@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -42,6 +43,7 @@ import Data.List (sortOn)
 import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
@@ -55,7 +57,7 @@ modify'_ = modify'
 
 shiftI offset i = (I.inf i + offset) ... (I.sup i + offset)
 
-bool2verilog True = "1'b1"
+bool2verilog True = "1'b1" :: T.Text
 bool2verilog False = "1'b0"
 
 values2dump vs =
@@ -67,7 +69,7 @@ values2dump vs =
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
         readBin :: String -> Int
-        readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
+        readBin = fst . head . readInt 2 (`elem` ("x01" :: String)) (\case '1' -> 1; _ -> 0)
 
 hdlValDump x =
     let bins =
@@ -81,7 +83,7 @@ hdlValDump x =
                     then bins
                     else replicate (4 - lMod) (head bins) ++ bins
         hs = map (foldr (\(i, a) acc -> if a then setBit acc i else acc) (0 :: Int) . zip [3, 2, 1, 0]) bins'
-     in concatMap (`showHex` "") hs
+     in T.concat $ map (T.pack . (`showHex` "")) hs
     where
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)

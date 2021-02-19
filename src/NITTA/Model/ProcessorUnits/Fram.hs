@@ -512,19 +512,18 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                         , tbcMC2verilogLiteral = showMicrocode
                         }
 
-softwareFile tag pu = T.unpack $ moduleName tag pu <> "." <> tag <> ".dump"
+softwareFile tag pu = moduleName tag pu <> "." <> tag <> ".dump"
 
 instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
     hardware tag pu = FromLibrary $ moduleName tag pu <> ".v"
     software tag fram@Fram{memory} =
         Immediate
-            (T.pack $ softwareFile tag fram)
-            $ T.pack $
-                unlines $
-                    map
-                        (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
-                        $ A.elems memory
+            (softwareFile tag fram)
+            $ T.unlines $
+                map
+                    (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
+                    $ A.elems memory
     hardwareInstance
         tag
         fram@Fram{memory}
