@@ -18,7 +18,6 @@ module NITTA.Project.Template (
     writeRenderedTemplates,
 ) where
 
--- TODO: Fix work with subpath inside project template
 -- TODO: Add template config (where to put nitta project)
 -- TODO: Fix imports inside template
 
@@ -34,30 +33,36 @@ import Text.Ginger
 
 writeRenderedTemplates prj@Project{pPath, pTemplates} = do
     createDirectoryIfMissing True pPath
-    for_ pTemplates $ \pTemplate -> do
-        templates <- findAllFiles pTemplate
-        mapM_ (writeRendedTemplate (projectContext prj) pPath) templates
+    for_ pTemplates $ \tPath -> do
+        tFiles <- findAllFiles tPath
+        for_ tFiles $ \tFile -> do
+            writeRendedTemplate (projectContext prj) pPath $ tPath </> tFile
 
-writeRendedTemplate context opath filename = do
-    src <- readFile filename
-    let raiseError err = error $ filename <> ": " <> formatParserError (Just src) err
+writeRendedTemplate context opath tFile = do
+    src <- readFile tFile
+    let raiseError err = error $ tFile <> ": " <> formatParserError (Just src) err
+        path = opath </> takeDirectory tFile
+        file = opath </> tFile
     template <-
         either raiseError return <$> runIdentity $
             parseGinger (const $ return Nothing) Nothing src
-    T.writeFile (joinPath [opath, takeFileName filename]) $ runGinger context template
+    createDirectoryIfMissing True path
+    T.writeFile file $ runGinger context template
 
 -- |List all files insede path
-findAllFiles path = do
-    items <- map (path </>) <$> listDirectory path
-    concat
-        <$> mapM
-            ( \item -> do
-                isDir <- doesDirectoryExist item
-                if isDir
-                    then findAllFiles item
-                    else return [item]
-            )
-            items
+findAllFiles root = findAllFiles' ""
+    where
+        findAllFiles' path = do
+            items <- map (path </>) <$> listDirectory (root </> path)
+            concat
+                <$> mapM
+                    ( \item -> do
+                        isDir <- doesDirectoryExist (root </> item)
+                        if isDir
+                            then findAllFiles' item
+                            else return [item]
+                    )
+                    items
 
 projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
     "nitta" ->
