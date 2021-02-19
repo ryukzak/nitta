@@ -131,6 +131,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tLibPath :: String
     , -- |output directory, where CAD create project directory with 'tName' name
       tPath :: String
+    , tTemplates :: [String]
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
     }
@@ -145,6 +146,7 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tReceivedValues = def
             , tSynthesisMethod = stateOfTheArtSynthesisIO
             , tLibPath = "hdl"
+            , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
             }
@@ -164,6 +166,7 @@ synthesizeTargetSystem
         , tSynthesisMethod
         , tLibPath
         , tPath
+        , tTemplates
         , tSimulationCycleN
         } = do
         -- TODO: check that tName is a valid verilog module name
@@ -202,7 +205,7 @@ synthesizeTargetSystem
                             , -- because application algorithm can be refactored we need to use
                               -- synthesised version
                               pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf
-                            , pTemplates = defProjectTemplates
+                            , pTemplates = tTemplates
                             }
                 writeProject prj
                 return prj

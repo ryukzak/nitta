@@ -57,6 +57,7 @@ data Nitta = Nitta
     , type_ :: String
     , io_sync :: IOSynchronization
     , port :: Int
+    , templates :: String
     , n :: Int
     , fsim :: Bool
     , lsim :: Bool
@@ -70,9 +71,10 @@ deriving instance Data IOSynchronization
 nittaArgs =
     Nitta
         { filename = def &= argPos 0 &= typFile
-        , type_ = "fx32.32" &= help "Data type (default: 'fx32.32')"
+        , type_ = "fx32.32" &= name "t" &= help "Data type (default: 'fx32.32')"
         , io_sync = Sync &= help "IO synchronization mode: sync, async, onboard"
         , port = 0 &= help "Run nitta server for UI on specific port (by default - not run)"
+        , templates = "platform/Icarus:platform/DE0-Nano" &= help "Specify target platform templates (':', default: 'platform/Icarus:platform/DE0-Nano')"
         , n = 10 &= help "Number of computation cycles for simulation and testbench"
         , fsim = False &= help "Functional simulation with trace"
         , lsim = False &= help "Logical (HDL) simulation with trace"
@@ -88,7 +90,8 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path} <- cmdArgs nittaArgs
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates} <-
+        cmdArgs nittaArgs
     setupLogger verbose
 
     src <- readSourceCode filename
@@ -120,6 +123,7 @@ main = do
                         , tMicroArch = ma
                         , tDFG = frDataFlow
                         , tReceivedValues = received
+                        , tTemplates = S.split ":" templates
                         , tSimulationCycleN = n
                         }
                     >>= \case

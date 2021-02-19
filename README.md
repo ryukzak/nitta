@@ -122,6 +122,9 @@ Common flags:
                                       onboard
   -p     --port=INT                   Run nitta server for UI on specific
                                       port (by default - not run)
+         --templates=ITEM             Specify target platform templates (':',
+                                      default:
+                                      'platform/Icarus:platform/DE0-Nano')
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
   -f     --fsim                       Functional simulation with trace
