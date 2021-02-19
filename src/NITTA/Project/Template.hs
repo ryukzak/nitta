@@ -36,18 +36,16 @@ writeRenderedTemplates prj@Project{pPath, pTemplates} = do
     for_ pTemplates $ \tPath -> do
         tFiles <- findAllFiles tPath
         for_ tFiles $ \tFile -> do
-            writeRendedTemplate (projectContext prj) pPath $ tPath </> tFile
+            writeRendedTemplate (projectContext prj) pPath tPath tFile
 
-writeRendedTemplate context opath tFile = do
-    src <- readFile tFile
-    let raiseError err = error $ tFile <> ": " <> formatParserError (Just src) err
-        path = opath </> takeDirectory tFile
-        file = opath </> tFile
+writeRendedTemplate context opath tPath tFile = do
+    src <- readFile $ tPath </> tFile
+    let raiseError err = error $ tPath </> tFile <> ": " <> formatParserError (Just src) err
     template <-
         either raiseError return <$> runIdentity $
             parseGinger (const $ return Nothing) Nothing src
-    createDirectoryIfMissing True path
-    T.writeFile file $ runGinger context template
+    createDirectoryIfMissing True $ opath </> takeDirectory tFile
+    T.writeFile (opath </> tFile) $ runGinger context template
 
 -- |List all files insede path
 findAllFiles root = findAllFiles' ""
