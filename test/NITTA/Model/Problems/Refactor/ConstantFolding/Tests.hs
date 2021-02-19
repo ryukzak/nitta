@@ -8,14 +8,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
-Module      : NITTA.Model.Problems.Refactor.CompileTimeEval.Tests
+Module      : NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 Description :
 Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Problems.Refactor.CompileTimeEval.Tests (
+module NITTA.Model.Problems.Refactor.ConstantFolding.Tests (
     tests,
 ) where
 

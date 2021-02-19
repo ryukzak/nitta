@@ -14,14 +14,14 @@ module NITTA.Synthesis.Refactor (
     module NITTA.Synthesis.BreakLoop,
     module NITTA.Synthesis.OptimizeAccum,
     module NITTA.Synthesis.ResolveDeadlock,
-    module NITTA.Synthesis.CompileTimeEval,
+    module NITTA.Synthesis.ConstantFolding,
     isRefactor,
 ) where
 
 import Data.Maybe
 import Data.Typeable
 import NITTA.Synthesis.BreakLoop
-import NITTA.Synthesis.CompileTimeEval
+import NITTA.Synthesis.ConstantFolding
 import NITTA.Synthesis.OptimizeAccum
 import NITTA.Synthesis.ResolveDeadlock
 import NITTA.Synthesis.Types
@@ -30,5 +30,5 @@ isRefactor SynthesisDecision{metrics}
     | isJust (cast metrics :: Maybe BreakLoopMetrics) = True
     | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = True
     | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = True
-    | isJust (cast metrics :: Maybe CompileTimeEvalMetrics) = True
+    | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = True
 isRefactor _ = False

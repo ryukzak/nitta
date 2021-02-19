@@ -60,10 +60,10 @@ instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
                 (recLoopOut bl){funHistory = [origin]} :
                 (functions dfg L.\\ [origin])
 
-instance (Var v, Val x) => CompileTimeEvalProblem (DataFlowGraph v x) v x where
+instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
     compileTimeEvalOptions dfg = compileTimeEvalOptions $ functions dfg
 
-    compileTimeEvalDecision dfg ref@CompileTimeEval{} =
+    compileTimeEvalDecision dfg ref@ConstantFolding{} =
         fsToDataFlowGraph $ compileTimeEvalDecision (functions dfg) ref
 
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where

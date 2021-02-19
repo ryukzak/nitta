@@ -9,15 +9,15 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.CompileTimeEval
+Module      : NITTA.Synthesis.ConstantFolding
 Description :
 Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.CompileTimeEval (
-    CompileTimeEvalMetrics (..),
+module NITTA.Synthesis.ConstantFolding (
+    ConstantFoldingMetrics (..),
 ) where
 
 import Data.Aeson (ToJSON)
@@ -28,22 +28,22 @@ import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Synthesis.Types
 
-data CompileTimeEvalMetrics = CompileTimeEvalMetrics
+data ConstantFoldingMetrics = ConstantFoldingMetrics
     deriving (Generic)
 
-instance ToJSON CompileTimeEvalMetrics
+instance ToJSON ConstantFoldingMetrics
 
 instance
     (VarValTime v x t) =>
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) v x) tag v x t)
         (TargetSystem (BusNetwork tag v x t) v x)
-        (CompileTimeEval v x)
-        (CompileTimeEval v x)
-        CompileTimeEvalMetrics
+        (ConstantFolding v x)
+        (ConstantFolding v x)
+        ConstantFoldingMetrics
     where
     decisions SynthesisState{sTarget} o = [(o, compileTimeEvalDecision sTarget o)]
 
-    parameters SynthesisState{} CompileTimeEval{} _ = CompileTimeEvalMetrics
+    parameters SynthesisState{} ConstantFolding{} _ = ConstantFoldingMetrics
 
-    estimate _ctx _o _d CompileTimeEvalMetrics = 5050
+    estimate _ctx _o _d ConstantFoldingMetrics = 5050

@@ -88,7 +88,7 @@ instance
             , mUnit = optimizeAccumDecision mUnit d
             }
 
-instance (VarValTime v x t) => CompileTimeEvalProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance (VarValTime v x t) => ConstantFoldingProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
     compileTimeEvalOptions TargetSystem{mUnit} = compileTimeEvalOptions mUnit
 
     compileTimeEvalDecision TargetSystem{mUnit, mDataFlowGraph} d =

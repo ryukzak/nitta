@@ -117,7 +117,7 @@ isComplete
                 , sBreakLoopOptions = []
                 , sResolveDeadlockOptions = []
                 , sOptimizeAccumOptions = []
-                , sCompileTimeEvalOptions = []
+                , sConstantFoldingOptions = []
                 , sTarget
                 }
         }
@@ -134,7 +134,7 @@ exploreSubForestVar parent@Tree{sID, sState} =
                     ++ map (decisonAndContext parent) (sBreakLoopOptions sState)
                     ++ map (decisonAndContext parent) (sResolveDeadlockOptions sState)
                     ++ map (decisonAndContext parent) (sOptimizeAccumOptions sState)
-                    ++ map (decisonAndContext parent) (sCompileTimeEvalOptions sState)
+                    ++ map (decisonAndContext parent) (sConstantFoldingOptions sState)
                 )
      in forM (zip [0 ..] edges) $ \(i, (desc, ctx')) -> do
             sSubForestVar <- newEmptyTMVar
@@ -164,7 +164,7 @@ nodeCtx parent nModel =
             , sResolveDeadlockOptions = resolveDeadlockOptions nModel
             , sBreakLoopOptions = breakLoopOptions nModel
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
-            , sCompileTimeEvalOptions = compileTimeEvalOptions nModel
+            , sConstantFoldingOptions = compileTimeEvalOptions nModel
             , bindingAlternative =
                 foldl
                     (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)

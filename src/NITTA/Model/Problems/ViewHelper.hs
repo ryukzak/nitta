@@ -54,7 +54,7 @@ data DecisionView
         { old :: [FView]
         , new :: [FView]
         }
-    | CompileTimeEvalView
+    | ConstantFoldingView
         { cRefOld :: [FView]
         , cRefNew :: [FView]
         }
@@ -102,9 +102,9 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance Viewable (CompileTimeEval v x) DecisionView where
-    view CompileTimeEval{cRefOld, cRefNew} =
-        CompileTimeEvalView
+instance Viewable (ConstantFolding v x) DecisionView where
+    view ConstantFolding{cRefOld, cRefNew} =
+        ConstantFoldingView
             { cRefOld = map view cRefOld
             , cRefNew = map view cRefNew
             }

@@ -410,7 +410,7 @@ possibilities.
 -}
 instance BreakLoopProblem (Multiplier v x t) v x
 
-instance CompileTimeEvalProblem (Multiplier v x t) v x
+instance ConstantFoldingProblem (Multiplier v x t) v x
 instance OptimizeAccumProblem (Multiplier v x t) v x
 instance ResolveDeadlockProblem (Multiplier v x t) v x
 
