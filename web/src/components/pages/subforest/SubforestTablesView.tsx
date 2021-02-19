@@ -108,6 +108,7 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
             60
           ),
           textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
+          detailColumn(),
         ]}
       />
       <Table
@@ -118,6 +119,7 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
           objectiveColumn(),
           decisionColumn(),
           parametersColumn(),
+          detailColumn(),
         ]}
       />
     </>
