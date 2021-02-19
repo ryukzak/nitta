@@ -45,18 +45,19 @@ data Project m v x = Project
     { -- |target project name
       pName :: String
     , -- |IP-core library directory
-      pLibPath :: String
+      pLibPath :: FilePath
     , -- |output directory
-      pPath :: String
+      pPath :: FilePath
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
     , pUnitEnv :: UnitEnv m
     , -- |testbench context with input values
       pTestCntx :: Cntx v x
     , -- |Target platform templates
-      pTemplates :: [String]
+      pTemplates :: [FilePath]
     }
 
+defProjectTemplates :: [FilePath]
 defProjectTemplates =
     [ "platform/Icarus"
     , "platform/DE0-Nano"
@@ -89,11 +90,11 @@ class TargetSystemComponent pu where
 -- |Element of target system implementation
 data Implementation
     = -- |Immediate implementation
-      Immediate {impFileName, impText :: String}
+      Immediate {impFileName :: FilePath, impText :: String}
     | -- |Fetch implementation from library
-      FromLibrary {impFileName :: String}
+      FromLibrary {impFileName :: FilePath}
     | -- |Aggregation of many implementation parts in separate paths
-      Aggregate {impPath :: Maybe String, subComponents :: [Implementation]}
+      Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
     | -- |Nothing
       Empty
 

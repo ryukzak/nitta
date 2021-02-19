@@ -131,7 +131,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tLibPath :: String
     , -- |output directory, where CAD create project directory with 'tName' name
       tPath :: String
-    , tTemplates :: [String]
+    , tTemplates :: [FilePath]
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
     }
