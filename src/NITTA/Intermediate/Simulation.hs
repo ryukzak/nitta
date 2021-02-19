@@ -43,7 +43,7 @@ simulateAlg cycleN cycle0 transmission alg
             -- without refactoring
             | Just (Loop _ (O o) (I i)) <- castF f = (i, elems o) : cycleConnections fs
             -- after refactoring (BreakLoopD)
-            | Just (LoopOut (Loop _ (O o) (I i)) _) <- castF f = (i, elems o) : cycleConnections fs
+            | Just (LoopBegin (Loop _ (O o) (I i)) _) <- castF f = (i, elems o) : cycleConnections fs
             | otherwise = cycleConnections fs
 
           fromPrevCycle = cycleConnections alg =

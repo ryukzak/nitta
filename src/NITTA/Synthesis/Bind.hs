@@ -42,7 +42,7 @@ import Numeric.Interval.NonEmpty (inf)
 
 data BindMetrics = BindMetrics
     { -- |Can this binding block another one (for example, one 'Loop' can
-      -- take the last free register)?
+      -- take the last free buffer)?
       pCritical :: Bool
     , -- |How many alternative binding we have?
       pAlternative :: Float

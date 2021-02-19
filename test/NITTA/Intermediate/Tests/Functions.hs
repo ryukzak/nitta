@@ -36,11 +36,11 @@ uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 instance (Arbitrary x) => Arbitrary (Loop String x) where
     arbitrary = suchThat (Loop <$> (X <$> arbitrary) <*> outputVarsGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Reg String x) where
-    arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
+instance Arbitrary (Buffer String x) where
+    arbitrary = suchThat (Buffer <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (BrokenReg String x) where
-    arbitrary = suchThat (BrokenReg <$> inputVarGen <*> outputVarsGen) uniqueVars
+instance Arbitrary (BrokenBuffer String x) where
+    arbitrary = suchThat (BrokenBuffer <$> inputVarGen <*> outputVarsGen) uniqueVars
 
 instance (Val x, Arbitrary x) => Arbitrary (Constant String x) where
     arbitrary = suchThat (Constant <$> (X <$> arbitrary) <*> outputVarsGen) uniqueVars

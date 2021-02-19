@@ -43,10 +43,10 @@ module NITTA.Intermediate.Functions (
     Loop (..),
     loop,
     isLoop,
-    LoopIn (..),
-    LoopOut (..),
-    Reg (..),
-    reg,
+    LoopEnd (..),
+    LoopBegin (..),
+    Buffer (..),
+    buffer,
 
     -- *Input/Output
     Receive (..),
@@ -55,8 +55,8 @@ module NITTA.Intermediate.Functions (
     send,
 
     -- *Internal
-    BrokenReg (..),
-    brokenReg,
+    BrokenBuffer (..),
+    brokenBuffer,
 ) where
 
 import qualified Data.Bits as B
@@ -140,8 +140,8 @@ Similation data:
 
 In practice, Loop function supported by Fram processor unit in the
 following way: Loop function should be prepared before execution by
-automatical refactor @BreakLoop@, which replace Loop by @LoopIn@
-and @LoopOut@.
+automatical refactor @BreakLoop@, which replace Loop by @LoopEnd@
+and @LoopBegin@.
 -}
 data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq, Show)
 
@@ -170,47 +170,47 @@ instance (Var v) => FunctionSimulation (Loop v x) v x where
             -- if output variables are not defined - set initial value
             Nothing -> [(v, x) | v <- elems vs]
 
-data LoopOut v x = LoopOut (Loop v x) (O v) deriving (Typeable, Eq, Show)
-instance (Show v) => Label (LoopOut v x) where
-    label (LoopOut _ (O vs)) = "loopOut() = " <> showOut vs
-instance (Ord v) => Function (LoopOut v x) v where
-    outputs (LoopOut _ o) = variables o
+data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq, Show)
+instance (Show v) => Label (LoopBegin v x) where
+    label (LoopBegin _ (O vs)) = "LoopBegin() = " <> showOut vs
+instance (Ord v) => Function (LoopBegin v x) v where
+    outputs (LoopBegin _ o) = variables o
     isInternalLockPossible _ = True
-instance (Ord v) => Patch (LoopOut v x) (v, v) where
-    patch diff (LoopOut l a) = LoopOut (patch diff l) $ patch diff a
-instance (Var v) => Locks (LoopOut v x) v where
+instance (Ord v) => Patch (LoopBegin v x) (v, v) where
+    patch diff (LoopBegin l a) = LoopBegin (patch diff l) $ patch diff a
+instance (Var v) => Locks (LoopBegin v x) v where
     locks _ = []
-instance (Var v) => FunctionSimulation (LoopOut v x) v x where
-    simulate cntx (LoopOut l _) = simulate cntx l
+instance (Var v) => FunctionSimulation (LoopBegin v x) v x where
+    simulate cntx (LoopBegin l _) = simulate cntx l
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving (Typeable, Eq, Show)
-instance (Show v) => Label (LoopIn v x) where
-    label (LoopIn (Loop _ (O vs) _) (I v)) = "loopIn(" <> show v <> ") pair out: " <> showOut vs
-instance (Ord v) => Function (LoopIn v x) v where
-    inputs (LoopIn _ o) = variables o
+data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq, Show)
+instance (Show v) => Label (LoopEnd v x) where
+    label (LoopEnd (Loop _ (O vs) _) (I v)) = "LoopEnd(" <> show v <> ") pair out: " <> showOut vs
+instance (Ord v) => Function (LoopEnd v x) v where
+    inputs (LoopEnd _ o) = variables o
     isInternalLockPossible _ = True
-instance (Ord v) => Patch (LoopIn v x) (v, v) where
-    patch diff (LoopIn l a) = LoopIn (patch diff l) $ patch diff a
-instance (Var v) => Locks (LoopIn v x) v where locks (LoopIn l _) = locks l
-instance (Var v) => FunctionSimulation (LoopIn v x) v x where
-    simulate cntx (LoopIn l _) = simulate cntx l
+instance (Ord v) => Patch (LoopEnd v x) (v, v) where
+    patch diff (LoopEnd l a) = LoopEnd (patch diff l) $ patch diff a
+instance (Var v) => Locks (LoopEnd v x) v where locks (LoopEnd l _) = locks l
+instance (Var v) => FunctionSimulation (LoopEnd v x) v x where
+    simulate cntx (LoopEnd l _) = simulate cntx l
 
-data Reg v x = Reg (I v) (O v) deriving (Typeable, Eq)
-instance Label (Reg v x) where label Reg{} = "r"
-instance (Show v) => Show (Reg v x) where
-    show (Reg (I k1) (O k2)) = "reg(" <> show k1 <> ")" <> " = " <> showOut k2
-reg :: (Var v, Val x) => v -> [v] -> F v x
-reg a b = packF $ Reg (I a) (O $ fromList b)
+data Buffer v x = Buffer (I v) (O v) deriving (Typeable, Eq)
+instance Label (Buffer v x) where label Buffer{} = "buf"
+instance (Show v) => Show (Buffer v x) where
+    show (Buffer (I k1) (O k2)) = "buffer(" <> show k1 <> ")" <> " = " <> showOut k2
+buffer :: (Var v, Val x) => v -> [v] -> F v x
+buffer a b = packF $ Buffer (I a) (O $ fromList b)
 
-instance (Ord v) => Function (Reg v x) v where
-    inputs (Reg a _b) = variables a
-    outputs (Reg _a b) = variables b
-instance (Ord v) => Patch (Reg v x) (v, v) where
-    patch diff (Reg a b) = Reg (patch diff a) (patch diff b)
-instance (Var v) => Locks (Reg v x) v where
+instance (Ord v) => Function (Buffer v x) v where
+    inputs (Buffer a _b) = variables a
+    outputs (Buffer _a b) = variables b
+instance (Ord v) => Patch (Buffer v x) (v, v) where
+    patch diff (Buffer a b) = Buffer (patch diff a) (patch diff b)
+instance (Var v) => Locks (Buffer v x) v where
     locks = inputsLockOutputs
-instance (Var v) => FunctionSimulation (Reg v x) v x where
-    simulate cntx (Reg (I a) (O vs)) =
+instance (Var v) => FunctionSimulation (Buffer v x) v x where
+    simulate cntx (Buffer (I a) (O vs)) =
         [(v, cntx `getCntx` a) | v <- elems vs]
 
 data Add v x = Add (I v) (I v) (O v) deriving (Typeable, Eq)
@@ -401,20 +401,20 @@ instance (Var v, Val x) => FunctionSimulation (Receive v x) v x where
             Nothing -> [(v, def) | v <- elems vs]
 
 -- |Special function for negative tests only.
-data BrokenReg v x = BrokenReg (I v) (O v) deriving (Typeable, Eq)
+data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, Eq)
 
-instance Label (BrokenReg v x) where label BrokenReg{} = "broken"
-instance (Show v) => Show (BrokenReg v x) where
-    show (BrokenReg (I k1) (O k2)) = "brokenReg(" <> show k1 <> ")" <> " = " <> showOut k2
-brokenReg :: (Var v, Val x) => v -> [v] -> F v x
-brokenReg a b = packF $ BrokenReg (I a) (O $ fromList b)
+instance Label (BrokenBuffer v x) where label BrokenBuffer{} = "broken"
+instance (Show v) => Show (BrokenBuffer v x) where
+    show (BrokenBuffer (I k1) (O k2)) = "brokenBuffer(" <> show k1 <> ")" <> " = " <> showOut k2
+brokenBuffer :: (Var v, Val x) => v -> [v] -> F v x
+brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ fromList b)
 
-instance (Ord v) => Function (BrokenReg v x) v where
-    inputs (BrokenReg a _b) = variables a
-    outputs (BrokenReg _a b) = variables b
-instance (Ord v) => Patch (BrokenReg v x) (v, v) where
-    patch diff (BrokenReg a b) = BrokenReg (patch diff a) (patch diff b)
-instance (Var v) => Locks (BrokenReg v x) v where
+instance (Ord v) => Function (BrokenBuffer v x) v where
+    inputs (BrokenBuffer a _b) = variables a
+    outputs (BrokenBuffer _a b) = variables b
+instance (Ord v) => Patch (BrokenBuffer v x) (v, v) where
+    patch diff (BrokenBuffer a b) = BrokenBuffer (patch diff a) (patch diff b)
+instance (Var v) => Locks (BrokenBuffer v x) v where
     locks = inputsLockOutputs
-instance (Var v) => FunctionSimulation (BrokenReg v x) v x where
-    simulate cntx (BrokenReg (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- elems vs]
+instance (Var v) => FunctionSimulation (BrokenBuffer v x) v x where
+    simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- elems vs]

@@ -84,11 +84,7 @@ instance BreakLoopProblem (Shift v x t) v x
 instance OptimizeAccumProblem (Shift v x t) v x
 instance ResolveDeadlockProblem (Shift v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Shift v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
     tryBind f pu@Shift{remain}
         | Just f' <- castF f =
             case f' of
@@ -116,11 +112,7 @@ execution pu@Shift{target = Nothing, sources = [], remain} f
                 }
 execution _ _ = error "Not right arguments in execution function in shift module"
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Shift v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
     endpointOptions Shift{target = Just t, process_} =
         [EndpointSt (Target t) $ TimeConstrain (nextTick process_ ... maxBound) (singleton 1)]
     endpointOptions Shift{sources, process_, byteShiftDiv, byteShiftMod}
@@ -196,7 +188,7 @@ instance
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
-                            let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables f)
+                            let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
                         return endpoints
                  in pu

@@ -213,8 +213,8 @@ arbitrary time. Choose the variant.
 >>> st2
 Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {sKey = 1, sTime = 0 ... 2, sDesc = Instruction: Load A}
-        1) Step {sKey = 0, sTime = 0 ... 2, sDesc = Endpoint: Target a}
+        0) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        1) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
     relations =
         0) Vertical 0 1
     nextTick  = 2
@@ -226,10 +226,10 @@ Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Jus
 >>> st3
 Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {sKey = 3, sTime = 3 ... 3, sDesc = Instruction: Load B}
-        1) Step {sKey = 2, sTime = 3 ... 3, sDesc = Endpoint: Target b}
-        2) Step {sKey = 1, sTime = 0 ... 2, sDesc = Instruction: Load A}
-        3) Step {sKey = 0, sTime = 0 ... 2, sDesc = Endpoint: Target a}
+        0) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+        1) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        2) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        3) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
     relations =
         0) Vertical 2 3
         1) Vertical 0 1
@@ -248,12 +248,12 @@ inside). Consider the second option:
 >>> st4
 Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {sKey = 5, sTime = 6 ... 6, sDesc = Instruction: Out}
-        1) Step {sKey = 4, sTime = 6 ... 6, sDesc = Endpoint: Source c}
-        2) Step {sKey = 3, sTime = 3 ... 3, sDesc = Instruction: Load B}
-        3) Step {sKey = 2, sTime = 3 ... 3, sDesc = Endpoint: Target b}
-        4) Step {sKey = 1, sTime = 0 ... 2, sDesc = Instruction: Load A}
-        5) Step {sKey = 0, sTime = 0 ... 2, sDesc = Endpoint: Target a}
+        0) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+        1) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
+        2) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+        3) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        4) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        5) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
     relations =
         0) Vertical 4 5
         1) Vertical 2 3
@@ -267,15 +267,15 @@ Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b
 >>> st5
 Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
     steps     =
-        0) Step {sKey = 8, sTime = 0 ... 7, sDesc = Intermediate: a * b = c = d}
-        1) Step {sKey = 7, sTime = 7 ... 7, sDesc = Instruction: Out}
-        2) Step {sKey = 6, sTime = 7 ... 7, sDesc = Endpoint: Source d}
-        3) Step {sKey = 5, sTime = 6 ... 6, sDesc = Instruction: Out}
-        4) Step {sKey = 4, sTime = 6 ... 6, sDesc = Endpoint: Source c}
-        5) Step {sKey = 3, sTime = 3 ... 3, sDesc = Instruction: Load B}
-        6) Step {sKey = 2, sTime = 3 ... 3, sDesc = Endpoint: Target b}
-        7) Step {sKey = 1, sTime = 0 ... 2, sDesc = Instruction: Load A}
-        8) Step {sKey = 0, sTime = 0 ... 2, sDesc = Endpoint: Target a}
+        0) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
+        1) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
+        2) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
+        3) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+        4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
+        5) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+        6) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        7) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        8) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
     relations =
         0) Vertical 8 6
         1) Vertical 8 4
@@ -426,11 +426,7 @@ From the CAD point of view, bind looks like:
 
 Binding can be done either gradually due synthesis process at the start.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Multiplier v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Multiplier v x t) v x t where
     tryBind f pu@Multiplier{remain}
         | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
@@ -488,11 +484,7 @@ It includes three cases:
   find the selected function, 'execute' it, and do a recursive call with the
   same decision.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Multiplier v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     endpointOptions Multiplier{targets, process_}
         | not $ null targets =
             let at = nextTick process_ + 1 ... maxBound
@@ -533,7 +525,7 @@ instance
                     endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables f)
+                        let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                         -- Set up the vertical relantions between functional unit
                         -- and related to that data sending.
                         establishVerticalRelations high low
@@ -652,11 +644,7 @@ instance IOConnected (Multiplier v x t) where
 
 - Hardware instance in the upper structure element.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (Multiplier v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
     hardware tag pu@Multiplier{isMocked} =

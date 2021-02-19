@@ -1,6 +1,6 @@
 function foo()
     local a = receive()
-    local x = reg(a)
+    local x = buffer(a)
     send(x)
     foo()
 end

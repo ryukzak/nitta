@@ -69,8 +69,8 @@ instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
 instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 
-    resolveDeadlockDecision dfg ResolveDeadlock{buffer, changeset} =
-        fsToDataFlowGraph (buffer : map (patch changeset) (functions dfg))
+    resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =
+        fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs

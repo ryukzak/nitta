@@ -26,8 +26,8 @@ before:
 
 after:
 
-> LoopIn l (I i)
-> LoopOut l (O o)
+> LoopEnd l (I i)
+> LoopBegin l (O o)
 
 For more details: 'NITTA.Intermediate.Functions.Loop'
 -}
@@ -65,7 +65,7 @@ recLoop BreakLoop{loopX, loopO, loopI} =
     packF $ Loop (X loopX) (O loopO) (I loopI)
 
 recLoopIn BreakLoop{loopX, loopO, loopI} =
-    packF $ LoopIn (Loop (X loopX) (O loopO) (I loopI)) (I loopI)
+    packF $ LoopEnd (Loop (X loopX) (O loopO) (I loopI)) (I loopI)
 
 recLoopOut BreakLoop{loopX, loopO, loopI} =
-    packF $ LoopOut (Loop (X loopX) (O loopO) (I loopI)) (O loopO)
+    packF $ LoopBegin (Loop (X loopX) (O loopO) (I loopI)) (O loopO)

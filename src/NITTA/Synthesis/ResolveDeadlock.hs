@@ -52,8 +52,8 @@ instance
     where
     decisions SynthesisState{sTarget} o = [(o, resolveDeadlockDecision sTarget o)]
 
-    parameters SynthesisState{transferableVars} ResolveDeadlock{buffer} _ =
-        let buffered = outputs buffer
+    parameters SynthesisState{transferableVars} ResolveDeadlock{newBuffer} _ =
+        let buffered = outputs newBuffer
          in ResolveDeadlockMetrics
                 { pNumberOfLockedVariables = fromIntegral $ S.size buffered
                 , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems buffered

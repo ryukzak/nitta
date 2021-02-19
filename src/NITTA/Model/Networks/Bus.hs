@@ -120,12 +120,7 @@ busNetwork signalBusWidth ioSync pus =
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    DataflowProblem (BusNetwork tag v x t) tag v t
-    where
+instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x t) tag v t where
     dataflowOptions BusNetwork{bnPus, bnProcess} =
         let sources =
                 concatMap
@@ -202,12 +197,7 @@ instance
         where
             applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    ProcessorUnit (BusNetwork tag v x t) v x t
-    where
+instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
     tryBind f net@BusNetwork{bnRemains, bnPus}
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
@@ -221,10 +211,10 @@ instance
     process net@BusNetwork{bnProcess, bnPus} =
         let v2transportStepKey =
                 M.fromList
-                    [ (v, sKey)
-                    | Step{sKey, sDesc} <- steps bnProcess
-                    , isInstruction sDesc
-                    , v <- case sDesc of
+                    [ (v, pID)
+                    | Step{pID, pDesc} <- steps bnProcess
+                    , isInstruction pDesc
+                    , v <- case pDesc of
                         (InstructionStep i) | Just (Transport var _ _) <- castInstruction net i -> [var]
                         _ -> []
                     ]
@@ -235,10 +225,10 @@ instance
                 -- Vertical relations between Transport and Endpoint
                 let enpointStepKeyVars =
                         concatMap
-                            ( \Step{sKey, sDesc} ->
-                                case sDesc of
-                                    NestedStep{nStep = Step{sDesc = EndpointRoleStep role}} ->
-                                        zip (repeat sKey) $ S.elems $ variables role
+                            ( \Step{pID, pDesc} ->
+                                case pDesc of
+                                    NestedStep{nStep = Step{pDesc = EndpointRoleStep role}} ->
+                                        zip (repeat pID) $ S.elems $ variables role
                                     _ -> []
                             )
                             steps
@@ -251,11 +241,11 @@ instance
 
                 -- Vertical relations between FB and Transport
                 mapM_
-                    ( \Step{sKey, sDesc = NestedStep{nStep = Step{sDesc = FStep f}}} ->
+                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = FStep f}}} ->
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelation sKey (v2transportStepKey M.! v)
+                                    establishVerticalRelation pID (v2transportStepKey M.! v)
                             )
                             $ variables f
                     )
@@ -267,9 +257,9 @@ instance
                 pu2netKey <-
                     M.fromList
                         <$> mapM
-                            ( \step@Step{sKey} -> do
-                                sKey' <- scheduleNestedStep tag step
-                                return (sKey, sKey')
+                            ( \step@Step{pID} -> do
+                                pID' <- scheduleNestedStep tag step
+                                return (pID, pID')
                             )
                             steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
@@ -302,9 +292,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 ----------------------------------------------------------------------
 
 instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
+    (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
     bindOptions BusNetwork{bnRemains, bnPus} = concatMap optionsFor bnRemains
@@ -394,13 +382,13 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{buffer, changeset} =
+    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{newBuffer, changeset} =
         let Just (tag, _) =
                 L.find
-                    (\(_, f) -> not $ null $ S.intersection (outputs buffer) $ unionsMap outputs f)
+                    (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
                     $ M.assocs bnBinded
          in bn
-                { bnRemains = buffer : patch changeset bnRemains
+                { bnRemains = newBuffer : patch changeset bnRemains
                 , bnPus = M.adjust (patch changeset) tag bnPus
                 , bnBinded = M.map (patch changeset) bnBinded
                 }
@@ -433,11 +421,7 @@ externalPortsDecl ports =
             )
             ports
 
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (BusNetwork String v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName tag BusNetwork{..} = tag ++ "_net"
 
     hardware tag pu@BusNetwork{..} =
@@ -573,9 +557,7 @@ instance IOConnected (BusNetwork tag v x t) where
     outputPorts = extOutputs
 
 instance
-    ( VarValTime v x t
-    , TargetSystemComponent (BusNetwork String v x t)
-    ) =>
+    (VarValTime v x t, TargetSystemComponent (BusNetwork String v x t)) =>
     Testable (BusNetwork String v x t) v x
     where
     testBenchImplementation

@@ -86,7 +86,7 @@ subForestIO
                         putTMVar sSubForestVar subForest
                         return (True, subForest)
         when firstTime $ do
-            infoM "NITTA.Synthesis" $
+            debugM "NITTA.Synthesis" $
                 "explore: " <> show sID
                     <> " score: "
                     <> ( case sDecision of

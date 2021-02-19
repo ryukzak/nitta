@@ -87,7 +87,7 @@ tests =
                 ]
             ]
         , puCoSimTestCase
-            "as register"
+            "as buffer"
             accumDef
             [("a", 99)]
             [ accFromStr "+a = c;"

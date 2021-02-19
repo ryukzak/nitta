@@ -206,7 +206,7 @@ instance ToSample (NodeView tag v x t) where
                             , pPercentOfBindedInputs = 0.2
                             , pWave = Just 2
                             }
-                , decision = BindDecisionView (FView "reg(a) = b = c" []) "pu"
+                , decision = BindDecisionView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032
                 }
             , NodeView
@@ -257,7 +257,7 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision =
                     ResolveDeadlockView
-                        { buffer = "reg(x#0@buf) = x#0"
+                        { newBuffer = "buffer(x#0@buf) = x#0"
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
                 , score = 1999
@@ -273,7 +273,7 @@ instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
 instance ToJSON StepInfoView
 
 instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
-    view p@Process{steps} = p{steps = map (\s@Step{sDesc} -> s{sDesc = view sDesc}) steps}
+    view p@Process{steps} = p{steps = map (\s@Step{pDesc} -> s{pDesc = view pDesc}) steps}
 
 -- Testbench
 
@@ -345,31 +345,31 @@ instance ToSample (TestbenchReportView String Int) where
                     , "web_ui_net_tb.v"
                     ]
                 , tbFunctions =
-                    [ "reg(x#0) = tmp_0#0"
-                    , "LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
-                    , "LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
+                    [ "buffer(x#0) = tmp_0#0"
+                    , "LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
+                    , "LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
                     ]
                 , tbSynthesisSteps =
-                    [ "Step {sKey = 19, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
-                    , "Step {sKey = 18, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 1, sTime = 0 ... 0, sDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
-                    , "Step {sKey = 17, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 2, sTime = 0 ... 0, sDesc = bind LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
-                    , "Step {sKey = 16, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 3, sTime = 0 ... 0, sDesc = bind LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
-                    , "Step {sKey = 15, sTime = 1 ... 1, sDesc = Nested fram2: Step {sKey = 4, sTime = 1 ... 1, sDesc = Source x#0}}"
-                    , "Step {sKey = 14, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 5, sTime = 0 ... 0, sDesc = PrepareRead 0}}"
-                    , "Step {sKey = 13, sTime = 0 ... 1, sDesc = Nested fram2: Step {sKey = 6, sTime = 0 ... 1, sDesc = LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
-                    , "Step {sKey = 12, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 7, sTime = 4 ... 4, sDesc = Target tmp_0#0}}"
-                    , "Step {sKey = 11, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 8, sTime = 4 ... 4, sDesc = Write 0}}"
-                    , "Step {sKey = 10, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 9, sTime = 4 ... 4, sDesc = LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
-                    , "Step {sKey = 9, sTime = 0 ... 0, sDesc = Nested fram1: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}}"
-                    , "Step {sKey = 8, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 1, sTime = 1 ... 1, sDesc = Target x#0}}"
-                    , "Step {sKey = 7, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 2, sTime = 1 ... 1, sDesc = Write 0}}"
-                    , "Step {sKey = 6, sTime = 4 ... 4, sDesc = Nested fram1: Step {sKey = 3, sTime = 4 ... 4, sDesc = Source tmp_0#0}}"
-                    , "Step {sKey = 5, sTime = 3 ... 3, sDesc = Nested fram1: Step {sKey = 4, sTime = 3 ... 3, sDesc = PrepareRead 0}}"
-                    , "Step {sKey = 4, sTime = 1 ... 4, sDesc = Nested fram1: Step {sKey = 5, sTime = 1 ... 4, sDesc = reg(x#0) = tmp_0#0}}"
-                    , "Step {sKey = 3, sTime = 4 ... 4, sDesc = Transport \"tmp_0#0\" \"fram1\" \"fram2\"}"
-                    , "Step {sKey = 2, sTime = 1 ... 1, sDesc = Transport \"x#0\" \"fram2\" \"fram1\"}"
-                    , "Step {sKey = 1, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}"
-                    , "Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
+                    [ "Step {pID = 19, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
+                    , "Step {pID = 18, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 1, pInterval = 0 ... 0, pDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
+                    , "Step {pID = 17, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 2, pInterval = 0 ... 0, pDesc = bind LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {pID = 16, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 3, pInterval = 0 ... 0, pDesc = bind LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {pID = 15, pInterval = 1 ... 1, pDesc = Nested fram2: Step {pID = 4, pInterval = 1 ... 1, pDesc = Source x#0}}"
+                    , "Step {pID = 14, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 5, pInterval = 0 ... 0, pDesc = PrepareRead 0}}"
+                    , "Step {pID = 13, pInterval = 0 ... 1, pDesc = Nested fram2: Step {pID = 6, pInterval = 0 ... 1, pDesc = LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {pID = 12, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 7, pInterval = 4 ... 4, pDesc = Target tmp_0#0}}"
+                    , "Step {pID = 11, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 8, pInterval = 4 ... 4, pDesc = Write 0}}"
+                    , "Step {pID = 10, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 9, pInterval = 4 ... 4, pDesc = LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {pID = 9, pInterval = 0 ... 0, pDesc = Nested fram1: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind buffer(x#0) = tmp_0#0}}"
+                    , "Step {pID = 8, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 1, pInterval = 1 ... 1, pDesc = Target x#0}}"
+                    , "Step {pID = 7, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 2, pInterval = 1 ... 1, pDesc = Write 0}}"
+                    , "Step {pID = 6, pInterval = 4 ... 4, pDesc = Nested fram1: Step {pID = 3, pInterval = 4 ... 4, pDesc = Source tmp_0#0}}"
+                    , "Step {pID = 5, pInterval = 3 ... 3, pDesc = Nested fram1: Step {pID = 4, pInterval = 3 ... 3, pDesc = PrepareRead 0}}"
+                    , "Step {pID = 4, pInterval = 1 ... 4, pDesc = Nested fram1: Step {pID = 5, pInterval = 1 ... 4, pDesc = buffer(x#0) = tmp_0#0}}"
+                    , "Step {pID = 3, pInterval = 4 ... 4, pDesc = Transport \"tmp_0#0\" \"fram1\" \"fram2\"}"
+                    , "Step {pID = 2, pInterval = 1 ... 1, pDesc = Transport \"x#0\" \"fram2\" \"fram1\"}"
+                    , "Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}"
+                    , "Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
                     ]
                 , tbFunctionalSimulationCntx =
                     replicate 2 $

@@ -84,7 +84,7 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
                 </pre>
               );
             } else if (e.decision.tag === "ResolveDeadlockView") {
-              return (e.decision as ResolveDeadlock).buffer;
+              return (e.decision as ResolveDeadlock).newBuffer;
             }
             return JSON.stringify(e.decision);
           }),
