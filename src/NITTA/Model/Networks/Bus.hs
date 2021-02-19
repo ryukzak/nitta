@@ -606,10 +606,10 @@ instance
             wire cycle;
 
             // clk and rst generator
-            { inline snippetClkGen }
+            { inline $ T.unpack snippetClkGen }
 
             // vcd dump
-            { inline $ snippetDumpFile $ moduleName pName n }
+            { inline $ T.unpack $ snippetDumpFile $ T.pack $ moduleName pName n }
 
 
 

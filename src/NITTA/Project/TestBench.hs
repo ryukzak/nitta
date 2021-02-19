@@ -215,8 +215,8 @@ snippetTestBench
 
         { inline $ T.pack inst }
 
-        { inline $ T.pack snippetClkGen }
-        { inline $ T.pack $ snippetDumpFile name }
+        { inline snippetClkGen }
+        { inline $ snippetDumpFile $ T.pack name }
 
         initial begin
             @(negedge rst);

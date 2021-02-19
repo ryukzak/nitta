@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 {- |
@@ -17,10 +18,11 @@ module NITTA.Project.VerilogSnippets (
     snippetDumpFile,
 ) where
 
-import NITTA.Utils
+import qualified Data.Text as T
+import NITTA.Utils.CodeFormatText
 import Text.InterpolatedString.Perl6 (qc)
 
-snippetClkGen :: String
+snippetClkGen :: T.Text
 snippetClkGen =
     codeBlock
         [qc|
@@ -33,7 +35,7 @@ snippetClkGen =
     end
     |]
 
-snippetDumpFile :: String -> String
+snippetDumpFile :: T.Text -> T.Text
 snippetDumpFile mn =
     codeBlock
         [qc|
