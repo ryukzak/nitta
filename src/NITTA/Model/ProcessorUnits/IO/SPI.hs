@@ -27,6 +27,7 @@ import Data.Default
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -96,7 +97,7 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/pu_slave_spi.v"
             , FromLibrary "spi/pu_master_spi.v"
             ]
-    software _ pu = Immediate "transport.txt" $ show pu
+    software _ pu = Immediate "transport.txt" $ T.pack $ show pu
 
     hardwareInstance
         tag

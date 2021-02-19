@@ -39,6 +39,7 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
@@ -462,7 +463,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     endmodule
                     |]
          in Aggregate (Just mn) $
-                [ Immediate (mn ++ ".v") iml
+                [ Immediate (mn ++ ".v") $ T.pack iml
                 , FromLibrary "pu_simple_control.v"
                 ]
                     ++ map (uncurry hardware) (M.assocs bnPus)
@@ -483,7 +484,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
         let subSW = map (uncurry software) (M.assocs bnPus)
-            sw = [Immediate (mn ++ ".dump") memoryDump]
+            sw = [Immediate (mn ++ ".dump") $ T.pack memoryDump]
          in Aggregate (Just mn) $ subSW ++ sw
         where
             mn = moduleName tag pu
@@ -584,8 +585,9 @@ instance
                 assertion (cycleI, t, Just (v, x)) =
                     codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
              in Immediate (moduleName pName n ++ "_tb.v") $
-                    codeBlock
-                        [qc|
+                    T.pack $
+                        codeBlock
+                            [qc|
             `timescale 1 ps / 1 ps
             module { moduleName pName n }_tb();
 

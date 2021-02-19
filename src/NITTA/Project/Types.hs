@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -27,8 +28,8 @@ module NITTA.Project.Types (
 
 import Data.Default
 import qualified Data.List as L
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
@@ -92,7 +93,7 @@ class TargetSystemComponent pu where
 -- |Element of target system implementation
 data Implementation
     = -- |Immediate implementation
-      Immediate {impFileName :: FilePath, impText :: String}
+      Immediate {impFileName :: FilePath, impText :: T.Text}
     | -- |Fetch implementation from library
       FromLibrary {impFileName :: FilePath}
     | -- |Aggregation of many implementation parts in separate paths
@@ -111,7 +112,7 @@ placeholder.
 writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            writeFile (joinPath [prjPath, p, fn]) $ S.replace "$PATH$" p src
+            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" p src
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]

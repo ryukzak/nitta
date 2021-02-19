@@ -23,6 +23,7 @@ module NITTA.Model.ProcessorUnits.IO.I2C (
 ) where
 
 import Data.Default
+import qualified Data.Text as T
 import NITTA.Intermediate.Value
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types
@@ -86,7 +87,7 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
             , FromLibrary "i2c/pu_master_i2c.v"
             , FromLibrary "i2c/pu_slave_i2c.v"
             ]
-    software _ pu = Immediate "transport.txt" $ show pu
+    software _ pu = Immediate "transport.txt" $ T.pack $ show pu
 
     hardwareInstance
         tag

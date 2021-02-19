@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -30,6 +31,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
@@ -38,7 +40,8 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
-import NITTA.Utils
+import NITTA.Utils hiding (codeBlock, codeLine, inline)
+import NITTA.Utils.CodeFormatText
 import System.FilePath.Posix (joinPath, (</>))
 import Text.InterpolatedString.Perl6 (qc)
 
@@ -87,8 +90,9 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
             , tbCompilerDump
             , tbSimulationDump
             } =
-            codeBlock
-                [qc|
+            T.unpack $
+                codeBlock
+                    [qc|
             Project: { tbPath }
             Files:
                 { inline $ showLst tbFiles }
@@ -102,7 +106,7 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
                 { inline $ showLst tbSimulationDump }
             |]
             where
-                showLst = unlines . map ("    " ++)
+                showLst = T.unlines . map (("    " <>) . T.pack)
 
 -- |Get name of testbench top module.
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
@@ -142,7 +146,7 @@ snippetTestBench ::
     ) =>
     Project m v x ->
     SnippetTestBenchConf m ->
-    String
+    T.Text
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
@@ -173,50 +177,50 @@ snippetTestBench
                 | Just (Target v) <- endpointAt t p =
                     getCntx cycleCntx v
                 | otherwise = 0
-            busCheck = concatMap busCheck' [0 .. nextTick + 1]
+            busCheck = T.concat $ map busCheck' [0 .. nextTick + 1]
                 where
                     busCheck' t
                         | Just (Source vs) <- endpointAt t p
                           , let v = oneOf vs
-                          , let x = getCntx cycleCntx v =
+                                x = getCntx cycleCntx v =
                             codeBlock
                                 [qc|
                         @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { dataLiteral x }, { attrLiteral x }, { v });
                         |]
                         | otherwise =
                             codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
-            tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
+            tbcSignals' = map (\x -> "reg " <> x <> ";") tbcSignals
          in codeBlock
                 [qc|
-        {"module"} {name}_tb();
+        module {name}_tb();
 
         parameter DATA_WIDTH = { dataWidth (def :: x) };
         parameter ATTR_WIDTH = { attrWidth (def :: x) };
 
         /*
         Algorithm:
-        { inline $ unlines $ map show $ fs }
+        { inline $ T.unlines $ map (T.pack . show) $ fs }
         Process:
-        { inline $ unlines $ map show $ reverse steps }
+        { inline $ T.unlines $ map (T.pack . show) $ reverse steps }
         Context:
-        { inline $ show cycleCntx }
+        { inline $ T.pack $ show cycleCntx }
         */
 
         reg clk, rst;
-        { inline $ S.join "\\n" tbcSignals' }
+        { inline $ T.unlines $ map T.pack tbcSignals' }
         reg [DATA_WIDTH-1:0]  data_in;
         reg [ATTR_WIDTH-1:0]  attr_in;
         wire [DATA_WIDTH-1:0] data_out;
         wire [ATTR_WIDTH-1:0] attr_out;
 
-        { inline inst }
+        { inline $ T.pack inst }
 
-        { inline snippetClkGen }
-        { inline $ snippetDumpFile name }
+        { inline $ T.pack snippetClkGen }
+        { inline $ T.pack $ snippetDumpFile name }
 
         initial begin
             @(negedge rst);
-            {inline controlSignals}
+            {inline $ T.pack controlSignals}
             $finish;
         end
 
@@ -226,7 +230,7 @@ snippetTestBench
             $finish;
         end
 
-        { inline $ verilogHelper (def :: x) }
+        { inline $ T.pack $ verilogHelper (def :: x) }
 
         endmodule
         |]

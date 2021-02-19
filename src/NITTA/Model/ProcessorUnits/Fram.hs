@@ -35,6 +35,7 @@ import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -518,10 +519,11 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     software tag fram@Fram{memory} =
         Immediate
             (softwareFile tag fram)
-            $ unlines $
-                map
-                    (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
-                    $ A.elems memory
+            $ T.pack $
+                unlines $
+                    map
+                        (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
+                        $ A.elems memory
     hardwareInstance
         tag
         fram@Fram{memory}
