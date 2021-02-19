@@ -4,7 +4,7 @@ import { SID, IAppContext } from "components/app/AppContext";
 import jsAPI from "gen/rest_api.js";
 import { TreeView, ShortNodeView } from "../gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
-import { EndpointSt, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
+import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
 import { Interval } from "../gen/types";
 
 export type SynthesisTree = TreeView<ShortNodeView>;
@@ -16,6 +16,8 @@ export type Dataflow = IDataflowDecisionView;
 
 export type Endpoint = EndpointSt<string, number>;
 export type EndpointDecision = EndpointSt<string, Interval<number>>;
+export type Source = ISource<string>;
+export type Target = ITarget<string>;
 export type PUEndpoints = [string, Endpoint[]];
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReport = TestbenchReportView<string, number>;

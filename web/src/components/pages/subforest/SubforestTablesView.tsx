@@ -2,10 +2,10 @@ import * as React from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
-import { Node, Bind, Dataflow, EndpointDecision } from "services/HaskellApiService";
+import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
 import { BindMetrics, DataflowMetrics } from "gen/types";
 
-import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Columns";
+import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn, detailColumn } from "./Columns";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
@@ -26,6 +26,7 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
     "OptimizeAccumView",
     "ResolveDeadlockView",
   ];
+
   return (
     <>
       <Table
@@ -81,8 +82,7 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
         columns={[
           sidColumn(appContext.setSID),
           objectiveColumn(),
-          // textColumn("at", (e: Node) => (e.decision as Dataflow).source.time),
-          textColumn("source", (e: Node) => JSON.stringify((e.decision as Dataflow).source)),
+          textColumn("source", (e: Node) => (e.decision as Dataflow).source[0], 60),
           textColumn(
             "targets",
             (e: Node) => {
@@ -90,7 +90,10 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
               return (
                 <div>
                   {targets.map((target: [string, EndpointDecision], i: number) => (
-                    <pre key={i}>{JSON.stringify(target)}</pre>
+                    <pre key={i}>
+                      {(target[1].epRole as Target).contents} &rarr; {target[0]} @ {target[1].epAt[0]} ...{" "}
+                      {target[1].epAt[1]}
+                    </pre>
                   ))}
                 </div>
               );
@@ -98,17 +101,24 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
             undefined,
             true
           ),
-          textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime),
-          textColumn("not transferable input", (e: Node) =>
-            JSON.stringify((e.parameters as DataflowMetrics).pNotTransferableInputs)
+          textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime, 60),
+          textColumn(
+            "not transferable input",
+            (e: Node) => JSON.stringify((e.parameters as DataflowMetrics).pNotTransferableInputs),
+            60
           ),
-          textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime)),
+          textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
         ]}
       />
       <Table
         name="Other"
         nodes={nodes.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
-        columns={[sidColumn(appContext.setSID), objectiveColumn(), decisionColumn(), parametersColumn()]}
+        columns={[
+          sidColumn(appContext.setSID),
+          objectiveColumn(),
+          decisionColumn(),
+          parametersColumn(),
+        ]}
       />
     </>
   );
