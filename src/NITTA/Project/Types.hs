@@ -59,7 +59,7 @@ data Project m v x = Project
 
 defProjectTemplates =
     [ "platform/Icarus"
-    , "platform/DE0-nano"
+    , "platform/DE0-Nano"
     ]
 
 instance (Default x) => DefaultX (Project m v x) x
