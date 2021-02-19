@@ -48,7 +48,9 @@ export const SynthesisGraphContainer: React.FC = () => {
             Forward
           </Button>
         </div>
-        <span className="text-muted">black - processed node; white - in progress node; green - succees synthesis</span>
+        <span className="text-muted">
+          black - processed node; white - in progress node; green - succees synthesis; blue - current
+        </span>
       </div>
       <div className="justify-content-center bg-light border" style={{ height: height }}>
         <SynthesisGraphView />
