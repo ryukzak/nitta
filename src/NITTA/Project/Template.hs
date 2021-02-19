@@ -18,7 +18,6 @@ module NITTA.Project.Template (
     writeRenderedTemplates,
 ) where
 
--- TODO: Improve error on undefined on wrong variable usage
 -- TODO: Fix work with subpath inside project template
 -- TODO: Add template config (where to put nitta project)
 -- TODO: Fix imports inside template
@@ -72,4 +71,4 @@ projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
                     ]
                 )
             ]
-    unknown -> error $ "can't find variable: " <> T.unpack unknown
+    unknown -> error $ "template error, variable '" <> T.unpack unknown <> "' not defined (see 'NITTA.Project.Template')"
