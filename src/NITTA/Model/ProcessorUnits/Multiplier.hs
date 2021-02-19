@@ -670,8 +670,9 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            codeBlock
-                [qc|
+            T.pack $
+                codeBlock
+                    [qc|
             pu_multiplier #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )

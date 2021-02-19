@@ -469,18 +469,17 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 ]
                     ++ map (uncurry hardware) (map (first T.pack) $ M.assocs bnPus)
         where
-            regInstance (t :: String) =
-                codeBlock
-                    [qc|
-                    wire [DATA_WIDTH-1:0] {t}_data_out;
-                    wire [ATTR_WIDTH-1:0] {t}_attr_out;
-                    |]
+            regInstance t =
+                unlines
+                    [ "wire [DATA_WIDTH-1:0] " <> t <> "_data_out;"
+                    , "wire [ATTR_WIDTH-1:0] " <> t <> "_attr_out;"
+                    ]
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
-                let inst = hardwareInstance (T.pack t) unit uEnv
+                let inst = T.unpack $ hardwareInstance (T.pack t) unit uEnv
                     insts' = inst : regInstance t : insts
-                    regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
+                    regs' = (t <> "_attr_out", t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
@@ -503,8 +502,9 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
         | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
               is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
               os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts =
-            codeBlock
-                [qc|
+            T.pack $
+                codeBlock
+                    [qc|
             { tag } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )

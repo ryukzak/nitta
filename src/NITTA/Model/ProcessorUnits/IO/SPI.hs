@@ -114,8 +114,9 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , ctrlPorts = Just SimpleIOPorts{..}
             , ioPorts = Just ioPorts
             } =
-            codeBlock
-                [qc|
+            T.pack $
+                codeBlock
+                    [qc|
             { module_ ioPorts } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )

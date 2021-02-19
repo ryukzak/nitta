@@ -80,11 +80,7 @@ class TargetSystemComponent pu where
     hardware :: T.Text -> pu -> Implementation
 
     -- |Generate code for making an instance of the hardware module
-    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> String
-    hardwareInstance n pu env = T.unpack $ hardwareInstanceT n pu env
-
-    hardwareInstanceT :: T.Text -> pu -> UnitEnv pu -> T.Text
-    hardwareInstanceT n pu env = T.pack $ hardwareInstance n pu env
+    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> T.Text
 
 -- |Element of target system implementation
 data Implementation

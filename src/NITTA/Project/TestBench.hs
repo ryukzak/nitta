@@ -213,7 +213,7 @@ snippetTestBench
         wire [DATA_WIDTH-1:0] data_out;
         wire [ATTR_WIDTH-1:0] attr_out;
 
-        { inline $ T.pack inst }
+        { inline inst }
 
         { inline snippetClkGen }
         { inline $ snippetDumpFile name }

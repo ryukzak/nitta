@@ -333,8 +333,9 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
             , valueOut = Just (dataOut, attrOut)
             , ctrlPorts = Just DividerPorts{oe, oeSel, wr, wrSel}
             } =
-            codeBlock
-                [qc|
+            T.pack $
+                codeBlock
+                    [qc|
             pu_div #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
