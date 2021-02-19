@@ -1,9 +1,11 @@
 import * as React from "react";
 import ReactTable, { Column } from "react-table";
+import * as Icon from "react-bootstrap-icons";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics } from "gen/types";
+import { BreakLoop, OptimizeAccum, ResolveDeadlock } from "services/HaskellApiService";
+import { BindMetrics, DataflowMetrics, FView } from "gen/types";
 
 import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn, detailColumn } from "./Columns";
 
@@ -64,16 +66,29 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
         columns={[
           sidColumn(appContext.setSID),
           objectiveColumn(),
-          textColumn("description", (e: Node) => JSON.stringify(e.decision)),
-          textColumn("parameters", (e: Node) => JSON.stringify(e.parameters), 50),
-          textColumn(
-            "pNStepBackRepeated",
-            (e: Node) => {
-              let n = e.parameters.pNStepBackRepeated;
-              return n === undefined || n === null ? "null" : (n as number).toString();
-            },
-            50
-          ),
+          textColumn("type", (e: Node) => e.decision.tag, 160),
+          textColumn("description", (e: Node) => {
+            if (e.decision.tag === "BreakLoopView") {
+              let d = e.decision as BreakLoop;
+              return "output: " + d.outputs.join(", ") + " input: " + d.input;
+            } else if (e.decision.tag === "OptimizeAccumView") {
+              let d = e.decision as OptimizeAccum;
+              return (
+                <pre>
+                  {d.old.map((e: FView) => e.fvFun).join("\n")}
+                  <br />
+                  <Icon.ArrowDown />
+                  <br />
+                  {d.new.map((e: FView) => e.fvFun).join(", ")}
+                  <br />
+                </pre>
+              );
+            } else if (e.decision.tag === "ResolveDeadlockView") {
+              return (e.decision as ResolveDeadlock).buffer;
+            }
+            return JSON.stringify(e.decision);
+          }),
+          detailColumn(),
         ]}
       />
       <Table

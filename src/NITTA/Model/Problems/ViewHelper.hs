@@ -62,7 +62,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = show pu
+            , pu = show' pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
@@ -80,14 +80,13 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
                         Target v -> Target $ show' v
                     , epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)
                     }
-            show' = S.replace "\"" "" . show
 
 instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =
         BreakLoopView
-            { value = show loopX
-            , outputs = map show $ S.elems loopO
-            , input = show loopI
+            { value = show' loopX
+            , outputs = map show' $ S.elems loopO
+            , input = show' loopI
             }
 
 instance Viewable (OptimizeAccum v x) DecisionView where
@@ -100,8 +99,10 @@ instance Viewable (OptimizeAccum v x) DecisionView where
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{buffer, changeset} =
         ResolveDeadlockView
-            { buffer = show buffer
-            , changeset = show changeset
+            { buffer = show' buffer
+            , changeset = show' changeset
             }
 
 instance ToJSON DecisionView
+
+show' = S.replace "\"" "" . show
