@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7b144100a8c4466c6fad1cf74f63bf1b5c203fa5ebfd5dc38dc3714cf6993848
+-- hash: 173c3961e1dfa58ce87c0538a225db901bb061f4eb640770d3d774d0049496ee
 
 name:           nitta
 version:        0.0.0.1
@@ -107,6 +107,7 @@ library
       NITTA.Utils
       NITTA.Utils.Base
       NITTA.Utils.CodeFormat
+      NITTA.Utils.CodeFormatText
       NITTA.Utils.ProcessDescription
   other-modules:
       Paths_nitta
