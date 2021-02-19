@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -251,7 +252,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
 
                 , .signal_oe( { oe } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
-                { if brokeVerilog then "WRONG VERILOG" else ""  }
+                { if brokeVerilog then "WRONG VERILOG" else "" :: String }
                 );
             |]
     hardwareInstance _title _pu _env = error "internal error"

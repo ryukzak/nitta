@@ -126,9 +126,9 @@ projectFiles prj@Project{pName, pUnit, pNittaPath} =
 
 -- |Data Type for SnippetTestBench function
 data SnippetTestBenchConf m = SnippetTestBenchConf
-    { tbcSignals :: [String]
+    { tbcSignals :: [T.Text]
     , tbcPorts :: Ports m
-    , tbcMC2verilogLiteral :: Microcode m -> String
+    , tbcMC2verilogLiteral :: Microcode m -> T.Text
     }
 
 -- |Function for testBench PU test
@@ -164,7 +164,7 @@ snippetTestBench
                         , valueOut = Just ("data_out", "attr_out")
                         }
             controlSignals =
-                S.join "\n" $
+                T.unlines $
                     map
                         ( \t ->
                             let setSignals = tbcMC2verilogLiteral (microcodeAt pUnit t)
@@ -207,7 +207,7 @@ snippetTestBench
         */
 
         reg clk, rst;
-        { inline $ T.unlines $ map T.pack tbcSignals' }
+        { inline $ T.unlines tbcSignals' }
         reg [DATA_WIDTH-1:0]  data_in;
         reg [ATTR_WIDTH-1:0]  attr_in;
         wire [DATA_WIDTH-1:0] data_out;
@@ -220,7 +220,7 @@ snippetTestBench
 
         initial begin
             @(negedge rst);
-            {inline $ T.pack controlSignals}
+            {inline controlSignals}
             $finish;
         end
 

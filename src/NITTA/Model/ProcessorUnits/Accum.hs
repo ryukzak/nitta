@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -30,6 +31,7 @@ import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe (fromMaybe)
 import Data.Set (elems, fromList, member)
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -325,7 +327,7 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                             , oe = SignalTag "oe"
                             , neg = SignalTag "neg"
                             }
-                    , tbcMC2verilogLiteral = showMicrocode
+                    , tbcMC2verilogLiteral = T.pack . showMicrocode
                     }
          in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
 
