@@ -151,7 +151,7 @@ snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
-            name = moduleName (T.pack pName) pUnit
+            name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
             fs = functions pUnit
             inst =

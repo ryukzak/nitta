@@ -273,7 +273,7 @@ instance IOConnected (Shift v x t) where
 
 instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
-    hardware tag pu = FromLibrary $ moduleName (T.pack tag) pu <> ".v"
+    hardware tag pu = FromLibrary $ moduleName tag pu <> ".v"
     software _ _ = Empty
     hardwareInstance
         tag

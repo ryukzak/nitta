@@ -403,7 +403,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
     hardware tag pu@BusNetwork{..} =
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            mn = moduleName (T.pack tag) pu
+            mn = moduleName tag pu
             iml =
                 codeBlock
                     [qc|
@@ -467,7 +467,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 [ Immediate (mn <> ".v") $ T.pack iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-                    ++ map (uncurry hardware) (M.assocs bnPus)
+                    ++ map (uncurry hardware) (map (first T.pack) $ M.assocs bnPus)
         where
             regInstance (t :: String) =
                 codeBlock
@@ -478,17 +478,17 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
-                let inst = hardwareInstance t unit uEnv
+                let inst = hardwareInstance (T.pack t) unit uEnv
                     insts' = inst : regInstance t : insts
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
-        let subSW = map (uncurry software) (M.assocs bnPus)
+        let subSW = map (uncurry software) (map (first T.pack) $ M.assocs bnPus)
             sw = [Immediate (mn <> ".dump") $ T.pack memoryDump]
          in Aggregate (Just mn) $ subSW ++ sw
         where
-            mn = moduleName (T.pack tag) pu
+            mn = moduleName tag pu
             -- Nop operation sets for all processor units at address 0. It is a
             -- safe state of the processor which is selected when rst signal is
             -- active.
@@ -585,12 +585,12 @@ instance
                     codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
                     codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
-             in Immediate (moduleName (T.pack pName) n <> "_tb.v") $
+             in Immediate (moduleName pName n <> "_tb.v") $
                     T.pack $
                         codeBlock
                             [qc|
             `timescale 1 ps / 1 ps
-            module { moduleName (T.pack pName) n }_tb();
+            module { moduleName pName n }_tb();
 
             /*
             Functions:
@@ -610,7 +610,7 @@ instance
             { inline $ T.unpack snippetClkGen }
 
             // vcd dump
-            { inline $ T.unpack $ snippetDumpFile $ moduleName (T.pack pName) n }
+            { inline $ T.unpack $ snippetDumpFile $ moduleName pName n }
 
 
 
@@ -631,7 +631,7 @@ instance
             ////////////////////////////////////////////////////////////
             // unit under test
 
-            { moduleName (T.pack pName) n } #
+            { moduleName pName n } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net

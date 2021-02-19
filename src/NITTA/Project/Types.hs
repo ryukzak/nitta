@@ -44,7 +44,7 @@ be writable to disk.
 -- pName or pTargetProjectPath should be maybe? Or both?
 data Project m v x = Project
     { -- |target project name
-      pName :: String
+      pName :: T.Text
     , -- |IP-core library directory
       pLibPath :: FilePath
     , -- |output directory for target project
@@ -74,17 +74,17 @@ class TargetSystemComponent pu where
     moduleName :: T.Text -> pu -> T.Text
 
     -- |Software and other specification which depends on application algorithm
-    software :: String -> pu -> Implementation
+    software :: T.Text -> pu -> Implementation
 
     -- |Hardware which depends on microarchitecture description and requires synthesis.
-    hardware :: String -> pu -> Implementation
+    hardware :: T.Text -> pu -> Implementation
 
     -- |Generate code for making an instance of the hardware module
-    hardwareInstance :: String -> pu -> UnitEnv pu -> String
-    hardwareInstance n pu env = T.unpack $ hardwareInstanceT (T.pack n) pu env
+    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> String
+    hardwareInstance n pu env = T.unpack $ hardwareInstanceT n pu env
 
     hardwareInstanceT :: T.Text -> pu -> UnitEnv pu -> T.Text
-    hardwareInstanceT n pu env = T.pack $ hardwareInstance (T.unpack n) pu env
+    hardwareInstanceT n pu env = T.pack $ hardwareInstance n pu env
 
 -- |Element of target system implementation
 data Implementation

@@ -31,6 +31,7 @@ import Data.Bifunctor
 import Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import qualified Data.Text as T
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -208,7 +209,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
     let prj =
             Project
-                { pName
+                { pName = T.pack pName
                 , pLibPath = "hdl"
                 , pTargetProjectPath = joinPath [outputPath, pName]
                 , pNittaPath = nittaPath

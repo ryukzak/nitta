@@ -121,7 +121,7 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
                 );
             |]
             where
-                module_ I2CMaster{} = "pu_master_i2c"
+                module_ I2CMaster{} = "pu_master_i2c" :: String
                 module_ I2CSlave{} = "pu_slave_i2c"
                 extIO I2CMaster{..} =
                     codeBlock

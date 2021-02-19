@@ -33,6 +33,7 @@ import Data.List (delete)
 import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
@@ -77,7 +78,7 @@ puCoSimTestCase name u cntxCycle alg =
             pTargetProjectPath = joinPath [wd, "gen", mname]
             prj =
                 Project
-                    { pName = mname
+                    { pName = T.pack mname
                     , pLibPath = "hdl"
                     , pTargetProjectPath
                     , pNittaPath = "."
@@ -155,10 +156,10 @@ puCoSimProp name pu0 fsGen =
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
-                    let pTargetProjectPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
+                    let pTargetProjectPath = joinPath [wd, "gen", toModuleName name <> "_" <> show i]
                         prj =
                             Project
-                                { pName = toModuleName name
+                                { pName = T.pack $ toModuleName name
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
                                 , pNittaPath = "."

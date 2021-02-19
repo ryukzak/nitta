@@ -171,7 +171,7 @@ findAllFiles root = findAllFiles' ""
 projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
     "nitta" ->
         dict
-            [ ("instance", toGVal $ hardwareInstanceT (moduleName (T.pack pName) pUnit) pUnit pUnitEnv)
+            [ ("instance", toGVal $ hardwareInstanceT (moduleName pName pUnit) pUnit pUnitEnv)
             , ("files", toGVal $ projectFiles prj)
             ,
                 ( "testbench"
