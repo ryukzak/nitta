@@ -308,6 +308,7 @@ import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe
 import qualified Data.Set as S
+import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -654,7 +655,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
             [ if isMocked
                 then FromLibrary "multiplier/mult_mock.v"
                 else FromLibrary "multiplier/mult_inner.v"
-            , FromLibrary $ "multiplier/" ++ moduleName tag pu ++ ".v"
+            , FromLibrary $ "multiplier/" <> moduleName (T.pack tag) pu <> ".v"
             ]
 
     software _ _ = Empty
@@ -706,7 +707,7 @@ process. You can see tests in @test/Spec.hs@. Testbench contains:
 -}
 instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        Immediate (moduleName pName pUnit ++ "_tb.v") $
+        Immediate (moduleName (T.pack pName) pUnit <> "_tb.v") $
             snippetTestBench
                 prj
                 SnippetTestBenchConf

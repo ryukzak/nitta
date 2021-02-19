@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -398,15 +399,15 @@ externalPortsDecl ports =
             ports
 
 instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
-    moduleName tag BusNetwork{} = tag ++ "_net"
+    moduleName tag BusNetwork{} = tag <> "_net"
 
     hardware tag pu@BusNetwork{..} =
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            mn = moduleName tag pu
+            mn = moduleName (T.pack tag) pu
             iml =
                 codeBlock
                     [qc|
-                    {"module"} { mn } #
+                    module { mn } #
                             ( parameter DATA_WIDTH = { dataWidth (def :: x) }
                             , parameter ATTR_WIDTH = { attrWidth (def :: x) }
                             )
@@ -463,7 +464,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     endmodule
                     |]
          in Aggregate (Just mn) $
-                [ Immediate (mn ++ ".v") $ T.pack iml
+                [ Immediate (mn <> ".v") $ T.pack iml
                 , FromLibrary "pu_simple_control.v"
                 ]
                     ++ map (uncurry hardware) (M.assocs bnPus)
@@ -484,10 +485,10 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
         let subSW = map (uncurry software) (M.assocs bnPus)
-            sw = [Immediate (mn ++ ".dump") $ T.pack memoryDump]
+            sw = [Immediate (mn <> ".dump") $ T.pack memoryDump]
          in Aggregate (Just mn) $ subSW ++ sw
         where
-            mn = moduleName tag pu
+            mn = moduleName (T.pack tag) pu
             -- Nop operation sets for all processor units at address 0. It is a
             -- safe state of the processor which is selected when rst signal is
             -- active.
@@ -584,12 +585,12 @@ instance
                     codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
                     codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
-             in Immediate (moduleName pName n ++ "_tb.v") $
+             in Immediate (moduleName (T.pack pName) n <> "_tb.v") $
                     T.pack $
                         codeBlock
                             [qc|
             `timescale 1 ps / 1 ps
-            module { moduleName pName n }_tb();
+            module { moduleName (T.pack pName) n }_tb();
 
             /*
             Functions:
@@ -609,7 +610,7 @@ instance
             { inline $ T.unpack snippetClkGen }
 
             // vcd dump
-            { inline $ T.unpack $ snippetDumpFile $ T.pack $ moduleName pName n }
+            { inline $ T.unpack $ snippetDumpFile $ moduleName (T.pack pName) n }
 
 
 
@@ -630,7 +631,7 @@ instance
             ////////////////////////////////////////////////////////////
             // unit under test
 
-            { moduleName pName n } #
+            { moduleName (T.pack pName) n } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net

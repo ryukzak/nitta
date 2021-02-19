@@ -30,6 +30,7 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
+import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -224,7 +225,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
     hardware tag pu =
         Aggregate
             Nothing
-            [ FromLibrary $ moduleName tag pu <> ".v"
+            [ FromLibrary $ moduleName (T.pack tag) pu <> ".v"
             ]
 
     hardwareInstance
@@ -238,7 +239,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
             } =
             codeBlock
                 [qc|
-            {  moduleName tag pu } #
+            { moduleName (T.pack tag) pu } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .IS_BROKEN( { bool2verilog wrongVerilogSimulationValue } )
@@ -269,7 +270,7 @@ instance (Ord t) => WithFunctions (Broken v x t) (F v x) where
 
 instance (VarValTime v x t) => Testable (Broken v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        Immediate (moduleName pName pUnit ++ "_tb.v") $
+        Immediate (moduleName (T.pack pName) pUnit <> "_tb.v") $
             snippetTestBench
                 prj
                 SnippetTestBenchConf

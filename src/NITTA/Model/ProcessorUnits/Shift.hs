@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,7 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions hiding (remain)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -271,7 +273,7 @@ instance IOConnected (Shift v x t) where
 
 instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware tag pu = FromLibrary $ moduleName (T.pack tag) pu <> ".v"
     software _ _ = Empty
     hardwareInstance
         tag

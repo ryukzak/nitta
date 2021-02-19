@@ -118,10 +118,10 @@ projectFiles prj@Project{pName, pUnit, pNittaPath} =
         $ L.nub $
             concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
     where
-        addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
+        addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, T.unpack p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
-        addPath p (Immediate fn _) = [joinPath [p, fn]]
-        addPath _ (FromLibrary fn) = [joinPath ["lib", fn]]
+        addPath p (Immediate fn _) = [joinPath [p, T.unpack fn]]
+        addPath _ (FromLibrary fn) = [joinPath ["lib", T.unpack fn]]
         addPath _ Empty = []
 
 -- |Data Type for SnippetTestBench function
@@ -151,7 +151,7 @@ snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
-            name = moduleName pName pUnit
+            name = moduleName (T.pack pName) pUnit
             p@Process{steps, nextTick} = process pUnit
             fs = functions pUnit
             inst =
@@ -203,7 +203,7 @@ snippetTestBench
         Process:
         { inline $ T.unlines $ map (T.pack . show) $ reverse steps }
         Context:
-        { inline $ T.pack $ show cycleCntx }
+        { inline $ (T.pack . show) cycleCntx }
         */
 
         reg clk, rst;
@@ -216,7 +216,7 @@ snippetTestBench
         { inline $ T.pack inst }
 
         { inline snippetClkGen }
-        { inline $ snippetDumpFile $ T.pack name }
+        { inline $ snippetDumpFile name }
 
         initial begin
             @(negedge rst);

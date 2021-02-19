@@ -268,7 +268,7 @@ instance (Var v) => Locks (Accum v x t) v where
 
 instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware tag pu = FromLibrary $ moduleName (T.pack tag) pu <> ".v"
     software _ _ = Empty
     hardwareInstance
         tag
@@ -329,7 +329,7 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                             }
                     , tbcMC2verilogLiteral = T.pack . showMicrocode
                     }
-         in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
+         in Immediate (moduleName (T.pack pName) pUnit <> "_tb.v") $ snippetTestBench prj conf
 
 instance IOTestBench (Accum v x t) v x
 

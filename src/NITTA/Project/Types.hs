@@ -71,11 +71,7 @@ instance (Default x) => DefaultX (Project m v x) x
 -- |Type class for target components. Target -- a target system project or a testbench.
 class TargetSystemComponent pu where
     -- |Name of the structural hardware module or Verilog module name (network or process unit)
-    moduleName :: String -> pu -> String
-    moduleName n pu = T.unpack $ moduleNameT (T.pack n) pu
-
-    moduleNameT :: T.Text -> pu -> T.Text
-    moduleNameT n pu = T.pack $ moduleName (T.unpack n) pu
+    moduleName :: T.Text -> pu -> T.Text
 
     -- |Software and other specification which depends on application algorithm
     software :: String -> pu -> Implementation
@@ -93,11 +89,11 @@ class TargetSystemComponent pu where
 -- |Element of target system implementation
 data Implementation
     = -- |Immediate implementation
-      Immediate {impFileName :: FilePath, impText :: T.Text}
+      Immediate {impFileName :: T.Text, impText :: T.Text}
     | -- |Fetch implementation from library
-      FromLibrary {impFileName :: FilePath}
+      FromLibrary {impFileName :: T.Text}
     | -- |Aggregation of many implementation parts in separate paths
-      Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
+      Aggregate {impPath :: Maybe T.Text, subComponents :: [Implementation]}
     | -- |Nothing
       Empty
 
@@ -112,9 +108,9 @@ placeholder.
 writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" p src
+            T.writeFile (joinPath [prjPath, p, T.unpack fn]) $ T.replace "$PATH$" (T.pack p) src
         writeImpl p (Aggregate p' subInstances) = do
-            let path = joinPath $ maybe [p] (\x -> [p, x]) p'
+            let path = joinPath $ maybe [p] (\x -> [p, x]) $ fmap T.unpack p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
             mapM_ (writeImpl path) subInstances
         writeImpl _ (FromLibrary _) = return ()
@@ -125,15 +121,15 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
         copyLibraryFile Project{pTargetProjectPath, pNittaPath, pLibPath} file = do
             let fullNittaPath = pTargetProjectPath </> pNittaPath
-            source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
+            source <- makeAbsolute $ joinPath [pLibPath, T.unpack file]
+            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", T.unpack file]
             createDirectoryIfMissing True $ takeDirectory target
             copyFile source target
 
         libraryFiles Project{pName, pUnit} =
             L.nub $ concatMap (args "") [hardware pName pUnit]
             where
-                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, T.unpack p']) subInstances
                 args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances
                 args _ (FromLibrary fn) = [fn]
                 args _ _ = []

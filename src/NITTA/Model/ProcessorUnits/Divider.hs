@@ -31,6 +31,7 @@ import Data.List (partition, sortBy)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Set (Set, member)
 import qualified Data.Set as S
+import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -320,7 +321,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
             [ if mock
                 then FromLibrary "div/div_mock.v"
                 else FromLibrary "div/div.v"
-            , FromLibrary $ "div/" ++ moduleName tag pu ++ ".v"
+            , FromLibrary $ "div/" <> moduleName (T.pack tag) pu <> ".v"
             ]
     hardwareInstance
         tag
@@ -360,7 +361,7 @@ instance IOTestBench (Divider v x t) v x
 
 instance (VarValTime v x t) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        Immediate (moduleName pName pUnit ++ "_tb.v") $
+        Immediate (moduleName (T.pack pName) pUnit <> "_tb.v") $
             snippetTestBench
                 prj
                 SnippetTestBenchConf

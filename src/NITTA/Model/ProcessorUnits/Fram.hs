@@ -498,7 +498,7 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                 [qc|oe <= { bool2verilog oeSignal };|]
                     <> [qc| wr <= { bool2verilog wrSignal };|]
                     <> [qc| addr <= { maybe "0" show addrSignal };|]
-         in Immediate (moduleName pName pUnit ++ "_tb.v") $
+         in Immediate (moduleName (T.pack pName) pUnit <> "_tb.v") $
                 snippetTestBench
                     prj
                     SnippetTestBenchConf
@@ -512,14 +512,14 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                         , tbcMC2verilogLiteral = showMicrocode
                         }
 
-softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
+softwareFile tag pu = T.unpack $ moduleName tag pu <> "." <> tag <> ".dump"
 
 instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware tag pu = FromLibrary $ moduleName (T.pack tag) pu <> ".v"
     software tag fram@Fram{memory} =
         Immediate
-            (softwareFile tag fram)
+            (T.pack $ softwareFile (T.pack tag) fram)
             $ T.pack $
                 unlines $
                     map
@@ -540,7 +540,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .RAM_SIZE( { numElements memory } )
-                    , .FRAM_DUMP( "$PATH$/{ softwareFile tag fram }" )
+                    , .FRAM_DUMP( "$PATH$/{ softwareFile (T.pack tag) fram }" )
                     ) { tag }
                 ( .clk( { sigClk } )
                 , .signal_addr( \{ { S.join ", " $ map show addr } } )

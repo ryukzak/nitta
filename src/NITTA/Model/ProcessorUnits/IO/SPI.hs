@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -135,7 +136,7 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                 );
             |]
             where
-                module_ SPISlave{} = "pu_slave_spi"
+                module_ SPISlave{} = "pu_slave_spi" :: String
                 module_ SPIMaster{} = "pu_master_spi"
                 extIO SPISlave{..} =
                     codeBlock
