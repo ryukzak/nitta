@@ -98,7 +98,7 @@ export const SynthesisHistory: React.FC<ISynthesisHistoryProps> = (props) => {
         history={synthesisHistory}
         columns={[
           stepColumn(appContext.setSID),
-          textColumn("decision type", (n: Node) => n.decision.tag, 100),
+          textColumn("decision type", (n: Node) => n.decision.tag, 160),
           textColumn("description", (n: Node) => {
             if (n.sid === "-") return <>INITIAL STATE</>;
             let decision = n.decision.tag;
