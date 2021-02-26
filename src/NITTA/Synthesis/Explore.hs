@@ -164,7 +164,7 @@ nodeCtx parent nModel =
             , sResolveDeadlockOptions = resolveDeadlockOptions nModel
             , sBreakLoopOptions = breakLoopOptions nModel
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
-            , sConstantFoldingOptions = compileTimeEvalOptions nModel
+            , sConstantFoldingOptions = constantFoldingOptions nModel
             , bindingAlternative =
                 foldl
                     (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)

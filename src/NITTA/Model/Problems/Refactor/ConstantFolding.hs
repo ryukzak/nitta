@@ -30,15 +30,6 @@
 --   |                  |         |              |
 --   +------------------+         +--------------+
 
--- |Doctest
--- >>> let a = constant 1 ["a"]
--- >>> let b = constant 2 ["b"]
--- >>> let res = add "a" "b" ["res"]
--- >>> loopRes = loop 1 "e" ["res"]
--- >>> let fs = [a, b, res, loopRes] :: [F String Int]
--- >>> compileTimeEvalDecision fs $ head $ compileTimeEvalOptions fs
--- [Loop (X 1) (O [res]) (I e),const(3) = res]
-
 {-
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding
 Description : Optimize an algorithm for Accum processor unit
@@ -46,6 +37,16 @@ Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+-}
+
+{- |Doctest
+ >>> let a = constant 1 ["a"]
+ >>> let b = constant 2 ["b"]
+ >>> let res = add "a" "b" ["res"]
+ >>> loopRes = loop 1 "e" ["res"]
+ >>> let fs = [a, b, res, loopRes] :: [F String Int]
+ >>> constantFoldingDecision fs $ head $ constantFoldingOptions fs
+ [Loop (X 1) (O [res]) (I e),const(3) = res]
 -}
 module NITTA.Model.Problems.Refactor.ConstantFolding (
     ConstantFolding (..),
@@ -68,26 +69,26 @@ data ConstantFolding v x = ConstantFolding
 
 class ConstantFoldingProblem u v x | u -> v x where
     -- |Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done
-    compileTimeEvalOptions :: u -> [ConstantFolding v x]
-    compileTimeEvalOptions _ = []
+    constantFoldingOptions :: u -> [ConstantFolding v x]
+    constantFoldingOptions _ = []
 
     -- |Function takes 'ConstantFolding' and modify 'DataFlowGraph'
-    compileTimeEvalDecision :: u -> ConstantFolding v x -> u
-    compileTimeEvalDecision _ _ = error "not implemented"
+    constantFoldingDecision :: u -> ConstantFolding v x -> u
+    constantFoldingDecision _ _ = error "not implemented"
 
 instance (Var v, Val x) => ConstantFoldingProblem [F v x] v x where
-    compileTimeEvalOptions fs =
+    constantFoldingOptions fs =
         let clusters = selectClusters fs
             evaluatedClusters = map evalCluster clusters
             zipOfClusters = zip clusters evaluatedClusters
             filteredZip = filter (\case ([_], _) -> False; _ -> True) zipOfClusters
             options = [ConstantFolding{cRefOld = c, cRefNew = ec} | (c, ec) <- filteredZip, c /= ec]
             optionsFiltered = filter blankOptions options
-            blankOptions (compileTimeEvalDecision fs -> []) = False
-            blankOptions (compileTimeEvalDecision fs -> _) = True
+            blankOptions (constantFoldingDecision fs -> []) = False
+            blankOptions (constantFoldingDecision fs -> _) = True
          in optionsFiltered
 
-    compileTimeEvalDecision fs ConstantFolding{cRefOld, cRefNew}
+    constantFoldingDecision fs ConstantFolding{cRefOld, cRefNew}
         | cRefOld == cRefNew = cRefNew
         | otherwise = deleteExtraF $ (fs L.\\ cRefOld) <> cRefNew
 

@@ -61,10 +61,10 @@ instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
                 (functions dfg L.\\ [origin])
 
 instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
-    compileTimeEvalOptions dfg = compileTimeEvalOptions $ functions dfg
+    constantFoldingOptions dfg = constantFoldingOptions $ functions dfg
 
-    compileTimeEvalDecision dfg ref@ConstantFolding{} =
-        fsToDataFlowGraph $ compileTimeEvalDecision (functions dfg) ref
+    constantFoldingDecision dfg ref@ConstantFolding{} =
+        fsToDataFlowGraph $ constantFoldingDecision (functions dfg) ref
 
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg

@@ -379,7 +379,7 @@ test_examples =
         (microarch Sync SlaveSPI)
         pFX22_32
         "example Compile time evaluation refactoring lua"
-        $(embedStringFile "examples/compileTimeEvaluation.lua")
+        $(embedStringFile "examples/constantFolding.lua")
     ]
 
 tests :: TestTree

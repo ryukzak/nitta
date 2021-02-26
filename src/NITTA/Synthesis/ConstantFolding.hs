@@ -42,7 +42,7 @@ instance
         (ConstantFolding v x)
         ConstantFoldingMetrics
     where
-    decisions SynthesisState{sTarget} o = [(o, compileTimeEvalDecision sTarget o)]
+    decisions SynthesisState{sTarget} o = [(o, constantFoldingDecision sTarget o)]
 
     parameters SynthesisState{} ConstantFolding{} _ = ConstantFoldingMetrics
 

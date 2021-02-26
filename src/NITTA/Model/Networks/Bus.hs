@@ -301,10 +301,10 @@ instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x w
         bn{bnRemains = functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa}
 
 instance (VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
-    compileTimeEvalOptions BusNetwork{bnRemains} = compileTimeEvalOptions $ fsToDataFlowGraph bnRemains
+    constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions $ fsToDataFlowGraph bnRemains
 
-    compileTimeEvalDecision bn@BusNetwork{bnRemains} oa@ConstantFolding{} =
-        bn{bnRemains = functions $ compileTimeEvalDecision (fsToDataFlowGraph bnRemains) oa}
+    constantFoldingDecision bn@BusNetwork{bnRemains} oa@ConstantFolding{} =
+        bn{bnRemains = functions $ constantFoldingDecision (fsToDataFlowGraph bnRemains) oa}
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =

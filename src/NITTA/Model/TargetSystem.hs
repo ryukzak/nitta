@@ -89,12 +89,12 @@ instance
             }
 
 instance (VarValTime v x t) => ConstantFoldingProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
-    compileTimeEvalOptions TargetSystem{mUnit} = compileTimeEvalOptions mUnit
+    constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit
 
-    compileTimeEvalDecision TargetSystem{mUnit, mDataFlowGraph} d =
+    constantFoldingDecision TargetSystem{mUnit, mDataFlowGraph} d =
         TargetSystem
-            { mDataFlowGraph = compileTimeEvalDecision mDataFlowGraph d
-            , mUnit = compileTimeEvalDecision mUnit d
+            { mDataFlowGraph = constantFoldingDecision mDataFlowGraph d
+            , mUnit = constantFoldingDecision mUnit d
             }
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where

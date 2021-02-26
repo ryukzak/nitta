@@ -36,13 +36,13 @@ refactorTo startFs resultFs = dfRefactored @?= dfRes
         dfRefactored = simpleRefactor df
 
 simpleRefactor dfg =
-    case compileTimeEvalOptions dfg of
+    case constantFoldingOptions dfg of
         [] -> dfg
-        (r : _) -> simpleRefactor $ compileTimeEvalDecision dfg r
+        (r : _) -> simpleRefactor $ constantFoldingDecision dfg r
 
 tests =
     testGroup
-        "Refactor problem (Compile time evaluation)"
+        "Refactor problem (Constant folding)"
         [ testCase "simple sum 2 numbers" $
             let -- Start algorithm:
                 -- a = 1
@@ -87,12 +87,12 @@ tests =
         , luaTestCase
             "Constants folding optimisation"
             [qc|
-            function compileTimeEvaluation(i)
+            function constantFolding(i)
                 local c = 3
                 local v = 1 + 2 + c
                 local res = i + v
-                compileTimeEvaluation(res)
+                constantFolding(res)
             end
-            compileTimeEvaluation(0)
+            constantFolding(0)
             |]
         ]
