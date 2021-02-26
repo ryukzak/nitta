@@ -10,13 +10,13 @@
 
 --   +------------------+
 --   |                  |         +-------------------------+
---   | Constant 2 "2#1" |         |                         |
+--   | Constant 2 "a" |         |                         |
 --   |                  +-------->+                         |      +--------------+
 --   +------------------+         |                         |      |              |
---                                | Add "2#1" "3#1" ["res"] +----->+    ......    |
+--                                | Add "a" "b" ["res"] +----->+    ......    |
 --   +------------------+         |                         |      |              |
 --   |                  +-------->+                         |      +--------------+
---   | Constant 3 "3#1" |         |                         |
+--   | Constant 3 "b1" |         |                         |
 --   |                  |         +-------------------------+
 --   +------------------+
 
@@ -30,7 +30,16 @@
 --   |                  |         |              |
 --   +------------------+         +--------------+
 
-{- |
+-- |Doctest
+-- >>> let a = constant 1 ["a"]
+-- >>> let b = constant 2 ["b"]
+-- >>> let res = add "a" "b" ["res"]
+-- >>> loopRes = loop 1 "e" ["res"]
+-- >>> let fs = [a, b, res, loopRes] :: [F String Int]
+-- >>> compileTimeEvalDecision fs $ head $ compileTimeEvalOptions fs
+-- [Loop (X 1) (O [res]) (I e),const(3) = res]
+
+{-
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding
 Description : Optimize an algorithm for Accum processor unit
 Copyright   : (c) Daniil Prohorov, 2021
