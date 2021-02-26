@@ -201,7 +201,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
             Project
                 { pName
                 , pLibPath = "hdl"
-                , pPath = joinPath [outputPath, pName]
+                , pTargetProjectPath = joinPath [outputPath, pName]
                 , pUnit = targetUnit tree
                 , pUnitEnv = bnEnv $ targetUnit tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree

@@ -31,12 +31,12 @@ import System.Directory
 import System.FilePath
 import Text.Ginger
 
-writeRenderedTemplates prj@Project{pPath, pTemplates} = do
-    createDirectoryIfMissing True pPath
+writeRenderedTemplates prj@Project{pTargetProjectPath, pTemplates} = do
+    createDirectoryIfMissing True pTargetProjectPath
     for_ pTemplates $ \tPath -> do
         tFiles <- findAllFiles tPath
         for_ tFiles $ \tFile -> do
-            writeRendedTemplate (projectContext prj) pPath tPath tFile
+            writeRendedTemplate (projectContext prj) pTargetProjectPath tPath tFile
 
 writeRendedTemplate context opath tPath tFile = do
     src <- readFile $ tPath </> tFile
@@ -47,7 +47,7 @@ writeRendedTemplate context opath tPath tFile = do
     createDirectoryIfMissing True $ opath </> takeDirectory tFile
     T.writeFile (opath </> tFile) $ runGinger context template
 
--- |List all files insede path
+-- |List all files inside path
 findAllFiles root = findAllFiles' ""
     where
         findAllFiles' path = do

@@ -40,14 +40,14 @@ be writable to disk.
 -}
 
 -- FIXME: collision between target project name and output directory. Maybe
--- pName or pPath should be maybe? Or both?
+-- pName or pTargetProjectPath should be maybe? Or both?
 data Project m v x = Project
     { -- |target project name
       pName :: String
     , -- |IP-core library directory
       pLibPath :: FilePath
     , -- |output directory
-      pPath :: FilePath
+      pTargetProjectPath :: FilePath
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
     , pUnitEnv :: UnitEnv m
@@ -120,9 +120,9 @@ writeImplementation pwd = writeImpl ""
 -- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
-        copyLibraryFile Project{pPath, pLibPath} file = do
+        copyLibraryFile Project{pTargetProjectPath, pLibPath} file = do
             source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [pPath, "lib", file]
+            target <- makeAbsolute $ joinPath [pTargetProjectPath, "lib", file]
             createDirectoryIfMissing True $ takeDirectory target
             copyFile source target
 

@@ -38,34 +38,34 @@ import System.Process
 import Text.Regex
 
 -- |Write project with all available parts.
-writeProject prj@Project{pPath} = do
-    infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
+writeProject prj@Project{pTargetProjectPath} = do
+    infoM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"..."
     writeTargetSystem prj
     writeTestBench prj
     writeRenderedTemplates prj
-    noticeM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
+    noticeM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"...ok"
 
-writeTargetSystem prj@Project{pName, pPath, pUnit} = do
-    createDirectoryIfMissing True pPath
-    writeImplementation pPath $ hardware pName pUnit
-    writeImplementation pPath $ software pName pUnit
+writeTargetSystem prj@Project{pName, pTargetProjectPath, pUnit} = do
+    createDirectoryIfMissing True pTargetProjectPath
+    writeImplementation pTargetProjectPath $ hardware pName pUnit
+    writeImplementation pTargetProjectPath $ software pName pUnit
     copyLibraryFiles prj
 
-writeTestBench prj@Project{pPath} = do
-    createDirectoryIfMissing True pPath
-    writeImplementation pPath $ testBenchImplementation prj
+writeTestBench prj@Project{pTargetProjectPath} = do
+    createDirectoryIfMissing True pTargetProjectPath
+    writeImplementation pTargetProjectPath $ testBenchImplementation prj
 
-runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
-    infoM "NITTA" $ "run logical synthesis(" <> pPath <> ")..."
+runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
+    infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."
     let files = projectFiles prj
     wd <- getCurrentDirectory
 
     (compileExitCode, compileOut, compileErr) <-
-        readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
+        readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) []
     let isCompileOk = compileExitCode == ExitSuccess && null compileErr
 
     (simExitCode, simOut, simErr) <-
-        readCreateProcessWithExitCode (shell "vvp a.out"){cwd = Just pPath} []
+        readCreateProcessWithExitCode (shell "vvp a.out"){cwd = Just pTargetProjectPath} []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
     let tbStatus = isCompileOk && isSimOk
@@ -73,9 +73,9 @@ runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNu
         tbSimulationDump = dump simOut simErr
 
     if tbStatus
-        then noticeM "NITTA" $ "run testbench (" <> pPath <> ")...ok"
+        then noticeM "NITTA" $ "run testbench (" <> pTargetProjectPath <> ")...ok"
         else do
-            noticeM "NITTA" $ "run testbench (" <> pPath <> ")...fail"
+            noticeM "NITTA" $ "run testbench (" <> pTargetProjectPath <> ")...fail"
             noticeM "NITTA" "-----------------------------------------------------------"
             noticeM "NITTA" "testbench compiler dump:"
             noticeM "NITTA" $ unlines tbCompilerDump
@@ -85,7 +85,7 @@ runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNu
     return
         TestbenchReport
             { tbStatus
-            , tbPath = joinPath [wd, pPath]
+            , tbPath = joinPath [wd, pTargetProjectPath]
             , tbFiles = files
             , tbFunctions = map show $ functions pUnit
             , tbSynthesisSteps = map show $ steps $ process pUnit

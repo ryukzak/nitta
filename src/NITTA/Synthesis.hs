@@ -60,7 +60,7 @@ NITTA.Synthesis:TargetSynthesis                                                 
 NITTA.Project.Types:Project            |        |                                                 NITTA.Project....
  |      # pName <--------- $tName      |        |
  |      # pLibPath                     |        +<----- $tReceivedValues
- |      # pPath                        |        |
+ |      # pTargetProjectPath           |        |
  |      # pModel<----------------------/        *<----- functional simulation (FIXME)
  |                                              |
  |      # pTestCntx <---------------------------/
@@ -199,7 +199,7 @@ synthesizeTargetSystem
                         Project
                             { pName = tName
                             , pLibPath = tLibPath
-                            , pPath = joinPath [tPath, tName]
+                            , pTargetProjectPath = joinPath [tPath, tName]
                             , pUnit = targetUnit leaf
                             , pUnitEnv = bnEnv $ targetUnit leaf
                             , -- because application algorithm can be refactored we need to use
