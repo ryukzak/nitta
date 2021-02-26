@@ -49,7 +49,7 @@ import Text.Toml
 
 data Conf = Conf
     { template :: TemplateConf
-    -- , signals :: M.HashMap String String
+    , signals :: M.HashMap String String
     }
     deriving (Show)
 
@@ -101,7 +101,7 @@ readTemplateConfDef fn = do
     return
         Conf
             { template = confLookup "template" conf
-            -- , signals = confLookup "signals" conf
+            , signals = confLookup "signals" conf
             }
     where
         confLookup sec conf =
@@ -112,18 +112,31 @@ readTemplateConfDef fn = do
         unwrap _prefix (Success a) = a
         unwrap prefix (Error msg) = error $ prefix <> msg
 
+applyCustomSignal
+    signals
+    env@UnitEnv{sigClk, sigRst} =
+        env
+            { sigClk = fromMaybe sigClk $ M.lookup "clk" signals
+            , sigRst = fromMaybe sigRst $ M.lookup "rst" signals
+            -- , sigCycleBegin = fromMaybe sigCycleBegin $ M.lookup "cycleBegin" signals
+            -- , sigInCycle = fromMaybe sigInCycle $ M.lookup "inCycle" signals
+            -- , sigCycleEnd = fromMaybe sigCycleEnd $ M.lookup "cycleEnd" signals
+            }
+
 writeRenderedTemplates prj@Project{pTargetProjectPath, pTemplates, pUnitEnv} = do
     createDirectoryIfMissing True pTargetProjectPath
     for_ pTemplates $ \tPath -> do
         infoM "NITTA" $ "process template: " <> tPath
         Conf
             { template = TemplateConf{ignore}
+            , signals
             } <-
             readTemplateConfDef $ tPath </> templateConfFileName
         let notIgnored fn = not $ all (\wc -> wildCheckCase wc fn) $ fromMaybe [] ignore
+            context = projectContext $ prj{pUnitEnv = applyCustomSignal signals pUnitEnv}
         tFiles <- filter notIgnored <$> findAllFiles tPath
         for_ tFiles $ \tFile -> do
-            writeRendedTemplate (projectContext prj) pTargetProjectPath tPath tFile
+            writeRendedTemplate context pTargetProjectPath tPath tFile
 
 writeRendedTemplate context opath tPath tFile = do
     -- Why we use Text and unpack it immidiatly? We need to avoid lazyness.

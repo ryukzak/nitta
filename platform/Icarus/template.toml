@@ -5,7 +5,7 @@ nittaPath = "."
 # list of template files, which should be ignored (default: ['template.toml'])
 ignore = ['template.toml']
 
-# TODO:
-# [signals]
-# rst = "rst"
-# clk = "clk"
+# external signal names used in nitta instance
+[signals]
+rst = "rst"
+clk = "clk"
