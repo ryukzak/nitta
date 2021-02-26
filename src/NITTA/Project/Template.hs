@@ -80,7 +80,7 @@ return it if all of them are the same.
 -}
 collectNittaPath :: [FilePath] -> IO (Either String FilePath)
 collectNittaPath templates = do
-    paths <- mapM (\fn -> (fn,) . getNittaPath <$> readTemplateConfDef fn) $ map (</> templateConfFileName) templates
+    paths <- mapM (\fn -> (fn,) . getNittaPath <$> readTemplateConfDef (fn </> templateConfFileName)) templates
     let path = if null paths then defNittaPath else snd $ head paths
         err =
             "inconsistency of nittaPath: "

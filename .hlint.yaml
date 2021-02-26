@@ -11,3 +11,4 @@
 - ignore: {name: "Use camelCase", within: "NITTA.Intermediate.Value.Tests"}
 - ignore: {name: "Evaluate", within: "NITTA.Intermediate.Value.Tests"}
 - ignore: {name: "Use <$>", within: "NITTA.UIBackend.ViewHelper"}
+- ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
