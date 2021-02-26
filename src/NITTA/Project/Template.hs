@@ -26,6 +26,7 @@ module NITTA.Project.Template (
 
 -- TODO: Fix imports inside template
 
+import Control.Exception
 import Control.Monad.Identity (runIdentity)
 import Data.Aeson
 import Data.Default
@@ -41,6 +42,7 @@ import NITTA.Project.TestBench
 import NITTA.Project.Types
 import System.Directory
 import System.FilePath
+import System.Log.Logger
 import System.Path.WildMatch
 import Text.Ginger
 import Text.Toml
@@ -110,9 +112,10 @@ readTemplateConfDef fn = do
         unwrap _prefix (Success a) = a
         unwrap prefix (Error msg) = error $ prefix <> msg
 
-writeRenderedTemplates prj@Project{pTargetProjectPath, pTemplates} = do
+writeRenderedTemplates prj@Project{pTargetProjectPath, pTemplates, pUnitEnv} = do
     createDirectoryIfMissing True pTargetProjectPath
     for_ pTemplates $ \tPath -> do
+        infoM "NITTA" $ "process template: " <> tPath
         Conf
             { template = TemplateConf{ignore}
             } <-
@@ -123,7 +126,13 @@ writeRenderedTemplates prj@Project{pTargetProjectPath, pTemplates} = do
             writeRendedTemplate (projectContext prj) pTargetProjectPath tPath tFile
 
 writeRendedTemplate context opath tPath tFile = do
-    src <- readFile $ tPath </> tFile
+    -- Why we use Text and unpack it immidiatly? We need to avoid lazyness.
+    try (T.readFile $ tPath </> tFile) >>= \case
+        Left (e :: IOException) ->
+            warningM "NITTA" $ "template problem SKIP: " <> show e
+        Right src -> writeRendedTemplate' context opath tPath tFile $ T.unpack src
+
+writeRendedTemplate' context opath tPath tFile src = do
     let raiseError err = error $ tPath </> tFile <> ": " <> formatParserError (Just src) err
     template <-
         either raiseError return <$> runIdentity $
