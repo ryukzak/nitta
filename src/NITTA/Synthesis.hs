@@ -153,10 +153,9 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tSimulationCycleN = 5
             }
 
-runTargetSynthesis leaf =
-    synthesizeTargetSystem leaf >>= \case
-        Right prj -> Right <$> runTestbench prj
-        Left msg -> return $ Left msg
+runTargetSynthesis leaf = do
+    prj <- synthesizeTargetSystem leaf
+    traverse runTestbench prj
 
 synthesizeTargetSystem
     TargetSynthesis
