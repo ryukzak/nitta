@@ -29,6 +29,7 @@ import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import Text.InterpolatedString.Perl6 (qc)
 
+refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
 refactorTo startFs resultFs = dfRefactored @?= dfRes
     where
         df = fsToDataFlowGraph (startFs :: [F String Int])
