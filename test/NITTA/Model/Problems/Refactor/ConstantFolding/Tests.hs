@@ -19,22 +19,20 @@ module NITTA.Model.Problems.Refactor.ConstantFolding.Tests (
     tests,
 ) where
 
-import NITTA.Intermediate.DataFlow
 import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
+import qualified Data.Set as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import Text.InterpolatedString.Perl6 (qc)
 
 refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
-refactorTo startFs resultFs = dfRefactored @?= dfRes
+refactorTo startFs resultFs = S.fromList resultFs @?= S.fromList fsRefactored
     where
-        df = fsToDataFlowGraph (startFs :: [F String Int])
-        dfRes = fsToDataFlowGraph (resultFs :: [F String Int])
-        dfRefactored = simpleRefactor df
+        fsRefactored = simpleRefactor startFs
 
 simpleRefactor dfg =
     case constantFoldingOptions dfg of
