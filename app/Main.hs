@@ -36,7 +36,7 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
-import NITTA.Project (TestbenchReport (..), runTestbench)
+import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis
 import NITTA.UIBackend
 import Paths_nitta
@@ -74,7 +74,7 @@ nittaArgs =
         , type_ = "fx32.32" &= name "t" &= help "Data type (default: 'fx32.32')"
         , io_sync = Sync &= help "IO synchronization mode: sync, async, onboard"
         , port = 0 &= help "Run nitta server for UI on specific port (by default - not run)"
-        , templates = "templates/Icarus:templates/DE0-Nano" &= help "Specify target platform templates (':', default: 'platform/Icarus:platform/DE0-Nano')"
+        , templates = defTemplates &= help ("Specify target platform templates (':', default: '" <> defTemplates <> "')")
         , n = 10 &= help "Number of computation cycles for simulation and testbench"
         , fsim = False &= help "Functional simulation with trace"
         , lsim = False &= help "Logical (HDL) simulation with trace"
@@ -82,6 +82,8 @@ nittaArgs =
         , output_path = "gen" &= help "Place the output into specified directory"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
+    where
+        defTemplates = S.join ":" defProjectTemplates
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
