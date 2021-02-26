@@ -42,7 +42,6 @@ import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
 import Data.Typeable
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
@@ -295,16 +294,16 @@ instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x
                 }
 
 instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
-    optimizeAccumOptions BusNetwork{bnRemains} = optimizeAccumOptions $ fsToDataFlowGraph bnRemains
+    optimizeAccumOptions BusNetwork{bnRemains} = optimizeAccumOptions bnRemains
 
     optimizeAccumDecision bn@BusNetwork{bnRemains} oa@OptimizeAccum{} =
-        bn{bnRemains = functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa}
+        bn{bnRemains = optimizeAccumDecision bnRemains oa}
 
 instance (VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
-    constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions $ fsToDataFlowGraph bnRemains
+    constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 
     constantFoldingDecision bn@BusNetwork{bnRemains} oa@ConstantFolding{} =
-        bn{bnRemains = functions $ constantFoldingDecision (fsToDataFlowGraph bnRemains) oa}
+        bn{bnRemains = constantFoldingDecision bnRemains oa}
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =

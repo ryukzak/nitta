@@ -30,9 +30,7 @@ import NITTA.LuaFrontend.Tests.Utils
 import Text.InterpolatedString.Perl6 (qc)
 
 refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
-refactorTo startFs resultFs = S.fromList resultFs @?= S.fromList fsRefactored
-    where
-        fsRefactored = simpleRefactor startFs
+refactorTo startFs resultFs = S.fromList (simpleRefactor startFs) @?= S.fromList resultFs
 
 simpleRefactor dfg =
     case constantFoldingOptions dfg of

@@ -67,7 +67,7 @@ instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
         fsToDataFlowGraph $ constantFoldingDecision (functions dfg) ref
 
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
-    optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg
+    optimizeAccumOptions _dfg = []
 
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
