@@ -1,19 +1,11 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { SID, IAppContext } from "app/AppContext";
 
-import jsAPI from "services/gen/rest_api";
-import {
-  TreeView,
-  ShortNodeView,
-  IBreakLoopView,
-  IOptimizeAccumView,
-  IResolveDeadlockView,
-  NetworkDesc,
-  UnitDesc,
-} from "services/gen/types";
-import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
-import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
-import { Interval, MicroarchitectureDesc } from "services/gen/types";
+import jsAPI from "gen/rest_api.js";
+import { TreeView, ShortNodeView, IBreakLoopView, IOptimizeAccumView, IResolveDeadlockView, IConstantFoldingView } from "../gen/types";
+import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
+import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
+import { Interval } from "../gen/types";
 
 export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;
@@ -24,6 +16,7 @@ export type Dataflow = IDataflowDecisionView;
 export type BreakLoop = IBreakLoopView;
 export type OptimizeAccum = IOptimizeAccumView;
 export type ResolveDeadlock = IResolveDeadlockView;
+export type ConstantFolding = IConstantFoldingView;
 
 export type Endpoint = EndpointSt<string, number>;
 export type EndpointDecision = EndpointSt<string, Interval<number>>;

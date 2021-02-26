@@ -4,8 +4,8 @@ import * as Icon from "react-bootstrap-icons";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
-import { BreakLoop, OptimizeAccum, ResolveDeadlock } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics, FView } from "services/gen/types";
+import { BreakLoop, OptimizeAccum, ResolveDeadlock, ConstantFolding } from "services/HaskellApiService";
+import { BindMetrics, DataflowMetrics, FView } from "gen/types";
 
 import {
   sidColumn,
@@ -33,6 +33,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
     "DataflowDecisionView",
     "BreakLoopView",
     "OptimizeAccumView",
+    "ConstantFoldingView",
     "ResolveDeadlockView",
   ];
 
@@ -92,6 +93,19 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
               );
             } else if (e.decision.tag === "ResolveDeadlockView") {
               return (e.decision as ResolveDeadlock).newBuffer;
+
+            } else if (e.decision.tag === "ConstantFoldingView") {
+              let d = e.decision as ConstantFolding;
+              return (
+                <pre>
+                  {d.cRefOld.map((e: FView) => e.fvFun).join("\n")}
+                  <br />
+                  <Icon.ArrowDown />
+                  <br />
+                  {d.cRefNew.map((e: FView) => e.fvFun).join(", ")}
+                  <br />
+                </pre>
+              );
             }
             return JSON.stringify(e.decision);
           }),
