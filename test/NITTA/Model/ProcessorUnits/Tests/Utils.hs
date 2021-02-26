@@ -80,6 +80,7 @@ puCoSimTestCase name u cntxCycle alg =
                     { pName = mname
                     , pLibPath = "hdl"
                     , pTargetProjectPath
+                    , pNittaPath = "."
                     , pUnit = naiveSynthesis alg u
                     , pUnitEnv = def
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
@@ -160,6 +161,7 @@ puCoSimProp name pu0 fsGen =
                                 { pName = toModuleName name
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
+                                , pNittaPath = "."
                                 , pUnit = pu
                                 , pUnitEnv = def
                                 , pTestCntx

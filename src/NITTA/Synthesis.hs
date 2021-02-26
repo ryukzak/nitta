@@ -100,7 +100,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeProject)
+import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
@@ -195,11 +195,13 @@ synthesizeTargetSystem
                         else Left "synthesis process...fail"
 
             writeProject' leaf = do
+                nittaPath <- either error id <$> collectNittaPath tTemplates
                 let prj =
                         Project
                             { pName = tName
                             , pLibPath = tLibPath
                             , pTargetProjectPath = joinPath [tPath, tName]
+                            , pNittaPath = nittaPath
                             , pUnit = targetUnit leaf
                             , pUnitEnv = bnEnv $ targetUnit leaf
                             , -- because application algorithm can be refactored we need to use

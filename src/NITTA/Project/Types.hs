@@ -33,7 +33,7 @@ import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
 import System.Directory
-import System.FilePath.Posix (joinPath, pathSeparator, takeDirectory)
+import System.FilePath.Posix (joinPath, pathSeparator, takeDirectory, (</>))
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -46,8 +46,10 @@ data Project m v x = Project
       pName :: String
     , -- |IP-core library directory
       pLibPath :: FilePath
-    , -- |output directory
+    , -- |output directory for target project
       pTargetProjectPath :: FilePath
+    , -- |output directory for NITTA processor inside target project
+      pNittaPath :: FilePath
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
     , pUnitEnv :: UnitEnv m
@@ -106,13 +108,13 @@ To do this, you often need to specify its address relative to the working
 directory, which is done by inserting this address in place of the $path$
 placeholder.
 -}
-writeImplementation pwd = writeImpl ""
+writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            writeFile (joinPath [pwd, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
+            writeFile (joinPath [prjPath, p, fn]) $ S.replace "$path$" (p <> [pathSeparator]) src
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
-            createDirectoryIfMissing True $ joinPath [pwd, path]
+            createDirectoryIfMissing True $ joinPath [prjPath, path]
             mapM_ (writeImpl path) subInstances
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
@@ -120,9 +122,10 @@ writeImplementation pwd = writeImpl ""
 -- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
-        copyLibraryFile Project{pTargetProjectPath, pLibPath} file = do
+        copyLibraryFile Project{pTargetProjectPath, pNittaPath, pLibPath} file = do
+            let fullNittaPath = pTargetProjectPath </> pNittaPath
             source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [pTargetProjectPath, "lib", file]
+            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
             createDirectoryIfMissing True $ takeDirectory target
             copyFile source target
 

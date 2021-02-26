@@ -39,7 +39,7 @@ import NITTA.Model.Types
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix (joinPath, (</>))
 import Text.InterpolatedString.Perl6 (qc)
 
 -- |Type class for all testable parts of a target system.
@@ -108,8 +108,11 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
 
 -- |Generate list of project verilog files (including testbench).
-projectFiles prj@Project{pName, pUnit} =
-    L.nub $ concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
+projectFiles prj@Project{pName, pUnit, pNittaPath} =
+    map
+        (pNittaPath </>)
+        $ L.nub $
+            concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances

@@ -12,9 +12,10 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project (
+    module NITTA.Project.Template,
     module NITTA.Project.TestBench,
-    module NITTA.Project.VerilogSnippets,
     module NITTA.Project.Types,
+    module NITTA.Project.VerilogSnippets,
     writeProject,
     runTestbench,
 ) where
@@ -45,15 +46,15 @@ writeProject prj@Project{pTargetProjectPath} = do
     writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"...ok"
 
-writeTargetSystem prj@Project{pName, pTargetProjectPath, pUnit} = do
-    createDirectoryIfMissing True pTargetProjectPath
-    writeImplementation pTargetProjectPath $ hardware pName pUnit
-    writeImplementation pTargetProjectPath $ software pName pUnit
+writeTargetSystem prj@Project{pName, pTargetProjectPath, pNittaPath, pUnit} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
+    writeImplementation pTargetProjectPath pNittaPath $ hardware pName pUnit
+    writeImplementation pTargetProjectPath pNittaPath $ software pName pUnit
     copyLibraryFiles prj
 
-writeTestBench prj@Project{pTargetProjectPath} = do
-    createDirectoryIfMissing True pTargetProjectPath
-    writeImplementation pTargetProjectPath $ testBenchImplementation prj
+writeTestBench prj@Project{pTargetProjectPath, pNittaPath} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
+    writeImplementation pTargetProjectPath pNittaPath $ testBenchImplementation prj
 
 runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."
