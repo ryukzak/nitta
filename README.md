@@ -124,7 +124,7 @@ Common flags:
                                       port (by default - not run)
          --templates=ITEM             Specify target platform templates (':',
                                       default:
-                                      'platform/Icarus:platform/DE0-Nano')
+                                      'templates/Icarus:templates/DE0-Nano')
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
   -f     --fsim                       Functional simulation with trace

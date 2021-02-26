@@ -84,7 +84,7 @@ puCoSimTestCase name u cntxCycle alg =
                     , pUnit = naiveSynthesis alg u
                     , pUnitEnv = def
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
-                    , pTemplates = ["platform/Icarus"]
+                    , pTemplates = ["templates/Icarus"]
                     }
         writeProject prj
         (tbStatus <$> runTestbench prj) @? (name <> " in " <> pTargetProjectPath)
@@ -165,7 +165,7 @@ puCoSimProp name pu0 fsGen =
                                 , pUnit = pu
                                 , pUnitEnv = def
                                 , pTestCntx
-                                , pTemplates = ["platform/Icarus"]
+                                , pTemplates = ["templates/Icarus"]
                                 }
                     writeProject prj
                     res <- runTestbench prj

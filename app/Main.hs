@@ -74,7 +74,7 @@ nittaArgs =
         , type_ = "fx32.32" &= name "t" &= help "Data type (default: 'fx32.32')"
         , io_sync = Sync &= help "IO synchronization mode: sync, async, onboard"
         , port = 0 &= help "Run nitta server for UI on specific port (by default - not run)"
-        , templates = "platform/Icarus:platform/DE0-Nano" &= help "Specify target platform templates (':', default: 'platform/Icarus:platform/DE0-Nano')"
+        , templates = "templates/Icarus:templates/DE0-Nano" &= help "Specify target platform templates (':', default: 'platform/Icarus:platform/DE0-Nano')"
         , n = 10 &= help "Number of computation cycles for simulation and testbench"
         , fsim = False &= help "Functional simulation with trace"
         , lsim = False &= help "Logical (HDL) simulation with trace"

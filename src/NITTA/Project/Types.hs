@@ -61,8 +61,8 @@ data Project m v x = Project
 
 defProjectTemplates :: [FilePath]
 defProjectTemplates =
-    [ "platform/Icarus"
-    , "platform/DE0-Nano"
+    [ "templates/Icarus"
+    , "templates/DE0-Nano"
     ]
 
 instance (Default x) => DefaultX (Project m v x) x
