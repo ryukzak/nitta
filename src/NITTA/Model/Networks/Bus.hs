@@ -422,7 +422,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
                     pu_simple_control #
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-                            , .PROGRAM_DUMP( "$path${ mn }.dump" )
+                            , .PROGRAM_DUMP( "$PATH$/{ mn }.dump" )
                             , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
                             ) control_unit
                         ( .clk( clk )

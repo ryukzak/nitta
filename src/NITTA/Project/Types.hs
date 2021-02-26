@@ -33,7 +33,7 @@ import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
 import System.Directory
-import System.FilePath.Posix (joinPath, pathSeparator, takeDirectory, (</>))
+import System.FilePath.Posix (joinPath, takeDirectory, (</>))
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -102,16 +102,16 @@ data Implementation
 
 {- |Write 'Implementation' to the file system.
 
-The $path$ placeholder is used for correct addressing between nested files. For
+The $PATH$ placeholder is used for correct addressing between nested files. For
 example, the PATH contains two files f1 and f2, and f1 imports f2 into itself.
 To do this, you often need to specify its address relative to the working
-directory, which is done by inserting this address in place of the $path$
+directory, which is done by inserting this address in place of the $PATH$
 placeholder.
 -}
 writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            writeFile (joinPath [prjPath, p, fn]) $ S.replace "$path$" (p <> [pathSeparator]) src
+            writeFile (joinPath [prjPath, p, fn]) $ S.replace "$PATH$" p src
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
