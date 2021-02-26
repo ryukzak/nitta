@@ -1,0 +1,18 @@
+name: telegram notify
+on: [push]
+jobs:
+
+  build:
+    name: Notify on push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send msg on push
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
+        args: |
+            Author: <strong>${{ github.event.head_commit.author.name }}</strong>
+            Place: <strong>${{ github.ref }}</strong>
+            Pushed: ${{ join(github.event.commits[*].message, '; ') }}
