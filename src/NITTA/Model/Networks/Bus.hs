@@ -392,7 +392,7 @@ externalPortsDecl ports =
             ports
 
 instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
-    moduleName tag BusNetwork{..} = tag ++ "_net"
+    moduleName tag BusNetwork{} = tag ++ "_net"
 
     hardware tag pu@BusNetwork{..} =
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
@@ -476,7 +476,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                  in renderInstance insts' regs' xs
 
-    software tag pu@BusNetwork{bnProcess = Process{..}, ..} =
+    software tag pu@BusNetwork{bnProcess = Process{}, ..} =
         let subSW = map (uncurry software) (M.assocs bnPus)
             sw = [Immediate (mn ++ ".dump") memoryDump]
          in Aggregate (Just mn) $ subSW ++ sw

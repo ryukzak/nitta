@@ -21,7 +21,7 @@ module NITTA.Intermediate.Variable (
 ) where
 
 import Data.Hashable
-import Data.List
+import Data.List (stripPrefix)
 import qualified Data.Set as S
 import Data.Typeable
 

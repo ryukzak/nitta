@@ -163,7 +163,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
         UnitEnv
             { sigClk
             , sigRst
-            , ctrlPorts = Just SimpleIOPorts{..}
+            , ctrlPorts = Just SimpleIOPorts{}
             , ioPorts = Just ioPorts
             }
         TestEnvironment{teCntx = cntx@Cntx{cntxCycleNumber, cntxProcess}, teComputationDuration} =
