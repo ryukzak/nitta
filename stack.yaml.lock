@@ -12,12 +12,12 @@ packages:
   original:
     hackage: language-lua-0.11.0.1
 - completed:
-    hackage: alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3,995
+    hackage: alex-tools-0.5.0.1@sha256:97ca9aa79d50151dd88b49b817389d92b2a70d13d9e4972e64eaf67aced97a2c,1023
     pantry-tree:
-      size: 262
-      sha256: 98715aed391e9e76b61cc0491843b2a860d0aba0d062a4a696574632b8ad6753
+      size: 323
+      sha256: 23db3c5cdcaa9b9807b067737b99a8504cb836e77b0c5c05644fe256ce34c8bf
   original:
-    hackage: alex-tools-0.4
+    hackage: alex-tools-0.5.0.1
 - completed:
     hackage: aeson-typescript-0.2.0.0@sha256:d4bd016c04612bd6cbc02e3e38315de3bbf4f50c408f720b4472928b6ac4b59f,2642
     pantry-tree:
@@ -25,9 +25,16 @@ packages:
       sha256: 92ba5548e53be350edd6f5961a51375d77c0358a738a9a4f6bb496bf85f6935a
   original:
     hackage: aeson-typescript-0.2.0.0
+- completed:
+    hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
+    pantry-tree:
+      size: 961
+      sha256: c3c27de2989ed3537567ef531406ccd88c6e715cf85e8da554fca1da78c1104d
+  original:
+    hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
 snapshots:
 - completed:
-    size: 532832
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/23.yaml
-    sha256: fbb2a0519008533924c7753bd7164ddd1009f09504eb06674acad6049b46db09
-  original: lts-16.23
+    size: 563103
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/4.yaml
+    sha256: f11e2153044f5f71ea7b1c9398f4721f517c9bd37642ed769647b896564021f3
+  original: lts-17.4
