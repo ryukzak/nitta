@@ -18,6 +18,9 @@ module NITTA.Model.Networks.Types (
     PU (..),
     PUClasses,
     IOSynchronization (..),
+    puInputPorts,
+    puOutputPorts,
+    puInOutPorts,
 ) where
 
 import qualified Data.List as L
@@ -159,3 +162,7 @@ data IOSynchronization
     | -- |defined by onboard signal (sync - false, async - true)
       OnBoard
     deriving (Show, Read, Typeable)
+
+puInputPorts PU{uEnv} = envInputPorts uEnv
+puOutputPorts PU{uEnv} = envOutputPorts uEnv
+puInOutPorts PU{uEnv} = envInOutPorts uEnv

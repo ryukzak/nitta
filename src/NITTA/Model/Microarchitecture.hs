@@ -60,9 +60,9 @@ defineNetwork ioSync builder =
         BuilderSt{signalBusWidth, puProtos} = flip execState st0 $ void builder
         netIOPorts =
             BusNetworkIO
-                { extInputs = L.nub $ concatMap ((\PU{uEnv} -> envInputPorts uEnv) . snd) puProtos
-                , extOutputs = L.nub $ concatMap ((\PU{uEnv} -> envOutputPorts uEnv) . snd) puProtos
-                , extInOuts = L.nub $ concatMap ((\PU{uEnv} -> envInOutPorts uEnv) . snd) puProtos
+                { extInputs = L.nub $ concatMap (puInputPorts . snd) puProtos
+                , extOutputs = L.nub $ concatMap (puOutputPorts . snd) puProtos
+                , extInOuts = L.nub $ concatMap (puInOutPorts . snd) puProtos
                 }
      in BusNetwork
             { bnRemains = []

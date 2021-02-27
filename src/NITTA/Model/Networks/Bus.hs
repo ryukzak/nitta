@@ -359,10 +359,10 @@ programTicks BusNetwork{bnProcess = Process{nextTick}} = [-1 .. nextTick]
 bnExternalPorts pus =
     M.assocs $
         M.map
-            ( \PU{uEnv} ->
-                ( map inputPortTag $ envInputPorts uEnv
-                , map outputPortTag $ envOutputPorts uEnv
-                , map inoutPortTag $ envInOutPorts uEnv
+            ( \pu ->
+                ( map inputPortTag $ puInputPorts pu
+                , map outputPortTag $ puOutputPorts pu
+                , map inoutPortTag $ puInOutPorts pu
                 )
             )
             pus
