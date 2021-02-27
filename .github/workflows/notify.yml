@@ -13,6 +13,6 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         format: html
         args: |
-            Author: <strong>${{ github.event.head_commit.author.name }}</strong>
-            Place: <strong>${{ github.ref }}</strong>
+            Push by: <strong>${{ github.event.head_commit.author.name }}</strong>
+            In: <strong>${{github.repository}} ${{ github.ref }}</strong>
             Pushed: ${{ join(github.event.commits[*].message, '; ') }}
