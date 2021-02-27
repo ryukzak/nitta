@@ -184,10 +184,10 @@ snippetTestBench
                 S.join "\n" $
                     map
                         ( \t ->
-                            let x = targetVal t
-                             in tbcMC2verilogLiteral (microcodeAt pUnit t)
-                                    <> [qc| data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
-                                    <> " @(posedge clk);"
+                            let setSignals = tbcMC2verilogLiteral (microcodeAt pUnit t)
+                                x = targetVal t
+                                setValueBus = [qc|data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
+                             in setSignals <> " " <> setValueBus <> " @(posedge clk);"
                         )
                         [0 .. nextTick + 1]
             targetVal t
