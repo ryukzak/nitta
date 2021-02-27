@@ -106,7 +106,7 @@ writeImplementation prjPath nittaPath = writeImpl nittaPath
         writeImpl p (Immediate fn src) =
             T.writeFile (joinPath [prjPath, p, T.unpack fn]) $ T.replace "$PATH$" (T.pack p) src
         writeImpl p (Aggregate p' subInstances) = do
-            let path = joinPath $ maybe [p] (\x -> [p, x]) $ fmap T.unpack p'
+            let path = joinPath $ maybe [p] ((\x -> [p, x]) . T.unpack) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
             mapM_ (writeImpl path) subInstances
         writeImpl _ (FromLibrary _) = return ()

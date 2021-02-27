@@ -38,6 +38,7 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
@@ -54,7 +55,10 @@ import NITTA.Project.VerilogSnippets
 import NITTA.Utils hiding (codeBlock, codeLine, inline)
 import NITTA.Utils.CodeFormatText
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (inf, sup, width, (...))
+import Numeric.Interval.NonEmpty (inf, sup, (...))
+import qualified Numeric.Interval.NonEmpty as I
+import Prettyprinter
+import Prettyprinter.Render.Text
 import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
@@ -143,7 +147,7 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
             error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show src
         | otherwise =
             let srcStart = inf $ epAt src
-                srcDuration = maximum $ map ((\EndpointSt{epAt} -> (inf epAt - srcStart) + width epAt) . snd) dfTargets
+                srcDuration = maximum $ map ((\EndpointSt{epAt} -> (inf epAt - srcStart) + I.width epAt) . snd) dfTargets
                 srcEnd = srcStart + srcDuration
 
                 subDecisions =
@@ -181,7 +185,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                     | Step{pID, pDesc} <- steps bnProcess
                     , isInstruction pDesc
                     , v <- case pDesc of
-                        (InstructionStep i) | Just (Transport var _ _) <- castInstruction net i -> [var]
+                        (InstructionStep ins) | Just (Transport var _ _) <- castInstruction net ins -> [var]
                         _ -> []
                     ]
             wholeProcess = execScheduleWithProcess net bnProcess $ do
@@ -253,7 +257,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =
         BusNetworkMC $ foldl merge initSt $ M.elems bnPus
         where
-            initSt = M.fromList $ map (\i -> (SignalTag $ controlSignalLiteral i, def)) [0 .. bnSignalBusWidth - 1]
+            initSt = M.fromList $ map (\ins -> (SignalTag $ controlSignalLiteral ins, def)) [0 .. bnSignalBusWidth - 1]
 
             merge st PU{unit, uEnv = UnitEnv{ctrlPorts = Just ports}} =
                 foldl merge' st $ zipSignalTagsAndValues ports $microcodeAt unit t
@@ -367,7 +371,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
 --------------------------------------------------------------------------
 
-controlSignalLiteral i = "control_bus[" <> show i <> "]"
+controlSignalLiteral ix = "control_bus[" <> show ix <> "]"
 
 -- |Add binding to Map tag [F v x] dict
 registerBinding tag f dict =
@@ -468,7 +472,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 [ Immediate (mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-                    ++ map (uncurry hardware) (map (first T.pack) $ M.assocs bnPus)
+                    <> map (uncurry hardware . first T.pack) (M.assocs bnPus)
         where
             regInstance t =
                 T.unlines
@@ -484,7 +488,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
-        let subSW = map (uncurry software) (map (first T.pack) $ M.assocs bnPus)
+        let subSW = map (uncurry software . first T.pack) $ M.assocs bnPus
             sw = [Immediate (mn <> ".dump") $ T.pack memoryDump]
          in Aggregate (Just mn) $ subSW ++ sw
         where
@@ -496,31 +500,33 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
             values (BusNetworkMC arr) =
                 reverse $
                     map snd $
-                        L.sortOn ((\(Just [i]) -> read i :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . signalTag . fst) $
+                        L.sortOn ((\(Just [ix]) -> read ix :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . signalTag . fst) $
                             M.assocs arr
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
-        | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
-              is = map (\(InputPortTag n) -> T.pack $ io2v n) $ inputPorts ioPorts
-              os = map (\(OutputPortTag n) -> T.pack $ io2v n) $ outputPorts ioPorts =
-            codeBlock
-                [qc|
-            { tag } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    ) net
-                ( .rst( { sigRst } )
-                , .clk( { sigClk } )
-                // inputs:
-                { inline $ T.unlines is }
-                // outputs:
-                { inline $ T.unlines os }
-                , .debug_status( debug_status ) // FIXME:
-                , .debug_bus1( debug_bus1 )     // FIXME:
-                , .debug_bus2( debug_bus2 )     // FIXME:
-                , .is_drop_allow( rendezvous )  // FIXME:
-                );
-            |]
+        | let io2v n = [i|, .#{ n }( #{ n } )|]
+              is = map (io2v . inputPortTag) $ inputPorts ioPorts
+              os = map (io2v . outputPortTag) $ outputPorts ioPorts =
+            renderStrict $
+                layoutPretty
+                    defaultLayoutOptions
+                    [__i|
+                        #{ tag } \#
+                                ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                                , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                                ) net
+                            ( .rst( #{ sigRst } )
+                            , .clk( #{ sigClk } )
+                            // inputs:
+                            #{ nest 4 $ vsep is }
+                            // outputs:
+                            #{ nest 4 $ vsep os }
+                            , .debug_status( debug_status ) // FIXME:
+                            , .debug_bus1( debug_bus1 )     // FIXME:
+                            , .debug_bus2( debug_bus2 )     // FIXME:
+                            , .is_drop_allow( rendezvous )  // FIXME:
+                            );
+                    |]
     hardwareInstance _title _bn _env =
         error "BusNetwork should be NetworkEnv"
 

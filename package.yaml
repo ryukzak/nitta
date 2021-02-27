@@ -58,11 +58,11 @@ dependencies:
   - ginger
   - htoml
   - interpolatedstring-perl6
+  - prettyprinter
   - regex-compat
   - string-interpolate
   - text
   - tostring
-
 
 library:
   source-dirs: src
