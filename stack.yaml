@@ -45,7 +45,7 @@ extra-deps:
 - aeson-typescript-0.2.0.0
 - servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
 
-# allow-newer: true
+allow-newer: true
 
 # Override default flag values for local packages and extra-deps
 flags: {}
