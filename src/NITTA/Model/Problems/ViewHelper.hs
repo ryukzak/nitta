@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -14,8 +14,7 @@ module NITTA.Model.Problems.ViewHelper (
 ) where
 
 import Data.Aeson
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
+import Data.Bifunctor
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import GHC.Generics
@@ -41,8 +40,8 @@ data DecisionView
         , pu :: String
         }
     | DataflowDecisionView
-        { source :: String
-        , targets :: HM.HashMap String (Maybe (String, Interval Int))
+        { source :: (String, EndpointSt String (Interval Int))
+        , targets :: [(String, EndpointSt String (Interval Int))]
         }
     | BreakLoopView
         { value :: String
@@ -63,29 +62,31 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = showNoQ pu
+            , pu = show' pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
-    view DataflowSt{dfSource = (source, _st), dfTargets} =
+    view DataflowSt{dfSource, dfTargets} =
         DataflowDecisionView
-            { source = showNoQ source
-            , targets =
-                HM.fromList $
-                    map
-                        ( \case
-                            (v, Just (target, i)) -> (showNoQ v, Just (showNoQ target, fromEnum (sup i) ... fromEnum (inf i)))
-                            (v, Nothing) -> (showNoQ v, Nothing)
-                        )
-                        $ M.assocs dfTargets
+            { source = view' dfSource
+            , targets = map view' dfTargets
             }
+        where
+            view' = bimap show' epdView
+            epdView EndpointSt{epRole, epAt} =
+                EndpointSt
+                    { epRole = case epRole of
+                        Source vs -> Source $ S.map show' vs
+                        Target v -> Target $ show' v
+                    , epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)
+                    }
 
 instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =
         BreakLoopView
-            { value = showNoQ loopX
-            , outputs = map showNoQ $ S.elems loopO
-            , input = showNoQ loopI
+            { value = show' loopX
+            , outputs = map show' $ S.elems loopO
+            , input = show' loopI
             }
 
 instance Viewable (OptimizeAccum v x) DecisionView where
@@ -98,11 +99,10 @@ instance Viewable (OptimizeAccum v x) DecisionView where
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
-            { newBuffer = showNoQ newBuffer
-            , changeset = showNoQ changeset
+            { newBuffer = show' newBuffer
+            , changeset = show' changeset
             }
 
 instance ToJSON DecisionView
 
-showNoQ :: (Show a) => a -> String
-showNoQ = S.replace "\"" "" . show
+show' = S.replace "\"" "" . show

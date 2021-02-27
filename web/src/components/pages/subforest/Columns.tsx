@@ -1,5 +1,8 @@
 import * as React from "react";
 
+import { Popover, OverlayTrigger } from "react-bootstrap";
+import * as Icon from "react-bootstrap-icons";
+
 import { sidSeparator } from "components/app/AppContext";
 import { Node } from "services/HaskellApiService";
 import { Interval } from "gen/types";
@@ -46,6 +49,36 @@ export function textColumn(
     maxWidth: maxWidth,
     Cell: (row: { original: Node }) => f(row.original),
   };
+}
+
+export function detailColumn() {
+  return textColumn(
+    "",
+    (e: Node) => {
+      return (
+        <OverlayTrigger
+          trigger="click"
+          key={e.sid}
+          placement="left"
+          overlay={
+            <Popover id={`popover-positioned-left`}>
+              <Popover.Title>{e.decision.tag}</Popover.Title>
+              <Popover.Content>
+                <b>Decision:</b>
+                <pre>{JSON.stringify(e.decision, undefined, 2)}</pre>
+                <hr />
+                <b>Metrics:</b>
+                <pre>{JSON.stringify(e.parameters, undefined, 2)}</pre>
+              </Popover.Content>
+            </Popover>
+          }
+        >
+          <Icon.InfoCircle />
+        </OverlayTrigger>
+      );
+    },
+    25
+  );
 }
 
 export function parametersColumn() {

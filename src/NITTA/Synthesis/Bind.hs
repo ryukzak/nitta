@@ -116,9 +116,10 @@ instance
             + pOutputNumber * 2
 
 waitingTimeOfVariables net =
-    [ (variable, inf $ tcAvailable tc)
-    | DataflowSt{dfSource = (_, tc@TimeConstrain{}), dfTargets} <- dataflowOptions net
-    , (variable, Nothing) <- M.assocs dfTargets
+    [ (variable, inf $ tcAvailable constrain)
+    | DataflowSt{dfSource = (_, srcEp), dfTargets} <- dataflowOptions net
+    , let constrain = epAt srcEp
+    , variable <- S.elems (variables srcEp S.\\ unionsMap (variables . snd) dfTargets)
     ]
 
 optionsAfterBind f tag TargetSystem{mUnit = BusNetwork{bnPus}} =

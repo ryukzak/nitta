@@ -170,11 +170,6 @@ instance Default (UnitEnv m) where
             , valueOut = Nothing
             }
 
-envInputPorts UnitEnv{ioPorts = Just ioports} = inputPorts ioports
-envInputPorts UnitEnv{ioPorts = Nothing} = []
-
-envOutputPorts UnitEnv{ioPorts = Just ioports} = outputPorts ioports
-envOutputPorts UnitEnv{ioPorts = Nothing} = []
-
-envInOutPorts UnitEnv{ioPorts = Just ioports} = inoutPorts ioports
-envInOutPorts UnitEnv{ioPorts = Nothing} = []
+envInputPorts UnitEnv{ioPorts} = concatMap inputPorts ioPorts
+envOutputPorts UnitEnv{ioPorts} = concatMap outputPorts ioPorts
+envInOutPorts UnitEnv{ioPorts} = concatMap inoutPorts ioPorts

@@ -35,7 +35,6 @@ module NITTA.Utils (
     relatedEndpoints,
     isFB,
     isInstruction,
-    isTarget,
     module NITTA.Utils.Base,
     module NITTA.Utils.CodeFormat,
 ) where
@@ -47,7 +46,6 @@ import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.CodeFormat
@@ -127,9 +125,6 @@ relatedEndpoints process_ vs =
             _ -> False
         )
         $ steps process_
-
-isTarget (EndpointSt (Target _) _) = True
-isTarget _ = False
 
 isInstruction (InstructionStep _) = True
 isInstruction _ = False
