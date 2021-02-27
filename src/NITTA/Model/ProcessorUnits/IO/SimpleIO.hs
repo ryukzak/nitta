@@ -180,15 +180,15 @@ instance Controllable (SimpleIO i v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
+    zipSignalTagsAndValues SimpleIOPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals SimpleIOPorts{wr, oe} = [wr, oe]
+    usedPortTags SimpleIOPorts{wr, oe} = [wr, oe]
 
-    signalsToPorts (wr : oe : _) _ = SimpleIOPorts wr oe "stop"
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts SimpleIOPorts"
+    takePortTags (wr : oe : _) _ = SimpleIOPorts wr oe "stop"
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def =

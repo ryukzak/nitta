@@ -163,15 +163,15 @@ instance Controllable (Broken v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} BrokenPorts{..} =
+    zipSignalTagsAndValues BrokenPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals BrokenPorts{wr, oe} = [wr, oe]
+    usedPortTags BrokenPorts{wr, oe} = [wr, oe]
 
-    signalsToPorts (wr : oe : _) _ = BrokenPorts wr oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts MultiplierPorts"
+    takePortTags (wr : oe : _) _ = BrokenPorts wr oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Broken v x t)) where
     def =
@@ -229,9 +229,12 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
     hardwareInstance
         tag
         pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk}
-        BrokenPorts{..}
-        BrokenIO =
+        UnitEnv
+            { sigClk
+            , ctrlPorts = Just BrokenPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
             codeBlock
                 [qc|
             {  moduleName tag pu } #
@@ -241,18 +244,17 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
                     , .WRONG_ATTR( { bool2verilog wrongAttr } )
                     , .UNKNOWN_DATA_OUT( { bool2verilog unknownDataOut } )
                     ) { tag }
-                ( .clk( { signalClk } )
+                ( .clk( { sigClk } )
 
-                , .signal_wr( { signal wr } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
 
-                , .signal_oe( { signal oe } )
+                , .signal_oe( { oe } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { if brokeVerilog then "WRONG VERILOG" else ""  }
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Broken v x t) v x
 
@@ -273,14 +275,10 @@ instance (VarValTime v x t) => Testable (Broken v x t) v x where
                     { tbcSignals = ["oe", "wr"]
                     , tbcPorts =
                         BrokenPorts
-                            { oe = SignalTag 0
-                            , wr = SignalTag 1
+                            { oe = SignalTag "oe"
+                            , wr = SignalTag "wr"
                             }
                     , tbcIOPorts = BrokenIO
-                    , tbcSignalConnect = \case
-                        (SignalTag 0) -> "oe"
-                        (SignalTag 1) -> "wr"
-                        _ -> error "testBenchImplementation wrong signal"
-                    , tbcCtrl = \Microcode{oeSignal, wrSignal} ->
+                    , tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal};|]
                     }

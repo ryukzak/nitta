@@ -56,7 +56,6 @@ module NITTA.Model.ProcessorUnits.Types (
 import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
-import Data.Ix
 import Data.Kind
 import qualified Data.List as L
 import Data.Maybe
@@ -225,21 +224,20 @@ representation (see ahead).
 -}
 class Controllable pu where
     -- Instruction describe unit behaviour on each mUnit cycle. If instruction
-    -- not defined for some cycles - it should be interpreted as NOP. In future,
-    -- Instruction should be extracted, because
+    -- not defined for some cycles - it should be interpreted as NOP.
     data Instruction pu :: Type
 
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
     data Microcode pu :: Type
 
-    -- |Map microcode to unit signal ports.
-    mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
+    -- |Zip port signal tags and value.
+    zipSignalTagsAndValues :: Ports pu -> Microcode pu -> [(SignalTag, SignalValue)]
 
-    -- |Get list of signals from Ports pu
-    portsToSignals :: Ports pu -> [SignalTag]
+    -- |Get list of used control signal tags.
+    usedPortTags :: Ports pu -> [SignalTag]
 
-    -- |Get Ports from list of signals
-    signalsToPorts :: [SignalTag] -> pu -> Ports pu
+    -- |Take signal tags from inifinite list of tags.
+    takePortTags :: [SignalTag] -> pu -> Ports pu
 
 -- |Getting microcode value at a specific time.
 class ByTime pu t | pu -> t where
@@ -260,7 +258,10 @@ instance
         [i] -> decodeInstruction i
         is -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
 
-newtype SignalTag = SignalTag {signalTag :: Int} deriving (Show, Eq, Ord, Ix)
+newtype SignalTag = SignalTag {signalTag :: String} deriving (Eq, Ord)
+
+instance Show SignalTag where
+    show = signalTag
 
 -- |Type class of processor units with control ports.
 class Connected pu where
@@ -316,6 +317,11 @@ class IOConnected pu where
     inoutPorts :: IOPorts pu -> [InoutPortTag]
     inoutPorts _ = []
 
-newtype InputPortTag = InputPortTag {inputPortTag :: String} deriving (Show, Eq, Ord)
-newtype OutputPortTag = OutputPortTag {outputPortTag :: String} deriving (Show, Eq, Ord)
-newtype InoutPortTag = InoutPortTag {inoutPortTag :: String} deriving (Show, Eq, Ord)
+newtype InputPortTag = InputPortTag {inputPortTag :: String} deriving (Eq, Ord)
+instance Show InputPortTag where show = inputPortTag
+
+newtype OutputPortTag = OutputPortTag {outputPortTag :: String} deriving (Eq, Ord)
+instance Show OutputPortTag where show = outputPortTag
+
+newtype InoutPortTag = InoutPortTag {inoutPortTag :: String} deriving (Eq, Ord)
+instance Show InoutPortTag where show = inoutPortTag
