@@ -507,26 +507,24 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
         | let io2v n = [i|, .#{ n }( #{ n } )|]
               is = map (io2v . inputPortTag) $ inputPorts ioPorts
               os = map (io2v . outputPortTag) $ outputPorts ioPorts =
-            renderStrict $
-                layoutPretty
-                    defaultLayoutOptions
-                    [__i|
-                        #{ tag } \#
-                                ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
-                                , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
-                                ) net
-                            ( .rst( #{ sigRst } )
-                            , .clk( #{ sigClk } )
-                            // inputs:
-                            #{ nest 4 $ vsep is }
-                            // outputs:
-                            #{ nest 4 $ vsep os }
-                            , .debug_status( debug_status ) // FIXME:
-                            , .debug_bus1( debug_bus1 )     // FIXME:
-                            , .debug_bus2( debug_bus2 )     // FIXME:
-                            , .is_drop_allow( rendezvous )  // FIXME:
-                            );
-                    |]
+            doc2text
+                [__i|
+                    #{ tag } \#
+                            ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                            , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                            ) net
+                        ( .rst( #{ sigRst } )
+                        , .clk( #{ sigClk } )
+                        // inputs:
+                        #{ nest 4 $ vsep is }
+                        // outputs:
+                        #{ nest 4 $ vsep os }
+                        , .debug_status( debug_status ) // FIXME:
+                        , .debug_bus1( debug_bus1 )     // FIXME:
+                        , .debug_bus2( debug_bus2 )     // FIXME:
+                        , .is_drop_allow( rendezvous )  // FIXME:
+                        );
+                |]
     hardwareInstance _title _bn _env =
         error "BusNetwork should be NetworkEnv"
 
@@ -556,26 +554,25 @@ instance
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
-                    T.intercalate
-                        "\\n\\n"
-                        [ tbEnv
+                    vsep
+                        [ pretty tbEnv
                         | (t, PU{unit, uEnv}) <- M.assocs bnPus
                         , let tbEnv =
-                                T.pack $
-                                    testEnvironment
-                                        t
-                                        unit
-                                        uEnv
-                                        TestEnvironment
-                                            { teCntx = pTestCntx
-                                            , teComputationDuration = fromEnum $ nextTick bnProcess
-                                            }
-                        , not $ T.null tbEnv
+                                testEnvironment
+                                    (toString t)
+                                    unit
+                                    uEnv
+                                    TestEnvironment
+                                        { teCntx = pTestCntx
+                                        , teComputationDuration = fromEnum $ nextTick bnProcess
+                                        }
+                        , not $ null tbEnv
                         ]
 
-                externalPortNames = concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
-                externalIO = T.intercalate ", " ("" : map ((\p -> "." <> p <> "( " <> p <> " )") . T.pack) externalPortNames)
-                envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
+                externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
+                externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
+
+                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
                 tickWithTransfers =
                     map
@@ -586,26 +583,26 @@ instance
                         )
                         $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-                assertions = T.concat $ map (\cycleTickTransfer -> posedgeCycle <> T.concat (map assertion cycleTickTransfer)) tickWithTransfers
+                assertions = vsep $ map (\cycleTickTransfer -> posedgeCycle <> line <> vsep (map assertion cycleTickTransfer)) tickWithTransfers
 
                 assertion (cycleI, t, Nothing) =
-                    codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
+                    [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
-                    codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
+                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
              in Immediate (moduleName pName n <> "_tb.v") $
-                    codeBlock
-                        [qc|
+                    doc2text
+                        [__i|
             `timescale 1 ps / 1 ps
-            module { moduleName pName n }_tb();
+            module #{ moduleName pName n }_tb();
 
             /*
             Functions:
-            { inline $ T.unlines $ map (T.pack . show) $ functions n }
+            #{ indent 4 $ vsep $ map viaShow $ functions n }
             */
 
             /*
             Steps:
-            { inline $ T.unlines $ map (T.pack . show) $ reverse $ steps $ process n }
+            #{ indent 4 $ vsep $ map viaShow $ reverse $ steps $ process n }
             */
 
             // system signals
@@ -613,42 +610,40 @@ instance
             wire cycle;
 
             // clk and rst generator
-            { inline snippetClkGen }
+            #{ snippetClkGen }
 
             // vcd dump
-            { inline $ snippetDumpFile $ moduleName pName n }
-
+            #{ snippetDumpFile $ moduleName pName n }
 
 
             ////////////////////////////////////////////////////////////
             // test environment
 
             // external ports (IO)
-            { inline $ if null externalPortNames then "" else "wire " <> T.pack (S.join ", " externalPortNames) <> ";" }
+            #{ if null externalPortNames then "" else "wire " <> hsep (punctuate ", " externalPortNames) <> ";" }
 
             // initialization flags
-            { if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
-            assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
+            #{ if null envInitFlags then "" else "reg " <> hsep (punctuate ", " envInitFlags) <> ";" }
+            assign env_init_flag = #{ hsep $ defEnvInitFlag envInitFlags ioSync };
 
-            { inline testEnv }
+            #{ testEnv }
 
 
             ////////////////////////////////////////////////////////////
             // unit under test
 
-            { moduleName pName n } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
+            #{ moduleName pName n } \#
+                    ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                     ) net
                 ( .clk( clk )
                 , .rst( rst )
                 , .flag_cycle_begin( cycle )
-                { externalIO }
+                #{ nest 4 externalIO }
                 // if 1 - The process cycle are indipendent from a SPI.
                 // else - The process cycle are wait for the SPI.
-                , .is_drop_allow( { isDrowAllowSignal ioSync } )
+                , .is_drop_allow( #{ isDrowAllowSignal ioSync } )
                 );
-
 
             // internal unit under test checks
             initial
@@ -659,30 +654,28 @@ instance
                     // Signals effect to mUnit state after first clk posedge.
                     @(posedge clk);
                     while (!env_init_flag) @(posedge clk);
-                    { inline assertions }
-                    repeat ( { 2 * nextTick bnProcess } ) @(posedge clk);
+                    #{ nest 8 assertions }
+                    repeat ( #{ 2 * nextTick bnProcess } ) @(posedge clk);
                     $finish;
                 end
-
 
             // TIMEOUT
             initial
                 begin
-                repeat (100000) @(posedge clk);
-                $display("FAIL too long simulation process");
-                $finish;
+                    repeat (100000) @(posedge clk);
+                    $display("FAIL too long simulation process");
+                    $finish;
                 end
-
 
             ////////////////////////////////////////////////////////////
             // Utils
-            { inline $ verilogHelper (def :: x) }
+            #{ verilogHelper (def :: x) }
 
             endmodule
             |]
             where
-                defEnvInitFlag flags Sync = S.join " && " $ "1'b1" : flags
-                defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags
+                defEnvInitFlag flags Sync = punctuate " && " $ "1'b1" : flags
+                defEnvInitFlag flags ASync = punctuate " || " $ "1'b1" : flags
                 defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
 
                 cntxToTransfer cycleCntx t =
@@ -691,13 +684,13 @@ instance
                         _ -> Nothing
 
                 posedgeCycle =
-                    codeBlock
-                        [qc|
-
-                //-----------------------------------------------------------------
-                @(posedge cycle);
-                |]
+                    [__i|
+                        //-----------------------------------------------------------------
+                        @(posedge cycle);
+                    |]
 
 isDrowAllowSignal Sync = bool2verilog False
 isDrowAllowSignal ASync = bool2verilog True
 isDrowAllowSignal OnBoard = "is_drop_allow"
+
+doc2text = renderStrict . layoutPretty defaultLayoutOptions
