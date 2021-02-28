@@ -561,14 +561,14 @@ instance
                                             { teCntx = pTestCntx
                                             , teComputationDuration = fromEnum $ nextTick bnProcess
                                             }
-                                 in testEnvironment (toString tag) unit uEnv tEnv
+                                 in testEnvironment (T.pack tag) unit uEnv tEnv
                             )
                             $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
 
-                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
+                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag . first T.pack) $ M.assocs bnPus
 
                 tickWithTransfers =
                     map

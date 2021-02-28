@@ -53,10 +53,10 @@ class Testable m v x | m -> v x where
 external input ports signals and checking output port signals.
 -}
 class IOTestBench pu v x | pu -> v x where
-    testEnvironmentInitFlag :: String -> pu -> Maybe String
+    testEnvironmentInitFlag :: T.Text -> pu -> Maybe T.Text
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
+    testEnvironment :: T.Text -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
     testEnvironment _title _pu _env _tEnv = Nothing
 
 -- |Information required for testbench generation.
