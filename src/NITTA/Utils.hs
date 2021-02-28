@@ -15,6 +15,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils (
+    doc2text,
+    Verilog,
     shiftI,
     modify'_,
 
@@ -51,6 +53,11 @@ import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
+import Prettyprinter
+import Prettyprinter.Render.Text
+
+type Verilog = Doc ()
+doc2text = renderStrict . layoutPretty defaultLayoutOptions
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'

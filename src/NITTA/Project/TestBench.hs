@@ -56,8 +56,8 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironmentInitFlag :: String -> pu -> Maybe String
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> String
-    testEnvironment _title _pu _env _tEnv = ""
+    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
+    testEnvironment _title _pu _env _tEnv = Nothing
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment

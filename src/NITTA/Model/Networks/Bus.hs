@@ -58,7 +58,6 @@ import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
-import Prettyprinter.Render.Text
 import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
@@ -554,20 +553,17 @@ instance
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
-                    vsep
-                        [ pretty tbEnv
-                        | (t, PU{unit, uEnv}) <- M.assocs bnPus
-                        , let tbEnv =
-                                testEnvironment
-                                    (toString t)
-                                    unit
-                                    uEnv
-                                    TestEnvironment
-                                        { teCntx = pTestCntx
-                                        , teComputationDuration = fromEnum $ nextTick bnProcess
-                                        }
-                        , not $ null tbEnv
-                        ]
+                    vsep $
+                        mapMaybe
+                            ( \(tag, PU{unit, uEnv}) ->
+                                let tEnv =
+                                        TestEnvironment
+                                            { teCntx = pTestCntx
+                                            , teComputationDuration = fromEnum $ nextTick bnProcess
+                                            }
+                                 in testEnvironment (toString tag) unit uEnv tEnv
+                            )
+                            $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
@@ -692,5 +688,3 @@ instance
 isDrowAllowSignal Sync = bool2verilog False
 isDrowAllowSignal ASync = bool2verilog True
 isDrowAllowSignal OnBoard = "is_drop_allow"
-
-doc2text = renderStrict . layoutPretty defaultLayoutOptions
