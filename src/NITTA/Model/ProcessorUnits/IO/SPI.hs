@@ -38,7 +38,6 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import Prettyprinter
-import Text.InterpolatedString.Perl6 (qc)
 
 data SPIinterface
 
@@ -115,47 +114,44 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , ctrlPorts = Just SimpleIOPorts{..}
             , ioPorts = Just ioPorts
             } =
-            T.pack $
-                codeBlock
-                    [qc|
-            { module_ ioPorts } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .BOUNCE_FILTER( { show bounceFilter } )
-                    , .DISABLED( { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .rst( { sigRst } )
-                , .flag_stop( { stop } )
-                , .signal_cycle_begin( { sigCycleBegin } )
-                , .signal_in_cycle( { sigInCycle  } )
-                , .signal_cycle_end( { sigCycleEnd } )
-                , .signal_oe( { oe } )
-                , .signal_wr( { wr } )
-                , .data_in( { dataIn } ), .attr_in( { attrIn } )
-                , .data_out( { dataOut } ), .attr_out( { attrOut } )
-                { inline $ extIO ioPorts }
-                );
+            [__i|
+                #{ module_ ioPorts } \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .BOUNCE_FILTER( #{ show bounceFilter } )
+                        , .DISABLED( #{ if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .flag_stop( #{ stop } )
+                    , .signal_cycle_begin( #{ sigCycleBegin } )
+                    , .signal_in_cycle( #{ sigInCycle  } )
+                    , .signal_cycle_end( #{ sigCycleEnd } )
+                    , .signal_oe( #{ oe } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } ), .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } ), .attr_out( #{ attrOut } )
+                    #{ nest 4 $ extIO ioPorts  }
+                    );
             |]
             where
-                module_ SPISlave{} = "pu_slave_spi" :: String
+                module_ SPISlave{} = "pu_slave_spi" :: Verilog
                 module_ SPIMaster{} = "pu_master_spi"
                 extIO SPISlave{..} =
-                    codeBlock
-                        [qc|
-                        , .mosi( { slave_mosi } )
-                        , .miso( { slave_miso } )
-                        , .sclk( { slave_sclk } )
-                        , .cs( { slave_cs } )
-                        |]
+                    [__i|
+                        , .mosi( #{ slave_mosi } )
+                        , .miso( #{ slave_miso } )
+                        , .sclk( #{ slave_sclk } )
+                        , .cs( #{ slave_cs } )
+                    |] ::
+                        Verilog
                 extIO SPIMaster{..} =
-                    codeBlock
-                        [qc|
-                        , .mosi( { master_mosi } )
-                        , .miso( { master_miso } )
-                        , .sclk( { master_sclk } )
-                        , .cs( { master_cs } )
-                        |]
+                    [__i|
+                        , .mosi( #{ master_mosi } )
+                        , .miso( #{ master_miso } )
+                        , .sclk( #{ master_sclk } )
+                        , .cs( #{ master_cs } )
+                    |]
     hardwareInstance _title _pu _env = error "internal error"
 
 instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
