@@ -1,11 +1,11 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
-import { SID, IAppContext } from "components/app/AppContext";
+import { SID, IAppContext } from "app/AppContext";
 
-import jsAPI from "gen/rest_api.js";
-import { TreeView, ShortNodeView, IBreakLoopView, IOptimizeAccumView, IResolveDeadlockView } from "../gen/types";
-import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
-import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
-import { Interval, MicroarchitectureDesc } from "../gen/types";
+import jsAPI from "services/gen/rest_api.js";
+import { TreeView, ShortNodeView, IBreakLoopView, IOptimizeAccumView, IResolveDeadlockView } from "services/gen/types";
+import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
+import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
+import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
 export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;

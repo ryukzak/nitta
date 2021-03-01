@@ -2,11 +2,11 @@ import { AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 
 import { api } from "services/HaskellApiService";
-import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "gen/types";
+import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "services/gen/types";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { TimelineView } from "./TimelineView";
-import "./ProcessView.scss";
+import { AppContext, IAppContext } from "app/AppContext";
+import { TimelineView } from "components/ProcessTimeline";
+import "containers/ProcessScreen.scss";
 
 export interface Highlight {
   up: number[];
@@ -17,7 +17,7 @@ export interface Highlight {
 // depricated
 // TODO: diff from previous synthesis process step
 // TODO: highlight point by click on info part
-export const ProcessView: React.FC = () => {
+export const ProcessScreen: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [pIdIndex, setPIdIndex] = useState<Record<number, TimelinePoint<number>> | null>(null);
@@ -31,7 +31,7 @@ export const ProcessView: React.FC = () => {
     api
       .getTimelines(appContext.selectedSID)
       .then((response: { data: ProcessTimelines<number> }) => {
-        console.log("> ProcessView.requestTimelines - done");
+        console.log("> ProcessScreen.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
         response.data.timelines.forEach((vt) => {
           vt.timelinePoints.forEach((point) => {

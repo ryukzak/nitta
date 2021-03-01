@@ -3,13 +3,13 @@ import { AxiosResponse } from "axios";
 
 import { api, Node } from "services/HaskellApiService";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { IntermediateView } from "components/pages/node/IntermediateView";
-import { SynthesisHistoryView } from "components/pages/history/SynthesisHistoryView";
-import { SubforestTablesView } from "./SubforestTablesView";
-import { MicroarchitectureView } from "components/pages/microarchitecture/microarchitecture";
+import { AppContext, IAppContext } from "app/AppContext";
+import { IntermediateView } from "components/IntermediateView";
+import { MicroarchitectureView } from "components/Microarchitecture";
+import { SynthesisHistory } from "components/SynthesisHistory";
+import { SubforestTables } from "components/SubforestTables";
 
-export const SubforestView: React.FC = () => {
+export const SubforestScreen: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const [subforest, setSubforest] = React.useState<Node[] | null>(null);
 
@@ -38,12 +38,12 @@ export const SubforestView: React.FC = () => {
           <MicroarchitectureView />
         </div>
         <div className="col-8">
-          <SubforestTablesView nodes={subforest} />
+          <SubforestTables nodes={subforest} />
         </div>
       </div>
       <div className="row mt-1">
         <div className="col">
-          <SynthesisHistoryView reverse={true} />
+          <SynthesisHistory reverse={true} />
         </div>
       </div>
     </div>

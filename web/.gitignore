@@ -10,7 +10,7 @@
 
 # production
 /build
-/src/gen
+/src/services/gen
 
 # misc
 .DS_Store

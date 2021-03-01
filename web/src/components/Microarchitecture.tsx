@@ -3,7 +3,7 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
+import { AppContext, IAppContext } from "app/AppContext";
 import { api, Microarchitecture } from "services/HaskellApiService";
 import { PUEndpoints } from "services/HaskellApiService";
 

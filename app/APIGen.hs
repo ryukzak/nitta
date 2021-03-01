@@ -59,7 +59,7 @@ data APIGen = APIGen
 apiGenArgs =
     APIGen
         { port = 8080 &= help "NITTA UI Backend will start on this port"
-        , output_path = "./web/src/gen" &= help "Place the output into specified directory (default: ./web/src/gen)"
+        , output_path = "./web/src/services/gen" &= help "Place the output into specified directory (default: ./web/src/services/gen)"
         , verbose = False &= help "Verbose"
         }
         &= program "nitta-api-gen"

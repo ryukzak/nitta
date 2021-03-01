@@ -4,12 +4,12 @@ import { Route, Switch, Redirect } from "react-router-dom";
 import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 
-import { SynthesisGraphContainer } from "components/pages/synthesis/SynthesisGraphContainer";
-import { NodeView } from "components/pages/node/NodeView";
-import { SubforestView } from "components/pages/subforest/SubforestView";
-import { TestBenchPage } from "components/pages/testBench/TestBenchPage";
-import { ProcessView } from "components/pages/process/ProcessView";
-import { DebugView } from "components/pages/debug/DebugView";
+import { SynthesisGraph } from "components/SynthesisGraph";
+import { NodeScreen } from "containers/NodeScreen";
+import { SubforestScreen } from "containers/SubforestScreen";
+import { TestBenchScreen } from "containers/TestBenchScreen";
+import { ProcessScreen } from "containers/ProcessScreen";
+import { DebugScreen } from "containers/DebugScreen";
 
 export interface IAppProps {}
 
@@ -41,26 +41,25 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <SynthesisGraphContainer />
-
+          <SynthesisGraph />
           <Switch>
             <Route exact path="/">
               <Redirect to="/node" />
             </Route>
             <Route exact path="/node">
-              <NodeView />
+              <NodeScreen />
             </Route>
             <Route exact path="/subforest">
-              <SubforestView />
+              <SubforestScreen />
             </Route>
             <Route exact path="/process">
-              <ProcessView />
+              <ProcessScreen />
             </Route>
             <Route exact path="/testbench">
-              <TestBenchPage />
+              <TestBenchScreen />
             </Route>
             <Route exact path="/debug">
-              <DebugView />
+              <DebugScreen />
             </Route>
 
             <Route>404 NOT FOUND</Route>

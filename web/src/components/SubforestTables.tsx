@@ -2,12 +2,12 @@ import * as React from "react";
 import ReactTable, { Column } from "react-table";
 import * as Icon from "react-bootstrap-icons";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
+import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
 import { BreakLoop, OptimizeAccum, ResolveDeadlock } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics, FView } from "gen/types";
+import { BindMetrics, DataflowMetrics, FView } from "services/gen/types";
 
-import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn, detailColumn } from "./Columns";
+import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn, detailColumn } from "components/SubforestColumns";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
@@ -15,7 +15,7 @@ type EdgesProps = {
   nodes: Node[];
 };
 
-export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
+export const SubforestTables: React.FC<EdgesProps> = ({ nodes }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
