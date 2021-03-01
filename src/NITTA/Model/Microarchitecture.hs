@@ -36,7 +36,7 @@ data BuilderSt tag v x t = BuilderSt
     }
 
 -- |Define microarchitecture with BusNetwork
-defineNetwork ioSync builder =
+defineNetwork bnName ioSync builder =
     let netEnv0 =
             UnitEnv
                 { sigClk = "clk"
@@ -49,7 +49,6 @@ defineNetwork ioSync builder =
                 , valueIn = Nothing
                 , valueOut = Nothing
                 }
-
         st0 =
             BuilderSt
                 { signalBusWidth = 0
@@ -65,7 +64,8 @@ defineNetwork ioSync builder =
                 , extInOuts = L.nub $ concatMap (puInOutPorts . snd) puProtos
                 }
      in BusNetwork
-            { bnRemains = []
+            { bnName
+            , bnRemains = []
             , bnBinded = M.empty
             , bnProcess = def
             , bnPus = M.fromList puProtos

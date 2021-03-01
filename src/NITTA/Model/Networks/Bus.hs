@@ -57,7 +57,8 @@ import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
-    { -- |List of functions binded to network, but not binded to any process unit.
+    { bnName :: tag
+    , -- |List of functions binded to network, but not binded to any process unit.
       bnRemains :: [F v x]
     , -- |Map process unit name to list of binded functions.
       bnBinded :: M.Map tag [F v x]
