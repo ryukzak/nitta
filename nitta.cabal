@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f6e096f31637999af9abd53962ed1f571ed9b7d26b794a78c51a8eedebf4e95
+-- hash: 0f48110aa005b810f56ad254b59e18e4bbd8045217642de26e3029368ba896bc
 
 name:           nitta
 version:        0.0.0.1
@@ -138,6 +138,7 @@ library
     , network-simple
     , prettyprinter
     , process
+    , process-extras
     , regex-compat
     , safe
     , servant
@@ -178,6 +179,7 @@ executable nitta
     , interpolatedstring-perl6
     , nitta
     , prettyprinter
+    , process-extras
     , regex-compat
     , string-interpolate
     , text
@@ -209,6 +211,7 @@ executable nitta-api-gen
     , intervals
     , nitta
     , prettyprinter
+    , process-extras
     , regex-compat
     , string-interpolate
     , text
@@ -262,6 +265,7 @@ test-suite nitta-test
     , interpolatedstring-perl6
     , nitta
     , prettyprinter
+    , process-extras
     , regex-compat
     , split
     , string-interpolate

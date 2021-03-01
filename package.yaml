@@ -59,6 +59,7 @@ dependencies:
   - htoml
   - interpolatedstring-perl6
   - prettyprinter
+  - process-extras
   - regex-compat
   - string-interpolate
   - text

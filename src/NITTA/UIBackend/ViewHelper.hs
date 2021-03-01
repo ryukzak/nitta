@@ -47,6 +47,7 @@ import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -281,10 +282,10 @@ data TestbenchReportView v x = TestbenchReportView
     { tbStatus :: Bool
     , tbPath :: String
     , tbFiles :: [String]
-    , tbFunctions :: [String]
-    , tbSynthesisSteps :: [String]
-    , tbCompilerDump :: [String]
-    , tbSimulationDump :: [String]
+    , tbFunctions :: [T.Text]
+    , tbSynthesisSteps :: [T.Text]
+    , tbCompilerDump :: T.Text
+    , tbSimulationDump :: T.Text
     , tbFunctionalSimulationCntx :: [HM.HashMap v x]
     , tbLogicalSimulationCntx :: [HM.HashMap v x]
     }
@@ -304,24 +305,25 @@ instance ToSample (TestbenchReportView String Int) where
         singleSample
             TestbenchReportView
                 { tbStatus = True
-                , tbCompilerDump = ["stdout:", "stderr:"]
+                , tbCompilerDump = "stdout:\n" <> "stderr:\n"
                 , tbSimulationDump =
-                    [ "stdout:"
-                    , "VCD info: dumpfile web_ui_net_tb.vcd opened for output."
-                    , "0:0\tactual: 0.000  0\t"
-                    , "0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
-                    , "0:2\tactual: 0.000  0\t"
-                    , "0:3\tactual: 0.000  0\t"
-                    , "0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
-                    , "0:5\tactual: 0.000  0\t"
-                    , "1:0\tactual: 0.000  0\t"
-                    , "1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
-                    , "1:2\tactual: 0.000  0\t"
-                    , "1:3\tactual: 0.000  0\t"
-                    , "1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
-                    , "1:5\tactual: 0.000  0\t"
-                    , "stderr:"
-                    ]
+                    T.unlines
+                        [ "stdout:"
+                        , "VCD info: dumpfile web_ui_net_tb.vcd opened for output."
+                        , "0:0\tactual: 0.000  0\t"
+                        , "0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
+                        , "0:2\tactual: 0.000  0\t"
+                        , "0:3\tactual: 0.000  0\t"
+                        , "0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
+                        , "0:5\tactual: 0.000  0\t"
+                        , "1:0\tactual: 0.000  0\t"
+                        , "1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
+                        , "1:2\tactual: 0.000  0\t"
+                        , "1:3\tactual: 0.000  0\t"
+                        , "1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
+                        , "1:5\tactual: 0.000  0\t"
+                        , "stderr:"
+                        ]
                 , tbPath = "/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui"
                 , tbFiles =
                     [ "web_ui_net/web_ui_net.v"

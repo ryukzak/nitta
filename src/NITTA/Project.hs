@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : NITTA.Project
@@ -25,6 +26,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Project.Template
@@ -35,7 +37,8 @@ import System.Directory
 import System.Exit
 import System.FilePath.Posix
 import System.Log.Logger
-import System.Process
+import System.Process.ListLike (CreateProcess (..), proc)
+import System.Process.Text
 import Text.Regex
 
 -- |Write project with all available parts.
@@ -62,12 +65,12 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
     wd <- getCurrentDirectory
 
     (compileExitCode, compileOut, compileErr) <-
-        readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) []
-    let isCompileOk = compileExitCode == ExitSuccess && null compileErr
+        readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+    let isCompileOk = compileExitCode == ExitSuccess && T.null compileErr
 
     (simExitCode, simOut, simErr) <-
-        readCreateProcessWithExitCode (shell "vvp a.out"){cwd = Just pTargetProjectPath} []
-    let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
+        readCreateProcessWithExitCode (proc "vvp" ["a.out"]){cwd = Just pTargetProjectPath} ""
+    let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `T.isInfixOf` simOut)
 
     let tbStatus = isCompileOk && isSimOk
         tbCompilerDump = dump compileOut compileErr
@@ -79,25 +82,25 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             noticeM "NITTA" $ "run testbench (" <> pTargetProjectPath <> ")...fail"
             noticeM "NITTA" "-----------------------------------------------------------"
             noticeM "NITTA" "testbench compiler dump:"
-            noticeM "NITTA" $ unlines tbCompilerDump
+            noticeM "NITTA" $ T.unpack tbCompilerDump
             noticeM "NITTA" "-----------------------------------------------------------"
             noticeM "NITTA" "testbench simulation dump:"
-            noticeM "NITTA" $ unlines tbSimulationDump
+            noticeM "NITTA" $ T.unpack tbSimulationDump
     return
         TestbenchReport
             { tbStatus
             , tbPath = joinPath [wd, pTargetProjectPath]
             , tbFiles = files
-            , tbFunctions = map show $ functions pUnit
-            , tbSynthesisSteps = map show $ steps $ process pUnit
+            , tbFunctions = map (T.pack . show) $ functions pUnit
+            , tbSynthesisSteps = map (T.pack . show) $ steps $ process pUnit
             , tbCompilerDump
             , tbSimulationDump
             , tbFunctionalSimulationCntx = map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
-            , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) simOut
+            , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) $ T.unpack simOut
             }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){cwd = Just workdir}
-        dump out err = ["stdout:"] ++ lines out ++ ["stderr:"] ++ lines err
+        dump out err = "stdout:\n" <> out <> "stderr:\n" <> err
 
 extractLogValues x0 text = mapMaybe f $ lines text
     where

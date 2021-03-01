@@ -30,6 +30,7 @@ module NITTA.Project.TestBench (
 import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
+import Data.String.Interpolate
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
@@ -42,6 +43,7 @@ import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils hiding (codeBlock, codeLine, inline)
 import NITTA.Utils.CodeFormatText
+import Prettyprinter
 import System.FilePath.Posix (joinPath, (</>))
 import Text.InterpolatedString.Perl6 (qc)
 
@@ -69,18 +71,18 @@ data TestEnvironment v x = TestEnvironment
 
 data TestbenchReport v x = TestbenchReport
     { tbStatus :: Bool
-    , tbPath :: String
-    , tbFiles :: [String]
-    , tbFunctions :: [String]
-    , tbSynthesisSteps :: [String]
-    , tbCompilerDump :: [String]
-    , tbSimulationDump :: [String]
+    , tbPath :: FilePath
+    , tbFiles :: [FilePath]
+    , tbFunctions :: [T.Text]
+    , tbSynthesisSteps :: [T.Text]
+    , tbCompilerDump :: T.Text
+    , tbSimulationDump :: T.Text
     , tbFunctionalSimulationCntx :: [HM.HashMap v x]
     , tbLogicalSimulationCntx :: Cntx v x
     }
     deriving (Generic)
 
-instance (Show v, Show x) => Show (TestbenchReport v x) where
+instance Show (TestbenchReport v x) where
     show
         TestbenchReport
             { tbPath
@@ -90,23 +92,20 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
             , tbCompilerDump
             , tbSimulationDump
             } =
-            T.unpack $
-                codeBlock
-                    [qc|
-            Project: { tbPath }
-            Files:
-                { inline $ showLst tbFiles }
-            Functional blocks:
-                { inline $ showLst tbFunctions }
-            Steps:
-                { inline $ showLst tbSynthesisSteps }
-            compiler dump:
-                { inline $ showLst tbCompilerDump }
-            simulation dump:
-                { inline $ showLst tbSimulationDump }
-            |]
-            where
-                showLst = T.unlines . map (("    " <>) . T.pack)
+            (show :: Doc () -> String)
+                [__i|
+                    Project: #{ tbPath }
+                    Files:
+                        #{ nest 4 $ pretty tbFiles }
+                    Functional blocks:
+                        #{ nest 4 $ pretty tbFunctions }
+                    Steps:
+                        #{ nest 4 $ pretty tbSynthesisSteps }
+                    compiler dump:
+                        #{ nest 4 $ pretty tbCompilerDump }
+                    simulation dump:
+                        #{ nest 4 $ pretty tbSimulationDump }
+                |]
 
 -- |Get name of testbench top module.
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
