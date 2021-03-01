@@ -3,7 +3,6 @@ import { Route, Switch, Redirect } from "react-router-dom";
 
 import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
-import NotFoundErrorPage from "components/pages/errors/NotFoundErrorPage";
 
 import { SynthesisGraphContainer } from "components/pages/synthesis/SynthesisGraphContainer";
 import { NodeView } from "components/pages/node/NodeView";
@@ -64,7 +63,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <DebugView />
             </Route>
 
-            <Route component={NotFoundErrorPage} />
+            <Route>404 NOT FOUND</Route>
           </Switch>
         </div>
       </AppContextProvider>
