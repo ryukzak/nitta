@@ -18,12 +18,16 @@ module NITTA.Model.Problems.Bind (
     BindProblem (..),
 ) where
 
+import Data.String.ToString
 import GHC.Generics
 import NITTA.Intermediate.Types
 
 data Bind tag v x
     = Bind (F v x) tag
-    deriving (Generic, Show)
+    deriving (Generic)
+
+instance (ToString tag) => Show (Bind tag v x) where
+    show (Bind f tag) = "Bind " <> show f <> " " <> toString tag
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [Bind tag v x]

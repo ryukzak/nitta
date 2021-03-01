@@ -59,6 +59,8 @@ import Data.Either
 import Data.Kind
 import qualified Data.List as L
 import Data.Maybe
+import Data.String
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Typeable
 import GHC.Generics (Generic)
@@ -71,7 +73,7 @@ import qualified Numeric.Interval.NonEmpty as I
 import Text.InterpolatedString.Perl6 (qc)
 
 -- |Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, Show tag)
+type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
 
 {- |Process unit - part of NITTA process with can execute a function from
 intermediate representation:
@@ -189,7 +191,7 @@ instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
     show (FStep F{fun}) = "Intermediate: " <> S.replace "\"" "" (show fun)
     show (EndpointRoleStep eff) = "Endpoint: " <> S.replace "\"" "" (show eff)
     show (InstructionStep instr) = "Instruction: " <> S.replace "\"" "" (show instr)
-    show NestedStep{nTitle, nStep = Step{pDesc}} = S.replace "\"" "" ("@" <> show nTitle <> " " <> show pDesc)
+    show NestedStep{nTitle, nStep = Step{pDesc}} = S.replace "\"" "" ("@" <> toString nTitle <> " " <> show pDesc)
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f

@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -22,6 +23,7 @@ module NITTA.Model.Problems.Dataflow (
 ) where
 
 import Control.Arrow
+import Data.String.ToString
 import GHC.Generics
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
@@ -40,7 +42,11 @@ data DataflowSt tag v tp = DataflowSt
     }
     deriving (Generic)
 
-deriving instance (Show tag, Show v, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp)
+instance (ToString tag, Show v, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) where
+    show DataflowSt{dfSource, dfTargets} =
+        "DataflowSt{ dfSource=" <> show' dfSource <> ", dfTargets=" <> show (map show' dfTargets) <> "}"
+        where
+            show' (tag, ep) = "(" <> toString tag <> ", " <> show ep <> ")"
 
 {- |Implemented for any things, which can send data between processor units over
 the network.

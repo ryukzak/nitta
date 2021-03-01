@@ -16,6 +16,7 @@ module NITTA.Model.Problems.ViewHelper (
 import Data.Aeson
 import Data.Bifunctor
 import qualified Data.Set as S
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -62,7 +63,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = show' pu
+            , pu = toString pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
@@ -72,7 +73,7 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
             , targets = map view' dfTargets
             }
         where
-            view' = bimap show' epdView
+            view' = bimap toString epdView
             epdView EndpointSt{epRole, epAt} =
                 EndpointSt
                     { epRole = case epRole of
