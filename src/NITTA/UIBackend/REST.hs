@@ -320,11 +320,8 @@ instance (Time t) => ToSample (Process t StepInfoView) where
 
 instance (UnitTag tag) => ToSample (MicroarchitectureDesc tag) where
     toSamples _ =
-        singleSample $
-            microarchitectureDesc
-                ( defineNetwork "net1" Sync $ do
-                    addCustom "fram1" (framWithSize 16) FramIO
-                    addCustom "fram2" (framWithSize 32) FramIO
-                    add "shift" ShiftIO
-                    :: BusNetwork tag String (IntX 32) Int
-                )
+        let bn :: BusNetwork tag String (IntX 32) Int = defineNetwork "net1" Sync $ do
+                addCustom "fram1" (framWithSize 16) FramIO
+                addCustom "fram2" (framWithSize 32) FramIO
+                add "shift" ShiftIO
+         in singleSample $ microarchitectureDesc bn
