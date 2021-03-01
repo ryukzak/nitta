@@ -7,6 +7,7 @@ import { AppContext, IAppContext } from "components/app/AppContext";
 import { IntermediateView } from "components/pages/node/IntermediateView";
 import { SynthesisHistoryView } from "components/pages/history/SynthesisHistoryView";
 import { SubforestTablesView } from "./SubforestTablesView";
+import { MicroarchitectureView } from "components/pages/microarchitecture/microarchitecture";
 
 export const SubforestView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -34,6 +35,7 @@ export const SubforestView: React.FC = () => {
       <div className="row">
         <div className="col-4">
           <IntermediateView />
+          <MicroarchitectureView />
         </div>
         <div className="col-8">
           <SubforestTablesView nodes={subforest} />
