@@ -3,6 +3,7 @@ import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { IntermediateView } from "./IntermediateView";
+import { MicroarchitectureView } from "components/pages/microarchitecture/microarchitecture";
 
 export interface INodeViewProps {}
 
@@ -18,6 +19,8 @@ export const NodeView: React.FC<INodeViewProps> = (props) => {
 
       <h3>Dataflow graph:</h3>
       <IntermediateView />
+
+      <MicroarchitectureView />
     </div>
   );
 };

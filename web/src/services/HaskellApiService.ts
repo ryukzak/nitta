@@ -5,7 +5,7 @@ import jsAPI from "gen/rest_api.js";
 import { TreeView, ShortNodeView, IBreakLoopView, IOptimizeAccumView, IResolveDeadlockView } from "../gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
 import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
-import { Interval } from "../gen/types";
+import { Interval, MicroarchitectureDesc } from "../gen/types";
 
 export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;
@@ -24,6 +24,8 @@ export type Target = ITarget<string>;
 export type PUEndpoints = [string, Endpoint[]];
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReport = TestbenchReportView<string, number>;
+
+export type Microarchitecture = MicroarchitectureDesc<string>;
 
 export function synthesize<T extends Array<any>>(
   context: IAppContext,
@@ -49,6 +51,7 @@ export const api = {
 
   // Synthesis node inspections
   getNode: (sid: SID): AxiosPromise<Node> => jsAPI.getNodeBySid(sid),
+  getMicroarchitecture: (sid: SID): AxiosPromise<Microarchitecture> => jsAPI.getNodeBySidMicroarchitecture(sid),
   getIntermediateView: (sid: SID): AxiosPromise<IntermediateGraph> => jsAPI.getNodeBySidIntermediateView(sid),
   getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
   getEndpoints: (sid: SID): AxiosPromise<PUEndpoints[]> => jsAPI.getNodeBySidEndpoints(sid),
