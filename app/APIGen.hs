@@ -28,6 +28,8 @@ import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import qualified Data.String.Utils as S
 import Data.Version
+import NITTA.Model.Microarchitecture
+import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
@@ -91,6 +93,12 @@ $(deriveTypeScript defaultOptions ''GraphStructure)
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
 
+-- Microarchitecture
+$(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
+$(deriveTypeScript defaultOptions ''NetworkDesc)
+$(deriveTypeScript defaultOptions ''UnitDesc)
+$(deriveTypeScript defaultOptions ''IOSynchronization)
+
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
     let level = if verbose then DEBUG else NOTICE
@@ -143,6 +151,11 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
+                    , -- Microarchitecture
+                      getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy NetworkDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy UnitDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy IOSynchronization)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl
