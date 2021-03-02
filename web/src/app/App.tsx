@@ -5,11 +5,11 @@ import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext
 import { AppNavbar } from "./AppNavbar";
 
 import { SynthesisGraph } from "components/SynthesisGraph";
-import { NodeScreen } from "containers/NodeScreen";
-import { SubforestScreen } from "containers/SubforestScreen";
-import { TestBenchScreen } from "containers/TestBenchScreen";
-import { ProcessScreen } from "containers/ProcessScreen";
-import { DebugScreen } from "containers/DebugScreen";
+import { NodeScreen } from "screens/NodeScreen";
+import { SubforestScreen } from "screens/SubforestScreen";
+import { TestBenchScreen } from "screens/TestBenchScreen";
+import { ProcessScreen } from "screens/ProcessScreen";
+import { DebugScreen } from "screens/DebugScreen";
 
 export interface IAppProps {}
 

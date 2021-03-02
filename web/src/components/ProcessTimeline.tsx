@@ -1,7 +1,7 @@
 import React from "react";
 
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "services/gen/types";
-import { Highlight } from "containers/ProcessScreen";
+import { Highlight } from "screens/ProcessScreen";
 
 // FIXME: review, refactor (reorganize?)
 

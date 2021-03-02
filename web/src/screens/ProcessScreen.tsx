@@ -6,7 +6,7 @@ import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } f
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { TimelineView } from "components/ProcessTimeline";
-import "containers/ProcessScreen.scss";
+import "screens/ProcessScreen.scss";
 
 export interface Highlight {
   up: number[];
