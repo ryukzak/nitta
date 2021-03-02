@@ -40,7 +40,6 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.DataFlow
@@ -52,7 +51,7 @@ import NITTA.Model.Types
 import NITTA.Project.TestBench
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
-import NITTA.Utils hiding (codeBlock, codeLine, inline)
+import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
@@ -169,11 +168,11 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
-        Left $ "All sub process units reject the functional block: " <> show f <> "\n" <> rejects
+        Left $ [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
         where
-            rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-            showReject (tag, pu) | Left err <- tryBind f pu = "    [" <> toString tag <> "]: " <> err
-            showReject (tag, _) = "    [" <> toString tag <> "]: undefined"
+            rejects = T.intercalate "; " $ map showReject $ M.assocs bnPus
+            showReject (tag, pu) | Left err <- tryBind f pu = [i|[#{ toString tag }]: #{ err }"|]
+            showReject (tag, _) = [i|[#{ toString tag }]: undefined"|]
 
     process net@BusNetwork{bnProcess, bnPus} =
         let v2transportStepKey =
@@ -391,7 +390,7 @@ externalPortsDecl ports =
     concatMap
         ( \(tag, (is, os, ios)) ->
             concat
-                [ ["// external ports for: " <> T.pack (toString tag)]
+                [ ["// external ports for: " <> (T.pack . toString) tag]
                 , map (", input " <>) is
                 , map (", output " <>) os
                 , map (", inout " <>) ios
@@ -399,7 +398,7 @@ externalPortsDecl ports =
         )
         ports
 
-instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
+instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork tag v x t) where
     moduleName tag BusNetwork{} = tag <> "_net"
 
     hardware tag pu@BusNetwork{..} =
@@ -467,7 +466,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 [ Immediate (toString $ mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-                    <> map (uncurry hardware . first T.pack) (M.assocs bnPus)
+                    <> map (uncurry hardware . first (T.pack . toString)) (M.assocs bnPus)
         where
             regInstance t =
                 [__i|
@@ -477,13 +476,13 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
-                let inst = hardwareInstance (T.pack t) unit uEnv
-                    insts' = inst : regInstance (T.pack t) : insts
+                let inst = hardwareInstance ((T.pack . toString) t) unit uEnv
+                    insts' = inst : regInstance ((T.pack . toString) t) : insts
                     regs' = ((T.pack . toString) t <> "_attr_out", (T.pack . toString) t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
-        let subSW = map (uncurry software . first T.pack) $ M.assocs bnPus
+        let subSW = map (uncurry software . first (T.pack . toString)) $ M.assocs bnPus
             sw = [Immediate (toString $ mn <> ".dump") $ T.pack memoryDump]
          in Aggregate (Just $ toString mn) $ subSW ++ sw
         where
@@ -538,10 +537,7 @@ instance IOConnected (BusNetwork tag v x t) where
     outputPorts = extOutputs
     inoutPorts = extInOuts
 
-instance
-    (VarValTime v x t, TargetSystemComponent (BusNetwork String v x t)) =>
-    Testable (BusNetwork String v x t) v x
-    where
+instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x where
     testBenchImplementation
         Project
             { pName
@@ -557,14 +553,14 @@ instance
                                             { teCntx = pTestCntx
                                             , teComputationDuration = fromEnum $ nextTick bnProcess
                                             }
-                                 in testEnvironment (T.pack tag) unit uEnv tEnv
+                                 in testEnvironment ((T.pack . toString) tag) unit uEnv tEnv
                             )
                             $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
 
-                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag . first T.pack) $ M.assocs bnPus
+                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag . first (T.pack . toString)) $ M.assocs bnPus
 
                 tickWithTransfers =
                     map
