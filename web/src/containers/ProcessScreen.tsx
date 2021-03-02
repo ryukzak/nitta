@@ -14,7 +14,7 @@ export interface Highlight {
   down: number[];
 }
 
-// depricated
+// FIXME: deprecated (use `GET /node/:sid/process`)
 // TODO: diff from previous synthesis process step
 // TODO: highlight point by click on info part
 export const ProcessScreen: React.FC = () => {

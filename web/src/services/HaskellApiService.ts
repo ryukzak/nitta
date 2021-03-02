@@ -2,7 +2,15 @@ import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { SID, IAppContext } from "app/AppContext";
 
 import jsAPI from "services/gen/rest_api.js";
-import { TreeView, ShortNodeView, IBreakLoopView, IOptimizeAccumView, IResolveDeadlockView } from "services/gen/types";
+import {
+  TreeView,
+  ShortNodeView,
+  IBreakLoopView,
+  IOptimizeAccumView,
+  IResolveDeadlockView,
+  NetworkDesc,
+  UnitDesc,
+} from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
@@ -26,6 +34,8 @@ export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReport = TestbenchReportView<string, number>;
 
 export type Microarchitecture = MicroarchitectureDesc<string>;
+export type Network = NetworkDesc<string>;
+export type Unit = UnitDesc<string>;
 
 export function synthesize<T extends Array<any>>(
   context: IAppContext,

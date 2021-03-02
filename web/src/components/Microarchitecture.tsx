@@ -4,7 +4,7 @@ import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, Microarchitecture } from "services/HaskellApiService";
+import { api, Microarchitecture, Network, Unit } from "services/HaskellApiService";
 import { PUEndpoints } from "services/HaskellApiService";
 
 import "components/Graphviz.scss";
@@ -13,9 +13,9 @@ import "components/Graphviz.scss";
  * Component to display algorithm graph.
  */
 
-export interface IIntermediateViewProps {}
+export interface IMicroarchitectureViewProps {}
 
-export const MicroarchitectureView: React.FC<IIntermediateViewProps> = (props) => {
+export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   const [ma, setMA] = React.useState<Microarchitecture | null>(null);
@@ -54,8 +54,7 @@ type Endpoints = {
 
 function collectEndpoints(data: PUEndpoints[]): Endpoints {
   let result: Endpoints = {};
-  data.forEach((eps: PUEndpoints) => {
-    const [tag, endpoints] = eps;
+  data.forEach(([tag, endpoints]: PUEndpoints) => {
     result[tag] = { sources: [], targets: [] };
     endpoints.forEach((e) => {
       let role = e.epRole;
@@ -77,9 +76,9 @@ function renderMicroarchitectureDot(ma: Microarchitecture, endpoints: Endpoints)
 
   lines.push("digraph {");
   lines.push("  rankdir=LR;");
-  ma.networks.forEach((net) => {
+  ma.networks.forEach((net: Network) => {
     lines.push(`  ${net.networkTag}[label="${net.networkTag} :: ${net.valueType}"];`);
-    net.units.forEach((unit) => {
+    net.units.forEach((unit: Unit) => {
       const name = `${net.networkTag}_${unit.unitTag}`;
       units.push(name);
       lines.push(`  ${name}[label="${unit.unitTag} :: ${unit.unitType}"];`);

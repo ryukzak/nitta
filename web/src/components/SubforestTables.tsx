@@ -7,15 +7,22 @@ import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/Haskell
 import { BreakLoop, OptimizeAccum, ResolveDeadlock } from "services/HaskellApiService";
 import { BindMetrics, DataflowMetrics, FView } from "services/gen/types";
 
-import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn, detailColumn } from "components/SubforestColumns";
+import {
+  sidColumn,
+  textColumn,
+  objectiveColumn,
+  decisionColumn,
+  parametersColumn,
+  detailColumn,
+} from "components/SubforestColumns";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
-type EdgesProps = {
+type SubforestTablesProps = {
   nodes: Node[];
 };
 
-export const SubforestTables: React.FC<EdgesProps> = ({ nodes }) => {
+export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
