@@ -53,12 +53,10 @@ import NITTA.Project.TestBench
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils hiding (codeBlock, codeLine, inline)
-import NITTA.Utils.CodeFormatText
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
-import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
@@ -390,17 +388,16 @@ bnExternalPorts pus =
             pus
 
 externalPortsDecl ports =
-    T.unlines $
-        concatMap
-            ( \(tag, (is, os, ios)) ->
-                concat
-                    [ ["// external ports for: " <> T.pack (toString tag)]
-                    , map (", input " <>) is
-                    , map (", output " <>) os
-                    , map (", inout " <>) ios
-                    ]
-            )
-            ports
+    concatMap
+        ( \(tag, (is, os, ios)) ->
+            concat
+                [ ["// external ports for: " <> T.pack (toString tag)]
+                , map (", input " <>) is
+                , map (", output " <>) os
+                , map (", inout " <>) ios
+                ]
+        )
+        ports
 
 instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName tag BusNetwork{} = tag <> "_net"
@@ -409,11 +406,10 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             mn = moduleName tag pu
             iml =
-                codeBlock
-                    [qc|
-                    module { mn } #
-                            ( parameter DATA_WIDTH = { dataWidth (def :: x) }
-                            , parameter ATTR_WIDTH = { attrWidth (def :: x) }
+                [__i|
+                    module #{ mn } \#
+                            ( parameter DATA_WIDTH = #{ dataWidth (def :: x) }
+                            , parameter ATTR_WIDTH = #{ attrWidth (def :: x) }
                             )
                         ( input                     clk
                         , input                     rst
@@ -421,13 +417,13 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , output                    flag_cycle_begin
                         , output                    flag_in_cycle
                         , output                    flag_cycle_end
-                        { inline $ externalPortsDecl $ bnExternalPorts bnPus }
+                        #{ nest 4 $ vsep $ map pretty $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
                         );
 
-                    parameter MICROCODE_WIDTH = { bnSignalBusWidth };
+                    parameter MICROCODE_WIDTH = #{ bnSignalBusWidth };
 
                     wire start, stop;
 
@@ -436,22 +432,22 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     wire [ATTR_WIDTH-1:0] attr_bus;
 
                     // Debug
-                    assign debug_status = \{ flag_cycle_begin, flag_in_cycle, flag_cycle_end, data_bus[4:0] };
+                    assign debug_status = { flag_cycle_begin, flag_in_cycle, flag_cycle_end, data_bus[4:0] };
                     assign debug_bus1 = data_bus[7:0];
                     assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
 
 
                     // Sub module instances
 
-                    pu_simple_control #
+                    pu_simple_control \#
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-                            , .PROGRAM_DUMP( "$PATH$/{ mn }.dump" )
-                            , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
+                            , .PROGRAM_DUMP( "$PATH$/#{ mn }.dump" )
+                            , .MEMORY_SIZE( #{ length $ programTicks pu } ) // 0 - address for nop microcode
                             ) control_unit
                         ( .clk( clk )
                         , .rst( rst )
 
-                        , .signal_cycle_start( { isDrowAllowSignal ioSync } || stop )
+                        , .signal_cycle_start( #{ isDrowAllowSignal ioSync } || stop )
 
                         , .signals_out( control_bus )
 
@@ -460,10 +456,10 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , .flag_cycle_end( flag_cycle_end )
                         );
 
-                    { inline $ T.intercalate "\\n\\n" instances }
+                    #{ vsep $ punctuate "\n\n" $ map pretty instances }
 
-                    assign data_bus = { S.join " | " $ map snd valuesRegs };
-                    assign attr_bus = { S.join " | " $ map fst valuesRegs };
+                    assign data_bus = #{ T.intercalate " | " $ map snd valuesRegs };
+                    assign attr_bus = #{ T.intercalate " | " $ map fst valuesRegs };
 
                     endmodule
                     |]
@@ -474,16 +470,16 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     <> map (uncurry hardware . first T.pack) (M.assocs bnPus)
         where
             regInstance t =
-                T.unlines
-                    [ "wire [DATA_WIDTH-1:0] " <> t <> "_data_out;"
-                    , "wire [ATTR_WIDTH-1:0] " <> t <> "_attr_out;"
-                    ]
+                [__i|
+                    wire [DATA_WIDTH-1:0] #{ t }_data_out;
+                    wire [ATTR_WIDTH-1:0] #{ t }_attr_out;
+                |]
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
                 let inst = hardwareInstance (T.pack t) unit uEnv
                     insts' = inst : regInstance (T.pack t) : insts
-                    regs' = (t <> "_attr_out", t <> "_data_out") : regs
+                    regs' = ((T.pack . toString) t <> "_attr_out", (T.pack . toString) t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
