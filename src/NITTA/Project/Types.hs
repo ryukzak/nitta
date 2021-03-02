@@ -85,11 +85,11 @@ class TargetSystemComponent pu where
 -- |Element of target system implementation
 data Implementation
     = -- |Immediate implementation
-      Immediate {impFileName :: T.Text, impText :: T.Text}
+      Immediate {impFileName :: FilePath, impText :: T.Text}
     | -- |Fetch implementation from library
-      FromLibrary {impFileName :: T.Text}
+      FromLibrary {impFileName :: FilePath}
     | -- |Aggregation of many implementation parts in separate paths
-      Aggregate {impPath :: Maybe T.Text, subComponents :: [Implementation]}
+      Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
     | -- |Nothing
       Empty
 
@@ -104,9 +104,9 @@ placeholder.
 writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            T.writeFile (joinPath [prjPath, p, T.unpack fn]) $ T.replace "$PATH$" (T.pack p) src
+            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" (T.pack p) src
         writeImpl p (Aggregate p' subInstances) = do
-            let path = joinPath $ maybe [p] ((\x -> [p, x]) . T.unpack) p'
+            let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
             mapM_ (writeImpl path) subInstances
         writeImpl _ (FromLibrary _) = return ()
@@ -117,15 +117,15 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
         copyLibraryFile Project{pTargetProjectPath, pNittaPath, pLibPath} file = do
             let fullNittaPath = pTargetProjectPath </> pNittaPath
-            source <- makeAbsolute $ joinPath [pLibPath, T.unpack file]
-            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", T.unpack file]
+            source <- makeAbsolute $ joinPath [pLibPath, file]
+            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
             createDirectoryIfMissing True $ takeDirectory target
             copyFile source target
 
         libraryFiles Project{pName, pUnit} =
             L.nub $ concatMap (args "") [hardware pName pUnit]
             where
-                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, T.unpack p']) subInstances
+                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
                 args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances
                 args _ (FromLibrary fn) = [fn]
                 args _ _ = []

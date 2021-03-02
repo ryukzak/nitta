@@ -35,6 +35,7 @@ import Data.Default
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
@@ -498,7 +499,7 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                 [qc|oe <= { bool2verilog oeSignal };|]
                     <> [qc| wr <= { bool2verilog wrSignal };|]
                     <> [qc| addr <= { maybe "0" show addrSignal };|]
-         in Immediate (moduleName pName pUnit <> "_tb.v") $
+         in Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
                 snippetTestBench
                     prj
                     SnippetTestBenchConf
@@ -516,10 +517,10 @@ softwareFile tag pu = moduleName tag pu <> "." <> tag <> ".dump"
 
 instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
-    hardware tag pu = FromLibrary $ moduleName tag pu <> ".v"
+    hardware tag pu = FromLibrary $ toString $ moduleName tag pu <> ".v"
     software tag fram@Fram{memory} =
         Immediate
-            (softwareFile tag fram)
+            (toString $ softwareFile tag fram)
             $ T.unlines $
                 map
                     (\Cell{initialValue = initialValue} -> hdlValDump initialValue)

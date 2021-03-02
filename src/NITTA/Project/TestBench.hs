@@ -117,10 +117,10 @@ projectFiles prj@Project{pName, pUnit, pNittaPath} =
         $ L.nub $
             concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
     where
-        addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, T.unpack p']) subInstances
+        addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
-        addPath p (Immediate fn _) = [joinPath [p, T.unpack fn]]
-        addPath _ (FromLibrary fn) = [joinPath ["lib", T.unpack fn]]
+        addPath p (Immediate fn _) = [joinPath [p, fn]]
+        addPath _ (FromLibrary fn) = [joinPath ["lib", fn]]
         addPath _ Empty = []
 
 -- |Data Type for SnippetTestBench function

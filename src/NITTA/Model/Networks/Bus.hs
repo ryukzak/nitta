@@ -467,8 +467,8 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
                     endmodule
                     |]
-         in Aggregate (Just mn) $
-                [ Immediate (mn <> ".v") iml
+         in Aggregate (Just $ toString mn) $
+                [ Immediate (toString $ mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
                     <> map (uncurry hardware . first T.pack) (M.assocs bnPus)
@@ -488,8 +488,8 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
         let subSW = map (uncurry software . first T.pack) $ M.assocs bnPus
-            sw = [Immediate (mn <> ".dump") $ T.pack memoryDump]
-         in Aggregate (Just mn) $ subSW ++ sw
+            sw = [Immediate (toString $ mn <> ".dump") $ T.pack memoryDump]
+         in Aggregate (Just $ toString mn) $ subSW ++ sw
         where
             mn = moduleName tag pu
             -- Nop operation sets for all processor units at address 0. It is a
@@ -585,7 +585,7 @@ instance
                     [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
                     [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
-             in Immediate (moduleName pName n <> "_tb.v") $
+             in Immediate (toString $ moduleName pName n <> "_tb.v") $
                     doc2text
                         [__i|
             `timescale 1 ps / 1 ps

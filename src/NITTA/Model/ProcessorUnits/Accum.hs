@@ -31,6 +31,7 @@ import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe (fromMaybe)
 import Data.Set (elems, fromList, member)
+import Data.String.ToString
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -268,7 +269,7 @@ instance (Var v) => Locks (Accum v x t) v where
 
 instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
-    hardware tag pu = FromLibrary $ moduleName tag pu <> ".v"
+    hardware tag pu = FromLibrary $ toString $ moduleName tag pu <> ".v"
     software _ _ = Empty
     hardwareInstance
         tag
@@ -330,7 +331,7 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                             }
                     , tbcMC2verilogLiteral = T.pack . showMicrocode
                     }
-         in Immediate (moduleName pName pUnit <> "_tb.v") $ snippetTestBench prj conf
+         in Immediate (toString $ moduleName pName pUnit <> "_tb.v") $ snippetTestBench prj conf
 
 instance IOTestBench (Accum v x t) v x
 
