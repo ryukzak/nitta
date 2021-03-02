@@ -8,7 +8,7 @@ import { GraphNode, GraphEdge } from "services/gen/types";
 import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 import { PUEndpoints, Endpoint, EndpointDecision } from "services/HaskellApiService";
 
-import "./graphviz.scss";
+import "components/Graphviz.scss";
 
 /**
  * Component to display algorithm graph.

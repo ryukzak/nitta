@@ -7,7 +7,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { api, Microarchitecture } from "services/HaskellApiService";
 import { PUEndpoints } from "services/HaskellApiService";
 
-import "./graphviz.scss";
+import "components/Graphviz.scss";
 
 /**
  * Component to display algorithm graph.

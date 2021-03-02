@@ -166,11 +166,11 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
-        Left $ "All sub process units reject the functional block: " ++ show f ++ "\n" ++ rejects
+        Left $ "All sub process units reject the functional block: " <> show f <> "\n" <> rejects
         where
             rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-            showReject (tag, pu) | Left err <- tryBind f pu = "    [" ++ toString tag ++ "]: " ++ err
-            showReject (tag, _) = "    [" ++ toString tag ++ "]: undefined"
+            showReject (tag, pu) | Left err <- tryBind f pu = "    [" <> toString tag <> "]: " <> err
+            showReject (tag, _) = "    [" <> toString tag <> "]: undefined"
 
     process net@BusNetwork{bnProcess, bnPus} =
         let v2transportStepKey =
