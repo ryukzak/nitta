@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -34,7 +35,7 @@ import Data.Foldable
 import qualified Data.HashMap.Strict as M
 import Data.Hashable
 import Data.Maybe
-import qualified Data.String.Utils as S
+import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics hiding (moduleName)
@@ -78,13 +79,13 @@ instance ToJSON TemplateConf
 {- |collectNittaPath - read nittaPath from all provided target templates and
 return it if all of them are the same.
 -}
-collectNittaPath :: [FilePath] -> IO (Either String FilePath)
+collectNittaPath :: [FilePath] -> IO (Either T.Text FilePath)
 collectNittaPath templates = do
     paths <- mapM (\fn -> (fn,) . getNittaPath <$> readTemplateConfDef (fn </> templateConfFileName)) templates
     let path = if null paths then defNittaPath else snd $ head paths
         err =
             "inconsistency of nittaPath: "
-                <> S.join ", " (map (\(f, p) -> f <> " -> '" <> p <> "'") paths)
+                <> T.intercalate ", " (map (\(f, p) -> [i|#{f} -> '#{p}'|]) paths)
     return $
         if all ((== path) . snd) paths
             then Right path

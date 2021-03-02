@@ -195,7 +195,7 @@ synthesizeTargetSystem
                         else Left "synthesis process...fail"
 
             writeProject' leaf = do
-                nittaPath <- either error id <$> collectNittaPath tTemplates
+                nittaPath <- either (error . T.unpack) id <$> collectNittaPath tTemplates
                 let prj =
                         Project
                             { pName = T.pack tName
