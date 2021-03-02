@@ -14,7 +14,7 @@ import {
   decisionColumn,
   parametersColumn,
   detailColumn,
-} from "components/SubforestColumns";
+} from "components/SubforestTables/Columns";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
