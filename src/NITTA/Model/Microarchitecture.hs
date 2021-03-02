@@ -88,7 +88,7 @@ addCustom tag pu ioports = do
                     { ctrlPorts = Just ports
                     , ioPorts = Just ioports
                     , valueIn = Just ("data_bus", "attr_bus")
-                    , valueOut = Just (toString tag <> "_data_out", toString tag <> "_attr_out")
+                    , valueOut = Just ((T.pack . toString) tag <> "_data_out", T.pack (toString tag) <> "_attr_out")
                     }
         usedPorts = usedPortTags ports
     put

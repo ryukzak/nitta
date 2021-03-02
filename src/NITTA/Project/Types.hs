@@ -135,18 +135,18 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
 -}
 data UnitEnv m = UnitEnv
     { -- |clock signal
-      sigClk :: String
+      sigClk :: T.Text
     , -- |reset signal
-      sigRst :: String
+      sigRst :: T.Text
     , -- |posedge on computation cycle begin
-      sigCycleBegin :: String
+      sigCycleBegin :: T.Text
     , -- |positive on computation cycle
-      sigInCycle :: String
+      sigInCycle :: T.Text
     , -- |posedge on computation cycle end
-      sigCycleEnd :: String
+      sigCycleEnd :: T.Text
     , ctrlPorts :: Maybe (Ports m)
     , ioPorts :: Maybe (IOPorts m)
-    , valueIn, valueOut :: Maybe (String, String)
+    , valueIn, valueOut :: Maybe (T.Text, T.Text)
     }
 
 instance Default (UnitEnv m) where

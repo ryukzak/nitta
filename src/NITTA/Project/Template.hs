@@ -49,7 +49,7 @@ import Text.Toml
 
 data Conf = Conf
     { template :: TemplateConf
-    , signals :: M.HashMap String String
+    , signals :: M.HashMap T.Text T.Text
     }
     deriving (Show)
 

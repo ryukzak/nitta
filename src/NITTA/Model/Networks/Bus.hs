@@ -370,7 +370,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
 --------------------------------------------------------------------------
 
-controlSignalLiteral ix = "control_bus[" <> show ix <> "]"
+controlSignalLiteral ix = [i|control_bus[#{ ix }]|]
 
 -- |Add binding to Map tag [F v x] dict
 registerBinding tag f dict =
@@ -390,11 +390,11 @@ bnExternalPorts pus =
             pus
 
 externalPortsDecl ports =
-    unlines $
+    T.unlines $
         concatMap
             ( \(tag, (is, os, ios)) ->
                 concat
-                    [ ["// external ports for: " <> tag]
+                    [ ["// external ports for: " <> T.pack (toString tag)]
                     , map (", input " <>) is
                     , map (", output " <>) os
                     , map (", inout " <>) ios
@@ -421,7 +421,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , output                    flag_cycle_begin
                         , output                    flag_in_cycle
                         , output                    flag_cycle_end
-                        { inline $ T.pack $ externalPortsDecl $ bnExternalPorts bnPus }
+                        { inline $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
@@ -499,7 +499,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
             values (BusNetworkMC arr) =
                 reverse $
                     map snd $
-                        L.sortOn ((\(Just [ix]) -> read ix :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . signalTag . fst) $
+                        L.sortOn ((\(Just [ix]) -> read ix :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . T.unpack . signalTag . fst) $
                             M.assocs arr
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
