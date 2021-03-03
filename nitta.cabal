@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f8ddb2fc97ad1697b8a0d4f38f1221fddb8e3bf7857931ae700b38384444751f
+-- hash: ad2602ce7b918866e57a0034645ea0cf45747b3d13fdfe70d4a7decb40e3ae96
 
 name:           nitta
 version:        0.0.0.1
@@ -129,7 +129,6 @@ library
     , hslogger
     , htoml
     , http-api-data
-    , interpolatedstring-perl6
     , intervals
     , language-lua
     , mtl
@@ -174,7 +173,6 @@ executable nitta
     , ginger
     , hslogger
     , htoml
-    , interpolatedstring-perl6
     , nitta
     , prettyprinter
     , process-extras
@@ -205,7 +203,6 @@ executable nitta-api-gen
     , ginger
     , hslogger
     , htoml
-    , interpolatedstring-perl6
     , intervals
     , nitta
     , prettyprinter
@@ -259,7 +256,6 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
-    , interpolatedstring-perl6
     , nitta
     , prettyprinter
     , process-extras

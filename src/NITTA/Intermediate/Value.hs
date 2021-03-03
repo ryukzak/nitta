@@ -42,13 +42,13 @@ import Data.Default
 import Data.Maybe
 import Data.Proxy
 import Data.Ratio
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Data.Typeable
 import Data.Validity hiding (invalid)
 import GHC.Generics
 import GHC.TypeLits
 import Numeric
-import Text.InterpolatedString.Perl6 (qc)
 import Text.Printf
 import Text.Regex
 
@@ -95,39 +95,39 @@ class
     -- | helper functions to work with values in Verilog (trace and assert)
     verilogHelper :: x -> T.Text
     verilogHelper x =
-        [qc|
-task traceWithAttr;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actualData;
-    input [{ attrWidth x }-1:0] actualAttr;
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %d %d\t", actualData, actualAttr);
-        $display();
-    end
-endtask // traceWithAttr
+        [__i|
+            task traceWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %d %d\t", actualData, actualAttr);
+                    $display();
+                end
+            endtask // traceWithAttr
 
-task assertWithAttr;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actualData;
-    input [{ attrWidth x }-1:0] actualAttr;
-    input [{ dataWidth x }-1:0] expectData;
-    input [{ attrWidth x }-1:0] expectAttr;
-    input [256*8-1:0] var; // string
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %d %d\t", actualData, actualAttr);
-        $write("expect: %d %d\t", expectData, expectAttr);
-        $write("var: %0s\t", var);
-        if ( actualData != expectData || actualAttr != expectAttr
-            || ( actualData === 'dx && !actualAttr[0] )
-            ) $write("FAIL");
-        $display();
-    end
-endtask // assertWithAttr
-|]
+            task assertWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                input [#{ dataWidth x }-1:0] expectData;
+                input [#{ attrWidth x }-1:0] expectAttr;
+                input [256*8-1:0] var; // string
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %d %d\t", actualData, actualAttr);
+                    $write("expect: %d %d\t", expectData, expectAttr);
+                    $write("var: %0s\t", var);
+                    if ( actualData != expectData || actualAttr != expectAttr
+                        || ( actualData === 'dx && !actualAttr[0] )
+                        ) $write("FAIL");
+                    $display();
+                end
+            endtask // assertWithAttr
+        |]
 
     -- | RE for extraction assertion data from a testbench log
     verilogAssertRE :: x -> Regex
@@ -236,13 +236,13 @@ instance (Bits x, Validity x) => Bits (Attr x) where
     a .|. b = setInvalidAttr $ liftA2 (.|.) a b
     xor a b = setInvalidAttr $ liftA2 xor a b
     complement = setInvalidAttr . fmap complement
-    shift Attr{value} i = setInvalidAttr $ pure $ shift value i
-    rotate Attr{value} i = setInvalidAttr $ pure $ rotate value i
+    shift Attr{value} ix = setInvalidAttr $ pure $ shift value ix
+    rotate Attr{value} ix = setInvalidAttr $ pure $ rotate value ix
     bitSize Attr{value} = fromMaybe undefined $ bitSizeMaybe value
     bitSizeMaybe Attr{value} = bitSizeMaybe value
     isSigned Attr{value} = isSigned value
     testBit Attr{value} = testBit value
-    bit i = pure $ bit i
+    bit ix = pure $ bit ix
     popCount Attr{value} = popCount value
 
 instance (Val x, Integral x) => Val (Attr x) where
@@ -330,14 +330,14 @@ instance (KnownNat w) => Bits (IntX w) where
     (IntX a) .|. (IntX b) = IntX (a .|. b)
     (IntX a) `xor` (IntX b) = IntX (a `xor` b)
     complement (IntX a) = IntX $ complement a
-    shift (IntX a) i = crop $ IntX $ shift a i
-    rotate (IntX a) i = crop $ IntX $ rotate a i
+    shift (IntX a) ix = crop $ IntX $ shift a ix
+    rotate (IntX a) ix = crop $ IntX $ rotate a ix
 
     bitSize (IntX a) = fromMaybe undefined $ bitSizeMaybe a
     bitSizeMaybe (IntX a) = bitSizeMaybe a
     isSigned (IntX a) = isSigned a
     testBit (IntX a) = testBit a
-    bit i = IntX $ bit i
+    bit ix = IntX $ bit ix
     popCount (IntX a) = popCount a
 
 instance (KnownNat w) => Val (IntX w) where
@@ -417,13 +417,13 @@ instance (KnownNat m, KnownNat b) => Bits (FX m b) where
     (FX a) .|. (FX b) = FX (a .|. b)
     (FX a) `xor` (FX b) = FX (a `xor` b)
     complement (FX a) = FX $ complement a
-    shift (FX a) i = crop $ FX $ shift a i
-    rotate (FX a) i = crop $ FX $ rotate a i
+    shift (FX a) ix = crop $ FX $ shift a ix
+    rotate (FX a) ix = crop $ FX $ rotate a ix
     bitSize = dataWidth
     bitSizeMaybe = Just . dataWidth
     isSigned (FX a) = isSigned a
     testBit (FX a) = testBit a
-    bit i = FX $ bit i
+    bit ix = FX $ bit ix
     popCount (FX a) = popCount a
 
 instance (KnownNat m, KnownNat b) => Val (FX m b) where
@@ -437,43 +437,43 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
     attrLiteral x = T.pack $ show (attrWidth x) <> "'d000" <> show (rawAttr x)
 
     verilogHelper x =
-        [qc|
-task traceWithAttr;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actualData;
-    input [{ attrWidth x }-1:0] actualAttr;
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %.3f %d\t", fxtor(actualData), actualAttr);
-        $display();
-    end
-endtask // traceWithAttr
+        [__i|
+            task traceWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %.3f %d\t", fxtor(actualData), actualAttr);
+                    $display();
+                end
+            endtask // traceWithAttr
 
-task assertWithAttr;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actualData;
-    input [{ attrWidth x }-1:0] actualAttr;
-    input [{ dataWidth x }-1:0] expectData;
-    input [{ attrWidth x }-1:0] expectAttr;
-    input [256*8-1:0] var; // string
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %.3f %d \t", fxtor(actualData), actualAttr);
-        $write("expect: %.3f %d \t", fxtor(expectData), expectAttr);
-        $write("var: %0s\t", var);
-        if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
-        $display();
-    end
-endtask // assertWithAttr
+            task assertWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                input [#{ dataWidth x }-1:0] expectData;
+                input [#{ attrWidth x }-1:0] expectAttr;
+                        input [256*8-1:0] var; // string
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %.3f %d \t", fxtor(actualData), actualAttr);
+                    $write("expect: %.3f %d \t", fxtor(expectData), expectAttr);
+                    $write("var: %0s\t", var);
+                    if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
+                    $display();
+                end
+            endtask // assertWithAttr
 
-function real fxtor(input integer x);
-    begin
-        fxtor = $itor(x) / $itor(1 << { scalingFactorPower x });
-    end
-endfunction // fxtor
-|]
+            function real fxtor(input integer x);
+                begin
+                    fxtor = $itor(x) / $itor(1 << #{ scalingFactorPower x });
+                end
+            endfunction // fxtor
+        |]
 
     verilogAssertRE _ =
         mkRegex $

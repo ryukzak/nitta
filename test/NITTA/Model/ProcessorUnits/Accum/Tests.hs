@@ -18,6 +18,7 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 
 import Data.Default
 import qualified Data.Set as S
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
@@ -28,7 +29,6 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
-import Text.InterpolatedString.Perl6 (qc)
 
 tests =
     testGroup
@@ -132,24 +132,24 @@ tests =
             (microarch ASync SlaveSPI)
             pFX22_32
             "fixpoint 22 32"
-            [qc|
-        function f()
-            send(0.5 - 0.25)
-            send(-1.25 + 2.5)
-        end
-        f()
-        |]
+            [__i|
+                function f()
+                    send(0.5 - 0.25)
+                    send(-1.25 + 2.5)
+                end
+                f()
+            |]
         , typedLuaTestCase
             (microarch ASync SlaveSPI)
             pFX42_64
             "fixpoint 42 64"
-            [qc|
-        function f()
-            send(0.5 - 0.25)
-            send(-1.25 + 2.5)
-        end
-        f()
-        |]
+            [__i|
+                function f()
+                    send(0.5 - 0.25)
+                    send(-1.25 + 2.5)
+                end
+                f()
+            |]
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
         ]

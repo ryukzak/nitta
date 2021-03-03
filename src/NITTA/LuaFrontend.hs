@@ -30,6 +30,7 @@ import Data.Bifunctor
 import Data.List (find, group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as T
@@ -38,7 +39,6 @@ import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types hiding (patch)
 import NITTA.Utils (modify'_)
-import Text.InterpolatedString.Perl6 (qq)
 import Text.Printf
 
 data FrontendResult x = FrontendResult
@@ -107,12 +107,10 @@ lua2functions src =
             }
     where
         varRow lst@(x : _) =
-            let vs = zipWith f lst [0 ..]
+            let vs = zipWith f lst [0 :: Int ..]
              in (x, (vs, vs))
         varRow _ = undefined
-        f v i =
-            let v' = unpack v
-             in [qq|{v'}#{i}|]
+        f v ix = toString v <> "#" <> show ix
 
 getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
     where

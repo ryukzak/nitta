@@ -25,6 +25,7 @@ module NITTA.UIBackend (
 import Control.Exception (SomeException, try)
 import Control.Monad (unless)
 import Data.Either
+import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.Synthesis
 import NITTA.UIBackend.REST
@@ -36,7 +37,6 @@ import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
 import System.Log.Logger
-import Text.InterpolatedString.Perl6 (qq)
 
 restDocs port =
     markdown $
@@ -53,15 +53,17 @@ restDocs port =
 
 prepareJSAPI port path = do
     let prefix =
-            [qq|import axios from 'axios';
-var jsAPI = \{\};
-export default jsAPI;
-/* eslint no-useless-concat: "off" */|]
+            [__i|
+                import axios from 'axios';
+                var jsAPI = {};
+                export default jsAPI;
+                /* eslint no-useless-concat: "off" */
+            |]
     let axios' =
             SJS.axiosWith
                 SJS.defAxiosOptions
                 SJS.defCommonGeneratorOptions
-                    { SJS.urlPrefix = [qq|http://localhost:$port|]
+                    { SJS.urlPrefix = [i|http://localhost:#{ port }|]
                     , SJS.moduleName = "jsAPI"
                     }
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]

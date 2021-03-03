@@ -22,170 +22,170 @@ module NITTA.LuaFrontend.Tests (
 ) where
 
 import Data.FileEmbed (embedStringFile)
+import Data.String.Interpolate
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.TH
-import Text.InterpolatedString.Perl6 (qc)
 
 test_simple_recursion =
     [ luaTestCase
         "unary operator"
-        [qc|
-        function counter(i)
-            counter(-i)
-        end
-        counter(2)
+        [__i|
+            function counter(i)
+                counter(-i)
+            end
+            counter(2)
         |]
     , luaTestCase
         "binary operator"
-        [qc|
-        function counter(i)
-            counter(i + 1)
-        end
-        counter(0)
+        [__i|
+            function counter(i)
+                counter(i + 1)
+            end
+            counter(0)
         |]
     , luaTestCase
         "binary operator with bracket"
-        [qc|
-        function counter(i)
-            counter((i + 1))
-        end
-        counter(0)
+        [__i|
+            function counter(i)
+                counter((i + 1))
+            end
+            counter(0)
         |]
     , luaTestCase
         "function call"
-        [qc|
-        function counter(x)
-            counter(buffer(x))
-        end
-        counter(0)
+        [__i|
+            function counter(x)
+                counter(buffer(x))
+            end
+            counter(0)
         |]
     , luaTestCase
         "function call statement"
-        [qc|
-        function counter(x)
-            send(x)
-            counter(x)
-        end
-        counter(0)
+        [__i|
+            function counter(x)
+                send(x)
+                counter(x)
+            end
+            counter(0)
         |]
     ]
 
 test_assignment_and_reassignment =
     [ luaTestCase
         "assignment statement with new global variable"
-        [qc|
-        function f(x)
-            y = x + 1
-            f(y)
-        end
-        f(0)
+        [__i|
+            function f(x)
+                y = x + 1
+                f(y)
+            end
+            f(0)
         |]
     , luaTestCase
         "assignment statement with new global variable and bracket"
-        [qc|
-        function f(x)
-            y = (x + 1)
-            f(y)
-        end
-        f(0)
+        [__i|
+            function f(x)
+                y = (x + 1)
+                f(y)
+            end
+            f(0)
         |]
     , luaTestCase
         "assigment function result"
-        [qc|
-       function counter(x)
-            y = buffer(x + 1)
-            counter(y)
-        end
-        counter(0)
+        [__i|
+           function counter(x)
+                y = buffer(x + 1)
+                counter(y)
+            end
+            counter(0)
         |]
     , luaTestCase
         "multiple assigment function result"
-        [qc|
-       function counter(a, b)
-            a, b = b, a + b
-            counter(a, b)
-        end
-        counter(1, 1)
+        [__i|
+            function counter(a, b)
+                a, b = b, a + b
+                counter(a, b)
+            end
+            counter(1, 1)
         |]
     , luaTestCase
         "assigment function multiple results to global variables"
-        [qc|
-        function f(a, b)
-            n, d = a / b
-            f(n, d + 1)
-        end
-        f(4, 2)
+        [__i|
+            function f(a, b)
+                n, d = a / b
+                f(n, d + 1)
+            end
+            f(4, 2)
         |]
     , luaTestCase
         "assigment function multiple results to local variables"
-        [qc|
-        function f(a, b)
-            local n, d = a / b
-            f(n, d + 1)
-        end
-        f(4, 2)
+        [__i|
+            function f(a, b)
+                local n, d = a / b
+                f(n, d + 1)
+            end
+            f(4, 2)
         |]
     , luaTestCase
         "argument variable reassignment"
-        [qc|
-        function counter(x)
-            x = x + 1
-            counter(x)
-        end
-        counter(0)
+        [__i|
+            function counter(x)
+                x = x + 1
+                counter(x)
+            end
+            counter(0)
         |]
     , luaTestCase
         "global variable reassignment"
-        [qc|
-        function counter(x)
-            y = x + 1
-            y = y + 1
-            counter(y)
-        end
-        counter(0)
+        [__i|
+            function counter(x)
+                y = x + 1
+                y = y + 1
+                counter(y)
+            end
+            counter(0)
         |]
     , luaTestCase
         "local variable reassignment"
-        [qc|
-        function counter(x)
-            local y = x + 1
-            y = y + 1
-            counter(y)
-        end
-        counter(0)
+        [__i|
+            function counter(x)
+                local y = x + 1
+                y = y + 1
+                counter(y)
+            end
+            counter(0)
         |]
     ]
 
 test_complex_examples =
     [ luaTestCase
         "fibonacci"
-        [qc|
-        function fib(a, b)
-            b, a = a + b, b
-            fib(a, b)
-        end
-        fib(0, 1)
+        [__i|
+            function fib(a, b)
+                b, a = a + b, b
+                fib(a, b)
+            end
+            fib(0, 1)
         |]
     , luaTestCase
         "fibonacci with registers"
-        [qc|
-        function fib(a, b)
-            a, b = b, buffer(buffer(a) + buffer(b))
-            fib(a, b)
-        end
-        fib(0, 1)
+        [__i|
+            function fib(a, b)
+                a, b = b, buffer(buffer(a) + buffer(b))
+                fib(a, b)
+            end
+            fib(0, 1)
         |]
     , luaTestCase
         "fibonacci with registers and zeros"
-        [qc|
-        function fib(a, b)
-            a, b = b, buffer(a + buffer(b + 0)) + 0
-            fib(a, b)
-        end
-        fib(0, 1)
+        [__i|
+            function fib(a, b)
+                a, b = b, buffer(a + buffer(b + 0)) + 0
+                fib(a, b)
+            end
+            fib(0, 1)
         |]
     ]
 
@@ -193,12 +193,12 @@ test_trace_features =
     [ traceLuaSimulationTestCase
         pInt
         "simple trace"
-        [qc|
-        function counter(i)
-            debug.trace(i)
-            counter(i + 1)
-        end
-        counter(0)
+        [__i|
+            function counter(i)
+                debug.trace(i)
+                counter(i + 1)
+            end
+            counter(0)
         |]
         $ unlines
             [ "i    "
@@ -211,13 +211,13 @@ test_trace_features =
     , traceLuaSimulationTestCase
         pInt
         "specific fmt"
-        [qc|
-        function counter(i)
-            debug.trace("%.0f", i)
-            counter(i + 1)
-        end
-        counter(0)
-        |]
+        [__i|
+            function counter(i)
+                debug.trace("%.0f", i)
+                counter(i + 1)
+            end
+            counter(0)
+         |]
         $ unlines
             [ "i"
             , "0"
@@ -229,13 +229,13 @@ test_trace_features =
     , traceLuaSimulationTestCase
         pInt
         "specific fmt and multiple variable"
-        [qc|
-        function counter(i)
-            local tmp = i + 1
-            debug.trace("%.0f", i, tmp)
-            counter(tmp)
-        end
-        counter(0)
+        [__i|
+            function counter(i)
+                local tmp = i + 1
+                debug.trace("%.0f", i, tmp)
+                counter(tmp)
+            end
+            counter(0)
         |]
         $ unlines
             [ "i tmp"
@@ -248,13 +248,13 @@ test_trace_features =
     , traceLuaSimulationTestCase
         pInt
         "default trace"
-        [qc|
-        function counter(i, two)
-            local one = 1
-            local tmp = i + one + two
-            counter(tmp, 2)
-        end
-        counter(0, 2)
+        [__i|
+            function counter(i, two)
+                local one = 1
+                local tmp = i + one + two
+                counter(tmp, 2)
+            end
+            counter(0, 2)
         |]
         $ unlines
             [ "i      two  "
@@ -284,13 +284,13 @@ test_trace_features =
       traceLuaSimulationTestCase
         pInt
         "variable after changing"
-        [qc|
-        function counter(i)
-            i = i + 1
-            debug.trace("%.0f", i)
-            counter(i)
-        end
-        counter(0)
+        [__i|
+            function counter(i)
+                i = i + 1
+                debug.trace("%.0f", i)
+                counter(i)
+            end
+            counter(0)
         |]
         $ unlines
             [ "i"
