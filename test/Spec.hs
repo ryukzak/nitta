@@ -28,7 +28,6 @@ import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
 import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
 import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Tests
-import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
 import System.Environment (lookupEnv, setEnv)
 import Test.Tasty (testGroup)
@@ -54,6 +53,5 @@ main = do
             , NITTA.Model.ProcessorUnits.Accum.Tests.tests
             , NITTA.Model.ProcessorUnits.Shift.Tests.tests
             , NITTA.Tests.tests
-            , NITTA.Utils.CodeFormat.Tests.tests
             , NITTA.Utils.Tests.tests
             ]

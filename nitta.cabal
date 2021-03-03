@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9cc74b67c94f4f8738ca262867089a6ae93eb1176871794d2bf271c0df9b0e89
+-- hash: f8ddb2fc97ad1697b8a0d4f38f1221fddb8e3bf7857931ae700b38384444751f
 
 name:           nitta
 version:        0.0.0.1
@@ -106,8 +106,6 @@ library
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base
-      NITTA.Utils.CodeFormat
-      NITTA.Utils.CodeFormatText
       NITTA.Utils.ProcessDescription
   other-modules:
       Paths_nitta
@@ -240,7 +238,6 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.Tests.Utils
       NITTA.Model.Tests.Microarchitecture
       NITTA.Tests
-      NITTA.Utils.CodeFormat.Tests
       NITTA.Utils.Tests
       Paths_nitta
   hs-source-dirs:

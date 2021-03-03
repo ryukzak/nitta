@@ -17,6 +17,7 @@ Stability   : experimental
 module NITTA.Utils (
     doc2text,
     Verilog,
+    comment,
     shiftI,
     modify'_,
 
@@ -36,7 +37,6 @@ module NITTA.Utils (
     isFB,
     isInstruction,
     module NITTA.Utils.Base,
-    module NITTA.Utils.CodeFormat,
 ) where
 
 import Control.Monad.State (State, modify')
@@ -49,7 +49,6 @@ import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
-import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
@@ -59,6 +58,8 @@ import Prettyprinter.Render.Text
 type Verilog = Doc ()
 doc2text :: Verilog -> T.Text
 doc2text = renderStrict . layoutPretty defaultLayoutOptions
+
+comment str = unlines $ map ("// " ++) $ lines str
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
