@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -17,7 +18,7 @@ import Data.Aeson
 import Data.Bifunctor
 import qualified Data.Set as S
 import Data.String.ToString
-import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -26,11 +27,11 @@ import NITTA.Model.Types
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
 
-newtype IntervalView = IntervalView String
+newtype IntervalView = IntervalView T.Text
     deriving (Generic)
 
 instance (Time t) => Viewable (Interval t) IntervalView where
-    view = IntervalView . S.replace (show (maxBound :: t)) "∞" . show
+    view = IntervalView . T.replace (T.pack $ show (maxBound :: t)) "∞" . T.pack . show
 
 instance ToJSON IntervalView
 
@@ -38,24 +39,24 @@ data DecisionView
     = RootView
     | BindDecisionView
         { function :: FView
-        , pu :: String
+        , pu :: T.Text
         }
     | DataflowDecisionView
-        { source :: (String, EndpointSt String (Interval Int))
-        , targets :: [(String, EndpointSt String (Interval Int))]
+        { source :: (T.Text, EndpointSt T.Text (Interval Int))
+        , targets :: [(T.Text, EndpointSt T.Text (Interval Int))]
         }
     | BreakLoopView
-        { value :: String
-        , outputs :: [String]
-        , input :: String
+        { value :: T.Text
+        , outputs :: [T.Text]
+        , input :: T.Text
         }
     | OptimizeAccumView
         { old :: [FView]
         , new :: [FView]
         }
     | ResolveDeadlockView
-        { newBuffer :: String
-        , changeset :: String
+        { newBuffer :: T.Text
+        , changeset :: T.Text
         }
     deriving (Generic)
 
@@ -63,7 +64,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = toString pu
+            , pu = (T.pack . toString) pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
@@ -73,7 +74,7 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
             , targets = map view' dfTargets
             }
         where
-            view' = bimap toString epdView
+            view' = bimap (T.pack . toString) epdView
             epdView EndpointSt{epRole, epAt} =
                 EndpointSt
                     { epRole = case epRole of
@@ -106,4 +107,4 @@ instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
 
 instance ToJSON DecisionView
 
-show' = S.replace "\"" "" . show
+show' = T.replace "\"" "" . T.pack . show
