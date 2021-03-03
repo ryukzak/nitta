@@ -57,6 +57,7 @@ import Prettyprinter
 import Prettyprinter.Render.Text
 
 type Verilog = Doc ()
+doc2text :: Verilog -> T.Text
 doc2text = renderStrict . layoutPretty defaultLayoutOptions
 
 modify'_ :: (s -> s) -> State s ()
