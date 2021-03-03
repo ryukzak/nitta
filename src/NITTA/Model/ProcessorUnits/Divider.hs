@@ -31,8 +31,8 @@ import Data.List (partition, sortBy)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Set (Set, member)
 import qualified Data.Set as S
+import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -42,7 +42,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (Interval, inf, intersection, singleton, sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 data InputDesc
     = Numer
@@ -109,14 +108,14 @@ data Job v x t
     deriving (Eq, Show)
 
 nextTargetTick Divider{targetIntervals = []} = 0
-nextTargetTick Divider{targetIntervals = i : _} = sup i + 1
+nextTargetTick Divider{targetIntervals = int : _} = sup int + 1
 
 nextSourceTick Divider{sourceIntervals = []} = 0
-nextSourceTick Divider{sourceIntervals = i : _} = sup i + 1
+nextSourceTick Divider{sourceIntervals = int : _} = sup int + 1
 
 findJob f jobs =
     case partition f jobs of
-        ([i], other) -> Just (i, other)
+        ([i_], other) -> Just (i_, other)
         ([], _) -> Nothing
         _ -> error "findInput internal error"
 
@@ -227,7 +226,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                         , jobs = remain2input (sup epAt) f : jobs
                         }
                     d
-            | Just (i@Input{inputSeq = ((tag, nextV) : vs), function, startAt}, other) <- findInput jobs
+            | Just (inp@Input{inputSeq = ((tag, nextV) : vs), function, startAt}, other) <- findInput jobs
               , v == nextV
               , let finishAt = sup epAt + pipeline + latency =
                 pushOutput
@@ -236,7 +235,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                         , jobs =
                             if null vs
                                 then InProgress{function, startAt, finishAt} : other
-                                else i{inputSeq = vs} : other
+                                else inp{inputSeq = vs} : other
                         , process_ = execSchedule pu $ do
                             _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Load tag
                             updateTick (sup epAt)
@@ -316,13 +315,13 @@ instance IOConnected (Divider v x t) where
 instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
-    hardware tag pu@Divider{mock} =
+    hardware _tag Divider{mock} =
         Aggregate
             Nothing
             [ if mock
                 then FromLibrary "div/div_mock.v"
                 else FromLibrary "div/div.v"
-            , FromLibrary $ toString $ "div/" <> moduleName tag pu <> ".v"
+            , FromLibrary "div/pu_div.v"
             ]
     hardwareInstance
         tag
@@ -334,28 +333,26 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
             , valueOut = Just (dataOut, attrOut)
             , ctrlPorts = Just DividerPorts{oe, oeSel, wr, wrSel}
             } =
-            T.pack $
-                codeBlock
-                    [qc|
-            pu_div #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .INVALID( 0 )
-                    , .PIPELINE( { pipeline } )
-                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-                    , .MOCK_DIV( { bool2verilog mock } )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .rst( { sigRst } )
-                , .signal_wr( { wr } )
-                , .signal_wr_sel( { wrSel } )
-                , .data_in( { dataIn } )
-                , .attr_in( { attrIn } )
-                , .signal_oe( { oe } )
-                , .signal_oe_sel( { oeSel } )
-                , .data_out( { dataOut } )
-                , .attr_out( { attrOut } )
-                );
+            [__i|
+                pu_div \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .INVALID( 0 )
+                        , .PIPELINE( #{ pipeline } )
+                        , .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )
+                        , .MOCK_DIV( #{ bool2verilog mock } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_wr( #{ wr } )
+                    , .signal_wr_sel( #{ wrSel } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .signal_oe( #{ oe } )
+                    , .signal_oe_sel( #{ oeSel } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
@@ -376,5 +373,5 @@ instance (VarValTime v x t) => Testable (Divider v x t) v x where
                             , wrSel = SignalTag "wrSel"
                             }
                     , tbcMC2verilogLiteral = \Microcode{oeSignal, oeSelSignal, wrSignal, wrSelSignal} ->
-                        [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
+                        [i|oe <= #{ bool2verilog oeSignal }; oeSel <= #{ bool2verilog oeSelSignal }; wr <= #{ bool2verilog wrSignal }; wrSel <= #{ bool2verilog wrSelSignal };|]
                     }

@@ -41,6 +41,7 @@ import qualified Data.Text.IO as T
 import GHC.Generics hiding (moduleName)
 import NITTA.Project.TestBench
 import NITTA.Project.Types
+import NITTA.Utils
 import System.Directory
 import System.FilePath
 import System.Log.Logger
@@ -172,7 +173,7 @@ findAllFiles root = findAllFiles' ""
 projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
     "nitta" ->
         dict
-            [ ("instance", toGVal $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
+            [ ("instance", toGVal $ doc2text $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
             , ("files", toGVal $ projectFiles prj)
             ,
                 ( "testbench"

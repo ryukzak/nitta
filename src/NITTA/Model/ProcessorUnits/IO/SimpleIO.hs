@@ -27,6 +27,8 @@ import Data.Default
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.Interpolate
+import Data.String.ToString
 import Data.Typeable
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -36,7 +38,7 @@ import NITTA.Model.Types
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
+import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
 
@@ -55,18 +57,19 @@ data SimpleIO i v x t = SimpleIO
 
 instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where
     show io =
-        codeBlock
-            [qc|
-        bounceFilter  = {bounceFilter io}
-        bufferSize    = {bufferSize io}
-        receiveQueue  = {receiveQueue io}
-        receiveN      = {receiveN io}
-        isReceiveOver = {isReceiveOver io}
-        sendQueue     = {sendQueue io}
-        sendN         = {sendN io}
-        process_      =
-            {inline $ show $ process_ io}
-        |]
+        toString $
+            doc2text
+                [__i|
+                    bounceFilter  = #{ bounceFilter io }
+                    bufferSize    = #{ bufferSize io }
+                    receiveQueue  = #{ receiveQueue io }
+                    receiveN      = #{ receiveN io }
+                    isReceiveOver = #{ isReceiveOver io }
+                    sendQueue     = #{ sendQueue io }
+                    sendN         = #{ sendN io }
+                    process_      =
+                        #{ nest 4 $ viaShow $ process_ io }
+                |]
 
 data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
     deriving (Show)

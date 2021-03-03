@@ -30,6 +30,7 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
+import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
@@ -41,7 +42,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 data Broken v x t = Broken
     { remain :: [F v x]
@@ -223,40 +223,34 @@ instance IOConnected (Broken v x t) where
 instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
     moduleName _title _pu = "pu_broken"
     software _ _ = Empty
-    hardware tag pu =
-        Aggregate
-            Nothing
-            [ FromLibrary $ toString $ moduleName tag pu <> ".v"
-            ]
+    hardware _tag _pu = Aggregate Nothing [FromLibrary "pu_broken.v"]
 
     hardwareInstance
         tag
-        pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
+        Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
         UnitEnv
             { sigClk
             , ctrlPorts = Just BrokenPorts{..}
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            T.pack $
-                codeBlock
-                    [qc|
-            { moduleName tag pu } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .IS_BROKEN( { bool2verilog wrongVerilogSimulationValue } )
-                    , .WRONG_ATTR( { bool2verilog wrongAttr } )
-                    , .UNKNOWN_DATA_OUT( { bool2verilog unknownDataOut } )
-                    ) { tag }
-                ( .clk( { sigClk } )
+            [__i|
+                pu_broken \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .IS_BROKEN( #{ bool2verilog wrongVerilogSimulationValue } )
+                        , .WRONG_ATTR( #{ bool2verilog wrongAttr } )
+                        , .UNKNOWN_DATA_OUT( #{ bool2verilog unknownDataOut } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
 
-                , .signal_wr( { wr } )
-                , .data_in( { dataIn } ), .attr_in( { attrIn } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } ), .attr_in( #{ attrIn } )
 
-                , .signal_oe( { oe } )
-                , .data_out( { dataOut } ), .attr_out( { attrOut } )
-                { if brokeVerilog then "WRONG VERILOG" else "" :: String }
-                );
+                    , .signal_oe( #{ oe } )
+                    , .data_out( #{ dataOut } ), .attr_out( #{ attrOut } )
+                    #{ if brokeVerilog then "WRONG VERILOG" else "" :: T.Text }
+                    );
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
@@ -283,5 +277,5 @@ instance (VarValTime v x t) => Testable (Broken v x t) v x where
                             , wr = SignalTag "wr"
                             }
                     , tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
-                        [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal};|]
+                        [i|oe <= #{ bool2verilog oeSignal }; wr <= #{ bool2verilog wrSignal };|]
                     }

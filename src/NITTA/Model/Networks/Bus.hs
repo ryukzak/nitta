@@ -168,7 +168,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
-        Left $ [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
+        Left [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
         where
             rejects = T.intercalate "; " $ map showReject $ M.assocs bnPus
             showReject (tag, pu) | Left err <- tryBind f pu = [i|[#{ toString tag }]: #{ err }"|]
@@ -455,7 +455,7 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
                         , .flag_cycle_end( flag_cycle_end )
                         );
 
-                    #{ vsep $ punctuate "\n\n" $ map pretty instances }
+                    #{ vsep $ punctuate "\n\n" instances }
 
                     assign data_bus = #{ T.intercalate " | " $ map snd valuesRegs };
                     assign attr_bus = #{ T.intercalate " | " $ map fst valuesRegs };
@@ -501,8 +501,7 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
         | let io2v n = [i|, .#{ n }( #{ n } )|]
               is = map (io2v . inputPortTag) $ inputPorts ioPorts
               os = map (io2v . outputPortTag) $ outputPorts ioPorts =
-            doc2text
-                [__i|
+            [__i|
                     #{ tag } \#
                             ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                             , .ATTR_WIDTH( #{ attrWidth (def :: x) } )

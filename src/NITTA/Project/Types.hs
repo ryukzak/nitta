@@ -33,6 +33,7 @@ import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
+import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath, takeDirectory, (</>))
 
@@ -80,7 +81,7 @@ class TargetSystemComponent pu where
     hardware :: T.Text -> pu -> Implementation
 
     -- |Generate code for making an instance of the hardware module
-    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> T.Text
+    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> Verilog
 
 -- |Element of target system implementation
 data Implementation

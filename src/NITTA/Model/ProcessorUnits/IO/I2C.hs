@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -24,14 +25,14 @@ module NITTA.Model.ProcessorUnits.IO.I2C (
 ) where
 
 import Data.Default
+import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.Intermediate.Value
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
 import NITTA.Project
-import NITTA.Utils
-import Text.InterpolatedString.Perl6 (qc)
+import Prettyprinter
 
 data I2Cinterface
 
@@ -102,38 +103,34 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            T.pack $
-                codeBlock
-                    [qc|
-            { module_ ioPorts } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .BOUNCE_FILTER( { show bounceFilter } )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .rst( { sigRst } )
-                , .flag_stop( { stop } )
-                , .signal_cycle( { sigCycleBegin } )
-                , .signal_oe( { oe } )
-                , .signal_wr( { wr } )
-                , .data_in( { dataIn } ), .attr_in( { attrIn } )
-                , .data_out( { dataOut } ), .attr_out( { attrOut } )
-                { extIO ioPorts }
-                );
+            [__i|
+                #{ module_ ioPorts } \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .BOUNCE_FILTER( #{ bounceFilter } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .flag_stop( #{ stop } )
+                    , .signal_cycle( #{ sigCycleBegin } )
+                    , .signal_oe( #{ oe } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } ), .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } ), .attr_out( #{ attrOut } )
+                    #{ nest 4 $ extIO ioPorts }
+                    );
             |]
             where
-                module_ I2CMaster{} = "pu_master_i2c" :: String
+                module_ I2CMaster{} = "pu_master_i2c" :: T.Text
                 module_ I2CSlave{} = "pu_slave_i2c"
                 extIO I2CMaster{..} =
-                    codeBlock
-                        [qc|
-                    , .scl( { masterSCL } )
-                    , .sda( { masterSDA } )
+                    [__i|
+                        , .scl( #{ masterSCL } )
+                        , .sda( #{ masterSDA } )
                     |]
                 extIO I2CSlave{..} =
-                    codeBlock
-                        [qc|
-                    , .scl( { slaveSCL } )
-                    , .sda( { slaveSDA } )
+                    [__i|
+                        , .scl( #{ slaveSCL } )
+                        , .sda( #{ slaveSDA } )
                     |]
     hardwareInstance _title _pu _env = error "internal error"
