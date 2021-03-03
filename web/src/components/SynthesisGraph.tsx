@@ -3,10 +3,10 @@ import { Button } from "react-bootstrap";
 
 import { synthesize, api } from "services/HaskellApiService";
 
-import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext, reLastSID, sidSeparator } from "components/app/AppContext";
+import { SynthesisGraphRender } from "./SynthesisGraphRender";
+import { AppContext, IAppContext, reLastSID, sidSeparator } from "app/AppContext";
 
-export const SynthesisGraphContainer: React.FC = () => {
+export const SynthesisGraph: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const step = 100;
@@ -53,7 +53,7 @@ export const SynthesisGraphContainer: React.FC = () => {
         </span>
       </div>
       <div className="justify-content-center bg-light border" style={{ height: height }}>
-        <SynthesisGraphView />
+        <SynthesisGraphRender />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 832f3957fac5ee7b9e3e76305fc7c1448885e04d57a8c9b2a455ffd474334330
+-- hash: 7b144100a8c4466c6fad1cf74f63bf1b5c203fa5ebfd5dc38dc3714cf6993848
 
 name:           nitta
 version:        0.0.0.1
@@ -146,6 +146,7 @@ library
     , stm
     , string-interpolate
     , text
+    , tostring
     , transformers
     , unordered-containers
     , utility-ht
@@ -177,6 +178,7 @@ executable nitta
     , regex-compat
     , string-interpolate
     , text
+    , tostring
   default-language: Haskell2010
 
 executable nitta-api-gen
@@ -206,6 +208,7 @@ executable nitta-api-gen
     , regex-compat
     , string-interpolate
     , text
+    , tostring
   default-language: Haskell2010
 
 test-suite nitta-test
@@ -264,4 +267,5 @@ test-suite nitta-test
     , tasty-rerun
     , tasty-th
     , text
+    , tostring
   default-language: Haskell2010

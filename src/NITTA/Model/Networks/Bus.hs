@@ -37,6 +37,7 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Typeable
 import NITTA.Intermediate.DataFlow
@@ -55,7 +56,8 @@ import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
-    { -- |List of functions binded to network, but not binded to any process unit.
+    { bnName :: tag
+    , -- |List of functions binded to network, but not binded to any process unit.
       bnRemains :: [F v x]
     , -- |Map process unit name to list of binded functions.
       bnBinded :: M.Map tag [F v x]
@@ -163,11 +165,11 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
-        Left $ "All sub process units reject the functional block: " ++ show f ++ "\n" ++ rejects
+        Left $ "All sub process units reject the functional block: " <> show f <> "\n" <> rejects
         where
             rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-            showReject (tag, pu) | Left err <- tryBind f pu = "    [" ++ show tag ++ "]: " ++ err
-            showReject (tag, _) = "    [" ++ show tag ++ "]: undefined"
+            showReject (tag, pu) | Left err <- tryBind f pu = "    [" <> toString tag <> "]: " <> err
+            showReject (tag, _) = "    [" <> toString tag <> "]: undefined"
 
     process net@BusNetwork{bnProcess, bnPus} =
         let v2transportStepKey =
@@ -228,7 +230,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
         = Transport v tag tag
-        deriving (Typeable, Show)
+        deriving (Typeable)
 
     data Microcode (BusNetwork tag v x t)
         = BusNetworkMC (M.Map SignalTag SignalValue)
@@ -240,6 +242,9 @@ instance Controllable (BusNetwork tag v x t) where
     usedPortTags _ = error "internal error"
 
     takePortTags _ _ = error "internal error"
+
+instance (Show v, ToString tag) => Show (Instruction (BusNetwork tag v x t)) where
+    show (Transport v src trg) = "Transport " <> show v <> " " <> toString src <> " " <> toString trg
 
 instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =
@@ -547,10 +552,9 @@ instance
                         "\\n\\n"
                         [ tbEnv
                         | (t, PU{unit, uEnv}) <- M.assocs bnPus
-                        , let t' = filter (/= '"') $ show t
                         , let tbEnv =
                                 testEnvironment
-                                    t'
+                                    (toString t)
                                     unit
                                     uEnv
                                     TestEnvironment

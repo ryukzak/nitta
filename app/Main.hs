@@ -166,7 +166,7 @@ functionalSimulation n received src = do
 
 putCntx cntx = putStr $ cntx2table cntx
 
-microarch ioSync = defineNetwork ioSync $ do
+microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO
     addCustom "fram2" (framWithSize 32) FramIO
     add "shift" ShiftIO

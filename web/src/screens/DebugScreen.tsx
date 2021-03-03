@@ -2,12 +2,12 @@ import * as React from "react";
 import "react-table/react-table.css";
 
 import { api } from "services/HaskellApiService";
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { JsonView } from "components/pages/node/JsonView";
+import { AppContext, IAppContext } from "app/AppContext";
+import { JsonView } from "components/JsonView";
 
-export interface IDebugViewProps {}
+export interface IDebugScreenProps {}
 
-export const DebugView: React.FC<IDebugViewProps> = (props) => {
+export const DebugScreen: React.FC<IDebugScreenProps> = (props) => {
   const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   const [debugInfo, setDebugInfo] = React.useState<any | null>(null);

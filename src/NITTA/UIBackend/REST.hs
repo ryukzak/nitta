@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -33,7 +34,9 @@ import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
+import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
@@ -128,6 +131,10 @@ type NodeInspectionAPI tag v x t =
                         :> "endpoints"
                         :> Get '[JSON] [(tag, [EndpointSt v (TimeConstrain t)])]
                      )
+                :<|> ( Description "Microarchitecture description"
+                        :> "microarchitecture"
+                        :> Get '[JSON] (MicroarchitectureDesc tag)
+                     )
                 :<|> ("debug" :> DebugAPI tag v t)
            )
 
@@ -138,6 +145,7 @@ nodeInspection ctx@BackendCtx{root} sid =
         :<|> liftIO (view . process . targetUnit <$> getTreeIO root sid)
         :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetUnit <$> getTreeIO root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
+        :<|> liftIO (microarchitectureDesc . targetUnit <$> getTreeIO root sid)
         :<|> debug ctx sid
 
 type SynthesisMethodsAPI tag v x t =
@@ -313,3 +321,11 @@ instance (Time t) => ToSample (Process t StepInfoView) where
                 }
             )
         ]
+
+instance (UnitTag tag) => ToSample (MicroarchitectureDesc tag) where
+    toSamples _ =
+        let bn :: BusNetwork tag String (IntX 32) Int = defineNetwork "net1" Sync $ do
+                addCustom "fram1" (framWithSize 16) FramIO
+                addCustom "fram2" (framWithSize 32) FramIO
+                add "shift" ShiftIO
+         in singleSample $ microarchitectureDesc bn
