@@ -59,7 +59,7 @@ type Verilog = Doc ()
 doc2text :: Verilog -> T.Text
 doc2text = renderStrict . layoutPretty defaultLayoutOptions
 
-comment str = unlines $ map ("// " ++) $ lines str
+comment str = unlines $ map ("// " <>) $ lines str
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'

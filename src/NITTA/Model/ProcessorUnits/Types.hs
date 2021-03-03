@@ -261,7 +261,7 @@ instance
     microcodeAt pu t = case extractInstructionAt pu t of
         [] -> def
         [instr] -> decodeInstruction instr
-        is -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
+        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ process pu }|]
 
 newtype SignalTag = SignalTag {signalTag :: T.Text} deriving (Eq, Ord)
 
