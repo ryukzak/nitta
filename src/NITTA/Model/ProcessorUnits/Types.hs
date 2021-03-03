@@ -132,14 +132,13 @@ instance (Time t, Show i) => Show (Process t i) where
                 relations =
                     #{ nest 8 $ listShow $ relations p }
                 nextTick  = #{ nextTick p }
-                nextUid   = #{ nextUid p }
+                nextUid   = #{ nextUid p }\n
         |]
         where
             listShow lst =
-                pretty $
-                    T.unlines $
-                        map (\(ix, value) -> [i|#{ ix }) #{ value }|]) $
-                            zip [0 :: Int ..] lst
+                vsep $
+                    map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
+                        zip [0 :: Int ..] lst
 
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
