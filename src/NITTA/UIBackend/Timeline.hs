@@ -29,6 +29,7 @@ module NITTA.UIBackend.Timeline (
 import Data.Aeson
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
@@ -103,7 +104,7 @@ viewpoint EndpointRoleStep{} = ViewPointID{level = "EndPoint", component = []}
 viewpoint InstructionStep{} = ViewPointID{level = "INST", component = []}
 viewpoint NestedStep{nTitle, nStep = Step{pDesc}} =
     let ViewPointID{level, component} = viewpoint pDesc
-     in ViewPointID{level, component = S.replace "\"" "" (show nTitle) : component}
+     in ViewPointID{level, component = toString nTitle : component}
 
 appendToViews views step =
     M.alter
@@ -133,7 +134,7 @@ timeline a b steps = map findSteps [a .. b]
                 { pID = pID
                 , pTime = pInterval
                 , pInfo = S.replace "\"" "" $ case pDesc of
-                    NestedStep{nTitle, nStep = Step{pDesc = subDesc}} -> show nTitle ++ " do " ++ show subDesc
+                    NestedStep{nTitle, nStep = Step{pDesc = subDesc}} -> toString nTitle ++ " do " ++ show subDesc
                     _ -> show pDesc
                 }
 

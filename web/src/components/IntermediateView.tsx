@@ -3,12 +3,12 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { GraphNode, GraphEdge } from "gen/types";
+import { AppContext, IAppContext } from "app/AppContext";
+import { GraphNode, GraphEdge } from "services/gen/types";
 import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 import { PUEndpoints, Endpoint, EndpointDecision } from "services/HaskellApiService";
 
-import "./IntermediateView.scss";
+import "components/Graphviz.scss";
 
 /**
  * Component to display algorithm graph.

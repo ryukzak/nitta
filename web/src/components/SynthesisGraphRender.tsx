@@ -3,7 +3,7 @@ import * as React from "react";
 import Tree from "react-d3-tree";
 
 import { SynthesisTree, api } from "services/HaskellApiService";
-import { AppContext, IAppContext, SID, reLastSID, sidSeparator } from "components/app/AppContext";
+import { AppContext, IAppContext, SID, reLastSID, sidSeparator } from "app/AppContext";
 
 interface SID2Node {
   // SID -> Tree
@@ -24,7 +24,7 @@ interface GraphAttributes {
   [key: string]: any;
 }
 
-export const SynthesisGraphView: React.FC = () => {
+export const SynthesisGraphRender: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const [dataGraph, setDataGraph] = React.useState<Tree[]>([] as Tree[]);

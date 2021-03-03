@@ -58,6 +58,7 @@ dependencies:
   - interpolatedstring-perl6
   - regex-compat
   - text
+  - tostring
 
 
 library:

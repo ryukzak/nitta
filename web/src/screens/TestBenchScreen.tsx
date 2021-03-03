@@ -3,10 +3,10 @@ import { AxiosResponse, AxiosError } from "axios";
 
 import { api, TestBenchReport } from "services/HaskellApiService";
 
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { SimulationDataView } from "./SimulationDataView";
+import { AppContext, IAppContext } from "app/AppContext";
+import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
 
-export const TestBenchPage: React.FC = () => {
+export const TestBenchScreen: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
@@ -66,7 +66,7 @@ export const TestBenchPage: React.FC = () => {
       </pre>
       <hr />
       <h3>Simulation data:</h3>
-      <SimulationDataView
+      <TestBenchSimulationLog
         functional={testBenchDump!.tbFunctionalSimulationCntx}
         logical={testBenchDump!.tbLogicalSimulationCntx}
       />

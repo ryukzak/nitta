@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -23,10 +24,12 @@ module NITTA.Model.Networks.Types (
     puInOutPorts,
 ) where
 
+import Data.Aeson
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Typeable
+import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -161,7 +164,9 @@ data IOSynchronization
       ASync
     | -- |defined by onboard signal (sync - false, async - true)
       OnBoard
-    deriving (Show, Read, Typeable)
+    deriving (Show, Read, Typeable, Generic)
+
+instance ToJSON IOSynchronization
 
 puInputPorts PU{uEnv} = envInputPorts uEnv
 puOutputPorts PU{uEnv} = envOutputPorts uEnv

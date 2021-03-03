@@ -28,6 +28,8 @@ import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import qualified Data.String.Utils as S
 import Data.Version
+import NITTA.Model.Microarchitecture
+import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
@@ -57,7 +59,7 @@ data APIGen = APIGen
 apiGenArgs =
     APIGen
         { port = 8080 &= help "NITTA UI Backend will start on this port"
-        , output_path = "./web/src/gen" &= help "Place the output into specified directory (default: ./web/src/gen)"
+        , output_path = "./web/src/services/gen" &= help "Place the output into specified directory (default: ./web/src/services/gen)"
         , verbose = False &= help "Verbose"
         }
         &= program "nitta-api-gen"
@@ -90,6 +92,12 @@ $(deriveTypeScript defaultOptions ''GraphStructure)
 
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
+
+-- Microarchitecture
+$(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
+$(deriveTypeScript defaultOptions ''NetworkDesc)
+$(deriveTypeScript defaultOptions ''UnitDesc)
+$(deriveTypeScript defaultOptions ''IOSynchronization)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
@@ -143,6 +151,11 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
+                    , -- Microarchitecture
+                      getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy NetworkDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy UnitDesc)
+                    , getTypeScriptDeclarations (Proxy :: Proxy IOSynchronization)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl

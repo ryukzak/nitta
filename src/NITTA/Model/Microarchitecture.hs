@@ -1,7 +1,8 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -17,12 +18,21 @@ module NITTA.Model.Microarchitecture (
     defineNetwork,
     add,
     addCustom,
+    MicroarchitectureDesc (..),
+    NetworkDesc (..),
+    UnitDesc (..),
+    microarchitectureDesc,
 ) where
 
 import Control.Monad.State.Lazy
+import Data.Aeson
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
+import Data.String.ToString
+import qualified Data.Text as T
+import Data.Typeable
+import GHC.Generics
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
@@ -36,7 +46,7 @@ data BuilderSt tag v x t = BuilderSt
     }
 
 -- |Define microarchitecture with BusNetwork
-defineNetwork ioSync builder =
+defineNetwork bnName ioSync builder =
     let netEnv0 =
             UnitEnv
                 { sigClk = "clk"
@@ -49,7 +59,6 @@ defineNetwork ioSync builder =
                 , valueIn = Nothing
                 , valueOut = Nothing
                 }
-
         st0 =
             BuilderSt
                 { signalBusWidth = 0
@@ -65,7 +74,8 @@ defineNetwork ioSync builder =
                 , extInOuts = L.nub $ concatMap (puInOutPorts . snd) puProtos
                 }
      in BusNetwork
-            { bnRemains = []
+            { bnName
+            , bnRemains = []
             , bnBinded = M.empty
             , bnProcess = def
             , bnPus = M.fromList puProtos
@@ -89,7 +99,7 @@ addCustom tag pu ioports = do
                     { ctrlPorts = Just ports
                     , ioPorts = Just ioports
                     , valueIn = Just ("data_bus", "attr_bus")
-                    , valueOut = Just (tag <> "_data_out", tag <> "_attr_out")
+                    , valueOut = Just (toString tag <> "_data_out", toString tag <> "_attr_out")
                     }
         usedPorts = usedPortTags ports
     put
@@ -98,3 +108,49 @@ addCustom tag pu ioports = do
             , availPorts = drop (length usedPorts) availPorts
             , puProtos = (tag, pu') : puProtos
             }
+
+data MicroarchitectureDesc tag = MicroarchitectureDesc
+    { networks :: [NetworkDesc tag]
+    , ioSyncMode :: IOSynchronization
+    }
+    deriving (Generic)
+
+instance (ToJSON tag) => ToJSON (MicroarchitectureDesc tag)
+
+data NetworkDesc tag = NetworkDesc
+    { networkTag :: tag
+    , valueType :: T.Text
+    , units :: [UnitDesc tag]
+    }
+    deriving (Generic)
+
+instance (ToJSON tag) => ToJSON (NetworkDesc tag)
+
+data UnitDesc tag = UnitDesc
+    { unitTag :: tag
+    , unitType :: T.Text
+    }
+    deriving (Generic)
+
+instance (ToJSON tag) => ToJSON (UnitDesc tag)
+
+microarchitectureDesc :: forall tag v x t. (Typeable x) => BusNetwork tag v x t -> MicroarchitectureDesc tag
+microarchitectureDesc BusNetwork{bnName, bnPus, ioSync} =
+    MicroarchitectureDesc
+        { networks =
+            [ NetworkDesc
+                { networkTag = bnName
+                , valueType = T.pack $ show $ typeRep (Proxy :: Proxy x)
+                , units =
+                    map
+                        ( \(tag, PU{unit}) ->
+                            UnitDesc
+                                { unitTag = tag
+                                , unitType = T.pack $ takeWhile (' ' /=) $ show $ typeOf unit
+                                }
+                        )
+                        $ M.assocs bnPus
+                }
+            ]
+        , ioSyncMode = ioSync
+        }

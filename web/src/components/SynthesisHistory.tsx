@@ -2,17 +2,16 @@ import { AxiosResponse, AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 
-import { SID } from "components/app/AppContext.js";
+import { SID, AppContext, IAppContext } from "app/AppContext";
 import { api, Node, Bind } from "services/HaskellApiService";
-import { AppContext, IAppContext } from "components/app/AppContext";
 
 type Row = { original: Node; index: number };
 
-export interface ISynthesisHistoryViewProps {
+export interface ISynthesisHistoryProps {
   reverse: boolean;
 }
 
-export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props) => {
+export const SynthesisHistory: React.FC<ISynthesisHistoryProps> = (props) => {
   const appContext = useContext(AppContext) as IAppContext;
   const [synthesisHistory, setHistory] = useState<Node[]>();
   const style = {
