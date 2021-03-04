@@ -76,7 +76,7 @@ test_lua_two_name_for_same_constant =
                         return ()
                     )
                     (\(_ :: ErrorCall) -> assertFailure "fail")
-                assertBool "check temporal restriction" $ True
+                assertBool "check temporal restriction" True
         ]
 
 test_simple_recursion =
