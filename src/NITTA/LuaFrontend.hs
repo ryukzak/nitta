@@ -240,6 +240,30 @@ processStatement _fn (LocalAssign _names Nothing) =
     return ()
 processStatement fn (LocalAssign names (Just rexp)) =
     processStatement fn $ Assign (map VarName names) rexp
+processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
+    processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
+processStatement _fn (Assign lexps@[_] [n@(Number _ textX)]) = do
+    let outs@[name] = parseLeftExp lexps
+    diff <- renameVarsIfNeeded outs
+    AlgBuilder{algItems} <- get
+    case findConstant textX algItems of
+        Just Constant{cVar} ->
+            -- TODO: sould work correctly, see test test_lua_two_name_for_same_constant
+            error $
+                concat
+                    [ "using several names for one constant value ("
+                    , show cVar
+                    , " and "
+                    , show name
+                    , "), please, use only one name (temporal restriction)"
+                    ]
+        Nothing -> do
+            -- `expConstant` return a wrong name, the correct name will be established
+            -- after all statement was processed
+            void $ expConstant name n
+            flushBuffer diff []
+        _ -> error "internal error"
+
 -- e.g. @n, d = a / b@, or @n, d = f()@
 processStatement _fn (Assign lexps [rexp])
     | length lexps > 1 = do
@@ -350,9 +374,11 @@ expArg diff (Unop Neg expr@(PrefixExp _)) = do
 expArg _diff a = error $ "expArg: " ++ show a
 -- *Internal
 
+findConstant textX = find (\case Constant{cTextX} | cTextX == textX -> True; _ -> False)
+
 expConstant name (Number _ textX) = do
     AlgBuilder{algItems} <- get
-    case find (\case Constant{cTextX} | cTextX == textX -> True; _ -> False) algItems of
+    case findConstant textX algItems of
         Just Constant{cVar} -> return cVar
         Nothing -> do
             addItem
