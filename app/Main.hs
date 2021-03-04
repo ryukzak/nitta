@@ -42,7 +42,7 @@ import NITTA.UIBackend
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix
 import System.IO (stdout)
 import System.Log.Formatter
 import System.Log.Handler (setFormatter)
@@ -102,10 +102,12 @@ main = do
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
             when (port > 0) $ do
-                buf <- try $ readFile $ joinPath ["web", "src", "gen", "PORT"]
-                let expect = case buf of
-                        Right p -> readMaybe p
-                        Left (_ :: IOError) -> Nothing
+                bufE <- try $ readFile (apiPath </> "PORT")
+                let expect = case bufE of
+                        Right buf -> case readEither buf of
+                            Right p -> p
+                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
                 warningIfUnexpectedPort expect port
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
@@ -176,7 +178,7 @@ microarch ioSync = defineNetwork "net1" ioSync $ do
             }
 
 warningIfUnexpectedPort expect port =
-    when (expect /= Just port) $
+    when (expect /= port) $
         warningM "NITTA.UI" $
             concat
                 [ "WARNING: expected backend port: "

@@ -1,7 +1,7 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { SID, IAppContext } from "app/AppContext";
 
-import jsAPI from "services/gen/rest_api.js";
+import jsAPI from "services/gen/rest_api";
 import {
   TreeView,
   ShortNodeView,

@@ -59,7 +59,7 @@ data APIGen = APIGen
 apiGenArgs =
     APIGen
         { port = 8080 &= help "NITTA UI Backend will start on this port"
-        , output_path = "./web/src/services/gen" &= help "Place the output into specified directory (default: ./web/src/services/gen)"
+        , output_path = apiPath &= help ("Place the output into specified directory (default: " <> apiPath <> ")")
         , verbose = False &= help "Verbose"
         }
         &= program "nitta-api-gen"
@@ -117,11 +117,11 @@ main = do
     infoM "NITTA.APIGen" $ "Expected nitta server port: " <> show port
     writeFile (joinPath [output_path, "PORT"]) $ show port
 
-    infoM "NITTA.APIGen" "Generate rest_api.js library..."
+    infoM "NITTA.APIGen" $ "Generate call library " <> output_path <> "/rest_api.js..."
     prepareJSAPI port output_path
-    infoM "NITTA.APIGen" "Generate rest_api.js library...OK"
+    infoM "NITTA.APIGen" $ "Generate call library " <> output_path <> "/rest_api.js...OK"
 
-    infoM "NITTA.APIGen" "Generate typescript interface..."
+    infoM "NITTA.APIGen" $ "Generate typescript interface " <> output_path <> "/types.ts..."
     let ts =
             formatTSDeclarations $
                 foldl1
@@ -166,8 +166,8 @@ main = do
             , ("[k: T1]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
             , ("[k: T2]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
             ]
-    infoM "NITTA.APIGen" "Generate typescript interface...OK"
+    infoM "NITTA.APIGen" $ "Generate typescript interface " <> output_path <> "/types.ts...OK"
 
-    infoM "NITTA.APIGen" "Generate REST API description..."
+    infoM "NITTA.APIGen" $ "Generate REST API description " <> output_path <> "/rest_api.markdown..."
     writeFile (joinPath [output_path, "rest_api.markdown"]) $ restDocs port
-    infoM "NITTA.APIGen" "Generate REST API description...ok"
+    infoM "NITTA.APIGen" $ "Generate REST API description " <> output_path <> "/rest_api.markdown...ok"

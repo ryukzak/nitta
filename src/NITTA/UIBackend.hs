@@ -20,6 +20,7 @@ module NITTA.UIBackend (
     backendServer,
     prepareJSAPI,
     restDocs,
+    apiPath,
 ) where
 
 import Control.Exception (SomeException, try)
@@ -37,6 +38,8 @@ import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
 import System.Log.Logger
 import Text.InterpolatedString.Perl6 (qq)
+
+apiPath = joinPath [".", "web", "src", "services", "gen"]
 
 restDocs port =
     markdown $
