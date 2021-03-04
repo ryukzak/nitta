@@ -139,7 +139,7 @@ data AlgBuilder x = AlgBuilder
 instance (Show x) => Show (AlgBuilder x) where
     show AlgBuilder{algItems, algBuffer, algVars} =
         "AlgBuilder\n{ algItems=\n"
-            ++ S.join "\n" (map show $ reverse algItems)
+            ++ S.join "\n" (map (("    " <>) . show) $ reverse algItems)
             ++ "\nalgBuffer: "
             ++ show algBuffer
             ++ "\nalgVars: "
@@ -196,7 +196,7 @@ input v = do
 output v
     | T.head v == '_' = return []
     | otherwise = gets $ \(dict, _fs) ->
-        snd (fromMaybe (error $ "unknown variable: " ++ show v) (dict M.!? v))
+        snd (fromMaybe (error $ "unknown variable: " <> show v <> " defined: " <> show (M.keys dict)) (dict M.!? v))
 
 store f = modify'_ $ second (f :)
 -- *AST inspection and algorithm builder
