@@ -318,9 +318,8 @@ rightExp
 rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
     =
     addItemToBuffer Alias{aFrom = a, aTo = applyPatch diff b}
-rightExp diff out (PrefixExp (Paren e)) -- a = (...)
-    =
-    rightExp diff out e
+-- a = (...)
+rightExp diff out (PrefixExp (Paren e)) = rightExp diff out e
 rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [n]))))
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
@@ -329,7 +328,9 @@ rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
      in rightExp diff [a] binop
 rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
-expArg _diff n@(Number _ _) = expConstant "@const" n
+expArg _diff n@(Number _ n') = expConstant (n' <> "@const") n
+expArg _diff (Unop Neg (Number numType n)) =
+    let n' = "-" <> n in expConstant (n' <> "@const") $ Number numType n'
 expArg _diff (String s) = return s
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 expArg diff call@(PrefixExp (PEFunCall _)) = do
@@ -341,7 +342,6 @@ expArg diff binop@Binop{} = do
     c <- genVar "tmp"
     rightExp diff [c] binop
     return c
-expArg _diff (Unop Neg (Number numType n)) = expConstant "@const" $ Number numType $ T.cons '-' n
 expArg diff (Unop Neg expr@(PrefixExp _)) = do
     c <- genVar "tmp"
     let binop = Binop Sub (Number IntNum "0") expr
@@ -350,35 +350,19 @@ expArg diff (Unop Neg expr@(PrefixExp _)) = do
 expArg _diff a = error $ "expArg: " ++ show a
 -- *Internal
 
-expConstant suffix (Number _ textX) = do
+expConstant name (Number _ textX) = do
     AlgBuilder{algItems} <- get
     case find (\case Constant{cTextX} | cTextX == textX -> True; _ -> False) algItems of
         Just Constant{cVar} -> return cVar
         Nothing -> do
-            let cVar = T.concat [textX, suffix]
             addItem
                 Constant
                     { cX = read $ unpack textX
-                    , cVar
+                    , cVar = name
                     , cTextX = textX
                     }
                 []
-            return cVar
-        Just _ -> error "internal error"
-expConstant suffix (String textX) = do
-    AlgBuilder{algItems} <- get
-    case find (\case Constant{cTextX} | cTextX == textX -> True; _ -> False) algItems of
-        Just Constant{cVar} -> return cVar
-        Nothing -> do
-            let cVar = T.concat [pack "_", textX, suffix]
-            addItem
-                Constant
-                    { cX = 0
-                    , cVar
-                    , cTextX = textX
-                    }
-                []
-            return cVar
+            return name
         Just _ -> error "internal error"
 expConstant _ _ = undefined
 
