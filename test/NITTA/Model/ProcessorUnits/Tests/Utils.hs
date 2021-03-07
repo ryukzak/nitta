@@ -74,16 +74,20 @@ puCoSimTestCase name u cntxCycle alg =
     testCase name $ do
         wd <- getCurrentDirectory
         let mname = toModuleName name
-            pPath = joinPath [wd, "gen", mname]
+            pTargetProjectPath = joinPath [wd, "gen", mname]
             prj =
                 Project
                     { pName = mname
                     , pLibPath = "hdl"
-                    , pPath
+                    , pTargetProjectPath
+                    , pNittaPath = "."
                     , pUnit = naiveSynthesis alg u
+                    , pUnitEnv = def
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                    , pTemplates = ["templates/Icarus"]
                     }
-        (tbStatus <$> writeAndRunTestbench prj) @? (name <> " in " <> pPath)
+        writeProject prj
+        (tbStatus <$> runTestbench prj) @? (name <> " in " <> pTargetProjectPath)
 
 {- |Bind all functions to processor unit and synthesis process with endpoint
 decisions.
@@ -151,17 +155,21 @@ puCoSimProp name pu0 fsGen =
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
-                    let pPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
-                    res <-
-                        writeAndRunTestbench
+                    let pTargetProjectPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
+                        prj =
                             Project
                                 { pName = toModuleName name
                                 , pLibPath = "hdl"
-                                , pPath
+                                , pTargetProjectPath
+                                , pNittaPath = "."
                                 , pUnit = pu
+                                , pUnitEnv = def
                                 , pTestCntx
+                                , pTemplates = ["templates/Icarus"]
                                 }
-                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
+                    writeProject prj
+                    res <- runTestbench prj
+                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pTargetProjectPath
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
     where

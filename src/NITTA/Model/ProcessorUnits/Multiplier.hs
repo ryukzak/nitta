@@ -144,10 +144,10 @@ repl` command from the project directory. After that:
 [15 of 30] Compiling NITTA.Utils.CodeFormat ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils/CodeFormat.hs, interpreted )
 [16 of 30] Compiling NITTA.Model.ProcessorUnits.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsTypes.hs, interpreted )
 [17 of 30] Compiling NITTA.Utils      ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils.hs, interpreted )
-[18 of 30] Compiling NITTA.Project.Snippets ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Snippets.hs, interpreted )
+[18 of 30] Compiling NITTA.Project.VerilogSnippets ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Snippets.hs, interpreted )
 [19 of 30] Compiling NITTA.Project.Implementation ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Implementation.hs, interpreted )
 [20 of 30] Compiling NITTA.Project.Parts.Utils ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsUtils.hs, interpreted )
-[21 of 30] Compiling NITTA.Project.Parts.TestBench ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsTestBench.hs, interpreted )
+[21 of 30] Compiling NITTA.Project.TestBench ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsTestBench.hs, interpreted )
 [22 of 30] Compiling NITTA.Project.Parts.TargetSystem ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsTargetSystem.hs, interpreted )
 [23 of 30] Compiling NITTA.Project.Parts.Icarus ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsIcarus.hs, interpreted )
 [24 of 30] Compiling NITTA.Model.Networks.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelNetworksTypes.hs, interpreted )
@@ -689,7 +689,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-{- |Empty implementation of 'NITTA.Project.Parts.TestBench.IOTestBench' class
+{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
 means that multiplier, as expected, doesn't have any IO.
 -}
 instance IOTestBench (Multiplier v x t) v x
@@ -713,9 +713,9 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                       -- registers with the same names.
                       tbcSignals = ["oe", "wr", "wrSel"]
                     , -- A processor unit connects to the environment by signal
-                      -- lines. In 'NITTA.Project.Parts.TestBench.tbcPorts'
+                      -- lines. In 'NITTA.Project.TestBench.tbcPorts'
                       -- describes IDs signal lines of testbench. In
-                      -- 'NITTA.Project.Parts.TestBench.tbcSignalConnect' how
+                      -- 'NITTA.Project.TestBench.tbcSignalConnect' how
                       -- abstract numbers are translate to source code.
                       tbcPorts =
                         MultiplierPorts
@@ -723,7 +723,6 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                             , wr = SignalTag "wr"
                             , wrSel = SignalTag "wrSel"
                             }
-                    , tbcIOPorts = MultiplierIO
                     , -- Map microcode to registers in the testbench.
                       tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]

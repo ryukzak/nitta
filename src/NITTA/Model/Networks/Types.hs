@@ -34,8 +34,8 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
-import NITTA.Project.Implementation
-import NITTA.Project.Parts.TestBench
+import NITTA.Project.TestBench
+import NITTA.Project.Types
 
 type PUClasses pu v x t =
     ( ByTime pu t

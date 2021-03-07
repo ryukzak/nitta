@@ -5,14 +5,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 {- |
-Module      : NITTA.Project.Snippets
+Module      : NITTA.Project.VerilogSnippets
 Description : Snippets for Verilog code-generation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Project.Snippets (
+module NITTA.Project.VerilogSnippets (
     snippetClkGen,
     snippetDumpFile,
 ) where

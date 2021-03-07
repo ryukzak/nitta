@@ -55,8 +55,11 @@ dependencies:
   - containers
   - data-default
   - filepath
+  - ginger
+  - htoml
   - interpolatedstring-perl6
   - regex-compat
+  - string-interpolate
   - text
   - tostring
 

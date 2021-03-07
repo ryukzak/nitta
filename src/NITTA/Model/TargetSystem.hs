@@ -25,16 +25,14 @@ import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
-import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Types
 import NITTA.Utils
 
 {- |Model of target unit, which is a main subject of synthesis process and
 synthesis graph.
 -}
-data TargetSystem u v x = TargetSystem
+data TargetSystem u tag v x t = TargetSystem
     { -- |model of target unit
       mUnit :: u
     , -- |whole application algorithm
@@ -42,7 +40,7 @@ data TargetSystem u v x = TargetSystem
     }
     deriving (Generic)
 
-instance WithFunctions (TargetSystem (BusNetwork tag v x t) v x) (F v x) where
+instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (F v x) where
     functions TargetSystem{mUnit, mDataFlowGraph} =
         assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) $ -- inconsistent TargetSystem
             functions mUnit
@@ -52,21 +50,24 @@ processDuration TargetSystem{mUnit} = nextTick $ process mUnit
 {- |Synthesis process is finish when all variable from data flow are
 transferred.
 -}
-isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u v x -> Bool
+isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
 isSynthesisFinish TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
 
-instance (UnitTag tag, VarValTime v x t) => BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x where
+instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
 
     bindDecision f@TargetSystem{mUnit} d = f{mUnit = bindDecision mUnit d}
 
-instance (UnitTag tag, VarValTime v x t) => DataflowProblem (TargetSystem (BusNetwork tag v x t) v x) tag v t where
+instance (DataflowProblem u tag v t) => DataflowProblem (TargetSystem u tag v x t) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit
 
     dataflowDecision f@TargetSystem{mUnit} d = f{mUnit = dataflowDecision mUnit d}
 
-instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance
+    (Var v, Val x, BreakLoopProblem u v x) =>
+    BreakLoopProblem (TargetSystem u tag v x t) v x
+    where
     breakLoopOptions TargetSystem{mUnit} = breakLoopOptions mUnit
 
     breakLoopDecision TargetSystem{mUnit, mDataFlowGraph} d =
@@ -75,7 +76,10 @@ instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (TargetSystem (BusN
             , mUnit = breakLoopDecision mUnit d
             }
 
-instance (VarValTime v x t) => OptimizeAccumProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance
+    (Var v, Val x, OptimizeAccumProblem u v x) =>
+    OptimizeAccumProblem (TargetSystem u tag v x t) v x
+    where
     optimizeAccumOptions TargetSystem{mUnit} = optimizeAccumOptions mUnit
 
     optimizeAccumDecision TargetSystem{mUnit, mDataFlowGraph} d =
@@ -84,7 +88,10 @@ instance (VarValTime v x t) => OptimizeAccumProblem (TargetSystem (BusNetwork ta
             , mUnit = optimizeAccumDecision mUnit d
             }
 
-instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance
+    (Var v, ResolveDeadlockProblem u v x) =>
+    ResolveDeadlockProblem (TargetSystem u tag v x t) v x
+    where
     resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit
 
     resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =

@@ -62,11 +62,11 @@ instance IOConnected (I2C v x t) where
             }
         deriving (Show)
 
-    inputPorts I2CMaster{..} = []
+    inputPorts I2CMaster{} = []
     inputPorts I2CSlave{..} = [slaveSCL]
 
     outputPorts I2CMaster{..} = [masterSCL]
-    outputPorts I2CSlave{..} = []
+    outputPorts I2CSlave{} = []
 
     inoutPorts I2CMaster{..} = [masterSDA]
     inoutPorts I2CSlave{..} = [slaveSDA]

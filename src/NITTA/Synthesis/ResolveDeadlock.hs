@@ -44,8 +44,8 @@ instance ToJSON ResolveDeadlockMetrics
 instance
     (UnitTag tag, VarValTime v x t) =>
     SynthesisDecisionCls
-        (SynthesisState (TargetSystem (BusNetwork tag v x t) v x) tag v x t)
-        (TargetSystem (BusNetwork tag v x t) v x)
+        (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t)
         (ResolveDeadlock v x)
         (ResolveDeadlock v x)
         ResolveDeadlockMetrics

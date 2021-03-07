@@ -35,11 +35,11 @@ Model of a processor unit includes the following things:
   from "NITTA.Project.Implementation");
 
 - how to test process unit (see 'Testable' from
-  "NITTA.Project.Parts.TestBench");
+  "NITTA.Project.TestBench");
 
 - IO signals and how to test IO if applicable (see 'IOConnected' from
   'NITTA.Model.ProcessorUnits.Time' and 'IOTestBench' from
-  "NITTA.Project.Parts.TestBench");
+  "NITTA.Project.TestBench");
 
 - and some technical stuff for it.
 

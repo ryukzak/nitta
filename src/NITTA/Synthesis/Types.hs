@@ -35,7 +35,7 @@ module NITTA.Synthesis.Types (
     DefTree,
     SynthesisMethod,
     (<?>),
-    targetModel,
+    targetUnit,
     targetDFG,
 ) where
 
@@ -60,7 +60,7 @@ import Servant
 
 -- |Default synthesis tree type.
 type DefTree tag v x t =
-    Tree (TargetSystem (BusNetwork tag v x t) v x) tag v x t
+    Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 
 {- |The synthesis method is a function, which manipulates a synthesis tree. It
 receives a node and explores it deeply by IO.
@@ -116,8 +116,8 @@ data Tree m tag v x t = Tree
       sSubForestVar :: TMVar [Tree m tag v x t]
     }
 
-targetModel = mUnit . sTarget . sState
-targetDFG = mUnit . sTarget . sState
+targetUnit = mUnit . sTarget . sState
+targetDFG = mDataFlowGraph . sTarget . sState
 
 data SynthesisDecision ctx m where
     Root :: SynthesisDecision ctx m

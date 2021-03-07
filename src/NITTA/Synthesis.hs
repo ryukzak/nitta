@@ -32,7 +32,7 @@ NITTA.Synthesis:TargetSynthesis                                                 
     # tReceivedValues                                                             |                   |   Model   |
     # tVerbose                                                                    |                   \-----------/
     # tSynthesisMethod ----------------------------------\                        |
-    # tWriteProject                                      |                        |
+                                                         |                        |
                                                          |                        |
 ===================================================================================================================
                                                          |                        |               Synthesis process
@@ -60,19 +60,18 @@ NITTA.Synthesis:TargetSynthesis                                                 
 NITTA.Project.Types:Project            |        |                                                 NITTA.Project....
  |      # pName <--------- $tName      |        |
  |      # pLibPath                     |        +<----- $tReceivedValues
- |      # pPath                        |        |
+ |      # pTargetProjectPath           |        |
  |      # pModel<----------------------/        *<----- functional simulation (FIXME)
  |                                              |
  |      # pTestCntx <---------------------------/
  |
  |
- *<---------- $tWriteProject by ProjectPart pt m
+ *<---------- $writeProject
  |                # TargetSystem
  |                    # hardware
  |                    # software
- |                # QuartusProject
  |                # TestBench
- |                # IcarusMakefile
+ |                # Templates
  |
  \---> filesystem
 @
@@ -97,11 +96,11 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
-import NITTA.Model.Networks.Bus (BusNetwork)
+import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), runTestbench, writeWholeProject)
+import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
@@ -128,12 +127,11 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tReceivedValues :: [(v, [x])]
     , -- |synthesis method
       tSynthesisMethod :: SynthesisMethod tag v x t
-    , -- |project writer, which defines necessary project part
-      tWriteProject :: Project (BusNetwork tag v x t) v x -> IO ()
     , -- |IP-core library directory
       tLibPath :: String
     , -- |output directory, where CAD create project directory with 'tName' name
       tPath :: String
+    , tTemplates :: [FilePath]
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
     }
@@ -147,8 +145,8 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tDFG = undefined
             , tReceivedValues = def
             , tSynthesisMethod = stateOfTheArtSynthesisIO
-            , tWriteProject = writeWholeProject
             , tLibPath = "hdl"
+            , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
             }
@@ -165,9 +163,9 @@ synthesizeTargetSystem
         , tDFG
         , tReceivedValues
         , tSynthesisMethod
-        , tWriteProject
         , tLibPath
         , tPath
+        , tTemplates
         , tSimulationCycleN
         } = do
         -- TODO: check that tName is a valid verilog module name
@@ -177,7 +175,7 @@ synthesizeTargetSystem
         synthesise root >>= \case
             Left err -> return $ Left err
             Right leafNode -> do
-                Right <$> writeProject leafNode
+                Right <$> writeProject' leafNode
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
@@ -195,18 +193,22 @@ synthesizeTargetSystem
                         then Right leaf
                         else Left "synthesis process...fail"
 
-            writeProject leaf = do
+            writeProject' leaf = do
+                nittaPath <- either error id <$> collectNittaPath tTemplates
                 let prj =
                         Project
                             { pName = tName
                             , pLibPath = tLibPath
-                            , pPath = joinPath [tPath, tName]
-                            , pUnit = targetModel leaf
+                            , pTargetProjectPath = joinPath [tPath, tName]
+                            , pNittaPath = nittaPath
+                            , pUnit = targetUnit leaf
+                            , pUnitEnv = bnEnv $ targetUnit leaf
                             , -- because application algorithm can be refactored we need to use
                               -- synthesised version
                               pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf
+                            , pTemplates = tTemplates
                             }
-                tWriteProject prj
+                writeProject prj
                 return prj
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All

@@ -9,19 +9,19 @@ module nitta
   , output miso
   , input sclk
   , input cs
-  
+
   , output mosi_lg
   , output miso_lg
   , output sclk_lg
   , output cs_lg
-  
-  ); 
-  
+
+  );
+
 assign mosi_lg = mosi;
 assign miso_lg = miso;
 assign sclk_lg = sclk;
 assign cs_lg = cs;
- 
+
 wire clk_200MHz, clk_5kHz, clk_1Hz;
 
 wire rst           = dips[3];
@@ -40,7 +40,7 @@ reg [ 15:0 ] counter;
 always @( posedge clk_5kHz )
   if ( rst || counter >= 5000 ) counter <= 0;
   else                          counter <= counter + 1;
-  
+
 assign clk_1Hz = counter <= 2500;
 
 wire [7:0] debug_status, debug_bus1, debug_bus2;
@@ -51,6 +51,6 @@ assign leds = show_bus_7_0 ? debug_bus1
 
 wire clk = boost ? clk_200MHz : clk_1Hz;
 
-$top_level_module$
-               
+{{ nitta.instance }}
+
 endmodule

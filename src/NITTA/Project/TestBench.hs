@@ -8,23 +8,22 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
-Module      : NITTA.Project.Parts.TestBench
+Module      : NITTA.Project.TestBench
 Description : Generation a test bench for the target system.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Project.Parts.TestBench (
-    TestBench (..),
-    TestEnvironment (..),
+module NITTA.Project.TestBench (
     Testable (..),
     IOTestBench (..),
+    TestEnvironment (..),
     TestbenchReport (..),
     testBenchTopModuleName,
     projectFiles,
-    snippetTestBench,
     SnippetTestBenchConf (..),
+    snippetTestBench,
 ) where
 
 import Data.Default
@@ -37,25 +36,11 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
-import NITTA.Project.Implementation
-import NITTA.Project.Parts.Utils
-import NITTA.Project.Snippets
 import NITTA.Project.Types
+import NITTA.Project.VerilogSnippets
 import NITTA.Utils
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix (joinPath, (</>))
 import Text.InterpolatedString.Perl6 (qc)
-
-data TestBench = TestBench
-
-instance
-    ( Testable (m v x t) v x
-    ) =>
-    ProjectPart TestBench (Project (m v x t) v x)
-    where
-    writePart TestBench prj@Project{pPath} = do
-        createDirectoryIfMissing True pPath
-        writeImplementation pPath $ testBenchImplementation prj
 
 -- |Type class for all testable parts of a target system.
 class Testable m v x | m -> v x where
@@ -119,9 +104,15 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
             where
                 showLst = unlines . map ("    " ++)
 
+-- |Get name of testbench top module.
+testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
+
 -- |Generate list of project verilog files (including testbench).
-projectFiles prj@Project{pName, pUnit} =
-    L.nub $ concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
+projectFiles prj@Project{pName, pUnit, pNittaPath} =
+    map
+        (pNittaPath </>)
+        $ L.nub $
+            concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
@@ -129,14 +120,10 @@ projectFiles prj@Project{pName, pUnit} =
         addPath _ (FromLibrary fn) = [joinPath ["lib", fn]]
         addPath _ Empty = []
 
--- |Get name of testbench top module.
-testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
-
 -- |Data Type for SnippetTestBench function
 data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [String]
     , tbcPorts :: Ports m
-    , tbcIOPorts :: IOPorts m
     , tbcMC2verilogLiteral :: Microcode m -> String
     }
 
@@ -157,29 +144,21 @@ snippetTestBench ::
     SnippetTestBenchConf m ->
     String
 snippetTestBench
-    Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}}
-    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcMC2verilogLiteral} =
+    Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
+    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
             fs = functions pUnit
-
             inst =
                 hardwareInstance
                     pName
                     pUnit
-                    UnitEnv
-                        { sigClk = "clk"
-                        , sigRst = "rst"
-                        , sigCycleBegin = "flag_cycle_begin"
-                        , sigInCycle = "flag_in_cycle"
-                        , sigCycleEnd = "flag_cycle_end"
-                        , ioPorts = Just tbcIOPorts
+                    pUnitEnv
+                        { ctrlPorts = Just tbcPorts
                         , valueIn = Just ("data_in", "attr_in")
                         , valueOut = Just ("data_out", "attr_out")
-                        , ctrlPorts = Just tbcPorts
                         }
-
             controlSignals =
                 S.join "\n" $
                     map
@@ -250,5 +229,4 @@ snippetTestBench
         { inline $ verilogHelper (def :: x) }
 
         endmodule
-        |] ::
-                String
+        |]

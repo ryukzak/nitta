@@ -84,15 +84,10 @@ library
       NITTA.Model.TargetSystem
       NITTA.Model.Types
       NITTA.Project
-      NITTA.Project.Implementation
-      NITTA.Project.Parts.Icarus
-      NITTA.Project.Parts.Quartus
-      NITTA.Project.Parts.TargetSystem
-      NITTA.Project.Parts.TestBench
-      NITTA.Project.Parts.Utils
-      NITTA.Project.Snippets
+      NITTA.Project.Template
+      NITTA.Project.TestBench
       NITTA.Project.Types
-      NITTA.Project.Utils
+      NITTA.Project.VerilogSnippets
       NITTA.Synthesis
       NITTA.Synthesis.Bind
       NITTA.Synthesis.BreakLoop
@@ -130,8 +125,10 @@ library
     , directory
     , file-embed
     , filepath
+    , ginger
     , hashable
     , hslogger
+    , htoml
     , http-api-data
     , interpolatedstring-perl6
     , intervals
@@ -147,6 +144,7 @@ library
     , servant-server
     , split
     , stm
+    , string-interpolate
     , text
     , tostring
     , transformers
@@ -172,10 +170,13 @@ executable nitta
     , containers
     , data-default
     , filepath
+    , ginger
     , hslogger
+    , htoml
     , interpolatedstring-perl6
     , nitta
     , regex-compat
+    , string-interpolate
     , text
     , tostring
   default-language: Haskell2010
@@ -198,11 +199,14 @@ executable nitta-api-gen
     , data-default
     , directory
     , filepath
+    , ginger
     , hslogger
+    , htoml
     , interpolatedstring-perl6
     , intervals
     , nitta
     , regex-compat
+    , string-interpolate
     , text
     , tostring
   default-language: Haskell2010
@@ -249,10 +253,13 @@ test-suite nitta-test
     , filepath
     , genvalidity
     , genvalidity-property
+    , ginger
+    , htoml
     , interpolatedstring-perl6
     , nitta
     , regex-compat
     , split
+    , string-interpolate
     , tasty
     , tasty-expected-failure
     , tasty-hunit

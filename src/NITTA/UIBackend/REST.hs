@@ -39,9 +39,8 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), writeAndRunTestbench)
+import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
@@ -142,11 +141,11 @@ type NodeInspectionAPI tag v x t =
 nodeInspection ctx@BackendCtx{root} sid =
     liftIO (view <$> getTreeIO root sid)
         :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
-        :<|> liftIO (processTimelines . process . targetModel <$> getTreeIO root sid)
-        :<|> liftIO (view . process . targetModel <$> getTreeIO root sid)
-        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetModel <$> getTreeIO root sid))
+        :<|> liftIO (processTimelines . process . targetUnit <$> getTreeIO root sid)
+        :<|> liftIO (view . process . targetUnit <$> getTreeIO root sid)
+        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetUnit <$> getTreeIO root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
-        :<|> liftIO (microarchitectureDesc . targetModel <$> getTreeIO root sid)
+        :<|> liftIO (microarchitectureDesc . targetUnit <$> getTreeIO root sid)
         :<|> debug ctx sid
 
 type SynthesisMethodsAPI tag v x t =
@@ -205,16 +204,21 @@ type TestBenchAPI v x =
 
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
+    nittaPath <- either error id <$> collectNittaPath defProjectTemplates
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
-    view
-        <$> writeAndRunTestbench
+    let prj =
             Project
                 { pName
                 , pLibPath = "hdl"
-                , pPath = joinPath [outputPath, pName]
-                , pUnit = mUnit $ sTarget $ sState tree
+                , pTargetProjectPath = joinPath [outputPath, pName]
+                , pNittaPath = nittaPath
+                , pUnit = targetUnit tree
+                , pUnitEnv = bnEnv $ targetUnit tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
+                , pTemplates = defProjectTemplates
                 }
+    writeProject prj
+    view <$> runTestbench prj
 
 -- Debug
 
@@ -245,17 +249,17 @@ type DebugAPI tag v t =
 
 debug BackendCtx{root} sid = liftIO $ do
     tree <- getTreeIO root sid
-    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetModel tree
-        already = transferred $ targetModel tree
+    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetUnit tree
+        already = transferred $ targetUnit tree
     return
         Debug
-            { dbgEndpointOptions = endpointOptions' $ targetModel tree
+            { dbgEndpointOptions = endpointOptions' $ targetUnit tree
             , dbgFunctionLocks
             , dbgCurrentStateFunctionLocks =
                 [ (tag, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
                 | (tag, ls) <- dbgFunctionLocks
                 ]
-            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetModel tree
+            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetUnit tree
             }
     where
         endpointOptions' BusNetwork{bnPus} = map (second endpointOptions) $ M.assocs bnPus

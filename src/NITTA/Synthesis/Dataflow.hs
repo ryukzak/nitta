@@ -48,8 +48,8 @@ instance ToJSON DataflowMetrics
 instance
     (UnitTag tag, VarValTime v x t) =>
     SynthesisDecisionCls
-        (SynthesisState (TargetSystem (BusNetwork tag v x t) v x) tag v x t)
-        (TargetSystem (BusNetwork tag v x t) v x)
+        (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t)
         (DataflowSt tag v (TimeConstrain t))
         (DataflowSt tag v (Interval t))
         DataflowMetrics

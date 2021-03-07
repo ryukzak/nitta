@@ -507,7 +507,6 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                                 , wr = SignalTag "wr"
                                 , addr = map SignalTag ["addr[3]", "addr[2]", "addr[1]", "addr[0]"]
                                 }
-                        , tbcIOPorts = FramIO
                         , tbcMC2verilogLiteral = showMicrocode
                         }
 
@@ -538,7 +537,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .RAM_SIZE( { numElements memory } )
-                    , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
+                    , .FRAM_DUMP( "$PATH$/{ softwareFile tag fram }" )
                     ) { tag }
                 ( .clk( { sigClk } )
                 , .signal_addr( \{ { S.join ", " $ map show addr } } )

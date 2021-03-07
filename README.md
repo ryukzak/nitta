@@ -122,6 +122,9 @@ Common flags:
                                       onboard
   -p     --port=INT                   Run nitta server for UI on specific
                                       port (by default - not run)
+         --templates=ITEM             Specify target platform templates (':',
+                                      default:
+                                      'templates/Icarus:templates/DE0-Nano')
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
   -f     --fsim                       Functional simulation with trace
@@ -214,4 +217,7 @@ $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exe
 
 # run formolu for all files
 $ find . -name '*.hs' | xargs fourmolu -m inplace
+
+# show modules dependency
+$ graphmod -q -p src | pbcopy
 ```

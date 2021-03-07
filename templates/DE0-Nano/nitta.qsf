@@ -81,18 +81,24 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
 
-$verilog_files$
+{% for file in nitta.files %}
+set_global_assignment -name VERILOG_FILE {{ file }}
+{% endfor %}
 
 set_global_assignment -name SDC_FILE nitta.sdc
 
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
-set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH $testbench_module$ -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH {{ nitta.testbench.module_name }} -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_NAME $testbench_module$ -section_id eda_simulation
-set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id $testbench_module$
-$test_bench_files$
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id {{ nitta.testbench.module_name }}
+
+{% for file in nitta.files %}
+set_global_assignment -name EDA_TEST_BENCH_FILE {{ file }} -section_id {{ nitta.testbench.module_name }}
+{% endfor %}
+
 set_global_assignment -name EDA_NATIVELINK_SIMULATION_SETUP_SCRIPT sim.do -section_id eda_simulation
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name EDA_NETLIST_WRITER_OUTPUT_DIR simulation/modelsim -section_id eda_simulation
-set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME $testbench_module$ -section_id $testbench_module$
-set_global_assignment -name EDA_TEST_BENCH_FILE $testbench_module$.v -section_id $testbench_module$
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME $testbench_module$ -section_id {{ nitta.testbench.module_name }}
+set_global_assignment -name EDA_TEST_BENCH_FILE $testbench_module$.v -section_id {{ nitta.testbench.module_name }}
