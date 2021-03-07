@@ -50,13 +50,13 @@ data DecisionView
         , outputs :: [T.Text]
         , input :: T.Text
         }
-    | OptimizeAccumView
-        { old :: [FView]
-        , new :: [FView]
-        }
     | ConstantFoldingView
         { cRefOld :: [FView]
         , cRefNew :: [FView]
+        }
+    | OptimizeAccumView
+        { old :: [FView]
+        , new :: [FView]
         }
     | ResolveDeadlockView
         { newBuffer :: T.Text
@@ -95,18 +95,18 @@ instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
             , input = show' loopI
             }
 
-instance Viewable (OptimizeAccum v x) DecisionView where
-    view OptimizeAccum{refOld, refNew} =
-        OptimizeAccumView
-            { old = map view refOld
-            , new = map view refNew
-            }
-
 instance Viewable (ConstantFolding v x) DecisionView where
     view ConstantFolding{cRefOld, cRefNew} =
         ConstantFoldingView
             { cRefOld = map view cRefOld
             , cRefNew = map view cRefNew
+            }
+
+instance Viewable (OptimizeAccum v x) DecisionView where
+    view OptimizeAccum{refOld, refNew} =
+        OptimizeAccumView
+            { old = map view refOld
+            , new = map view refNew
             }
 
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where

@@ -4,19 +4,19 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ViewPatterns #-}
 
+-- ASCII digram
 -- Before compile-time eval optimization
 
 --   +------------------+
 --   |                  |         +-------------------------+
---   | Constant 2 "a" |         |                         |
+--   | Constant 2 "a"   |         |                         |
 --   |                  +-------->+                         |      +--------------+
 --   +------------------+         |                         |      |              |
 --                                | Add "a" "b" ["res"] +----->+    ......    |
 --   +------------------+         |                         |      |              |
 --   |                  +-------->+                         |      +--------------+
---   | Constant 3 "b1" |         |                         |
+--   | Constant 3 "b1"  |         |                         |
 --   |                  |         +-------------------------+
 --   +------------------+
 
@@ -30,23 +30,23 @@
 --   |                  |         |              |
 --   +------------------+         +--------------+
 
-{-
+{- |
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding
-Description : Optimize an algorithm for Accum processor unit
+Description : Constant folding optimization
 Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
--}
 
-{- |Doctest
- >>> let a = constant 1 ["a"]
- >>> let b = constant 2 ["b"]
- >>> let res = add "a" "b" ["res"]
- >>> loopRes = loop 1 "e" ["res"]
- >>> let fs = [a, b, res, loopRes] :: [F String Int]
- >>> constantFoldingDecision fs $ head $ constantFoldingOptions fs
- [Loop (X 1) (O [res]) (I e),const(3) = res]
+== Example from ASCII diagram
+
+>>> let a = constant 1 ["a"]
+>>> let b = constant 2 ["b"]
+>>> let res = add "a" "b" ["res"]
+>>> loopRes = loop 1 "e" ["res"]
+>>> let fs = [a, b, res, loopRes] :: [F String Int]
+>>> constantFoldingDecision fs $ head $ constantFoldingOptions fs
+[Loop (X 1) (O [res]) (I e),const(3) = res]
 -}
 module NITTA.Model.Problems.Refactor.ConstantFolding (
     ConstantFolding (..),
@@ -83,9 +83,8 @@ instance (Var v, Val x) => ConstantFoldingProblem [F v x] v x where
             zipOfClusters = zip clusters evaluatedClusters
             filteredZip = filter (\case ([_], _) -> False; _ -> True) zipOfClusters
             options = [ConstantFolding{cRefOld = c, cRefNew = ec} | (c, ec) <- filteredZip, c /= ec]
-            optionsFiltered = filter blankOptions options
-            blankOptions (constantFoldingDecision fs -> []) = False
-            blankOptions (constantFoldingDecision fs -> _) = True
+            optionsFiltered = filter isBlankOptions options
+            isBlankOptions = not . null . constantFoldingDecision fs
          in optionsFiltered
 
     constantFoldingDecision fs ConstantFolding{cRefOld, cRefNew}

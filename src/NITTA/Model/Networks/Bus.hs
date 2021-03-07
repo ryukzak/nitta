@@ -302,8 +302,8 @@ instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x w
 instance (VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
     constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 
-    constantFoldingDecision bn@BusNetwork{bnRemains} oa@ConstantFolding{} =
-        bn{bnRemains = constantFoldingDecision bnRemains oa}
+    constantFoldingDecision bn@BusNetwork{bnRemains} cf@ConstantFolding{} =
+        bn{bnRemains = constantFoldingDecision bnRemains cf}
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
