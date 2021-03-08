@@ -30,6 +30,7 @@ jobs:
 
       - name: Build & test nitta backend
         run: stack build --haddock --test --copy-bins
+        timeout-minutes: 45
 
       - name: Check examples by doctest
         run: |
