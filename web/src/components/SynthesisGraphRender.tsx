@@ -2,8 +2,8 @@ import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
 import Tree from "react-d3-tree";
 
-import { SynthesisTree, api } from "services/HaskellApiService";
-import { AppContext, IAppContext, SID, reLastSID, sidSeparator } from "app/AppContext";
+import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
+import { AppContext, IAppContext } from "app/AppContext";
 
 interface SID2Node {
   // SID -> Tree

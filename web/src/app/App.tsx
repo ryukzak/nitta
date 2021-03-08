@@ -1,8 +1,9 @@
 import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
-import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
+import { IAppContext, AppContextProvider } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
+import { SID, sidSeparator } from "services/HaskellApiService";
 
 import { SynthesisGraph } from "components/SynthesisGraph";
 import { NodeScreen } from "screens/NodeScreen";

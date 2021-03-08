@@ -1,5 +1,5 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
-import { SID, IAppContext } from "app/AppContext";
+import { IAppContext } from "app/AppContext";
 
 import jsAPI from "services/gen/rest_api";
 import {
@@ -15,6 +15,10 @@ import {
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
+
+export type SID = string;
+export const sidSeparator = "-";
+export const reLastSID = /-[^-]*$/;
 
 export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;

@@ -3,8 +3,7 @@ import * as React from "react";
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { sidSeparator } from "app/AppContext";
-import { Node } from "services/HaskellApiService";
+import { Node, sidSeparator } from "services/HaskellApiService";
 import { Interval } from "services/gen/types";
 
 const style = {

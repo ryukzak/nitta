@@ -2,8 +2,8 @@ import { AxiosResponse, AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 
-import { SID, AppContext, IAppContext } from "app/AppContext";
-import { api, Node, Bind } from "services/HaskellApiService";
+import { AppContext, IAppContext } from "app/AppContext";
+import { api, Node, Bind, SID } from "services/HaskellApiService";
 
 type Row = { original: Node; index: number };
 
