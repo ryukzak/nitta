@@ -37,7 +37,7 @@ jobs:
           find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
       - name: Generate backend API
-        run: stack exec nitta-api-gen
+        run: stack exec nitta-api-gen -- -v
 
       - name: Cache node_modules
         uses: actions/cache@v2.1.3
