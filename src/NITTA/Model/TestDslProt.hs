@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 
 {- |
@@ -13,6 +14,7 @@ module NITTA.Model.TestDslProt (
     ) where
 
 import Control.Monad.State.Lazy
+import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -20,28 +22,38 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 import Numeric.Interval.NonEmpty
 
--- bind shoud put State
--- bindFunc :: ProcessorUnit u v x t => F v x -> u ->
+data UnitTestState v x t = UnitTestState
+    { unit :: Multiplier v x t
+    , function :: F v x
+    }
+
+-- F v x -> Multiplier v x t -> m ()
 bindFunc f st =
     case tryBind f st of
-        Right v -> put [v]
+        Right v -> put $ UnitTestState v f
         --- TODO add assertFalse when wrong bind
         Left err -> error $ "can't get report: " ++ err
 
 -- TODO: fix not only first decision?
 --       Check for null
-getDecision st = endpointOptionToDecision . head . endpointOptions $ st
+fstDecision st = endpointOptionToDecision . head . endpointOptions $ st
+
+beTarget a b t = doDecision $ EndpointSt (Target t) (a ... b)
+
+beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 -- what if [] is empty??
 doDecision endpSt = do
-    sts <- get
-    put $ endpointDecision (head sts) endpSt : sts
+    UnitTestState{unit, function} <- get
+    put $ UnitTestState (endpointDecision unit endpSt) function
+
+--  endpointDecision (head sts) endpSt : sts
 
 -- doDecision endpSt = modify (endpointDecision (head <$> get) endpSt :)
 
-getAndDoDecision st = doDecision . getDecision . head $ st
+getAndDoDecision st = doDecision . fstDecision $ st
 
-getAndDoDecision2 = runState $ doDecision . getDecision . head <$> get
+--getAndDoDecision2 = runState $ doDecision . getDecision . head <$> get
 
 -- TODO: rewrite, because `functions a` has `F [Char] Int` type
 isBinded f pu =
@@ -49,6 +61,7 @@ isBinded f pu =
      in not (null fu) && (head fu == f)
 
 evalMultiplierChain st bindF [] = error ""
+evalMultiplierChain st bindF [] = error "i"
 evalMultiplierChain st bindF fs = head $
     flip execState [] $ do
         modify (bindFunc bindF st :)
@@ -63,7 +76,7 @@ evalMultiplierChain' fs = do
 --- To check whether piping work
 --testMultChain = evalMultiplierChain st0 fDef []
 
-checkPipe f st = flip runState [] $ do
+checkPipe f st = flip runState $ do
     bindFunc f st
     --isBinded st
 
@@ -71,8 +84,11 @@ checkPipe f st = flip runState [] $ do
     let ep = EndpointSt (Target "a") (1 ... 2)
     doDecision ep
 
-    --    isProcessComplete (head sts) $ variables f
+--doDecision ep
 
+--    isProcessComplete (head sts) $ variables f
+
+{-}
     sts <- get
     getAndDoDecision sts
 
@@ -80,7 +96,8 @@ checkPipe f st = flip runState [] $ do
     getAndDoDecision sts
 
     sts <- get
-    return $ isProcessComplete (head sts) [f]
+    -}
+--return $ isProcessComplete st [f]
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
 
