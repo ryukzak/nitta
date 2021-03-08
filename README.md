@@ -214,6 +214,15 @@ $ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examp
 
 # run doctest for all files
 $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+# in case:
+# src/NITTA/Model/ProcessorUnits/Multiplier.hs:311:1: error:
+#     Ambiguous module name ‘Data.String.Interpolate’:
+#       it was found in multiple packages:
+#       interpolate-0.2.1 string-interpolate-0.3.1.0
+#     |
+# 311 | import Data.String.Interpolate
+#     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+$ stack exec ghc-pkg unregister interpolate -- --force
 
 # run formolu for all files
 $ find . -name '*.hs' | xargs fourmolu -m inplace

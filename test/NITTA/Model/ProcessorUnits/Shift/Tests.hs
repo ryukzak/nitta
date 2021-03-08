@@ -13,12 +13,12 @@ module NITTA.Model.ProcessorUnits.Shift.Tests (
     tests,
 ) where
 
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (testGroup)
-import Text.InterpolatedString.Perl6 (qc)
 
 tests =
     testGroup
@@ -33,40 +33,40 @@ tests =
             ]
         , luaTestCase
             "shift lua 1"
-            [qc|
-        function shift(x)
-            local tmp = x << 1
-            shift(tmp)
-        end
-        shift(1)
-        |]
+            [__i|
+                function shift(x)
+                    local tmp = x << 1
+                    shift(tmp)
+                end
+                shift(1)
+            |]
         , luaTestCase
             "shift lua 2"
-            [qc|
-        function shift(x)
-            local tmp = x << 2
-            shift(tmp)
-        end
-        shift(1)
-        |]
+            [__i|
+                function shift(x)
+                    local tmp = x << 2
+                    shift(tmp)
+                end
+                shift(1)
+            |]
         , luaTestCase
             "shift left 16 and shift right 8"
-            [qc|
-        function shift(x)
-            local tmp = x << 16
-            local tmp2 = tmp >> 8
-            shift(tmp2)
-        end
-        shift(1)
-        |]
+            [__i|
+                function shift(x)
+                    local tmp = x << 16
+                    local tmp2 = tmp >> 8
+                    shift(tmp2)
+                end
+                shift(1)
+            |]
         , luaTestCase
             "shift left 9 and shift right 7"
-            [qc|
-        function shift(x)
-            local tmp = x << 9
-            local tmp2 = tmp >> 7
-            shift(tmp2)
-        end
-        shift(1)
-        |]
+            [__i|
+                function shift(x)
+                    local tmp = x << 9
+                    local tmp2 = tmp >> 7
+                    shift(tmp2)
+                end
+                shift(1)
+            |]
         ]

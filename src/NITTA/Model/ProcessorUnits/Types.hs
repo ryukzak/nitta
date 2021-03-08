@@ -60,17 +60,18 @@ import Data.Kind
 import qualified Data.List as L
 import Data.Maybe
 import Data.String
+import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
-import NITTA.Utils.CodeFormat
 import Numeric.Interval.NonEmpty
 import qualified Numeric.Interval.NonEmpty as I
-import Text.InterpolatedString.Perl6 (qc)
+import Prettyprinter
 
 -- |Typeclass alias for processor unit tag or "name."
 type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
@@ -124,18 +125,20 @@ data Process t i = Process
 
 instance (Time t, Show i) => Show (Process t i) where
     show p =
-        codeBlock
-            [qc|
-        Process
-            steps     =
-                { inline $ listShow $ steps p }
-            relations =
-                { inline $ listShow $ relations p }
-            nextTick  = { show ( nextTick p ) }
-            nextUid   = { show ( nextUid p ) }
+        [__i|
+            Process
+                steps     =
+                    #{ nest 8 $ listShow $ steps p }
+                relations =
+                    #{ nest 8 $ listShow $ relations p }
+                nextTick  = #{ nextTick p }
+                nextUid   = #{ nextUid p }\n
         |]
         where
-            listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0 :: Integer ..] list
+            listShow lst =
+                vsep $
+                    map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
+                        zip [0 :: Int ..] lst
 
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
@@ -197,7 +200,7 @@ instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f
     patch diff (EndpointRoleStep ep) = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
-    patch _ i = i
+    patch _ instr = instr
 
 -- |Relations between process steps.
 data Relation
@@ -257,13 +260,13 @@ instance
     where
     microcodeAt pu t = case extractInstructionAt pu t of
         [] -> def
-        [i] -> decodeInstruction i
-        is -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
+        [instr] -> decodeInstruction instr
+        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ process pu }|]
 
-newtype SignalTag = SignalTag {signalTag :: String} deriving (Eq, Ord)
+newtype SignalTag = SignalTag {signalTag :: T.Text} deriving (Eq, Ord)
 
 instance Show SignalTag where
-    show = signalTag
+    show = toString . signalTag
 
 -- |Type class of processor units with control ports.
 class Connected pu where
@@ -319,11 +322,11 @@ class IOConnected pu where
     inoutPorts :: IOPorts pu -> [InoutPortTag]
     inoutPorts _ = []
 
-newtype InputPortTag = InputPortTag {inputPortTag :: String} deriving (Eq, Ord)
-instance Show InputPortTag where show = inputPortTag
+newtype InputPortTag = InputPortTag {inputPortTag :: T.Text} deriving (Eq, Ord)
+instance Show InputPortTag where show = toString . inputPortTag
 
-newtype OutputPortTag = OutputPortTag {outputPortTag :: String} deriving (Eq, Ord)
-instance Show OutputPortTag where show = outputPortTag
+newtype OutputPortTag = OutputPortTag {outputPortTag :: T.Text} deriving (Eq, Ord)
+instance Show OutputPortTag where show = toString . outputPortTag
 
-newtype InoutPortTag = InoutPortTag {inoutPortTag :: String} deriving (Eq, Ord)
-instance Show InoutPortTag where show = inoutPortTag
+newtype InoutPortTag = InoutPortTag {inoutPortTag :: T.Text} deriving (Eq, Ord)
+instance Show InoutPortTag where show = toString . inoutPortTag

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -29,7 +30,9 @@ module NITTA.Project.TestBench (
 import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
+import Data.String.Interpolate
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
@@ -39,8 +42,8 @@ import NITTA.Model.Types
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils
+import Prettyprinter
 import System.FilePath.Posix (joinPath, (</>))
-import Text.InterpolatedString.Perl6 (qc)
 
 -- |Type class for all testable parts of a target system.
 class Testable m v x | m -> v x where
@@ -50,11 +53,11 @@ class Testable m v x | m -> v x where
 external input ports signals and checking output port signals.
 -}
 class IOTestBench pu v x | pu -> v x where
-    testEnvironmentInitFlag :: String -> pu -> Maybe String
+    testEnvironmentInitFlag :: T.Text -> pu -> Maybe T.Text
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> String
-    testEnvironment _title _pu _env _tEnv = ""
+    testEnvironment :: T.Text -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
+    testEnvironment _title _pu _env _tEnv = Nothing
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
@@ -66,18 +69,18 @@ data TestEnvironment v x = TestEnvironment
 
 data TestbenchReport v x = TestbenchReport
     { tbStatus :: Bool
-    , tbPath :: String
-    , tbFiles :: [String]
-    , tbFunctions :: [String]
-    , tbSynthesisSteps :: [String]
-    , tbCompilerDump :: [String]
-    , tbSimulationDump :: [String]
+    , tbPath :: FilePath
+    , tbFiles :: [FilePath]
+    , tbFunctions :: [T.Text]
+    , tbSynthesisSteps :: [T.Text]
+    , tbCompilerDump :: T.Text
+    , tbSimulationDump :: T.Text
     , tbFunctionalSimulationCntx :: [HM.HashMap v x]
     , tbLogicalSimulationCntx :: Cntx v x
     }
     deriving (Generic)
 
-instance (Show v, Show x) => Show (TestbenchReport v x) where
+instance Show (TestbenchReport v x) where
     show
         TestbenchReport
             { tbPath
@@ -87,24 +90,24 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
             , tbCompilerDump
             , tbSimulationDump
             } =
-            codeBlock
-                [qc|
-            Project: { tbPath }
-            Files:
-                { inline $ showLst tbFiles }
-            Functional blocks:
-                { inline $ showLst tbFunctions }
-            Steps:
-                { inline $ showLst tbSynthesisSteps }
-            compiler dump:
-                { inline $ showLst tbCompilerDump }
-            simulation dump:
-                { inline $ showLst tbSimulationDump }
-            |]
-            where
-                showLst = unlines . map ("    " ++)
+            (show :: Doc () -> String)
+                [__i|
+                    Project: #{ tbPath }
+                    Files:
+                        #{ nest 4 $ pretty tbFiles }
+                    Functional blocks:
+                        #{ nest 4 $ pretty tbFunctions }
+                    Steps:
+                        #{ nest 4 $ pretty tbSynthesisSteps }
+                    compiler dump:
+                        #{ nest 4 $ pretty tbCompilerDump }
+                    simulation dump:
+                        #{ nest 4 $ pretty tbSimulationDump }
+                |]
 
 -- |Get name of testbench top module.
+testBenchTopModuleName ::
+    (TargetSystemComponent m, Testable m v x) => Project m v x -> FilePath
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
 
 -- |Generate list of project verilog files (including testbench).
@@ -122,9 +125,9 @@ projectFiles prj@Project{pName, pUnit, pNittaPath} =
 
 -- |Data Type for SnippetTestBench function
 data SnippetTestBenchConf m = SnippetTestBenchConf
-    { tbcSignals :: [String]
+    { tbcSignals :: [T.Text]
     , tbcPorts :: Ports m
-    , tbcMC2verilogLiteral :: Microcode m -> String
+    , tbcMC2verilogLiteral :: Microcode m -> T.Text
     }
 
 -- |Function for testBench PU test
@@ -142,7 +145,7 @@ snippetTestBench ::
     ) =>
     Project m v x ->
     SnippetTestBenchConf m ->
-    String
+    T.Text
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
@@ -160,73 +163,69 @@ snippetTestBench
                         , valueOut = Just ("data_out", "attr_out")
                         }
             controlSignals =
-                S.join "\n" $
-                    map
-                        ( \t ->
-                            let setSignals = tbcMC2verilogLiteral (microcodeAt pUnit t)
-                                x = targetVal t
-                                setValueBus = [qc|data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
-                             in setSignals <> " " <> setValueBus <> " @(posedge clk);"
-                        )
-                        [0 .. nextTick + 1]
+                map
+                    ( \t ->
+                        let setSignals = pretty $ tbcMC2verilogLiteral (microcodeAt pUnit t)
+                            x = targetVal t
+                            setValueBus = [i|data_in <= #{ dataLiteral x }; attr_in <= #{ attrLiteral x };|]
+                         in setSignals <> " " <> setValueBus <> " @(posedge clk);"
+                    )
+                    [0 .. nextTick + 1]
             targetVal t
                 | Just (Target v) <- endpointAt t p =
                     getCntx cycleCntx v
                 | otherwise = 0
-            busCheck = concatMap busCheck' [0 .. nextTick + 1]
+            busCheck = map busCheck' [0 .. nextTick + 1]
                 where
                     busCheck' t
-                        | Just (Source vs) <- endpointAt t p
-                          , let v = oneOf vs
-                          , let x = getCntx cycleCntx v =
-                            codeBlock
-                                [qc|
-                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { dataLiteral x }, { attrLiteral x }, { v });
-                        |]
+                        | Just (Source vs) <- endpointAt t p =
+                            let v = oneOf vs
+                                x = getCntx cycleCntx v
+                             in [i|@(posedge clk); assertWithAttr(0, 0, data_out, attr_out, #{ dataLiteral x }, #{ attrLiteral x }, #{ show v });|]
                         | otherwise =
-                            codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
-            tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
-         in codeBlock
-                [qc|
-        {"module"} {name}_tb();
+                            [i|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
+            tbcSignals' = map (\x -> [i|reg #{x};|]) tbcSignals
+         in doc2text
+                [__i|
+                    module #{name}_tb();
 
-        parameter DATA_WIDTH = { dataWidth (def :: x) };
-        parameter ATTR_WIDTH = { attrWidth (def :: x) };
+                    parameter DATA_WIDTH = #{ dataWidth (def :: x) };
+                    parameter ATTR_WIDTH = #{ attrWidth (def :: x) };
 
-        /*
-        Algorithm:
-        { inline $ unlines $ map show $ fs }
-        Process:
-        { inline $ unlines $ map show $ reverse steps }
-        Context:
-        { inline $ show cycleCntx }
-        */
+                    /*
+                    Algorithm:
+                        #{ nest 4 $ vsep $ map viaShow fs }
+                    Process:
+                        #{ nest 4 $ vsep $ map viaShow $ reverse steps }
+                    Context:
+                        #{ nest 4 $ viaShow cycleCntx }
+                    */
 
-        reg clk, rst;
-        { inline $ S.join "\\n" tbcSignals' }
-        reg [DATA_WIDTH-1:0]  data_in;
-        reg [ATTR_WIDTH-1:0]  attr_in;
-        wire [DATA_WIDTH-1:0] data_out;
-        wire [ATTR_WIDTH-1:0] attr_out;
+                    reg clk, rst;
+                    #{ vsep tbcSignals' }
+                    reg [DATA_WIDTH-1:0]  data_in;
+                    reg [ATTR_WIDTH-1:0]  attr_in;
+                    wire [DATA_WIDTH-1:0] data_out;
+                    wire [ATTR_WIDTH-1:0] attr_out;
 
-        { inline inst }
+                    #{ inst }
 
-        { inline snippetClkGen }
-        { inline $ snippetDumpFile name }
+                    #{ snippetClkGen }
+                    #{ snippetDumpFile name }
 
-        initial begin
-            @(negedge rst);
-            {inline controlSignals}
-            $finish;
-        end
+                    initial begin
+                        @(negedge rst);
+                        #{nest 4 $ vsep controlSignals}
+                        $finish;
+                    end
 
-        initial begin
-            @(negedge rst);
-            {inline busCheck}
-            $finish;
-        end
+                    initial begin
+                        @(negedge rst);
+                        #{ nest 4 $ vsep busCheck }
+                                $finish;
+                    end
 
-        { inline $ verilogHelper (def :: x) }
+                    #{ verilogHelper (def :: x) }
 
-        endmodule
-        |]
+                    endmodule
+                |]

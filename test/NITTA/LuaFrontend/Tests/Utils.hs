@@ -104,7 +104,7 @@ runLua arch _proxy wd received src = do
         Right TestbenchReport{tbStatus = True} -> Right ()
         Left err -> Left $ "synthesis process fail" <> err
         Right TestbenchReport{tbCompilerDump, tbPath}
-            | length tbCompilerDump > 2 ->
+            | T.length tbCompilerDump > 2 ->
                 Left $ "icarus synthesis error: " <> tbPath
         Right TestbenchReport{tbPath} ->
             Left $ "icarus simulation error: " <> tbPath

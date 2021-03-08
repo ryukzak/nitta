@@ -16,6 +16,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
     tests,
 ) where
 
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
@@ -26,7 +27,6 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
-import Text.InterpolatedString.Perl6 (qc)
 
 tests =
     testGroup
@@ -52,35 +52,35 @@ tests =
             [multiply "a" "b" ["c"], multiply "d" "e" ["f"]]
         , luaTestCase
             "geometric progression"
-            [qc|
-        function f(x)
-            local tmp = buffer(2 * x)
-            f(tmp)
-        end
-        f(1)
-        |]
+            [__i|
+                function f(x)
+                    local tmp = buffer(2 * x)
+                    f(tmp)
+                end
+                f(1)
+            |]
         , typedLuaTestCase
             (microarch ASync SlaveSPI)
             pFX22_32
             "fixpoint 22 32"
-            [qc|
-        function f()
-            send(0.5 * -0.5)
-            send(-20.5 * -2)
-        end
-        f()
-        |]
+            [__i|
+                function f()
+                    send(0.5 * -0.5)
+                    send(-20.5 * -2)
+                end
+                f()
+            |]
         , typedLuaTestCase
             (microarch ASync SlaveSPI)
             pFX42_64
             "fixpoint 42 64"
-            [qc|
-        function f()
-            send(0.5 * -0.5)
-            send(-20.5 * -2)
-        end
-        f()
-        |]
+            [__i|
+                function f()
+                    send(0.5 * -0.5)
+                    send(-20.5 * -2)
+                end
+                f()
+            |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
         ]

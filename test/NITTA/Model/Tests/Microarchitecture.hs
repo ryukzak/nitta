@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -53,8 +54,6 @@ import NITTA.Model.TargetSystem ()
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
-
-{-# ANN module "HLint: ignore Reduce duplication" #-}
 
 pInt = Proxy :: Proxy Int
 

@@ -46,24 +46,10 @@ export const TestBenchScreen: React.FC = () => {
       <pre> {JSON.stringify(testBenchDump!.tbStatus)} </pre>
       <hr />
       <h3>Compiler output:</h3>
-      <pre className="squeeze">
-        {testBenchDump!.tbCompilerDump.map((e: string, i: number) => (
-          <div key={i}>
-            {e}
-            <br />
-          </div>
-        ))}
-      </pre>
+      <pre className="squeeze">{testBenchDump!.tbCompilerDump}</pre>
       <hr />
       <h3>Simulation output:</h3>
-      <pre className="squeeze">
-        {testBenchDump!.tbSimulationDump.map((e: string, i: number) => (
-          <div key={i}>
-            {e}
-            <br />
-          </div>
-        ))}
-      </pre>
+      <pre className="squeeze">{testBenchDump!.tbSimulationDump}</pre>
       <hr />
       <h3>Simulation data:</h3>
       <TestBenchSimulationLog

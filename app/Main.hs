@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -62,7 +63,7 @@ data Nitta = Nitta
     , fsim :: Bool
     , lsim :: Bool
     , verbose :: Bool
-    , output_path :: String
+    , output_path :: FilePath
     }
     deriving (Show, Data, Typeable)
 

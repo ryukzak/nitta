@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 {- |
@@ -17,28 +18,26 @@ module NITTA.Project.VerilogSnippets (
     snippetDumpFile,
 ) where
 
-import NITTA.Utils
-import Text.InterpolatedString.Perl6 (qc)
+import Data.String.Interpolate
+import qualified Data.Text as T
 
-snippetClkGen :: String
+snippetClkGen :: T.Text
 snippetClkGen =
-    codeBlock
-        [qc|
-    initial begin
-        clk = 1'b0;
-        rst = 1'b1;
-        repeat(4) #1 clk = ~clk;
-        rst = 1'b0;
-        forever #1 clk = ~clk;
-    end
+    [__i|
+        initial begin
+            clk = 1'b0;
+            rst = 1'b1;
+            repeat(4) \#1 clk = ~clk;
+            rst = 1'b0;
+            forever \#1 clk = ~clk;
+        end
     |]
 
-snippetDumpFile :: String -> String
+snippetDumpFile :: T.Text -> T.Text
 snippetDumpFile mn =
-    codeBlock
-        [qc|
-    initial begin
-        $dumpfile("{ mn }_tb.vcd");
-        $dumpvars(0, { mn }_tb);
-    end
+    [__i|
+        initial begin
+            $dumpfile("#{ mn }_tb.vcd");
+            $dumpvars(0, #{ mn }_tb);
+        end
     |]

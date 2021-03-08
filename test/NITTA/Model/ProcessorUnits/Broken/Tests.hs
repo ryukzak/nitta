@@ -22,6 +22,7 @@ module NITTA.Model.ProcessorUnits.Broken.Tests (
 ) where
 
 import Data.Default
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
@@ -32,7 +33,6 @@ import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
-import Text.InterpolatedString.Perl6 (qc)
 
 tests =
     testGroup
@@ -119,13 +119,13 @@ tests =
         u2 = def :: Broken String (Attr (IntX 32)) Int
         alg = [loop 1 "b" ["a"], brokenBuffer "a" ["b"]]
         lua =
-            [qc|
-            function foo(a)
-                b = brokenBuffer(a)
-                foo(b)
-            end
-            foo(1)
-        |]
+            [__i|
+                function foo(a)
+                    b = brokenBuffer(a)
+                    foo(b)
+                end
+                foo(1)
+            |]
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (BrokenBuffer _ _))

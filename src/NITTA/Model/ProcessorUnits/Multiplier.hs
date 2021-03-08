@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -307,6 +308,8 @@ import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.Interpolate
+import Data.String.ToString
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -316,7 +319,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 {- |It is a PU model state representation, which describes each state of
 synthesis model for that PU.
@@ -647,13 +649,13 @@ instance IOConnected (Multiplier v x t) where
 instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
-    hardware tag pu@Multiplier{isMocked} =
+    hardware _tag Multiplier{isMocked} =
         Aggregate
             Nothing
             [ if isMocked
                 then FromLibrary "multiplier/mult_mock.v"
                 else FromLibrary "multiplier/mult_inner.v"
-            , FromLibrary $ "multiplier/" ++ moduleName tag pu ++ ".v"
+            , FromLibrary "multiplier/pu_multiplier.v"
             ]
 
     software _ _ = Empty
@@ -668,24 +670,23 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            codeBlock
-                [qc|
-            pu_multiplier #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-                    , .INVALID( 0 )
-                    ) { tag }
-                ( .clk( {sigClk} )
-                , .rst( {sigRst} )
-                , .signal_wr( { wr } )
-                , .signal_sel( { wrSel } )
-                , .data_in( { dataIn } )
-                , .attr_in( { attrIn } )
-                , .signal_oe( { oe } )
-                , .data_out( { dataOut } )
-                , .attr_out( { attrOut } )
-                );
+            [__i|
+                pu_multiplier \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )
+                        , .INVALID( 0 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_wr( #{ wr } )
+                    , .signal_sel( #{ wrSel } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .signal_oe( #{ oe } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
@@ -705,7 +706,7 @@ process. You can see tests in @test/Spec.hs@. Testbench contains:
 -}
 instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        Immediate (moduleName pName pUnit ++ "_tb.v") $
+        Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench
                 prj
                 SnippetTestBenchConf
@@ -725,5 +726,7 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                             }
                     , -- Map microcode to registers in the testbench.
                       tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} ->
-                        [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
+                        [i|oe <= #{bool2verilog oeSignal};|]
+                            <> [i| wr <= #{bool2verilog wrSignal};|]
+                            <> [i| wrSel <= #{bool2verilog selSignal};|]
                     }

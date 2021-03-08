@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -27,11 +28,12 @@ module NITTA.Project.Types (
 
 import Data.Default
 import qualified Data.List as L
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
+import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath, takeDirectory, (</>))
 
@@ -43,7 +45,7 @@ be writable to disk.
 -- pName or pTargetProjectPath should be maybe? Or both?
 data Project m v x = Project
     { -- |target project name
-      pName :: String
+      pName :: T.Text
     , -- |IP-core library directory
       pLibPath :: FilePath
     , -- |output directory for target project
@@ -70,29 +72,21 @@ instance (Default x) => DefaultX (Project m v x) x
 -- |Type class for target components. Target -- a target system project or a testbench.
 class TargetSystemComponent pu where
     -- |Name of the structural hardware module or Verilog module name (network or process unit)
-    moduleName :: String -> pu -> String
-    moduleName n pu = T.unpack $ moduleNameT (T.pack n) pu
-
-    moduleNameT :: T.Text -> pu -> T.Text
-    moduleNameT n pu = T.pack $ moduleName (T.unpack n) pu
+    moduleName :: T.Text -> pu -> T.Text
 
     -- |Software and other specification which depends on application algorithm
-    software :: String -> pu -> Implementation
+    software :: T.Text -> pu -> Implementation
 
     -- |Hardware which depends on microarchitecture description and requires synthesis.
-    hardware :: String -> pu -> Implementation
+    hardware :: T.Text -> pu -> Implementation
 
     -- |Generate code for making an instance of the hardware module
-    hardwareInstance :: String -> pu -> UnitEnv pu -> String
-    hardwareInstance n pu env = T.unpack $ hardwareInstanceT (T.pack n) pu env
-
-    hardwareInstanceT :: T.Text -> pu -> UnitEnv pu -> T.Text
-    hardwareInstanceT n pu env = T.pack $ hardwareInstance (T.unpack n) pu env
+    hardwareInstance :: T.Text -> pu -> UnitEnv pu -> Verilog
 
 -- |Element of target system implementation
 data Implementation
     = -- |Immediate implementation
-      Immediate {impFileName :: FilePath, impText :: String}
+      Immediate {impFileName :: FilePath, impText :: T.Text}
     | -- |Fetch implementation from library
       FromLibrary {impFileName :: FilePath}
     | -- |Aggregation of many implementation parts in separate paths
@@ -111,7 +105,7 @@ placeholder.
 writeImplementation prjPath nittaPath = writeImpl nittaPath
     where
         writeImpl p (Immediate fn src) =
-            writeFile (joinPath [prjPath, p, fn]) $ S.replace "$PATH$" p src
+            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" (T.pack p) src
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
@@ -142,18 +136,18 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
 -}
 data UnitEnv m = UnitEnv
     { -- |clock signal
-      sigClk :: String
+      sigClk :: T.Text
     , -- |reset signal
-      sigRst :: String
+      sigRst :: T.Text
     , -- |posedge on computation cycle begin
-      sigCycleBegin :: String
+      sigCycleBegin :: T.Text
     , -- |positive on computation cycle
-      sigInCycle :: String
+      sigInCycle :: T.Text
     , -- |posedge on computation cycle end
-      sigCycleEnd :: String
+      sigCycleEnd :: T.Text
     , ctrlPorts :: Maybe (Ports m)
     , ioPorts :: Maybe (IOPorts m)
-    , valueIn, valueOut :: Maybe (String, String)
+    , valueIn, valueOut :: Maybe (T.Text, T.Text)
     }
 
 instance Default (UnitEnv m) where

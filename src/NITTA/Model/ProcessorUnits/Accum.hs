@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -30,6 +31,9 @@ import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe (fromMaybe)
 import Data.Set (elems, fromList, member)
+import Data.String.Interpolate
+import Data.String.ToString
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -39,7 +43,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 {- |Type that contains expression:
 
@@ -74,13 +77,13 @@ data Accum v x t = Accum
 
 instance (VarValTime v x t) => Show (Accum v x t) where
     show a =
-        codeBlock
-            [qc|"
-        Accum:
-            work                 = {work a}
-            currentWork          = {currentWork a}
-            process_             = {process_ a}
-            isInit               = {isInit a}|]
+        [__i|
+            Accum:
+                work                 = #{ work a }
+                currentWork          = #{ currentWork a }
+                process_             = #{ process_ a }
+                isInit               = #{ isInit a }
+        |]
 
 instance (VarValTime v x t) => Default (Accum v x t) where
     def =
@@ -266,7 +269,7 @@ instance (Var v) => Locks (Accum v x t) v where
 
 instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware _tag _pu = FromLibrary "pu_accum.v"
     software _ _ = Empty
     hardwareInstance
         tag
@@ -278,23 +281,22 @@ instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            codeBlock
-                [qc|
-            pu_accum #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .rst( { sigRst } )
-                , .signal_resetAcc( { resetAcc } )
-                , .signal_load( { load } )
-                , .signal_neg( { neg } )
-                , .signal_oe( { oe } )
-                , .data_in( { dataIn } )
-                , .attr_in( { attrIn } )
-                , .data_out( { dataOut } )
-                , .attr_out( { attrOut } )
-                );
+            [__i|
+                pu_accum \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_resetAcc( #{ resetAcc } )
+                    , .signal_load( #{ load } )
+                    , .signal_neg( #{ neg } )
+                    , .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
@@ -307,13 +309,10 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
         let tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
 
             showMicrocode Microcode{resetAccSignal, loadSignal, oeSignal, negSignal} =
-                codeBlock
-                    [qc|
-                resetAcc   <= { bool2verilog resetAccSignal };
-                load       <= { bool2verilog loadSignal };
-                oe         <= { bool2verilog oeSignal };
-                neg        <= { bool2verilog $ fromMaybe False negSignal };
-                |]
+                ([i|resetAcc <= #{ bool2verilog resetAccSignal };|] :: String)
+                    <> [i| load <= #{ bool2verilog loadSignal };|]
+                    <> [i| oe <= #{ bool2verilog oeSignal };|]
+                    <> [i| neg <= #{ bool2verilog $ fromMaybe False negSignal };|]
 
             conf =
                 SnippetTestBenchConf
@@ -325,9 +324,9 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                             , oe = SignalTag "oe"
                             , neg = SignalTag "neg"
                             }
-                    , tbcMC2verilogLiteral = showMicrocode
+                    , tbcMC2verilogLiteral = T.pack . showMicrocode
                     }
-         in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
+         in Immediate (toString $ moduleName pName pUnit <> "_tb.v") $ snippetTestBench prj conf
 
 instance IOTestBench (Accum v x t) v x
 

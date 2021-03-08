@@ -30,10 +30,14 @@ jobs:
 
       - name: Build & test nitta backend
         run: stack build --haddock --test --copy-bins
+        timeout-minutes: 45
 
       - name: Check examples by doctest
         run: |
           stack build --fast
+          # dirty hack for fix Ambiguous module name ‘Data.String.Interpolate’:
+          # it was found in multiple packages: interpolate-0.2.1 string-interpolate-0.3.1.0
+          stack exec ghc-pkg unregister interpolate -- --force
           find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
       - name: Generate backend API

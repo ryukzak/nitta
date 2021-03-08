@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,7 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions hiding (remain)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -37,7 +39,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 import Prelude hiding (init)
 
 data Shift v x t = Shift
@@ -97,8 +98,8 @@ instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
 execution pu@Shift{target = Nothing, sources = [], remain} f
     | Just f' <- castF f =
         case f' of
-            ShiftL s (I i) (O o) -> toPU i o False s
-            ShiftR s (I i) (O o) -> toPU i o True s
+            ShiftL s (I i_) (O o) -> toPU i_ o False s
+            ShiftR s (I i_) (O o) -> toPU i_ o True s
     where
         toPU inp out sRight step =
             pu
@@ -271,7 +272,7 @@ instance IOConnected (Shift v x t) where
 
 instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware _tag _pu = FromLibrary "pu_shift.v"
     software _ _ = Empty
     hardwareInstance
         tag
@@ -282,20 +283,19 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            codeBlock
-                [qc|
-            pu_shift #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .signal_work( { work } ), .signal_direction( { direction } )
-                , .signal_mode( { mode } ), .signal_step( { step } )
-                , .signal_init( { init } ), .signal_oe( { oe } )
-                , .data_in( { dataIn } )
-                , .attr_in( { attrIn } )
-                , .data_out( { dataOut } )
-                , .attr_out( { attrOut } )
+            [__i|
+                pu_shift \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .signal_work( #{ work } ), .signal_direction( #{ direction } )
+                    , .signal_mode( #{ mode } ), .signal_step( #{ step } )
+                    , .signal_init( #{ init } ), .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
                 );
             |]
     hardwareInstance _title _pu _env = error "internal error"

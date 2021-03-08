@@ -19,6 +19,8 @@ module NITTA.Model.ProcessorUnits.IO.SPI.Tests (
 
 import Control.Monad (void)
 import Data.Default
+import Data.String.Interpolate
+import qualified Data.Text as T
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
@@ -29,7 +31,6 @@ import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
-import Text.InterpolatedString.Perl6 (qc)
 
 test_multiple_receives =
     [ testCase "receive two variables" $
@@ -135,15 +136,16 @@ received =
     ]
 
 alg =
-    [qc|
-            function sum()
-                local a = receive()
-                local b = receive()
-                send(a + b)
-                sum()
-            end
+    [__i|
+        function sum()
+            local a = receive()
+            local b = receive()
+            send(a + b)
             sum()
-            |]
+        end
+        sum()
+    |] ::
+        T.Text
 
 tests :: TestTree
 tests = $(testGroupGenerator)

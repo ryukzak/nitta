@@ -92,6 +92,7 @@ module NITTA.Synthesis (
 import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
+import qualified Data.Text as T
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -194,10 +195,10 @@ synthesizeTargetSystem
                         else Left "synthesis process...fail"
 
             writeProject' leaf = do
-                nittaPath <- either error id <$> collectNittaPath tTemplates
+                nittaPath <- either (error . T.unpack) id <$> collectNittaPath tTemplates
                 let prj =
                         Project
-                            { pName = tName
+                            { pName = T.pack tName
                             , pLibPath = tLibPath
                             , pTargetProjectPath = joinPath [tPath, tName]
                             , pNittaPath = nittaPath

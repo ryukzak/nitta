@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -34,7 +35,10 @@ import Data.Default
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String.Interpolate
+import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -44,7 +48,6 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 data Fram v x t = Fram
     { -- |memory cell array
@@ -240,9 +243,9 @@ instance (Var v) => Locks (Fram v x t) v where
 
 instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
     breakLoopOptions Fram{memory} =
-        [ BreakLoop x o i
+        [ BreakLoop x o i_
         | (_, Cell{state = NotBrokenLoop, job = Just Job{function}}) <- A.assocs memory
-        , let Just (Loop (X x) (O o) (I i)) = castF function
+        , let Just (Loop (X x) (O o) (I i_)) = castF function
         ]
     breakLoopDecision fram@Fram{memory} bl@BreakLoop{loopO} =
         let Just (addr, cell@Cell{history, job = Just Job{binds}}) =
@@ -427,11 +430,12 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     , process_
                     }
     endpointDecision Fram{memory} d =
-        error $
-            "fram model internal error: "
-                ++ show d
-                ++ "\n cells state: \n"
-                ++ S.join "\n" (map (\(i, c) -> show i ++ ": " ++ show (state c)) $ A.assocs memory)
+        error
+            [__i|
+                fram model internal error: #{ d }
+                cells state:
+                #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
+            |]
 
 ---------------------------------------------------------------------
 
@@ -456,9 +460,9 @@ instance Controllable (Fram v x t) where
         where
             addrs =
                 map
-                    ( \(linkId, i) ->
+                    ( \(linkId, ix) ->
                         ( linkId
-                        , maybe Undef (Bool . (`testBit` i)) addrSignal
+                        , maybe Undef (Bool . (`testBit` ix)) addrSignal
                         )
                     )
                     $ zip (reverse addr) [0 ..]
@@ -493,10 +497,10 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         let tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
             showMicrocode Microcode{oeSignal, wrSignal, addrSignal} =
-                [qc|oe <= { bool2verilog oeSignal };|]
-                    <> [qc| wr <= { bool2verilog wrSignal };|]
-                    <> [qc| addr <= { maybe "0" show addrSignal };|]
-         in Immediate (moduleName pName pUnit ++ "_tb.v") $
+                [i|oe <= #{ bool2verilog oeSignal };|]
+                    <> [i| wr <= #{ bool2verilog wrSignal };|]
+                    <> [i| addr <= #{ maybe "0" show addrSignal };|]
+         in Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
                 snippetTestBench
                     prj
                     SnippetTestBenchConf
@@ -510,15 +514,15 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                         , tbcMC2verilogLiteral = showMicrocode
                         }
 
-softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
+softwareFile tag pu = moduleName tag pu <> "." <> tag <> ".dump"
 
 instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
-    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    hardware _tag _pu = FromLibrary "pu_fram.v"
     software tag fram@Fram{memory} =
         Immediate
-            (softwareFile tag fram)
-            $ unlines $
+            (toString $ softwareFile tag fram)
+            $ T.unlines $
                 map
                     (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
                     $ A.elems memory
@@ -531,23 +535,22 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            codeBlock
-                [qc|
-            pu_fram #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
-                    , .RAM_SIZE( { numElements memory } )
-                    , .FRAM_DUMP( "$PATH$/{ softwareFile tag fram }" )
-                    ) { tag }
-                ( .clk( { sigClk } )
-                , .signal_addr( \{ { S.join ", " $ map show addr } } )
-                , .signal_wr( { wr } )
-                , .data_in( { dataIn } )
-                , .attr_in( { attrIn } )
-                , .signal_oe( { oe } )
-                , .data_out( { dataOut } )
-                , .attr_out( { attrOut } )
-                );
+            [__i|
+                pu_fram \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .RAM_SIZE( #{ numElements memory } )
+                        , .FRAM_DUMP( "$PATH$/#{ softwareFile tag fram }" )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .signal_addr( { #{ T.intercalate ", " $ map (T.pack . show) addr } } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .signal_oe( #{ oe } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
             |]
     hardwareInstance _title _pu _env = error "internal error"
 

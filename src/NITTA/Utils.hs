@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -14,6 +15,9 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils (
+    doc2text,
+    Verilog,
+    comment,
     shiftI,
     modify'_,
 
@@ -22,9 +26,6 @@ module NITTA.Utils (
     values2dump,
     hdlValDump,
     toModuleName,
-
-    -- *HDL generation (deprecated)
-    renderST,
 
     -- *Process inspection
     endpointAt,
@@ -36,7 +37,6 @@ module NITTA.Utils (
     isFB,
     isInstruction,
     module NITTA.Utils.Base,
-    module NITTA.Utils.CodeFormat,
 ) where
 
 import Control.Monad.State (State, modify')
@@ -45,21 +45,28 @@ import Data.List (sortOn)
 import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
-import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
-import Text.StringTemplate
+import Prettyprinter
+import Prettyprinter.Render.Text
+
+type Verilog = Doc ()
+doc2text :: Verilog -> T.Text
+doc2text = renderStrict . layoutPretty defaultLayoutOptions
+
+comment str = unlines $ map ("// " <>) $ lines str
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
 shiftI offset i = (I.inf i + offset) ... (I.sup i + offset)
 
-bool2verilog True = "1'b1"
+bool2verilog True = "1'b1" :: T.Text
 bool2verilog False = "1'b0"
 
 values2dump vs =
@@ -71,7 +78,7 @@ values2dump vs =
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
         readBin :: String -> Int
-        readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
+        readBin = fst . head . readInt 2 (`elem` ("x01" :: String)) (\case '1' -> 1; _ -> 0)
 
 hdlValDump x =
     let bins =
@@ -85,14 +92,12 @@ hdlValDump x =
                     then bins
                     else replicate (4 - lMod) (head bins) ++ bins
         hs = map (foldr (\(i, a) acc -> if a then setBit acc i else acc) (0 :: Int) . zip [3, 2, 1, 0]) bins'
-     in concatMap (`showHex` "") hs
+     in T.concat $ map (T.pack . (`showHex` "")) hs
     where
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
 
 toModuleName = S.replace " " "_"
-
-renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
 endpointAt t p =
     case mapMaybe getEndpoint $ whatsHappen t p of

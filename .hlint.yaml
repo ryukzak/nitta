@@ -12,3 +12,4 @@
 - ignore: {name: "Evaluate", within: "NITTA.Intermediate.Value.Tests"}
 - ignore: {name: "Use <$>", within: "NITTA.UIBackend.ViewHelper"}
 - ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
+- ignore: {name: "Reduce duplication", within: "NITTA.Model.Tests.Microarchitecture"}
