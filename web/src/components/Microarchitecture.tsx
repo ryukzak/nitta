@@ -99,6 +99,5 @@ function renderMicroarchitectureDot(ma: Microarchitecture, endpoints: Endpoints)
   lines.push(`  { rank = max; ${vars.join("; ")} }`);
   lines.push("}");
 
-  console.log(lines.join("\n"));
   return lines.join("\n");
 }
