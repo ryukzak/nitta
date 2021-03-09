@@ -378,7 +378,7 @@ test_examples =
     , typedLuaTestCase
         (microarch Sync SlaveSPI)
         pFX22_32
-        "example Compile time evaluation refactoring lua"
+        "example Constant folding process lua"
         $(embedStringFile "examples/constantFolding.lua")
     ]
 

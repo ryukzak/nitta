@@ -97,8 +97,9 @@ isConst f
 
 selectClusters fs =
     let consts = filter isConst fs
+        isIntersection a b = not . S.null $ S.intersection a b
         inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)
-        getInputConsts f = filter (\c -> outputs c `S.isSubsetOf` inputs f) consts
+        getInputConsts f = filter (\c -> outputs c `isIntersection` inputs f) consts
         createCluster f
             | inputsAreConst f = f : getInputConsts f
             | otherwise = [f]
