@@ -29,7 +29,7 @@ module NITTA.Intermediate.Functions.Accum (
     isPush,
 ) where
 
-import Data.List (partition)
+import Data.List (nub, partition)
 import Data.List.Split (splitWhen)
 import Data.Set (elems, fromList)
 import qualified Data.String.Utils as S
@@ -82,12 +82,13 @@ instance (Ord v) => Function (Acc v x) v where
 instance (Ord v) => Patch (Acc v x) (v, v) where
     patch diff (Acc lst) =
         Acc $
-            map
-                ( \case
-                    Push s v -> Push s (patch diff v)
-                    Pull vs -> Pull (patch diff vs)
-                )
-                lst
+            nub $
+                map
+                    ( \case
+                        Push s v -> Push s (patch diff v)
+                        Pull vs -> Pull (patch diff vs)
+                    )
+                    lst
 
 exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
 toBlocksSplit exprInput =
