@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -22,6 +23,7 @@ module NITTA.Intermediate.Simulation (
 import Data.List (intersect, (\\))
 import qualified Data.Map.Strict as M
 import Data.Set (elems)
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Utils
@@ -41,9 +43,9 @@ simulateAlg cycleN cycle0 transmission alg
     | let cycleConnections [] = []
           cycleConnections (f : fs)
             -- without refactoring
-            | Just (Loop _ (O o) (I i)) <- castF f = (i, elems o) : cycleConnections fs
+            | Just (Loop _ (O ov) (I iv)) <- castF f = (iv, elems ov) : cycleConnections fs
             -- after refactoring (BreakLoopD)
-            | Just (LoopBegin (Loop _ (O o) (I i)) _) <- castF f = (i, elems o) : cycleConnections fs
+            | Just (LoopBegin (Loop _ (O ov) (I iv)) _) <- castF f = (iv, elems ov) : cycleConnections fs
             | otherwise = cycleConnections fs
 
           fromPrevCycle = cycleConnections alg =
@@ -88,7 +90,9 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
         simulateCycle cntx00 fs =
             foldl
                 ( \cntx f ->
-                    updateCntx cntx $ simulate cntx f
+                    case updateCntx cntx $ simulate cntx f of
+                        Right cntx' -> cntx'
+                        Left e -> error [i|can't simulate #{f} in context #{cntx}: #{e}|]
                 )
                 cntx00
                 fs
