@@ -111,8 +111,8 @@ evalCluster fs = outputResult
         (consts, [f]) = L.partition isConst fs
         cntx = CycleCntx $ M.fromList $ concatMap (simulate def) consts
         outputResult
-            | Just Send{} <- castF f = fs
-            | otherwise = map (\(v, x) -> constant x [v]) (simulate cntx f) ++ consts
+            | null $ outputs f = fs
+            | otherwise = map (\(v, x) -> constant x [v]) (simulate cntx f) <> consts
 
 deleteExtraF fs =
     L.nub
