@@ -16,6 +16,8 @@ module NITTA.Model.TestDslProt (
 import Control.Monad.State.Lazy
 import Data.Default
 import qualified Data.Set as S
+
+-- TODO remove debug
 import qualified Debug.Trace as DebugTrace
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -69,13 +71,22 @@ isBindedSt f =
         UnitTestState{unit, functs} = get
      in not (null fu) && fu == f
 
-checkPipe f st = flip runState defUTS $ do
+-- TODO: do I need this func for single functions when we have 2 binded
+isProcessComplete = do
+    UnitTestState{unit, functs} <- get
+    if isProcessComplete' unit functs
+        then return ()
+        else error "Process is not complete!"
+
+checkPipe f st = flip execState defUTS $ do
     bindFunc f st
     --    if isBindedSt [f] then doFstDecision else error "[Char]"
     doDecision $ beTarget 1 2 "a"
     doFstDecision
     doDecision $ beSource 5 5 ["c", "d"]
+    isProcessComplete
 
+------------------------------------------------------------------
 defUTS = UnitTestState st0 []
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
@@ -84,6 +95,6 @@ st0 = multiplier True :: Multiplier String Int Int
 Right st1def = tryBind fDef st0
 
 -- TODO: clean/combine with utils
-isProcessComplete pu fs = unionsMap variables fs == processedVars pu
+isProcessComplete' pu fs = unionsMap variables fs == processedVars pu
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
