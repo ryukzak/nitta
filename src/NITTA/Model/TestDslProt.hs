@@ -61,15 +61,15 @@ doDecision endpSt = do
     UnitTestState{unit, functs} <- get
     put $ UnitTestState (endpointDecision unit endpSt) functs
 
--- TODO: rewrite with State
 isBinded f pu =
     let fu = functions pu
-     in not (null fu) && (head fu == f)
-
-isBindedSt f =
-    let fu = functions unit
-        UnitTestState{unit, functs} = get
      in not (null fu) && fu == f
+
+isFuncBinded = do
+    UnitTestState{unit, functs} <- get
+    if isBinded functs unit
+        then return ()
+        else error "Function is not binded to process!"
 
 -- TODO: do I need this func for single functions when we have 2 binded
 isProcessComplete = do
@@ -80,7 +80,7 @@ isProcessComplete = do
 
 checkPipe f st = flip execState defUTS $ do
     bindFunc f st
-    --    if isBindedSt [f] then doFstDecision else error "[Char]"
+    isFuncBinded
     doDecision $ beTarget 1 2 "a"
     doFstDecision
     doDecision $ beSource 5 5 ["c", "d"]
