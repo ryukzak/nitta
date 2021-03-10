@@ -66,6 +66,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("newDF", (e: Node) => (e.parameters as BindMetrics).pAllowDataFlow, 70),
           textColumn("newBind", (e: Node) => (e.parameters as BindMetrics).pNumberOfBindedFunctions, 70),
           textColumn("|inputs|", (e: Node) => (e.parameters as BindMetrics).pPercentOfBindedInputs, 70),
+          detailColumn(),
         ]}
       />
       <Table
