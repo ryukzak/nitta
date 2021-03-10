@@ -22,9 +22,9 @@ Possible deadlocks (recognized in 'NITTA.Model.Networks.Bus'):
 @
                     source1
     DoubleLoopOut--b1--+--b2--> DoubleLoopIn
-               |       |------> Send
+               |       +------> Send
                |
-               |------b3------> DoubleLoopIn
+               +------b3------> DoubleLoopIn
                     source2
 
     Possible buffers: b1, b2, b3
@@ -35,7 +35,7 @@ Possible deadlocks (recognized in 'NITTA.Model.Networks.Bus'):
 @
     a + b = c ---+----> c + d = e ---> e * c = f
                  |                         ^
-                 |-------------b1----------|
+                 +-------------b1----------+
 @
 
 ResolveDeadlock example:
