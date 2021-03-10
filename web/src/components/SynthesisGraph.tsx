@@ -1,9 +1,10 @@
 import * as React from "react";
-import { Button } from "react-bootstrap";
+import { Popover, OverlayTrigger, Button } from "react-bootstrap";
+import * as Icon from "react-bootstrap-icons";
 
 import { synthesize, api, reLastSID, sidSeparator } from "services/HaskellApiService";
 
-import { SynthesisGraphRender } from "./SynthesisGraphRender";
+import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
 
 export const SynthesisGraph: React.FC = () => {
@@ -38,9 +39,6 @@ export const SynthesisGraph: React.FC = () => {
           <Button {...buttonAttrs} onClick={() => reduceSynthesisGraphView()}>
             Reduce
           </Button>
-          <Button {...buttonAttrs} onClick={() => appContext.resetSID()}>
-            Refresh
-          </Button>
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
@@ -49,7 +47,23 @@ export const SynthesisGraph: React.FC = () => {
           </Button>
         </div>
         <span className="text-muted">
-          black - processed node; white - in progress node; green - succees synthesis; blue - current
+          <OverlayTrigger
+            trigger="click"
+            placement="left"
+            overlay={
+              <Popover id={`popover-positioned-left`}>
+                <Popover.Title>Legend</Popover.Title>
+                <Popover.Content>
+                  <p>black - processed node (subforest was evaluated)</p>
+                  <p>white - not precessed node (subforest was not evaluated)</p>
+                  <p>green - succees synthesis</p>
+                  <p>blue - current sected node</p>
+                </Popover.Content>
+              </Popover>
+            }
+          >
+            <Icon.InfoCircle />
+          </OverlayTrigger>
         </span>
       </div>
       <div className="justify-content-center bg-light border" style={{ height: height }}>
