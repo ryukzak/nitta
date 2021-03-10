@@ -60,8 +60,14 @@ instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
                 (recLoopOut bl){funHistory = [origin]} :
                 (functions dfg L.\\ [origin])
 
+instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
+    constantFoldingOptions _dfg = []
+
+    constantFoldingDecision dfg ref@ConstantFolding{} =
+        fsToDataFlowGraph $ constantFoldingDecision (functions dfg) ref
+
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
-    optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg
+    optimizeAccumOptions _dfg = []
 
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref

@@ -143,8 +143,9 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
                         Root{} -> "root"
                         SynthesisDecision{metrics}
                             | Just BindMetrics{} <- cast metrics -> "Bind"
-                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
                             | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
+                            | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"
+                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
                             | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
                             | Just ResolveDeadlockMetrics{} <- cast metrics -> "Refactor"
                         _ -> "?"
@@ -243,6 +244,17 @@ instance ToSample (NodeView tag v x t) where
                     OptimizeAccumView
                         { old = [FView "a + b = c" [], FView "c + d = e" []]
                         , new = [FView "a + b + d = e" []]
+                        }
+                , score = 1999
+                }
+            , NodeView
+                { sid = show $ SID [0, 1, 3, 1, 5]
+                , isLeaf = False
+                , parameters = toJSON ConstantFoldingMetrics
+                , decision =
+                    ConstantFoldingView
+                        { cRefOld = [FView "a = 1" [], FView "b = 2" [], FView "a + b = r" []]
+                        , cRefNew = [FView "r = 3" []]
                         }
                 , score = 1999
                 }

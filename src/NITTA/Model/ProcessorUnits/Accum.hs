@@ -331,5 +331,6 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
 instance IOTestBench (Accum v x t) v x
 
 instance BreakLoopProblem (Accum v x t) v x
+instance ConstantFoldingProblem (Accum v x t) v x
 instance OptimizeAccumProblem (Accum v x t) v x
 instance ResolveDeadlockProblem (Accum v x t) v x

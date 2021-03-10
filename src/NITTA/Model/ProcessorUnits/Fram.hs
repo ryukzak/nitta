@@ -274,6 +274,7 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
                 , process_
                 }
 
+instance ConstantFoldingProblem (Fram v x t) v x
 instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 

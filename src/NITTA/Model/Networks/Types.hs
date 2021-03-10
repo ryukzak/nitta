@@ -43,6 +43,7 @@ type PUClasses pu v x t =
     , IOConnected pu
     , EndpointProblem pu v t
     , BreakLoopProblem pu v x
+    , ConstantFoldingProblem pu v x
     , OptimizeAccumProblem pu v x
     , ResolveDeadlockProblem pu v x
     , ProcessorUnit pu v x t

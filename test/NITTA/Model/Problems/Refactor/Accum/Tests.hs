@@ -19,18 +19,14 @@ module NITTA.Model.Problems.Refactor.Accum.Tests (
 ) where
 
 import qualified Data.Set as S
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
-refactorTo startFs resultFs = dfRefactored @?= dfRes
-    where
-        df = fsToDataFlowGraph (startFs :: [F String Int])
-        dfRes = fsToDataFlowGraph (resultFs :: [F String Int])
-        dfRefactored = simpleRefactor df
+refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
+refactorTo startFs resultFs = S.fromList (simpleRefactor startFs) @?= S.fromList resultFs
 
 simpleRefactor dfg =
     case optimizeAccumOptions dfg of

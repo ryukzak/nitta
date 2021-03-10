@@ -404,12 +404,13 @@ instance (Var v) => Locks (Multiplier v x t) v where
                ]
 
 {- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
-'ResolveDeadlockProblem') describes the possibility of PU to modify an
+'ResolveDeadlockProblem', 'ConstantFoldingProblem') describes the possibility of PU to modify an
 algorithm. Empty implementation means that multiplier PU doesn't have such
 possibilities.
 -}
 instance BreakLoopProblem (Multiplier v x t) v x
 
+instance ConstantFoldingProblem (Multiplier v x t) v x
 instance OptimizeAccumProblem (Multiplier v x t) v x
 instance ResolveDeadlockProblem (Multiplier v x t) v x
 

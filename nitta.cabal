@@ -1,10 +1,8 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: ad2602ce7b918866e57a0034645ea0cf45747b3d13fdfe70d4a7decb40e3ae96
 
 name:           nitta
 version:        0.0.0.1
@@ -67,6 +65,7 @@ library
       NITTA.Model.Problems.Endpoint
       NITTA.Model.Problems.Refactor
       NITTA.Model.Problems.Refactor.BreakLoop
+      NITTA.Model.Problems.Refactor.ConstantFolding
       NITTA.Model.Problems.Refactor.OptimizeAccum
       NITTA.Model.Problems.Refactor.ResolveDeadlock
       NITTA.Model.Problems.ViewHelper
@@ -91,6 +90,7 @@ library
       NITTA.Synthesis
       NITTA.Synthesis.Bind
       NITTA.Synthesis.BreakLoop
+      NITTA.Synthesis.ConstantFolding
       NITTA.Synthesis.Dataflow
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
@@ -224,6 +224,7 @@ test-suite nitta-test
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Utils
       NITTA.Model.Problems.Refactor.Accum.Tests
+      NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
       NITTA.Model.ProcessorUnits.Accum.Tests
       NITTA.Model.ProcessorUnits.Broken.Tests

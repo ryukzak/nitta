@@ -81,6 +81,7 @@ instance (Var v) => Locks (Broken v x t) v where
                ]
 
 instance BreakLoopProblem (Broken v x t) v x
+instance ConstantFoldingProblem (Broken v x t) v x
 instance OptimizeAccumProblem (Broken v x t) v x
 instance ResolveDeadlockProblem (Broken v x t) v x
 

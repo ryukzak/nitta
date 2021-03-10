@@ -6,6 +6,7 @@ import {
   TreeView,
   ShortNodeView,
   IBreakLoopView,
+  IConstantFoldingView,
   IOptimizeAccumView,
   IResolveDeadlockView,
   NetworkDesc,
@@ -22,6 +23,7 @@ export type Root = IRootView;
 export type Bind = IBindDecisionView;
 export type Dataflow = IDataflowDecisionView;
 export type BreakLoop = IBreakLoopView;
+export type ConstantFolding = IConstantFoldingView;
 export type OptimizeAccum = IOptimizeAccumView;
 export type ResolveDeadlock = IResolveDeadlockView;
 

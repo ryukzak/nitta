@@ -50,6 +50,10 @@ data DecisionView
         , outputs :: [T.Text]
         , input :: T.Text
         }
+    | ConstantFoldingView
+        { cRefOld :: [FView]
+        , cRefNew :: [FView]
+        }
     | OptimizeAccumView
         { old :: [FView]
         , new :: [FView]
@@ -89,6 +93,13 @@ instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
             { value = show' loopX
             , outputs = map show' $ S.elems loopO
             , input = show' loopI
+            }
+
+instance Viewable (ConstantFolding v x) DecisionView where
+    view ConstantFolding{cRefOld, cRefNew} =
+        ConstantFoldingView
+            { cRefOld = map view cRefOld
+            , cRefNew = map view cRefNew
             }
 
 instance Viewable (OptimizeAccum v x) DecisionView where
