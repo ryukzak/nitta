@@ -6,6 +6,7 @@ jobs:
 
   nitta:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v2
 
@@ -16,9 +17,10 @@ jobs:
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
-        uses: actions/setup-haskell@v1.1.3
+        uses: haskell/actions/setup@v1.2
         with:
           enable-stack: true
+          stack-version: 'latest'
 
       - name: Build nitta backend dependencies and doctest
         run: |
@@ -30,7 +32,6 @@ jobs:
 
       - name: Build & test nitta backend
         run: stack build --haddock --test --copy-bins
-        timeout-minutes: 45
 
       - name: Check examples by doctest
         run: |
