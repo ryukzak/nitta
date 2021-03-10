@@ -47,7 +47,6 @@ import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import Numeric (readInt, showHex)

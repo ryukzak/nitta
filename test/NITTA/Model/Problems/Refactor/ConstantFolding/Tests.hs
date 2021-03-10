@@ -19,15 +19,14 @@ module NITTA.Model.Problems.Refactor.ConstantFolding.Tests (
     tests,
 ) where
 
-import NITTA.Model.Problems.Refactor
-import Test.Tasty (testGroup)
-import Test.Tasty.HUnit
-
 import qualified Data.Set as S
+import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
-import Text.InterpolatedString.Perl6 (qc)
+import NITTA.Model.Problems.Refactor
+import Test.Tasty (testGroup)
+import Test.Tasty.HUnit
 
 refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
 refactorTo startFs resultFs = S.fromList (simpleRefactor startFs) @?= S.fromList resultFs
@@ -83,7 +82,7 @@ tests =
              in [a, b, c, d, tmp1, tmp2, summ, res, loopRes] `refactorTo` [calcTmp, loopRes]
         , luaTestCase
             "Constants folding optimisation"
-            [qc|
+            [__i|
             function constantFolding(i)
                 local c = 3
                 local v = 1 + 2 + c

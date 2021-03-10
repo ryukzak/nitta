@@ -88,7 +88,7 @@ instance
             , mUnit = optimizeAccumDecision mUnit d
             }
 
-instance (VarValTime v x t) => ConstantFoldingProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance (Var v, Val x, ConstantFoldingProblem u v x) => ConstantFoldingProblem (TargetSystem u tag v x t) v x where
     constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit
 
     constantFoldingDecision TargetSystem{mUnit, mDataFlowGraph} d =
@@ -97,7 +97,7 @@ instance (VarValTime v x t) => ConstantFoldingProblem (TargetSystem (BusNetwork 
             , mUnit = constantFoldingDecision mUnit d
             }
 
-instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+instance (Var v, ResolveDeadlockProblem u v x) => ResolveDeadlockProblem (TargetSystem u tag v x t) v x where
     resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit
 
     resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =

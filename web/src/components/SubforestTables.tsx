@@ -5,7 +5,7 @@ import * as Icon from "react-bootstrap-icons";
 import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
 import { BreakLoop, OptimizeAccum, ResolveDeadlock, ConstantFolding } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics, FView } from "gen/types";
+import { BindMetrics, DataflowMetrics, FView } from "services/gen/types";
 
 import {
   sidColumn,
@@ -32,8 +32,8 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
     "BindDecisionView",
     "DataflowDecisionView",
     "BreakLoopView",
-    "OptimizeAccumView",
     "ConstantFoldingView",
+    "OptimizeAccumView",
     "ResolveDeadlockView",
   ];
 

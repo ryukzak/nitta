@@ -1,10 +1,8 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.34.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: ad2602ce7b918866e57a0034645ea0cf45747b3d13fdfe70d4a7decb40e3ae96
 
 name:           nitta
 version:        0.0.0.1
