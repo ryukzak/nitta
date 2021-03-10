@@ -6,6 +6,7 @@ import { Graphviz } from "graphviz-react";
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Microarchitecture, Network, Unit } from "services/HaskellApiService";
 import { PUEndpoints } from "services/HaskellApiService";
+import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 
@@ -33,13 +34,14 @@ export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (pro
       .catch((err: AxiosError) => console.error(err));
   }, [selectedSID]);
 
+  const dot = ma && endpoints ? renderMicroarchitectureDot(ma, endpoints) : undefined;
   return (
     <div className="bg-light border graphvizContainer">
-      {ma && endpoints && (
-        <Graphviz
-          dot={renderMicroarchitectureDot(ma, endpoints)}
-          options={{ height: 399, width: "100%", zoom: true }}
-        />
+      {dot && (
+        <>
+          <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
+          <DownloadTextFile name={"microarchitecture.dot"} text={dot} />
+        </>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
 import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 import { PUEndpoints, Endpoint, EndpointDecision } from "services/HaskellApiService";
+import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 
@@ -100,13 +101,14 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.log(err));
   }, [selectedSID]);
 
+  const dot = algorithmGraph ? renderGraphJsonToDot(algorithmGraph, procState, endpoints) : undefined;
   return (
     <div className="bg-light border edgeGraphContainer">
-      {algorithmGraph && (
-        <Graphviz
-          dot={renderGraphJsonToDot(algorithmGraph, procState, endpoints)}
-          options={{ height: 399, width: "100%", zoom: true }}
-        />
+      {dot && (
+        <>
+          <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
+          <DownloadTextFile name={"algorithm.dot"} text={dot} />
+        </>
       )}
     </div>
   );
