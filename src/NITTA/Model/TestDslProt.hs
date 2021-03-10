@@ -14,7 +14,9 @@ module NITTA.Model.TestDslProt (
     ) where
 
 import Control.Monad.State.Lazy
+import Data.Default
 import qualified Data.Set as S
+import qualified Debug.Trace as DebugTrace
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -24,80 +26,57 @@ import Numeric.Interval.NonEmpty
 
 data UnitTestState v x t = UnitTestState
     { unit :: Multiplier v x t
-    , function :: F v x
+    , functs :: [F v x]
+    -- , decisions :: EndpointSt
     }
+    deriving (Show)
 
--- F v x -> Multiplier v x t -> m ()
+-- TODO: make func use previous state [F v x]
 bindFunc f st =
     case tryBind f st of
-        Right v -> put $ UnitTestState v f
+        Right v -> put $ UnitTestState v [f] -- : functs
         --- TODO add assertFalse when wrong bind
         Left err -> error $ "can't get report: " ++ err
 
 -- TODO: fix not only first decision?
 --       Check for null
+-- TODO fix bug when sources are taken at one decision
+doFstDecision = do
+    UnitTestState{unit, functs} <- get
+    doDecision $ DebugTrace.traceShow (fstDecision unit) (fstDecision unit)
+
 fstDecision st = endpointOptionToDecision . head . endpointOptions $ st
 
-beTarget a b t = doDecision $ EndpointSt (Target t) (a ... b)
+-- TODO: add version without time via Maybe
+beTarget a b t = EndpointSt (Target t) (a ... b)
 
+-- TODO: add version without time
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 -- what if [] is empty??
+-- Todo make endpSt Maybe, it will allow to get it from State
 doDecision endpSt = do
-    UnitTestState{unit, function} <- get
-    put $ UnitTestState (endpointDecision unit endpSt) function
+    UnitTestState{unit, functs} <- get
+    put $ UnitTestState (endpointDecision unit endpSt) functs
 
---  endpointDecision (head sts) endpSt : sts
-
--- doDecision endpSt = modify (endpointDecision (head <$> get) endpSt :)
-
-getAndDoDecision st = doDecision . fstDecision $ st
-
---getAndDoDecision2 = runState $ doDecision . getDecision . head <$> get
-
--- TODO: rewrite, because `functions a` has `F [Char] Int` type
+-- TODO: rewrite with State
 isBinded f pu =
     let fu = functions pu
      in not (null fu) && (head fu == f)
 
-evalMultiplierChain st bindF [] = error ""
-evalMultiplierChain st bindF [] = error "i"
-evalMultiplierChain st bindF fs = head $
-    flip execState [] $ do
-        modify (bindFunc bindF st :)
-        --isBinded f st
-        evalMultiplierChain' fs
+isBindedSt f =
+    let fu = functions unit
+        UnitTestState{unit, functs} = get
+     in not (null fu) && fu == f
 
-evalMultiplierChain' [] = get
-evalMultiplierChain' fs = do
-    modify (head fs get :)
-    evalMultiplierChain' $ tail fs
-
---- To check whether piping work
---testMultChain = evalMultiplierChain st0 fDef []
-
-checkPipe f st = flip runState $ do
+checkPipe f st = flip runState defUTS $ do
     bindFunc f st
-    --isBinded st
+    --    if isBindedSt [f] then doFstDecision else error "[Char]"
+    doDecision $ beTarget 1 2 "a"
+    doFstDecision
+    doDecision $ beSource 5 5 ["c", "d"]
 
-    -- TODO assert between steps
-    let ep = EndpointSt (Target "a") (1 ... 2)
-    doDecision ep
-
---doDecision ep
-
---    isProcessComplete (head sts) $ variables f
-
-{-}
-    sts <- get
-    getAndDoDecision sts
-
-    sts <- get
-    getAndDoDecision sts
-
-    sts <- get
-    -}
---return $ isProcessComplete st [f]
+defUTS = UnitTestState st0 []
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
 
