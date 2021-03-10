@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -65,6 +66,8 @@ import qualified Data.Map as M
 import Data.Set (elems, fromList, union)
 import qualified Data.String.Utils as S
 import Data.Typeable
+import Data.Validity
+import GHC.Generics
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
@@ -261,13 +264,16 @@ instance (Var v, Num x) => FunctionSimulation (Sub v x) v x where
             y = x1 - x2
          in [(v, y) | v <- elems vs]
 
-data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
+data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq, Generic)
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance (Show v) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) =
         show k1 ++ " * " ++ show k2 <> " = " <> showOut k3
 multiply :: (Var v, Val x) => v -> v -> [v] -> F v x
 multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
+
+instance Validity (Multiply v x) where
+    validate m = check (True) "Multiply equation is valid"
 
 instance (Ord v) => Function (Multiply v x) v where
     inputs (Multiply a b _c) = variables a `union` variables b

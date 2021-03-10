@@ -14,6 +14,7 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
+import Data.GenValidity
 import Data.Set (fromList, intersection)
 import qualified Data.Set as S
 import NITTA.Intermediate.Functions
@@ -48,6 +49,10 @@ instance (Val x, Arbitrary x) => Arbitrary (Constant String x) where
 instance Arbitrary (Multiply String x) where
     arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
 
+instance GenUnchecked (Multiply String x)
+
+instance GenValid (Multiply String x)
+
 instance Arbitrary (Division String x) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
@@ -60,5 +65,8 @@ instance Arbitrary (Acc String x) where
 instance Arbitrary (IntX m) where
     arbitrary = IntX <$> choose (0, 256)
 
+instance GenUnchecked (IntX m)
+
+instance GenValid (IntX m)
 instance (Arbitrary x) => Arbitrary (Attr x) where
     arbitrary = Attr <$> arbitrary <*> arbitrary

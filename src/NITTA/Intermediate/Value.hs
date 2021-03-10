@@ -286,7 +286,7 @@ instance Val Int where
 
 -- | Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Generic)
 
 instance (KnownNat m) => Validity (IntX m) where
     validate x@(IntX raw) =
