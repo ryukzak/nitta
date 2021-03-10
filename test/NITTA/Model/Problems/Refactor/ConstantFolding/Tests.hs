@@ -83,12 +83,12 @@ tests =
         , luaTestCase
             "Constants folding optimisation"
             [__i|
-            function constantFolding(i)
-                local c = 3
-                local v = 1 + 2 + c
-                local res = i + v
-                constantFolding(res)
-            end
-            constantFolding(0)
+                function constantFolding(i)
+                        local c = 3
+                        local v = 1 + 2 + c
+                        local res = i + v
+                        constantFolding(res)
+                end
+                constantFolding(0)
             |]
         ]

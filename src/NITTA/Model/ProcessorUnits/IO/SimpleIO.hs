@@ -106,8 +106,8 @@ instance
     process = process_
 
 instance BreakLoopProblem (SimpleIO i v x t) v x
-instance OptimizeAccumProblem (SimpleIO i v x t) v x
 instance ConstantFoldingProblem (SimpleIO i v x t) v x
+instance OptimizeAccumProblem (SimpleIO i v x t) v x
 instance ResolveDeadlockProblem (SimpleIO i v x t) v x
 
 instance

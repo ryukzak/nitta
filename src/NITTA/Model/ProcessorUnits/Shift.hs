@@ -82,8 +82,8 @@ instance Default t => Default (Shift v x t) where
             }
 
 instance BreakLoopProblem (Shift v x t) v x
-instance OptimizeAccumProblem (Shift v x t) v x
 instance ConstantFoldingProblem (Shift v x t) v x
+instance OptimizeAccumProblem (Shift v x t) v x
 instance ResolveDeadlockProblem (Shift v x t) v x
 
 instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where

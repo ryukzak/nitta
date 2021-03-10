@@ -180,8 +180,8 @@ instance (Var v) => Locks (Divider v x t) v where
     locks _ = []
 
 instance BreakLoopProblem (Divider v x t) v x
-instance OptimizeAccumProblem (Divider v x t) v x
 instance ConstantFoldingProblem (Divider v x t) v x
+instance OptimizeAccumProblem (Divider v x t) v x
 instance ResolveDeadlockProblem (Divider v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where

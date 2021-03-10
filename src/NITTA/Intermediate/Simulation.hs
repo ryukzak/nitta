@@ -1,4 +1,3 @@
-{- ORMOLU_DISABLE -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -22,10 +21,10 @@ module NITTA.Intermediate.Simulation (
 
 import Data.List (intersect, (\\))
 import qualified Data.Map.Strict as M
-import           Data.Set ( elems )
-import           NITTA.Intermediate.Functions
-import           NITTA.Intermediate.Types
-import           NITTA.Utils
+import Data.Set (elems)
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Types
+import NITTA.Utils
 
 -- |Functional algorithm simulation
 simulateDataFlowGraph ::
@@ -78,12 +77,21 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
                 )
                 trans
             )
-        throwLoop (CycleCntx cntx) = CycleCntx $ M.fromList $ foldl
-            (\st (thrown, vs) -> map ( \v -> (v, cntx M.! thrown) ) vs ++ st
-            ) [] fromPrevCycle
-        simulateCycle cntx00 fs = foldl (\cntx f ->
-            updateCntx cntx $ simulate cntx f
-            ) cntx00 fs
+        throwLoop (CycleCntx cntx) =
+            CycleCntx $
+                M.fromList $
+                    foldl
+                        ( \st (thrown, vs) -> map (\v -> (v, cntx M.! thrown)) vs ++ st
+                        )
+                        []
+                        fromPrevCycle
+        simulateCycle cntx00 fs =
+            foldl
+                ( \cntx f ->
+                    updateCntx cntx $ simulate cntx f
+                )
+                cntx00
+                fs
 
 reorderAlgorithm alg = orderAlgorithm' [] alg
     where

@@ -5,30 +5,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
--- ASCII digram
--- Before compile-time eval optimization
-
---   +------------------+
---   |                  |         +-------------------------+
---   | Constant 2 "a"   |         |                         |
---   |                  +-------->+                         |      +--------------+
---   +------------------+         |                         |      |              |
---                                | Add "a" "b" ["res"] +----->+    ......    |
---   +------------------+         |                         |      |              |
---   |                  +-------->+                         |      +--------------+
---   | Constant 3 "b1"  |         |                         |
---   |                  |         +-------------------------+
---   +------------------+
-
--- +--------------------------------------------------------------------------------+
-
--- After compile-time eval optimization
-
---   +------------------+         +--------------+
---   |                  |         |              |
---   | Constant 5 "res" +-------->+    ......    |
---   |                  |         |              |
---   +------------------+         +--------------+
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding
@@ -37,6 +13,35 @@ Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+== ASCII digram
+
+Before compile-time eval optimization
+
+@
++------------------+
+|                  |         +-------------------------+
+| Constant 2 "a"   |         |                         |
+|                  +-------->+                         |      +--------------+
++------------------+         |                         |      |              |
+                             |   Add "a" "b" ["res"]   +----->+    ......    |
++------------------+         |                         |      |              |
+|                  +-------->+                         |      +--------------+
+| Constant 3 "b1"  |         |                         |
+|                  |         +-------------------------+
++------------------+
+@
+
+
+After compile-time eval optimization
+
+@
++------------------+         +--------------+
+|                  |         |              |
+| Constant 5 "res" +-------->+    ......    |
+|                  |         |              |
++------------------+         +--------------+
+@
 
 == Example from ASCII diagram
 
