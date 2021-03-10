@@ -57,7 +57,7 @@ export function detailColumn() {
     (e: Node) => {
       return (
         <OverlayTrigger
-          trigger="click"
+          trigger="hover"
           key={e.sid}
           placement="left"
           overlay={
@@ -68,7 +68,18 @@ export function detailColumn() {
                 <pre>{JSON.stringify(e.decision, undefined, 2)}</pre>
                 <hr />
                 <b>Metrics:</b>
-                <pre>{JSON.stringify(e.parameters, undefined, 2)}</pre>
+                <pre>
+                  {Object.keys(e.parameters).map(
+                    (k: string): React.ReactElement => {
+                      return (
+                        <>
+                          - {k}: {JSON.stringify(e.parameters[k])}
+                          <br />
+                        </>
+                      );
+                    }
+                  )}
+                </pre>
               </Popover.Content>
             </Popover>
           }
