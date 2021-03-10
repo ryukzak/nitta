@@ -19,23 +19,24 @@ Possible deadlocks (recognized in 'NITTA.Model.Networks.Bus'):
 
 - selfsending;
 
-    @
-                      source1
-      DoubleLoopOut--b1--+--b2--> DoubleLoopIn
-                 |       \------> Send
-                 |
-                 \------b3------> DoubleLoopIn
-                      source2
+@
+                    source1
+    DoubleLoopOut--b1--+--b2--> DoubleLoopIn
+               |       |------> Send
+               |
+               |------b3------> DoubleLoopIn
+                    source2
 
     Possible buffers: b1, b2, b3
-    @
+@
+
 - classical deadlock betweeb two function on same PU.
 
-    @
-      a + b = c ---+----> c + d = e ---> e * c = f
-                   |                         ^
-                   \-------------b1----------/
-    @
+@
+    a + b = c ---+----> c + d = e ---> e * c = f
+                 |                         ^
+                 |-------------b1----------|
+@
 
 ResolveDeadlock example:
 
