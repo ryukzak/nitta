@@ -3,7 +3,8 @@ import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, Node, Bind, SID } from "services/HaskellApiService";
+import { api, Node, SID } from "services/HaskellApiService";
+import { showDecision } from "./SubforestTables/Columns";
 
 type Row = { original: Node; index: number };
 
@@ -101,14 +102,7 @@ export const SynthesisHistory: React.FC<ISynthesisHistoryProps> = (props) => {
           textColumn("decision type", (n: Node) => n.decision.tag, 160),
           textColumn("description", (n: Node) => {
             if (n.sid === "-") return <>INITIAL STATE</>;
-            let decision = n.decision.tag;
-            return (
-              <>
-                {decision === "BindDecisionView" &&
-                  (n.decision as Bind).pu + " <- " + (n.decision as Bind).function.fvFun}
-                {decision !== "BindDecisionView" && JSON.stringify(n.decision)}
-              </>
-            );
+            return showDecision(n.decision);
           }),
         ]}
       />

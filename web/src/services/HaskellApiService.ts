@@ -24,8 +24,10 @@ export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;
 export type Decision = DecisionView;
 export type Root = IRootView;
+
 export type Bind = IBindDecisionView;
 export type Dataflow = IDataflowDecisionView;
+
 export type BreakLoop = IBreakLoopView;
 export type ConstantFolding = IConstantFoldingView;
 export type OptimizeAccum = IOptimizeAccumView;

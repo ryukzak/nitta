@@ -22,7 +22,7 @@ export const SubforestScreen: React.FC = () => {
       .catch((err) => console.log(err));
   }, [appContext.selectedSID]);
 
-  if (subforest === undefined || subforest === null) {
+  if (!subforest) {
     return (
       <div className="m-3 text-black-50">
         <h5>Empty EdgesView</h5>

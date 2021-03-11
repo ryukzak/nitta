@@ -3,8 +3,9 @@ import * as React from "react";
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { Node, sidSeparator } from "services/HaskellApiService";
-import { Interval } from "services/gen/types";
+import { Bind, Dataflow, BreakLoop, OptimizeAccum, ConstantFolding, ResolveDeadlock } from "services/HaskellApiService";
+import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
+import { Interval, FView, DecisionView } from "services/gen/types";
 
 const style = {
   fontWeight: 600,
@@ -95,4 +96,72 @@ export function objectiveColumn() {
     style: style,
     Cell: (row: { original: Node }) => row.original.score,
   };
+}
+
+export function showDecision(decision: DecisionView): React.ReactElement {
+  if (decision.tag === "BindDecisionView") return showBind(decision);
+  else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
+  else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
+  else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
+  else if (decision.tag === "OptimizeAccumView") return showOptimizeAccum(decision);
+  else if (decision.tag === "ResolveDeadlockView") return showResolveDeadlock(decision);
+  else throw new Error("Unkown decision type: " + decision.tag);
+}
+
+export function showBind(decision: Bind): React.ReactElement {
+  return (
+    <div>
+      <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}
+    </div>
+  );
+}
+
+export function showDataflow(decision: Dataflow): React.ReactElement {
+  let targets = decision.targets;
+  return (
+    <div>
+      from: <strong>{decision.source[0]}</strong> <br />
+      {targets.map((target: [string, EndpointDecision], i: number) => (
+        <div key={i}>
+          {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong> <Icon.ArrowLeft />{" "}
+          <strong>{target[0]}</strong> @ {target[1].epAt[0]} ... {target[1].epAt[1]}
+          <br />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function showBreakLoop(decision: BreakLoop): React.ReactElement {
+  return <div>{"output: " + decision.outputs.join(", ") + " input: " + decision.input}</div>;
+}
+
+export function showConstantFolding(d: ConstantFolding): React.ReactElement {
+  return (
+    <div>
+      {d.cRefOld.map((e: FView) => e.fvFun).join("\n")}
+      <br />
+      <Icon.ArrowDown />
+      <br />
+      {d.cRefNew.map((e: FView) => e.fvFun).join(", ")}
+      <br />
+    </div>
+  );
+}
+
+export function showOptimizeAccum(d: OptimizeAccum): React.ReactElement {
+  return (
+    <div>
+      {d.old.map((e: FView) => e.fvFun).join("\n")}
+      <br />
+      <Icon.ArrowDown />
+      <br />
+      {d.new.map((e: FView) => e.fvFun).join(", ")}
+      <br />
+    </div>
+  );
+}
+
+export function showResolveDeadlock(decision: ResolveDeadlock): React.ReactElement {
+  return <div>{decision.newBuffer}</div>;
 }
