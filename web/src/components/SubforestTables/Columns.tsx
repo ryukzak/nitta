@@ -57,7 +57,7 @@ export function detailColumn() {
     (e: Node) => {
       return (
         <OverlayTrigger
-          trigger="hover"
+          trigger={["hover", "focus"]}
           key={e.sid}
           placement="left"
           overlay={
@@ -70,12 +70,12 @@ export function detailColumn() {
                 <b>Metrics:</b>
                 <pre>
                   {Object.keys(e.parameters).map(
-                    (k: string): React.ReactElement => {
+                    (k: string, i: number): React.ReactElement => {
                       return (
-                        <>
+                        <div key={i}>
                           - {k}: {JSON.stringify(e.parameters[k])}
                           <br />
-                        </>
+                        </div>
                       );
                     }
                   )}
