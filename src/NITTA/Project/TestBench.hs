@@ -111,9 +111,9 @@ testBenchTopModuleName ::
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
 
 -- |Generate list of project verilog files (including testbench).
-projectFiles prj@Project{pName, pUnit, pNittaPath} =
+projectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
-        (pNittaPath </>)
+        (pInProjectNittaPath </>)
         $ L.nub $
             concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
     where

@@ -49,15 +49,15 @@ writeProject prj@Project{pTargetProjectPath} = do
     writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"...ok"
 
-writeTargetSystem prj@Project{pName, pTargetProjectPath, pNittaPath, pUnit} = do
-    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
-    writeImplementation pTargetProjectPath pNittaPath $ hardware pName pUnit
-    writeImplementation pTargetProjectPath pNittaPath $ software pName pUnit
+writeTargetSystem prj@Project{pName, pTargetProjectPath, pInProjectNittaPath, pUnit} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
+    writeImplementation pTargetProjectPath pInProjectNittaPath $ hardware pName pUnit
+    writeImplementation pTargetProjectPath pInProjectNittaPath $ software pName pUnit
     copyLibraryFiles prj
 
-writeTestBench prj@Project{pTargetProjectPath, pNittaPath} = do
-    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
-    writeImplementation pTargetProjectPath pNittaPath $ testBenchImplementation prj
+writeTestBench prj@Project{pTargetProjectPath, pInProjectNittaPath} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
+    writeImplementation pTargetProjectPath pInProjectNittaPath $ testBenchImplementation prj
 
 runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."

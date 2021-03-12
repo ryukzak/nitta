@@ -49,7 +49,7 @@ import qualified NITTA.Project as P
 import NITTA.Synthesis
 import NITTA.Utils
 import System.Directory
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
@@ -73,15 +73,18 @@ puCoSimTestCase ::
     TestTree
 puCoSimTestCase name u cntxCycle alg =
     testCase name $ do
-        wd <- getCurrentDirectory
+        pwd <- getCurrentDirectory
         let mname = toModuleName name
-            pTargetProjectPath = joinPath [wd, "gen", mname]
+            pTargetProjectPath = "gen" </> mname
+            pInProjectNittaPath = "."
             prj =
                 Project
                     { pName = T.pack mname
                     , pLibPath = "hdl"
                     , pTargetProjectPath
-                    , pNittaPath = "."
+                    , pAbsTargetProjectPath = pwd </> pTargetProjectPath
+                    , pInProjectNittaPath
+                    , pAbsNittaPath = pwd </> pInProjectNittaPath </> pTargetProjectPath
                     , pUnit = naiveSynthesis alg u
                     , pUnitEnv = def
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
@@ -155,14 +158,17 @@ puCoSimProp name pu0 fsGen =
                     unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
-                    wd <- getCurrentDirectory
-                    let pTargetProjectPath = joinPath [wd, "gen", toModuleName name <> "_" <> show i]
+                    pwd <- getCurrentDirectory
+                    let pTargetProjectPath = "gen" </> (toModuleName name <> "_" <> show i)
+                        pInProjectNittaPath = "."
                         prj =
                             Project
                                 { pName = T.pack $ toModuleName name
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
-                                , pNittaPath = "."
+                                , pAbsTargetProjectPath = pwd </> pTargetProjectPath
+                                , pInProjectNittaPath
+                                , pAbsNittaPath = pwd </> pInProjectNittaPath </> pTargetProjectPath
                                 , pUnit = pu
                                 , pUnitEnv = def
                                 , pTestCntx

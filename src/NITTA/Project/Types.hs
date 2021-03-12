@@ -46,12 +46,16 @@ be writable to disk.
 data Project m v x = Project
     { -- |target project name
       pName :: T.Text
-    , -- |IP-core library directory
+    , -- |IP-core library path
       pLibPath :: FilePath
-    , -- |output directory for target project
+    , -- |output path for target project
       pTargetProjectPath :: FilePath
-    , -- |output directory for NITTA processor inside target project
-      pNittaPath :: FilePath
+    , -- |absolute output path for target project
+      pAbsTargetProjectPath :: FilePath
+    , -- |relative to the project path output path for NITTA processor inside target project
+      pInProjectNittaPath :: FilePath
+    , -- |absolute output path for NITTA processor inside target project
+      pAbsNittaPath :: FilePath
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
     , pUnitEnv :: UnitEnv m
@@ -116,8 +120,8 @@ writeImplementation prjPath nittaPath = writeImpl nittaPath
 -- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
-        copyLibraryFile Project{pTargetProjectPath, pNittaPath, pLibPath} file = do
-            let fullNittaPath = pTargetProjectPath </> pNittaPath
+        copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do
+            let fullNittaPath = pTargetProjectPath </> pInProjectNittaPath
             source <- makeAbsolute $ joinPath [pLibPath, file]
             target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
             createDirectoryIfMissing True $ takeDirectory target

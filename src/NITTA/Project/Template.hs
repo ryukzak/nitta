@@ -170,10 +170,17 @@ findAllFiles root = findAllFiles' ""
                     )
                     items
 
-projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
+projectContext prj@Project{pName, pUnit, pUnitEnv, pAbsTargetProjectPath, pAbsNittaPath} = makeContextText $ \case
     "nitta" ->
         dict
             [ ("instance", toGVal $ doc2text $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
+            ,
+                ( "paths"
+                , dict
+                    [ ("abs_project", toGVal pAbsTargetProjectPath)
+                    , ("abs_nitta", toGVal pAbsNittaPath)
+                    ]
+                )
             , ("files", toGVal $ projectFiles prj)
             ,
                 ( "testbench"
