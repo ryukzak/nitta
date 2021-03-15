@@ -14,10 +14,11 @@ module NITTA.Model.TestDslProt (
     ) where
 
 import Control.Monad.State.Lazy
-import Data.Default
 import qualified Data.Set as S
 
 -- TODO remove debug
+
+import qualified Data.String.Utils as S
 import qualified Debug.Trace as DebugTrace
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -29,7 +30,6 @@ import Numeric.Interval.NonEmpty
 data UnitTestState v x t = UnitTestState
     { unit :: Multiplier v x t
     , functs :: [F v x]
-    -- , decisions :: EndpointSt
     }
     deriving (Show)
 
@@ -81,7 +81,66 @@ isProcessComplete = do
         else -- TODO: more info in errro?
             error "Process is not complete!"
 
+-----------------INTEGRITY ----------------------
+{-
+    if isProcessComplete' pu f
+        then checkIntegrity pu f
         else error "Process is not complete!"
+-}
+
+--checkIntegrity pu [] = integrity -- output
+checkIntegrity f pu = checkIntegrity' f pu
+
+--checkIntegrity' f steps [] = integrity
+checkIntegrity f pu =
+    let pr = process pu
+        funcPID = checkFunction f $ steps pr
+     in checkEndpoints f pr funcPID
+
+-- | Find requested function f in steps of a given process
+checkFunction f [] = error $ "Requested function: " <> show f <> ", not found."
+checkFunction f (stp : stps) =
+    let compFun (FStep F{fun}) = show f == S.replace "\"" "" (DebugTrace.traceShow ("CHECK FUNC|" <> show fun) (show fun))
+        compFun _ = False
+     in if compFun $ pDesc stp
+            then pID stp
+            else checkFunction f stps
+
+-- | For a given pID finds and returns pIDs of Steps which has all Endpoints
+checkEndpoints f pr pid =
+    let vars = variables f
+        (foundRel, foundPid) = checkRelationsEp pid (steps pr) vars $ relations pr
+     in if vars == foundRel
+            then foundPid
+            else error $ "Not all variables has related Endpoints, expected: [" <> show vars <> "]; found: [" <> show foundRel <> "]."
+
+                    -- TODO use [i|] ???
+
+checkTransports f pr pids =
+    let concRes (epVars, epPid) (epVars2, epPid2) = (S.union epVars epVars2, epPid ++ epPid2)
+     in foldr concRes (S.empty, []) [checkRelationsEp pid (steps pr) (variables f) $ relations pr | pid <- pids]
+
+checkRelationsEp pid stps vars rels =
+    let concEp (epVars, epPid) (epVars2, epPid2) = (S.union epVars epVars2, epPid : epPid2)
+     in foldr concEp (S.empty, []) $
+            [ checkStepsEp vars stps v2
+            | (Vertical v1 v2) <- rels
+            , pid == v1
+            ]
+
+-- | Finds given pid in pDesc of Steps, if it's Source or Target then returns it.
+checkStepsEp vars stps pid =
+    let combSteps = [S.intersection vars stp | stp <- map stepInfo stps, not $ null stp]
+        stepInfo Step{pID, pDesc}
+            | pID == pid = pDescInfo pDesc
+            | otherwise = S.empty
+        pDescInfo descr = case descr of
+            (EndpointRoleStep (Source s)) -> s
+            (EndpointRoleStep (Target t)) -> S.fromList [t]
+            _ -> S.empty
+     in if not $ null combSteps
+            then (head combSteps, pid)
+            else error $ "Endpoint with pid=" <> show pid <> " not found in Steps [" <> show stps <> "]!"
 
 ------------------REMOVE AFTER TESTS------------------------
 checkPipe f f2 st = execMultiplier st $ do
@@ -98,11 +157,10 @@ checkPipe f f2 st = execMultiplier st $ do
     doFstDecision
     isProcessComplete
 
-getSmth f st = checkIntegrity (unit $ checkPipe2 f st) f
+getSmth f st = checkIntegrity f (unit $ checkPipe2 f st)
 
 stability2 = getSmth fDef st0
-
--- integrityCheck
+test2 f = checkIntegrity f $ unit $ checkPipe fDef f2Def st0
 
 checkPipe2 f st = execMultiplier st $ do
     bindFunc f
