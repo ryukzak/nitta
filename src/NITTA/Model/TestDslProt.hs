@@ -33,21 +33,25 @@ data UnitTestState v x t = UnitTestState
     }
     deriving (Show)
 
--- TODO: make func use previous state [F v x]
-bindFunc f st =
-    case tryBind f st of
-        Right v -> put $ UnitTestState v [f] -- : functs
-        --- TODO add assertFalse when wrong bind
-        Left err -> error $ "can't get report: " ++ err
+execMultiplier st decs = flip execState (UnitTestState st []) $ do
+    _ <- decs
+    unit <$ get
+
+bindFunc f = do
+    UnitTestState{unit, functs} <- get
+    case tryBind f unit of
+        Right v -> put $ UnitTestState v $ f : functs
+        Left err -> error $ "tryBind func returned error: " ++ err
 
 -- TODO: fix not only first decision?
---       Check for null
+-- doNDecision = do
+
 -- TODO fix bug when sources are taken at one decision
 doFstDecision = do
     UnitTestState{unit, functs} <- get
-    doDecision $ DebugTrace.traceShow (fstDecision unit) (fstDecision unit)
+    doDecision $ fstDecision unit
 
-fstDecision st = endpointOptionToDecision . head . endpointOptions $ st
+fstDecision = endpointOptionToDecision . head . endpointOptions
 
 -- TODO: add version without time via Maybe
 beTarget a b t = EndpointSt (Target t) (a ... b)
@@ -55,19 +59,17 @@ beTarget a b t = EndpointSt (Target t) (a ... b)
 -- TODO: add version without time
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
--- what if [] is empty??
--- Todo make endpSt Maybe, it will allow to get it from State
 doDecision endpSt = do
     UnitTestState{unit, functs} <- get
     put $ UnitTestState (endpointDecision unit endpSt) functs
 
-isBinded f pu =
-    let fu = functions pu
-     in not (null fu) && fu == f
+isFunctionsBinded pu fs =
+    let fu = S.fromList $ functions pu
+     in not (null fu) && fu == S.fromList fs
 
-isFuncBinded = do
+isBinded = do
     UnitTestState{unit, functs} <- get
-    if isBinded functs unit
+    if isFunctionsBinded unit functs
         then return ()
         else error "Function is not binded to process!"
 
@@ -76,20 +78,54 @@ isProcessComplete = do
     UnitTestState{unit, functs} <- get
     if isProcessComplete' unit functs
         then return ()
+        else -- TODO: more info in errro?
+            error "Process is not complete!"
+
         else error "Process is not complete!"
 
-checkPipe f st = flip execState defUTS $ do
-    bindFunc f st
-    isFuncBinded
+------------------REMOVE AFTER TESTS------------------------
+checkPipe f f2 st = execMultiplier st $ do
+    bindFunc f
+    bindFunc f2
+    isBinded
+    doDecision $ beTarget 1 2 "q"
+    doFstDecision
+    doFstDecision
+    --doDecision $ beSource 5 5 ["c", "d"]
+    ----
+    doFstDecision
+    doFstDecision
+    doFstDecision
+    isProcessComplete
+
+getSmth f st = checkIntegrity (unit $ checkPipe2 f st) f
+
+stability2 = getSmth fDef st0
+
+-- integrityCheck
+
+checkPipe2 f st = execMultiplier st $ do
+    bindFunc f
+    isBinded
     doDecision $ beTarget 1 2 "a"
     doFstDecision
     doDecision $ beSource 5 5 ["c", "d"]
     isProcessComplete
+checkPipe3 f st = execMultiplier st $ do
+    bindFunc f
+    isBinded
+    doDecision $ beTarget 1 2 "a"
+    doFstDecision
+    doDecision $ beSource 5 5 ["d"]
+    doDecision $ beSource 6 6 ["c"]
+    isProcessComplete
+
+-- TODO make example to hold signatures
+stability f f2 = checkPipe f f2 st0
 
 ------------------------------------------------------------------
-defUTS = UnitTestState st0 []
-
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
+f2Def = F.multiply "c" "q" ["m"] :: F String Int
 
 st0 = multiplier True :: Multiplier String Int Int
 Right st1def = tryBind fDef st0
