@@ -38,6 +38,7 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
@@ -133,8 +134,7 @@ finitePUSynthesisProp name pu0 fsGen =
         return $
             isProcessComplete pu fs
                 && null (endpointOptions pu)
-
--- && not (null $ checkIntegrity fs pu)
+                && not (null $ checkIntegrity fs pu)
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
