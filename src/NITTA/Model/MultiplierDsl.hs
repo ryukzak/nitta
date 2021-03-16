@@ -19,8 +19,6 @@ import qualified Data.Set as S
 import Data.String.Interpolate
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
-
---import NITTA.Model.IntegrityCheck
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
@@ -47,20 +45,26 @@ bindFunc f = do
                                        for unit: #{ unit }
                 |]
 
--- TODO: fix not only first decision?
--- doNDecision = do
-
--- TODO fix bug when sources are taken at one decision
 doFstDecision = do
     UnitTestState{unit, functs} <- get
     doDecision $ fstDecision unit
 
-fstDecision = endpointOptionToDecision . head . endpointOptions
+doNDecision n = do
+    UnitTestState{unit, functs} <- get
+    doDecision $ nDecision unit n
 
--- TODO: add version without time via Maybe
-beTarget a b t = EndpointSt (Target t) (a ... b)
+fstDecision pu = endpointOptionToDecision $ head $ endpointOptions pu
 
--- TODO: add version without time
+nDecision pu n =
+    let opts = endpointOptions pu
+        calcN =
+            if n <= length opts
+                then n - 1
+                else length (endpointOptions pu) - 1
+     in endpointOptionToDecision $ opts !! calcN
+
+beTarget t a b = EndpointSt (Target t) (a ... b)
+
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 doDecision endpSt = do
@@ -82,22 +86,13 @@ isProcessComplete = do
     if isProcessComplete' unit functs
         && null (endpointOptions unit)
         then return ()
-        else -- TODO: more info in errro?
-            error "Process is not complete!"
-
-{-}
-isIntegrityOkSafe f = do
-    UnitTestState{unit, functs} <- get
-    if isProcessComplete' unit f
-        then checkIntegrity unit f
-        else error "Process is not complete!"
-
-isIntegrityOk f = do
-    UnitTestState{unit, functs} <- get
-    if not . null $ checkIntegrity unit f
-        then return ()
-        else error "Integrity is not valid!"
--}
+        else
+            error
+                [__i| Process is not complete!
+                        decisions available: #{ endpointOptions unit }
+                                     functs: #{ functs }
+                                         pu: #{ unit }
+                  |]
 
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars pu
@@ -105,13 +100,14 @@ isProcessComplete' pu fs = unionsMap variables fs == processedVars pu
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
 ------------------REMOVE AFTER TESTS------------------------
-checkPipe f1 f2 st = execMultiplier st $ do
+example f f2 = example' f f2 st0
+example' f1 f2 st = execMultiplier st $ do
     bindFunc f1
     bindFunc f2
     isBinded
-    doDecision $ beTarget 1 2 "a"
-    --doDecision $ beSource 3 3 ["c"]
-    doFstDecision
+    doDecision $ beTarget "a" 1 2
+    doNDecision 2
+    --doFstDecision
     doFstDecision
     ----
     doFstDecision
@@ -119,10 +115,6 @@ checkPipe f1 f2 st = execMultiplier st $ do
     doFstDecision
     isProcessComplete
 
--- TODO make example to hold signatures
-stability f f2 = checkPipe f f2 st0
-
-------------------------------------------------------------------
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
 f2Def = F.multiply "c" "q" ["m"] :: F String Int
 
