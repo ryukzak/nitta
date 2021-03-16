@@ -36,6 +36,7 @@ module NITTA.Model.Tests.Microarchitecture (
     pFX32_32,
     pFX22_32,
     pFX42_64,
+    pFX48_64,
     pAttrIntX32,
     pAttrFX22_32,
 ) where
@@ -74,6 +75,8 @@ pFX22_32 = Proxy :: Proxy (FX 22 32)
 pFX32_32 = Proxy :: Proxy (FX 32 32)
 
 pFX42_64 = Proxy :: Proxy (FX 42 64)
+
+pFX48_64 = Proxy :: Proxy (FX 48 64)
 
 basic :: (Integral x, Val x) => Proxy x -> BusNetwork String String x Int
 basic _proxy = defineNetwork "net1" ASync $ do

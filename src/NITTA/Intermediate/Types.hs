@@ -331,9 +331,9 @@ getCntx (CycleCntx cntx) v = case cntx M.!? v of
     Just x -> x
     Nothing -> error $ "variable not defined: " <> show v
 
-updateCntx cycleCntx [] = cycleCntx
+updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | M.member v cntx = error $ "variable value already defined: " <> show v
+    | M.member v cntx = Left $ "variable value already defined: " <> show v
     | otherwise = updateCntx (CycleCntx $ M.insert v x cntx) vxs
 
 -----------------------------------------------------------
