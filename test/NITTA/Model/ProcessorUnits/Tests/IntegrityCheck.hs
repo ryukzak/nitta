@@ -21,25 +21,33 @@ import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Utils.Base
 
 checkIntegrity fs pu =
     let pr = process pu
-        vars = unionsMap variables fs
-        -- TODO remove head
-        funcPID = checkFunction (head fs) $ steps pr
-     in checkEndpoints vars pr funcPID
+        vars = map variables fs
+        pids = checkFunction fs $ steps pr
+     in concat [checkEndpoints var pr pid | pid <- pids, var <- vars]
 
--- | Find requested function f in steps of a given process
-checkFunction f [] = error [i|Requested function not found: #{ show f }."|]
-checkFunction f (stp : stps) =
-    let compFun (FStep F{fun}) = T.pack (show f) == T.replace (T.pack "\"") T.empty (T.pack $ show fun)
-        compFun _ = False
-     in if compFun $ pDesc stp
-            then pID stp
-            else checkFunction f stps
+{- | Find requested functions fs in steps of a given process
+ | if not found then error
+-}
+checkFunction fs stps =
+    let nullSteps f =
+            if not . null $ iterSteps f
+                then iterSteps f
+                else
+                    error
+                        [__i|Requested function not found: #{ show fs }
+                                                 in steps: #{ show stps }
+                        |]
+        iterSteps f = [pID stp | stp <- stps, compFun f $ pDesc stp]
+        compFun f (FStep F{fun}) = T.pack (show f) == T.replace (T.pack "\"") T.empty (T.pack $ show fun)
+        compFun _ _ = False
+     in concatMap nullSteps fs
 
--- | For a given pID finds and returns pIDs of Steps which have Endpoints
+{- | For a given pID finds and returns pIDs of Steps which have Endpoints
+ | if pids not found then error
+-}
 checkEndpoints vars pr pid =
     let (foundRel, foundPid) = checkRelationsEp pid (steps pr) vars $ relations pr
      in if vars == foundRel
@@ -47,9 +55,11 @@ checkEndpoints vars pr pid =
             else
                 error
                     [__i|
-                    Not all variables has related Endpoints:
+                    Not all variables has related Endpoints, 
+                    function with pID=#{pid} should have more endpoints at least: #{S.difference vars foundRel};
                     expected: [ #{ show vars } ];
                        found: [ #{ show foundRel } ]
+                          pr: [ #{pr} ]
                     |]
 
 -- | Goes through process relations and finds pIDs related to given pID
@@ -76,7 +86,3 @@ checkStepsEp vars stps pid =
      in if not $ null combSteps
             then (head combSteps, pid)
             else error [i|Endpoint with pid=#{ show pid } not found in Steps: #{ show stps }|]
-
-checkTransports f pr pids =
-    let concRes (epVars, epPid) (epVars2, epPid2) = (S.union epVars epVars2, epPid ++ epPid2)
-     in foldr concRes (S.empty, []) [checkRelationsEp pid (steps pr) (variables f) $ relations pr | pid <- pids]
