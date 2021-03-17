@@ -66,7 +66,7 @@ nDecision pu n =
                 else length (endpointOptions pu) - 1
      in endpointOptionToDecision $ opts !! calcN
 
-beTarget t a b = EndpointSt (Target t) (a ... b)
+beTarget a b t = EndpointSt (Target t) (a ... b)
 
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
@@ -100,15 +100,12 @@ processedVars' pu = unionsMap variables $ getEndpoints $ process pu
 ------------------REMOVE AFTER TESTS------------------------
 example = execMultiplier st0 $ do
     bindFunc fDef
-    bindFunc f2Def
     isBinded
-    doDecision $ beTarget "a" 1 2
+    doDecision $ beTarget 1 2 "a"
     doNDecision 2
+    doDecision $ beSource 5 5 ["c"]
     doFstDecision
 
-    doFstDecision
-    doFstDecision
-    doFstDecision
     isProcessDone
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
