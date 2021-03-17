@@ -34,6 +34,8 @@ module NITTA.Model.ProcessorUnits.Types (
     Step (..),
     StepInfo (..),
     Relation (..),
+    isVertical,
+    isHorizontal,
     descent,
     whatsHappen,
     extractInstructionAt,
@@ -225,8 +227,18 @@ data Relation
     = -- |Vertical relationships (up and down). For example, the intermediate
       -- step (function execution) can be translated to a sequence of endpoint
       -- steps (receiving and sending variable), and process unit instructions.
-      Vertical ProcessStepID ProcessStepID
-    deriving (Show, Eq, Generic)
+      Vertical {vUp, vDown :: ProcessStepID}
+    | -- |Horizontal relationships (on one level). For example, we bind the
+      -- function and apply the refactoring. The binding step should be
+      -- connected to refactoring steps, including new binding steps.
+      Horizontal {hPrev, hNext :: ProcessStepID}
+    deriving (Show, Generic, Ord, Eq)
+
+isVertical Vertical{} = True
+isVertical _ = False
+
+isHorizontal Horizontal{} = True
+isHorizontal _ = False
 
 instance ToJSON Relation
 

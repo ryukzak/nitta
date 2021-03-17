@@ -26,7 +26,7 @@ module NITTA.Model.ProcessorUnits.Broken (
     IOPorts (..),
 ) where
 
-import Control.Monad (when)
+import Control.Monad
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
@@ -66,6 +66,9 @@ data Broken v x t = Broken
     , -- |lost source endpoint due synthesis
       lostEndpointSource :: Bool
     , wrongAttr :: Bool
+    , lostFunctionRelation :: Bool
+    , lostEndpointRelation :: Bool
+    , lostInstructionRelation :: Bool
     , unknownDataOut :: Bool
     }
 
@@ -149,17 +152,44 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                     , doneAt = Just $ sup epAt + 3
                     }
     endpointDecision
-        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull}
-        d@EndpointSt{epRole = Source v, epAt}
+        pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush, lostInstructionRelation, lostEndpointRelation}
+        d@EndpointSt{epRole = Target v', epAt}
+            | v == v'
+              , let (newEndpoints, process_') = runSchedule pu $ do
+                        -- updateTick (sup epAt)
+                        let ins =
+                                if lostInstructionRelation
+                                    then return []
+                                    else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
+                        if lostEndpointRelation then return [] else scheduleEndpoint d ins =
+                pu
+                    { process_ = process_'
+                    , targets = []
+                    , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
+                    , doneAt = Just $ sup epAt + 3
+                    }
+    endpointDecision
+        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull, lostInstructionRelation, lostEndpointRelation, lostFunctionRelation}
+        EndpointSt{epRole = epRole@(Source v), epAt}
             | not $ null sources
               , let sources' = sources \\ elems v
               , sources' /= sources
               , let (newEndpoints, process_') = runSchedule pu $ do
-                        endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
+                        let doAt = shiftI (if wrongControlOnPull then 0 else -1) epAt
+                        -- Inlined: endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe doAt Out
+                        endpoints <- do
+                            high <- scheduleStep epAt $ EndpointRoleStep epRole
+                            low <- scheduleInstructionUnsafe doAt Out
+                            establishVerticalRelations
+                                (if lostEndpointRelation then [] else high)
+                                (if lostInstructionRelation then [] else low)
+                            return high
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
-                            establishVerticalRelations high low
+                            establishVerticalRelations
+                                (if lostFunctionRelation then [] else high)
+                                (if lostEndpointRelation then [] else low)
                         return endpoints =
                 pu
                     { process_ = process_'
@@ -220,6 +250,9 @@ instance (Time t) => Default (Broken v x t) where
             , lostEndpointTarget = False
             , lostEndpointSource = False
             , wrongAttr = False
+            , lostFunctionRelation = False
+            , lostEndpointRelation = False
+            , lostInstructionRelation = False
             , unknownDataOut = False
             }
 

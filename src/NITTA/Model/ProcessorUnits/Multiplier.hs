@@ -565,11 +565,12 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
             let process_' = execSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
                     when (null sources') $ do
-                        high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                         -- Set up the vertical relantions between functional unit
                         -- and related to that data sending.
-                        establishVerticalRelations high low
+
+                        -- FIXME: here ([]) you can see the source of error.
+                        -- Function don't connected to bind step. It should be fixed.
+                        scheduleFunctionFinish [] f $ a ... sup epAt
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
                     return endpoints =

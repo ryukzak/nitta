@@ -29,6 +29,10 @@ module NITTA.Utils (
 
     -- *Process inspection
     endpointAt,
+    getEndpoint,
+    getFunction,
+    getInstruction,
+    getCAD,
     getEndpoints,
     transferred,
     inputsPushedAt,
@@ -36,6 +40,7 @@ module NITTA.Utils (
     relatedEndpoints,
     isFB,
     getFBs,
+    isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
 
@@ -51,12 +56,12 @@ import Data.Bits (setBit, testBit)
 import qualified Data.HashMap.Strict as HM
 import Data.List (sortOn)
 import Data.Maybe
-import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
+import NITTA.Utils.ProcessDescription
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
@@ -121,8 +126,21 @@ getFB _ = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
+isEndpoint ep = isJust $ getEndpoint ep
+
 getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
+
+getFunction Step{pDesc} | FStep role <- descent pDesc = Just role
+getFunction _ = Nothing
+
+isInstruction instr = isJust $ getInstruction instr
+
+getInstruction Step{pDesc} | role@(InstructionStep _) <- descent pDesc = Just role
+getInstruction _ = Nothing
+
+getCAD Step{pDesc} | CADStep role <- descent pDesc = Just role
+getCAD _ = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
@@ -133,17 +151,6 @@ stepsInterval ss =
     let a = minimum $ map (inf . pInterval) ss
         b = maximum $ map (sup . pInterval) ss
      in a ... b
-
-relatedEndpoints process_ vs =
-    filter
-        ( \case
-            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
-            _ -> False
-        )
-        $ steps process_
-
-isInstruction (InstructionStep _) = True
-isInstruction _ = False
 
 stepStart Step{pInterval} = I.inf pInterval
 

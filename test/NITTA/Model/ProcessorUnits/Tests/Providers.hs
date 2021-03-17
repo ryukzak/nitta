@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
+import NITTA.Model.IntegrityCheck
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
@@ -82,9 +83,12 @@ puCoSimTestCase name u cntxCycle alg =
 finitePUSynthesisProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        return $
-            isProcessComplete pu fs
-                && null (endpointOptions pu)
+        case checkProcessСonsistent pu of
+            Left msg -> error msg
+            Right _ ->
+                return $
+                    isProcessComplete pu fs
+                        && null (endpointOptions pu)
 
 {- |A computational process of functional (Haskell) and logical (Verilog)
 simulation should be identical for any correct algorithm.

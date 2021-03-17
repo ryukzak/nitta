@@ -45,6 +45,7 @@ library
       NITTA.Intermediate.Value
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
+      NITTA.Model.IntegrityCheck
       NITTA.Model.Microarchitecture.Builder
       NITTA.Model.Microarchitecture.Config
       NITTA.Model.Networks.Bus

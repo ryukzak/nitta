@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -22,24 +23,29 @@ module NITTA.Utils.ProcessDescription (
     runSchedule,
     execSchedule,
     execScheduleWithProcess,
+    scheduleStep,
     scheduleEndpoint,
     scheduleEndpoint_,
     scheduleFunctionBind,
     scheduleFunctionRevoke,
     scheduleFunction,
+    scheduleFunctionFinish,
     scheduleRefactoring,
     scheduleInstructionUnsafe,
     scheduleInstructionUnsafe_,
     scheduleNestedStep,
     establishVerticalRelations,
-    establishVerticalRelation,
+    establishHorizontalRelations,
     getProcessSlice,
+    relatedEndpoints,
     castInstruction,
 ) where
 
 import Control.Monad.State
 import Data.Proxy (asProxyTypeOf)
+import qualified Data.Set as S
 import Data.Typeable
+import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import Numeric.Interval.NonEmpty (singleton, sup)
@@ -107,7 +113,7 @@ scheduleStep' mkStep = do
     return [nextUid]
 
 {- |Add to the process description information about vertical relations, which are defined by the
- Cartesian product of high and low lists.
+Cartesian product of high and low lists.
 -}
 establishVerticalRelations high low = do
     sch@Schedule{schProcess = p@Process{relations}} <- get
@@ -119,14 +125,16 @@ establishVerticalRelations high low = do
                     }
             }
 
--- |Add to the process description information about vertical relation.
-establishVerticalRelation h l = do
+{- |Add to the process description information about horizontal relations (inside
+level), which are defined by the Cartesian product of high and low lists.
+-}
+establishHorizontalRelations high low = do
     sch@Schedule{schProcess = p@Process{relations}} <- get
     put
         sch
             { schProcess =
                 p
-                    { relations = Vertical h l : relations
+                    { relations = [Horizontal h l | h <- high, l <- low] ++ relations
                     }
             }
 
@@ -142,6 +150,16 @@ scheduleFunctionRevoke f = do
 scheduleFunction ti f = scheduleStep ti $ FStep f
 
 scheduleRefactoring ti ref = scheduleStep ti $ RefactorStep ref
+
+{- |Schedule function and establish vertical relations between bind step,
+function step, and all related endpoints.
+-}
+scheduleFunctionFinish bPID function at = do
+    fPID <- scheduleFunction at function
+    establishVerticalRelations bPID fPID
+    process_ <- getProcessSlice
+    let low = map pID $ relatedEndpoints process_ $ variables function
+    establishVerticalRelations fPID low
 
 {- |Add to the process description information about endpoint behaviour, and it's low-level
 implementation (on instruction level). Vertical relations connect endpoint level and instruction
@@ -187,6 +205,14 @@ getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
 getProcessSlice = do
     Schedule{schProcess} <- get
     return schProcess
+
+relatedEndpoints process_ vs =
+    filter
+        ( \case
+            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
+            _ -> False
+        )
+        $ steps process_
 
 -- |Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)

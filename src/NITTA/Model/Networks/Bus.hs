@@ -25,6 +25,7 @@ For creating BusNetwork see 'NITTA.Model.Microarchitecture.Builder'.
 -}
 module NITTA.Model.Networks.Bus (
     BusNetwork (..),
+    Instruction (..),
     Ports (..),
     IOPorts (..),
     bindedFunctions,
@@ -193,8 +194,8 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         let v2transportStepKey =
                 M.fromList
                     [ (v, pID)
-                    | Step{pID, pDesc} <- steps bnProcess
-                    , isInstruction pDesc
+                    | step@Step{pID, pDesc} <- steps bnProcess
+                    , isInstruction step
                     , v <- case pDesc of
                         (InstructionStep ins) | Just (Transport var _ _) <- castInstruction net ins -> [var]
                         _ -> []
@@ -216,7 +217,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                 mapM_
                     ( \(epKey, v) ->
                         when (v `M.member` v2transportStepKey) $
-                            establishVerticalRelation (v2transportStepKey M.! v) epKey
+                            establishVerticalRelations [v2transportStepKey M.! v] [epKey]
                     )
                     enpointStepKeyVars
 
@@ -226,7 +227,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelation pID (v2transportStepKey M.! v)
+                                    establishVerticalRelations [pID] [v2transportStepKey M.! v]
                             )
                             $ variables f
                     )
@@ -243,7 +244,12 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                                 return (pID, pID')
                             )
                             steps
-                mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
+                mapM_
+                    ( \case
+                        (Vertical h l) -> establishVerticalRelations [pu2netKey M.! h] [pu2netKey M.! l]
+                        (Horizontal h l) -> establishHorizontalRelations [pu2netKey M.! h] [pu2netKey M.! l]
+                    )
+                    relations
 
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
