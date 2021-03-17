@@ -42,6 +42,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.ProcessorUnits.Tests.IntegrityCheck
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
@@ -132,6 +133,7 @@ finitePUSynthesisProp name pu0 fsGen =
         return $
             isProcessComplete pu fs
                 && null (endpointOptions pu)
+                && null (checkIntegrity pu fs)
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
