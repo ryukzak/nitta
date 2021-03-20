@@ -16,7 +16,6 @@ module NITTA.Model.ProcessorUnits.Tests.IntegrityCheck (
 ) where
 
 import qualified Data.Map.Strict as M
-import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Types
@@ -25,87 +24,47 @@ import NITTA.Model.ProcessorUnits
 
 checkIntegrity pu fs =
     let pr = process pu
+        vars = foldr (S.union . variables) S.empty fs
         -- TODO: possible to rewrite without unpacking?
-        -- TODO check whetehr it null
-        toIntermidiateMap = foldr findIntermidiate M.empty $ steps pr
-        toEndpointMap = foldr findEndpoint M.empty $ steps pr
-        --toInstructionMap = foldr findInstruction M.empty $ steps pr
-        --- TODO pattern match at params
+        toIntermidiateMap =
+            if M.null getIntermidiateMap
+                then Nothing
+                else Just getIntermidiateMap
+        getIntermidiateMap = foldr findIntermidiate M.empty $ steps pr
         findIntermidiate step m = case pDesc step of
             (FStep fun) -> M.insert (pID step) fun m
             _ -> m
+
+        --- TODO pattern match at params
+        toEndpointMap =
+            let check =
+                    if foldr S.union S.empty (M.elems eps) == vars
+                        then Just eps
+                        else Nothing
+                eps = foldr findEndpoint M.empty $ steps pr
+             in check
         findEndpoint step m = case pDesc step of
-            (EndpointRoleStep (Source s)) -> M.insert (pID step) s m
+            (EndpointRoleStep (Source t)) -> M.insert (pID step) t m
             (EndpointRoleStep (Target t)) -> M.insert (pID step) (S.fromList [t]) m
             _ -> m
-     in {-
-        findInstruction step m = case pDesc step of
-            (InstructionStep instr) -> M.insert (pID step) instr m
-            _ -> m
-            -}
-        checkIntermidiateToEndpointRelation pr fs toIntermidiateMap toEndpointMap
+     in checkIntermidiateToEndpointRelation pr toIntermidiateMap toEndpointMap
 
---     in concat [checkEndpoints var pr pid | pid <- pids, var <- vars]
+checkIntermidiateToEndpointRelation _ Nothing _ = error "No function found in steps of PU!"
+checkIntermidiateToEndpointRelation _ _ Nothing = error "Not all variables have their Endpoint!"
+checkIntermidiateToEndpointRelation pr (Just ieMap) (Just epMap) =
+    let checkRelation = foldr compRel S.empty $ relations pr
+        compRel (Vertical r1 r2) =
+            S.union $
+                compRel' r2 (M.lookup r1 ieMap) $ M.lookup r2 epMap
+        compRel' pid (Just _) (Just _) = S.fromList [pid]
+        compRel' _ _ _ = S.empty
+     in if S.size checkRelation == M.size epMap
+            then checkRelation
+            else --- TODO pretty print
 
-checkCadToIntermidiate = undefined
-
-checkIntermidiateToEndpointRelation pr fs ieMap epMap =
-    let exec = foldr compRel S.empty rels
-        rels = relations pr
-        -- TODO is it work???
-        vars = foldr (S.intersection . variables) S.empty fs
-        compRel (Vertical r1 r2) s =
-            S.union s $
-                S.intersection vars $
-                    compRel' (M.lookup r1 ieMap) $ M.lookup r2 epMap
-        compRel _ _ = S.empty
-        compRel' (Just fun) (Just ep) = ep
-        -- TODO remove?
-        compRel' (Just fun) Nothing = error "fun to Nothing"
-        compRel' Nothing (Just ep) = error "Nothing to EP"
-        compRel' _ _ = S.empty
-     in exec
-
-checkEndpointToInstructionRelation epMap isMap = undefined
-
-{- | For a given pID finds and returns pIDs of Steps which have Endpoints
- | if pids not found then error
--}
-checkEndpoints vars pr pid =
-    let (foundRel, foundPid) = checkRelationsEp pid (steps pr) vars $ relations pr
-     in if vars == foundRel
-            then foundPid
-            else
                 error
-                    [__i|
-                    Not all variables has related Endpoints, 
-                    function with pID=#{pid} should have more endpoints at least: #{S.difference vars foundRel};
-                    expected: [ #{ show vars } ];
-                       found: [ #{ show foundRel } ]
-                        step: [ #{ reverse (steps pr) !! pid } ]
-                    |]
+                    [i| Steps #{ M.withoutKeys epMap checkRelation } 
+                          not related to any FStep!|]
 
--- | Goes through process relations and finds pIDs related to given pID
-checkRelationsEp pid stps vars rels =
-    let concEp (epVars, epPid) (epVars2, epPid2) = (S.union epVars epVars2, epPid : epPid2)
-     in foldr concEp (S.empty, []) $
-            [ checkStepsEp vars stps v2
-            | (Vertical v1 v2) <- rels
-            , pid == v1
-            ]
-
-{- | Finds given pid in pDesc of Steps, if it's Source or Target then returns it.
- | if not found gave error
--}
-checkStepsEp vars stps pid =
-    let combSteps = [S.intersection vars stp | stp <- map stepInfo stps, not $ null stp]
-        stepInfo Step{pID, pDesc}
-            | pID == pid = pDescInfo pDesc
-            | otherwise = S.empty
-        pDescInfo descr = case descr of
-            (EndpointRoleStep (Source s)) -> s
-            (EndpointRoleStep (Target t)) -> S.fromList [t]
-            _ -> S.empty
-     in if not $ null combSteps
-            then (head combSteps, pid)
-            else error [i|Endpoint with pid=#{ show pid } not found in Steps: #{ show stps }|]
+-- | Print
+checkEndpointToInstructionRelation epMap isMap = undefined
