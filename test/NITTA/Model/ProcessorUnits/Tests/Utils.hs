@@ -34,6 +34,7 @@ import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
+import qualified Debug.Trace as DebugTrace
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
@@ -121,7 +122,7 @@ nittaCoSimTestCase n tMicroArch alg =
                     , tDFG = fsToDataFlowGraph alg
                     }
         case report of
-            Right report' -> assertBool "report with bad status" $ tbStatus report'
+            Right report' -> assertBool "report with bad status" $ tbStatus $ DebugTrace.traceShow report' report'
             Left err -> assertFailure $ "can't get report: " ++ err
 
 -- *Properties
@@ -154,7 +155,7 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
-                    unless (isProcessComplete pu fs) $
+                    unless (isProcessComplete pu fs && checkIntegrity pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
