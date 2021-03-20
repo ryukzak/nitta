@@ -81,7 +81,7 @@ selectClusters fs =
         ]
     where
         inputOutputIntersect f1 f2 = isIntersection (inputs f1) (outputs f2) || isIntersection (inputs f2) (outputs f1)
-        isIntersection a b = not . S.null $ S.intersection a b
+        isIntersection a b = not $ S.disjoint a b
 
 isSupportByAccum f
     | Just Add{} <- castF f = True
@@ -166,5 +166,5 @@ fromAddSub f
         Just $
             acc $
                 [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
-    | Just (Acc _) <- castF f = Just f
+    | Just Acc{} <- castF f = Just f
     | otherwise = Nothing
