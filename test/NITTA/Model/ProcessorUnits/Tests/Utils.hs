@@ -133,7 +133,7 @@ finitePUSynthesisProp name pu0 fsGen =
         return $
             isProcessComplete pu fs
                 && null (endpointOptions pu)
-                && not (null $ checkIntegrity pu fs)
+                && checkIntegrity pu fs
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
