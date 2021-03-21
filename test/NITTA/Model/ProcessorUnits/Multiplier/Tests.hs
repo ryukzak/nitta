@@ -21,6 +21,7 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
+import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
@@ -83,6 +84,19 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
+        , multiplierTest "smoke test multiplier" u $ do
+            bindFunc fDef
+            isBinded
+            doDecision $ beTarget 1 2 "a"
+            doNDecision 2
+            doDecision $ beSource 5 5 ["c"]
+            doFstDecision
+            isProcessDone
+        , multiplierTest "neg test" u $ do
+            isBinded
+            doDecision $ beTarget 1 2 "a"
+            doNDecision 2
+            isProcessDone
         ]
     where
         u = multiplier True :: Multiplier String Int Int

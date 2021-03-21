@@ -23,6 +23,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     finitePUSynthesisProp,
     puCoSimProp,
     algGen,
+    multiplierTest,
 ) where
 
 import Control.Monad
@@ -38,6 +39,7 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
@@ -230,3 +232,9 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             vs' <- suchThat (sublistOf $ elems vs) (not . null)
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
+
+multiplierTest name st alg =
+    let fu = assertBool "FAIl" $ execMultiplier st alg
+     in testCase name fu
+
+-- isBindedT = isBinded || assertFailure "Function is not binded to process!"
