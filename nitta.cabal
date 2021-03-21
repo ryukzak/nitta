@@ -57,6 +57,7 @@ library
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
       NITTA.Model.Microarchitecture
+      NITTA.Model.MultiplierDsl
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
       NITTA.Model.Problems
