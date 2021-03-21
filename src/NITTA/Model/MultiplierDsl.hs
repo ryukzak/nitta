@@ -29,9 +29,10 @@ data UnitTestState v x t = UnitTestState
     }
     deriving (Show)
 
-execMultiplier st alg = flip execState (UnitTestState st []) $ do
+execMultiplier st alg = flip evalState (UnitTestState st []) $ do
     _ <- alg
     unit <$ get
+    return True
 
 bindFunc f = do
     UnitTestState{unit, functs} <- get
@@ -87,7 +88,7 @@ isProcessDone = do
         then return ()
         else
             error
-                [__i| Process is not complete!
+                [i| Process is not complete!
                         decisions available: #{ endpointOptions unit }
                                      functs: #{ functs }
                                          pu: #{ unit }
