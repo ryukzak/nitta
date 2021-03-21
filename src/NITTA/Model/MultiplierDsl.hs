@@ -1,19 +1,29 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 {- |
-Module      : NITTA.Model.Microarchitecture
-Description : Create micro architecture functions
-Copyright   : (c) Daniil Prohorov, 2019
+Module      : NITTA.Model.MultiplierDsl
+Description : Provides functions to make decisions in Multiplier
+Copyright   : (c) co0ll3r, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.MultiplierDsl where
+module NITTA.Model.MultiplierDsl (
+    evalMultiplier,
+    bindFunc,
+    doDecision,
+    doFstDecision,
+    doNDecision,
+    beTarget,
+    beSource,
+    isProcessDone,
+    fDef
+) where
 
 import Control.Monad.State.Lazy
+import Data.Either
 import qualified Data.Set as S
 import Data.String.Interpolate
 import qualified NITTA.Intermediate.Functions as F
@@ -29,21 +39,15 @@ data UnitTestState v x t = UnitTestState
     }
     deriving (Show)
 
-execMultiplier st alg = flip evalState (UnitTestState st []) $ do
-    _ <- alg
-    unit <$ get
-    return True
+evalMultiplier st alg = evalState alg (UnitTestState st [])
 
 bindFunc f = do
     UnitTestState{unit, functs} <- get
     case tryBind f unit of
-        Right v -> put $ UnitTestState v $ f : functs
-        Left err ->
-            error
-                [i| tryBind func returned error: #{ err } 
-                                   for function: #{ f }
-                                       for unit: #{ unit }
-                |]
+        Right v -> do
+            put $ UnitTestState v $ f : functs
+            return $ Right v
+        Left err -> return $ Left err
 
 doDecision endpSt = do
     UnitTestState{unit, functs} <- get
@@ -74,42 +78,35 @@ beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 isBinded = do
     UnitTestState{unit, functs} <- get
     if isFuncsBinded unit functs
-        then return ()
-        else error "Function is not binded to process!"
+        then return $ Right unit
+        else return $ Left $ error "Function is not binded to process!"
 
 isFuncsBinded pu fs =
     let fu = S.fromList $ functions pu
      in not (null fu) && fu == S.fromList fs
 
-isProcessDone = do
-    UnitTestState{unit, functs} <- get
-    if isProcessComplete' unit functs
-        && null (endpointOptions unit)
-        then return ()
-        else
-            error
-                [i| Process is not complete!
-                        decisions available: #{ endpointOptions unit }
-                                     functs: #{ functs }
-                                         pu: #{ unit }
-                  |]
+isProcessDone =
+    do
+        UnitTestState{unit, functs} <- get
+        if isProcessComplete' unit functs
+            && null (endpointOptions unit)
+            then return $ Right unit
+            else return $ Left $ error "Process is not complete"
 
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
 processedVars' pu = unionsMap variables $ getEndpoints $ process pu
 
 ------------------REMOVE AFTER TESTS------------------------
-example = execMultiplier st0 $ do
-    bindFunc fDef
-    isBinded
+example = evalMultiplier st0 $ do
+    _ <- bindFunc fDef
+    _ <- isBinded
     doDecision $ beTarget 1 2 "a"
     doNDecision 2
     doDecision $ beSource 5 5 ["c"]
     doFstDecision
-
     isProcessDone
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
-f2Def = F.multiply "c" "q" ["m"] :: F String Int
 
 st0 = multiplier True :: Multiplier String Int Int

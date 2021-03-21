@@ -84,16 +84,15 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , multiplierTest "smoke test multiplier" u $ do
+        , multiplierTest "smoke test" u $ do
             bindFunc fDef
-            isBinded
             doDecision $ beTarget 1 2 "a"
             doNDecision 2
             doDecision $ beSource 5 5 ["c"]
             doFstDecision
             isProcessDone
-        , multiplierTest "neg test" u $ do
-            isBinded
+        , multiplierNegTest "smoke negative test" u $ do
+            bindFunc fDef
             doDecision $ beTarget 1 2 "a"
             doNDecision 2
             isProcessDone
