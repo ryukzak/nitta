@@ -24,6 +24,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     puCoSimProp,
     algGen,
     multiplierTest,
+    multiplierNegTest,
 ) where
 
 import Control.Monad
@@ -39,6 +40,7 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import Test.Tasty.ExpectedFailure
 import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
@@ -233,8 +235,11 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
-multiplierTest name st alg =
-    let fu = assertBool "FAIl" $ execMultiplier st alg
-     in testCase name fu
+multiplierTest name st alg = 
+    testCase name $ assertBool "Multiplier test failed" $ 
+        case evalMultiplier st alg of
+            Right v -> True
+            Left err -> err
 
--- isBindedT = isBinded || assertFailure "Function is not binded to process!"
+multiplierNegTest name st alg =
+    expectFail $ multiplierTest name st alg
