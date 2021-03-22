@@ -19,7 +19,6 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 
 checkIntegrity pu fs =
@@ -41,8 +40,7 @@ checkIntegrity pu fs =
                     then Just getEpMap
                     else Nothing
         findEndpoint step m = case pDesc step of
-            (EndpointRoleStep (Source t)) -> M.insert (pID step) t m
-            (EndpointRoleStep (Target t)) -> M.insert (pID step) (S.fromList [t]) m
+            (EndpointRoleStep t) -> M.insert (pID step) (variables t) m
             _ -> m
 
         toInstructionMap =
