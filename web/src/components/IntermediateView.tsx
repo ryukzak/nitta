@@ -101,6 +101,8 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.log(err));
   }, [selectedSID]);
 
+  // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
+  // each rerender
   const dot = algorithmGraph ? renderGraphJsonToDot(algorithmGraph, procState, endpoints) : undefined;
   return (
     <div className="bg-light border edgeGraphContainer">

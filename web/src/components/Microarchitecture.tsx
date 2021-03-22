@@ -23,18 +23,24 @@ export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (pro
   const [endpoints, setEndpoints] = React.useState<Endpoints | null>(null);
 
   React.useEffect(() => {
+    setMA(null);
+    setEndpoints(null);
     api
       .getMicroarchitecture(selectedSID)
       .then((response: AxiosResponse<Microarchitecture>) => setMA(response.data))
       .catch((err: AxiosError) => console.error(err));
-
     api
       .getEndpoints(selectedSID)
       .then((response: AxiosResponse<PUEndpoints[]>) => setEndpoints(collectEndpoints(response.data)))
       .catch((err: AxiosError) => console.error(err));
   }, [selectedSID]);
 
-  const dot = ma && endpoints ? renderMicroarchitectureDot(ma, endpoints) : undefined;
+  const dot = React.useMemo(() => {
+    if (ma && endpoints) {
+      return renderMicroarchitectureDot(ma, endpoints);
+    }
+  }, [ma, endpoints]);
+
   return (
     <div className="bg-light border graphvizContainer">
       {dot && (
