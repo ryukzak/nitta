@@ -1,6 +1,6 @@
 import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
-import Tree from "react-d3-tree";
+import { Tree as D3Tree } from "react-d3-tree";
 
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
@@ -64,7 +64,7 @@ function selectCurrentNode(currentSID: SID, node: Tree): Tree {
     sid: node.sid,
     isLeaf: node.isLeaf,
     attributes: node.attributes,
-    nodeSvgShape: currentSID === node.sid ? nodeShape("Cyan") : node.nodeSvgShape,
+    nodeSvgShape: currentSID === node.sid ? nodeShape("cyan") : node.nodeSvgShape,
     children: childrens,
   };
 }
@@ -112,7 +112,7 @@ export const SynthesisGraphRender: React.FC = () => {
   }
   return (
     <div className="h-100">
-      <Tree
+      <D3Tree
         data={dataGraph}
         nodeSize={{ x: 160, y: 60 }}
         separation={{ siblings: 1, nonSiblings: 1 }}

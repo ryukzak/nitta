@@ -70,9 +70,9 @@ export function detailColumn() {
                 <b>Metrics:</b>
                 <pre>
                   {Object.keys(e.parameters).map(
-                    (k: string, i: number): React.ReactElement => {
+                    (k: string): React.ReactElement => {
                       return (
-                        <div key={i}>
+                        <div key={e.sid}>
                           - {k}: {JSON.stringify(e.parameters[k])}
                           <br />
                         </div>
@@ -133,7 +133,7 @@ export function showDataflow(decision: Dataflow): React.ReactElement {
     <div>
       from: <strong>{decision.source[0]}</strong> <br />
       {targets.map((target: [string, EndpointDecision], i: number) => (
-        <div key={i}>
+        <div key={target[0]}>
           {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong> <Icon.ArrowLeft />{" "}
           <strong>{target[0]}</strong> @ {target[1].epAt[0]} ... {target[1].epAt[1]}
           <br />
