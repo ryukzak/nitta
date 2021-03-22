@@ -1,12 +1,12 @@
-import * as React from "react";
+import React, { useContext, FC } from "react";
 import { DropdownButton, Dropdown } from "react-bootstrap";
 import { synthesize, api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
 
 import "./AppNavbar.scss";
 
-export const AppNavbarButtons: React.FC = () => {
-  const ctx = React.useContext(AppContext) as IAppContext;
+export const AppNavbarButtons: FC = () => {
+  const ctx = useContext(AppContext) as IAppContext;
 
   const btnAttrs = {
     className: "mr-1 btn-sm btn-secondary appNavbarButton",

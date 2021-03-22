@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import * as React from "react";
+import React, { FC, useContext, useState, useEffect } from "react";
 import { Tree as D3Tree } from "react-d3-tree";
 
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
@@ -69,17 +69,17 @@ function selectCurrentNode(currentSID: SID, node: Tree): Tree {
   };
 }
 
-export const SynthesisGraphRender: React.FC = () => {
-  const appContext = React.useContext(AppContext) as IAppContext;
+export const SynthesisGraphRender: FC = () => {
+  const appContext = useContext(AppContext) as IAppContext;
 
-  const [synthesisTree, setSynthesisTree] = React.useState<Tree | null>(null);
-  const [knownSID] = React.useState<Set<SID>>(new Set());
+  const [synthesisTree, setSynthesisTree] = useState<Tree | null>(null);
+  const [knownSID] = useState<Set<SID>>(new Set());
 
-  const [currentSID, setCurrentSID] = React.useState<SID | null>(null);
+  const [currentSID, setCurrentSID] = useState<SID | null>(null);
 
-  const [dataGraph, setDataGraph] = React.useState<Tree[]>([] as Tree[]);
+  const [dataGraph, setDataGraph] = useState<Tree[]>([] as Tree[]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const sid = appContext.selectedSID;
     if (knownSID.has(sid)) return;
     console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid})`);
@@ -94,7 +94,7 @@ export const SynthesisGraphRender: React.FC = () => {
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedSID, knownSID]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const sid = appContext.selectedSID;
     if (synthesisTree && sid !== currentSID && knownSID.has(sid)) {
       console.log(`SynthesisGraphRender.setCurrentSID(${sid}) old: ${currentSID}`);

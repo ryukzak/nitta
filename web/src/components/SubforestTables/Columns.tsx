@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { ReactElement } from "react";
 
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
@@ -36,7 +36,7 @@ export function decisionColumn() {
 
 export function textColumn(
   columnName: string,
-  f: (e: Node) => string | number | Interval<number> | React.ReactElement,
+  f: (e: Node) => string | number | Interval<number> | ReactElement,
   maxWidth?: number,
   wrap?: boolean
 ) {
@@ -70,7 +70,7 @@ export function detailColumn() {
                 <b>Metrics:</b>
                 <pre>
                   {Object.keys(e.parameters).map(
-                    (k: string): React.ReactElement => (
+                    (k: string): ReactElement => (
                       <div key={e.sid}>
                         - {k}: {JSON.stringify(e.parameters[k])}
                         <br />
@@ -107,7 +107,7 @@ export function objectiveColumn() {
   };
 }
 
-export function showDecision(decision: DecisionView): React.ReactElement {
+export function showDecision(decision: DecisionView): ReactElement {
   if (decision.tag === "BindDecisionView") return showBind(decision);
   else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
@@ -117,7 +117,7 @@ export function showDecision(decision: DecisionView): React.ReactElement {
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
-export function showBind(decision: Bind): React.ReactElement {
+export function showBind(decision: Bind): ReactElement {
   return (
     <div>
       <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}
@@ -125,7 +125,7 @@ export function showBind(decision: Bind): React.ReactElement {
   );
 }
 
-export function showDataflow(decision: Dataflow): React.ReactElement {
+export function showDataflow(decision: Dataflow): ReactElement {
   let targets = decision.targets;
   return (
     <div>
@@ -141,11 +141,11 @@ export function showDataflow(decision: Dataflow): React.ReactElement {
   );
 }
 
-export function showBreakLoop(decision: BreakLoop): React.ReactElement {
+export function showBreakLoop(decision: BreakLoop): ReactElement {
   return <div>{"output: " + decision.outputs.join(", ") + " input: " + decision.input}</div>;
 }
 
-export function showConstantFolding(d: ConstantFolding): React.ReactElement {
+export function showConstantFolding(d: ConstantFolding): ReactElement {
   return (
     <div>
       {d.cRefOld.map((e: FView) => e.fvFun).join("\n")}
@@ -158,7 +158,7 @@ export function showConstantFolding(d: ConstantFolding): React.ReactElement {
   );
 }
 
-export function showOptimizeAccum(d: OptimizeAccum): React.ReactElement {
+export function showOptimizeAccum(d: OptimizeAccum): ReactElement {
   return (
     <div>
       {d.old.map((e: FView) => e.fvFun).join("\n")}
@@ -171,6 +171,6 @@ export function showOptimizeAccum(d: OptimizeAccum): React.ReactElement {
   );
 }
 
-export function showResolveDeadlock(decision: ResolveDeadlock): React.ReactElement {
+export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
   return <div>{decision.newBuffer}</div>;
 }

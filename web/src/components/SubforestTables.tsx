@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -18,8 +18,8 @@ type SubforestTablesProps = {
   nodes: Node[];
 };
 
-export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
-  const appContext = React.useContext(AppContext) as IAppContext;
+export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
+  const appContext = useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
   };

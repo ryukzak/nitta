@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, FC } from "react";
 
 import { api } from "services/HaskellApiService";
 import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "services/gen/types";
@@ -18,7 +18,7 @@ export interface Highlight {
 // TODO: diff from previous synthesis process step
 // TODO: highlight point by click on info part
 // FIXME: https://robinpokorny.medium.com/index-as-a-key-is-an-anti-pattern-e0349aece318
-export const ProcessScreen: React.FC = () => {
+export const ProcessScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [pIdIndex, setPIdIndex] = useState<Record<number, TimelinePoint<number>> | null>(null);

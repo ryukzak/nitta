@@ -1,4 +1,4 @@
-import React from "react";
+import React, { FC } from "react";
 
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "services/gen/types";
 import { Highlight } from "screens/ProcessScreen";
@@ -13,13 +13,7 @@ interface TimelineProps {
   onDetailChange: (detail: TimelinePoint<number>[]) => void;
 }
 
-export const TimelineView: React.FC<TimelineProps> = ({
-  timelines,
-  highlight,
-  data,
-  onHighlightChange,
-  onDetailChange,
-}) => {
+export const TimelineView: FC<TimelineProps> = ({ timelines, highlight, data, onHighlightChange, onDetailChange }) => {
   let viewColumnHead = "view point";
   let viewColumnLength: number = viewColumnHead.length;
   timelines.forEach((e) => {

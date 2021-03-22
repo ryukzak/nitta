@@ -1,7 +1,7 @@
-import * as React from "react";
+import React, { useCallback } from "react";
 
 export const DownloadTextFile = (props: { name: string; text: string }) => {
-  const downloadTextFileCallback = React.useCallback(() => {
+  const downloadTextFileCallback = useCallback(() => {
     const element = document.createElement("a");
     const file = new Blob([props.text], { type: "text/plain" });
     element.href = URL.createObjectURL(file);

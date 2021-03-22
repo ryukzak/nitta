@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Component } from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import { IAppContext, AppContextProvider } from "./AppContext";
@@ -19,7 +19,7 @@ export interface IAppProps {}
 // And yes, you got it right, EVERYTHING you need in context (including functions) must be in this.state.
 export type IAppState = IAppContext;
 
-export default class App extends React.Component<IAppProps, IAppState> {
+export default class App extends Component<IAppProps, IAppState> {
   constructor(props: IAppProps) {
     super(props);
 

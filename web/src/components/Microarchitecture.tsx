@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import * as React from "react";
+import React, { useContext, useMemo, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
@@ -16,13 +16,13 @@ import "components/Graphviz.scss";
 
 export interface IMicroarchitectureViewProps {}
 
-export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [ma, setMA] = React.useState<Microarchitecture | null>(null);
-  const [endpoints, setEndpoints] = React.useState<Endpoints | null>(null);
+  const [ma, setMA] = useState<Microarchitecture | null>(null);
+  const [endpoints, setEndpoints] = useState<Endpoints | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMA(null);
     setEndpoints(null);
     api
@@ -35,7 +35,7 @@ export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (pro
       .catch((err: AxiosError) => console.error(err));
   }, [selectedSID]);
 
-  const dot = React.useMemo(() => {
+  const dot = useMemo(() => {
     if (ma && endpoints) {
       return renderMicroarchitectureDot(ma, endpoints);
     }

@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC, useContext, useEffect, useState } from "react";
 import { AxiosResponse } from "axios";
 
 import { api, Node } from "services/HaskellApiService";
@@ -9,11 +9,11 @@ import { MicroarchitectureView } from "components/Microarchitecture";
 import { SynthesisHistory } from "components/SynthesisHistory";
 import { SubforestTables } from "components/SubforestTables";
 
-export const SubforestScreen: React.FC = () => {
-  const appContext = React.useContext(AppContext) as IAppContext;
-  const [subforest, setSubforest] = React.useState<Node[] | null>(null);
+export const SubforestScreen: FC = () => {
+  const appContext = useContext(AppContext) as IAppContext;
+  const [subforest, setSubforest] = useState<Node[] | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     api
       .getSubforest(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {

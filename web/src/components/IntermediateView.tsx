@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import * as React from "react";
+import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
@@ -27,15 +27,15 @@ interface Endpoints {
   targets: string[];
 }
 
-export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [algorithmGraph, setAlgorithmGraph] = React.useState<IntermediateGraph | null>(null);
-  const [procState, setProcState] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
-  const [endpoints, setEndpoints] = React.useState<Endpoints>({ sources: [], targets: [] });
+  const [algorithmGraph, setAlgorithmGraph] = useState<IntermediateGraph | null>(null);
+  const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
+  const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
 
   // Updating graph
-  React.useEffect(() => {
+  useEffect(() => {
     api
       .getIntermediateView(selectedSID)
       .then((response: AxiosResponse<IntermediateGraph>) => {

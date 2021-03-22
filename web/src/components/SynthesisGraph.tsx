@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useContext, useState, FC } from "react";
 import { Popover, OverlayTrigger, Button } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
@@ -7,12 +7,12 @@ import { synthesize, api, reLastSID, sidSeparator } from "services/HaskellApiSer
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
 
-export const SynthesisGraph: React.FC = () => {
-  const appContext = React.useContext(AppContext) as IAppContext;
+export const SynthesisGraph: FC = () => {
+  const appContext = useContext(AppContext) as IAppContext;
 
   const step = 100;
   const minHeight = 200;
-  const [height, setHeight] = React.useState<number>(minHeight);
+  const [height, setHeight] = useState<number>(minHeight);
 
   const buttonAttrs = {
     className: "btn btn-sm mr-3",

@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, ReactElement, useContext, FC } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -12,7 +12,7 @@ export interface ISynthesisHistoryProps {
   reverse: boolean;
 }
 
-export const SynthesisHistory: React.FC<ISynthesisHistoryProps> = (props) => {
+export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
   const appContext = useContext(AppContext) as IAppContext;
   const [synthesisHistory, setHistory] = useState<Node[]>();
   const style = {
@@ -75,12 +75,7 @@ export const SynthesisHistory: React.FC<ISynthesisHistoryProps> = (props) => {
     };
   }
 
-  function textColumn(
-    columnName: string,
-    f: (n: Node) => string | React.ReactElement,
-    maxWidth?: number,
-    minWidth?: number
-  ) {
+  function textColumn(columnName: string, f: (n: Node) => string | ReactElement, maxWidth?: number, minWidth?: number) {
     return {
       Header: columnName,
       style: style,

@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC } from "react";
 import ReactTable from "react-table";
 
 export interface ITestBenchSimulationLogProps {
@@ -6,7 +6,7 @@ export interface ITestBenchSimulationLogProps {
   logical: { [k: string]: number }[];
 }
 
-export const TestBenchSimulationLog: React.FC<ITestBenchSimulationLogProps> = ({ functional, logical }) => {
+export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ functional, logical }) => {
   let columns: { Header: string; accessor: string }[] = [{ Header: "Cycle", accessor: "i" }];
   for (let key in logical[0]) {
     columns.push({ Header: key, accessor: key });
