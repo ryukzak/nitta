@@ -70,14 +70,12 @@ export function detailColumn() {
                 <b>Metrics:</b>
                 <pre>
                   {Object.keys(e.parameters).map(
-                    (k: string): React.ReactElement => {
-                      return (
-                        <div key={e.sid}>
-                          - {k}: {JSON.stringify(e.parameters[k])}
-                          <br />
-                        </div>
-                      );
-                    }
+                    (k: string): React.ReactElement => (
+                      <div key={e.sid}>
+                        - {k}: {JSON.stringify(e.parameters[k])}
+                        <br />
+                      </div>
+                    )
                   )}
                 </pre>
               </Popover.Content>
