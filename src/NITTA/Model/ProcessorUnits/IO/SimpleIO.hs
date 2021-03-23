@@ -1,12 +1,16 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -20,21 +24,29 @@ module NITTA.Model.ProcessorUnits.IO.SimpleIO (
     SimpleIOInterface,
     SimpleIO (..),
     Ports (..),
+    protocolDescription,
 ) where
 
 import Control.Monad
+import Data.Aeson (ToJSON (toJSON))
+import Data.Aeson.Encode.Pretty
 import Data.Default
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
+import qualified Data.Text as T
+import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder
 import Data.Typeable
+import GHC.Generics (Generic)
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
+import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
@@ -217,3 +229,49 @@ instance Connected (SimpleIO i v x t) where
 
 instance (Var v) => Locks (SimpleIO i v x t) v where
     locks SimpleIO{} = []
+
+data ProtocolDescription v = ProtocolDescription
+    { description :: T.Text
+    , interface :: T.Text
+    , dataType :: T.Text
+    , toNitta :: [v]
+    , fromNitta :: [v]
+    }
+    deriving (Generic)
+
+instance (ToJSON v) => ToJSON (ProtocolDescription v)
+
+protocolDescription ::
+    forall i v x t.
+    (VarValTime v x t, SimpleIOInterface i, ToJSON v) =>
+    T.Text ->
+    SimpleIO i v x t ->
+    T.Text ->
+    Implementation
+protocolDescription tag io d
+    | not $ null $ endpointOptions io = error "EndpointProblem is not completed"
+    | otherwise =
+        let impFile = toString $ tag <> ".json"
+            fbs = getFBs $ process_ io
+         in Immediate impFile $
+                toStrict $
+                    toLazyText $
+                        encodePrettyToTextBuilder $
+                            toJSON
+                                ProtocolDescription
+                                    { description = d
+                                    , interface = T.pack $ show $ typeRep (Proxy :: Proxy i)
+                                    , dataType = T.pack $ show $ typeRep (Proxy :: Proxy x)
+                                    , toNitta = map (oneOf . outputs) $ filter isReceive fbs
+                                    , fromNitta = map (oneOf . inputs) $ filter isSend fbs
+                                    }
+
+isReceive :: (Typeable v, Typeable x) => F v x -> Bool
+isReceive f
+    | Just F.Receive{} <- castF f = True
+    | otherwise = False
+
+isSend :: (Typeable v, Typeable x) => F v x -> Bool
+isSend f
+    | Just F.Send{} <- castF f = True
+    | otherwise = False
