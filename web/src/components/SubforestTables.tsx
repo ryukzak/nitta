@@ -1,12 +1,9 @@
-import * as React from "react";
+import React, { FC, useContext } from "react";
 import ReactTable, { Column } from "react-table";
-import * as Icon from "react-bootstrap-icons";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { Node, Bind, Dataflow, EndpointDecision, Target } from "services/HaskellApiService";
-import { BreakLoop, OptimizeAccum, ResolveDeadlock, ConstantFolding } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics, FView } from "services/gen/types";
-
+import { Node, Dataflow } from "services/HaskellApiService";
+import { BindMetrics, DataflowMetrics } from "services/gen/types";
 import {
   sidColumn,
   textColumn,
@@ -14,16 +11,15 @@ import {
   decisionColumn,
   parametersColumn,
   detailColumn,
+  showDecision,
 } from "components/SubforestTables/Columns";
-
-// FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
 type SubforestTablesProps = {
   nodes: Node[];
 };
 
-export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
-  const appContext = React.useContext(AppContext) as IAppContext;
+export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
+  const appContext = useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
   };
@@ -46,8 +42,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
           sidColumn(appContext.setSID),
           objectiveColumn(),
 
-          textColumn("function", (e: Node) => (e.decision as Bind).function.fvFun),
-          textColumn("pu", (e: Node) => (e.decision as Bind).pu, 50),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
 
           textColumn("crit", (e: Node) => String((e.parameters as BindMetrics).pCritical), 50),
           textColumn("lock", (e: Node) => String((e.parameters as BindMetrics).pPossibleDeadlock), 50),
@@ -66,6 +61,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("newDF", (e: Node) => (e.parameters as BindMetrics).pAllowDataFlow, 70),
           textColumn("newBind", (e: Node) => (e.parameters as BindMetrics).pNumberOfBindedFunctions, 70),
           textColumn("|inputs|", (e: Node) => (e.parameters as BindMetrics).pPercentOfBindedInputs, 70),
+          detailColumn(),
         ]}
       />
       <Table
@@ -75,40 +71,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
           sidColumn(appContext.setSID),
           objectiveColumn(),
           textColumn("type", (e: Node) => e.decision.tag, 160),
-          textColumn("description", (e: Node) => {
-            if (e.decision.tag === "BreakLoopView") {
-              let d = e.decision as BreakLoop;
-              return "output: " + d.outputs.join(", ") + " input: " + d.input;
-            } else if (e.decision.tag === "OptimizeAccumView") {
-              let d = e.decision as OptimizeAccum;
-              return (
-                <pre>
-                  {d.old.map((e: FView) => e.fvFun).join("\n")}
-                  <br />
-                  <Icon.ArrowDown />
-                  <br />
-                  {d.new.map((e: FView) => e.fvFun).join(", ")}
-                  <br />
-                </pre>
-              );
-            } else if (e.decision.tag === "ResolveDeadlockView") {
-              return (e.decision as ResolveDeadlock).newBuffer;
-
-            } else if (e.decision.tag === "ConstantFoldingView") {
-              let d = e.decision as ConstantFolding;
-              return (
-                <pre>
-                  {d.cRefOld.map((e: FView) => e.fvFun).join("\n")}
-                  <br />
-                  <Icon.ArrowDown />
-                  <br />
-                  {d.cRefNew.map((e: FView) => e.fvFun).join(", ")}
-                  <br />
-                </pre>
-              );
-            }
-            return JSON.stringify(e.decision);
-          }),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
           detailColumn(),
         ]}
       />
@@ -119,24 +82,7 @@ export const SubforestTables: React.FC<SubforestTablesProps> = ({ nodes }) => {
           sidColumn(appContext.setSID),
           objectiveColumn(),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source[0], 60),
-          textColumn(
-            "targets",
-            (e: Node) => {
-              let targets = (e.decision as Dataflow).targets;
-              return (
-                <div>
-                  {targets.map((target: [string, EndpointDecision], i: number) => (
-                    <pre key={i}>
-                      {(target[1].epRole as Target).contents} &rarr; {target[0]} @ {target[1].epAt[0]} ...{" "}
-                      {target[1].epAt[1]}
-                    </pre>
-                  ))}
-                </div>
-              );
-            },
-            undefined,
-            true
-          ),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
           textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime, 60),
           textColumn(
             "not transferable input",

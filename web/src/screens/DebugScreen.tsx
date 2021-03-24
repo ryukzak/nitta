@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC, useState, useEffect, useContext } from "react";
 import "react-table/react-table.css";
 
 import { api } from "services/HaskellApiService";
@@ -7,19 +7,19 @@ import { JsonView } from "components/JsonView";
 
 export interface IDebugScreenProps {}
 
-export const DebugScreen: React.FC<IDebugScreenProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const DebugScreen: FC<IDebugScreenProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [debugInfo, setDebugInfo] = React.useState<any | null>(null);
-  React.useEffect(() => {
+  const [debugInfo, setDebugInfo] = useState<any | null>(null);
+  useEffect(() => {
     api
       .getDebugInfo(selectedSID)
       .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => console.error(err));
   }, [selectedSID]);
 
-  const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
-  React.useEffect(() => {
+  const [synthesisNodeData, setSynthesisNodeData] = useState<any | null>(null);
+  useEffect(() => {
     api
       .getNode(selectedSID)
       .then((response: any) => setSynthesisNodeData(response.data))

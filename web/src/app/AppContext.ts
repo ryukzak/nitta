@@ -1,8 +1,6 @@
 import React from "react";
 
-export type SID = string;
-export const sidSeparator = "-";
-export const reLastSID = /-[^-]*$/;
+import { SID } from "services/HaskellApiService";
 
 export interface IAppContext {
   selectedSID: SID;

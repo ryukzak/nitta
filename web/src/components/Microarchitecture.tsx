@@ -1,11 +1,12 @@
 import { AxiosResponse, AxiosError } from "axios";
-import * as React from "react";
+import React, { useContext, useMemo, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Microarchitecture, Network, Unit } from "services/HaskellApiService";
 import { PUEndpoints } from "services/HaskellApiService";
+import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 
@@ -15,31 +16,38 @@ import "components/Graphviz.scss";
 
 export interface IMicroarchitectureViewProps {}
 
-export const MicroarchitectureView: React.FC<IMicroarchitectureViewProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [ma, setMA] = React.useState<Microarchitecture | null>(null);
-  const [endpoints, setEndpoints] = React.useState<Endpoints | null>(null);
+  const [ma, setMA] = useState<Microarchitecture | null>(null);
+  const [endpoints, setEndpoints] = useState<Endpoints | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    setMA(null);
+    setEndpoints(null);
     api
       .getMicroarchitecture(selectedSID)
       .then((response: AxiosResponse<Microarchitecture>) => setMA(response.data))
       .catch((err: AxiosError) => console.error(err));
-
     api
       .getEndpoints(selectedSID)
       .then((response: AxiosResponse<PUEndpoints[]>) => setEndpoints(collectEndpoints(response.data)))
       .catch((err: AxiosError) => console.error(err));
   }, [selectedSID]);
 
+  const dot = useMemo(() => {
+    if (ma && endpoints) {
+      return renderMicroarchitectureDot(ma, endpoints);
+    }
+  }, [ma, endpoints]);
+
   return (
     <div className="bg-light border graphvizContainer">
-      {ma && endpoints && (
-        <Graphviz
-          dot={renderMicroarchitectureDot(ma, endpoints)}
-          options={{ height: 399, width: "100%", zoom: true }}
-        />
+      {dot && (
+        <>
+          <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
+          <DownloadTextFile name={"microarchitecture.dot"} text={dot} />
+        </>
       )}
     </div>
   );
@@ -99,6 +107,5 @@ function renderMicroarchitectureDot(ma: Microarchitecture, endpoints: Endpoints)
   lines.push(`  { rank = max; ${vars.join("; ")} }`);
   lines.push("}");
 
-  console.log(lines.join("\n"));
   return lines.join("\n");
 }

@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC } from "react";
 import ReactJson, { ReactJsonViewProps } from "react-json-view";
 
 export interface IJsonViewProps extends ReactJsonViewProps {}
@@ -12,7 +12,7 @@ const DEFAULT_REACT_JSON_PROPS: Partial<ReactJsonViewProps> = {
   collapseStringsAfterLength: 120,
 };
 
-export const JsonView: React.FC<IJsonViewProps> = props => {
+export const JsonView: FC<IJsonViewProps> = (props) => {
   // default values are overriden by passed props
   return <ReactJson {...{ ...DEFAULT_REACT_JSON_PROPS, ...props }} />;
 };

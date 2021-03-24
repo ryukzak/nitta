@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Component } from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
-import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
+import { IAppContext, AppContextProvider } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
+import { SID, sidSeparator } from "services/HaskellApiService";
 
 import { SynthesisGraph } from "components/SynthesisGraph";
 import { NodeScreen } from "screens/NodeScreen";
@@ -18,7 +19,7 @@ export interface IAppProps {}
 // And yes, you got it right, EVERYTHING you need in context (including functions) must be in this.state.
 export type IAppState = IAppContext;
 
-export default class App extends React.Component<IAppProps, IAppState> {
+export default class App extends Component<IAppProps, IAppState> {
   constructor(props: IAppProps) {
     super(props);
 

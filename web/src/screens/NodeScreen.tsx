@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { FC, useContext } from "react";
 import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -7,8 +7,8 @@ import { MicroarchitectureView } from "components/Microarchitecture";
 
 export interface INodeScreenProps {}
 
-export const NodeScreen: React.FC<INodeScreenProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const NodeScreen: FC<INodeScreenProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
   if (!selectedSID) return <pre> synthesis is not selected </pre>;
 

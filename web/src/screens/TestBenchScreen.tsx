@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, FC } from "react";
 import { AxiosResponse, AxiosError } from "axios";
 
 import { api, TestBenchReport } from "services/HaskellApiService";
@@ -6,7 +6,7 @@ import { api, TestBenchReport } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
 
-export const TestBenchScreen: React.FC = () => {
+export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);

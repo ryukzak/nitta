@@ -1,5 +1,5 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
-import { SID, IAppContext } from "app/AppContext";
+import { IAppContext } from "app/AppContext";
 
 import jsAPI from "services/gen/rest_api";
 import {
@@ -16,12 +16,18 @@ import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecision
 import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
+export type SID = string;
+export const sidSeparator = "-";
+export const reLastSID = /-[^-]*$/;
+
 export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;
 export type Decision = DecisionView;
 export type Root = IRootView;
+
 export type Bind = IBindDecisionView;
 export type Dataflow = IDataflowDecisionView;
+
 export type BreakLoop = IBreakLoopView;
 export type ConstantFolding = IConstantFoldingView;
 export type OptimizeAccum = IOptimizeAccumView;
