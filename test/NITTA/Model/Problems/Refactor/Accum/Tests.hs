@@ -47,6 +47,17 @@ tests =
                 func2 = sub "c" "tmp1" ["res"]
                 funcRes = acc [Push Plus (I "c"), Push Minus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["res"])]
              in [func1, func2] `refactorTo` [funcRes]
+        , testCase "Acc and Add refactor test" $
+            let -- Start algorithm:
+                -- tmp1 = Acc [a, b] => tmp1
+                -- res = c + tmp1
+                --
+                -- Result algorithm:
+                -- res = c + a + b
+                func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
+                func2 = add "c" "tmp1" ["res"]
+                funcRes = acc [Push Plus (I "c"), Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["res"])]
+             in [func1, func2] `refactorTo` [funcRes]
         , testCase "simple 1 tmp variable sum refactor" $
             let -- Start algorithm:
                 -- tmp1 = a + b
