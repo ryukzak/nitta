@@ -58,32 +58,30 @@ class OptimizeAccumProblem u v x | u -> v x where
     optimizeAccumDecision _ _ = error "not implemented"
 
 instance (Var v, Val x) => OptimizeAccumProblem [F v x] v x where
-    optimizeAccumOptions fs =
-        [ OptimizeAccum{refOld, refNew}
-        | refOld <- selectClusters $ filter isSupportByAccum fs
-        , let refNew = optimizeCluster refOld
-        , S.fromList refOld /= S.fromList refNew
-        ]
+    optimizeAccumOptions fs = res
+        where
+            res =
+                L.nub
+                    [ OptimizeAccum{refOld, refNew}
+                    | refOld <- selectClusters $ filter isSupportByAccum fs
+                    , let refNew = optimizeCluster refOld
+                    , S.fromList refOld /= S.fromList refNew
+                    ]
 
-    optimizeAccumDecision fs OptimizeAccum{refOld, refNew} =
-        filter (`notElem` refOld) fs ++ refNew
+    optimizeAccumDecision fs OptimizeAccum{refOld, refNew} = refNew <> (fs L.\\ refOld)
 
 selectClusters fs =
     L.nubBy
         (\a b -> S.fromList a == S.fromList b)
-        [ cluster
+        [ [f, f']
         | f <- fs
-        , let cluster = selectClusterFor f
-        , length cluster > 1
+        , f' <- fs
+        , f' /= f
+        , inputOutputIntersect f f'
         ]
     where
-        selectClusterFor f =
-            f :
-                [ f'
-                | f' <- fs
-                , f' /= f
-                , not $ null (variables f `S.intersection` variables f')
-                ]
+        inputOutputIntersect f1 f2 = isIntersection (inputs f1) (outputs f2) || isIntersection (inputs f2) (outputs f1)
+        isIntersection a b = not $ S.disjoint a b
 
 isSupportByAccum f
     | Just Add{} <- castF f = True
@@ -122,7 +120,7 @@ optimizeCluster fs = concatMap refactored fs
 refactorFunction f' f
     | Just (Acc lst') <- castF f'
       , Just (Acc lst) <- castF f
-      , let multipleOutBool = (1 <) $ length $ outputs f'
+      , let singleOutBool = (1 ==) $ length $ outputs f'
             isOutInpIntersect =
                 any
                     ( \case
@@ -130,7 +128,7 @@ refactorFunction f' f
                         _ -> False
                     )
                     lst
-            makeRefactor = not multipleOutBool && isOutInpIntersect
+            makeRefactor = singleOutBool && isOutInpIntersect
          in makeRefactor =
         let subs _ (Push Minus _) (Push Plus v) = Just $ Push Minus v
             subs _ (Push Minus _) (Push Minus v) = Just $ Push Plus v
@@ -146,7 +144,8 @@ refactorFunction f' f
             refactorAcc _ _ (Push _ (I _)) = undefined
          in [packF $ Acc $ concatMap (refactorAcc lst' f') lst]
     | Just f1 <- fromAddSub f'
-      , Just f2 <- fromAddSub f = case refactorFunction f1 f2 of
+      , Just f2 <- fromAddSub f
+      , (1 ==) $ length $ outputs f' = case refactorFunction f1 f2 of
         [fNew] -> [fNew]
         _ -> [f, f']
     | otherwise = [f, f']
@@ -167,4 +166,5 @@ fromAddSub f
         Just $
             acc $
                 [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | Just Acc{} <- castF f = Just f
     | otherwise = Nothing
