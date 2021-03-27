@@ -40,7 +40,6 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import Test.Tasty.ExpectedFailure
 import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
@@ -57,6 +56,7 @@ import System.FilePath.Posix
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase, (@?))
 import Test.Tasty.QuickCheck (testProperty)
 
