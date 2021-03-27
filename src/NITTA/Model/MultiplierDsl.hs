@@ -5,7 +5,7 @@
 {- |
 Module      : NITTA.Model.MultiplierDsl
 Description : Provides functions to make decisions in Multiplier
-Copyright   : (c) co0ll3r, 2021
+Copyright   : (c) Artyom Kostyuchik, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -14,51 +14,64 @@ module NITTA.Model.MultiplierDsl (
     evalMultiplier,
     bindFunc,
     doDecision,
+    doDecisionSafe,
     doFstDecision,
     doNDecision,
     beTarget,
     beSource,
-    isProcessDone,
-    fDef
+    assertProcessDone,
+    fDef,
 ) where
 
 import Control.Monad.State.Lazy
-import Data.Either
 import qualified Data.Set as S
-import Data.String.Interpolate
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
-import Numeric.Interval.NonEmpty
+import Numeric.Interval.NonEmpty hiding (elem)
 
-data UnitTestState v x t = UnitTestState
-    { unit :: Multiplier v x t
-    , functs :: [F v x]
+data UnitTestState pu x t = UnitTestState
+    { unit :: pu
+    , functs :: [F x t]
     }
     deriving (Show)
 
 evalMultiplier st alg = evalState alg (UnitTestState st [])
 
+evalMultiplierGet st alg = flip evalState (UnitTestState st []) $ do
+    _ <- alg
+    return <$ get
+
 bindFunc f = do
-    UnitTestState{unit, functs} <- get
+    st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
-        Right v -> do
-            put $ UnitTestState v $ f : functs
-            return $ Right v
-        Left err -> return $ Left err
+        Right unit_ -> put st{unit = unit_, functs = f : functs}
+        Left err -> error err
+
+doDecisionSafe endpSt = do
+    isAvailable <- isEpOptionAvailable endpSt
+    if isAvailable
+        then doDecision endpSt
+        else error ("Such option isn't available: " <> show endpSt)
+
+isEpOptionAvailable (EndpointSt v inter) = do
+    UnitTestState{unit} <- get
+    return $
+        v `elem` map epRole (endpointOptions unit)
+            && nextTick (process unit) <=! inter
 
 doDecision endpSt = do
-    UnitTestState{unit, functs} <- get
-    put $ UnitTestState (endpointDecision unit endpSt) functs
+    st@UnitTestState{unit} <- get
+    put st{unit = endpointDecision unit endpSt}
 
 doFstDecision = do
-    UnitTestState{unit, functs} <- get
+    UnitTestState{unit} <- get
     doDecision $ fstDecision unit
 
 doNDecision n = do
-    UnitTestState{unit, functs} <- get
+    UnitTestState{unit} <- get
     doDecision $ nDecision unit n
 
 fstDecision pu = endpointOptionToDecision $ head $ endpointOptions pu
@@ -75,23 +88,23 @@ beTarget a b t = EndpointSt (Target t) (a ... b)
 
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
-isBinded = do
+assertBindFullness = do
     UnitTestState{unit, functs} <- get
-    if isFuncsBinded unit functs
+    if isFullyBinded unit functs
         then return $ Right unit
-        else return $ Left $ error "Function is not binded to process!"
+        else error "Function is not binded to process!"
 
-isFuncsBinded pu fs =
+isFullyBinded pu fs =
     let fu = S.fromList $ functions pu
      in not (null fu) && fu == S.fromList fs
 
-isProcessDone =
+assertProcessDone =
     do
         UnitTestState{unit, functs} <- get
         if isProcessComplete' unit functs
             && null (endpointOptions unit)
             then return $ Right unit
-            else return $ Left $ error "Process is not complete"
+            else error "Process is not complete"
 
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
@@ -100,12 +113,12 @@ processedVars' pu = unionsMap variables $ getEndpoints $ process pu
 ------------------REMOVE AFTER TESTS------------------------
 example = evalMultiplier st0 $ do
     _ <- bindFunc fDef
-    _ <- isBinded
+    _ <- assertBindFullness
     doDecision $ beTarget 1 2 "a"
     doNDecision 2
     doDecision $ beSource 5 5 ["c"]
     doFstDecision
-    isProcessDone
+    assertProcessDone
 
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
 

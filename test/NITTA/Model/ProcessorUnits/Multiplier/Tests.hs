@@ -90,12 +90,12 @@ tests =
             doNDecision 2
             doDecision $ beSource 5 5 ["c"]
             doFstDecision
-            isProcessDone
+            assertProcessDone
         , multiplierNegTest "smoke negative test" u $ do
             bindFunc fDef
             doDecision $ beTarget 1 2 "a"
             doNDecision 2
-            isProcessDone
+            assertProcessDone
         ]
     where
         u = multiplier True :: Multiplier String Int Int
