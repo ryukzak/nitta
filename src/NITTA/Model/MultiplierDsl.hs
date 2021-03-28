@@ -1,3 +1,4 @@
+{-# LANGUAGE DatatypeContexts #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -32,11 +33,10 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
 
-data UnitTestState pu x t = UnitTestState
+data (ProcessorUnit pu v x t) => UnitTestState pu v x t = UnitTestState
     { unit :: pu
-    , functs :: [F x t]
-    }
-    deriving (Show)
+    , functs :: [F v x]
+    } deriving Show
 
 evalMultiplier st alg = evalState alg (UnitTestState st [])
 
@@ -88,15 +88,24 @@ beTarget a b t = EndpointSt (Target t) (a ... b)
 
 beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
+assertBindFullness :: (MonadState (UnitTestState b v x t) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m (Either a2 b)
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     if isFullyBinded unit functs
         then return $ Right unit
-        else error "Function is not binded to process!"
+        else error $ "Function is not binded to process! expected: " <> show functs  <> "; actual: " <> show (functions unit)
 
+isFullyBinded :: (WithFunctions a1 a2, Ord v2, Function a2 v2, Label a2, Function f v2, Label f) => a1 -> [f] -> Bool
 isFullyBinded pu fs =
-    let fu = S.fromList $ functions pu
-     in not (null fu) && fu == S.fromList fs
+    let fu = functions pu
+        outs = S.fromList $ map outputs fu
+        inps = S.fromList $ map inputs fu
+        -- TODO: why for a - b = c binded to Acc, label returns "Acc"?
+        sign = S.fromList $ map label fu
+     in not (null fu) 
+         && outs == S.fromList (map outputs fs)
+         && inps == S.fromList (map inputs fs)
+         && sign == S.fromList (map label fs)
 
 assertProcessDone =
     do
