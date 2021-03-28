@@ -51,38 +51,34 @@ bindFunc f = do
         Left err -> error err
 
 doDecisionSafe endpSt = do
-    isAvailable <- isEpOptionAvailable endpSt
+    st@UnitTestState{unit} <- get
+    let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
-        then doDecision endpSt
-        else error ("Such option isn't available: " <> show endpSt)
+        then put st{unit = endpointDecision unit endpSt}
+        else error $ "Such option isn't available: " <> show endpSt
 
-isEpOptionAvailable (EndpointSt v inter) = do
-    UnitTestState{unit} <- get
-    return $
-        v `elem` map epRole (endpointOptions unit)
-            && nextTick (process unit) <=! inter
+isEpOptionAvailable (EndpointSt v _) pu = 
+        v `elem` map epRole (endpointOptions pu)
+--            && nextTick (process pu) <=! inter
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
     put st{unit = endpointDecision unit endpSt}
 
-doFstDecision = do
-    UnitTestState{unit} <- get
-    doDecision $ fstDecision unit
+doFstDecision :: (MonadState (UnitTestState pu v1 x t1) m, ProcessorUnit pu v1 x t1, EndpointProblem pu v2 t2, Num t2, Ord t2) => m ()
+doFstDecision = doNDecision 0
 
 doNDecision n = do
     UnitTestState{unit} <- get
     doDecision $ nDecision unit n
 
-fstDecision pu = endpointOptionToDecision $ head $ endpointOptions pu
-
-nDecision pu n =
+nDecision pu i =
     let opts = endpointOptions pu
-        calcN =
-            if n <= length opts
-                then n - 1
-                else length (endpointOptions pu) - 1
-     in endpointOptionToDecision $ opts !! calcN
+        i_ =
+            if i < length opts
+                then i
+                else error $ "nDecision out of bound: provided i=" <> show i <> "; options lenght=" <> show (length opts)
+     in endpointOptionToDecision $ opts !! i_
 
 beTarget a b t = EndpointSt (Target t) (a ... b)
 
