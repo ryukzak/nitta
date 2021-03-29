@@ -56,11 +56,13 @@ doDecisionSafe endpSt = do
     let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else error $ "Such option isn't available: " <> show endpSt
+        else error $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
 
--- TODO: add check:  && nextTick (process pu) <=! inter
-isEpOptionAvailable (EndpointSt v _) pu =
-    v `elem` map epRole (endpointOptions pu)
+isEpOptionAvailable (EndpointSt v inter) pu =
+    let compEpRoles = case v of
+            (Target _) -> v `elem` map epRole (endpointOptions pu)
+            (Source s) -> S.isSubsetOf s $ unionsMap (variables . epRole) $ endpointOptions pu
+     in compEpRoles && singleton (nextTick $ process pu) <=! inter
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
