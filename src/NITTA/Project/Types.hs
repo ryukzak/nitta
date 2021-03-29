@@ -107,16 +107,21 @@ data Implementation
     | -- |Nothing
       Empty
 
+-- |Ginger is powerfull but slow down testing two times.
+enableGingerForImplementation = False
+
 -- |Write 'Implementation' to the file system.
 writeImplementation prjPath nittaPath ctx impl = writeImpl nittaPath impl
     where
-        writeImpl p (Immediate fn src0) = do
+        writeImpl p (Immediate fn src0) | enableGingerForImplementation = do
             let src = T.unpack src0
                 implCtx = appendImplementationContext p ctx
             template <-
                 either (error . formatParserError (Just src)) return <$> runIdentity $
                     parseGinger (const $ return Nothing) Nothing src
             T.writeFile (joinPath [prjPath, p, fn]) $ runGinger implCtx template
+        writeImpl p (Immediate fn src0) =
+            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "{{ nitta.paths.nest }}" (T.pack p) src0
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
