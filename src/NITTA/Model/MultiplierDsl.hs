@@ -26,11 +26,9 @@ module NITTA.Model.MultiplierDsl (
     fDef,
     fAdd,
     fSub,
-    accumDef,
 ) where
 
 import Control.Monad.State.Lazy
-import Data.Default
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -68,7 +66,7 @@ doDecision endpSt = do
     st@UnitTestState{unit} <- get
     put st{unit = endpointDecision unit endpSt}
 
-doFstDecision :: (MonadState (UnitTestState pu v1 x t1) m, ProcessorUnit pu v1 x t1, EndpointProblem pu v2 t2, Num t2, Ord t2) => m ()
+doFstDecision :: (MonadState (UnitTestState pu v1 x) m, EndpointProblem pu v2 t2, Num t2, Ord t2) => m ()
 doFstDecision = doNDecision 0
 
 doNDecision n = do
@@ -83,6 +81,7 @@ nDecision pu i =
                 else error $ "nDecision out of bound: provided i=" <> show i <> "; options lenght=" <> show (length opts)
      in endpointOptionToDecision $ opts !! i_
 
+-- TODO FIx
 beTarget t = do
     UnitTestState{unit} <- get
     let inter = getInterval' $ process unit
@@ -95,7 +94,6 @@ beSource ss = EndpointSt (Source $ S.fromList ss) (1 ... 1)
 
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
--- getInter :: ProcessorUnit u v x a => u -> Interval a
 getInterval' pu =
     let iMin = nextTick pu
      in (iMin ... iMin)
@@ -112,7 +110,6 @@ isFullyBinded pu fs =
     let fu = functions pu
         outs = S.fromList $ map outputs fu
         inps = S.fromList $ map inputs fu
-        -- TODO: why for a - b = c binded to Acc, label returns "Acc"?
         sign = S.fromList $ map label fu
      in not (null fu)
             && outs == S.fromList (map outputs fs)
@@ -133,15 +130,8 @@ isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
 processedVars' pu = unionsMap variables $ getEndpoints $ process pu
 
 ------------------REMOVE AFTER TESTS------------------------
-example = evalMultiplier st0 $ do
-    _ <- bindFunc fDef
-    _ <- assertBindFullness
-    doDecision $ beTarget 1 2 "a"
-    doNDecision 2
-    doDecision $ beSource 5 5 ["c"]
-    doFstDecision
-    assertProcessDone
-
 fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
 
-st0 = multiplier True :: Multiplier String Int Int
+fAdd = F.add "a" "b" ["c", "d"] :: F String Int
+
+fSub = F.sub "a" "b" ["c"] :: F String Int

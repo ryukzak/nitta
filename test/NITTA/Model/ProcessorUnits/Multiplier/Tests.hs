@@ -16,6 +16,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
     tests,
 ) where
 
+import Data.Default
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
@@ -84,7 +85,7 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , multiplierTest "smoke test" u $ do
+        , multiplierTest "multiplier smoke test" u $ do
             bindFunc fDef
             assertBindFullness
             doDecision $ beTargetAt 1 2 "a"
@@ -92,19 +93,27 @@ tests =
             doDecision $ beSourceAt 5 5 ["c"]
             doFstDecision
             assertProcessDone
+        , multiplierTest "accum smoke test" u3 $ do
+            bindFunc fSub
+            -- assertBindFullness  -- TODO: Won't work because it has label "Acc" instead "-"
+            doDecision $ beTargetAt 4 4 "a"
+            doFstDecision
+            doDecision $ beSourceAt 5 5 ["c"]
+            assertProcessDone
         , multiplierNegTest "smoke negative test" u $ do
             bindFunc fDef
             doDecision $ beTargetAt 1 2 "a"
             doNDecision 0
             assertProcessDone
-        , multiplierNegTest "shouldn't bind test" accumDef $ do
+        , multiplierNegTest "shouldn't bind test" u3 $ do
             bindFunc fSub
             assertBindFullness
-            -- TODO: not work with finishVoid
+            -- TODO: if we add the next operators error at assertBindFullness will be ignored
         ]
     where
         u = multiplier True :: Multiplier String Int Int
         u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
+        u3 = def :: Accum String Int Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Multiply _ _))
