@@ -404,7 +404,7 @@ externalPortsDecl ports =
         ports
 
 instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork tag v x t) where
-    moduleName tag BusNetwork{} = tag <> "_net"
+    moduleName _tag BusNetwork{bnName} = T.pack $ toString bnName
 
     hardware tag pu@BusNetwork{..} =
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
@@ -545,7 +545,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
     testBenchImplementation
         Project
             { pName
-            , pUnit = n@BusNetwork{bnProcess, bnPus, ioSync}
+            , pUnit = n@BusNetwork{bnProcess, bnPus, ioSync, bnName}
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
@@ -578,9 +578,9 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                 assertions = vsep $ map (\cycleTickTransfer -> posedgeCycle <> line <> vsep (map assertion cycleTickTransfer)) tickWithTransfers
 
                 assertion (cycleI, t, Nothing) =
-                    [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus);|]
+                    [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
-                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
+                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
              in Immediate (toString $ moduleName pName n <> "_tb.v") $
                     doc2text
                         [__i|
@@ -627,7 +627,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
             #{ moduleName pName n } \#
                     ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                     , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
-                    ) net
+                    ) #{ toString bnName }
                 ( .clk( clk )
                 , .rst( rst )
                 , .flag_cycle_begin( cycle )
