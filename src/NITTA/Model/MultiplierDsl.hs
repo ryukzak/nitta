@@ -23,6 +23,7 @@ module NITTA.Model.MultiplierDsl (
     beSourceAt,
     assertBindFullness,
     assertProcessDone,
+    assertExecute,
     fDef,
     fAdd,
     fSub,
@@ -86,19 +87,21 @@ nDecision pu i =
 -- TODO FIx
 beTarget t = do
     UnitTestState{unit} <- get
-    let inter = getInterval' $ process unit
-    return $ EndpointSt (Target t) inter
+    return $ EndpointSt (Target t) $ getInterval' unit
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 
 -- TODO FIx
-beSource ss = EndpointSt (Source $ S.fromList ss) (1 ... 1)
+beSource :: (ProcessorUnit u v2 x2 a, Ord v3) => [v3] -> State (UnitTestState u v2 x2) (EndpointSt v3 (Interval a))
+beSource ss = do
+    UnitTestState{unit} <- get
+    return $ EndpointSt (Source $ S.fromList ss) $ getInterval' unit
 
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 getInterval' pu =
-    let iMin = nextTick pu
-     in (iMin ... iMin)
+    let iMin = nextTick $ process pu
+     in iMin ... iMin
 
 assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m Bool
 assertBindFullness = do
@@ -126,6 +129,13 @@ assertProcessDone =
             && null (endpointOptions unit)
             then return True
             else error "Process is not complete"
+
+assertExecute :: (ProcessorUnit pu v x t) => State (UnitTestState pu v x) Bool
+assertExecute = do
+    UnitTestState{unit} <- get
+    let nT = nextTick $ process unit
+        nU = nextUid $ process unit
+    return $ nT >= 0 && nU >= 0
 
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
