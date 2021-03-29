@@ -87,33 +87,42 @@ tests =
         , puCoSimProp "multiplier_coSimulation" u fsGen
         , multiplierTest "multiplier smoke test" u $ do
             bindFunc fDef
-            assertBindFullness
-            doDecision $ beTargetAt 1 2 "a"
+            _ <- assertBindFullness
+            doDecisionSafe $ beTargetAt 1 2 "a"
             doNDecision 0
-            doDecision $ beSourceAt 5 5 ["c"]
+            doDecisionSafe $ beSourceAt 5 5 ["c"]
             doFstDecision
-            assertProcessDone
+            _ <- assertProcessDone
+            assertExecute
         , multiplierTest "accum smoke test" u3 $ do
             bindFunc fSub
-            -- assertBindFullness  -- TODO: Won't work because it has label "Acc" instead "-"
-            doDecision $ beTargetAt 4 4 "a"
+            doDecisionSafe $ beTargetAt 4 4 "a"
             doFstDecision
-            doDecision $ beSourceAt 5 5 ["c"]
-            assertProcessDone
-        , multiplierNegTest "smoke negative test" u $ do
+            doDecisionSafe $ beSourceAt 5 5 ["c"]
+            _ <- assertProcessDone
+            assertExecute
+        , multiplierNegTest "should error, when proccess is not done" u $ do
             bindFunc fDef
-            doDecision $ beTargetAt 1 2 "a"
+            doDecisionSafe $ beTargetAt 1 2 "a"
             doNDecision 0
-            assertProcessDone
-        , multiplierNegTest "shouldn't bind test" u3 $ do
+            _ <- assertProcessDone
+            assertExecute
+        , multiplierNegTest "shouldn't bind, when PU incompatible with F" u $ do
             bindFunc fSub
-            assertBindFullness
-            -- TODO: if we add the next operators error at assertBindFullness will be ignored
+            assertExecute
+        , multiplierNegTest "shouldn't bind, when different signatures" u3 $ do
+            bindFunc fSub
+            _ <- assertBindFullness -- TODO: Why Accum return "Acc" as a label instead "-"?
+            assertExecute
+        , multiplierNegTest "shouldn't " u4 $ do
+            bindFunc fSub
+            assertExecute
         ]
     where
         u = multiplier True :: Multiplier String Int Int
         u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
         u3 = def :: Accum String Int Int
+        u4 = def :: Fram String Int Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Multiply _ _))
