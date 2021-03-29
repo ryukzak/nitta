@@ -1,9 +1,14 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS -fno-warn-orphans #-}
 
 {- |
 Module      : NITTA.Project.Types
@@ -26,6 +31,8 @@ module NITTA.Project.Types (
     envInOutPorts,
 ) where
 
+import Control.Applicative
+import Control.Monad.Identity (runIdentity)
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -36,6 +43,8 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath, takeDirectory, (</>))
+import Text.Ginger
+import Text.Ginger.Run.Type
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -89,7 +98,7 @@ class TargetSystemComponent pu where
 
 -- |Element of target system implementation
 data Implementation
-    = -- |Immediate implementation
+    = -- |Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')
       Immediate {impFileName :: FilePath, impText :: T.Text}
     | -- |Fetch implementation from library
       FromLibrary {impFileName :: FilePath}
@@ -98,24 +107,32 @@ data Implementation
     | -- |Nothing
       Empty
 
-{- |Write 'Implementation' to the file system.
-
-The $PATH$ placeholder is used for correct addressing between nested files. For
-example, the PATH contains two files f1 and f2, and f1 imports f2 into itself.
-To do this, you often need to specify its address relative to the working
-directory, which is done by inserting this address in place of the $PATH$
-placeholder.
--}
-writeImplementation prjPath nittaPath = writeImpl nittaPath
+-- |Write 'Implementation' to the file system.
+writeImplementation prjPath nittaPath ctx impl = writeImpl nittaPath impl
     where
-        writeImpl p (Immediate fn src) =
-            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" (T.pack p) src
+        writeImpl p (Immediate fn src0) = do
+            let src = T.unpack src0
+                implCtx = appendImplementationContext p ctx
+            template <-
+                either (error . formatParserError (Just src)) return <$> runIdentity $
+                    parseGinger (const $ return Nothing) Nothing src
+            T.writeFile (joinPath [prjPath, p, fn]) $ runGinger implCtx template
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
             createDirectoryIfMissing True $ joinPath [prjPath, path]
             mapM_ (writeImpl path) subInstances
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
+
+instance Semigroup (RuntimeError SourcePos) where a <> _ = a
+instance Monoid (RuntimeError SourcePos) where mempty = def
+
+appendImplementationContext nest ctx@GingerContext{contextLookup = contextLookup2} =
+    let GingerContext{contextLookup = contextLookup1} =
+            makeContextText $ \case
+                "nitta" -> dict [("paths", dict [("nest", toGVal nest)])]
+                _ -> error "implementation level context"
+     in ctx{contextLookup = \n -> contextLookup1 n <|> contextLookup2 n}
 
 -- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj

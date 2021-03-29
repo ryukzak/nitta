@@ -44,20 +44,21 @@ import Text.Regex
 -- |Write project with all available parts.
 writeProject prj@Project{pTargetProjectPath} = do
     infoM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"..."
-    writeTargetSystem prj
-    writeTestBench prj
+    let ctx = projectContext prj
+    writeTargetSystem ctx prj
+    writeTestBench ctx prj
     writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"...ok"
 
-writeTargetSystem prj@Project{pName, pTargetProjectPath, pInProjectNittaPath, pUnit} = do
+writeTargetSystem ctx prj@Project{pName, pTargetProjectPath, pInProjectNittaPath, pUnit} = do
     createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
-    writeImplementation pTargetProjectPath pInProjectNittaPath $ hardware pName pUnit
-    writeImplementation pTargetProjectPath pInProjectNittaPath $ software pName pUnit
+    writeImplementation pTargetProjectPath pInProjectNittaPath ctx $ hardware pName pUnit
+    writeImplementation pTargetProjectPath pInProjectNittaPath ctx $ software pName pUnit
     copyLibraryFiles prj
 
-writeTestBench prj@Project{pTargetProjectPath, pInProjectNittaPath} = do
+writeTestBench ctx prj@Project{pTargetProjectPath, pInProjectNittaPath} = do
     createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
-    writeImplementation pTargetProjectPath pInProjectNittaPath $ testBenchImplementation prj
+    writeImplementation pTargetProjectPath pInProjectNittaPath ctx $ testBenchImplementation prj
 
 runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."

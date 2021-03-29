@@ -23,6 +23,7 @@ Stability   : experimental
 module NITTA.Project.Template (
     writeRenderedTemplates,
     collectNittaPath,
+    projectContext,
 ) where
 
 -- TODO: Fix imports inside template
@@ -170,23 +171,34 @@ findAllFiles root = findAllFiles' ""
                     )
                     items
 
-projectContext prj@Project{pName, pUnit, pUnitEnv, pAbsTargetProjectPath, pAbsNittaPath} = makeContextText $ \case
-    "nitta" ->
-        dict
-            [ ("instance", toGVal $ doc2text $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
-            ,
-                ( "paths"
-                , dict
-                    [ ("abs_project", toGVal pAbsTargetProjectPath)
-                    , ("abs_nitta", toGVal pAbsNittaPath)
-                    ]
-                )
-            , ("files", toGVal $ projectFiles prj)
-            ,
-                ( "testbench"
-                , dict
-                    [ ("module_name", toGVal $ testBenchTopModuleName prj)
-                    ]
-                )
-            ]
-    unknown -> error $ "template error, variable '" <> T.unpack unknown <> "' not defined (see 'NITTA.Project.Template')"
+projectContext
+    prj@Project
+        { pName
+        , pUnit
+        , pUnitEnv
+        , pTargetProjectPath
+        , pInProjectNittaPath
+        , pAbsTargetProjectPath
+        , pAbsNittaPath
+        } = makeContextText $ \case
+        "nitta" ->
+            dict
+                [ ("instance", toGVal $ doc2text $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
+                ,
+                    ( "paths"
+                    , dict
+                        [ ("abs_project", toGVal pAbsTargetProjectPath)
+                        , ("project", toGVal pTargetProjectPath)
+                        , ("abs_nitta", toGVal pAbsNittaPath)
+                        , ("nitta", toGVal pInProjectNittaPath)
+                        ]
+                    )
+                , ("files", toGVal $ projectFiles prj)
+                ,
+                    ( "testbench"
+                    , dict
+                        [ ("module_name", toGVal $ testBenchTopModuleName prj)
+                        ]
+                    )
+                ]
+        unknown -> error $ "template error, variable '" <> T.unpack unknown <> "' not defined (see 'NITTA.Project.Template')"
