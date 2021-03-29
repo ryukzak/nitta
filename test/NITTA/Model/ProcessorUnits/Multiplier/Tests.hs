@@ -86,16 +86,21 @@ tests =
         , puCoSimProp "multiplier_coSimulation" u fsGen
         , multiplierTest "smoke test" u $ do
             bindFunc fDef
-            doDecision $ beTarget 1 2 "a"
-            doNDecision 2
-            doDecision $ beSource 5 5 ["c"]
+            assertBindFullness
+            doDecision $ beTargetAt 1 2 "a"
+            doNDecision 0
+            doDecision $ beSourceAt 5 5 ["c"]
             doFstDecision
             assertProcessDone
         , multiplierNegTest "smoke negative test" u $ do
             bindFunc fDef
-            doDecision $ beTarget 1 2 "a"
-            doNDecision 2
+            doDecision $ beTargetAt 1 2 "a"
+            doNDecision 0
             assertProcessDone
+        , multiplierNegTest "shouldn't bind test" accumDef $ do
+            bindFunc fSub
+            assertBindFullness
+            -- TODO: not work with finishVoid
         ]
     where
         u = multiplier True :: Multiplier String Int Int

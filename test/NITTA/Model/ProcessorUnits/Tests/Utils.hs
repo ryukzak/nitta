@@ -235,11 +235,10 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
-multiplierTest name st alg = 
-    testCase name $ assertBool "Multiplier test failed" $ 
-        case evalMultiplier st alg of
-            Right v -> True
-            Left err -> err
+multiplierTest name st alg =
+    let result = evalMultiplier st alg
+     in testCase name $
+            assertBool "Multiplier test failed" result
 
 multiplierNegTest name st alg =
     expectFail $ multiplierTest name st alg

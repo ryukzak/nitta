@@ -1,4 +1,3 @@
-{-# LANGUAGE DatatypeContexts #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -19,12 +18,19 @@ module NITTA.Model.MultiplierDsl (
     doFstDecision,
     doNDecision,
     beTarget,
+    beTargetAt,
     beSource,
+    beSourceAt,
+    assertBindFullness,
     assertProcessDone,
     fDef,
+    fAdd,
+    fSub,
+    accumDef,
 ) where
 
 import Control.Monad.State.Lazy
+import Data.Default
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -33,16 +39,13 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
 
-data (ProcessorUnit pu v x t) => UnitTestState pu v x t = UnitTestState
+data UnitTestState pu v x = UnitTestState
     { unit :: pu
     , functs :: [F v x]
-    } deriving Show
+    }
+    deriving (Show)
 
 evalMultiplier st alg = evalState alg (UnitTestState st [])
-
-evalMultiplierGet st alg = flip evalState (UnitTestState st []) $ do
-    _ <- alg
-    return <$ get
 
 bindFunc f = do
     st@UnitTestState{unit, functs} <- get
@@ -57,9 +60,9 @@ doDecisionSafe endpSt = do
         then put st{unit = endpointDecision unit endpSt}
         else error $ "Such option isn't available: " <> show endpSt
 
-isEpOptionAvailable (EndpointSt v _) pu = 
-        v `elem` map epRole (endpointOptions pu)
---            && nextTick (process pu) <=! inter
+-- TODO: add check:  && nextTick (process pu) <=! inter
+isEpOptionAvailable (EndpointSt v _) pu =
+    v `elem` map epRole (endpointOptions pu)
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
@@ -80,16 +83,29 @@ nDecision pu i =
                 else error $ "nDecision out of bound: provided i=" <> show i <> "; options lenght=" <> show (length opts)
      in endpointOptionToDecision $ opts !! i_
 
-beTarget a b t = EndpointSt (Target t) (a ... b)
+beTarget t = do
+    UnitTestState{unit} <- get
+    let inter = getInterval' $ process unit
+    return $ EndpointSt (Target t) inter
 
-beSource a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
+beTargetAt a b t = EndpointSt (Target t) (a ... b)
 
-assertBindFullness :: (MonadState (UnitTestState b v x t) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m (Either a2 b)
+-- TODO FIx
+beSource ss = EndpointSt (Source $ S.fromList ss) (1 ... 1)
+
+beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
+
+-- getInter :: ProcessorUnit u v x a => u -> Interval a
+getInterval' pu =
+    let iMin = nextTick pu
+     in (iMin ... iMin)
+
+assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m Bool
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     if isFullyBinded unit functs
-        then return $ Right unit
-        else error $ "Function is not binded to process! expected: " <> show functs  <> "; actual: " <> show (functions unit)
+        then return True
+        else error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
 isFullyBinded :: (WithFunctions a1 a2, Ord v2, Function a2 v2, Label a2, Function f v2, Label f) => a1 -> [f] -> Bool
 isFullyBinded pu fs =
@@ -98,17 +114,18 @@ isFullyBinded pu fs =
         inps = S.fromList $ map inputs fu
         -- TODO: why for a - b = c binded to Acc, label returns "Acc"?
         sign = S.fromList $ map label fu
-     in not (null fu) 
-         && outs == S.fromList (map outputs fs)
-         && inps == S.fromList (map inputs fs)
-         && sign == S.fromList (map label fs)
+     in not (null fu)
+            && outs == S.fromList (map outputs fs)
+            && inps == S.fromList (map inputs fs)
+            && sign == S.fromList (map label fs)
 
+assertProcessDone :: (ProcessorUnit pu v x t, EndpointProblem pu v x) => State (UnitTestState pu v x) Bool
 assertProcessDone =
     do
         UnitTestState{unit, functs} <- get
         if isProcessComplete' unit functs
             && null (endpointOptions unit)
-            then return $ Right unit
+            then return True
             else error "Process is not complete"
 
 -- TODO: clean/combine with utils
