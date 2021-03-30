@@ -581,90 +581,127 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                     [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
                     [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
-             in Immediate (toString $ moduleName pName n <> "_tb.v") $
-                    doc2text
-                        [__i|
-            `timescale 1 ps / 1 ps
-            module #{ moduleName pName n }_tb();
 
-            /*
-            Functions:
-            #{ indent 4 $ vsep $ map viaShow $ functions n }
-            */
+                tbName = moduleName pName n <> "_tb"
+             in Aggregate
+                    Nothing
+                    [ Immediate (toString $ tbName <> ".v") $
+                        doc2text
+                            [__i|
+                        `timescale 1 ps / 1 ps
+                        module #{ tbName }();
 
-            /*
-            Steps:
-            #{ indent 4 $ vsep $ map viaShow $ reverse $ steps $ process n }
-            */
+                        /*
+                        Functions:
+                        #{ indent 4 $ vsep $ map viaShow $ functions n }
+                        */
 
-            // system signals
-            reg clk, rst;
-            wire cycle;
+                        /*
+                        Steps:
+                        #{ indent 4 $ vsep $ map viaShow $ reverse $ steps $ process n }
+                        */
 
-            // clk and rst generator
-            #{ snippetClkGen }
+                        // system signals
+                        reg clk, rst;
+                        wire cycle;
 
-            // vcd dump
-            #{ snippetDumpFile $ moduleName pName n }
+                        // clk and rst generator
+                        #{ snippetClkGen }
 
-
-            ////////////////////////////////////////////////////////////
-            // test environment
-
-            // external ports (IO)
-            #{ if null externalPortNames then "" else "wire " <> hsep (punctuate ", " externalPortNames) <> ";" }
-
-            // initialization flags
-            #{ if null envInitFlags then "" else "reg " <> hsep (punctuate ", " envInitFlags) <> ";" }
-            assign env_init_flag = #{ hsep $ defEnvInitFlag envInitFlags ioSync };
-
-            #{ testEnv }
+                        // vcd dump
+                        #{ snippetDumpFile $ moduleName pName n }
 
 
-            ////////////////////////////////////////////////////////////
-            // unit under test
+                        ////////////////////////////////////////////////////////////
+                        // test environment
 
-            #{ moduleName pName n } \#
-                    ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
-                    ) #{ toString bnName }
-                ( .clk( clk )
-                , .rst( rst )
-                , .flag_cycle_begin( cycle )
-                #{ nest 4 externalIO }
-                // if 1 - The process cycle are indipendent from a SPI.
-                // else - The process cycle are wait for the SPI.
-                , .is_drop_allow( #{ isDrowAllowSignal ioSync } )
-                );
+                        // external ports (IO)
+                        #{ if null externalPortNames then "" else "wire " <> hsep (punctuate ", " externalPortNames) <> ";" }
 
-            // internal unit under test checks
-            initial
-                begin
-                    // microcode when rst == 1 -> program[0], and must be nop for all PUs
-                    @(negedge rst); // Turn mUnit on.
-                    // Start computational cycle from program[1] to program[n] and repeat.
-                    // Signals effect to mUnit state after first clk posedge.
-                    @(posedge clk);
-                    while (!env_init_flag) @(posedge clk);
-                    #{ nest 8 assertions }
-                    repeat ( #{ 2 * nextTick bnProcess } ) @(posedge clk);
-                    $finish;
-                end
+                        // initialization flags
+                        #{ if null envInitFlags then "" else "reg " <> hsep (punctuate ", " envInitFlags) <> ";" }
+                        assign env_init_flag = #{ hsep $ defEnvInitFlag envInitFlags ioSync };
 
-            // TIMEOUT
-            initial
-                begin
-                    repeat (100000) @(posedge clk);
-                    $display("FAIL too long simulation process");
-                    $finish;
-                end
+                        #{ testEnv }
 
-            ////////////////////////////////////////////////////////////
-            // Utils
-            #{ verilogHelper (def :: x) }
 
-            endmodule
-            |]
+                        ////////////////////////////////////////////////////////////
+                        // unit under test
+
+                        #{ moduleName pName n } \#
+                                ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                                , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                                ) #{ toString bnName }
+                            ( .clk( clk )
+                            , .rst( rst )
+                            , .flag_cycle_begin( cycle )
+                            #{ nest 4 externalIO }
+                            // if 1 - The process cycle are indipendent from a SPI.
+                            // else - The process cycle are wait for the SPI.
+                            , .is_drop_allow( #{ isDrowAllowSignal ioSync } )
+                            );
+
+                        // internal unit under test checks
+                        initial
+                            begin
+                                // microcode when rst == 1 -> program[0], and must be nop for all PUs
+                                @(negedge rst); // Turn mUnit on.
+                                // Start computational cycle from program[1] to program[n] and repeat.
+                                // Signals effect to mUnit state after first clk posedge.
+                                @(posedge clk);
+                                while (!env_init_flag) @(posedge clk);
+                                #{ nest 8 assertions }
+                                repeat ( #{ 2 * nextTick bnProcess } ) @(posedge clk);
+                                $finish;
+                            end
+
+                        // TIMEOUT
+                        initial
+                            begin
+                                repeat (100000) @(posedge clk);
+                                $display("FAIL too long simulation process");
+                                $finish;
+                            end
+
+                        ////////////////////////////////////////////////////////////
+                        // Utils
+                        #{ verilogHelper (def :: x) }
+
+                        endmodule
+                        |]
+                    , Immediate (toString $ tbName <> ".gtkw") $
+                        T.pack
+                            [__i|
+                                [*]
+                                [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+                                [*] Fri Mar 12 11:37:55 2021
+                                [*]
+                                [dumpfile] "{{ nitta.paths.abs_nitta }}/#{ tbName }.vcd"
+                                [timestart] 0
+                                *-6.864726 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+                                [treeopen] #{ tbName }.
+                                [treeopen] #{ tbName }.#{ toString bnName }.
+                                [sst_width] 193
+                                [signals_width] 203
+                                [sst_expanded] 1
+                                [sst_vpaned_height] 167
+                                @28
+                                #{ tbName }.clk
+                                #{ tbName }.rst
+                                #{ tbName }.cycle
+                                @24
+                                #{ tbName }.#{ toString bnName }.control_unit.pc[5:0]
+                                @28
+                                #{ tbName }.#{ toString bnName }.control_unit.flag_cycle_begin
+                                #{ tbName }.#{ toString bnName }.control_unit.flag_cycle_end
+                                @25
+                                #{ tbName }.#{ toString bnName }.data_bus[31:0]
+                                @22
+                                #{ tbName }.#{ toString bnName }.attr_bus[3:0]
+                                [pattern_trace] 1
+                                [pattern_trace] 0
+                                |]
+                    ]
             where
                 defEnvInitFlag flags Sync = punctuate " && " $ "1'b1" : flags
                 defEnvInitFlag flags ASync = punctuate " || " $ "1'b1" : flags
