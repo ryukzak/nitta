@@ -65,7 +65,7 @@ writeTestBench prj@Project{pTargetProjectPath, pInProjectNittaPath} = do
 
 runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."
-    let files = projectFiles prj
+    let files = verilogProjectFiles prj
     wd <- getCurrentDirectory
 
     (compileExitCode, compileOut, compileErr) <-

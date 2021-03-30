@@ -22,7 +22,7 @@ module NITTA.Project.TestBench (
     TestEnvironment (..),
     TestbenchReport (..),
     testBenchTopModuleName,
-    projectFiles,
+    verilogProjectFiles,
     SnippetTestBenchConf (..),
     snippetTestBench,
 ) where
@@ -108,10 +108,10 @@ instance Show (TestbenchReport v x) where
 -- |Get name of testbench top module.
 testBenchTopModuleName ::
     (TargetSystemComponent m, Testable m v x) => Project m v x -> FilePath
-testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
+testBenchTopModuleName prj = S.replace ".v" "" $ last $ verilogProjectFiles prj
 
 -- |Generate list of project verilog files (including testbench).
-projectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
+verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
         (pInProjectNittaPath </>)
         $ L.nub $
