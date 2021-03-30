@@ -24,6 +24,7 @@ module NITTA.Model.ProcessorUnits.IO.I2C (
     IOPorts (..),
 ) where
 
+import Data.Aeson
 import Data.Default
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -74,8 +75,8 @@ instance IOConnected (I2C v x t) where
     inoutPorts I2CMaster{..} = [masterSDA]
     inoutPorts I2CSlave{..} = [slaveSDA]
 
-instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
-    moduleName _ _ = "pu_spi"
+instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (I2C v x t) where
+    moduleName _ _ = "pu_i2c"
     hardware _tag _pu =
         Aggregate
             Nothing
@@ -89,7 +90,8 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
             , FromLibrary "i2c/pu_master_i2c.v"
             , FromLibrary "i2c/pu_slave_i2c.v"
             ]
-    software _ pu = Immediate "transport.txt" $ T.pack $ show pu
+
+    software tag pu = protocolDescription tag pu "I2C Processor Unit"
 
     hardwareInstance
         tag

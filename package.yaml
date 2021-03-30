@@ -69,6 +69,7 @@ library:
   dependencies:
     - HStringTemplate
     - aeson
+    - aeson-pretty
     - array
     - directory
     - file-embed

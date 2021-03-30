@@ -24,11 +24,11 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
     IOPorts (..),
 ) where
 
+import Data.Aeson
 import Data.Default
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String.Interpolate
-import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -83,7 +83,7 @@ instance IOConnected (SPI v x t) where
 instance (Time t) => Default (SPI v x t) where
     def = anySPI 0
 
-instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
+instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_spi"
     hardware _tag _pu =
         Aggregate
@@ -98,7 +98,8 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/pu_slave_spi.v"
             , FromLibrary "spi/pu_master_spi.v"
             ]
-    software _ pu = Immediate "transport.txt" $ T.pack $ show pu
+
+    software tag pu = protocolDescription tag pu "SPI Processor Unit"
 
     hardwareInstance
         tag
