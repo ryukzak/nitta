@@ -13,7 +13,6 @@ Stability   : experimental
 module NITTA.Model.MultiplierDsl (
     evalMultiplier,
     bindFunc,
-    doDecision,
     doDecisionSafe,
     doFstDecision,
     doNDecision,
@@ -24,14 +23,10 @@ module NITTA.Model.MultiplierDsl (
     assertBindFullness,
     assertProcessDone,
     assertExecute,
-    fDef,
-    fAdd,
-    fSub,
 ) where
 
 import Control.Monad.State.Lazy
 import qualified Data.Set as S
-import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -59,15 +54,12 @@ doDecisionSafe endpSt = do
         then put st{unit = endpointDecision unit endpSt}
         else error $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
 
-isEpOptionAvailable (EndpointSt v inter) pu =
+isEpOptionAvailable (EndpointSt v interv) pu =
     let compEpRoles = case v of
             (Target _) -> v `elem` map epRole (endpointOptions pu)
             (Source s) -> S.isSubsetOf s $ unionsMap (variables . epRole) $ endpointOptions pu
-     in compEpRoles && singleton (nextTick $ process pu) <=! inter
-
-doDecision endpSt = do
-    st@UnitTestState{unit} <- get
-    put st{unit = endpointDecision unit endpSt}
+        compIntervs = singleton (nextTick $ process pu) <=! interv
+     in compEpRoles && compIntervs
 
 doFstDecision :: (MonadState (UnitTestState pu v1 x) m, EndpointProblem pu v2 t2, Num t2, Ord t2) => m ()
 doFstDecision = doNDecision 0
@@ -84,24 +76,25 @@ nDecision pu i =
                 else error $ "nDecision out of bound: provided i=" <> show i <> "; options lenght=" <> show (length opts)
      in endpointOptionToDecision $ opts !! i_
 
+doDecision endpSt = do
+    st@UnitTestState{unit} <- get
+    put st{unit = endpointDecision unit endpSt}
+
 -- TODO FIx
 beTarget t = do
     UnitTestState{unit} <- get
     return $ EndpointSt (Target t) $ getInterval' unit
 
-beTargetAt a b t = EndpointSt (Target t) (a ... b)
-
 -- TODO FIx
-beSource :: (ProcessorUnit u v2 x2 a, Ord v3) => [v3] -> State (UnitTestState u v2 x2) (EndpointSt v3 (Interval a))
 beSource ss = do
     UnitTestState{unit} <- get
     return $ EndpointSt (Source $ S.fromList ss) $ getInterval' unit
 
-beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
+getInterval' pu = singleton $ nextTick $ process pu
 
-getInterval' pu =
-    let iMin = nextTick $ process pu
-     in iMin ... iMin
+beTargetAt a b t = EndpointSt (Target t) (a ... b)
+
+beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m Bool
 assertBindFullness = do
@@ -140,10 +133,3 @@ assertExecute = do
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
 processedVars' pu = unionsMap variables $ getEndpoints $ process pu
-
-------------------REMOVE AFTER TESTS------------------------
-fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
-
-fAdd = F.add "a" "b" ["c", "d"] :: F String Int
-
-fSub = F.sub "a" "b" ["c"] :: F String Int

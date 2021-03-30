@@ -40,7 +40,6 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
@@ -241,10 +240,9 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
-multiplierTest name st alg =
-    let result = evalMultiplier st alg
-     in testCase name $
-            assertBool "Multiplier test failed" result
+multiplierTest :: HasCallStack => String -> Bool -> TestTree
+multiplierTest name res = testCase name $ assertBool "Multiplier test failed" res
 
-multiplierNegTest name st alg =
-    expectFail $ multiplierTest name st alg
+multiplierNegTest :: HasCallStack => String -> Bool -> TestTree
+multiplierNegTest name res =
+    expectFail $ multiplierTest name res
