@@ -99,9 +99,11 @@ tests =
         , multiplierTest "accum smoke test" $
             evalMultiplier u3 $ do
                 bindFunc fSub
-                doDecisionSafe $ beTargetAt 4 4 "a"
+                t1 <- beTarget "a"
+                doDecisionSafe t1
                 doFstDecision
-                doDecisionSafe $ beSourceAt 5 5 ["c"]
+                s1 <- beSource ["c"]
+                doDecisionSafe s1
                 _ <- assertProcessDone
                 assertExecute
         , multiplierNegTest "should error, when proccess is not done" $
