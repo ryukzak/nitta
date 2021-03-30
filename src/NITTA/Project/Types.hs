@@ -23,28 +23,18 @@ module NITTA.Project.Types (
     defProjectTemplates,
     TargetSystemComponent (..),
     Implementation (..),
-    writeImplementation,
-    copyLibraryFiles,
     UnitEnv (..),
     envInputPorts,
     envOutputPorts,
     envInOutPorts,
 ) where
 
-import Control.Applicative
-import Control.Monad.Identity (runIdentity)
 import Data.Default
-import qualified Data.List as L
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils
-import System.Directory
-import System.FilePath.Posix (joinPath, takeDirectory, (</>))
-import Text.Ginger
-import Text.Ginger.Run.Type
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -106,56 +96,6 @@ data Implementation
       Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
     | -- |Nothing
       Empty
-
--- |Ginger is powerfull but slow down testing two times.
-enableGingerForImplementation = False
-
--- |Write 'Implementation' to the file system.
-writeImplementation prjPath nittaPath ctx impl = writeImpl nittaPath impl
-    where
-        writeImpl p (Immediate fn src0) | enableGingerForImplementation = do
-            let src = T.unpack src0
-                implCtx = appendImplementationContext p ctx
-            template <-
-                either (error . formatParserError (Just src)) return <$> runIdentity $
-                    parseGinger (const $ return Nothing) Nothing src
-            T.writeFile (joinPath [prjPath, p, fn]) $ runGinger implCtx template
-        writeImpl p (Immediate fn src0) =
-            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "{{ nitta.paths.nest }}" (T.pack p) src0
-        writeImpl p (Aggregate p' subInstances) = do
-            let path = joinPath $ maybe [p] (\x -> [p, x]) p'
-            createDirectoryIfMissing True $ joinPath [prjPath, path]
-            mapM_ (writeImpl path) subInstances
-        writeImpl _ (FromLibrary _) = return ()
-        writeImpl _ Empty = return ()
-
-instance Semigroup (RuntimeError SourcePos) where a <> _ = a
-instance Monoid (RuntimeError SourcePos) where mempty = def
-
-appendImplementationContext nest ctx@GingerContext{contextLookup = contextLookup2} =
-    let GingerContext{contextLookup = contextLookup1} =
-            makeContextText $ \case
-                "nitta" -> dict [("paths", dict [("nest", toGVal nest)])]
-                _ -> error "implementation level context"
-     in ctx{contextLookup = \n -> contextLookup1 n <|> contextLookup2 n}
-
--- |Copy library files to target path.
-copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
-    where
-        copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do
-            let fullNittaPath = pTargetProjectPath </> pInProjectNittaPath
-            source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
-            createDirectoryIfMissing True $ takeDirectory target
-            copyFile source target
-
-        libraryFiles Project{pName, pUnit} =
-            L.nub $ concatMap (args "") [hardware pName pUnit]
-            where
-                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-                args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances
-                args _ (FromLibrary fn) = [fn]
-                args _ _ = []
 
 {- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
 `data_bus`, `dataOut` into `accum_data_out`.

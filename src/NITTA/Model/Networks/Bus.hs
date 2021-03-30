@@ -445,7 +445,7 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
 
                     pu_simple_control \#
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-                            , .PROGRAM_DUMP( "{{ nitta.paths.nest }}/#{ mn }.dump" )
+                            , .PROGRAM_DUMP( "{{ impl.paths.nest }}/#{ mn }.dump" )
                             , .MEMORY_SIZE( #{ length $ programTicks pu } ) // 0 - address for nop microcode
                             ) control_unit
                         ( .clk( clk )

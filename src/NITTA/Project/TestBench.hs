@@ -115,7 +115,10 @@ projectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
         (pInProjectNittaPath </>)
         $ L.nub $
-            concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
+            filter (".v" `L.isSuffixOf`) $
+                concatMap
+                    (addPath "")
+                    [hardware pName pUnit, testBenchImplementation prj]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
