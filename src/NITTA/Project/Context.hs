@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -51,7 +48,7 @@ nittaContextDict
                     , ("nitta", toGVal pInProjectNittaPath)
                     ]
                 )
-            , ("files", toGVal $ filter (".v" `L.isSuffixOf`) $ projectFiles prj)
+            , ("files", toGVal $ filter (".v" `L.isSuffixOf`) $ verilogProjectFiles prj)
             ,
                 ( "testbench"
                 , dict
