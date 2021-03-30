@@ -103,7 +103,6 @@ assertBindFullness = do
         then return True
         else error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
-isFullyBinded :: (WithFunctions a1 a2, Ord v2, Function a2 v2, Label a2, Function f v2, Label f) => a1 -> [f] -> Bool
 isFullyBinded pu fs =
     let fu = functions pu
         outs = S.fromList $ map outputs fu
