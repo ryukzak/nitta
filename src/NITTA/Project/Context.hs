@@ -20,7 +20,6 @@ module NITTA.Project.Context (
     implementationContext,
 ) where
 
-import qualified Data.List as L
 import qualified Data.Text as T
 import NITTA.Project.TestBench
 import NITTA.Project.Types
@@ -48,7 +47,7 @@ nittaContextDict
                     , ("nitta", toGVal pInProjectNittaPath)
                     ]
                 )
-            , ("files", toGVal $ filter (".v" `L.isSuffixOf`) $ verilogProjectFiles prj)
+            , ("files", toGVal $ verilogProjectFiles prj)
             ,
                 ( "testbench"
                 , dict
