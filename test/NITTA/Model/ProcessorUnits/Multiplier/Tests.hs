@@ -19,6 +19,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 import Data.Default
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
@@ -85,44 +86,88 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , multiplierTest "multiplier smoke test" u $ do
-            bindFunc fDef
-            _ <- assertBindFullness
-            doDecisionSafe $ beTargetAt 1 2 "a"
-            doNDecision 0
-            doDecisionSafe $ beSourceAt 5 5 ["c"]
-            doFstDecision
-            _ <- assertProcessDone
-            assertExecute
-        , multiplierTest "accum smoke test" u3 $ do
-            bindFunc fSub
-            doDecisionSafe $ beTargetAt 4 4 "a"
-            doFstDecision
-            doDecisionSafe $ beSourceAt 5 5 ["c"]
-            _ <- assertProcessDone
-            assertExecute
-        , multiplierNegTest "should error, when proccess is not done" u $ do
-            bindFunc fDef
-            doDecisionSafe $ beTargetAt 1 2 "a"
-            doNDecision 0
-            _ <- assertProcessDone
-            assertExecute
-        , multiplierNegTest "shouldn't bind, when PU incompatible with F" u $ do
-            bindFunc fSub
-            assertExecute
-        , multiplierNegTest "shouldn't bind, when different signatures" u3 $ do
-            bindFunc fSub
-            _ <- assertBindFullness -- TODO: Why Accum return "Acc" as a label instead "-"?
-            assertExecute
-        , multiplierNegTest "shouldn't " u4 $ do
-            bindFunc fSub
-            assertExecute
+        , multiplierTest "multiplier smoke test" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                _ <- assertBindFullness
+                doDecisionSafe $ beTargetAt 1 2 "a"
+                doNDecision 0
+                doDecisionSafe $ beSourceAt 5 5 ["c"]
+                doFstDecision
+                _ <- assertProcessDone
+                assertExecute
+        , multiplierTest "accum smoke test" $
+            evalMultiplier u3 $ do
+                bindFunc fSub
+                doDecisionSafe $ beTargetAt 4 4 "a"
+                doFstDecision
+                doDecisionSafe $ beSourceAt 5 5 ["c"]
+                _ <- assertProcessDone
+                assertExecute
+        , multiplierNegTest "should error, when proccess is not done" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                doDecisionSafe $ beTargetAt 1 2 "a"
+                doNDecision 0
+                _ <- assertProcessDone
+                assertExecute
+        , multiplierNegTest "shouldn't bind, when PU incompatible with F" $
+            evalMultiplier u $ do
+                bindFunc fSub
+                assertExecute
+        , multiplierNegTest "shouldn't bind, when different signatures" $
+            evalMultiplier u3 $ do
+                bindFunc fSub
+                _ <- assertBindFullness -- TODO: Why Accum return "Acc" as a label instead "-"?
+                assertExecute
+        , multiplierNegTest "doDecisionSafe should error, when Target in Decision is not present" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                doDecisionSafe $ beTargetAt 1 1 "aa"
+                assertExecute
+        , multiplierNegTest "Multiplier should error, when Source in Decision is Targets" $
+            -- TODO: there "Multiplier decision error" not edsl?
+            evalMultiplier u $ do
+                bindFunc fDef
+                doDecisionSafe $ beSourceAt 1 1 ["a"]
+                assertExecute
+        , multiplierNegTest "doDecisionSafe should error, when Target in Decision is Source" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                doFstDecision
+                doFstDecision
+                doDecisionSafe $ beTargetAt 4 4 "c"
+                assertExecute
+        , multiplierNegTest "doDecisionSafe should error, when Interval is not correct" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                doDecisionSafe $ beTargetAt 2 2 "a"
+                doDecisionSafe $ beTargetAt 1 1 "b"
+                assertExecute
+        , multiplierNegTest "doNDecision should error, when index is out of bound" $
+            evalMultiplier u $ do
+                bindFunc fDef
+                doNDecision 3
+                assertExecute
+        , multiplierNegTest "doFstDecision should error, when decisions are spent" $
+            evalMultiplier u3 $ do
+                bindFunc fSub
+                doFstDecision
+                doFstDecision
+                doFstDecision
+                doFstDecision
+                assertExecute
+        , multiplierNegTest "doFstDecision should error, when PU is not bound" $
+            evalMultiplier u3 $ do
+                doFstDecision
+                assertExecute
         ]
     where
         u = multiplier True :: Multiplier String Int Int
         u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
         u3 = def :: Accum String Int Int
-        u4 = def :: Fram String Int Int
+        fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
+        fSub = F.sub "a" "b" ["c"] :: F String Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Multiply _ _))
