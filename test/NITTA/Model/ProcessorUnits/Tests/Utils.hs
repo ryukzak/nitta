@@ -34,16 +34,15 @@ import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
-import qualified Debug.Trace as DebugTrace
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.IntegrityCheck
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.IntegrityCheck
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
@@ -134,7 +133,7 @@ finitePUSynthesisProp name pu0 fsGen =
         return $
             isProcessComplete pu fs
                 && null (endpointOptions pu)
-                && checkIntegrity pu fs
+                && checkIntegrityInternal pu
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
@@ -155,7 +154,7 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
-                    unless (isProcessComplete pu fs && checkIntegrity pu fs) $
+                    unless (isProcessComplete pu fs && checkIntegrityInternal pu) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
