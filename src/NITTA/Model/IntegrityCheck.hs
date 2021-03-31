@@ -49,7 +49,13 @@ checkIntegrityInternal pu =
                     ]
      in and [checkIntermidiateToEndpointRelation getFuncMap getEpMap pr]
 
-checkIntermidiateToEndpointRelation fs eps pr = S.isSubsetOf makeRelationList fromRelation
+checkFunctionToIntermidiateRelation pu fs =
+    let fsVars = unionsMap variables fs
+        puFuncVars = unionsMap variables $ getFBs (process pu)
+     in fsVars == transferred pu
+            && fsVars == puFuncVars
+
+checkIntermidiateToEndpointRelation ifs eps pr = S.isSubsetOf makeRelationList fromRelation
     where
         fromRelation = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
         makeRelationList =
@@ -61,6 +67,4 @@ checkIntermidiateToEndpointRelation fs eps pr = S.isSubsetOf makeRelationList fr
                             )
                             $ variables f
                     )
-                    $ M.elems fs
-checkFunctionToIntermidiateRelation pu fs = True
-checkEndpointToInstructionRelation = undefined
+                    $ M.elems ifs
