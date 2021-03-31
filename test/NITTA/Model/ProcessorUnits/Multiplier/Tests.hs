@@ -30,6 +30,7 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
+import Test.Tasty.ExpectedFailure
 
 tests =
     testGroup
@@ -90,79 +91,83 @@ tests =
             evalMultiplier u $ do
                 bindFunc fDef
                 _ <- assertBindFullness
-                doDecisionSafe $ beTargetAt 1 2 "a"
-                doNDecision 0
-                doDecisionSafe $ beSourceAt 5 5 ["c"]
+                doDecision $ beTargetAt 1 2 "a"
                 doFstDecision
-                _ <- assertProcessDone
+                doDecision $ beSourceAt 5 5 ["c"]
+                doFstDecision
+                _ <- assertSynthesisDone
                 assertExecute
         , multiplierTest "accum smoke test" $
             evalMultiplier u3 $ do
                 bindFunc fSub
                 t1 <- beTarget "a"
-                doDecisionSafe t1
+                doDecision t1
                 doFstDecision
                 s1 <- beSource ["c"]
-                doDecisionSafe s1
-                _ <- assertProcessDone
+                doDecision s1
+                _ <- assertSynthesisDone
                 assertExecute
-        , multiplierNegTest "should error, when proccess is not done" $
-            evalMultiplier u $ do
-                bindFunc fDef
-                doDecisionSafe $ beTargetAt 1 2 "a"
-                doNDecision 0
-                _ <- assertProcessDone
-                assertExecute
-        , multiplierNegTest "shouldn't bind, when PU incompatible with F" $
-            evalMultiplier u $ do
-                bindFunc fSub
-                assertExecute
-        , multiplierNegTest "shouldn't bind, when different signatures" $
-            evalMultiplier u3 $ do
-                bindFunc fSub
-                _ <- assertBindFullness -- TODO: Why Accum return "Acc" as a label instead "-"?
-                assertExecute
-        , multiplierNegTest "doDecisionSafe should error, when Target in Decision is not present" $
-            evalMultiplier u $ do
-                bindFunc fDef
-                doDecisionSafe $ beTargetAt 1 1 "aa"
-                assertExecute
-        , multiplierNegTest "Multiplier should error, when Source in Decision is Targets" $
-            -- TODO: there "Multiplier decision error" not edsl?
-            evalMultiplier u $ do
-                bindFunc fDef
-                doDecisionSafe $ beSourceAt 1 1 ["a"]
-                assertExecute
-        , multiplierNegTest "doDecisionSafe should error, when Target in Decision is Source" $
-            evalMultiplier u $ do
-                bindFunc fDef
-                doFstDecision
-                doFstDecision
-                doDecisionSafe $ beTargetAt 4 4 "c"
-                assertExecute
-        , multiplierNegTest "doDecisionSafe should error, when Interval is not correct" $
-            evalMultiplier u $ do
-                bindFunc fDef
-                doDecisionSafe $ beTargetAt 2 2 "a"
-                doDecisionSafe $ beTargetAt 1 1 "b"
-                assertExecute
-        , multiplierNegTest "doNDecision should error, when index is out of bound" $
-            evalMultiplier u $ do
-                bindFunc fDef
-                doNDecision 3
-                assertExecute
-        , multiplierNegTest "doFstDecision should error, when decisions are spent" $
-            evalMultiplier u3 $ do
-                bindFunc fSub
-                doFstDecision
-                doFstDecision
-                doFstDecision
-                doFstDecision
-                assertExecute
-        , multiplierNegTest "doFstDecision should error, when PU is not bound" $
-            evalMultiplier u3 $ do
-                doFstDecision
-                assertExecute
+        , expectFail $
+            multiplierTest "should error, when proccess is not done" $
+                evalMultiplier u $ do
+                    bindFunc fDef
+                    doDecision $ beTargetAt 1 2 "a"
+                    doFstDecision
+                    _ <- assertSynthesisDone
+                    assertExecute
+        , expectFail $
+            multiplierTest "shouldn't bind, when PU incompatible with F" $
+                evalMultiplier u $ do
+                    bindFunc fSub
+                    assertExecute
+        , expectFail $
+            multiplierTest "shouldn't bind, when different signatures" $
+                evalMultiplier u3 $ do
+                    bindFunc fSub
+                    _ <- assertBindFullness -- TODO: Why Accum return "Acc" as a label instead "-"?
+                    assertExecute
+        , expectFail $
+            multiplierTest "doDecision should error, when Target in Decision is not present" $
+                evalMultiplier u $ do
+                    bindFunc fDef
+                    doDecision $ beTargetAt 1 1 "aa"
+                    assertExecute
+        , expectFail $
+            multiplierTest "Multiplier should error, when Source in Decision is Targets" $
+                -- TODO: there "Multiplier decision error" not edsl?
+                evalMultiplier u $ do
+                    bindFunc fDef
+                    doDecision $ beSourceAt 1 1 ["a"]
+                    assertExecute
+        , expectFail $
+            multiplierTest "doDecision should error, when Target in Decision is Source" $
+                evalMultiplier u $ do
+                    bindFunc fDef
+                    doFstDecision
+                    doFstDecision
+                    doDecision $ beTargetAt 4 4 "c"
+                    assertExecute
+        , expectFail $
+            multiplierTest "doDecision should error, when Interval is not correct" $
+                evalMultiplier u $ do
+                    bindFunc fDef
+                    doDecision $ beTargetAt 2 2 "a"
+                    doDecision $ beTargetAt 1 1 "b"
+                    assertExecute
+        , expectFail $
+            multiplierTest "doFstDecision should error, when decisions are spent" $
+                evalMultiplier u3 $ do
+                    bindFunc fSub
+                    doFstDecision
+                    doFstDecision
+                    doFstDecision
+                    doFstDecision
+                    assertExecute
+        , expectFail $
+            multiplierTest "doFstDecision should error, when PU is not bound" $
+                evalMultiplier u3 $ do
+                    doFstDecision
+                    assertExecute
         ]
     where
         u = multiplier True :: Multiplier String Int Int
