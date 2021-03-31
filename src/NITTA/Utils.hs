@@ -36,6 +36,7 @@ module NITTA.Utils (
     relatedEndpoints,
     isFB,
     getFBs,
+    isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
 ) where
@@ -112,6 +113,8 @@ getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
 getFB _ = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
+
+isEndpoint ep = isJust $ getEndpoint ep
 
 getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
