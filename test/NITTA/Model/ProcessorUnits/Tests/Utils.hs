@@ -121,7 +121,7 @@ nittaCoSimTestCase n tMicroArch alg =
                     , tDFG = fsToDataFlowGraph alg
                     }
         case report of
-            Right report' -> assertBool "report with bad status" $ tbStatus $ report'
+            Right report' -> assertBool "report with bad status" $ tbStatus report'
             Left err -> assertFailure $ "can't get report: " ++ err
 
 -- *Properties
