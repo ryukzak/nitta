@@ -24,7 +24,6 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     puCoSimProp,
     algGen,
     multiplierTest,
-    multiplierNegTest,
 ) where
 
 import Control.Monad
@@ -55,7 +54,6 @@ import System.FilePath.Posix
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
-import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase, (@?))
 import Test.Tasty.QuickCheck (testProperty)
 
@@ -242,7 +240,3 @@ algSynthesisGen fRemain fPassed pu = select tasksList
 
 multiplierTest :: HasCallStack => String -> Bool -> TestTree
 multiplierTest name res = testCase name $ assertBool "Multiplier test failed" res
-
-multiplierNegTest :: HasCallStack => String -> Bool -> TestTree
-multiplierNegTest name res =
-    expectFail $ multiplierTest name res

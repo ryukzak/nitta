@@ -4,7 +4,7 @@
 
 {- |
 Module      : NITTA.Model.MultiplierDsl
-Description : Provides functions to make decisions in Multiplier
+Description : Provides functions to make decisions in PU
 Copyright   : (c) Artyom Kostyuchik, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -13,20 +13,21 @@ Stability   : experimental
 module NITTA.Model.MultiplierDsl (
     evalMultiplier,
     bindFunc,
-    doDecisionSafe,
+    doDecision,
     doFstDecision,
-    doNDecision,
     beTarget,
     beTargetAt,
     beSource,
     beSourceAt,
     assertBindFullness,
-    assertProcessDone,
+    assertSynthesisDone,
     assertExecute,
 ) where
 
 import Control.Monad.State.Lazy
+import Data.Maybe
 import qualified Data.Set as S
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -47,7 +48,7 @@ bindFunc f = do
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> error err
 
-doDecisionSafe endpSt = do
+doDecision endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
@@ -61,47 +62,42 @@ isEpOptionAvailable (EndpointSt v interv) pu =
         compIntervs = singleton (nextTick $ process pu) <=! interv
      in compEpRoles && compIntervs
 
-doFstDecision :: (MonadState (UnitTestState pu v1 x) m, EndpointProblem pu v2 t2, Num t2, Ord t2) => m ()
-doFstDecision = doNDecision 0
-
-doNDecision n = do
+doFstDecision :: (EndpointProblem pu v x, Num x, Ord x) => State (UnitTestState pu v x) ()
+doFstDecision = do
     UnitTestState{unit} <- get
-    doDecision $ nDecision unit n
+    doDecision' $ fstDecision unit
 
-nDecision pu i =
-    let opts = endpointOptions pu
-        i_ =
-            if i < length opts
-                then i
-                else error $ "nDecision out of bound: provided i=" <> show i <> "; options lenght=" <> show (length opts)
-     in endpointOptionToDecision $ opts !! i_
+fstDecision pu =
+    endpointOptionToDecision $
+        fromMaybe showError $ listToMaybe $ endpointOptions pu
+    where
+        showError = error "Failed at fstDecision, there is no decisions left!"
 
-doDecision endpSt = do
+doDecision' endpSt = do
     st@UnitTestState{unit} <- get
     put st{unit = endpointDecision unit endpSt}
 
 -- TODO FIx
 beTarget t = do
     UnitTestState{unit} <- get
-    return $ EndpointSt (Target t) $ getInterval' unit
+    return $ EndpointSt (Target t) $ nextInterval' unit
 
 -- TODO FIx
 beSource ss = do
     UnitTestState{unit} <- get
-    return $ EndpointSt (Source $ S.fromList ss) $ getInterval' unit
+    return $ EndpointSt (Source $ S.fromList ss) $ nextInterval' unit
 
-getInterval' pu = singleton $ nextTick $ process pu
+nextInterval' pu = singleton $ nextTick $ process pu
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
-assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m Bool
+assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m ()
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
-    if isFullyBinded unit functs
-        then return True
-        else error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
+    unless (isFullyBinded unit functs) $
+        error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
 isFullyBinded pu fs =
     let fu = functions pu
@@ -113,14 +109,15 @@ isFullyBinded pu fs =
             && inps == S.fromList (map inputs fs)
             && sign == S.fromList (map label fs)
 
-assertProcessDone :: (ProcessorUnit pu v x t, EndpointProblem pu v x) => State (UnitTestState pu v x) Bool
-assertProcessDone =
+assertSynthesisDone :: (ProcessorUnit pu v x t, EndpointProblem pu v x) => State (UnitTestState pu v x) ()
+assertSynthesisDone =
     do
         UnitTestState{unit, functs} <- get
-        if isProcessComplete' unit functs
-            && null (endpointOptions unit)
-            then return True
-            else error "Process is not complete"
+        unless
+            ( isProcessComplete' unit functs
+                && null (endpointOptions unit)
+            )
+            $ error "Process is not complete"
 
 assertExecute :: (ProcessorUnit pu v x t) => State (UnitTestState pu v x) Bool
 assertExecute = do
