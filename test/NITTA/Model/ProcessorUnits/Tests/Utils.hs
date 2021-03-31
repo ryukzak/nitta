@@ -133,7 +133,7 @@ finitePUSynthesisProp name pu0 fsGen =
         return $
             isProcessComplete pu fs
                 && null (endpointOptions pu)
-                && checkIntegrityInternal pu
+                && checkIntegrity pu
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
@@ -154,7 +154,7 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
-                    unless (isProcessComplete pu fs && checkIntegrityInternal pu) $
+                    unless (isProcessComplete pu fs && checkIntegrity pu) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
