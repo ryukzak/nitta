@@ -122,7 +122,7 @@ isComplete
                 , sTarget
                 }
         }
-        | isSynthesisFinish sTarget && checkIntegrityInternal (mUnit sTarget) = True
+        | isSynthesisFinish sTarget && checkIntegrity (mUnit sTarget) = True
 isComplete _ = False
 
 -- *Internal

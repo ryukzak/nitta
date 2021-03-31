@@ -10,7 +10,9 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.IntegrityCheck where
+module NITTA.Model.IntegrityCheck (
+    checkIntegrity,
+) where
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -18,13 +20,9 @@ import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 
-checkIntegrity pu fs =
-    checkFunctionToIntermidiateRelation pu fs
-        && checkIntegrityInternal pu
-
-checkIntegrityInternal pu =
+checkIntegrity pu =
     let pr = process pu
-        getFuncMap =
+        getInterMap =
             M.fromList $
                 [ (pID, (pID, f))
                 | step@Step{pID, pDesc} <- steps pr
@@ -44,27 +42,27 @@ checkIntegrityInternal pu =
                         (EndpointRoleStep e) -> [e]
                         _ -> []
                     ]
-        -- TODO why instruction could be the same in case with two binded functions?
         getInstrMap =
             M.fromList $
                 [ (pID, (pID, pDesc))
                 | Step{pID, pDesc} <- steps pr
                 , isInstruction pDesc
                 ]
+        getRels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
      in and
-            [ checkIntermidiateToEndpointRelation getFuncMap getEpMap pr
-            , checkEndpointToInstructionRelation getFuncMap getInstrMap pr
+            [ checkEndpointToIntermidiateRelation getEpMap getInterMap getRels
+            , checkInstructionToEndpointRelation getInstrMap getEpMap getRels
             ]
 
-checkFunctionToIntermidiateRelation pu fs =
+-- TODO: remove?
+checkIntermidiateToFunctionRelation pu fs =
     let fsVars = unionsMap variables fs
         puFuncVars = unionsMap variables $ getFBs (process pu)
      in fsVars == transferred pu
             && fsVars == puFuncVars
 
-checkIntermidiateToEndpointRelation ifs eps pr = S.isSubsetOf makeRelationList fromRelation
+checkEndpointToIntermidiateRelation eps ifs rels = S.isSubsetOf makeRelationList rels
     where
-        fromRelation = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
         makeRelationList =
             S.fromList $
                 concatMap
@@ -77,10 +75,10 @@ checkIntermidiateToEndpointRelation ifs eps pr = S.isSubsetOf makeRelationList f
                     $ M.elems ifs
 
 checkEndpointToInstructionRelation eps ins pr =
+checkInstructionToEndpointRelation ins eps rels =
     let eps_ = M.fromList $ M.elems eps
         ins_ = M.fromList $ M.elems ins
-        fromRelation = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
         checkRel (v1, v2) = case eps_ M.!? v1 of
             Just _ | Just (InstructionStep _) <- ins_ M.!? v2 -> [True]
             _ -> []
-     in and $ concatMap checkRel fromRelation
+     in and $ concatMap checkRel rels
