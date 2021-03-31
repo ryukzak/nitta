@@ -3,15 +3,16 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 {- |
-Module      : NITTA.Model.ProcessorUnits.Tests.IntegrityCheck
+Module      : NITTA.Model.IntegrityCheck
 Description : Tests vertical relations in PU
-Copyright   : (c) co0ll3r, 2021
+Copyright   : (c) Artyom Kostyuchik, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.IntegrityCheck (
     checkIntegrity,
+    checkIntegrityInternal,
 ) where
 
 import qualified Data.Map.Strict as M
@@ -21,6 +22,10 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 
 checkIntegrity pu fs =
+    checkFunctionToIntermidiateRelation pu fs
+        && checkIntegrityInternal pu
+
+checkIntegrityInternal pu =
     let pr = process pu
         getFuncMap =
             M.fromList $
@@ -31,7 +36,7 @@ checkIntegrity pu fs =
                     (FStep f) -> [f]
                     _ -> []
                 ]
-        --- TODO what if we have 2 same variables?
+        --- TODO what if we have 2 same variables? Link will be only to 1
         getEpMap =
             M.fromList $
                 concat
@@ -57,3 +62,5 @@ checkIntermidiateToEndpointRelation fs eps pr = S.isSubsetOf makeRelationList fr
                             $ variables f
                     )
                     $ M.elems fs
+checkFunctionToIntermidiateRelation pu fs = True
+checkEndpointToInstructionRelation = undefined
