@@ -23,7 +23,7 @@ import NITTA.Utils
 checkIntegrity pu =
     let pr = process pu
         getInterMap =
-            M.fromList $
+            M.fromList
                 [ (pID, (pID, f))
                 | step@Step{pID, pDesc} <- steps pr
                 , isFB step
@@ -43,7 +43,7 @@ checkIntegrity pu =
                         _ -> []
                     ]
         getInstrMap =
-            M.fromList $
+            M.fromList
                 [ (pID, (pID, pDesc))
                 | Step{pID, pDesc} <- steps pr
                 , isInstruction pDesc
@@ -53,13 +53,6 @@ checkIntegrity pu =
             [ checkEndpointToIntermidiateRelation getEpMap getInterMap getRels
             , checkInstructionToEndpointRelation getInstrMap getEpMap getRels
             ]
-
--- TODO: remove?
-checkIntermidiateToFunctionRelation pu fs =
-    let fsVars = unionsMap variables fs
-        puFuncVars = unionsMap variables $ getFBs (process pu)
-     in fsVars == transferred pu
-            && fsVars == puFuncVars
 
 checkEndpointToIntermidiateRelation eps ifs rels = S.isSubsetOf makeRelationList rels
     where
@@ -74,11 +67,14 @@ checkEndpointToIntermidiateRelation eps ifs rels = S.isSubsetOf makeRelationList
                     )
                     $ M.elems ifs
 
-checkEndpointToInstructionRelation eps ins pr =
-checkInstructionToEndpointRelation ins eps rels =
-    let eps_ = M.fromList $ M.elems eps
-        ins_ = M.fromList $ M.elems ins
-        checkRel (v1, v2) = case eps_ M.!? v1 of
-            Just _ | Just (InstructionStep _) <- ins_ M.!? v2 -> [True]
-            _ -> []
-     in and $ concatMap checkRel rels
+checkInstructionToEndpointRelation ins eps rels = and makeRelationList
+    where
+        eps' = M.fromList $ M.elems eps
+        ins' = M.fromList $ M.elems ins
+        makeRelationList =
+            concatMap
+                ( \(r1, r2) -> case eps' M.!? r1 of
+                    Just _ | (InstructionStep _) <- ins' M.! r2 -> [True]
+                    _ -> []
+                )
+                rels
