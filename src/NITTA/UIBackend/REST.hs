@@ -67,6 +67,10 @@ type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
         :> "synthesisTree"
         :> Get '[JSON] (TreeView ShortNodeView)
+    ) :<|>
+    ( Description "lolkekdescription"
+        :> "synthesis-info"
+        :> Get '[JSON] (TreeView ShortNodeView)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -78,7 +82,8 @@ type SynthesisAPI tag v x t =
              )
 
 synthesisServer ctx@BackendCtx{root} =
-    liftIO (viewNodeTree root)
+    liftIO (viewNodeTree root) :<|>
+    liftIO (viewNodeTreeShow root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid

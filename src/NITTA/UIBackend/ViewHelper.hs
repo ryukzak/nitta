@@ -33,6 +33,7 @@ module NITTA.UIBackend.ViewHelper (
     FView (..),
     Viewable (..),
     viewNodeTree,
+    viewNodeTreeShow,
     TreeView,
     ShortNodeView,
     NodeView,
@@ -61,6 +62,8 @@ import NITTA.Synthesis
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
 import Servant.Docs
+import Debug.Trace
+import Data.Maybe (catMaybes)
 
 type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
 
@@ -70,7 +73,7 @@ data TreeView a = TreeNodeView
     { rootLabel :: a
     , subForest :: [TreeView a]
     }
-    deriving (Generic)
+    deriving (Generic, Show)
 
 instance (ToJSON a) => ToJSON (TreeView a)
 
@@ -123,15 +126,65 @@ data ShortNodeView = ShortNodeView
     , score :: Float
     , decsionType :: String
     }
-    deriving (Generic)
+    deriving (Generic, Show)
+
+data NodeInfo = NodeInfo
+    { sid :: String
+    , isLeaf :: Bool
+    , isProcessed :: Bool
+    , duration :: Int
+    , score :: Float
+    , decsionType :: String
+    }
+    deriving (Generic, Show)
 
 instance ToJSON ShortNodeView
+
+filterTreeView TreeNodeView {rootLabel=ShortNodeView{isProcessed=False}} = Nothing
+filterTreeView tnv@TreeNodeView {rootLabel=ShortNodeView{isProcessed=True}, subForest=[]} = Just tnv
+filterTreeView tnv@TreeNodeView {rootLabel=ShortNodeView{isProcessed=True}, subForest} = Just tnv {subForest = catMaybes $ map filterTreeView subForest}
+
+-- synthesisSteps TreeNodeView {rootLabel=ShortNodeView{isProcessed=False}}
+-- viewNodeTreeShow tree = do
+--     treeRes <- viewNodeTree tree
+--     -- let filteredIsProcessed =
+--     print $ filterTreeView treeRes
+--     return treeRes
+
+viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar}
+    | traceShow tree False = undefined
+    | otherwise =  do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+    subForest <- maybe (return []) (mapM viewNodeTreeShow) subForestM
+    let treeRes = TreeNodeView
+            { rootLabel =
+                ShortNodeView
+                    { sid = show sid
+                    , isLeaf = isComplete tree
+                    , isProcessed = isJust subForestM
+                    , duration = fromEnum $ processDuration sTarget
+                    , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
+                    , decsionType = case sDecision of
+                        Root{} -> "root"
+                        SynthesisDecision{metrics, decision}
+                            | Just BindMetrics{} <- cast metrics -> ("Bind" <> " " <> show decision)
+                            | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
+                            | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"
+                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
+                            | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
+                            | Just ResolveDeadlockMetrics{} <- cast metrics -> "Refactor"
+                        _ -> "?"
+                    }
+            , subForest = subForest
+            }
+
+    print $ filterTreeView treeRes
+    return treeRes
 
 viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForest <- maybe (return []) (mapM viewNodeTree) subForestM
-    return
-        TreeNodeView
+    return TreeNodeView
             { rootLabel =
                 ShortNodeView
                     { sid = show sid
@@ -152,6 +205,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
                     }
             , subForest = subForest
             }
+
 
 data NodeView tag v x t = NodeView
     { sid :: String

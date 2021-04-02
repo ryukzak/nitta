@@ -27,7 +27,7 @@ data Bind tag v x
     deriving (Generic)
 
 instance (ToString tag) => Show (Bind tag v x) where
-    show (Bind f tag) = "Bind " <> show f <> " " <> toString tag
+    show (Bind f tag) = "Bind " <> show f <> " " <> toString tag <> " " <>  label f
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [Bind tag v x]
