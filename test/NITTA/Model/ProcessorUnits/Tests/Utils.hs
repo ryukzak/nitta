@@ -27,6 +27,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
 ) where
 
 import Control.Monad
+import Control.Monad.Trans.State.Lazy
 import Data.Atomics.Counter (incrCounter)
 import Data.CallStack
 import Data.Default
@@ -209,6 +210,12 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
+dslTest ::
+    (HasCallStack) =>
+    String ->
+    pu ->
+    Control.Monad.Trans.State.Lazy.StateT (NITTA.Model.MultiplierDsl.UnitTestState pu v x) IO Bool ->
+    TestTree
 dslTest name pu alg = testCase name $ do
     res <- evalMultiplier pu alg
     assertBool "DSL test failed" res
