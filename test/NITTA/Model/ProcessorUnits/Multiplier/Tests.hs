@@ -87,86 +87,90 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , multiplierTest "multiplier smoke test" u $
+        , dslTest "multiplier smoke test" u $
             do
                 bindFunc fDef
-                _ <- assertBindFullness
+                assertBindFullness
                 doDecision $ beTargetAt 1 2 "a"
                 doFstDecision
                 doDecision $ beSourceAt 5 5 ["c"]
                 doFstDecision
-                _ <- assertSynthesisDone
-                assertExecute
-        , multiplierTest "accum smoke test" u3 $
+                assertSynthesisDone
+        , dslTest "accum smoke test" u3 $
             do
                 bindFunc fSub
-                doDecisionWithTarget "a"
+                _ <- doDecisionWithTarget "a"
                 doFstDecision
-                doDecisionWithSource ["c"]
-                _ <- assertSynthesisDone
-                assertExecute
+                _ <- doDecisionWithSource ["c"]
+                assertSynthesisDone
+        , dslTest "multiplier coSim smoke test" u $
+            do
+                bindFunc fDef
+                doFstDecision
+                doFstDecision
+                doFstDecision
+                assertCoSimulation [("a", 2), ("b", 7)]
         , expectFail $
-            multiplierTest "should error, when proccess is not done" u $
+            dslTest "should error, when proccess is not done" u $
                 do
                     bindFunc fDef
                     doDecision $ beTargetAt 1 2 "a"
                     doFstDecision
-                    _ <- assertSynthesisDone
-                    assertExecute
+                    assertSynthesisDone
         , expectFail $
-            multiplierTest "shouldn't bind, when PU incompatible with F" u $
+            dslTest "shouldn't bind, when PU incompatible with F" u $
                 do
                     bindFunc fSub
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "shouldn't bind, when different signatures" u3 $
+            dslTest "shouldn't bind, when different signatures" u3 $
                 do
                     bindFunc fSub
                     -- TODO: Why Accum return "Acc" as a label instead "-"?
                     _ <- assertBindFullness
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "doDecision should error, when Target in Decision is not present" u $
+            dslTest "doDecision should error, when Target in Decision is not present" u $
                 do
                     bindFunc fDef
                     doDecision $ beTargetAt 1 1 "aa"
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "Multiplier should error, when Source in Decision is Targets" u $
+            dslTest "Multiplier should error, when Source in Decision is Targets" u $
                 -- TODO: there "Multiplier decision error" not edsl?
                 do
                     bindFunc fDef
                     doDecision $ beSourceAt 1 1 ["a"]
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "doDecision should error, when Target in Decision is Source" u $
+            dslTest "doDecision should error, when Target in Decision is Source" u $
                 do
                     bindFunc fDef
                     doFstDecision
                     doFstDecision
                     doDecision $ beTargetAt 4 4 "c"
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "doDecision should error, when Interval is not correct" u $
+            dslTest "doDecision should error, when Interval is not correct" u $
                 do
                     bindFunc fDef
                     doDecision $ beTargetAt 2 2 "a"
                     doDecision $ beTargetAt 1 1 "b"
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "doFstDecision should error, when decisions are spent" u3 $
+            dslTest "doFstDecision should error, when decisions are spent" u3 $
                 do
                     bindFunc fSub
                     doFstDecision
                     doFstDecision
                     doFstDecision
                     doFstDecision
-                    assertExecute
+                    assertSomethingScheduled
         , expectFail $
-            multiplierTest "doFstDecision should error, when PU is not bound" u3 $
+            dslTest "doFstDecision should error, when PU is not bound" u3 $
                 do
                     doFstDecision
-                    assertExecute
+                    assertSomethingScheduled
         ]
     where
         u = multiplier True :: Multiplier String Int Int
