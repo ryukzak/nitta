@@ -22,9 +22,8 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     nittaCoSimTestCase,
     finitePUSynthesisProp,
     puCoSimProp,
-    puCoSim,
     algGen,
-    multiplierTest,
+    dslTest,
 ) where
 
 import Control.Monad
@@ -36,6 +35,7 @@ import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
+import NITTA.CoSimulationUtils
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
@@ -77,46 +77,6 @@ puCoSimTestCase ::
 puCoSimTestCase name u cntxCycle alg =
     testCase name $
         tbStatus <$> puCoSim name u cntxCycle alg @? (name <> " in ")
-
-puCoSim ::
-    ( HasCallStack
-    , PUClasses (pu String x Int) String x Int
-    , WithFunctions (pu String x Int) (F String x)
-    , P.Testable (pu String x Int) String x
-    , DefaultX (pu String x Int) x
-    ) =>
-    String ->
-    pu String x Int ->
-    [(String, x)] ->
-    [F String x] ->
-    IO (TestbenchReport String x)
-puCoSim name u cntxCycle alg = do
-    wd <- getCurrentDirectory
-    let mname = toModuleName name
-        pTargetProjectPath = joinPath [wd, "gen", mname]
-        prj =
-            Project
-                { pName = T.pack mname
-                , pLibPath = "hdl"
-                , pTargetProjectPath
-                , pNittaPath = "."
-                , pUnit = naiveSynthesis alg u
-                , pUnitEnv = def
-                , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
-                , pTemplates = ["templates/Icarus"]
-                }
-    writeProject prj
-    runTestbench prj
-
-{- |Bind all functions to processor unit and synthesis process with endpoint
-decisions.
--}
-naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
-    where
-        naiveSynthesis' u
-            | opt : _ <- endpointOptions u =
-                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
-            | otherwise = u
 
 -- |Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
@@ -249,7 +209,6 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
--- multiplierTest :: HasCallStack => String -> Bool -> TestTree
-multiplierTest name pu alg = testCase name $ do
+dslTest name pu alg = testCase name $ do
     res <- evalMultiplier pu alg
     assertBool "DSL test failed" res

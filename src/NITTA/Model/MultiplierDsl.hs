@@ -21,8 +21,9 @@ module NITTA.Model.MultiplierDsl (
     doDecisionWithSource,
     beSourceAt,
     assertBindFullness,
+    assertCoSimulation,
     assertSynthesisDone,
-    assertExecute,
+    assertSomethingScheduled,
 ) where
 
 import Control.Monad.Identity
@@ -30,9 +31,9 @@ import Control.Monad.State.Lazy
 import Data.Default
 import Data.Maybe
 import qualified Data.Set as S
+import NITTA.CoSimulationUtils
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
-import NITTA.Model.MultiplierDslUtils
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Project
@@ -120,13 +121,11 @@ isFullyBinded pu fs =
 assertSynthesisDone =
     do
         UnitTestState{unit, functs} <- get
-        unless
-            ( isProcessComplete' unit functs
-                && null (endpointOptions unit)
-            )
-            $ error "Process is not complete"
+        if isProcessComplete' unit functs && null (endpointOptions unit)
+            then return True
+            else error "Process is not complete"
 
-assertExecute = do
+assertSomethingScheduled = do
     UnitTestState{unit} <- get
     let nT = nextTick $ process unit
         nU = nextUid $ process unit
