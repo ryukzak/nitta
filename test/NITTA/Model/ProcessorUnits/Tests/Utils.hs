@@ -22,6 +22,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     nittaCoSimTestCase,
     finitePUSynthesisProp,
     puCoSimProp,
+    puCoSim,
     algGen,
     multiplierTest,
 ) where
@@ -39,6 +40,7 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
@@ -73,23 +75,38 @@ puCoSimTestCase ::
     [F String x] ->
     TestTree
 puCoSimTestCase name u cntxCycle alg =
-    testCase name $ do
-        wd <- getCurrentDirectory
-        let mname = toModuleName name
-            pTargetProjectPath = joinPath [wd, "gen", mname]
-            prj =
-                Project
-                    { pName = T.pack mname
-                    , pLibPath = "hdl"
-                    , pTargetProjectPath
-                    , pNittaPath = "."
-                    , pUnit = naiveSynthesis alg u
-                    , pUnitEnv = def
-                    , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
-                    , pTemplates = ["templates/Icarus"]
-                    }
-        writeProject prj
-        (tbStatus <$> runTestbench prj) @? (name <> " in " <> pTargetProjectPath)
+    testCase name $
+        tbStatus <$> puCoSim name u cntxCycle alg @? (name <> " in ")
+
+puCoSim ::
+    ( HasCallStack
+    , PUClasses (pu String x Int) String x Int
+    , WithFunctions (pu String x Int) (F String x)
+    , P.Testable (pu String x Int) String x
+    , DefaultX (pu String x Int) x
+    ) =>
+    String ->
+    pu String x Int ->
+    [(String, x)] ->
+    [F String x] ->
+    IO (TestbenchReport String x)
+puCoSim name u cntxCycle alg = do
+    wd <- getCurrentDirectory
+    let mname = toModuleName name
+        pTargetProjectPath = joinPath [wd, "gen", mname]
+        prj =
+            Project
+                { pName = T.pack mname
+                , pLibPath = "hdl"
+                , pTargetProjectPath
+                , pNittaPath = "."
+                , pUnit = naiveSynthesis alg u
+                , pUnitEnv = def
+                , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                , pTemplates = ["templates/Icarus"]
+                }
+    writeProject prj
+    runTestbench prj
 
 {- |Bind all functions to processor unit and synthesis process with endpoint
 decisions.
@@ -232,5 +249,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
 
-multiplierTest :: HasCallStack => String -> Bool -> TestTree
-multiplierTest name res = testCase name $ assertBool "Multiplier test failed" res
+-- multiplierTest :: HasCallStack => String -> Bool -> TestTree
+multiplierTest name pu alg = testCase name $ do
+    res <- evalMultiplier pu alg
+    assertBool "DSL test failed" res

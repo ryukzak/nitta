@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
 Module      : NITTA.Model.MultiplierDsl
@@ -15,22 +16,26 @@ module NITTA.Model.MultiplierDsl (
     bindFunc,
     doDecision,
     doFstDecision,
-    beTarget,
+    doDecisionWithTarget,
     beTargetAt,
-    beSource,
+    doDecisionWithSource,
     beSourceAt,
     assertBindFullness,
     assertSynthesisDone,
     assertExecute,
 ) where
 
+import Control.Monad.Identity
 import Control.Monad.State.Lazy
+import Data.Default
 import Data.Maybe
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
+import NITTA.Model.MultiplierDslUtils
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
+import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
 
@@ -40,7 +45,7 @@ data UnitTestState pu v x = UnitTestState
     }
     deriving (Show)
 
-evalMultiplier st alg = evalState alg (UnitTestState st [])
+evalMultiplier st alg = evalStateT alg (UnitTestState st [])
 
 bindFunc f = do
     st@UnitTestState{unit, functs} <- get
@@ -62,10 +67,9 @@ isEpOptionAvailable (EndpointSt v interv) pu =
         compIntervs = singleton (nextTick $ process pu) <=! interv
      in compEpRoles && compIntervs
 
-doFstDecision :: (EndpointProblem pu v x, Num x, Ord x) => State (UnitTestState pu v x) ()
 doFstDecision = do
-    UnitTestState{unit} <- get
-    doDecision' $ fstDecision unit
+    st@UnitTestState{unit} <- get
+    put st{unit = endpointDecision unit $ fstDecision unit}
 
 fstDecision pu =
     endpointOptionToDecision $
@@ -73,32 +77,36 @@ fstDecision pu =
     where
         showError = error "Failed at fstDecision, there is no decisions left!"
 
-doDecision' endpSt = do
-    st@UnitTestState{unit} <- get
-    put st{unit = endpointDecision unit endpSt}
-
--- TODO FIx
-beTarget t = do
+doDecisionWithTarget t = do
     UnitTestState{unit} <- get
-    return $ EndpointSt (Target t) $ nextInterval' unit
+    doDecision $ EndpointSt (Target t) $ nextInterval' unit
 
--- TODO FIx
-beSource ss = do
+doDecisionWithSource ss = do
     UnitTestState{unit} <- get
-    return $ EndpointSt (Source $ S.fromList ss) $ nextInterval' unit
+    doDecision $ EndpointSt (Source $ S.fromList ss) $ nextInterval' unit
 
-nextInterval' pu = singleton $ nextTick $ process pu
+nextInterval' pu = epAt $ fstDecision pu
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
-assertBindFullness :: (MonadState (UnitTestState b v x) m, ProcessorUnit b v x t, WithFunctions b (F v x)) => m ()
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     unless (isFullyBinded unit functs) $
         error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
+isFullyBinded ::
+    ( Function a1 v
+    , Label a1
+    , WithFunctions a2 a3
+    , Ord v
+    , Function a3 v
+    , Label a3
+    ) =>
+    a2 ->
+    [a1] ->
+    Bool
 isFullyBinded pu fs =
     let fu = functions pu
         outs = S.fromList $ map outputs fu
@@ -109,7 +117,6 @@ isFullyBinded pu fs =
             && inps == S.fromList (map inputs fs)
             && sign == S.fromList (map label fs)
 
-assertSynthesisDone :: (ProcessorUnit pu v x t, EndpointProblem pu v x) => State (UnitTestState pu v x) ()
 assertSynthesisDone =
     do
         UnitTestState{unit, functs} <- get
@@ -119,13 +126,17 @@ assertSynthesisDone =
             )
             $ error "Process is not complete"
 
-assertExecute :: (ProcessorUnit pu v x t) => State (UnitTestState pu v x) Bool
 assertExecute = do
     UnitTestState{unit} <- get
     let nT = nextTick $ process unit
         nU = nextUid $ process unit
     return $ nT >= 0 && nU >= 0
 
+-- TODO: resolve duplicate binding
+assertCoSimulation cntxCycle = do
+    UnitTestState{unit, functs} <- get
+    res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs
+    return $ tbStatus res
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
 processedVars' pu = unionsMap variables $ getEndpoints $ process pu
