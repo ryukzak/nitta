@@ -12,6 +12,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.MultiplierDsl (
+    UnitTestState (..),
     evalMultiplier,
     bindFunc,
     doDecision,

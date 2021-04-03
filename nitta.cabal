@@ -50,6 +50,7 @@ extra-doc-files:
 
 library
   exposed-modules:
+      NITTA.CoSimulationUtils
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum
@@ -276,4 +277,5 @@ test-suite nitta-test
     , tasty-th
     , text
     , tostring
+    , transformers
   default-language: Haskell2010
