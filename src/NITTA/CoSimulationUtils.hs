@@ -49,8 +49,9 @@ puCoSim ::
     pu String x Int ->
     [(String, x)] ->
     [F String x] ->
+    Bool ->
     IO (TestbenchReport String x)
-puCoSim name u cntxCycle alg = do
+puCoSim name u cntxCycle alg isBind = do
     wd <- getCurrentDirectory
     let mname = toModuleName name
         pTargetProjectPath = joinPath [wd, "gen", mname]
@@ -60,7 +61,10 @@ puCoSim name u cntxCycle alg = do
                 , pLibPath = "hdl"
                 , pTargetProjectPath
                 , pNittaPath = "."
-                , pUnit = naiveSynthesis alg u
+                , pUnit =
+                    if isBind
+                        then naiveSynthesis alg u
+                        else u
                 , pUnitEnv = def
                 , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
                 , pTemplates = ["templates/Icarus"]

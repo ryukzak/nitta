@@ -133,7 +133,7 @@ assertSomethingScheduled = do
 -- TODO: resolve duplicate binding
 assertCoSimulation cntxCycle = do
     UnitTestState{unit, functs} <- get
-    res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs
+    res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs False
     return $ tbStatus res
 
 -- TODO: clean/combine with utils
