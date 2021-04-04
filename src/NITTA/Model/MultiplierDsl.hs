@@ -11,27 +11,29 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.MultiplierDsl (
+module NITTA.Model.ProcessorUnits.Tests.ProcessorUnitTestDsl (
     UnitTestState (..),
     evalMultiplier,
     bindFunc,
     doDecision,
     doFstDecision,
-    doDecisionWithTarget,
     beTargetAt,
-    doDecisionWithSource,
     beSourceAt,
+    doDecisionWithTarget,
+    doDecisionWithSource,
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
     assertSomethingScheduled,
+    traceProcess,
+    traceFunctions,
 ) where
 
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
 import Data.Maybe
 import qualified Data.Set as S
-import NITTA.CoSimulationUtils
+import qualified Debug.Trace
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -79,13 +81,13 @@ fstDecision pu =
 
 doDecisionWithTarget t = do
     UnitTestState{unit} <- get
-    doDecision $ EndpointSt (Target t) $ nextInterval' unit
+    doDecision $ EndpointSt (Target t) $ nextInterval unit
 
 doDecisionWithSource ss = do
     UnitTestState{unit} <- get
-    doDecision $ EndpointSt (Source $ S.fromList ss) $ nextInterval' unit
+    doDecision $ EndpointSt (Source $ S.fromList ss) $ nextInterval unit
 
-nextInterval' pu = epAt $ fstDecision pu
+nextInterval pu = epAt $ fstDecision pu
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 
@@ -97,15 +99,15 @@ assertBindFullness = do
         error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
 isFullyBinded ::
-    ( Function a1 v
-    , Label a1
-    , WithFunctions a2 a3
-    , Ord v
-    , Function a3 v
-    , Label a3
+    ( WithFunctions a c
+    , Function c k1
+    , Label c
+    , Function b k1
+    , Label b
+    , Ord k1
     ) =>
-    a2 ->
-    [a1] ->
+    a ->
+    [b] ->
     Bool
 isFullyBinded pu fs =
     let fu = functions pu
@@ -120,7 +122,7 @@ isFullyBinded pu fs =
 assertSynthesisDone =
     do
         UnitTestState{unit, functs} <- get
-        if isProcessComplete' unit functs && null (endpointOptions unit)
+        if isProcessComplete unit functs && null (endpointOptions unit)
             then return True
             else error "Process is not complete"
 
@@ -130,13 +132,19 @@ assertSomethingScheduled = do
         nU = nextUid $ process unit
     return $ nT >= 0 && nU >= 0
 
--- TODO: resolve duplicate binding
 assertCoSimulation cntxCycle = do
     _ <- assertSynthesisDone
     UnitTestState{unit, functs} <- get
     res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs False
     return $ tbStatus res
 
--- TODO: clean/combine with utils
-isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
-processedVars' pu = unionsMap variables $ getEndpoints $ process pu
+traceProcess = do
+    UnitTestState{unit} <- get
+    return $ Debug.Trace.traceShow unit unit
+
+traceFunctions = do
+    UnitTestState{functs} <- get
+    return $ Debug.Trace.traceShow functs functs
+
+isProcessComplete pu fs = unionsMap variables fs == processedVars pu
+processedVars pu = unionsMap variables $ getEndpoints $ process pu
