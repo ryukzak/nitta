@@ -11,7 +11,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Tests.ProcessorUnitTestDsl (
+module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     UnitTestState (..),
     evalMultiplier,
     bindFunc,
