@@ -111,6 +111,13 @@ tests =
                 doFstDecision
                 assertCoSimulation [("a", 2), ("b", 7)]
         , expectFail $
+            dslTest "coSim test should fail because synthesis not complete" u $
+                do
+                    bindFunc fDef
+                    doFstDecision
+                    doFstDecision
+                    assertCoSimulation [("a", 2), ("b", 7)]
+        , expectFail $
             dslTest "should error, when proccess is not done" u $
                 do
                     bindFunc fDef
