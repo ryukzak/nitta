@@ -1,6 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
 Module      : NITTA.Model.MultiplierDsl
@@ -31,6 +38,7 @@ import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath)
 
+-- |Execute co-simulation test for the specific process unit
 puCoSim ::
     ( PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) (F String x)
