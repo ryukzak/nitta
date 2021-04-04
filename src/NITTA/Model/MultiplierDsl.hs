@@ -29,11 +29,9 @@ module NITTA.Model.MultiplierDsl (
 
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
-import Data.Default
 import Data.Maybe
 import qualified Data.Set as S
 import NITTA.CoSimulationUtils
-import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -137,6 +135,7 @@ assertCoSimulation cntxCycle = do
     UnitTestState{unit, functs} <- get
     res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs
     return $ tbStatus res
+
 -- TODO: clean/combine with utils
 isProcessComplete' pu fs = unionsMap variables fs == processedVars' pu
 processedVars' pu = unionsMap variables $ getEndpoints $ process pu
