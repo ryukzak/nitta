@@ -77,7 +77,7 @@ puCoSimTestCase ::
     TestTree
 puCoSimTestCase name u cntxCycle alg =
     testCase name $
-        tbStatus <$> puCoSim name u cntxCycle alg @? (name <> " in ")
+        tbStatus <$> puCoSim name u cntxCycle alg True @? (name <> " in ")
 
 -- |Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
@@ -211,7 +211,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
         endpointGen o = return o
 
 dslTest ::
-    (HasCallStack) =>
+    HasCallStack =>
     String ->
     pu ->
     Control.Monad.Trans.State.Lazy.StateT (NITTA.Model.MultiplierDsl.UnitTestState pu v x) IO Bool ->
