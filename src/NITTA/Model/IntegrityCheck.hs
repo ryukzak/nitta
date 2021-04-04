@@ -19,6 +19,7 @@ import qualified Data.Set as S
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
+import Safe
 
 checkIntegrity pu =
     let pr = process pu
@@ -33,9 +34,9 @@ checkIntegrity pu =
                 ]
         --- TODO what if we have 2 same variables? The key will be only one
         getEpMap =
-            M.fromList $
+            M.fromListWith (++) $
                 concat
-                    [ concatMap (\v -> [(v, (pID, ep))]) $ variables ep
+                    [ concatMap (\v -> [(v, [(pID, ep)])]) $ variables ep
                     | step@Step{pID, pDesc} <- steps pr
                     , isEndpoint step
                     , ep <- case pDesc of
@@ -48,28 +49,36 @@ checkIntegrity pu =
                 | Step{pID, pDesc} <- steps pr
                 , isInstruction pDesc
                 ]
-        getRels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
      in and
-            [ checkEndpointToIntermidiateRelation getEpMap getInterMap getRels
-            , checkInstructionToEndpointRelation getInstrMap getEpMap getRels
+            [ checkEndpointToIntermidiateRelation getEpMap getInterMap pr
+            , checkInstructionToEndpointRelation getInstrMap getEpMap pr
+            , True
+            , True
             ]
 
 checkEndpointToIntermidiateRelation eps ifs rels = S.isSubsetOf makeRelationList rels
+checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList rels
     where
+        rels = S.fromList $ relations pr
+        findRel (h, l) =
+            if length l > 1
+                then Vertical h $ fst $ findJust (\(k, _) -> Vertical h k `elem` rels) l
+                else Vertical h $ fst $ head l
         makeRelationList =
             S.fromList $
                 concatMap
                     ( \(h, f) ->
                         concatMap
-                            ( \v -> [(h, fst (eps M.! v))]
+                            ( \v -> [findRel (h, eps M.! v)]
                             )
                             $ variables f
                     )
                     $ M.elems ifs
 
-checkInstructionToEndpointRelation ins eps rels = and makeRelationList
+checkInstructionToEndpointRelation ins eps pr = and makeRelationList
     where
-        eps' = M.fromList $ M.elems eps
+        rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
+        eps' = M.fromList $ concat $ M.elems eps
         ins' = M.fromList $ M.elems ins
         makeRelationList =
             concatMap

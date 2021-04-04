@@ -208,7 +208,7 @@ data Relation
       -- step (function execution) can be translated to a sequence of endpoint
       -- steps (receiving and sending variable), and process unit instructions.
       Vertical ProcessStepID ProcessStepID
-    deriving (Show, Eq, Generic)
+    deriving (Show, Eq, Generic, Ord)
 
 instance ToJSON Relation
 
