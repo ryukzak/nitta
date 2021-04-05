@@ -64,6 +64,8 @@ data Broken v x t = Broken
     , -- |lost source endpoint due synthesis
       lostEndpointSource :: Bool
     , wrongAttr :: Bool
+    , -- | lost vertical relation
+      lostVerticalRelation :: Bool
     , unknownDataOut :: Bool
     }
 
@@ -117,11 +119,13 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
         | not $ null remain = concatMap (endpointOptions . execution pu) $ tail remain
     endpointOptions pu@Broken{remain} = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush} d@EndpointSt{epRole = Target v', epAt}
+    endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush, lostVerticalRelation} d@EndpointSt{epRole = Target v', epAt}
         | v == v'
           , let (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
-                    scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load =
+                    let ins = scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
+                    let ins' = if lostVerticalRelation then fmap (const []) ins else ins
+                    scheduleEndpoint d ins' =
             pu
                 { process_ = process_'
                 , targets = []
@@ -129,17 +133,19 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                 , doneAt = Just $ sup epAt + 3
                 }
     endpointDecision
-        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull}
+        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull, lostVerticalRelation}
         d@EndpointSt{epRole = Source v, epAt}
             | not $ null sources
               , let sources' = sources \\ elems v
               , sources' /= sources
               , let (newEndpoints, process_') = runSchedule pu $ do
-                        endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
+                        let ins = scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
+                        let res = scheduleEndpoint d $ if lostVerticalRelation then fmap (const []) ins else ins
+                        endpoints <- res
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
-                            establishVerticalRelations high low
+                            uncurry establishVerticalRelations $ if lostVerticalRelation then ([], []) else (high, low)
                         updateTick (sup epAt + 1)
                         return endpoints =
                 pu
@@ -201,6 +207,7 @@ instance (Time t) => Default (Broken v x t) where
             , lostEndpointTarget = False
             , lostEndpointSource = False
             , wrongAttr = False
+            , lostVerticalRelation = False
             , unknownDataOut = False
             }
 

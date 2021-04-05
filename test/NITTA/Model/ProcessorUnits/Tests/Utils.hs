@@ -154,8 +154,10 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
-                    unless (isProcessComplete pu fs && checkIntegrity pu) $
+                    unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
+                    unless (checkIntegrity pu) $
+                        error "fail at integrity check"
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
                     let pTargetProjectPath = joinPath [wd, "gen", toModuleName name <> "_" <> show i]
