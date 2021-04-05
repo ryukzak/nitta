@@ -116,6 +116,9 @@ tests =
         , testGroup
             "broken relations integrity check"
             [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost relations" u{lostVerticalRelation = True} fsGen
+            [ finitePUSynthesisProp "finitePUSynthesisProp relation positive test" u{lostVerticalRelation = False} fsGen
+            , puCoSimProp "puCoSimProp relation positive test" u{lostVerticalRelation = False} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost relations" u{lostVerticalRelation = True} fsGen
             , expectFail $ puCoSimProp "puCoSimProp lost relations" u{lostVerticalRelation = True} fsGen
             ]
         ]
