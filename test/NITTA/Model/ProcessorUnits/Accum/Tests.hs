@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
-
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Accum.Tests
@@ -174,9 +174,11 @@ tests =
             doDecisionWithSource ["c"]
             assertSynthesisDone
         , expectFail $
-            puUnitTestCase "shouldn't bind, when different signatures" accumDef $ do
+            puUnitTestCase "should not bind, when different signatures" accumDef $ do
                 bindFunc fSub
                 -- TODO: Why Accum return "Acc" as a label instead "-"?
+                traceFunctions -- expected: [a - b = c]
+                tracePUSub functions -- actual: [+a -b = c;]
                 assertBindFullness
         ]
     where

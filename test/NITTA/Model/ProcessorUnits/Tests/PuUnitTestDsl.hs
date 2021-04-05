@@ -25,7 +25,8 @@ module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
-    traceProcess,
+    tracePU,
+    tracePUSub,
     traceFunctions,
 ) where
 
@@ -34,7 +35,6 @@ import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.Maybe
 import qualified Data.Set as S
-import qualified Debug.Trace
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -52,7 +52,7 @@ puUnitTestCase ::
     StateT (UnitTestState pu v x) IO () ->
     TestTree
 puUnitTestCase name pu alg = testCase name $ do
-    !_ <- evalMultiplier pu alg -- ! probably not work
+    !_ <- evalMultiplier pu alg -- ! probably do not always work
     assertBool "test failed" True
 
 data UnitTestState pu v x = UnitTestState
@@ -99,7 +99,7 @@ getFstDecision = do
     UnitTestState{unit} <- get
     if isJust $ checkFstDecision unit
         then return $ getFstDecision' unit
-        else lift $ assertFailure "Failed at fstDecision, there is no decisions left!"
+        else lift $ assertFailure "Failed during decision making: there is no decisions left!"
     where
         checkFstDecision unit = listToMaybe $ endpointOptions unit
         getFstDecision' unit = endpointOptionToDecision $ head $ endpointOptions unit
@@ -109,7 +109,8 @@ beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
-    unless (isFullyBinded unit functs) $
+    isOk <- lift $ isFullyBinded unit functs
+    unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
 isFullyBinded ::
@@ -119,19 +120,24 @@ isFullyBinded ::
     , Function b k1
     , Label b
     , Ord k1
+    , Show k1
     ) =>
     a ->
     [b] ->
-    Bool
-isFullyBinded pu fs =
-    let fu = functions pu
+    IO Bool
+isFullyBinded pu fs = do
+    assertBool ("Outputs not equal, expected: " <> show fOuts <> "; actual: " <> show outs) $ outs == fOuts
+    assertBool ("Inputs not equal, expected: " <> show fInps <> "; actual: " <> show inps) $ inps == fInps
+    assertBool ("Signs not equal, expected: " <> show fSign <> "; actual: " <> show sign) $ sign == fSign
+    return $ not $ null fu
+    where
+        fu = functions pu
         outs = S.fromList $ map outputs fu
         inps = S.fromList $ map inputs fu
         sign = S.fromList $ map label fu
-     in not (null fu)
-            && outs == S.fromList (map outputs fs)
-            && inps == S.fromList (map inputs fs)
-            && sign == S.fromList (map label fs)
+        fOuts = S.fromList (map outputs fs)
+        fInps = S.fromList (map inputs fs)
+        fSign = S.fromList (map label fs)
 
 assertSynthesisDone =
     do
@@ -146,10 +152,16 @@ assertCoSimulation cntxCycle = do
     unless (tbStatus res) $
         lift $ assertFailure "Simulation failed"
 
-traceProcess = do
+tracePU = do
     UnitTestState{unit} <- get
-    return $ Debug.Trace.traceShow unit unit
+    lift $ putStrLn $ "\nPU: " <> show unit
+
+tracePUSub f = do
+    UnitTestState{unit} <- get
+    lift $ putStrLn $ "\nPU: " <> show (f unit)
+    return $ f unit
 
 traceFunctions = do
     UnitTestState{functs} <- get
-    return $ Debug.Trace.traceShow functs functs
+    lift $ putStrLn $ "\nFunctions: " <> show functs
+    return functs

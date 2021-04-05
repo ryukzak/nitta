@@ -150,7 +150,6 @@ tests:
       - nitta
       - split
       - tasty
-      - transformers
       - tasty-expected-failure
       - tasty-hunit
       - intervals
