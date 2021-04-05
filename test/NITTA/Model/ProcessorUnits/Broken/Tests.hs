@@ -113,6 +113,15 @@ tests =
             , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost source endpoint" (maBroken u{lostEndpointSource = True}) alg
             , expectFail $ typedLuaTestCase (maBroken def{lostEndpointSource = True}) pInt "typedLuaTestCase lost source endpoint" lua
             ]
+        , testGroup
+            "broken relations integrity check"
+            -- at first positive test: it has good relation and checkIntegrity True
+            -- at second negative test for same pu: it has bad relation and checkIntegrity False
+            [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost relations" u{lostVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lost relations" u{lostVerticalRelation = True} fsGen
+            , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost relations" (maBroken u{lostVerticalRelation = True}) alg
+            , expectFail $ typedLuaTestCase (maBroken def{lostVerticalRelation = True}) pInt "typedLuaTestCase lost relations" lua
+            ]
         ]
     where
         u = def :: Broken String Int Int
