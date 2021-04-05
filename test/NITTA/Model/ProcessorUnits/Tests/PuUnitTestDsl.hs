@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -13,7 +14,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     UnitTestState (..),
-    evalMultiplier,
+    puUnitTestCase,
     bindFunc,
     doDecision,
     doFstDecision,
@@ -24,22 +25,35 @@ module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
-    assertSomethingScheduled,
     traceProcess,
     traceFunctions,
 ) where
 
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
+import Data.CallStack
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Debug.Trace
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
+import Test.Tasty (TestTree)
+import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
+
+puUnitTestCase ::
+    HasCallStack =>
+    String ->
+    pu ->
+    StateT (UnitTestState pu v x) IO () ->
+    TestTree
+puUnitTestCase name pu alg = testCase name $ do
+    !_ <- evalMultiplier pu alg -- ! probably not work
+    assertBool "test failed" True
 
 data UnitTestState pu v x = UnitTestState
     { unit :: pu
@@ -53,14 +67,14 @@ bindFunc f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
-        Left err -> error err
+        Left err -> lift $ assertFailure err
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else error $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
+        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
 
 isEpOptionAvailable (EndpointSt v interv) pu =
     let compEpRoles = case v of
@@ -70,33 +84,33 @@ isEpOptionAvailable (EndpointSt v interv) pu =
      in compEpRoles && compIntervs
 
 doFstDecision = do
-    st@UnitTestState{unit} <- get
-    put st{unit = endpointDecision unit $ fstDecision unit}
-
-fstDecision pu =
-    endpointOptionToDecision $
-        fromMaybe showError $ listToMaybe $ endpointOptions pu
-    where
-        showError = error "Failed at fstDecision, there is no decisions left!"
+    fDes <- getFstDecision
+    doDecision fDes
 
 doDecisionWithTarget t = do
-    UnitTestState{unit} <- get
-    doDecision $ EndpointSt (Target t) $ nextInterval unit
+    fDes <- getFstDecision
+    doDecision $ EndpointSt (Target t) $ epAt fDes
 
 doDecisionWithSource ss = do
-    UnitTestState{unit} <- get
-    doDecision $ EndpointSt (Source $ S.fromList ss) $ nextInterval unit
+    fDes <- getFstDecision
+    doDecision $ EndpointSt (Source $ S.fromList ss) $ epAt fDes
 
-nextInterval pu = epAt $ fstDecision pu
+getFstDecision = do
+    UnitTestState{unit} <- get
+    if isJust $ checkFstDecision unit
+        then return $ getFstDecision' unit
+        else lift $ assertFailure "Failed at fstDecision, there is no decisions left!"
+    where
+        checkFstDecision unit = listToMaybe $ endpointOptions unit
+        getFstDecision' unit = endpointOptionToDecision $ head $ endpointOptions unit
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
-
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     unless (isFullyBinded unit functs) $
-        error $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
+        lift $ assertFailure $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
 isFullyBinded ::
     ( WithFunctions a c
@@ -122,21 +136,15 @@ isFullyBinded pu fs =
 assertSynthesisDone =
     do
         UnitTestState{unit, functs} <- get
-        if isProcessComplete unit functs && null (endpointOptions unit)
-            then return True
-            else error "Process is not complete"
-
-assertSomethingScheduled = do
-    UnitTestState{unit} <- get
-    let nT = nextTick $ process unit
-        nU = nextUid $ process unit
-    return $ nT >= 0 && nU >= 0
+        unless (isProcessComplete unit functs && null (endpointOptions unit)) $
+            lift $ assertFailure "Process is not complete"
 
 assertCoSimulation cntxCycle = do
-    _ <- assertSynthesisDone
+    assertSynthesisDone
     UnitTestState{unit, functs} <- get
     res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs False
-    return $ tbStatus res
+    unless (tbStatus res) $
+        lift $ assertFailure "Simulation failed"
 
 traceProcess = do
     UnitTestState{unit} <- get
@@ -145,6 +153,3 @@ traceProcess = do
 traceFunctions = do
     UnitTestState{functs} <- get
     return $ Debug.Trace.traceShow functs functs
-
-isProcessComplete pu fs = unionsMap variables fs == processedVars pu
-processedVars pu = unionsMap variables $ getEndpoints $ process pu

@@ -62,6 +62,7 @@ dependencies:
   - regex-compat
   - string-interpolate
   - text
+  - mtl
   - tostring
 
 library:
@@ -78,7 +79,6 @@ library:
     - http-api-data
     - intervals
     - language-lua
-    - mtl
     - network-simple
     - process
     - safe
@@ -153,6 +153,7 @@ tests:
       - transformers
       - tasty-expected-failure
       - tasty-hunit
+      - intervals
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
