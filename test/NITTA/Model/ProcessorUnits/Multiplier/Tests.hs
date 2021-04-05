@@ -111,7 +111,7 @@ tests =
                 doDecision $ beTargetAt 1 2 "a"
                 assertSynthesisDone
         , expectFail $
-            puUnitTestCase "shouldn't bind, when PU incompatible with F" u $ do
+            puUnitTestCase "should not bind, when PU incompatible with F" u $ do
                 bindFunc fSub
         , expectFail $
             puUnitTestCase "doDecision should error, when Target in Decision is not present" u $ do

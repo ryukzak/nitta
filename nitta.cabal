@@ -276,5 +276,4 @@ test-suite nitta-test
     , tasty-th
     , text
     , tostring
-    , transformers
   default-language: Haskell2010
