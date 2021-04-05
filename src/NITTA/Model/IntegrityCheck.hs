@@ -25,14 +25,13 @@ checkIntegrity pu =
     let pr = process pu
         getInterMap =
             M.fromList
-                [ (pID, (pID, f))
+                [ (pID, f)
                 | step@Step{pID, pDesc} <- steps pr
                 , isFB step
                 , f <- case pDesc of
                     (FStep f) -> [f]
                     _ -> []
                 ]
-        --- TODO what if we have 2 same variables? The key will be only one
         getEpMap =
             M.fromListWith (++) $
                 concat
@@ -45,7 +44,7 @@ checkIntegrity pu =
                     ]
         getInstrMap =
             M.fromList
-                [ (pID, (pID, pDesc))
+                [ (pID, pDesc)
                 | Step{pID, pDesc} <- steps pr
                 , isInstruction pDesc
                 ]
@@ -56,7 +55,6 @@ checkIntegrity pu =
             , True
             ]
 
-checkEndpointToIntermidiateRelation eps ifs rels = S.isSubsetOf makeRelationList rels
 checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList rels
     where
         rels = S.fromList $ relations pr
@@ -73,17 +71,16 @@ checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList r
                             )
                             $ variables f
                     )
-                    $ M.elems ifs
+                    $ M.toList ifs
 
 checkInstructionToEndpointRelation ins eps pr = and makeRelationList
     where
         rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
         eps' = M.fromList $ concat $ M.elems eps
-        ins' = M.fromList $ M.elems ins
         makeRelationList =
             concatMap
                 ( \(r1, r2) -> case eps' M.!? r1 of
-                    Just _ | (InstructionStep _) <- ins' M.! r2 -> [True]
+                    Just _ | (InstructionStep _) <- ins M.! r2 -> [True]
                     _ -> []
                 )
                 rels
