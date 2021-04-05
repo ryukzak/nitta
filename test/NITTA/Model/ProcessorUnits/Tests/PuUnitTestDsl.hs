@@ -17,7 +17,7 @@ module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     puUnitTestCase,
     bindFunc,
     doDecision,
-    doFstDecision,
+    doDecisionFst,
     beTargetAt,
     beSourceAt,
     doDecisionWithTarget,
@@ -52,7 +52,7 @@ puUnitTestCase ::
     StateT (UnitTestState pu v x) IO () ->
     TestTree
 puUnitTestCase name pu alg = testCase name $ do
-    !_ <- evalMultiplier pu alg -- ! probably do not always work
+    !_ <- evalUnitTestState pu alg -- ! probably do not always work
     assertBool "test failed" True
 
 data UnitTestState pu v x = UnitTestState
@@ -61,7 +61,7 @@ data UnitTestState pu v x = UnitTestState
     }
     deriving (Show)
 
-evalMultiplier st alg = evalStateT alg (UnitTestState st [])
+evalUnitTestState st alg = evalStateT alg (UnitTestState st [])
 
 bindFunc f = do
     st@UnitTestState{unit, functs} <- get
@@ -83,26 +83,25 @@ isEpOptionAvailable (EndpointSt v interv) pu =
         compIntervs = singleton (nextTick $ process pu) <=! interv
      in compEpRoles && compIntervs
 
-doFstDecision = do
-    fDes <- getFstDecision
+doDecisionFst = do
+    fDes <- getDecisionFst
     doDecision fDes
 
 doDecisionWithTarget t = do
-    fDes <- getFstDecision
+    fDes <- getDecisionFst
     doDecision $ EndpointSt (Target t) $ epAt fDes
 
 doDecisionWithSource ss = do
-    fDes <- getFstDecision
+    fDes <- getDecisionFst
     doDecision $ EndpointSt (Source $ S.fromList ss) $ epAt fDes
 
-getFstDecision = do
+getDecisionFst = do
     UnitTestState{unit} <- get
-    if isJust $ checkFstDecision unit
-        then return $ getFstDecision' unit
-        else lift $ assertFailure "Failed during decision making: there is no decisions left!"
+    case epOptions unit of
+        Just h -> return $ endpointOptionToDecision h
+        Nothing -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
     where
-        checkFstDecision unit = listToMaybe $ endpointOptions unit
-        getFstDecision' unit = endpointOptionToDecision $ head $ endpointOptions unit
+        epOptions unit = listToMaybe $ endpointOptions unit
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
