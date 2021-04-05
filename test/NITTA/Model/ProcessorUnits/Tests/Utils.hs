@@ -19,15 +19,15 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.Utils (
     puCoSimTestCase,
+    puCoSim,
     nittaCoSimTestCase,
     finitePUSynthesisProp,
     puCoSimProp,
     algGen,
-    dslTest,
+    isProcessComplete,
 ) where
 
 import Control.Monad
-import Control.Monad.Trans.State.Lazy
 import Data.Atomics.Counter (incrCounter)
 import Data.CallStack
 import Data.Default
@@ -36,12 +36,10 @@ import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
-import NITTA.CoSimulationUtils
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
@@ -63,7 +61,14 @@ import Test.Tasty.QuickCheck (testProperty)
 -- *Test cases
 
 -- |Execute co-simulation test for the specific process unit
-puCoSimTestCase ::
+puCoSimTestCase name u cntxCycle alg =
+    testCase name $
+        tbStatus <$> puCoSim name u cntxCycle alg True @? (name <> " in ")
+
+{- |Execute co-simulation test for the specific process unit
+ | with or without "naive synthesis".
+-}
+puCoSim ::
     ( HasCallStack
     , PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) (F String x)
@@ -74,10 +79,38 @@ puCoSimTestCase ::
     pu String x Int ->
     [(String, x)] ->
     [F String x] ->
-    TestTree
-puCoSimTestCase name u cntxCycle alg =
-    testCase name $
-        tbStatus <$> puCoSim name u cntxCycle alg True @? (name <> " in ")
+    Bool ->
+    IO (TestbenchReport String x)
+puCoSim name u cntxCycle alg needBind = do
+    wd <- getCurrentDirectory
+    let mname = toModuleName name
+        pTargetProjectPath = joinPath [wd, "gen", mname]
+        prj =
+            Project
+                { pName = T.pack mname
+                , pLibPath = "hdl"
+                , pTargetProjectPath
+                , pNittaPath = "."
+                , pUnit =
+                    if needBind
+                        then naiveSynthesis alg u
+                        else u
+                , pUnitEnv = def
+                , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                , pTemplates = ["templates/Icarus"]
+                }
+    writeProject prj
+    runTestbench prj
+
+{- |Bind all functions to processor unit and synthesis process with endpoint
+decisions.
+-}
+naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
+    where
+        naiveSynthesis' u
+            | opt : _ <- endpointOptions u =
+                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
+            | otherwise = u
 
 -- |Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
@@ -209,13 +242,3 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             vs' <- suchThat (sublistOf $ elems vs) (not . null)
             return option{epRole = Source $ fromList vs'}
         endpointGen o = return o
-
-dslTest ::
-    HasCallStack =>
-    String ->
-    pu ->
-    Control.Monad.Trans.State.Lazy.StateT (NITTA.Model.MultiplierDsl.UnitTestState pu v x) IO Bool ->
-    TestTree
-dslTest name pu alg = testCase name $ do
-    res <- evalMultiplier pu alg
-    assertBool "DSL test failed" res

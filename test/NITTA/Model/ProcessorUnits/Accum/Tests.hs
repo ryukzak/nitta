@@ -20,15 +20,18 @@ import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
+import Test.Tasty.ExpectedFailure
 
 tests =
     testGroup
@@ -152,8 +155,20 @@ tests =
             |]
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
+        , puUnitTestCase "accum smoke test" accumDef $ do
+            bindFunc fSub
+            doDecisionWithTarget "a"
+            doDecisionWithTarget "b"
+            doDecisionWithSource ["c"]
+            assertSynthesisDone
+        , expectFail $
+            puUnitTestCase "shouldn't bind, when different signatures" accumDef $ do
+                bindFunc fSub
+                -- TODO: Why Accum return "Acc" as a label instead "-"?
+                assertBindFullness
         ]
     where
         accumDef = def :: Accum String Int Int
         u2 = def :: Accum String (Attr (IntX 8)) Int
+        fSub = F.sub "a" "b" ["c"] :: F String Int
         fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]

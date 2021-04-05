@@ -48,7 +48,6 @@ extra-doc-files:
 
 library
   exposed-modules:
-      NITTA.CoSimulationUtils
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum
@@ -58,7 +57,6 @@ library
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
       NITTA.Model.Microarchitecture
-      NITTA.Model.MultiplierDsl
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
       NITTA.Model.Problems
@@ -175,6 +173,7 @@ executable nitta
     , ginger
     , hslogger
     , htoml
+    , mtl
     , nitta
     , prettyprinter
     , process-extras
@@ -206,6 +205,7 @@ executable nitta-api-gen
     , hslogger
     , htoml
     , intervals
+    , mtl
     , nitta
     , prettyprinter
     , process-extras
@@ -235,6 +235,7 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
+      NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
       NITTA.Model.ProcessorUnits.Tests.Utils
       NITTA.Model.Tests.Microarchitecture
       NITTA.Tests
@@ -259,6 +260,8 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
+    , intervals
+    , mtl
     , nitta
     , prettyprinter
     , process-extras

@@ -16,16 +16,15 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
     tests,
 ) where
 
-import Data.Default
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.MultiplierDsl
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
@@ -87,102 +86,67 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , dslTest "multiplier smoke test" u $
-            do
+        , puUnitTestCase "multiplier smoke test" u $ do
+            bindFunc fDef
+            assertBindFullness
+            doDecision $ beTargetAt 1 2 "a"
+            doDecisionWithTarget "b"
+            doDecision $ beSourceAt 5 5 ["c"]
+            doDecisionWithSource ["d"]
+            assertSynthesisDone
+        , puUnitTestCase "multiplier coSim smoke test" u $ do
+            bindFunc fDef
+            doDecisionWithTarget "a"
+            doDecisionWithTarget "b"
+            doDecisionWithSource ["c", "d"]
+            assertCoSimulation [("a", 2), ("b", 7)]
+        , expectFail $
+            puUnitTestCase "coSim test should fail because synthesis not complete" u $ do
                 bindFunc fDef
-                assertBindFullness
-                doDecision $ beTargetAt 1 2 "a"
-                doFstDecision
-                doDecision $ beSourceAt 5 5 ["c"]
-                doFstDecision
-                assertSynthesisDone
-        , dslTest "accum smoke test" u3 $
-            do
-                bindFunc fSub
-                _ <- doDecisionWithTarget "a"
-                doFstDecision
-                _ <- doDecisionWithSource ["c"]
-                assertSynthesisDone
-        , dslTest "multiplier coSim smoke test" u $
-            do
-                bindFunc fDef
-                doFstDecision
-                doFstDecision
-                doFstDecision
+                doDecisionWithTarget "b"
                 assertCoSimulation [("a", 2), ("b", 7)]
         , expectFail $
-            dslTest "coSim test should fail because synthesis not complete" u $
-                do
-                    bindFunc fDef
-                    doFstDecision
-                    doFstDecision
-                    assertCoSimulation [("a", 2), ("b", 7)]
+            puUnitTestCase "should error, when proccess is not done" u $ do
+                bindFunc fDef
+                doDecision $ beTargetAt 1 2 "a"
+                assertSynthesisDone
         , expectFail $
-            dslTest "should error, when proccess is not done" u $
-                do
-                    bindFunc fDef
-                    doDecision $ beTargetAt 1 2 "a"
-                    doFstDecision
-                    assertSynthesisDone
+            puUnitTestCase "shouldn't bind, when PU incompatible with F" u $ do
+                bindFunc fSub
         , expectFail $
-            dslTest "shouldn't bind, when PU incompatible with F" u $
-                do
-                    bindFunc fSub
-                    assertSomethingScheduled
+            puUnitTestCase "doDecision should error, when Target in Decision is not present" u $ do
+                bindFunc fDef
+                doDecision $ beTargetAt 1 1 "aa"
         , expectFail $
-            dslTest "shouldn't bind, when different signatures" u3 $
-                do
-                    bindFunc fSub
-                    -- TODO: Why Accum return "Acc" as a label instead "-"?
-                    _ <- assertBindFullness
-                    assertSomethingScheduled
+            puUnitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
+                bindFunc fDef
+                doDecision $ beSourceAt 1 1 ["a"]
+                assertSynthesisDone -- to force evaluation
         , expectFail $
-            dslTest "doDecision should error, when Target in Decision is not present" u $
-                do
-                    bindFunc fDef
-                    doDecision $ beTargetAt 1 1 "aa"
-                    assertSomethingScheduled
+            puUnitTestCase "doDecision should error, when Target in Decision is Source" u $ do
+                bindFunc fDef
+                doDecisionWithTarget "a"
+                doDecisionWithTarget "b"
+                doDecision $ beTargetAt 4 4 "c"
         , expectFail $
-            dslTest "Multiplier should error, when Source in Decision is Targets" u $
-                -- TODO: there "Multiplier decision error" not edsl?
-                do
-                    bindFunc fDef
-                    doDecision $ beSourceAt 1 1 ["a"]
-                    assertSomethingScheduled
+            puUnitTestCase "doDecision should error, when Interval is not correct" u $ do
+                bindFunc fDef
+                doDecision $ beTargetAt 2 2 "a"
+                doDecision $ beTargetAt 1 1 "b"
         , expectFail $
-            dslTest "doDecision should error, when Target in Decision is Source" u $
-                do
-                    bindFunc fDef
-                    doFstDecision
-                    doFstDecision
-                    doDecision $ beTargetAt 4 4 "c"
-                    assertSomethingScheduled
+            puUnitTestCase "doFstDecision should error, when decisions are spent" u $ do
+                bindFunc fDef
+                doDecisionWithTarget "a"
+                doDecisionWithTarget "b"
+                doDecisionWithSource ["c", "d"]
+                doFstDecision
         , expectFail $
-            dslTest "doDecision should error, when Interval is not correct" u $
-                do
-                    bindFunc fDef
-                    doDecision $ beTargetAt 2 2 "a"
-                    doDecision $ beTargetAt 1 1 "b"
-                    assertSomethingScheduled
-        , expectFail $
-            dslTest "doFstDecision should error, when decisions are spent" u3 $
-                do
-                    bindFunc fSub
-                    doFstDecision
-                    doFstDecision
-                    doFstDecision
-                    doFstDecision
-                    assertSomethingScheduled
-        , expectFail $
-            dslTest "doFstDecision should error, when PU is not bound" u3 $
-                do
-                    doFstDecision
-                    assertSomethingScheduled
+            puUnitTestCase "doFstDecision should error, when PU is not bound" u $ do
+                doFstDecision
         ]
     where
         u = multiplier True :: Multiplier String Int Int
         u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
-        u3 = def :: Accum String Int Int
         fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
         fSub = F.sub "a" "b" ["c"] :: F String Int
         fsGen =
