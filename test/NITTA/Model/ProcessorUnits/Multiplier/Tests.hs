@@ -134,15 +134,15 @@ tests =
                 doDecision $ beTargetAt 2 2 "a"
                 doDecision $ beTargetAt 1 1 "b"
         , expectFail $
-            puUnitTestCase "doFstDecision should error, when decisions are spent" u $ do
+            puUnitTestCase "doDecisionFst should error, when decisions are spent" u $ do
                 bindFunc fDef
                 doDecisionWithTarget "a"
                 doDecisionWithTarget "b"
                 doDecisionWithSource ["c", "d"]
-                doFstDecision
+                doDecisionFst
         , expectFail $
-            puUnitTestCase "doFstDecision should error, when PU is not bound" u $ do
-                doFstDecision
+            puUnitTestCase "doDecisionFst should error, when PU is not bound" u $ do
+                doDecisionFst
         ]
     where
         u = multiplier True :: Multiplier String Int Int

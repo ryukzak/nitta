@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS -fno-warn-partial-type-signatures #-}
-{-# OPTIONS_GHC -Wno-unused-do-bind #-}
+
+{-# OPTIONS -fno-warn-partial-type-signatures -Wno-unused-do-bind #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Accum.Tests
