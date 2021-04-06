@@ -1,10 +1,10 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38ae9dfec3c729744ade2b144647eb82cfff1075fca88aea4b7a590bfcb55fee
+-- hash: c3a97bddf13c70decd19f20371a744c987f681f8f140db96624f1cc206691628
 
 name:           nitta
 version:        0.0.0.1
@@ -58,6 +58,8 @@ library
       NITTA.Intermediate.Value
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
+      NITTA.LuaFrontendNew
+      NITTA.LuaFrontendNew.Internal
       NITTA.Model.Microarchitecture
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
@@ -226,6 +228,7 @@ test-suite nitta-test
       NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Utils
+      NITTA.LuaFrontend.TestsNew
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
