@@ -58,7 +58,7 @@ instance (Show v) => Show (Acc v x) where
             initElements = init acts
             showElement inp@(Push _ _) = show inp
             showElement out@(Pull _) = show out <> ","
-            elements = S.join " " $ (map showElement initElements) <> [show lastElement]
+            elements = S.join " " $ map showElement initElements <> [show lastElement]
          in "Acc(" <> elements <> ")"
 
 instance Label (Acc v x) where label Acc{} = "Acc"
