@@ -188,10 +188,9 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     (_, process_') = runSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt -1) Out
                         when (null tasks') $ do
-                            high <- scheduleFunction (a ... sup epAt) func
-                            let low = endpoints ++ map pID (relatedEndpoints process_ $ variables func)
-                            establishVerticalRelations high low
-
+                            -- FIXME: here ([]) you can see the source of error.
+                            -- Function don't connected to bind step. It should be fixed.
+                            scheduleFunctionFinish [] func $ a ... sup epAt
                         updateTick (sup epAt)
                         return endpoints
                  in pu
