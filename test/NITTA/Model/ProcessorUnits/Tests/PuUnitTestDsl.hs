@@ -28,6 +28,7 @@ module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     tracePU,
     tracePUSub,
     traceFunctions,
+    traceEndpoints,
 ) where
 
 import Control.Monad.Identity
@@ -164,3 +165,10 @@ traceFunctions = do
     UnitTestState{functs} <- get
     lift $ putStrLn $ "\nFunctions: " <> show functs
     return functs
+
+traceEndpoints = do
+    UnitTestState{unit} <- get
+    lift $ do
+        putStrLn $ "Endpoints:"
+        mapM_ (\ep -> putStrLn $ "- " <> show ep) $ endpointOptions unit
+    return ()
