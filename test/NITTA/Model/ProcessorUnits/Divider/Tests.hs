@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Divider.Tests
@@ -15,15 +17,31 @@ module NITTA.Model.ProcessorUnits.Divider.Tests (
 ) where
 
 import Data.Default
+import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
+import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
+import Numeric.Interval.NonEmpty
 import Test.Tasty (testGroup)
+import Test.Tasty.ExpectedFailure
+
+-- TODO: add implementation and move this functions to the DSL module
+-- TODO: Update tests in this module
+assign = bindFunc
+
+-- TODO: decide $ consume "a" | decide $ provide ["c"]
+decide = undefined
+
+decideAt a b role = doDecision $ EndpointSt role (a ... b)
+consume = Target
+provide = Source . S.fromList
 
 tests =
     testGroup
@@ -40,7 +58,60 @@ tests =
             , division "a1" "b1" ["c1"] ["d1"]
             , add "c1" "d1" ["e1"]
             ]
-        , puCoSimTestCase
+        , puUnitTestCase "division simple" u2 $ do
+            assign $ division "a" "b" ["c"] ["d"]
+            -- TODO: it will be better to set values near function binding
+            -- setValue "a" 64
+            -- setValue "b" 12
+            -- and setValues = mapM_ (uncurry setValue)
+            decideAt 1 1 $ consume "a" -- but I would like to write: decide $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 10 10 $ provide ["c"]
+            decideAt 11 11 $ provide ["d"]
+            assertCoSimulation [("a", 64), ("b", 12)]
+        , puUnitTestCase "division only mod" u2 $ do
+            assign $ division "a" "b" ["c"] []
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 10 10 $ provide ["c"]
+            assertCoSimulation [("a", 64), ("b", 12)]
+        , puUnitTestCase "division only rem" u2 $ do
+            assign $ division "a" "b" [] ["d"]
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 11 11 $ provide ["d"]
+            assertCoSimulation [("a", 64), ("b", 12)]
+        , puUnitTestCase "division success pipeline" u2 $ do
+            assign $ division "a" "b" ["c"] []
+            assign $ division "e" "f" ["g"] []
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 3 3 $ consume "e"
+            decideAt 4 4 $ consume "f"
+            decideAt 7 7 $ provide ["c"]
+            decideAt 9 9 $ provide ["g"]
+            assertCoSimulation [("a", 64), ("b", 12), ("e", 64), ("f", 12)]
+        , expectFail $puUnitTestCase "division failed pipeline" u2 $ do
+            assign $ division "a" "b" ["c"] []
+            assign $ division "e" "f" ["g"] []
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 3 3 $ consume "e"
+            decideAt 4 4 $ consume "f"
+            traceEndpoints
+            decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
+            decideAt 13 13 $ provide ["g"]
+            assertCoSimulation [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
+        , -- FIXME: the test fail with following description:
+          --
+          -- > division failed pipeline:  - ?Source "c"@(7..∞ /P 1..1)
+          -- > FAIL (expected) (0.03s)
+          -- >       test/NITTA/Model/ProcessorUnits/Tests/PuUnitTestDsl.hs:160:
+          -- >       Simulation failed (expected failure)
+          --
+          -- wrong error place
+          -- TODO: right now, all tests will write in the same path. Separate them by testCase name, which allow to run test in multithread
+          puCoSimTestCase
             "division by zero"
             u2
             [("a", 64), ("b", 0)]
