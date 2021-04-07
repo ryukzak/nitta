@@ -128,7 +128,7 @@ instance (Time t, Show i) => Show (Process t i) where
         [__i|
             Process
                 steps     =
-                    #{ nest 8 $ listShow $ steps p }
+                    #{ nest 8 $ listShow $ reverse $ steps p }
                 relations =
                     #{ nest 8 $ listShow $ relations p }
                 nextTick  = #{ nextTick p }
