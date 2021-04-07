@@ -4,6 +4,9 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
+-- FIXME: module description
+-- FIXME: NITTA.Model.ProcessorUnits.Tests.DSL
+
 {- |
 Module      : NITTA.Model.MultiplierDsl
 Description : Provides functions to make decisions in PU
@@ -13,7 +16,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
-    UnitTestState (..),
+    -- TODO: add sections, reduce API amount
+    UnitTestState (..), -- FIXME: use only inside this module
     puUnitTestCase,
     bindFunc,
     doDecision,
@@ -89,6 +93,7 @@ doDecisionFst = do
     doDecision fDes
 
 doDecisionWithTarget t = do
+    -- Not all decision have the same epAt. You need specific one by variable name.
     fDes <- getDecisionFst
     doDecision $ EndpointSt (Target t) $ epAt fDes
 
@@ -138,6 +143,8 @@ isFullyBinded pu fs = do
         fOuts = S.fromList (map outputs fs)
         fInps = S.fromList (map inputs fs)
         fSign = S.fromList (map label fs)
+
+-- be more consitance. `$` will be better
 
 assertSynthesisDone =
     do
