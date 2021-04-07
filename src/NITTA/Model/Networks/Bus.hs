@@ -227,7 +227,12 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                                 return (pID, pID')
                             )
                             steps
-                mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
+                mapM_
+                    ( \case
+                        (Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)
+                        (Horizontal h l) -> establishHorizontalRelations [pu2netKey M.! h] [pu2netKey M.! l]
+                    )
+                    relations
 
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)

@@ -32,6 +32,7 @@ module NITTA.Utils.ProcessDescription (
     scheduleNestedStep,
     establishVerticalRelations,
     establishVerticalRelation,
+    establishHorizontalRelations,
     getProcessSlice,
     relatedEndpoints,
     castInstruction,
@@ -104,7 +105,7 @@ scheduleStep' mkStep = do
     return [nextUid]
 
 {- |Add to the process description information about vertical relations, which are defined by the
- Cartesian product of high and low lists.
+Cartesian product of high and low lists.
 -}
 establishVerticalRelations high low = do
     sch@Schedule{schProcess = p@Process{relations}} <- get
@@ -124,6 +125,19 @@ establishVerticalRelation h l = do
             { schProcess =
                 p
                     { relations = Vertical h l : relations
+                    }
+            }
+
+{- |Add to the process description information about horizontal relations (inside
+level), which are defined by the Cartesian product of high and low lists.
+-}
+establishHorizontalRelations high low = do
+    sch@Schedule{schProcess = p@Process{relations}} <- get
+    put
+        sch
+            { schProcess =
+                p
+                    { relations = [Horizontal h l | h <- high, l <- low] ++ relations
                     }
             }
 

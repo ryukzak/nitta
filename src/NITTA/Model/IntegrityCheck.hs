@@ -57,7 +57,7 @@ checkIntegrity pu =
 
 checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList rels
     where
-        rels = S.fromList $ relations pr
+        rels = S.fromList $ filter isVertical $ relations pr
         findRel (h, l) =
             if length l > 1
                 then Vertical h $ fst $ findJust (\(k, _) -> Vertical h k `elem` rels) l
@@ -75,7 +75,7 @@ checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList r
 
 checkInstructionToEndpointRelation ins eps pr = and makeRelationList
     where
-        rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ relations pr
+        rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ filter isVertical $ relations pr
         eps' = M.fromList $ concat $ M.elems eps
         makeRelationList =
             concatMap
