@@ -31,7 +31,6 @@ module NITTA.Utils.ProcessDescription (
     scheduleInstruction_,
     scheduleNestedStep,
     establishVerticalRelations,
-    establishVerticalRelation,
     establishHorizontalRelations,
     getProcessSlice,
     relatedEndpoints,
@@ -114,17 +113,6 @@ establishVerticalRelations high low = do
             { schProcess =
                 p
                     { relations = [Vertical h l | h <- high, l <- low] ++ relations
-                    }
-            }
-
--- |Add to the process description information about vertical relation.
-establishVerticalRelation h l = do
-    sch@Schedule{schProcess = p@Process{relations}} <- get
-    put
-        sch
-            { schProcess =
-                p
-                    { relations = Vertical h l : relations
                     }
             }
 
