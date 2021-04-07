@@ -200,7 +200,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                 mapM_
                     ( \(epKey, v) ->
                         when (v `M.member` v2transportStepKey) $
-                            establishVerticalRelation (v2transportStepKey M.! v) epKey
+                            establishVerticalRelations [v2transportStepKey M.! v] [epKey]
                     )
                     enpointStepKeyVars
 
@@ -210,7 +210,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelation pID (v2transportStepKey M.! v)
+                                    establishVerticalRelations [pID] [v2transportStepKey M.! v]
                             )
                             $ variables f
                     )
@@ -229,7 +229,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                             steps
                 mapM_
                     ( \case
-                        (Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)
+                        (Vertical h l) -> establishVerticalRelations [pu2netKey M.! h] [pu2netKey M.! l]
                         (Horizontal h l) -> establishHorizontalRelations [pu2netKey M.! h] [pu2netKey M.! l]
                     )
                     relations
