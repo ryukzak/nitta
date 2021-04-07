@@ -32,15 +32,27 @@ import NITTA.Intermediate.Types
 
 {- |OptimizeAccum example:
 
-> OptimizeAccum [+a +tmp_1 => d; +b +c => tmp_1] [+a +b +c => d]
+> OptimizeAccum [+a +b => tmp1; +tmp1 +c => res] [+a +b +c => d]
 
 before:
 
-> [+a +tmp_1 => d; +b +c => tmp_1]
+> [+a +b => tmp1; +tmp1 +c => res]
 
 after:
 
-> [+a +b +c => d]
+> [+a +b +c => res]
+
+== Doctest optimize example
+
+>>> let a = constant 1 ["a"]
+>>> let b = constant 2 ["b"]
+>>> let c = constant 3 ["c"]
+>>> let tmp1 = add "a" "b" ["tmp1"]
+>>> let res = add "tmp1" "c" ["res"]
+>>> let loopRes = loop 1 "e" ["res"]
+>>> let fs = [a, b, c, tmp1, res, loopRes] :: [F String Int]
+>>> optimizeAccumDecision fs $ head $ optimizeAccumOptions fs
+[+a +b +c = res;,const(1) = a,const(2) = b,const(3) = c,Loop (X 1) (O [res]) (I e)]
 -}
 data OptimizeAccum v x = OptimizeAccum
     { refOld :: [F v x]
