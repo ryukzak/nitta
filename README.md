@@ -206,6 +206,9 @@ $ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examp
 # rerun only failed test, if all test passed - run all test
 $ stack build nitta:nitta-test --fast --test --test-arguments --rerun
 
+# run only specific tests in one thread
+stack build --test --fast --ta '-p "Divider PU" --num-threads 1'
+
 # show profiler report
 $ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
 
