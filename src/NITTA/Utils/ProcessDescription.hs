@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {- |
@@ -24,18 +25,22 @@ module NITTA.Utils.ProcessDescription (
     scheduleFunctionBind,
     scheduleFunctionRevoke,
     scheduleFunction,
+    scheduleFunctionFinish,
     scheduleInstruction,
     scheduleNestedStep,
     establishVerticalRelations,
     establishVerticalRelation,
     getProcessSlice,
+    relatedEndpoints,
     castInstruction,
     updateTick, -- TODO: must be hidded
 ) where
 
 import Control.Monad.State
 import Data.Proxy (asProxyTypeOf)
+import qualified Data.Set as S
 import Data.Typeable
+import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import Numeric.Interval.NonEmpty (singleton)
@@ -131,6 +136,16 @@ scheduleFunctionRevoke f = do
 -- |Add to the process description information about function evaluation.
 scheduleFunction ti f = scheduleStep ti $ FStep f
 
+{- |Schedule function and establish vertical relations between bind step,
+function step, and all related endpoints.
+-}
+scheduleFunctionFinish bPID function at = do
+    fPID <- scheduleFunction at function
+    establishVerticalRelations bPID fPID
+    process_ <- getProcessSlice
+    let low = map pID $ relatedEndpoints process_ $ variables function
+    establishVerticalRelations fPID low
+
 {- |Add to the process description information about endpoint behaviour, and it's low-level
 implementation (on instruction level). Vertical relations connect endpoint level and instruction
 level steps.
@@ -157,6 +172,14 @@ getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
 getProcessSlice = do
     Schedule{schProcess} <- get
     return schProcess
+
+relatedEndpoints process_ vs =
+    filter
+        ( \case
+            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
+            _ -> False
+        )
+        $ steps process_
 
 -- |Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)

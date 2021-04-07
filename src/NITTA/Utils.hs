@@ -45,12 +45,12 @@ import Control.Monad.State (State, modify')
 import Data.Bits (setBit, testBit)
 import Data.List (sortOn)
 import Data.Maybe (isJust, mapMaybe)
-import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
+import NITTA.Utils.ProcessDescription
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
@@ -128,14 +128,6 @@ stepsInterval ss =
     let a = minimum $ map (inf . pInterval) ss
         b = maximum $ map (sup . pInterval) ss
      in a ... b
-
-relatedEndpoints process_ vs =
-    filter
-        ( \case
-            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
-            _ -> False
-        )
-        $ steps process_
 
 isInstruction (InstructionStep _) = True
 isInstruction _ = False
