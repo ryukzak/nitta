@@ -301,7 +301,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
          in fromRemain ++ fromCells
 
     -- Constant
-    endpointDecision fram@Fram{memory, process_} d@EndpointSt{epRole = Source vs, epAt}
+    endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}
         | Just (addr, cell@Cell{state = DoConstant vs', job = Just Job{function, binds}}) <-
             L.find
                 ( \case
@@ -312,12 +312,9 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_') = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (0 ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        let low = eps ++ map pID (relatedEndpoints process_ $ variables function)
-                        establishVerticalRelations fPID low
+                    void $ scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    when (null vsRemain) $
+                        scheduleFunctionFinish binds function $ 0 ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -345,11 +342,8 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 (_endpoints, process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
                     eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (0 ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        let low = eps ++ map pID (relatedEndpoints process_ $ variables function)
-                        establishVerticalRelations fPID low
+                    when (null vsRemain) $
+                        scheduleFunctionFinish binds function $ 0 ... sup epAt
                     return eps
                 cell' =
                     if not $ null vsRemain
@@ -368,12 +362,11 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
         | Just (addr, cell@Cell{job = Just Job{function, binds}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
             let ((), process_) = runSchedule fram $ do
-                    eps <- scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
+                    void $ scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
                     updateTick (sup epAt + 1)
-                    fPID <- scheduleFunction epAt function
-                    establishVerticalRelations binds fPID
-                    let low = eps ++ map pID (relatedEndpoints process_ $ variables function)
-                    establishVerticalRelations fPID low
+
+                    scheduleFunctionFinish binds function epAt
+
                 cell' =
                     cell
                         { job = Nothing
@@ -413,12 +406,9 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (fBegin ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        let low = eps ++ map pID (relatedEndpoints process_ $ variables function)
-                        establishVerticalRelations fPID low
+                    void $ scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    when (null vsRemain) $
+                        scheduleFunctionFinish binds function $ fBegin ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
