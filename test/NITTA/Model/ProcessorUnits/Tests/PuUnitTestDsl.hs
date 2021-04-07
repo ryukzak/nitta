@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
     beSourceAt,
     doDecisionWithTarget,
     doDecisionWithSource,
+    breakLoop,
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
@@ -80,6 +81,11 @@ doDecision endpSt = do
     if isAvailable
         then put st{unit = endpointDecision unit endpSt}
         else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
+
+-- TODO: need to check availability
+breakLoop x i o = do
+    st@UnitTestState{unit} <- get
+    put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 
 isEpOptionAvailable (EndpointSt v interv) pu =
     let compEpRoles = case v of
