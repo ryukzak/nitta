@@ -14,3 +14,4 @@
 - ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.Tests.Microarchitecture"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Multiplier.Tests"}
+- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Divider.Tests"}
