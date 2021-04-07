@@ -143,6 +143,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                         let res = scheduleEndpoint d $ if lostVerticalRelation then fmap (const []) ins else ins
                         endpoints <- res
                         when (null sources') $ do
+                            -- TODO: migrate to scheduleFunctionFinish
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
                             uncurry establishVerticalRelations $ if lostVerticalRelation then ([], []) else (high, low)
