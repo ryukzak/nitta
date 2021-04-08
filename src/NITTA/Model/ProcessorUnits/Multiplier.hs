@@ -214,8 +214,8 @@ arbitrary time. Choose the variant.
 >>> st2
 Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        1) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
     relations =
         0) Vertical 0 1
     nextTick  = 2
@@ -227,10 +227,10 @@ Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Jus
 >>> st3
 Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-        1) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        2) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        3) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
     relations =
         0) Vertical 2 3
         1) Vertical 0 1
@@ -249,12 +249,12 @@ inside). Consider the second option:
 >>> st4
 Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b = c = d, process_ = Process
     steps     =
-        0) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
-        1) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
-        2) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-        3) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        4) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        5) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+        4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
+        5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
     relations =
         0) Vertical 4 5
         1) Vertical 2 3
@@ -268,15 +268,15 @@ Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b
 >>> st5
 Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
     steps     =
-        0) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
-        1) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
-        2) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
-        3) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
         4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
-        5) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-        6) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        7) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        8) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+        5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+        6) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
+        7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
+        8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
     relations =
         0) Vertical 8 6
         1) Vertical 8 4
