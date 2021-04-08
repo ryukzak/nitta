@@ -5,13 +5,11 @@
 module NITTA.LuaFrontendNew (
     parseLuaSources,
     -- *Internal
-    findStartupFunction
+    findStartupFunction,
+    getLuaBlockFromSources
 ) where
 
-import Data.Text (Text, pack, unpack)
 import Language.Lua
-import NITTA.Intermediate.DataFlow
-import NITTA.Intermediate.Types
 
 
 findStartupFunction (Block statements Nothing)
@@ -23,8 +21,10 @@ findStartupFunction (Block statements Nothing)
         (fnCall, call, funAssign)
 findStartupFunction _ = error "can't find startup function in lua source code"
 
-parseLuaSources src = 
-    let syntaxTree = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
-        (mainName, mainCall, mainFunDef) = findStartupFunction syntaxTree
 
+getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
+
+parseLuaSources src = 
+    let syntaxTree = getLuaBlockFromSources src
+        (_, mainCall, _) = findStartupFunction syntaxTree
     in mainCall

@@ -155,3 +155,4 @@ tests:
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
+      - language-lua

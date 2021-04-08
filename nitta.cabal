@@ -3,8 +3,6 @@ cabal-version: 1.18
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: c3a97bddf13c70decd19f20371a744c987f681f8f140db96624f1cc206691628
 
 name:           nitta
 version:        0.0.0.1
@@ -59,7 +57,6 @@ library
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
       NITTA.LuaFrontendNew
-      NITTA.LuaFrontendNew.Internal
       NITTA.Model.Microarchitecture
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
@@ -263,6 +260,7 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
+    , language-lua
     , nitta
     , prettyprinter
     , process-extras

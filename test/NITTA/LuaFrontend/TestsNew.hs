@@ -1,22 +1,29 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module NITTA.LuaFrontend.TestsNew (
     tests,
 ) where
 
 
 import Data.String.Interpolate
-import Language.Lua
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Types
-import NITTA.LuaFrontendNew
+import NITTA.LuaFrontendNew 
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 import Test.Tasty
-import Data.Text (Text)
+import Data.Text
 
-
-case_lua_constant_declatation =
-    let 
-        src =
+findStartupFunkName =
+    let src =
             [__i|
                 function sum(a)
                     local t = 2
@@ -25,8 +32,9 @@ case_lua_constant_declatation =
                 end
                 sum(0)
             |]
-        result = (pack "sum",FunCall (NormalFunCall (PEVar (VarName (Name $ pack "sum"))) _),FunAssign (FunName (Name $ pack "sum") _ _) _)
-     in result @?= findStartupFunction $ parseText src
+        (actualName, _, _) = findStartupFunction (getLuaBlockFromSources src)
+        expectedName = pack "sum"
+     in expectedName @?= actualName
 
 
 tests :: TestTree
