@@ -14,10 +14,10 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
-    -- TODO: add sections, reduce API amount
     puUnitTestCase,
     assign,
     setValue,
+    setValues,
     decide,
     decideAt,
     consume,
@@ -60,10 +60,12 @@ data UnitTestState pu v x = UnitTestState
     { testName :: String
     , unit :: pu
     , functs :: [F v x]
+    , -- | Initial values for coSimulation
+      cntxCycle :: [(String, x)]
     }
     deriving (Show)
 
-evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [])
+evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
 
 assign f = do
     st@UnitTestState{unit, functs} <- get
@@ -71,9 +73,14 @@ assign f = do
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> lift $ assertFailure err
 
-setValue = undefined
+setValue var val = do
+    pu@UnitTestState{cntxCycle} <- get
+    -- TODO What if variable already present?
+    put pu{cntxCycle = (var, val) : cntxCycle}
 
--- takes Endpoint and assign time automatically
+setValues = mapM_ (uncurry setValue)
+
+-- | Make synthesis decision with provided Endpoint Role and automatically assigned time
 decide role = do
     des <- epAt <$> getDecisionSpecific role
     doDecision $ EndpointSt role des
@@ -105,7 +112,6 @@ getDecisionSpecific role = do
         Just v -> return $ endpointOptionToDecision v
         Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show role
 
---TODO combine with upper?
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
@@ -150,9 +156,9 @@ assertSynthesisDone =
         unless (isProcessComplete unit functs && null (endpointOptions unit)) $
             lift $ assertFailure "Process is not complete"
 
-assertCoSimulation cntxCycle = do
+assertCoSimulation = do
     assertSynthesisDone
-    UnitTestState{unit, functs, testName} <- get
+    UnitTestState{unit, functs, testName, cntxCycle} <- get
     res <- lift $ puCoSim testName unit cntxCycle functs False
     unless (tbStatus res) $
         lift $ assertFailure "Simulation failed"
