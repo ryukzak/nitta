@@ -17,32 +17,20 @@ module NITTA.Model.ProcessorUnits.Divider.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
-import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
-import Numeric.Interval.NonEmpty
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
 
 -- TODO: add implementation and move this functions to the DSL module
 -- TODO: Update tests in this module
-assign = bindFunc
-
--- TODO: decide $ consume "a" | decide $ provide ["c"]
-decide = undefined
-
-decideAt a b role = doDecision $ EndpointSt role (a ... b)
-consume = Target
-provide = Source . S.fromList
-
 tests =
     testGroup
         "Divider PU"
