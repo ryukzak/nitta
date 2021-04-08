@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -14,7 +15,6 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- TODO: add sections, reduce API amount
-    UnitTestState (..), -- FIXME: use only inside this module
     puUnitTestCase,
     bindFunc,
     doDecision,
@@ -35,7 +35,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
 import Data.CallStack
-import Data.Maybe
+import Data.List (find)
 import qualified Data.Set as S
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -61,7 +61,6 @@ data UnitTestState pu v x = UnitTestState
     { testName :: String
     , unit :: pu
     , functs :: [F v x]
-    , testName :: String
     }
     deriving (Show)
 
@@ -88,25 +87,31 @@ isEpOptionAvailable (EndpointSt v interv) pu =
      in compEpRoles && compIntervs
 
 doDecisionFst = do
-    fDes <- getDecisionFst
-    doDecision fDes
+    des <- getDecisionFirst
+    doDecision des
+
+getDecisionFirst = endpointOptionToDecision . head <$> getDecisionsFromEp
 
 doDecisionWithTarget t = do
-    -- Not all decision have the same epAt. You need specific one by variable name.
-    fDes <- getDecisionFst
-    doDecision $ EndpointSt (Target t) $ epAt fDes
+    des <- getDecisionSpecific [t]
+    doDecision des
 
 doDecisionWithSource ss = do
-    fDes <- getDecisionFst
-    doDecision $ EndpointSt (Source $ S.fromList ss) $ epAt fDes
+    des <- epAt <$> getDecisionSpecific ss
+    doDecision $ EndpointSt (Source $ S.fromList ss) des
 
-getDecisionFst = do
+getDecisionSpecific t = do
+    let s = S.fromList t
+    des <- getDecisionsFromEp
+    case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
+        Just v -> return $ endpointOptionToDecision v
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show t
+
+getDecisionsFromEp = do
     UnitTestState{unit} <- get
-    case epOptions unit of
-        Just h -> return $ endpointOptionToDecision h
-        Nothing -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
-    where
-        epOptions unit = listToMaybe $ endpointOptions unit
+    case endpointOptions unit of
+        [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
+        opts -> return opts
 
 beTargetAt a b t = EndpointSt (Target t) (a ... b)
 beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
@@ -139,11 +144,9 @@ isFullyBinded pu fs = do
         outs = S.fromList $ map outputs fu
         inps = S.fromList $ map inputs fu
         sign = S.fromList $ map label fu
-        fOuts = S.fromList (map outputs fs)
-        fInps = S.fromList (map inputs fs)
-        fSign = S.fromList (map label fs)
-
--- be more consitance. `$` will be better
+        fOuts = S.fromList $ map outputs fs
+        fInps = S.fromList $ map inputs fs
+        fSign = S.fromList $ map label fs
 
 assertSynthesisDone =
     do
