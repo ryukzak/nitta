@@ -16,13 +16,12 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- TODO: add sections, reduce API amount
     puUnitTestCase,
-    bindFunc,
-    doDecision,
-    doDecisionFst,
-    beTargetAt,
-    beSourceAt,
-    doDecisionWithTarget,
-    doDecisionWithSource,
+    assign,
+    setValue,
+    decide,
+    decideAt,
+    consume,
+    provide,
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
@@ -66,11 +65,20 @@ data UnitTestState pu v x = UnitTestState
 
 evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [])
 
-bindFunc f = do
+assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> lift $ assertFailure err
+
+setValue = undefined
+
+-- takes Endpoint and assign time automatically
+decide role = do
+    des <- epAt <$> getDecisionSpecific role
+    doDecision $ EndpointSt role des
+
+decideAt a b role = doDecision $ EndpointSt role (a ... b)
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
@@ -86,35 +94,23 @@ isEpOptionAvailable (EndpointSt v interv) pu =
         compIntervs = singleton (nextTick $ process pu) <=! interv
      in compEpRoles && compIntervs
 
-doDecisionFst = do
-    des <- getDecisionFirst
-    doDecision des
+consume = Target
 
-getDecisionFirst = endpointOptionToDecision . head <$> getDecisionsFromEp
+provide = Source . S.fromList
 
-doDecisionWithTarget t = do
-    des <- getDecisionSpecific [t]
-    doDecision des
-
-doDecisionWithSource ss = do
-    des <- epAt <$> getDecisionSpecific ss
-    doDecision $ EndpointSt (Source $ S.fromList ss) des
-
-getDecisionSpecific t = do
-    let s = S.fromList t
+getDecisionSpecific role = do
+    let s = variables role
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show t
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show role
 
+--TODO combine with upper?
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
         [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
         opts -> return opts
-
-beTargetAt a b t = EndpointSt (Target t) (a ... b)
-beSourceAt a b ss = EndpointSt (Source $ S.fromList ss) (a ... b)
 
 assertBindFullness = do
     UnitTestState{unit, functs} <- get

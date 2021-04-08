@@ -86,63 +86,54 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , puUnitTestCase "multiplier smoke test" u $ do
-            bindFunc fDef
+        , -- TODO move to DSL test?
+          puUnitTestCase "multiplier smoke test" u $ do
+            assign fDef
             assertBindFullness
-            doDecision $ beTargetAt 1 2 "a"
-            doDecisionWithTarget "b"
-            doDecision $ beSourceAt 5 5 ["c"]
-            doDecisionWithSource ["d"]
+            decideAt 1 2 $ consume "a"
+            decide $ consume "b"
+            decideAt 5 5 $ provide ["c"]
+            decide $ provide ["d"]
             assertSynthesisDone
         , puUnitTestCase "multiplier coSim smoke test" u $ do
-            bindFunc fDef
-            doDecisionWithTarget "a"
-            doDecisionWithTarget "b"
-            doDecisionWithSource ["c", "d"]
+            assign fDef
+            decide $ consume "a"
+            decide $ consume "b"
+            decide $ provide ["c", "d"]
             assertCoSimulation [("a", 2), ("b", 7)]
         , expectFail $
             puUnitTestCase "coSim test should fail because synthesis not complete" u $ do
-                bindFunc fDef
-                doDecisionWithTarget "b"
+                assign fDef
+                decide $ consume "b"
                 assertCoSimulation [("a", 2), ("b", 7)]
         , expectFail $
             puUnitTestCase "should error, when proccess is not done" u $ do
-                bindFunc fDef
-                doDecision $ beTargetAt 1 2 "a"
+                assign fDef
+                decideAt 1 2 $ consume "a"
                 assertSynthesisDone
         , expectFail $
             puUnitTestCase "should not bind, when PU incompatible with F" u $ do
-                bindFunc fSub
+                assign fSub
         , expectFail $
-            puUnitTestCase "doDecision should error, when Target in Decision is not present" u $ do
-                bindFunc fDef
-                doDecision $ beTargetAt 1 1 "aa"
+            puUnitTestCase "decide should error, when Target in Decision is not present" u $ do
+                assign fDef
+                decideAt 1 1 $ consume "aa"
         , expectFail $
             puUnitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
-                bindFunc fDef
-                doDecision $ beSourceAt 1 1 ["a"]
+                assign fDef
+                decideAt 1 1 $ provide ["a"]
                 assertSynthesisDone -- to force evaluation
         , expectFail $
-            puUnitTestCase "doDecision should error, when Target in Decision is Source" u $ do
-                bindFunc fDef
-                doDecisionWithTarget "a"
-                doDecisionWithTarget "b"
-                doDecision $ beTargetAt 4 4 "c"
+            puUnitTestCase "decide should error, when Target in Decision is Source" u $ do
+                assign fDef
+                decide $ consume "a"
+                decide $ consume "b"
+                decideAt 4 4 $ consume "c"
         , expectFail $
-            puUnitTestCase "doDecision should error, when Interval is not correct" u $ do
-                bindFunc fDef
-                doDecision $ beTargetAt 2 2 "a"
-                doDecision $ beTargetAt 1 1 "b"
-        , expectFail $
-            puUnitTestCase "doDecisionFst should error, when decisions are spent" u $ do
-                bindFunc fDef
-                doDecisionWithTarget "a"
-                doDecisionWithTarget "b"
-                doDecisionWithSource ["c", "d"]
-                doDecisionFst
-        , expectFail $
-            puUnitTestCase "doDecisionFst should error, when PU is not bound" u $ do
-                doDecisionFst
+            puUnitTestCase "decide should error, when Interval is not correct" u $ do
+                assign fDef
+                decideAt 2 2 $ consume "a"
+                decideAt 1 1 $ consume "b"
         ]
     where
         u = multiplier True :: Multiplier String Int Int

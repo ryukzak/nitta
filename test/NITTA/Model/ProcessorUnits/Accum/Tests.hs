@@ -156,14 +156,14 @@ tests =
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
         , puUnitTestCase "accum smoke test" accumDef $ do
-            bindFunc fSub
-            doDecisionWithTarget "a"
-            doDecisionWithTarget "b"
-            doDecisionWithSource ["c"]
+            assign fSub
+            decide $ consume "a"
+            decide $ consume "b"
+            decide $ provide ["c"]
             assertSynthesisDone
         , expectFail $
             puUnitTestCase "should not bind, when different signatures" accumDef $ do
-                bindFunc fSub
+                assign fSub
                 -- TODO: Why Accum return "Acc" as a label instead "-"?
                 traceFunctions -- expected: [a - b = c]
                 tracePUSub functions -- actual: [+a -b = c;]
