@@ -20,7 +20,6 @@ import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
-import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
@@ -156,14 +155,14 @@ tests =
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
         , puUnitTestCase "accum smoke test" accumDef $ do
-            assign fSub
+            assign $ sub "a" "b" ["c"]
             decide $ consume "a"
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
         , expectFail $
             puUnitTestCase "should not bind, when different signatures" accumDef $ do
-                assign fSub
+                assign $ sub "a" "b" ["c"]
                 -- TODO: Why Accum return "Acc" as a label instead "-"?
                 traceFunctions -- expected: [a - b = c]
                 tracePUSub functions -- actual: [+a -b = c;]
@@ -172,5 +171,4 @@ tests =
     where
         accumDef = def :: Accum String Int Int
         u2 = def :: Accum String (Attr (IntX 8)) Int
-        fSub = F.sub "a" "b" ["c"] :: F String Int
         fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]

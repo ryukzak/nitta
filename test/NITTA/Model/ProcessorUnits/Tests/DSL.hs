@@ -163,23 +163,19 @@ assertCoSimulation = do
     unless (tbStatus res) $
         lift $ assertFailure "Simulation failed"
 
-tracePU = do
-    UnitTestState{unit} <- get
-    lift $ putStrLn $ "\nPU: " <> show unit
+tracePU = tracePUSub id
 
 tracePUSub f = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "\nPU: " <> show (f unit)
-    return $ f unit
 
 traceFunctions = do
     UnitTestState{functs} <- get
     lift $ putStrLn $ "\nFunctions: " <> show functs
-    return functs
 
 traceEndpoints = do
     UnitTestState{unit} <- get
     lift $ do
-        putStrLn $ "Endpoints:"
+        putStrLn "Endpoints:"
         mapM_ (\ep -> putStrLn $ "- " <> show ep) $ endpointOptions unit
     return ()

@@ -18,7 +18,6 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
-import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
@@ -88,7 +87,7 @@ tests =
         , puCoSimProp "multiplier_coSimulation" u fsGen
         , -- TODO move to DSL test?
           puUnitTestCase "multiplier smoke test" u $ do
-            assign fDef
+            assign $ multiply "a" "b" ["c", "d"]
             assertBindFullness
             decideAt 1 2 $ consume "a"
             decide $ consume "b"
@@ -96,7 +95,7 @@ tests =
             decide $ provide ["d"]
             assertSynthesisDone
         , puUnitTestCase "multiplier coSim smoke test" u $ do
-            assign fDef
+            assign $ multiply "a" "b" ["c", "d"]
             setValue "a" 2
             setValue "b" 7
             decide $ consume "a"
@@ -105,44 +104,42 @@ tests =
             assertCoSimulation
         , expectFail $
             puUnitTestCase "coSim test should fail because synthesis not complete" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 setValues [("a", 2), ("b", 7)]
                 decide $ consume "b"
                 assertCoSimulation
         , expectFail $
             puUnitTestCase "should error, when proccess is not done" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 decideAt 1 2 $ consume "a"
                 assertSynthesisDone
         , expectFail $
             puUnitTestCase "should not bind, when PU incompatible with F" u $ do
-                assign fSub
+                assign $ sub "a" "b" ["c"]
         , expectFail $
             puUnitTestCase "decide should error, when Target in Decision is not present" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 decideAt 1 1 $ consume "aa"
         , expectFail $
             puUnitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 decideAt 1 1 $ provide ["a"]
                 assertSynthesisDone -- to force evaluation
         , expectFail $
             puUnitTestCase "decide should error, when Target in Decision is Source" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 decide $ consume "a"
                 decide $ consume "b"
                 decideAt 4 4 $ consume "c"
         , expectFail $
             puUnitTestCase "decide should error, when Interval is not correct" u $ do
-                assign fDef
+                assign $ multiply "a" "b" ["c", "d"]
                 decideAt 2 2 $ consume "a"
                 decideAt 1 1 $ consume "b"
         ]
     where
         u = multiplier True :: Multiplier String Int Int
         u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
-        fDef = F.multiply "a" "b" ["c", "d"] :: F String Int
-        fSub = F.sub "a" "b" ["c"] :: F String Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Multiply _ _))
