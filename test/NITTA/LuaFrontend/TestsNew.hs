@@ -21,9 +21,11 @@ import Test.Tasty.HUnit
 import Test.Tasty.TH
 import Test.Tasty
 import Data.Text
+import Language.Lua
 
-findStartupFunkName =
-    let src =
+findStartupFunctionTest =
+    let
+        src = 
             [__i|
                 function sum(a)
                     local t = 2
@@ -32,9 +34,10 @@ findStartupFunkName =
                 end
                 sum(0)
             |]
-        (actualName, _, _) = findStartupFunction (getLuaBlockFromSources src)
-        expectedName = pack "sum"
-     in expectedName @?= actualName
+        (actualName, FunCall (NormalFunCall _ (Args actualArgValue)), FunAssign _ (FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
+        expectedValues = (pack "sum", [Name $ pack "a"], [Number IntNum $ pack "1"])
+     in expectedValues @?= (actualName, actualArg, actualArgValue)
+
 
 
 tests :: TestTree
