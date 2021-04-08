@@ -4,18 +4,15 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
--- FIXME: module description
--- FIXME: NITTA.Model.ProcessorUnits.Tests.DSL
-
 {- |
-Module      : NITTA.Model.MultiplierDsl
-Description : Provides functions to make decisions in PU
+Module      : NITTA.Model.ProcessorUnits.Tests.DSL
+Description : Provides functions to test PU, by making syntesis decisions
 Copyright   : (c) Artyom Kostyuchik, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl (
+module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- TODO: add sections, reduce API amount
     UnitTestState (..), -- FIXME: use only inside this module
     puUnitTestCase,
@@ -59,16 +56,18 @@ puUnitTestCase ::
     StateT (UnitTestState pu v x) IO () ->
     TestTree
 puUnitTestCase name pu alg = testCase name $ do
-    !_ <- evalUnitTestState pu alg -- ! probably do not always work
+    !_ <- evalUnitTestState name pu alg -- ! probably do not always work
     assertBool "test failed" True
 
 data UnitTestState pu v x = UnitTestState
-    { unit :: pu
+    { testName :: String
+    , unit :: pu
     , functs :: [F v x]
+    , testName :: String
     }
     deriving (Show)
 
-evalUnitTestState st alg = evalStateT alg (UnitTestState st [])
+evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [])
 
 bindFunc f = do
     st@UnitTestState{unit, functs} <- get
@@ -161,8 +160,8 @@ assertSynthesisDone =
 
 assertCoSimulation cntxCycle = do
     assertSynthesisDone
-    UnitTestState{unit, functs} <- get
-    res <- lift $ puCoSim "test_multiplier_in_edsl" unit cntxCycle functs False
+    UnitTestState{unit, functs, testName} <- get
+    res <- lift $ puCoSim testName unit cntxCycle functs False
     unless (tbStatus res) $
         lift $ assertFailure "Simulation failed"
 

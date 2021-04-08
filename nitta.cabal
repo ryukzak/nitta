@@ -239,7 +239,7 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
-      NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
+      NITTA.Model.ProcessorUnits.Tests.DSL
       NITTA.Model.ProcessorUnits.Tests.Utils
       NITTA.Model.Tests.Microarchitecture
       NITTA.Tests
