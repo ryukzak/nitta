@@ -48,40 +48,44 @@ tests =
             ]
         , puUnitTestCase "division simple" u2 $ do
             assign $ division "a" "b" ["c"] ["d"]
-            -- TODO: it will be better to set values near function binding
-            -- setValue "a" 64
-            -- setValue "b" 12
-            -- and setValues = mapM_ (uncurry setValue)
+            setValue "a" 64
+            setValue "b" 12
             decideAt 1 1 $ consume "a" -- but I would like to write: decide $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 10 10 $ provide ["c"]
             decideAt 11 11 $ provide ["d"]
-            assertCoSimulation [("a", 64), ("b", 12)]
+            assertCoSimulation
         , puUnitTestCase "division only mod" u2 $ do
             assign $ division "a" "b" ["c"] []
+            setValue "a" 64
+            setValue "b" 12
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 10 10 $ provide ["c"]
-            assertCoSimulation [("a", 64), ("b", 12)]
+            assertCoSimulation
         , puUnitTestCase "division only rem" u2 $ do
             assign $ division "a" "b" [] ["d"]
+            setValue "a" 64
+            setValue "b" 12
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 11 11 $ provide ["d"]
-            assertCoSimulation [("a", 64), ("b", 12)]
+            assertCoSimulation
         , puUnitTestCase "division success pipeline" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
+            setValues [("a", 64), ("b", 12), ("e", 64), ("f", 12)]
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 3 3 $ consume "e"
             decideAt 4 4 $ consume "f"
             decideAt 7 7 $ provide ["c"]
             decideAt 9 9 $ provide ["g"]
-            assertCoSimulation [("a", 64), ("b", 12), ("e", 64), ("f", 12)]
+            assertCoSimulation
         , expectFail $puUnitTestCase "division failed pipeline" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
+            setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 3 3 $ consume "e"
@@ -89,7 +93,7 @@ tests =
             traceEndpoints
             decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
             decideAt 13 13 $ provide ["g"]
-            assertCoSimulation [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
+            assertCoSimulation
         , -- FIXME: the test fail with following description:
           --
           -- > division failed pipeline:  - ?Source "c"@(7..∞ /P 1..1)

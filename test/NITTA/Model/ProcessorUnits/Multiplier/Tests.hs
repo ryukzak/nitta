@@ -97,15 +97,18 @@ tests =
             assertSynthesisDone
         , puUnitTestCase "multiplier coSim smoke test" u $ do
             assign fDef
+            setValue "a" 2
+            setValue "b" 7
             decide $ consume "a"
             decide $ consume "b"
             decide $ provide ["c", "d"]
-            assertCoSimulation [("a", 2), ("b", 7)]
+            assertCoSimulation
         , expectFail $
             puUnitTestCase "coSim test should fail because synthesis not complete" u $ do
                 assign fDef
+                setValues [("a", 2), ("b", 7)]
                 decide $ consume "b"
-                assertCoSimulation [("a", 2), ("b", 7)]
+                assertCoSimulation
         , expectFail $
             puUnitTestCase "should error, when proccess is not done" u $ do
                 assign fDef
