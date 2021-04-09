@@ -22,13 +22,14 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     decideAt,
     consume,
     provide,
+    breakLoop,
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
     tracePU,
-    tracePUSub,
     traceFunctions,
     traceEndpoints,
+    traceProcess,
 ) where
 
 import Control.Monad.Identity
@@ -118,6 +119,11 @@ getDecisionsFromEp = do
         [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
         opts -> return opts
 
+-- TODO: need to check availability
+breakLoop x i o = do
+    st@UnitTestState{unit} <- get
+    put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
+
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     isOk <- lift $ isFullyBinded unit functs
@@ -163,19 +169,24 @@ assertCoSimulation = do
     unless (tbStatus res) $
         lift $ assertFailure "Simulation failed"
 
-tracePU = tracePUSub id
-
-tracePUSub f = do
+tracePU = do
     UnitTestState{unit} <- get
-    lift $ putStrLn $ "\nPU: " <> show (f unit)
+    lift $ putStrLn $ "PU: " <> show unit
+    return ()
 
 traceFunctions = do
     UnitTestState{functs} <- get
-    lift $ putStrLn $ "\nFunctions: " <> show functs
+    lift $ putStrLn $ "Functions: " <> show functs
+    return ()
 
 traceEndpoints = do
     UnitTestState{unit} <- get
     lift $ do
         putStrLn "Endpoints:"
         mapM_ (\ep -> putStrLn $ "- " <> show ep) $ endpointOptions unit
+    return ()
+
+traceProcess = do
+    UnitTestState{unit} <- get
+    lift $ putStrLn $ "Process: " <> show (process unit)
     return ()
