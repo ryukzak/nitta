@@ -188,5 +188,5 @@ traceEndpoints = do
 
 traceProcess = do
     UnitTestState{unit} <- get
-    lift $ putStrLn $ "Process: " <> (show $ process unit)
+    lift $ putStrLn $ "Process: " <> show (process unit)
     return ()
