@@ -165,7 +165,7 @@ tests =
                 assign $ sub "a" "b" ["c"]
                 -- TODO: Why Accum return "Acc" as a label instead "-"?
                 traceFunctions -- expected: [a - b = c]
-                tracePUSub functions -- actual: [+a -b = c;]
+                traceProcess -- actual: [+a -b = c;]
                 assertBindFullness
         ]
     where
