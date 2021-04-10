@@ -101,7 +101,6 @@ isEpOptionAvailable (EndpointSt v interv) pu =
             (Target _) -> v `elem` map epRole (endpointOptions pu)
             (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
      in compIntervs && compEpRoles
-     in compEpRoles && compIntervs
 
 consume = Target
 
@@ -120,10 +119,11 @@ getDecisionsFromEp = do
         [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
         opts -> return opts
 
--- TODO: need to check availability
 breakLoop x i o = do
     st@UnitTestState{unit} <- get
-    put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
+    case breakLoopOptions unit of
+        [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
+        _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
@@ -131,11 +131,6 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
-breakLoop x i o = do
-    st@UnitTestState{unit} <- get
-    case breakLoopOptions unit of
-        [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
-        _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 isFullyBinded ::
     ( WithFunctions a c
     , Function c k1
