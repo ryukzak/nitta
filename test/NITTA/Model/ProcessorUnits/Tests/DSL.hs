@@ -130,6 +130,11 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
+breakLoop x i o = do
+    st@UnitTestState{unit} <- get
+    case breakLoopOptions unit of
+        [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
+        _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 isFullyBinded ::
     ( WithFunctions a c
     , Function c k1
