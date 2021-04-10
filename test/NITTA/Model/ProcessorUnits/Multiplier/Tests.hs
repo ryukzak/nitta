@@ -139,6 +139,10 @@ tests =
                 assign $ multiply "a" "b" ["c", "d"]
                 decideAt 2 2 $ consume "a"
                 decideAt 1 1 $ consume "b"
+        , expectFail $
+            puUnitTestCase "should error: breakLoop is not supportd" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                breakLoop 10 "a" ["c"]
         ]
     where
         u = multiplier True :: Multiplier String Int Int
