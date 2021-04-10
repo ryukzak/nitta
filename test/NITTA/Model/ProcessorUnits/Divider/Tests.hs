@@ -29,8 +29,6 @@ import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
 
--- TODO: add implementation and move this functions to the DSL module
--- TODO: Update tests in this module
 tests =
     testGroup
         "Divider PU"
@@ -102,7 +100,6 @@ tests =
           -- >       Simulation failed (expected failure)
           --
           -- wrong error place
-          -- TODO: right now, all tests will write in the same path. Separate them by testCase name, which allow to run test in multithread
           puCoSimTestCase
             "division by zero"
             u2

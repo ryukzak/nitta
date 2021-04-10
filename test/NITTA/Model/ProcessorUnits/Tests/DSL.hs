@@ -96,10 +96,11 @@ doDecision endpSt = do
         else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> "; from list: " <> show (endpointOptions unit)
 
 isEpOptionAvailable (EndpointSt v interv) pu =
-    let compEpRoles = case v of
+    let compIntervs = singleton (nextTick $ process pu) <=! interv
+        compEpRoles = case v of
             (Target _) -> v `elem` map epRole (endpointOptions pu)
-            (Source s) -> S.isSubsetOf s $ unionsMap (variables . epRole) $ endpointOptions pu
-        compIntervs = singleton (nextTick $ process pu) <=! interv
+            (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
+     in compIntervs && compEpRoles
      in compEpRoles && compIntervs
 
 consume = Target
