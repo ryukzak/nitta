@@ -85,8 +85,7 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , -- TODO move to DSL test?
-          puUnitTestCase "multiplier smoke test" u $ do
+        , puUnitTestCase "multiplier smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertBindFullness
             decideAt 1 2 $ consume "a"
@@ -120,15 +119,11 @@ tests =
             puUnitTestCase "decide should error, when Target in Decision is not present" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
                 decideAt 1 1 $ consume "aa"
-        , {-
-            -- TODO: Fail tests even with expectFail condition
-           , expectFail $
-                 puUnitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
-                     assign $ multiply "a" "b" ["c", "d"]
-                     decideAt 1 1 $ provide ["a"]
-                     assertSynthesisDone -- to force evaluation
-          -}
-          expectFail $
+        , expectFail $
+            puUnitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                decideAt 1 1 $ provide ["a"]
+        , expectFail $
             puUnitTestCase "decide should error, when Target in Decision is Source" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
                 decide $ consume "a"
