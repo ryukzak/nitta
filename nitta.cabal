@@ -261,6 +261,7 @@ test-suite nitta-test
     , ginger
     , htoml
     , language-lua
+    , mtl
     , nitta
     , prettyprinter
     , process-extras

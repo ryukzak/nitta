@@ -156,3 +156,4 @@ tests:
       - tasty-rerun
       - tasty-th
       - language-lua
+      - mtl

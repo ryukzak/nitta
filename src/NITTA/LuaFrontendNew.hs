@@ -4,24 +4,25 @@
 
 module NITTA.LuaFrontendNew (
     parseLuaSources,
+    AlgBuilderItem (..),
     -- *Internal
     findStartupFunction,
-    getLuaBlockFromSources
+    getLuaBlockFromSources,
+    processStatement,
 ) where
 
 import Language.Lua
 import Control.Monad.State
-import Control.Monad.Identity
-import Data.Text (Text, unpack)
+import Data.Text (Text)
 
 
-data AlgBuilderItem x =
-     Constant {cName :: Text, cValue :: x, cValueString :: Text}
+data AlgBuilderItem =
+     Constant {cName :: Text, cValueString :: Text}
         deriving (Eq, Ord)
 
-instance (Show x) => Show (AlgBuilderItem x) where
+instance Show AlgBuilderItem where
 --    show (Function ins outs funcName values ints) = "Function { fIn = {" ++ show ins ++ "}, fOut = {" ++ show outs ++ "}, name = " ++ show funcName ++ ", values = {" ++ show values ++ "}, fInt = {" ++ show ints
-    show (Constant name _ value) = "Constant { name = {" ++ show name ++ "}, value = {" ++ show value ++ "}"
+    show (Constant name value) = "Constant { name = {" ++ show name ++ "}, value = {" ++ show value ++ "}"
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
@@ -31,7 +32,7 @@ parseLeftExp = map $ \case
     VarName (Name v) -> v
     e -> error $ "bad left expression: " ++ show e
 
-processStatement :: Read x => Text -> Stat -> State [AlgBuilderItem x] Int
+processStatement :: Text -> Stat -> State [AlgBuilderItem] Int
 processStatement _ (LocalAssign _names Nothing) = do
     return 0
 processStatement fn (LocalAssign names (Just exps)) =
@@ -46,10 +47,10 @@ processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = do
 
 processStatement _ _ = undefined
 
-expConstant :: Read x => Text -> Exp -> State [AlgBuilderItem x] Int
+expConstant :: Text -> Exp -> State [AlgBuilderItem] Int
 expConstant name (Number _ valueString) = do
     items <- get
-    put (items ++ [Constant{cValue= read $ unpack valueString, cName=name, cValueString=valueString}]) 
+    put (items ++ [Constant{cName=name, cValueString=valueString}]) 
     return 0
 expConstant _ _ = undefined
 
@@ -57,7 +58,7 @@ buildAlg syntaxTree = flip execState st $ do
     mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
     where
         (startupFunctionName, _, startupFunctionDef) = findStartupFunction syntaxTree
-        st = []::[AlgBuilderItem x]
+        st = []::[AlgBuilderItem]
 
 
 findStartupFunction (Block statements Nothing)

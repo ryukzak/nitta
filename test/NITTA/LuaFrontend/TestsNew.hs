@@ -16,12 +16,13 @@ module NITTA.LuaFrontend.TestsNew (
 
 
 import Data.String.Interpolate
-import NITTA.LuaFrontendNew 
+import NITTA.LuaFrontendNew
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 import Test.Tasty
 import Data.Text
 import Language.Lua
+import Control.Monad.State
 
 findStartupFunctionTest =
     let
@@ -38,7 +39,10 @@ findStartupFunctionTest =
         expectedValues = (pack "sum", [Name $ pack "a"], [Number IntNum $ pack "1"])
      in expectedValues @?= (actualName, actualArg, actualArgValue)
 
-
+processStatementSimpleAssignmentTest = 
+    let assignment = Assign [VarName (Name $ pack "a")] [Number IntNum (pack "2")]
+        result = [Constant { cName = pack "a", cValueString = pack "2"}]
+    in result @?= snd (runState (processStatement (pack "_") assignment) [])
 
 tests :: TestTree
 tests = $(testGroupGenerator)
