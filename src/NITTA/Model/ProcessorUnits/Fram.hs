@@ -258,7 +258,8 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
                 revoke <- scheduleFunctionRevoke $ recLoop bl
                 f1 <- scheduleFunctionBind $ recLoopOut bl
                 f2 <- scheduleFunctionBind $ recLoopIn bl
-                establishVerticalRelations binds (f1 ++ f2 ++ revoke)
+
+                establishHorizontalRelations binds (f1 ++ f2 ++ revoke)
                 return (f1, f2)
             iJob = (defJob $ recLoopOut bl){binds = iPid, startAt = Just 0}
             oJob = (defJob $ recLoopIn bl){binds = oPid}

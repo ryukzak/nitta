@@ -154,6 +154,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                                     else scheduleEndpoint d ins
                         endpoints <- res
                         when (null sources') $ do
+                            -- TODO: migrate to scheduleFunctionFinish
                             high <- scheduleFunction (a ... sup epAt) f
                             --if lostFunctionRelation
                             --    then return []
