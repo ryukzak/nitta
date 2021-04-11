@@ -24,9 +24,9 @@ import Data.Text
 import Language.Lua
 import Control.Monad.State
 
-findStartupFunctionTest =
+case_find_startup_function =
     let
-        src = 
+        src =
             [__i|
                 function sum(a)
                     local t = 2
@@ -39,10 +39,10 @@ findStartupFunctionTest =
         expectedValues = (pack "sum", [Name $ pack "a"], [Number IntNum $ pack "1"])
      in expectedValues @?= (actualName, actualArg, actualArgValue)
 
-processStatementSimpleAssignmentTest = 
+case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ pack "a")] [Number IntNum (pack "2")]
         result = [Constant { cName = pack "a", cValueString = pack "2"}]
-    in result @?= snd (runState (processStatement (pack "_") assignment) [])
+    in result @?= execState (processStatement (pack "_") assignment) []
 
 tests :: TestTree
 tests = $(testGroupGenerator)
