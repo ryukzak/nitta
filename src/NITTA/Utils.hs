@@ -35,7 +35,6 @@ module NITTA.Utils (
     stepsInterval,
     relatedEndpoints,
     isFB,
-    getFBs,
     isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
@@ -111,8 +110,6 @@ isFB s = isJust $ getFB s
 
 getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
 getFB _ = Nothing
-
-getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 isEndpoint ep = isJust $ getEndpoint ep
 

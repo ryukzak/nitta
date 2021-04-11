@@ -4,7 +4,7 @@
 
 {- |
 Module      : NITTA.Model.IntegrityCheck
-Description : Tests vertical relations in PU
+Description : Module for checking model description consistency
 Copyright   : (c) Artyom Kostyuchik, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -22,11 +22,10 @@ import NITTA.Utils
 import Safe
 
 checkIntegrity pu =
-    let pr = process pu
-        getInterMap =
+    let getInterMap =
             M.fromList
                 [ (pID, f)
-                | step@Step{pID, pDesc} <- steps pr
+                | step@Step{pID, pDesc} <- steps $ process pu
                 , isFB step
                 , f <- case pDesc of
                     (FStep f) -> [f]
@@ -36,7 +35,7 @@ checkIntegrity pu =
             M.fromListWith (++) $
                 concat
                     [ concatMap (\v -> [(v, [(pID, ep)])]) $ variables ep
-                    | step@Step{pID, pDesc} <- steps pr
+                    | step@Step{pID, pDesc} <- steps $ process pu
                     , isEndpoint step
                     , ep <- case pDesc of
                         (EndpointRoleStep e) -> [e]
@@ -45,14 +44,12 @@ checkIntegrity pu =
         getInstrMap =
             M.fromList
                 [ (pID, pDesc)
-                | Step{pID, pDesc} <- steps pr
+                | Step{pID, pDesc} <- steps $ process pu
                 , isInstruction pDesc
                 ]
      in and
-            [ checkEndpointToIntermidiateRelation getEpMap getInterMap pr
-            , checkInstructionToEndpointRelation getInstrMap getEpMap pr
-            , True
-            , True
+            [ checkEndpointToIntermidiateRelation getEpMap getInterMap $ process pu
+            , checkInstructionToEndpointRelation getInstrMap getEpMap $ process pu
             ]
 
 checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList rels

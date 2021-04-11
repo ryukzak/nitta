@@ -26,7 +26,7 @@ module NITTA.Model.ProcessorUnits.Broken (
     IOPorts (..),
 ) where
 
-import Control.Monad (when)
+import Control.Monad
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
@@ -64,8 +64,9 @@ data Broken v x t = Broken
     , -- |lost source endpoint due synthesis
       lostEndpointSource :: Bool
     , wrongAttr :: Bool
-    , -- | lost vertical relation
-      lostVerticalRelation :: Bool
+    , lostFunctionRelation :: Bool
+    , lostEndpointRelation :: Bool
+    , lostInstructionRelation :: Bool
     , unknownDataOut :: Bool
     }
 
@@ -119,33 +120,46 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
         | not $ null remain = concatMap (endpointOptions . execution pu) $ tail remain
     endpointOptions pu@Broken{remain} = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush, lostVerticalRelation} d@EndpointSt{epRole = Target v', epAt}
-        | v == v'
-          , let (newEndpoints, process_') = runSchedule pu $ do
-                    updateTick (sup epAt)
-                    let ins = scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
-                    let ins' = if lostVerticalRelation then fmap (const []) ins else ins
-                    scheduleEndpoint d ins' =
-            pu
-                { process_ = process_'
-                , targets = []
-                , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
-                , doneAt = Just $ sup epAt + 3
-                }
     endpointDecision
-        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull, lostVerticalRelation}
+        pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush, lostInstructionRelation, lostEndpointRelation}
+        d@EndpointSt{epRole = Target v', epAt}
+            | v == v'
+              , let (newEndpoints, process_') = runSchedule pu $ do
+                        updateTick (sup epAt)
+                        let ins =
+                                if lostInstructionRelation
+                                    then return []
+                                    else scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
+                        if lostEndpointRelation then return [] else scheduleEndpoint d ins =
+                pu
+                    { process_ = process_'
+                    , targets = []
+                    , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
+                    , doneAt = Just $ sup epAt + 3
+                    }
+    endpointDecision
+        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull, lostInstructionRelation, lostEndpointRelation, lostFunctionRelation}
         d@EndpointSt{epRole = Source v, epAt}
             | not $ null sources
               , let sources' = sources \\ elems v
               , sources' /= sources
               , let (newEndpoints, process_') = runSchedule pu $ do
-                        let ins = scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
-                        let res = scheduleEndpoint d $ if lostVerticalRelation then fmap (const []) ins else ins
+                        let ins =
+                                if lostInstructionRelation
+                                    then return []
+                                    else scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
+                        let res =
+                                if lostEndpointRelation
+                                    then return []
+                                    else scheduleEndpoint d ins
                         endpoints <- res
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
+                            --if lostFunctionRelation
+                            --    then return []
+                            --   else
                             let low = endpoints ++ currentWorkEndpoints
-                            uncurry establishVerticalRelations $ if lostVerticalRelation then ([], []) else (high, low)
+                            unless lostFunctionRelation $ uncurry establishVerticalRelations (high, low)
                         updateTick (sup epAt + 1)
                         return endpoints =
                 pu
@@ -207,7 +221,9 @@ instance (Time t) => Default (Broken v x t) where
             , lostEndpointTarget = False
             , lostEndpointSource = False
             , wrongAttr = False
-            , lostVerticalRelation = False
+            , lostFunctionRelation = False
+            , lostEndpointRelation = False
+            , lostInstructionRelation = False
             , unknownDataOut = False
             }
 
