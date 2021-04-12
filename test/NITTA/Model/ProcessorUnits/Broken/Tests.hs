@@ -115,28 +115,37 @@ tests =
             ]
         , testGroup
             "broken relations integrity check"
-            [ finitePUSynthesisProp "finitePUSynthesisProp relation positive test" u fsGen
-            , puCoSimProp "puCoSimProp relation positive test" u fsGen
-            , --- TODO fix case when we have lost Intstruction but integrityCheck is OK
+            [ nittaCoSimTestCase "nittaCoSimTestCase positive test" (maBroken u) alg
+            , typedLuaTestCase (maBroken def) pInt "typedLuaTestCase positive test" lua
+            , puCoSimTestCase "puCoSimTestCase positive test" u [("a", 42)] [brokenBuffer "a" ["b"]]
+            ]
+        , testGroup
+            "broken relations integrity check"
+            [ --- TODO fix case when we have lost Intstruction but integrityCheck is OK
               expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost instr and ep" u{lostInstructionRelation = True, lostEndpointRelation = True} fsGen
-            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Function" u{lostFunctionRelation = True} fsGen
             , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Endpoints" u{lostEndpointRelation = True} fsGen
             , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Instruction" u{lostInstructionRelation = True} fsGen
-            , expectFail $ puCoSimProp "puCoSimProp lost Function" u{lostFunctionRelation = True} fsGen
             , expectFail $ puCoSimProp "puCoSimProp lost Endpoints" u{lostEndpointRelation = True} fsGen
             , expectFail $ puCoSimProp "puCoSimProp lost Instruction" u{lostInstructionRelation = True} fsGen
             ]
         , testGroup
-            --"broken relations coSimTest"
             "broken relations integrity check"
-            [ nittaCoSimTestCase "nittaCoSimTestCase positive test" (maBroken u) alg
-            , typedLuaTestCase (maBroken def) pInt "typedLuaTestCase positive test" lua
-            , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
+            [ expectFail $ puCoSimTestCase "puCoSimTestCase lost Instructions" u{lostInstructionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
             , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Endpoints" (maBroken u{lostEndpointRelation = True}) alg
             , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Instruction" (maBroken u{lostInstructionRelation = True}) alg
-            , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
             , expectFail $ typedLuaTestCase (maBroken def{lostEndpointRelation = True}) pInt "typedLuaTestCase lost Endpoints" lua
             , expectFail $ typedLuaTestCase (maBroken def{lostInstructionRelation = True}) pInt "typedLuaTestCase lost Instruction" lua
+            ]
+        , testGroup
+            "broken relations integrity check fails"
+            [ finitePUSynthesisProp "finitePUSynthesisProp relation positive test" u fsGen
+            , puCoSimProp "puCoSimProp relation positive test" u fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lost Function" u{lostFunctionRelation = True} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Function" u{lostFunctionRelation = True} fsGen
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Function" u{lostFunctionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Endpoints" u{lostEndpointRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
+            , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
             ]
         ]
     where
