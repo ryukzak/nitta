@@ -2,7 +2,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-{-# OPTIONS -fno-warn-partial-type-signatures -Wno-unused-do-bind #-}
+{-# OPTIONS -fno-warn-partial-type-signatures #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Accum.Tests
@@ -30,7 +30,6 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
-import Test.Tasty.ExpectedFailure
 
 tests =
     testGroup
@@ -156,17 +155,11 @@ tests =
         , puCoSimProp "co simulation" accumDef fsGen
         , puUnitTestCase "accum smoke test" accumDef $ do
             assign $ sub "a" "b" ["c"]
+            assertBindFullness
             decide $ consume "a"
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
-        , expectFail $
-            puUnitTestCase "should not bind, when different signatures" accumDef $ do
-                assign $ sub "a" "b" ["c"]
-                -- TODO: Why Accum return "Acc" as a label instead "-"?
-                traceFunctions -- expected: [a - b = c]
-                traceProcess -- actual: [+a -b = c;]
-                assertBindFullness
         ]
     where
         accumDef = def :: Accum String Int Int

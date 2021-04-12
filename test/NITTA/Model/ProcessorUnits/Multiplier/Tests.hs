@@ -138,6 +138,17 @@ tests =
             puUnitTestCase "should error: breakLoop is not supportd" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
                 breakLoop 10 "a" ["c"]
+        , expectFail $
+            puUnitTestCase "should error: setValue variable is unavailable" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                setValue "e" 10
+        , expectFail $
+            puUnitTestCase "should error: setValue variable is unavailable" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                setValue "a" 10
+                setValue "b" 11
+                setValue "a" 15
+                assertSynthesisDone -- to force evaluation
         ]
     where
         u = multiplier True :: Multiplier String Int Int
