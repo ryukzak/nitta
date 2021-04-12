@@ -33,16 +33,24 @@ parseLeftExp = map $ \case
     e -> error $ "bad left expression: " ++ show e
 
 processStatement :: Text -> Stat -> State [AlgBuilderItem] Int
+--Lua language Stat structure parsing
+--LocalAssign
 processStatement _ (LocalAssign _names Nothing) = do
     return 0
 processStatement fn (LocalAssign names (Just exps)) =
     processStatement fn $ Assign (map VarName names) exps
+
+--Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
     processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-
+    
 processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = do
     let [name] = parseLeftExp lexps
     expConstant name n
+
+processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
+    mapM_ (\(var,expr) -> processStatement startupFunctionName (Assign [var] [expr])) $ zip vars exps
+    return 0
 
 
 processStatement _ _ = undefined
