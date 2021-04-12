@@ -33,11 +33,16 @@ case_find_startup_function =
                     local r = -1
                     sum(a + t + r)
                 end
-                sum(0)
+                sum(1)
             |]
         (actualName, FunCall (NormalFunCall _ (Args actualArgValue)), FunAssign _ (FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
         expectedValues = (pack "sum", [Name $ pack "a"], [Number IntNum $ pack "1"])
      in expectedValues @?= (actualName, actualArg, actualArgValue)
+
+case_process_local_assignment_statement =
+    let assignment = LocalAssign [Name $ pack "a"] (Just [Number IntNum (pack "2")])
+        result = [Constant { cName = pack "a", cValueString = pack "2"}]
+    in result @?= execState (processStatement (pack "_") assignment) []
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ pack "a")] [Number IntNum (pack "2")]

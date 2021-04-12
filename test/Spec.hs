@@ -21,6 +21,7 @@ import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
+import qualified NITTA.LuaFrontend.TestsNew
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
@@ -51,6 +52,7 @@ main = do
               , NITTA.Intermediate.Simulation.Tests.tests
               , NITTA.Intermediate.Value.Tests.tests
               , NITTA.LuaFrontend.Tests.tests
+              , NITTA.LuaFrontend.TestsNew.tests
               , NITTA.Model.Problems.Refactor.Tests.tests
               , NITTA.Model.Problems.Refactor.Accum.Tests.tests
               , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
