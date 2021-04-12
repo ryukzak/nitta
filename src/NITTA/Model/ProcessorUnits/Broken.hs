@@ -154,11 +154,11 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                                     else scheduleEndpoint d ins
                         endpoints <- res
                         when (null sources') $ do
-                            -- TODO: migrate to scheduleFunctionFinish
-                            high <- scheduleFunction (a ... sup epAt) f
-                            --if lostFunctionRelation
-                            --    then return []
-                            --   else
+                            -- TODO: migrate to scheduleFunctionFinish: unless lostFunctionRelation $ scheduleFunctionFinish low f (a ... sup epAt)
+                            high <-
+                                if lostFunctionRelation
+                                    then return []
+                                    else scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
                             unless lostFunctionRelation $ uncurry establishVerticalRelations (high, low)
                         updateTick (sup epAt + 1)

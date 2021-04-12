@@ -14,39 +14,44 @@ module NITTA.Model.IntegrityCheck (
     checkIntegrity,
 ) where
 
+import Data.List (find)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
-import Safe
 
 checkIntegrity pu =
     let getInterMap =
             M.fromList
                 [ (pID, f)
-                | step@Step{pID, pDesc} <- steps $ process pu
+                | step@Step{pID} <- steps $ process pu
                 , isFB step
-                , f <- case pDesc of
-                    (FStep f) -> [f]
+                , f <- case getFunction step of
+                    Just f -> [f]
                     _ -> []
                 ]
         getEpMap =
             M.fromListWith (++) $
                 concat
                     [ concatMap (\v -> [(v, [(pID, ep)])]) $ variables ep
-                    | step@Step{pID, pDesc} <- steps $ process pu
+                    | step@Step{pID} <- steps $ process pu
                     , isEndpoint step
-                    , ep <- case pDesc of
-                        (EndpointRoleStep e) -> [e]
+                    , ep <- case getEndpoint step of
+                        Just e -> [e]
                         _ -> []
                     ]
         getInstrMap =
             M.fromList
-                [ (pID, pDesc)
-                | Step{pID, pDesc} <- steps $ process pu
-                , isInstruction pDesc
+                [ (pID, instr)
+                | step@Step{pID} <- steps $ process pu
+                , isInstruction step
+                , instr <- case getInstruction step of
+                    Just i -> [i]
+                    _ -> []
                 ]
+
         -- (pid, f)
         getCadFunctions =
             let filterCad (_, f)
@@ -56,8 +61,8 @@ checkIntegrity pu =
                     | otherwise = False
              in M.fromList $ filter filterCad $ M.toList getInterMap
 
+        -- TODO: add Maybe?
         -- (Loop (pid, f)) , where Loop is show instance
-        -- TODO: add nothing
         getCadSteps =
             M.fromList $
                 concat
@@ -68,12 +73,12 @@ checkIntegrity pu =
                         _ -> []
                     ]
      in and
+            -- TODO: why so much calls(prints) in tests?
             [ checkEndpointToIntermidiateRelation getEpMap getInterMap $ process pu
             , checkInstructionToEndpointRelation getInstrMap getEpMap $ process pu
             , checkCadToFunctionRelation getCadFunctions getCadSteps $ process pu
             ]
 
--- every function should be binded to CAD step
 -- at the moment check LoopBegin/End
 checkCadToFunctionRelation cadFs cadSt pr = S.isSubsetOf makeCadVertical rels
     where
@@ -89,28 +94,44 @@ checkCadToFunctionRelation cadFs cadSt pr = S.isSubsetOf makeCadVertical rels
                             $ showLoop f
                     )
                     $ M.toList cadFs
-            if length l > 1
-                then Vertical h $ fst $ findJust (\(k, _) -> Vertical h k `elem` rels) l
-                else Vertical h $ fst $ head l
+
+-- FIX: S.isSubsetOf [] rels   ; produces True
+checkEndpointToIntermidiateRelation eps ifs pr = and $ S.isSubsetOf makeRelationList rels : [checkIfsEmpty, checkEpsEmpty]
+    where
+        checkIfsEmpty = not ((M.size eps > 0) && (M.size ifs == 0)) || error "Functions are empty. "
+        checkEpsEmpty = not ((M.size ifs > 0) && (M.size eps == 0)) || error "Endpoints are empty. "
+        rels = S.fromList $ filter isVertical $ relations pr
+        findRel (h, l) =
+            map (uncurry Vertical) $
+                case find (\(k, _) -> Vertical h k `elem` rels) l of
+                    Just res -> [(h, fst res)]
+                    Nothing -> findRelReverse (h, l)
+        findRelReverse (h, l) =
+            case find (\(k, _) -> Vertical k h `elem` rels) l of
+                Just res -> [(fst res, h)]
+                Nothing -> error $ "Can't find Endpoint for Function with pID: " <> show [h]
         makeRelationList =
             S.fromList $
                 concatMap
                     ( \(h, f) ->
-                        concatMap
-                            ( \v -> [findRel (h, eps M.! v)]
-                            )
-                            $ variables f
+                        concat $
+                            concatMap
+                                ( \v -> [findRel (h, eps M.! v)]
+                                )
+                                $ variables f
                     )
                     $ M.toList ifs
 
-checkInstructionToEndpointRelation ins eps pr = and makeRelationList
+checkInstructionToEndpointRelation ins eps pr = and $ makeRelationList <> [checkInsEmpty, checkEpsEmpty]
     where
         rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ filter isVertical $ relations pr
+        checkInsEmpty = not ((M.size eps > 0) && (M.size ins == 0)) || error "Instructions are empty. "
+        checkEpsEmpty = not ((M.size ins > 0) && (M.size eps == 0)) || error "Endpoints are empty. "
         eps' = M.fromList $ concat $ M.elems eps
         makeRelationList =
             concatMap
-                ( \(r1, r2) -> case eps' M.!? r1 of
-                    Just _ | (InstructionStep _) <- ins M.! r2 -> [True]
+                ( \(r1, r2) -> case eps' M.!? r1 of -- TODO could be two sided relation
+                    Just _ | Just (InstructionStep _) <- ins M.!? r2 -> [True]
                     _ -> []
                 )
                 rels
