@@ -50,6 +50,9 @@ export type Target = ITarget<string>;
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReportData = TestbenchReport<string, number>;
 
+export type ProcessView = Process<number, StepInfoView>;
+export type StepView = Step<number, StepInfoView>;
+
 export type MicroarchitectureData = MicroarchitectureDesc<string>;
 export type NetworkData = NetworkDesc<string>;
 export type UnitData = UnitDesc<string>;
@@ -81,6 +84,7 @@ export const api = {
   getMicroarchitecture: (sid: SID): AxiosPromise<MicroarchitectureData> => jsAPI.getNodeBySidMicroarchitecture(sid),
   getIntermediateView: (sid: SID): AxiosPromise<IntermediateGraph> => jsAPI.getNodeBySidIntermediateView(sid),
   getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
+  getProcess: (sid: SID): AxiosPromise<ProcessView> => jsAPI.getNodeBySidProcess(sid),
   getEndpoints: (sid: SID): AxiosPromise<UnitEndpointsData[]> => jsAPI.getNodeBySidEndpoints(sid),
   getDebugInfo: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidDebug(sid),
   runTestBench: (sid: SID, name: string, loopsNumber: number): AxiosPromise<TestBenchReportData | null> =>
