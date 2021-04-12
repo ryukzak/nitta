@@ -47,15 +47,48 @@ checkIntegrity pu =
                 | Step{pID, pDesc} <- steps $ process pu
                 , isInstruction pDesc
                 ]
+        -- (pid, f)
+        getCadFunctions =
+            let filterCad (_, f)
+                    | Just Loop{} <- castF f = True
+                    | Just (LoopBegin Loop{} _) <- castF f = True
+                    | Just (LoopEnd Loop{} _) <- castF f = True
+                    | otherwise = False
+             in M.fromList $ filter filterCad $ M.toList getInterMap
+
+        -- (Loop (pid, f)) , where Loop is show instance
+        -- TODO: add nothing
+        getCadSteps =
+            M.fromList $
+                concat
+                    [ concatMap (\l -> [(l, (pID, step))]) pDesc'
+                    | step@Step{pID} <- steps $ process pu
+                    , pDesc' <- case getCAD step of
+                        Just msg -> [msg]
+                        _ -> []
+                    ]
      in and
             [ checkEndpointToIntermidiateRelation getEpMap getInterMap $ process pu
             , checkInstructionToEndpointRelation getInstrMap getEpMap $ process pu
+            , checkCadToFunctionRelation getCadFunctions getCadSteps $ process pu
             ]
 
-checkEndpointToIntermidiateRelation eps ifs pr = S.isSubsetOf makeRelationList rels
+-- every function should be binded to CAD step
+-- at the moment check LoopBegin/End
+checkCadToFunctionRelation cadFs cadSt pr = S.isSubsetOf makeCadVertical rels
     where
         rels = S.fromList $ filter isVertical $ relations pr
-        findRel (h, l) =
+        showLoop f = "bind " <> show f
+        makeCadVertical =
+            S.fromList $
+                concatMap
+                    ( \(h, f) ->
+                        concatMap
+                            ( \v -> [uncurry Vertical (h, fst $ cadSt M.! v)]
+                            )
+                            $ showLoop f
+                    )
+                    $ M.toList cadFs
             if length l > 1
                 then Vertical h $ fst $ findJust (\(k, _) -> Vertical h k `elem` rels) l
                 else Vertical h $ fst $ head l
