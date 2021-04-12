@@ -17,12 +17,12 @@ import Data.Text (Text)
 
 
 data AlgBuilderItem =
-     Constant {cName :: Text, cValueString :: Text}
-        deriving (Eq, Ord)
+     Constant {cName :: Text, cValueString :: Text, cValueType :: NumberType }
+        deriving (Eq)
 
 instance Show AlgBuilderItem where
 --    show (Function ins outs funcName values ints) = "Function { fIn = {" ++ show ins ++ "}, fOut = {" ++ show outs ++ "}, name = " ++ show funcName ++ ", values = {" ++ show values ++ "}, fInt = {" ++ show ints
-    show (Constant name value) = "Constant { name = {" ++ show name ++ "}, value = {" ++ show value ++ "}"
+    show (Constant name value _) = "Constant { name = {" ++ show name ++ "}, value = {" ++ show value ++ "} }"
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
@@ -43,7 +43,7 @@ processStatement fn (LocalAssign names (Just exps)) =
 --Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
     processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-    
+
 processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = do
     let [name] = parseLeftExp lexps
     expConstant name n
@@ -56,9 +56,9 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 processStatement _ _ = undefined
 
 expConstant :: Text -> Exp -> State [AlgBuilderItem] Int
-expConstant name (Number _ valueString) = do
+expConstant name (Number valueType valueString) = do
     items <- get
-    put (items ++ [Constant{cName=name, cValueString=valueString}]) 
+    put (items ++ [Constant{cName=name, cValueString=valueString, cValueType=valueType}]) 
     return 0
 expConstant _ _ = undefined
 

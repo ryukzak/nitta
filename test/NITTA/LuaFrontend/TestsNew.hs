@@ -41,17 +41,17 @@ case_find_startup_function =
 
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ pack "a"] (Just [Number IntNum (pack "2")])
-        result = [Constant { cName = pack "a", cValueString = pack "2"}]
+        result = [Constant { cName = pack "a", cValueString = pack "2", cValueType = IntNum }]
     in result @?= execState (processStatement (pack "_") assignment) []
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ pack "a")] [Number IntNum (pack "2")]
-        result = [Constant { cName = pack "a", cValueString = pack "2"}]
-    in result @?= execState (processStatement (pack "_") assignment) []Constant { cName = pack "a", cValueString = pack "2"},
+        result = [Constant { cName = pack "a", cValueString = pack "2", cValueType = IntNum }]
+    in result @?= execState (processStatement (pack "_") assignment) []
 
 case_process_multiple_assignments_statement =
     let assignment = Assign [VarName (Name $ pack "a"), VarName (Name $ pack "b")] [Number IntNum $ pack "2", Number FloatNum $ pack "2.5"]
-        result = [Constant { cName = pack "a", cValueString = pack "2"}, Constant { cName = pack "b", cValueString = pack "2.5"}]
+        result = [Constant { cName = pack "a", cValueString = pack "2", cValueType = IntNum}, Constant { cName = pack "b", cValueString = pack "2.5", cValueType = FloatNum}]
     in result @?= execState (processStatement (pack "_") assignment) []
 
 tests :: TestTree
