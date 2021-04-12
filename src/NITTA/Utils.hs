@@ -29,6 +29,10 @@ module NITTA.Utils (
 
     -- *Process inspection
     endpointAt,
+    getEndpoint,
+    getFunction,
+    getInstruction,
+    getCAD,
     getEndpoints,
     transferred,
     inputsPushedAt,
@@ -116,6 +120,17 @@ isEndpoint ep = isJust $ getEndpoint ep
 getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
 
+getFunction Step{pDesc} | FStep role <- descent pDesc = Just role
+getFunction _ = Nothing
+
+isInstruction instr = isJust $ getInstruction instr
+
+getInstruction Step{pDesc} | role@(InstructionStep _) <- descent pDesc = Just role
+getInstruction _ = Nothing
+
+getCAD Step{pDesc} | CADStep role <- descent pDesc = Just role
+getCAD _ = Nothing
+
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
 
@@ -125,8 +140,5 @@ stepsInterval ss =
     let a = minimum $ map (inf . pInterval) ss
         b = maximum $ map (sup . pInterval) ss
      in a ... b
-
-isInstruction (InstructionStep _) = True
-isInstruction _ = False
 
 stepStart Step{pInterval} = I.inf pInterval
