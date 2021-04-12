@@ -177,6 +177,7 @@ executable nitta
     , ginger
     , hslogger
     , htoml
+    , intervals
     , mtl
     , nitta
     , prettyprinter

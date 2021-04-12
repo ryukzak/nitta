@@ -57,12 +57,13 @@ dependencies:
   - filepath
   - ginger
   - htoml
+  - intervals
+  - mtl
   - prettyprinter
   - process-extras
   - regex-compat
   - string-interpolate
   - text
-  - mtl
   - tostring
 
 library:
@@ -77,7 +78,6 @@ library:
     - hashable
     - hslogger
     - http-api-data
-    - intervals
     - language-lua
     - network-simple
     - process
@@ -126,7 +126,6 @@ executables:
       - cmdargs
       - directory
       - hslogger
-      - intervals
       - nitta
 
 
@@ -152,7 +151,6 @@ tests:
       - tasty
       - tasty-expected-failure
       - tasty-hunit
-      - intervals
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th

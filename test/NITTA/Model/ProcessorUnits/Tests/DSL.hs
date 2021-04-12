@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -18,14 +17,20 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assign,
     setValue,
     setValues,
+
+    -- *Process Unit Control
     decide,
     decideAt,
     consume,
     provide,
     breakLoop,
+
+    -- *Asserts
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
+
+    -- *Trace
     tracePU,
     traceFunctions,
     traceEndpoints,
@@ -54,7 +59,7 @@ puUnitTestCase ::
     StateT (UnitTestState pu v x) IO () ->
     TestTree
 puUnitTestCase name pu alg = testCase name $ do
-    !_ <- evalUnitTestState name pu alg -- ! probably do not always work
+    _ <- evalUnitTestState name pu alg
     assertBool "test failed" True
 
 data UnitTestState pu v x = UnitTestState
@@ -74,12 +79,17 @@ assign f = do
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> lift $ assertFailure err
 
-setValue var val = do
-    pu@UnitTestState{cntxCycle} <- get
-    -- TODO What if variable already present?
-    put pu{cntxCycle = (var, val) : cntxCycle}
-
 setValues = mapM_ (uncurry setValue)
+
+setValue var val = do
+    pu@UnitTestState{cntxCycle, unit} <- get
+    when ((var, val) `elem` cntxCycle) $
+        lift $ assertFailure $ "The variable '" <> show var <> "' is already set!"
+    unless (isVarAvailable var unit) $
+        lift $ assertFailure $ "It's not possible to set the variable '" <> show var <> "'! It's not present in process"
+    put pu{cntxCycle = (var, val) : cntxCycle}
+    where
+        isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ unionsMap inputs $ functions pu
 
 -- | Make synthesis decision with provided Endpoint Role and automatically assigned time
 decide role = do
@@ -131,37 +141,21 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " <> show functs <> "; actual: " <> show (functions unit)
 
-isFullyBinded ::
-    ( WithFunctions a c
-    , Function c k1
-    , Label c
-    , Function b k1
-    , Label b
-    , Ord k1
-    , Show k1
-    ) =>
-    a ->
-    [b] ->
-    IO Bool
 isFullyBinded pu fs = do
     assertBool ("Outputs not equal, expected: " <> show fOuts <> "; actual: " <> show outs) $ outs == fOuts
     assertBool ("Inputs not equal, expected: " <> show fInps <> "; actual: " <> show inps) $ inps == fInps
-    assertBool ("Signs not equal, expected: " <> show fSign <> "; actual: " <> show sign) $ sign == fSign
     return $ not $ null fu
     where
         fu = functions pu
         outs = S.fromList $ map outputs fu
         inps = S.fromList $ map inputs fu
-        sign = S.fromList $ map label fu
         fOuts = S.fromList $ map outputs fs
         fInps = S.fromList $ map inputs fs
-        fSign = S.fromList $ map label fs
 
-assertSynthesisDone =
-    do
-        UnitTestState{unit, functs} <- get
-        unless (isProcessComplete unit functs && null (endpointOptions unit)) $
-            lift $ assertFailure "Process is not complete"
+assertSynthesisDone = do
+    UnitTestState{unit, functs} <- get
+    unless (isProcessComplete unit functs && null (endpointOptions unit)) $
+        lift $ assertFailure "Process is not complete"
 
 assertCoSimulation = do
     assertSynthesisDone
