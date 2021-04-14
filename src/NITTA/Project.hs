@@ -42,7 +42,7 @@ import System.FilePath.Posix
 import System.Log.Logger
 import System.Process.ListLike (CreateProcess (..), proc)
 import System.Process.Text
-import Text.Ginger
+import Text.Ginger hiding (length)
 import Text.Regex
 
 -- |Write project with all available parts.
@@ -116,7 +116,7 @@ log2cntx lst0 =
     Cntx
         { cntxProcess
         , cntxReceived = def
-        , cntxCycleNumber = Prelude.length cntxProcess
+        , cntxCycleNumber = length cntxProcess
         }
     where
         cntxProcess = inner (0 :: Int) lst0
