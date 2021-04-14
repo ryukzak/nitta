@@ -5,7 +5,7 @@ import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Microarchitecture, Network, Unit } from "services/HaskellApiService";
-import { PUEndpoints } from "services/HaskellApiService";
+import { UnitEndpointsData, EndpointOptionData } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
@@ -31,7 +31,7 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) =>
       .catch((err: AxiosError) => console.error(err));
     api
       .getEndpoints(selectedSID)
-      .then((response: AxiosResponse<PUEndpoints[]>) => setEndpoints(collectEndpoints(response.data)))
+      .then((response: AxiosResponse<UnitEndpointsData[]>) => setEndpoints(collectEndpoints(response.data)))
       .catch((err: AxiosError) => console.error(err));
   }, [selectedSID]);
 
@@ -60,11 +60,12 @@ type Endpoints = {
   };
 };
 
-function collectEndpoints(data: PUEndpoints[]): Endpoints {
+function collectEndpoints(data: UnitEndpointsData[]): Endpoints {
   let result: Endpoints = {};
-  data.forEach(([tag, endpoints]: PUEndpoints) => {
+  data.forEach((eps: UnitEndpointsData) => {
+    let tag = eps.unitTag;
     result[tag] = { sources: [], targets: [] };
-    endpoints.forEach((e) => {
+    eps.unitEndpoints.forEach((e: EndpointOptionData) => {
       let role = e.epRole;
       if (role.tag === "Source") {
         result[tag].sources.push(...role.contents);

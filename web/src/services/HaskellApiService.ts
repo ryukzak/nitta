@@ -11,9 +11,10 @@ import {
   IResolveDeadlockView,
   NetworkDesc,
   UnitDesc,
+  TimeConstrain,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
-import { EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
+import { UnitEndpoints, EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
 export type SID = string;
@@ -33,11 +34,11 @@ export type ConstantFolding = IConstantFoldingView;
 export type OptimizeAccum = IOptimizeAccumView;
 export type ResolveDeadlock = IResolveDeadlockView;
 
-export type Endpoint = EndpointSt<string, number>;
+export type UnitEndpointsData = UnitEndpoints<string, string, number>;
+export type EndpointOptionData = EndpointSt<string, TimeConstrain<number>>;
 export type EndpointDecision = EndpointSt<string, Interval<number>>;
 export type Source = ISource<string>;
 export type Target = ITarget<string>;
-export type PUEndpoints = [string, Endpoint[]];
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReport = TestbenchReportView<string, number>;
 
@@ -72,7 +73,7 @@ export const api = {
   getMicroarchitecture: (sid: SID): AxiosPromise<Microarchitecture> => jsAPI.getNodeBySidMicroarchitecture(sid),
   getIntermediateView: (sid: SID): AxiosPromise<IntermediateGraph> => jsAPI.getNodeBySidIntermediateView(sid),
   getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
-  getEndpoints: (sid: SID): AxiosPromise<PUEndpoints[]> => jsAPI.getNodeBySidEndpoints(sid),
+  getEndpoints: (sid: SID): AxiosPromise<UnitEndpointsData[]> => jsAPI.getNodeBySidEndpoints(sid),
   getDebugInfo: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidDebug(sid),
   runTestBench: (sid: SID, name: string, loopsNumber: number): AxiosPromise<TestBenchReport | null> =>
     jsAPI.postNodeBySidTestbench(sid, name, loopsNumber),
