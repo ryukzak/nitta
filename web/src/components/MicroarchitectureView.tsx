@@ -4,14 +4,14 @@ import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, Microarchitecture, Network, Unit } from "services/HaskellApiService";
+import { api, MicroarchitectureData, NetworkData, UnitData } from "services/HaskellApiService";
 import { UnitEndpointsData, EndpointOptionData } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 
 /**
- * Component to display algorithm graph.
+ * Component to display a microarchitecture with available endpoints.
  */
 
 export interface IMicroarchitectureViewProps {}
@@ -19,7 +19,7 @@ export interface IMicroarchitectureViewProps {}
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [ma, setMA] = useState<Microarchitecture | null>(null);
+  const [ma, setMA] = useState<MicroarchitectureData | null>(null);
   const [endpoints, setEndpoints] = useState<Endpoints | null>(null);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) =>
     setEndpoints(null);
     api
       .getMicroarchitecture(selectedSID)
-      .then((response: AxiosResponse<Microarchitecture>) => setMA(response.data))
+      .then((response: AxiosResponse<MicroarchitectureData>) => setMA(response.data))
       .catch((err: AxiosError) => console.error(err));
     api
       .getEndpoints(selectedSID)
@@ -78,16 +78,16 @@ function collectEndpoints(data: UnitEndpointsData[]): Endpoints {
   return result;
 }
 
-function renderMicroarchitectureDot(ma: Microarchitecture, endpoints: Endpoints): string {
+function renderMicroarchitectureDot(ma: MicroarchitectureData, endpoints: Endpoints): string {
   var lines: string[] = [];
   var units: string[] = [];
   var vars: string[] = [];
 
   lines.push("digraph {");
   lines.push("  rankdir=LR;");
-  ma.networks.forEach((net: Network) => {
+  ma.networks.forEach((net: NetworkData) => {
     lines.push(`  ${net.networkTag}[label="${net.networkTag} :: ${net.valueType}"];`);
-    net.units.forEach((unit: Unit) => {
+    net.units.forEach((unit: UnitData) => {
       const name = `${net.networkTag}_${unit.unitTag}`;
       units.push(name);
       lines.push(`  ${name}[label="${unit.unitTag} :: ${unit.unitType}"];`);

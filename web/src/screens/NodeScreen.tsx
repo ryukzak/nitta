@@ -3,7 +3,7 @@ import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { IntermediateView } from "components/IntermediateView";
-import { MicroarchitectureView } from "components/Microarchitecture";
+import { MicroarchitectureView } from "components/MicroarchitectureView";
 
 export interface INodeScreenProps {}
 

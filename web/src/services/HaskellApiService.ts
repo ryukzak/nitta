@@ -42,9 +42,9 @@ export type Target = ITarget<string>;
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type TestBenchReport = TestbenchReportView<string, number>;
 
-export type Microarchitecture = MicroarchitectureDesc<string>;
-export type Network = NetworkDesc<string>;
-export type Unit = UnitDesc<string>;
+export type MicroarchitectureData = MicroarchitectureDesc<string>;
+export type NetworkData = NetworkDesc<string>;
+export type UnitData = UnitDesc<string>;
 
 export function synthesize<T extends Array<any>>(
   context: IAppContext,
@@ -70,7 +70,7 @@ export const api = {
 
   // Synthesis node inspections
   getNode: (sid: SID): AxiosPromise<Node> => jsAPI.getNodeBySid(sid),
-  getMicroarchitecture: (sid: SID): AxiosPromise<Microarchitecture> => jsAPI.getNodeBySidMicroarchitecture(sid),
+  getMicroarchitecture: (sid: SID): AxiosPromise<MicroarchitectureData> => jsAPI.getNodeBySidMicroarchitecture(sid),
   getIntermediateView: (sid: SID): AxiosPromise<IntermediateGraph> => jsAPI.getNodeBySidIntermediateView(sid),
   getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
   getEndpoints: (sid: SID): AxiosPromise<UnitEndpointsData[]> => jsAPI.getNodeBySidEndpoints(sid),
