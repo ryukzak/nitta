@@ -139,7 +139,7 @@ main = do
 
             when lsim $ do
                 TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-                 when (f == "md") $ do
+                when (f == "md") $ do
                     putStrLn "Logical simulation (by IcarusVerilog):"
                     putCntx2md $ frPrettyCntx tbLogicalSimulationCntx
                 when (f == "json") $ do

@@ -110,7 +110,6 @@ newtype X x = X x
 -----------------------------------------------------------
 
 {- |Casuality of variable processing sequence in term of locks.
-
 For example:
 > c := a + b
 > [ Lock{ locked=c, lockBy=a }, Lock{ locked=c, lockBy=b } ]
@@ -320,16 +319,16 @@ cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ M.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
-     in
+        in 
         map (uncurry (:)) $ zip header (transpose body)
     where
         sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
 
 cntx2listCycle Cntx{cntxCycleNumber} list = ("Cycle" : map show [1..cntxCycleNumber]) : list
 
-cntx2md cntx =
+cntx2md cntx = 
     let cntxList = cntx2listCycle cntx $ cntx2list cntx
-       in render $
+        in render $
             hsep 1 left $
                 map (vcat left . map text) cntxList
 
@@ -339,18 +338,19 @@ data CntxTable = CntxTable {
 } deriving (Show, Generic)
 
 instance ToJSON CntxTable where
-    toJSON ct = object[(T.pack $ key ct) .= values ct]
+    toJSON ct = object[T.pack (key ct) .= values ct]
 
-cntx2json cntx =
+cntx2json cntx = 
     let cntxList = cntx2list cntx
         listMap = map (\(v : xs) -> CntxTable{key = v, values = xs}) cntxList
-     in
-         B.writeFile "logicalSimulationOutput.json" $ encodePretty listMap
+        in 
+            B.writeFile "logicalSimulationOutput.json" $ encodePretty listMap
 
-cntx2csv cntx =
-    let cntxList = cntx2list cntx
-     in B.writeFile "logicalSimulationOutput.csv" $ Csv.encode cntxList
+cntx2csv cntx = 
+    let cntxList = cntx2list cntx 
+        in B.writeFile "logicalSimulationOutput.csv" $ Csv.encode cntxList
 
+        
 instance Default (Cntx v x) where
     def =
         Cntx
@@ -374,8 +374,6 @@ getCntx (CycleCntx cntx) v = case cntx M.!? v of
     Just x -> x
     Nothing -> error $ "variable not defined: " <> show v
 
-updateCntx :: (Ord v, Show v) =>
-CycleCntx v x -> [(v, x)] -> Either [Char] (CycleCntx v x)
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
     | M.member v cntx = Left $ "variable value already defined: " <> show v
