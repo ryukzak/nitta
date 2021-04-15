@@ -64,7 +64,7 @@ data Nitta = Nitta
     , lsim :: Bool
     , verbose :: Bool
     , output_path :: FilePath
-    , f :: String
+    , o :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -82,7 +82,7 @@ nittaArgs =
         , lsim = False &= help "Logical (HDL) simulation with trace"
         , verbose = False &= help "Verbose"
         , output_path = "gen" &= help "Place the output into specified directory"
-        , f = "md" &= help "Specify logical (HDL) simulation output format (default: 'md')"
+        , o = "md" &= help "Specify logical (HDL) simulation output format (default: 'md')"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
     where
@@ -95,7 +95,7 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates, f} <-
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates, o} <-
         cmdArgs nittaArgs
     setupLogger verbose
 
@@ -139,13 +139,13 @@ main = do
 
             when lsim $ do
                 TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-                when (f == "md") $ do
+                when (o == "md") $ do
                     putStrLn "Logical simulation (by IcarusVerilog):"
-                    putCntx2md $ frPrettyCntx tbLogicalSimulationCntx
-                when (f == "json") $ do
-                    putCntx2json $ frPrettyCntx tbLogicalSimulationCntx
-                when (f == "csv") $ do
-                    putCntx2csv $ frPrettyCntx tbLogicalSimulationCntx
+                    cntx2md $ frPrettyCntx tbLogicalSimulationCntx
+                when (o == "json") $ do
+                    cntx2json $ frPrettyCntx tbLogicalSimulationCntx
+                when (o == "csv") $ do
+                    cntx2csv $ frPrettyCntx tbLogicalSimulationCntx
         )
         $ parseFX type_
 
@@ -175,9 +175,6 @@ functionalSimulation n received src = do
     infoM "NITTA" "run functional simulation...ok"
 
 putCntx cntx = putStr $ cntx2table cntx
-putCntx2md cntx = putStr $ cntx2md cntx
-putCntx2json cntx = cntx2json cntx
-putCntx2csv cntx = cntx2csv cntx
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO

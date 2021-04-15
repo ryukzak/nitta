@@ -138,6 +138,8 @@ library
      , language-lua
      , mtl
      , network-simple
+     , pandoc
+     , pandoc-types
      , pptable
      , prettyprinter
      , process

@@ -5,9 +5,9 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : NITTA.Intermediate.Types
@@ -58,23 +58,27 @@ module NITTA.Intermediate.Types (
 ) where
 
 import Data.Aeson
+import Data.Aeson.Encode.Pretty
+import qualified Data.ByteString.Lazy as B
+import qualified Data.Csv as Csv
 import Data.Default
 import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S hiding (split)
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
 import NITTA.UIBackend.ViewHelperCls
+import Text.Pandoc.Class
+import Text.Pandoc.Definition
+import Text.Pandoc.Options
+import Text.Pandoc.Writers.Markdown
 import Text.PrettyPrint.Boxes hiding ((<>))
-import Data.Aeson.Encode.Pretty
-import qualified Data.ByteString.Lazy as B
-import qualified Data.Csv as Csv
-import qualified Data.Text as T
 
 -- |Input variable.
 newtype I v = I v
@@ -319,38 +323,45 @@ cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ M.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
-        in 
-        map (uncurry (:)) $ zip header (transpose body)
+     in map (uncurry (:)) $ zip header (transpose body)
     where
         sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
 
-cntx2listCycle Cntx{cntxCycleNumber} list = ("Cycle" : map show [1..cntxCycleNumber]) : list
+cntx2listCycle Cntx{cntxCycleNumber} list = ("Cycle" : map show [1 .. cntxCycleNumber]) : list
 
-cntx2md cntx = 
+cntx2md cntx@Cntx{cntxCycleNumber} = do
     let cntxList = cntx2listCycle cntx $ cntx2list cntx
-        in render $
-            hsep 1 left $
-                map (vcat left . map text) cntxList
+    let getHeaders = map (\x -> [Plain [Str $ T.pack $ head x]])
+    let headers = getHeaders cntxList
+    let deleteHeaders = map (\x -> tail x)
+    let cols = helper cntxCycleNumber $ deleteHeaders cntxList
+            where
+                helper 0 _ = []
+                helper i list = getHeaders list : helper (i - 1) (deleteHeaders list)
+    let table = Table [] [AlignLeft] [0.0] headers cols
+    md <- runIO (writeMarkdown (def{writerExtensions = extensionsFromList [Ext_pipe_tables]}) (Pandoc nullMeta [table]))
+    case md of
+        Left e -> error $ "can't create markdown table: " <> show e
+        Right t -> putStr $ T.unpack t
 
-data CntxTable = CntxTable {
-    key :: String,
-    values :: [String]
-} deriving (Show, Generic)
+data CntxTable = CntxTable
+    { key :: String
+    , values :: [String]
+    }
+    deriving (Show, Generic)
 
 instance ToJSON CntxTable where
-    toJSON ct = object[T.pack (key ct) .= values ct]
+    toJSON ct = object [T.pack (key ct) .= values ct]
 
-cntx2json cntx = 
+cntx2json cntx =
     let cntxList = cntx2list cntx
         listMap = map (\(v : xs) -> CntxTable{key = v, values = xs}) cntxList
-        in 
-            B.writeFile "logicalSimulationOutput.json" $ encodePretty listMap
+     in B.writeFile "logicalSimulationOutput.json" $ encodePretty listMap
 
-cntx2csv cntx = 
-    let cntxList = cntx2list cntx 
-        in B.writeFile "logicalSimulationOutput.csv" $ Csv.encode cntxList
+cntx2csv cntx =
+    let cntxList = cntx2list cntx
+     in B.writeFile "logicalSimulationOutput.csv" $ Csv.encode cntxList
 
-        
 instance Default (Cntx v x) where
     def =
         Cntx
