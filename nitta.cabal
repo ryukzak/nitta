@@ -115,47 +115,50 @@ library
       src
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
-      HStringTemplate
-    , MissingH
-    , aeson
-    , aeson-pretty
-    , array
-    , base
-    , boxes
-    , containers
-    , data-default
-    , directory
-    , file-embed
-    , filepath
-    , ginger
-    , hashable
-    , hslogger
-    , htoml
-    , http-api-data
-    , intervals
-    , language-lua
-    , mtl
-    , network-simple
-    , prettyprinter
-    , process
-    , process-extras
-    , regex-compat
-    , safe
-    , servant
-    , servant-docs
-    , servant-js
-    , servant-server
-    , split
-    , stm
-    , string-interpolate
-    , text
-    , tostring
-    , transformers
-    , unordered-containers
-    , utility-ht
-    , validity
-    , wai-cors
-    , warp
+       HStringTemplate
+     , MissingH
+     , aeson
+     , aeson-pretty
+     , array
+     , base
+     , boxes
+     , bytestring
+     , cassava
+     , containers
+     , data-default
+     , directory
+     , file-embed
+     , filepath
+     , ginger
+     , hashable
+     , hslogger
+     , htoml
+     , http-api-data
+     , intervals
+     , language-lua
+     , mtl
+     , network-simple
+     , pptable
+     , prettyprinter
+     , process
+     , process-extras
+     , regex-compat
+     , safe
+     , servant
+     , servant-docs
+     , servant-js
+     , servant-server
+     , split
+     , stm
+     , string-interpolate
+     , text
+     , tostring
+     , transformers
+     , unordered-containers
+     , utility-ht
+     , validity
+     , wai-cors
+     , warp
   default-language: Haskell2010
 
 executable nitta
