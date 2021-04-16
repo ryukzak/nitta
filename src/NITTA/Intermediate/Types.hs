@@ -41,7 +41,7 @@ module NITTA.Intermediate.Types (
     CycleCntx (..),
     Cntx (..),
     showCntx,
-    -- cntx2table,
+    cntx2table,
     cntx2md,
     cntx2json,
     cntx2csv,
@@ -290,10 +290,6 @@ data Cntx v x = Cntx
 instance (Show v, Val x) => Show (Cntx v x) where
     show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
         where
-            cntx2table cntx' =
-                render $
-                    hsep 1 left $
-                        map (vcat left . map text) $ cntx2list cntx'
             show' = S.replace "\"" "" . show
 
 showCntx f Cntx{cntxProcess, cntxCycleNumber} =
@@ -319,6 +315,11 @@ cntx2list Cntx{cntxProcess, cntxCycleNumber} =
      in map (uncurry (:)) $ zip header (transpose body)
     where
         sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
+
+cntx2table cntx =
+    render $
+        hsep 1 left $
+            map (vcat left . map text) $ cntx2list cntx
 
 cntx2listCycle Cntx{cntxCycleNumber} list = ("Cycle" : map show [1 .. cntxCycleNumber]) : list
 
