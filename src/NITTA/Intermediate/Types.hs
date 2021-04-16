@@ -333,7 +333,7 @@ cntx2md cntx@Cntx{cntxCycleNumber} = do
     let cntxList = cntx2listCycle cntx $ cntx2list cntx
     let getHeaders = map (\x -> [Plain [Str $ T.pack $ head x]])
     let headers = getHeaders cntxList
-    let deleteHeaders = map (\x -> tail x)
+    let deleteHeaders = map tail
     let cols = helper cntxCycleNumber $ deleteHeaders cntxList
             where
                 helper 0 _ = []
