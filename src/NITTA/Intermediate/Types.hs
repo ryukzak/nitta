@@ -41,7 +41,7 @@ module NITTA.Intermediate.Types (
     CycleCntx (..),
     Cntx (..),
     showCntx,
-    cntx2table,
+    -- cntx2table,
     cntx2md,
     cntx2json,
     cntx2csv,
@@ -290,6 +290,10 @@ data Cntx v x = Cntx
 instance (Show v, Val x) => Show (Cntx v x) where
     show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
         where
+            cntx2table cntx' =
+                render $
+                    hsep 1 left $
+                        map (vcat left . map text) $ cntx2list cntx'
             show' = S.replace "\"" "" . show
 
 showCntx f Cntx{cntxProcess, cntxCycleNumber} =
@@ -307,17 +311,6 @@ showCntx f Cntx{cntxProcess, cntxCycleNumber} =
                 , isJust vx'
                 , let Just (v', x') = vx'
                 ]
-
-cntx2table Cntx{cntxProcess, cntxCycleNumber} =
-    let header = sort $ M.keys $ cycleCntx $ head cntxProcess
-        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-        row cntx = map snd $ zip header $ sortedValues cntx
-        table = map (uncurry (:)) $ zip header (transpose body)
-     in render $
-            hsep 1 left $
-                map (vcat left . map text) table
-    where
-        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
 
 cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ M.keys $ cycleCntx $ head cntxProcess
@@ -342,7 +335,7 @@ cntx2md cntx@Cntx{cntxCycleNumber} = do
     md <- runIO (writeMarkdown (def{writerExtensions = extensionsFromList [Ext_pipe_tables]}) (Pandoc nullMeta [table]))
     case md of
         Left e -> error $ "can't create markdown table: " <> show e
-        Right t -> putStr $ T.unpack t
+        Right t -> putStr $ S.replace "\\" "" $ T.unpack t
 
 data CntxTable = CntxTable
     { key :: String

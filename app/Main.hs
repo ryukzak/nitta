@@ -120,7 +120,7 @@ main = do
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation n received src
+            when fsim $ functionalSimulation n received src o
 
             prj <-
                 synthesizeTargetSystem
@@ -166,15 +166,21 @@ readSourceCode filename = do
     infoM "NITTA" $ "read source code from: " <> show filename <> "...ok"
     return src
 
-functionalSimulation n received src = do
+functionalSimulation n received src o = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
-    putStrLn "Functional simulation:"
-    putCntx $ frPrettyCntx cntx
+    when (o == "md") $ do
+        putStrLn "Functional simulation:"
+        cntx2md $ frPrettyCntx cntx
+    when (o == "json") $ do
+        cntx2json $ frPrettyCntx cntx
+    when (o == "csv") $ do
+        cntx2csv $ frPrettyCntx cntx
+
     infoM "NITTA" "run functional simulation...ok"
 
-putCntx cntx = putStr $ cntx2table cntx
+-- putCntx cntx = putStr $ cntx2table cntx
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO
