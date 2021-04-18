@@ -3,8 +3,6 @@
 
 module NITTA.LuaFrontendNew
   ( parseLuaSources,
-    AlgBuilderItem (..),
-
     -- * Internal
     findStartupFunction,
     getLuaBlockFromSources,
@@ -15,13 +13,10 @@ where
 import Control.Monad.State
 import Data.Text (Text)
 import Language.Lua
+import NITTA.Intermediate.DataFlow
 
-data AlgBuilderItem = Constant {cName :: Text, cValueString :: Text, cValueType :: NumberType}
+data Constant = Constant {cName :: Text, cValueString :: Text, cValueType :: NumberType}
   deriving (Eq)
-
-instance Show AlgBuilderItem where
-  --    show (Function ins outs funcName values ints) = "Function { fIn = {" ++ show ins ++ "}, fOut = {" ++ show outs ++ "}, name = " ++ show funcName ++ ", values = {" ++ show values ++ "}, fInt = {" ++ show ints
-  show (Constant name value _) = "Constant { name = {" ++ show name ++ "}, value = {" ++ show value ++ "} }"
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
@@ -30,7 +25,7 @@ parseLeftExp = map $ \case
   VarName (Name v) -> v
   e -> error $ "bad left expression: " ++ show e
 
-processStatement :: Text -> Stat -> State [AlgBuilderItem] Int
+processStatement :: Text -> Stat -> State (DataFlowGraph String Int, [Constant]) Int
 --Lua language Stat structure parsing
 --LocalAssign
 processStatement _ (LocalAssign _names Nothing) = do
@@ -48,18 +43,18 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
   return 0
 processStatement _ _ = undefined
 
-expConstant :: Text -> Exp -> State [AlgBuilderItem] Int
+expConstant :: Text -> Exp -> State (DataFlowGraph String Int, [Constant]) Int
 expConstant name (Number valueType valueString) = do
-  items <- get
-  put (items ++ [Constant {cName = name, cValueString = valueString, cValueType = valueType}])
+  (graph, constants) <- get
+  put (graph, constants ++ [Constant {cName = name, cValueString = valueString, cValueType = valueType}])
   return 0
 expConstant _ _ = undefined
 
-buildAlg syntaxTree = flip execState st $ do
+buildAlg syntaxTree = fst $ flip execState st $ do
   mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
   where
     (startupFunctionName, _, startupFunctionDef) = findStartupFunction syntaxTree
-    st = [] :: [AlgBuilderItem]
+    st = (DFCluster [], [])
 
 findStartupFunction (Block statements Nothing)
   | [call] <- filter (\case FunCall {} -> True; _ -> False) statements,
@@ -72,6 +67,7 @@ findStartupFunction _ = error "can't find startup function in lua source code"
 
 getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
 
+parseLuaSources :: Text -> DataFlowGraph String Int
 parseLuaSources src =
   let syntaxTree = getLuaBlockFromSources src
       alg = buildAlg syntaxTree
