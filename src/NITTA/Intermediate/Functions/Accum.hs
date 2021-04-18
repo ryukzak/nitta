@@ -48,12 +48,18 @@ data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
 instance (Show v) => Show (Action v) where
     show (Push s (I v)) = show s <> show v
-    show (Pull (O vs)) = S.join " " (map (("= " <>) . show) $ elems vs) <> ";"
+    show (Pull (O vs)) = S.join " " (map (("= " <>) . show) $ elems vs)
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
 instance (Show v) => Show (Acc v x) where
-    show (Acc acts) = S.join " " $ map show acts
+    show (Acc acts) =
+        let lastElement = last acts
+            initElements = init acts
+            showElement inp@(Push _ _) = show inp
+            showElement out@(Pull _) = show out <> ","
+            elements = S.join " " $ map showElement initElements <> [show lastElement]
+         in "Acc(" <> elements <> ")"
 
 instance Label (Acc v x) where label Acc{} = "Acc"
 
