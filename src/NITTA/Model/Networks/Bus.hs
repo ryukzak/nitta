@@ -25,6 +25,7 @@ For creating BusNetwork see 'NITTA.Model.Microarchitecture'.
 -}
 module NITTA.Model.Networks.Bus (
     BusNetwork (..),
+    Instruction (..),
     Ports (..),
     IOPorts (..),
     bindedFunctions,

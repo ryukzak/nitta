@@ -205,7 +205,7 @@ processAlgOnEndpointGen pu0 algGen' = do
     algSynthesisGen alg [] pu0
 
 -- FIXME: support new synthesis/refactor style
-data PUSynthesisTask r f e = BreakLoop r | Bind f | Transport e
+data PUSynthesisTask r f e = BreakLoop r | Bind f | TransportST e
 
 algSynthesisGen fRemain fPassed pu = select tasksList
     where
@@ -213,7 +213,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             concat
                 [ map BreakLoop $ breakLoopOptions pu
                 , map Bind fRemain
-                , map Transport $ endpointOptions pu
+                , map TransportST $ endpointOptions pu
                 ]
 
         select [] = return (pu, fPassed)
@@ -225,7 +225,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             (Left _err) -> algSynthesisGen fRemain' fPassed pu
             where
                 fRemain' = delete f fRemain
-        taskPattern (Transport e) = do
+        taskPattern (TransportST e) = do
             d <- endpointOptionToDecision <$> endpointGen e
             let pu' = endpointDecision pu d
             algSynthesisGen fRemain fPassed pu'

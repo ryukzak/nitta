@@ -19,8 +19,10 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
+import NITTA.Model.Networks.Bus (Instruction (Transport))
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
+import NITTA.Utils.ProcessDescription
 
 checkIntegrity pu =
     let getInterMap =
@@ -51,6 +53,13 @@ checkIntegrity pu =
                     Just i -> [i]
                     _ -> []
                 ]
+
+        getTransportMap =
+            let filterTransport pu (InstructionStep ins)
+                    | Just var@(Transport v src trg) <- castInstruction pu ins = Just v
+                    | otherwise = Nothing
+                filterTransport _ _ = Nothing
+             in M.mapMaybe (filterTransport pu) getInstrMap
 
         -- (pid, f)
         getCadFunctions =
