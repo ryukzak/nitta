@@ -34,6 +34,7 @@ module NITTA.UIBackend.ViewHelper (
     Viewable (..),
     viewNodeTree,
     viewNodeTreeShow,
+    countN,
     TreeView,
     ShortNodeView,
     NodeView,
@@ -118,6 +119,10 @@ instance ToSample (TreeView ShortNodeView) where
                     ]
                 }
 
+instance ToSample (Integer) where
+    toSamples _ =
+        singleSample 0
+
 data ShortNodeView = ShortNodeView
     { sid :: String
     , isLeaf :: Bool
@@ -151,9 +156,14 @@ filterTreeView tnv@TreeNodeView {rootLabel=ShortNodeView{isProcessed=True}, subF
 --     print $ filterTreeView treeRes
 --     return treeRes
 
-viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar}
-    | traceShow tree False = undefined
-    | otherwise =  do
+countN tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+
+    subForestN <- maybe (return 0) (\x -> sum <$> mapM countN x) subForestM
+
+    return (1 + subForestN)
+
+viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForest <- maybe (return []) (mapM viewNodeTreeShow) subForestM
     let treeRes = TreeNodeView
