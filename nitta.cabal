@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38ae9dfec3c729744ade2b144647eb82cfff1075fca88aea4b7a590bfcb55fee
+-- hash: daf568e46eb043aadf18971ddd259b4aaf21d79deac6e8b8a2d5b591ae7ff396
 
 name:           nitta
 version:        0.0.0.1
@@ -115,52 +115,49 @@ library
       src
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
-       HStringTemplate
-     , MissingH
-     , aeson
-     , aeson-pretty
-     , array
-     , base
-     , boxes
-     , bytestring
-     , cassava
-     , containers
-     , data-default
-     , directory
-     , file-embed
-     , filepath
-     , ginger
-     , hashable
-     , hslogger
-     , htoml
-     , http-api-data
-     , intervals
-     , language-lua
-     , mtl
-     , network-simple
-     , pandoc
-     , pandoc-types
-     , pptable
-     , prettyprinter
-     , process
-     , process-extras
-     , regex-compat
-     , safe
-     , servant
-     , servant-docs
-     , servant-js
-     , servant-server
-     , split
-     , stm
-     , string-interpolate
-     , text
-     , tostring
-     , transformers
-     , unordered-containers
-     , utility-ht
-     , validity
-     , wai-cors
-     , warp
+      HStringTemplate
+    , MissingH
+    , aeson
+    , aeson-pretty
+    , array
+    , base
+    , boxes
+    , bytestring
+    , cassava
+    , containers
+    , data-default
+    , directory
+    , file-embed
+    , filepath
+    , ginger
+    , hashable
+    , hslogger
+    , htoml
+    , http-api-data
+    , intervals
+    , language-lua
+    , mtl
+    , network-simple
+    , prettyprinter
+    , process
+    , process-extras
+    , regex-compat
+    , safe
+    , servant
+    , servant-docs
+    , servant-js
+    , servant-server
+    , split
+    , stm
+    , string-interpolate
+    , text
+    , tostring
+    , transformers
+    , unordered-containers
+    , utility-ht
+    , validity
+    , wai-cors
+    , warp
   default-language: Haskell2010
 
 executable nitta
@@ -174,6 +171,7 @@ executable nitta
       MissingH
     , base
     , boxes
+    , bytestring
     , cmdargs
     , containers
     , data-default
@@ -203,6 +201,7 @@ executable nitta-api-gen
     , aeson-typescript
     , base
     , boxes
+    , bytestring
     , cmdargs
     , containers
     , data-default
@@ -255,6 +254,7 @@ test-suite nitta-test
     , atomic-primops
     , base
     , boxes
+    , bytestring
     , call-stack
     , containers
     , data-default
