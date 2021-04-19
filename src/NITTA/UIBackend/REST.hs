@@ -71,6 +71,14 @@ type SynthesisAPI tag v x t =
     ( Description "lolkekdescription"
         :> "synthesis-info"
         :> Get '[JSON] (TreeView ShortNodeView)
+    ) :<|>
+    ( Description "Count Nodes in synthesis graph"
+        :> "synthesis-nodes-count"
+        :> Get '[JSON] (Integer)
+    ) :<|>
+    ( Description "Count success nodes in synthesis graph"
+        :> "synthesis-success-nodes-count"
+        :> Get '[JSON] (Integer)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -83,7 +91,9 @@ type SynthesisAPI tag v x t =
 
 synthesisServer ctx@BackendCtx{root} =
     liftIO (viewNodeTree root) :<|>
-    liftIO (viewNodeTreeShow root)
+    liftIO (viewNodeTreeShow root) :<|>
+    liftIO (countN root) :<|>
+    liftIO (countSuccess root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid

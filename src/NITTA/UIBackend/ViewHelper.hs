@@ -35,6 +35,7 @@ module NITTA.UIBackend.ViewHelper (
     viewNodeTree,
     viewNodeTreeShow,
     countN,
+    countSuccess,
     TreeView,
     ShortNodeView,
     NodeView,
@@ -158,10 +159,14 @@ filterTreeView tnv@TreeNodeView {rootLabel=ShortNodeView{isProcessed=True}, subF
 
 countN tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
-
     subForestN <- maybe (return 0) (\x -> sum <$> mapM countN x) subForestM
-
     return (1 + subForestN)
+
+countSuccess tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+    subForestN <- maybe (return 0) (\x -> sum <$> mapM countSuccess x) subForestM
+    let isLeaf = isComplete tree
+    return (if isLeaf then 1 else 0 + subForestN)
 
 viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
