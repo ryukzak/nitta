@@ -59,7 +59,6 @@ module NITTA.Intermediate.Types (
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
-import qualified Data.ByteString.Lazy as B
 import qualified Data.Csv as Csv
 import Data.Default
 import Data.List (sort, sortOn, transpose)
@@ -74,10 +73,6 @@ import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
 import NITTA.UIBackend.ViewHelperCls
-import Text.Pandoc.Class
-import Text.Pandoc.Definition
-import Text.Pandoc.Options
-import Text.Pandoc.Writers.Markdown
 import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
@@ -321,22 +316,14 @@ cntx2table cntx =
         hsep 1 left $
             map (vcat left . map text) $ cntx2list cntx
 
-cntx2listCycle Cntx{cntxCycleNumber} list = ("Cycle" : map show [1 .. cntxCycleNumber]) : list
-
-cntx2md cntx@Cntx{cntxCycleNumber} = do
-    let cntxList = cntx2listCycle cntx $ cntx2list cntx
-    let getHeaders = map (\x -> [Plain [Str $ T.pack $ head x]])
-    let headers = getHeaders cntxList
-    let deleteHeaders = map tail
-    let cols = helper cntxCycleNumber $ deleteHeaders cntxList
-            where
-                helper 0 _ = []
-                helper i list = getHeaders list : helper (i - 1) (deleteHeaders list)
-    let table = Table [] [AlignLeft] [0.0] headers cols
-    md <- runIO (writeMarkdown (def{writerExtensions = extensionsFromList [Ext_pipe_tables]}) (Pandoc nullMeta [table]))
-    case md of
-        Left e -> error $ "can't create markdown table: " <> show e
-        Right t -> putStr $ S.replace "\\" "" $ T.unpack t
+cntx2md cntx@Cntx{cntxCycleNumber} =
+    let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
+        cycleTable = cntx2listCycle
+        maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cycleTable ++ [replicate (cntxCycleNumber + 2) "|"]
+     in render $
+            hsep 0 left $
+                map (vcat left . map text) cycleFormattedTable
 
 data CntxTable = CntxTable
     { key :: String
@@ -350,11 +337,11 @@ instance ToJSON CntxTable where
 cntx2json cntx =
     let cntxList = cntx2list cntx
         listMap = map (\(v : xs) -> CntxTable{key = v, values = xs}) cntxList
-     in B.writeFile "logicalSimulationOutput.json" $ encodePretty listMap
+     in encodePretty listMap
 
 cntx2csv cntx =
     let cntxList = cntx2list cntx
-     in B.writeFile "logicalSimulationOutput.csv" $ Csv.encode cntxList
+     in Csv.encode cntxList
 
 instance Default (Cntx v x) where
     def =
