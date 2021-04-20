@@ -24,7 +24,7 @@ import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
@@ -101,12 +101,6 @@ tests =
             decide $ consume "b"
             decide $ provide ["c", "d"]
             assertCoSimulation
-        , expectFail $
-            puUnitTestCase "coSim test should fail because synthesis not complete" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                setValues [("a", 2), ("b", 7)]
-                decide $ consume "b"
-                assertCoSimulation
         , expectFail $
             puUnitTestCase "should error, when proccess is not done" u $ do
                 assign $ multiply "a" "b" ["c", "d"]

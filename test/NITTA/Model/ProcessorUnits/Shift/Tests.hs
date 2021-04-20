@@ -16,7 +16,7 @@ module NITTA.Model.ProcessorUnits.Shift.Tests (
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (testGroup)
 

@@ -23,7 +23,7 @@ import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 

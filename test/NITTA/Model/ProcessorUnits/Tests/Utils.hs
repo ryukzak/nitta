@@ -18,55 +18,38 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.Utils (
-    puCoSimTestCase,
     puCoSim,
-    nittaCoSimTestCase,
-    finitePUSynthesisProp,
-    puCoSimProp,
-    algGen,
+    naiveBindlessSynthesis,
     isProcessComplete,
+    incompleteProcessMsg,
+    algGen,
+    initialCycleCntxGen,
+    processAlgOnEndpointGen,
+    algSynthesisGen,
 ) where
 
-import Control.Monad
-import Data.Atomics.Counter (incrCounter)
 import Data.CallStack
 import Data.Default
 import Data.List (delete)
 import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
-import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import qualified NITTA.Project as P
-import NITTA.Synthesis
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath)
 import Test.QuickCheck
-import Test.QuickCheck.Monadic
-import Test.Tasty (TestTree)
-import Test.Tasty.HUnit (assertBool, assertFailure, testCase, (@?))
-import Test.Tasty.QuickCheck (testProperty)
-
--- *Test cases
-
--- |Execute co-simulation test for the specific process unit
-puCoSimTestCase name u cntxCycle alg =
-    testCase name $
-        tbStatus <$> puCoSim name u cntxCycle alg True @? (name <> " in ")
 
 {- |Execute co-simulation test for the specific process unit
- | with or without "naive synthesis".
+with or without "naive synthesis".
 -}
 puCoSim ::
     ( HasCallStack
@@ -105,45 +88,15 @@ puCoSim name u cntxCycle alg needBind = do
 {- |Bind all functions to processor unit and synthesis process with endpoint
 decisions.
 -}
-naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
-    where
-        naiveSynthesis' u
-            | opt : _ <- endpointOptions u =
-                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
-            | otherwise = u
+naiveSynthesis alg u0 = naiveBindlessSynthesis $ foldl (flip bind) u0 alg
 
--- |Execute co-simulation test for the specific microarchitecture and algorithm
-nittaCoSimTestCase ::
-    ( HasCallStack
-    , Val x
-    , Integral x
-    ) =>
-    String ->
-    BusNetwork String String x Int ->
-    [F String x] ->
-    TestTree
-nittaCoSimTestCase n tMicroArch alg =
-    testCase n $ do
-        report <-
-            runTargetSynthesisWithUniqName
-                def
-                    { tName = S.replace " " "_" n
-                    , tMicroArch
-                    , tDFG = fsToDataFlowGraph alg
-                    }
-        case report of
-            Right report' -> assertBool "report with bad status" $ tbStatus report'
-            Left err -> assertFailure $ "can't get report: " ++ err
-
--- *Properties
-
--- |Is unit synthesis process complete (by function and variables).
-finitePUSynthesisProp name pu0 fsGen =
-    testProperty name $ do
-        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        return $
-            isProcessComplete pu fs
-                && null (endpointOptions pu)
+{- |Complete synthesis process with endpoint decisions without function
+binding.
+-}
+naiveBindlessSynthesis u
+    | opt : _ <- endpointOptions u =
+        naiveBindlessSynthesis $ endpointDecision u $ endpointOptionToDecision opt
+    | otherwise = u
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
@@ -153,36 +106,6 @@ incompleteProcessMsg pu fs =
         <> show (elems $ processedVars pu)
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
-
-{- |A computational process of functional (Haskell) and logical (Verilog)
-simulation should be identical for any correct algorithm.
--}
-puCoSimProp name pu0 fsGen =
-    testProperty name $ do
-        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        pTestCntx <- initialCycleCntxGen fs
-        return $
-            monadicIO $
-                run $ do
-                    unless (isProcessComplete pu fs) $
-                        error $ "process is not complete: " <> incompleteProcessMsg pu fs
-                    i <- incrCounter 1 externalTestCntr
-                    wd <- getCurrentDirectory
-                    let pTargetProjectPath = joinPath [wd, "gen", toModuleName name <> "_" <> show i]
-                        prj =
-                            Project
-                                { pName = T.pack $ toModuleName name
-                                , pLibPath = "hdl"
-                                , pTargetProjectPath
-                                , pNittaPath = "."
-                                , pUnit = pu
-                                , pUnitEnv = def
-                                , pTestCntx
-                                , pTemplates = ["templates/Icarus"]
-                                }
-                    writeProject prj
-                    res <- runTestbench prj
-                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pTargetProjectPath
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
     where

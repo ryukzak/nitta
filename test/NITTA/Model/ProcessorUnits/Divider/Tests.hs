@@ -24,7 +24,7 @@ import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
@@ -80,18 +80,19 @@ tests =
             decideAt 7 7 $ provide ["c"]
             decideAt 9 9 $ provide ["g"]
             assertCoSimulation
-        , expectFail $puUnitTestCase "division failed pipeline" u2 $ do
-            assign $ division "a" "b" ["c"] []
-            assign $ division "e" "f" ["g"] []
-            setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
-            decideAt 1 1 $ consume "a"
-            decideAt 2 2 $ consume "b"
-            decideAt 3 3 $ consume "e"
-            decideAt 4 4 $ consume "f"
-            traceEndpoints
-            decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
-            decideAt 13 13 $ provide ["g"]
-            assertCoSimulation
+        , expectFail $
+            puUnitTestCase "division failed pipeline" u2 $ do
+                assign $ division "a" "b" ["c"] []
+                assign $ division "e" "f" ["g"] []
+                setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
+                decideAt 1 1 $ consume "a"
+                decideAt 2 2 $ consume "b"
+                decideAt 3 3 $ consume "e"
+                decideAt 4 4 $ consume "f"
+                traceEndpoints
+                decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
+                decideAt 13 13 $ provide ["g"]
+                assertCoSimulation
         , -- FIXME: the test fail with following description:
           --
           -- > division failed pipeline:  - ?Source "c"@(7..∞ /P 1..1)

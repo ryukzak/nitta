@@ -28,7 +28,7 @@ import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import NITTA.Model.Tests.Microarchitecture
 import Test.QuickCheck
 import Test.Tasty (testGroup)
