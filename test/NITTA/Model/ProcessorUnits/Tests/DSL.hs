@@ -15,6 +15,9 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Tests.DSL (
     puUnitTestCase,
     assign,
+    assigns,
+    assignNaive,
+    assignsNaive,
     setValue,
     setValues,
 
@@ -28,6 +31,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- *Asserts
     assertBindFullness,
     assertCoSimulation,
+    assertNaiveCoSimulation,
     assertSynthesisDone,
 
     -- *Trace
@@ -73,14 +77,32 @@ data UnitTestState pu v x = UnitTestState
 
 evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
 
+-- | Binds several provided functions to PU
+assigns alg = mapM_ assign alg
+
+-- | Binds provided function to PU
 assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> lift $ assertFailure err
 
+{- | Store several provided functions and its initial values
+for naive coSimulation
+-}
+assignsNaive alg cntxs = mapM_ (`assignNaive` cntxs) alg
+
+{- | Store provided function and its initial values
+for naive coSimulation
+-}
+assignNaive f cntxs = do
+    st@UnitTestState{functs, cntxCycle} <- get
+    put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
+
+-- | set initital values for coSimulation input variables
 setValues = mapM_ (uncurry setValue)
 
+-- | set initital value for coSimulation input variables
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when ((var, val) `elem` cntxCycle) $
@@ -96,7 +118,8 @@ decide role = do
     des <- epAt <$> getDecisionSpecific role
     doDecision $ EndpointSt role des
 
-decideAt a b role = doDecision $ EndpointSt role (a ... b)
+-- | Make synthesis decision with provided Endpoint Role and manually selected interval
+decideAt from to role = doDecision $ EndpointSt role (from ... to)
 
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
@@ -112,8 +135,10 @@ isEpOptionAvailable (EndpointSt v interv) pu =
             (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
      in compIntervs && compEpRoles
 
+-- | Transforms provided variable to Target
 consume = Target
 
+-- | Transforms provided variables to Source
 provide = Source . S.fromList
 
 getDecisionSpecific role = do
@@ -129,6 +154,7 @@ getDecisionsFromEp = do
         [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
         opts -> return opts
 
+-- | Breaks loop on PU by using breakLoopDecision function
 breakLoop x i o = do
     st@UnitTestState{unit} <- get
     case breakLoopOptions unit of
@@ -153,16 +179,19 @@ isFullyBinded pu fs = do
         fInps = S.fromList $ map inputs fs
 
 assertSynthesisDone = do
-    UnitTestState{unit, functs} <- get
+    UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
-        lift $ assertFailure "Process is not complete"
+        lift $ assertFailure $ testName <> incompleteProcessMsg unit functs
 
-assertCoSimulation = do
-    assertSynthesisDone
+assertNaiveCoSimulation = assertCoSimulation' True
+
+assertCoSimulation = assertCoSimulation' False
+
+assertCoSimulation' isNaive = do
     UnitTestState{unit, functs, testName, cntxCycle} <- get
-    res <- lift $ puCoSim testName unit cntxCycle functs False
+    res <- lift $ puCoSim testName unit cntxCycle functs isNaive
     unless (tbStatus res) $
-        lift $ assertFailure "Simulation failed"
+        lift $ assertFailure $ testName <> " case: simulation failed. "
 
 tracePU = do
     UnitTestState{unit} <- get

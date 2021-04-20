@@ -18,26 +18,14 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Set as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.PuUnitTestDsl
-import NITTA.Model.ProcessorUnits.Tests.Utils
-import Numeric.Interval.NonEmpty
+import NITTA.Model.ProcessorUnits.Tests.DSL
+import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
 import Test.QuickCheck
 import Test.Tasty (testGroup)
-
-assign = bindFunc
-
--- TODO: decide $ consume "a" | decide $ provide ["c"]
-decide = undefined
-
-decideAt a b role = doDecision $ EndpointSt role (a ... b)
-consume = Target
-provide = Source . S.fromList
 
 tests =
     testGroup
@@ -54,11 +42,12 @@ tests =
             [constant 11 ["ovj"]]
         , puUnitTestCase "test BreakLoop" u2 $ do
             assign $ loop 10 "b" ["a"]
+            setValue "b" 64
             breakLoop 10 "b" ["a"]
             decideAt 1 1 $ provide ["a"]
             decideAt 2 2 $ consume "b"
             traceProcess
-            assertCoSimulation [("b", 64)]
+            assertCoSimulation
         , puCoSimTestCase
             "loop function"
             u
