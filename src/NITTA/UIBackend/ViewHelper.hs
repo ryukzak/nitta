@@ -197,6 +197,7 @@ instance ToSample (NodeView tag v x t) where
             [ NodeView
                 { sid = show $ SID [0, 1, 3, 1]
                 , isLeaf = False
+                , duration = 0
                 , parameters =
                     toJSON $
                         BindMetrics
@@ -216,6 +217,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
+                , duration = 0
                 , parameters =
                     toJSON $
                         DataflowMetrics
@@ -234,6 +236,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
                 , isLeaf = False
+                , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , score = 5000
@@ -241,6 +244,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
+                , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
                     OptimizeAccumView
@@ -252,6 +256,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
+                , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
                     ConstantFoldingView
@@ -263,6 +268,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
+                , duration = 0
                 , parameters =
                     toJSON $
                         ResolveDeadlockMetrics
