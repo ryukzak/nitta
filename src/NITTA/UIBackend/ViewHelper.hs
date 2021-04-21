@@ -156,6 +156,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
 data NodeView tag v x t = NodeView
     { sid :: String
     , isLeaf :: Bool
+    , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
     , score :: Float
@@ -163,10 +164,11 @@ data NodeView tag v x t = NodeView
     deriving (Generic)
 
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
-    view tree@Tree{sID, sDecision} =
+    view tree@Tree{sID, sDecision, sState = SynthesisState{sTarget}} =
         NodeView
             { sid = show sID
             , isLeaf = isComplete tree
+            , duration = fromEnum $ processDuration sTarget
             , decision =
                 ( \case
                     SynthesisDecision{decision} -> view decision
