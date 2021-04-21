@@ -541,7 +541,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                         ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                         , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                         , .RAM_SIZE( #{ numElements memory } )
-                        , .FRAM_DUMP( "$PATH$/#{ softwareFile tag fram }" )
+                        , .FRAM_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag fram }" )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .signal_addr( { #{ T.intercalate ", " $ map (T.pack . show) addr } } )

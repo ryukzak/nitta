@@ -21,14 +21,17 @@ module NITTA.Project (
     runTestbench,
 ) where
 
+import Control.Monad.Identity (runIdentity)
 import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
+import NITTA.Project.Context
 import NITTA.Project.Template
 import NITTA.Project.TestBench
 import NITTA.Project.Types
@@ -39,6 +42,7 @@ import System.FilePath.Posix
 import System.Log.Logger
 import System.Process.ListLike (CreateProcess (..), proc)
 import System.Process.Text
+import Text.Ginger hiding (length)
 import Text.Regex
 
 -- |Write project with all available parts.
@@ -49,19 +53,19 @@ writeProject prj@Project{pTargetProjectPath} = do
     writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"...ok"
 
-writeTargetSystem prj@Project{pName, pTargetProjectPath, pNittaPath, pUnit} = do
-    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
-    writeImplementation pTargetProjectPath pNittaPath $ hardware pName pUnit
-    writeImplementation pTargetProjectPath pNittaPath $ software pName pUnit
+writeTargetSystem prj@Project{pName, pTargetProjectPath, pInProjectNittaPath, pUnit} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
+    writeImplementation prj $ hardware pName pUnit
+    writeImplementation prj $ software pName pUnit
     copyLibraryFiles prj
 
-writeTestBench prj@Project{pTargetProjectPath, pNittaPath} = do
-    createDirectoryIfMissing True $ pTargetProjectPath </> pNittaPath
-    writeImplementation pTargetProjectPath pNittaPath $ testBenchImplementation prj
+writeTestBench prj@Project{pTargetProjectPath, pInProjectNittaPath} = do
+    createDirectoryIfMissing True $ pTargetProjectPath </> pInProjectNittaPath
+    writeImplementation prj $ testBenchImplementation prj
 
 runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pTargetProjectPath <> ")..."
-    let files = projectFiles prj
+    let files = verilogProjectFiles prj
     wd <- getCurrentDirectory
 
     (compileExitCode, compileOut, compileErr) <-
@@ -122,3 +126,43 @@ log2cntx lst0 =
                 let cycleCntx = CycleCntx $ M.fromList $ map (\(_c, v, x) -> (v, x)) xs
                  in cycleCntx : inner (n + 1) ys
             | otherwise = []
+
+-- |Ginger is powerfull but slow down testing two times.
+enableGingerForImplementation = True
+
+-- |Write 'Implementation' to the file system.
+writeImplementation prj@Project{pTargetProjectPath = prjPath, pInProjectNittaPath = nittaPath} impl = writeImpl nittaPath impl
+    where
+        writeImpl p (Immediate fn src0) | enableGingerForImplementation = do
+            let src = T.unpack src0
+                implCtx = implementationContext prj p
+            template <-
+                either (error . formatParserError (Just src)) return <$> runIdentity $
+                    parseGinger (const $ return Nothing) Nothing src
+            T.writeFile (joinPath [prjPath, p, fn]) $ runGinger implCtx template
+        writeImpl p (Immediate fn src0) =
+            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "{{ nitta.paths.nest }}" (T.pack p) src0
+        writeImpl p (Aggregate p' subInstances) = do
+            let path = joinPath $ maybe [p] (\x -> [p, x]) p'
+            createDirectoryIfMissing True $ joinPath [prjPath, path]
+            mapM_ (writeImpl path) subInstances
+        writeImpl _ (FromLibrary _) = return ()
+        writeImpl _ Empty = return ()
+
+-- |Copy library files to target path.
+copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
+    where
+        copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do
+            let fullNittaPath = pTargetProjectPath </> pInProjectNittaPath
+            source <- makeAbsolute $ joinPath [pLibPath, file]
+            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
+            createDirectoryIfMissing True $ takeDirectory target
+            copyFile source target
+
+        libraryFiles Project{pName, pUnit} =
+            L.nub $ concatMap (args "") [hardware pName pUnit]
+            where
+                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+                args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances
+                args _ (FromLibrary fn) = [fn]
+                args _ _ = []

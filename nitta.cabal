@@ -85,6 +85,7 @@ library
       NITTA.Model.TargetSystem
       NITTA.Model.Types
       NITTA.Project
+      NITTA.Project.Context
       NITTA.Project.Template
       NITTA.Project.TestBench
       NITTA.Project.Types

@@ -1,9 +1,13 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS -fno-warn-orphans #-}
 
 {- |
 Module      : NITTA.Project.Types
@@ -18,8 +22,6 @@ module NITTA.Project.Types (
     defProjectTemplates,
     TargetSystemComponent (..),
     Implementation (..),
-    writeImplementation,
-    copyLibraryFiles,
     UnitEnv (..),
     envInputPorts,
     envOutputPorts,
@@ -27,15 +29,11 @@ module NITTA.Project.Types (
 ) where
 
 import Data.Default
-import qualified Data.List as L
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils
-import System.Directory
-import System.FilePath.Posix (joinPath, takeDirectory, (</>))
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -46,12 +44,16 @@ be writable to disk.
 data Project m v x = Project
     { -- |target project name
       pName :: T.Text
-    , -- |IP-core library directory
+    , -- |IP-core library path
       pLibPath :: FilePath
-    , -- |output directory for target project
+    , -- |output path for target project
       pTargetProjectPath :: FilePath
-    , -- |output directory for NITTA processor inside target project
-      pNittaPath :: FilePath
+    , -- |absolute output path for target project
+      pAbsTargetProjectPath :: FilePath
+    , -- |relative to the project path output path for NITTA processor inside target project
+      pInProjectNittaPath :: FilePath
+    , -- |absolute output path for NITTA processor inside target project
+      pAbsNittaPath :: FilePath
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
     , pUnitEnv :: UnitEnv m
@@ -85,7 +87,7 @@ class TargetSystemComponent pu where
 
 -- |Element of target system implementation
 data Implementation
-    = -- |Immediate implementation
+    = -- |Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')
       Immediate {impFileName :: FilePath, impText :: T.Text}
     | -- |Fetch implementation from library
       FromLibrary {impFileName :: FilePath}
@@ -93,43 +95,6 @@ data Implementation
       Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
     | -- |Nothing
       Empty
-
-{- |Write 'Implementation' to the file system.
-
-The $PATH$ placeholder is used for correct addressing between nested files. For
-example, the PATH contains two files f1 and f2, and f1 imports f2 into itself.
-To do this, you often need to specify its address relative to the working
-directory, which is done by inserting this address in place of the $PATH$
-placeholder.
--}
-writeImplementation prjPath nittaPath = writeImpl nittaPath
-    where
-        writeImpl p (Immediate fn src) =
-            T.writeFile (joinPath [prjPath, p, fn]) $ T.replace "$PATH$" (T.pack p) src
-        writeImpl p (Aggregate p' subInstances) = do
-            let path = joinPath $ maybe [p] (\x -> [p, x]) p'
-            createDirectoryIfMissing True $ joinPath [prjPath, path]
-            mapM_ (writeImpl path) subInstances
-        writeImpl _ (FromLibrary _) = return ()
-        writeImpl _ Empty = return ()
-
--- |Copy library files to target path.
-copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
-    where
-        copyLibraryFile Project{pTargetProjectPath, pNittaPath, pLibPath} file = do
-            let fullNittaPath = pTargetProjectPath </> pNittaPath
-            source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
-            createDirectoryIfMissing True $ takeDirectory target
-            copyFile source target
-
-        libraryFiles Project{pName, pUnit} =
-            L.nub $ concatMap (args "") [hardware pName pUnit]
-            where
-                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-                args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances
-                args _ (FromLibrary fn) = [fn]
-                args _ _ = []
 
 {- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
 `data_bus`, `dataOut` into `accum_data_out`.
