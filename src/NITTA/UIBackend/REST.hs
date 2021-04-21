@@ -79,6 +79,10 @@ type SynthesisAPI tag v x t =
     ( Description "Count success nodes in synthesis graph"
         :> "synthesis-success-nodes-count"
         :> Get '[JSON] (Integer)
+    ) :<|>
+    ( Description "Count not processed nodes in synthesis graph"
+        :> "synthesis-not-processed-nodes-count"
+        :> Get '[JSON] (Integer)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -93,7 +97,8 @@ synthesisServer ctx@BackendCtx{root} =
     liftIO (viewNodeTree root) :<|>
     liftIO (viewNodeTreeShow root) :<|>
     liftIO (countN root) :<|>
-    liftIO (countSuccess root)
+    liftIO (countSuccess root) :<|>
+    liftIO (countNotProcessed root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid

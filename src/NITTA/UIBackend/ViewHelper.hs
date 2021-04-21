@@ -36,6 +36,7 @@ module NITTA.UIBackend.ViewHelper (
     viewNodeTreeShow,
     countN,
     countSuccess,
+    countNotProcessed,
     TreeView,
     ShortNodeView,
     NodeView,
@@ -167,6 +168,14 @@ countSuccess tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
     subForestN <- maybe (return 0) (\x -> sum <$> mapM countSuccess x) subForestM
     let isLeaf = isComplete tree
     return (if isLeaf then 1 else 0 + subForestN)
+
+countNotProcessed tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+    -- subForestN <- maybe (return 0) (\x -> sum <$> mapM countNotProcessed x) subForestM
+    isNotProcessed <- case subForestM of
+            Nothing        -> return 1
+            Just subForest -> sum <$> mapM countNotProcessed subForest
+    return isNotProcessed
 
 viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
