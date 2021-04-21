@@ -138,9 +138,7 @@ main = do
                         Left msg -> error msg
                         Right p -> return p
 
-            when lsim $ do
-                TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-                putCntx format ("lsim" :: String) $ frPrettyCntx tbLogicalSimulationCntx
+            when lsim $ logicalSimulation format frPrettyCntx prj
         )
         $ parseFX type_
 
@@ -161,12 +159,18 @@ readSourceCode filename = do
     infoM "NITTA" $ "read source code from: " <> show filename <> "...ok"
     return src
 
+-- |Simulation on intermediate level (data-flow graph)
 functionalSimulation n received src format = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
     putCntx format ("fsim" :: String) $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
+
+-- |Simulation on RTL level by a Verilog simulator.
+logicalSimulation format frPrettyCntx prj = do
+    TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
+    putCntx format ("lsim" :: String) $ frPrettyCntx tbLogicalSimulationCntx
 
 putCntx "md" t cntx = do
     putStrLn $ if t == "lsim" then "Logical simulation (by IcarusVerilog):" else "Functional simulation:"
