@@ -23,7 +23,7 @@ module Main (main) where
 
 import Control.Exception
 import Control.Monad (when)
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
@@ -164,24 +164,18 @@ functionalSimulation n received src format = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
-    putCntx format ("fsim" :: String) $ frPrettyCntx cntx
+    putCntx format $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
 logicalSimulation format frPrettyCntx prj = do
     TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-    putCntx format ("lsim" :: String) $ frPrettyCntx tbLogicalSimulationCntx
+    putCntx format $ frPrettyCntx tbLogicalSimulationCntx
 
-putCntx "md" t cntx = do
-    putStrLn $ if t == "lsim" then "Logical simulation (by IcarusVerilog):" else "Functional simulation:"
-    putStr $ cntx2md cntx
-putCntx "json" t cntx =
-    let filename = if t == "lsim" then "logicalSimulationOutput.json" else "functionalSimulationOutput.json"
-     in B.writeFile filename $ cntx2json cntx
-putCntx "csv" t cntx =
-    let filename = if t == "lsim" then "logicalSimulationOutput.csv" else "functionalSimulationOutput.csv"
-     in B.writeFile filename $ cntx2csv cntx
-putCntx _ _ _ = error "not supported output format option"
+putCntx "md" cntx = putStr $ cntx2md cntx
+putCntx "json" cntx = B.putStr $ cntx2json cntx
+putCntx "csv" cntx = B.putStr $ cntx2csv cntx
+putCntx t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO
