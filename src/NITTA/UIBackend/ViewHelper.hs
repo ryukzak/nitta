@@ -241,6 +241,7 @@ data NodeView tag v x t = NodeView
     }
     deriving (Generic)
 
+
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
     view tree@Tree{sID, sDecision, sState = SynthesisState{sTarget}} =
         NodeView
