@@ -61,12 +61,12 @@ import Data.Aeson
 import Data.Aeson.Encode.Pretty
 import qualified Data.Csv as Csv
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S hiding (split)
 import qualified Data.String.Utils as S
-import qualified Data.Text as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics
@@ -319,30 +319,17 @@ cntx2table cntx =
 
 cntx2md cntx@Cntx{cntxCycleNumber} =
     let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
-        cycleTable = cntx2listCycle
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cycleTable ++ [replicate (cntxCycleNumber + 2) "|"]
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
      in render $
             hsep 0 left $
                 map (vcat left . map text) cycleFormattedTable
 
-data CntxTable = CntxTable
-    { key :: String
-    , values :: [String]
-    }
-    deriving (Show, Generic)
-
-instance ToJSON CntxTable where
-    toJSON ct = object [T.pack (key ct) .= values ct]
-
 cntx2json cntx =
-    let cntxList = cntx2list cntx
-        listMap = map (\(v : xs) -> CntxTable{key = v, values = xs}) cntxList
-     in encodePretty listMap
+    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
+     in encodePretty $ map HM.fromList listHashMap
 
-cntx2csv cntx =
-    let cntxList = cntx2list cntx
-     in Csv.encode cntxList
+cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
 
 instance Default (Cntx v x) where
     def =
