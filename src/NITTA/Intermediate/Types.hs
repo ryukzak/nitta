@@ -109,6 +109,7 @@ newtype X x = X x
 -----------------------------------------------------------
 
 {- |Casuality of variable processing sequence in term of locks.
+
 For example:
 > c := a + b
 > [ Lock{ locked=c, lockBy=a }, Lock{ locked=c, lockBy=b } ]

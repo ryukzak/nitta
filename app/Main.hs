@@ -23,7 +23,7 @@ module Main (main) where
 
 import Control.Exception
 import Control.Monad (when)
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
@@ -173,8 +173,8 @@ logicalSimulation format frPrettyCntx prj = do
     putCntx format $ frPrettyCntx tbLogicalSimulationCntx
 
 putCntx "md" cntx = putStr $ cntx2md cntx
-putCntx "json" cntx = B.putStr $ cntx2json cntx
-putCntx "csv" cntx = B.putStr $ cntx2csv cntx
+putCntx "json" cntx = BS.putStr $ cntx2json cntx
+putCntx "csv" cntx = BS.putStr $ cntx2csv cntx
 putCntx t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
