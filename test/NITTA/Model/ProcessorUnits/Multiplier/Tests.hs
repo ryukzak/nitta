@@ -107,6 +107,22 @@ tests =
                 decideAt 1 2 $ consume "a"
                 assertSynthesisDone
         , expectFail $
+            puUnitTestCase "should fail coSim, when variables not set" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                decide $ consume "a"
+                decide $ consume "b"
+                decide $ provide ["c", "d"]
+                assertCoSimulation
+        , expectFail $
+            puUnitTestCase "should fail coSim, when variables incorrect" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                setValue "a" 1
+                setValue "b" 1
+                decide $ consume "a"
+                decide $ consume "b"
+                decide $ provide ["c", "d"]
+                assertCoSimulation
+        , expectFail $
             puUnitTestCase "should not bind, when PU incompatible with F" u $ do
                 assign $ sub "a" "b" ["c"]
         , expectFail $
