@@ -173,7 +173,7 @@ logicalSimulation format frPrettyCntx prj = do
     putCntx format $ frPrettyCntx tbLogicalSimulationCntx
 
 putCntx "md" cntx = putStr $ cntx2md cntx
-putCntx "json" cntx = BS.putStr $ cntx2json cntx
+putCntx "json" cntx = BS.putStrLn $ cntx2json cntx
 putCntx "csv" cntx = BS.putStr $ cntx2csv cntx
 putCntx t _ = error $ "not supported output format option: " <> t
 
