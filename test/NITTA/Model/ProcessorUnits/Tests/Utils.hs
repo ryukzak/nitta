@@ -53,13 +53,13 @@ with or without "naive synthesis".
 -}
 puCoSim ::
     ( HasCallStack
-    , PUClasses (pu String x Int) String x Int
-    , WithFunctions (pu String x Int) (F String x)
-    , P.Testable (pu String x Int) String x
-    , DefaultX (pu String x Int) x
+    , PUClasses pu String x Int
+    , WithFunctions pu (F String x)
+    , P.Testable pu String x
+    , DefaultX pu x
     ) =>
     String ->
-    pu String x Int ->
+    pu ->
     [(String, x)] ->
     [F String x] ->
     Bool ->
