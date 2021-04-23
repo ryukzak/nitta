@@ -23,9 +23,7 @@ module NITTA.LuaFrontend.Tests (
 
 import Data.FileEmbed (embedStringFile)
 import Data.String.Interpolate
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.TH
 

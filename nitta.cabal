@@ -225,7 +225,7 @@ test-suite nitta-test
       NITTA.Intermediate.Tests.Functions
       NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
-      NITTA.LuaFrontend.Tests.Utils
+      NITTA.LuaFrontend.Tests.Providers
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
@@ -237,9 +237,11 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
       NITTA.Model.ProcessorUnits.Tests.DSL
-      NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
+      NITTA.Model.ProcessorUnits.Tests.Providers
       NITTA.Model.ProcessorUnits.Tests.Utils
+      NITTA.Model.Tests.Internals
       NITTA.Model.Tests.Microarchitecture
+      NITTA.Model.Tests.Providers
       NITTA.Tests
       NITTA.Utils.Tests
       Paths_nitta

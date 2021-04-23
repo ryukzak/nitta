@@ -18,12 +18,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.Intermediate.Types
-import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.DSL
-import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 

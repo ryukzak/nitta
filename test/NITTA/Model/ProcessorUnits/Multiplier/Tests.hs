@@ -17,15 +17,9 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 ) where
 
 import Data.String.Interpolate
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.Intermediate.Types
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.DSL
-import NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Model.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure

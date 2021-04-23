@@ -8,49 +8,49 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
+{-# OPTIONS -fno-warn-dodgy-exports #-}
 
 {- |
-Module      : NITTA.Model.ProcessorUnits.Tests.Utils
+Module      : NITTA.Model.ProcessorUnits.Tests.Providers
 Description : Utils for processor unit testing
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Tests.TestCaseTemplates (
+module NITTA.Model.ProcessorUnits.Tests.Providers (
     puCoSimTestCase,
-    nittaCoSimTestCase,
     finitePUSynthesisProp,
     puCoSimProp,
+    module NITTA.Model.ProcessorUnits,
+    module NITTA.Intermediate.Functions,
+    module NITTA.Intermediate.Types,
+    module NITTA.Intermediate.Tests.Functions,
+    module NITTA.Model.ProcessorUnits.Tests.DSL,
     module NITTA.Model.ProcessorUnits.Tests.Utils,
 ) where
 
 import Control.Monad
-import Data.Atomics.Counter (incrCounter)
 import Data.CallStack
 import Data.Data
 import Data.Default
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
-import NITTA.Intermediate.DataFlow
-import NITTA.Intermediate.Functions ()
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
-import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
-import NITTA.Model.TargetSystem ()
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.Model.Tests.Internals
 import NITTA.Project
 import qualified NITTA.Project as P
-import NITTA.Synthesis
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath)
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
-import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 import Test.Tasty.QuickCheck (testProperty)
 
 -- *Test cases
@@ -73,29 +73,6 @@ puCoSimTestCase name u cntxCycle alg =
     puUnitTestCase name u $ do
         assignsNaive alg cntxCycle
         assertNaiveCoSimulation
-
--- |Execute co-simulation test for the specific microarchitecture and algorithm
-nittaCoSimTestCase ::
-    ( HasCallStack
-    , Val x
-    , Integral x
-    ) =>
-    String ->
-    BusNetwork String String x Int ->
-    [F String x] ->
-    TestTree
-nittaCoSimTestCase n tMicroArch alg =
-    testCase n $ do
-        report <-
-            runTargetSynthesisWithUniqName
-                def
-                    { tName = S.replace " " "_" n
-                    , tMicroArch
-                    , tDFG = fsToDataFlowGraph alg
-                    }
-        case report of
-            Right report' -> assertBool "report with bad status" $ tbStatus report'
-            Left err -> assertFailure $ "can't get report: " ++ err
 
 -- *Properties
 
