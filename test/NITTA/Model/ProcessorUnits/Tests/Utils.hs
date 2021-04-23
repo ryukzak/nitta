@@ -19,7 +19,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Tests.Utils (
     puCoSim,
-    naiveBindlessSynthesis,
+    naiveSynthesis,
     isProcessComplete,
     incompleteProcessMsg,
     algGen,
@@ -88,15 +88,12 @@ puCoSim name u cntxCycle alg needBind = do
 {- |Bind all functions to processor unit and synthesis process with endpoint
 decisions.
 -}
-naiveSynthesis alg u0 = naiveBindlessSynthesis $ foldl (flip bind) u0 alg
-
-{- |Complete synthesis process with endpoint decisions without function
-binding.
--}
-naiveBindlessSynthesis u
-    | opt : _ <- endpointOptions u =
-        naiveBindlessSynthesis $ endpointDecision u $ endpointOptionToDecision opt
-    | otherwise = u
+naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
+    where
+        naiveSynthesis' u
+            | opt : _ <- endpointOptions u =
+                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
+            | otherwise = u
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 

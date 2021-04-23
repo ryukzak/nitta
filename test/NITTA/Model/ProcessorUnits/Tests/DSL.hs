@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
@@ -27,11 +28,11 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     consume,
     provide,
     breakLoop,
+    decideNaiveSynthesis,
 
     -- *Asserts
     assertBindFullness,
     assertCoSimulation,
-    assertNaiveCoSimulation,
     assertSynthesisDone,
 
     -- *Trace
@@ -77,20 +78,20 @@ data UnitTestState pu v x = UnitTestState
     }
     deriving (Show)
 
+type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t) => StateT (UnitTestState pu v x) IO r
+
+type DSLTransformer pu v x t f =
+    ( Function f String
+    , WithFunctions pu f
+    ) =>
+    DSLStatement pu v x t () -- TODO change?
 evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
 
 -- | Binds several provided functions to PU
 assigns alg = mapM_ assign alg
 
 -- | Binds provided function to PU
-assign ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu v x) (t1 IO)
-    , ProcessorUnit pu v x t2
-    , MonadTrans t1
-    ) =>
-    F v x ->
-    t1 IO ()
+assign :: F v x -> DSLStatement pu v x t ()
 assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
@@ -110,31 +111,11 @@ assignNaive f cntxs = do
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues ::
-    ( HasCallStack
-    , Foldable t1
-    , MonadState (UnitTestState pu v b) (t2 IO)
-    , Eq b
-    , MonadTrans t2
-    , Function f String
-    , WithFunctions pu f
-    ) =>
-    t1 (String, b) ->
-    t2 IO ()
+setValues :: (Foldable l) => l (String, x) -> DSLTransformer pu v x t f
 setValues = mapM_ (uncurry setValue)
 
 -- | set initital value for coSimulation input variables
-setValue ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu v b) (t IO)
-    , Eq b
-    , MonadTrans t
-    , Function f String
-    , WithFunctions pu f
-    ) =>
-    String ->
-    b ->
-    t IO ()
+setValue :: String -> x -> DSLTransformer pu v x t f
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when ((var, val) `elem` cntxCycle) $
@@ -147,49 +128,26 @@ setValue var val = do
 
 -- | Make synthesis decision with provided Endpoint Role and automatically assigned time
 decide ::
-    ( HasCallStack
-    , EndpointProblem u v t2
-    , MonadTrans t
-    , MonadState (UnitTestState u v1 x1) (t IO)
-    , ProcessorUnit u v3 x2 t2
-    , Show v
-    , Show (EndpointRole v)
-    , Ord v
-    ) =>
+    (EndpointProblem pu v t) =>
     EndpointRole v ->
-    t IO ()
+    DSLStatement pu v x t ()
 decide role = do
     des <- epAt <$> getDecisionSpecific role
     doDecision $ EndpointSt role des
 
 -- | Make synthesis decision with provided Endpoint Role and manually selected interval
 decideAt ::
-    ( HasCallStack
-    , EndpointProblem u v2 t2
-    , MonadTrans t1
-    , MonadState (UnitTestState u v1 x1) (t1 IO)
-    , ProcessorUnit u v3 x2 t2
-    , Show v2
-    , Ord v2
-    ) =>
-    t2 ->
-    t2 ->
-    EndpointRole v2 ->
-    t1 IO ()
+    (EndpointProblem pu v t) =>
+    t ->
+    t ->
+    EndpointRole v ->
+    DSLStatement pu v x t ()
 decideAt from to role = doDecision $ EndpointSt role (from ... to)
 
 doDecision ::
-    ( HasCallStack
-    , MonadState (UnitTestState u v1 x1) (t1 IO)
-    , MonadTrans t1
-    , Show v2
-    , EndpointProblem u v2 a
-    , EndpointProblem u v2 t2
-    , ProcessorUnit u v3 x2 a
-    , Ord v2
-    ) =>
-    EndpointSt v2 (Interval a) ->
-    t1 IO ()
+    (EndpointProblem pu v t) =>
+    EndpointSt v (Interval t) ->
+    DSLStatement pu v x t ()
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
@@ -204,6 +162,16 @@ isEpOptionAvailable (EndpointSt v interv) pu =
             (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
      in compIntervs && compEpRoles
 
+-- |Bind all functions to processor unit and decide till decisions left.
+decideNaiveSynthesis ::
+    (EndpointProblem pu v t) =>
+    DSLStatement pu v x t ()
+decideNaiveSynthesis = do
+    st@UnitTestState{unit, functs} <- get
+    when (null functs) $
+        lift $ assertFailure "You should assign function to do naive synthesis!"
+    put st{unit = naiveSynthesis functs unit}
+
 -- | Transforms provided variable to Target
 consume = Target
 
@@ -211,32 +179,19 @@ consume = Target
 provide = Source . S.fromList
 
 getDecisionSpecific ::
-    ( HasCallStack
-    , Variables a1 a2
-    , MonadTrans t
-    , MonadState (UnitTestState u v x) (t IO)
-    , EndpointProblem u a2 a3
-    , Num a3
-    , Ord a2
-    , Ord a3
-    , Show a1
-    ) =>
-    a1 ->
-    t IO (EndpointSt a2 (Interval a3))
+    (EndpointProblem pu v t) =>
+    EndpointRole v ->
+    DSLStatement pu v x t (EndpointSt v (Interval t))
 getDecisionSpecific role = do
     let s = variables role
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show role
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " -- TODO: fix <> show role
 
 getDecisionsFromEp ::
-    ( HasCallStack
-    , MonadState (UnitTestState u v1 x) (t1 IO)
-    , EndpointProblem u v2 t2
-    , MonadTrans t1
-    ) =>
-    t1 IO [EndpointSt v2 (TS.TimeConstrain t2)]
+    (EndpointProblem pu v t) =>
+    DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
@@ -244,17 +199,7 @@ getDecisionsFromEp = do
         opts -> return opts
 
 -- | Breaks loop on PU by using breakLoopDecision function
-breakLoop ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu v x) (t IO)
-    , MonadTrans t
-    , BreakLoopProblem pu v2 x2
-    , Ord v2
-    ) =>
-    x2 ->
-    v2 ->
-    [v2] ->
-    t IO ()
+breakLoop :: (BreakLoopProblem pu v x) => x -> v -> [v] -> DSLStatement pu v x t ()
 breakLoop x i o = do
     st@UnitTestState{unit} <- get
     case breakLoopOptions unit of
@@ -302,18 +247,6 @@ assertSynthesisDone = do
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
 
-assertNaiveCoSimulation ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu String x) (t IO)
-    , MonadTrans t
-    , N.PUClasses pu String x Int
-    , WithFunctions pu (F String x)
-    , P.Testable pu String x
-    , DefaultX pu x
-    ) =>
-    t IO ()
-assertNaiveCoSimulation = assertCoSimulation' True
-
 assertCoSimulation ::
     ( HasCallStack
     , MonadState (UnitTestState pu String x) (t IO)
@@ -324,27 +257,14 @@ assertCoSimulation ::
     , DefaultX pu x
     ) =>
     t IO ()
-assertCoSimulation = assertCoSimulation' False
-
-assertCoSimulation' ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu String x) (t IO)
-    , MonadTrans t
-    , N.PUClasses pu String x Int
-    , WithFunctions pu (F String x)
-    , P.Testable pu String x
-    , DefaultX pu x
-    ) =>
-    Bool ->
-    t IO ()
-assertCoSimulation' isNaive =
+assertCoSimulation =
     let checkInputVars pu fs cntx = S.union (inpVars $ functions pu) (inpVars fs) == S.fromList (map fst cntx)
      in do
             UnitTestState{unit, functs, testName, cntxCycle} <- get
             unless (checkInputVars unit functs cntxCycle) $
                 lift $ assertFailure "you forgot to set initial values before coSimulation."
 
-            res <- lift $ puCoSim testName unit cntxCycle functs isNaive
+            res <- lift $ puCoSim testName unit cntxCycle functs False
             unless (P.tbStatus res) $
                 lift $ assertFailure "coSimulation failed."
 

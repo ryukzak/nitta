@@ -72,7 +72,8 @@ puCoSimTestCase ::
 puCoSimTestCase name u cntxCycle alg =
     puUnitTestCase name u $ do
         assignsNaive alg cntxCycle
-        assertNaiveCoSimulation
+        decideNaiveSynthesis
+        assertCoSimulation
 
 -- *Properties
 
