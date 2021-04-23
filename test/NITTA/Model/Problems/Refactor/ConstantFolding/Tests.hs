@@ -23,7 +23,7 @@ import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend.Tests.Utils
+import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit

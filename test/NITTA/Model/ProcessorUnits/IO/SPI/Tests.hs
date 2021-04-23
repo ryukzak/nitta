@@ -22,15 +22,15 @@ import Data.Default
 import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.Intermediate.DataFlow
-import qualified NITTA.Intermediate.Functions as F
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.Tests.Internals
+import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
+
+-- FIXME: avoid NITTA.Model.Tests.Internals usage
 
 test_multiple_receives =
     [ testCase "receive two variables" $
@@ -42,10 +42,10 @@ test_multiple_receives =
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph
-                            [ F.receive ["a"]
-                            , F.receive ["b"]
-                            , F.add "a" "b" ["c"]
-                            , F.send "c"
+                            [ receive ["a"]
+                            , receive ["b"]
+                            , add "a" "b" ["c"]
+                            , send "c"
                             ]
                     }
     , testCase "receive variable two times" $
@@ -57,9 +57,9 @@ test_multiple_receives =
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph
-                            [ F.receive ["a", "b"]
-                            , F.add "a" "b" ["c"]
-                            , F.send "c"
+                            [ receive ["a", "b"]
+                            , add "a" "b" ["c"]
+                            , send "c"
                             ]
                     }
     ]

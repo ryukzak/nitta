@@ -10,18 +10,19 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests.Utils
+Module      : NITTA.LuaFrontend.Tests.Providers
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.LuaFrontend.Tests.Utils (
+module NITTA.LuaFrontend.Tests.Providers (
     luaTestCase,
     typedLuaTestCase,
     typedIOLuaTestCase,
     traceLuaSimulationTestCase,
+    module NITTA.Model.Tests.Microarchitecture,
 ) where
 
 import Data.CallStack
@@ -33,6 +34,7 @@ import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
+import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import NITTA.Synthesis
@@ -81,6 +83,8 @@ typedIOLuaTestCase arch proxy name received src = testCase name $ do
     case status of
         Left err -> assertFailure err
         Right _ -> return ()
+
+-- Internals
 
 runLua ::
     forall x.
