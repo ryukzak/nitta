@@ -50,7 +50,8 @@ import NITTA.Utils
 import Numeric.Interval.NonEmpty ((...))
 import Servant
 import Servant.Docs
-import System.FilePath (joinPath)
+import System.Directory
+import System.FilePath
 
 data BackendCtx tag v x t = BackendCtx
     { -- |root synthesis node
@@ -205,14 +206,17 @@ type TestBenchAPI v x =
 
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
-    nittaPath <- either (error . T.unpack) id <$> collectNittaPath defProjectTemplates
+    pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath defProjectTemplates
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
+    pwd <- getCurrentDirectory
     let prj =
             Project
                 { pName = T.pack pName
                 , pLibPath = "hdl"
-                , pTargetProjectPath = joinPath [outputPath, pName]
-                , pNittaPath = nittaPath
+                , pTargetProjectPath = outputPath </> pName
+                , pAbsTargetProjectPath = pwd </> outputPath </> pName
+                , pInProjectNittaPath
+                , pAbsNittaPath = pwd </> outputPath </> pInProjectNittaPath
                 , pUnit = targetUnit tree
                 , pUnitEnv = bnEnv $ targetUnit tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree

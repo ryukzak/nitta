@@ -23,6 +23,7 @@ Stability   : experimental
 module NITTA.Project.Template (
     writeRenderedTemplates,
     collectNittaPath,
+    projectContext,
 ) where
 
 -- TODO: Fix imports inside template
@@ -39,9 +40,8 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.Generics hiding (moduleName)
-import NITTA.Project.TestBench
+import NITTA.Project.Context
 import NITTA.Project.Types
-import NITTA.Utils
 import System.Directory
 import System.FilePath
 import System.Log.Logger
@@ -169,17 +169,3 @@ findAllFiles root = findAllFiles' ""
                             else return [item]
                     )
                     items
-
-projectContext prj@Project{pName, pUnit, pUnitEnv} = makeContextText $ \case
-    "nitta" ->
-        dict
-            [ ("instance", toGVal $ doc2text $ hardwareInstance (moduleName pName pUnit) pUnit pUnitEnv)
-            , ("files", toGVal $ projectFiles prj)
-            ,
-                ( "testbench"
-                , dict
-                    [ ("module_name", toGVal $ testBenchTopModuleName prj)
-                    ]
-                )
-            ]
-    unknown -> error $ "template error, variable '" <> T.unpack unknown <> "' not defined (see 'NITTA.Project.Template')"

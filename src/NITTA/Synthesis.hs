@@ -108,7 +108,8 @@ import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Refactor
 import NITTA.Synthesis.Types
-import System.FilePath (joinPath)
+import System.Directory
+import System.FilePath
 import System.Log.Logger
 
 {- |Description of synthesis task. Applicable for target system synthesis and
@@ -195,13 +196,16 @@ synthesizeTargetSystem
                         else Left "synthesis process...fail"
 
             writeProject' leaf = do
-                nittaPath <- either (error . T.unpack) id <$> collectNittaPath tTemplates
+                pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath tTemplates
+                pwd <- getCurrentDirectory
                 let prj =
                         Project
                             { pName = T.pack tName
                             , pLibPath = tLibPath
-                            , pTargetProjectPath = joinPath [tPath, tName]
-                            , pNittaPath = nittaPath
+                            , pTargetProjectPath = tPath </> tName
+                            , pAbsTargetProjectPath = pwd </> tPath </> tName
+                            , pInProjectNittaPath
+                            , pAbsNittaPath = pwd </> tPath </> tName </> pInProjectNittaPath
                             , pUnit = targetUnit leaf
                             , pUnitEnv = bnEnv $ targetUnit leaf
                             , -- because application algorithm can be refactored we need to use
