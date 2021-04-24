@@ -4,6 +4,7 @@
 module NITTA.LuaFrontendNew
   ( parseLuaSources,
     -- * Internal
+    Constant(..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
