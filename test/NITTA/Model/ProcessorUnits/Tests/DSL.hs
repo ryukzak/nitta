@@ -79,7 +79,7 @@ data UnitTestState pu v x = UnitTestState
     }
     deriving (Show)
 
-type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t) => StateT (UnitTestState pu v x) IO r
+type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) => StateT (UnitTestState pu v x) IO r
 
 type DSLFunctions pu v x t f = (Function f v, WithFunctions pu f) => DSLStatement pu v x t ()
 
@@ -125,27 +125,16 @@ setValue var val = do
         isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ inpVars $ functions pu
 
 -- | Make synthesis decision with provided Endpoint Role and automatically assigned time
-decide ::
-    (EndpointProblem pu v t) =>
-    EndpointRole v ->
-    DSLStatement pu v x t ()
+decide :: EndpointRole v -> DSLStatement pu v x t ()
 decide role = do
     des <- epAt <$> getDecisionSpecific role
     doDecision $ EndpointSt role des
 
 -- | Make synthesis decision with provided Endpoint Role and manually selected interval
-decideAt ::
-    (EndpointProblem pu v t) =>
-    t ->
-    t ->
-    EndpointRole v ->
-    DSLStatement pu v x t ()
+decideAt :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 decideAt from to role = doDecision $ EndpointSt role (from ... to)
 
-doDecision ::
-    (EndpointProblem pu v t) =>
-    EndpointSt v (Interval t) ->
-    DSLStatement pu v x t ()
+doDecision :: EndpointSt v (Interval t) -> DSLStatement pu v x t ()
 doDecision endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
@@ -161,9 +150,7 @@ isEpOptionAvailable (EndpointSt v interv) pu =
      in compIntervs && compEpRoles
 
 -- |Bind all functions to processor unit and decide till decisions left.
-decideNaiveSynthesis ::
-    (EndpointProblem pu v t) =>
-    DSLStatement pu v x t ()
+decideNaiveSynthesis :: DSLStatement pu v x t ()
 decideNaiveSynthesis = do
     st@UnitTestState{unit, functs} <- get
     when (null functs) $
@@ -176,7 +163,7 @@ consume = Target
 -- | Transforms provided variables to Source
 provide = Source . S.fromList
 
-getDecisionSpecific :: (EndpointProblem pu v t) => EndpointRole v -> DSLStatement pu v x t (EndpointSt v (Interval t))
+getDecisionSpecific :: EndpointRole v -> DSLStatement pu v x t (EndpointSt v (Interval t))
 getDecisionSpecific role = do
     let s = variables role
     des <- getDecisionsFromEp
@@ -184,7 +171,7 @@ getDecisionSpecific role = do
         Just v -> return $ endpointOptionToDecision v
         Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
 
-getDecisionsFromEp :: (EndpointProblem pu v t) => DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
+getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
@@ -217,7 +204,7 @@ isFullyBinded pu fs = do
         fOuts = S.fromList $ map outputs fs
         fInps = S.fromList $ map inputs fs
 
-assertSynthesisDone :: (EndpointProblem pu v x) => DSLStatement pu v x t ()
+assertSynthesisDone :: DSLStatement pu v x t ()
 assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
