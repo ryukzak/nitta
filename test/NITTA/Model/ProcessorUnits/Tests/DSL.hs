@@ -4,6 +4,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Tests.DSL
@@ -80,11 +81,8 @@ data UnitTestState pu v x = UnitTestState
 
 type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t) => StateT (UnitTestState pu v x) IO r
 
-type DSLTransformer pu v x t f =
-    ( Function f String
-    , WithFunctions pu f
-    ) =>
-    DSLStatement pu v x t () -- TODO change?
+type DSLFunctions pu v x t f = (Function f v, WithFunctions pu f) => DSLStatement pu v x t ()
+
 evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
 
 -- | Binds several provided functions to PU
@@ -111,11 +109,11 @@ assignNaive f cntxs = do
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues :: (Foldable l) => l (String, x) -> DSLTransformer pu v x t f
+setValues :: [(String, x)] -> DSLFunctions pu String x t f
 setValues = mapM_ (uncurry setValue)
 
 -- | set initital value for coSimulation input variables
-setValue :: String -> x -> DSLTransformer pu v x t f
+setValue :: String -> x -> DSLFunctions pu String x t f
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when ((var, val) `elem` cntxCycle) $
@@ -178,20 +176,15 @@ consume = Target
 -- | Transforms provided variables to Source
 provide = Source . S.fromList
 
-getDecisionSpecific ::
-    (EndpointProblem pu v t) =>
-    EndpointRole v ->
-    DSLStatement pu v x t (EndpointSt v (Interval t))
+getDecisionSpecific :: (EndpointProblem pu v t) => EndpointRole v -> DSLStatement pu v x t (EndpointSt v (Interval t))
 getDecisionSpecific role = do
     let s = variables role
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " -- TODO: fix <> show role
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
 
-getDecisionsFromEp ::
-    (EndpointProblem pu v t) =>
-    DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
+getDecisionsFromEp :: (EndpointProblem pu v t) => DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
@@ -199,24 +192,14 @@ getDecisionsFromEp = do
         opts -> return opts
 
 -- | Breaks loop on PU by using breakLoopDecision function
-breakLoop :: (BreakLoopProblem pu v x) => x -> v -> [v] -> DSLStatement pu v x t ()
+breakLoop :: BreakLoopProblem pu v x => x -> v -> [v] -> DSLStatement pu v x t ()
 breakLoop x i o = do
     st@UnitTestState{unit} <- get
     case breakLoopOptions unit of
         [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
         _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 
-assertBindFullness ::
-    ( HasCallStack
-    , WithFunctions a b
-    , Show b
-    , Show v
-    , MonadState (UnitTestState a v x) (t IO)
-    , MonadTrans t
-    , Ord v
-    , Function b v
-    ) =>
-    t IO ()
+assertBindFullness :: Show f => DSLFunctions pu v x t f
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     isOk <- lift $ isFullyBinded unit functs
@@ -234,29 +217,19 @@ isFullyBinded pu fs = do
         fOuts = S.fromList $ map outputs fs
         fInps = S.fromList $ map inputs fs
 
-assertSynthesisDone ::
-    ( HasCallStack
-    , ProcessorUnit pu v x c
-    , EndpointProblem pu v2 c2
-    , MonadTrans t
-    , MonadState (UnitTestState pu v x) (t IO)
-    ) =>
-    t IO ()
+assertSynthesisDone :: (EndpointProblem pu v x) => DSLStatement pu v x t ()
 assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
 
 assertCoSimulation ::
-    ( HasCallStack
-    , MonadState (UnitTestState pu String x) (t IO)
-    , MonadTrans t
-    , N.PUClasses pu String x Int
+    ( N.PUClasses pu String x Int
     , WithFunctions pu (F String x)
     , P.Testable pu String x
     , DefaultX pu x
     ) =>
-    t IO ()
+    DSLStatement pu String x Int ()
 assertCoSimulation =
     let checkInputVars pu fs cntx = S.union (inpVars $ functions pu) (inpVars fs) == S.fromList (map fst cntx)
      in do
