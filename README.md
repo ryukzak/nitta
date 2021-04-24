@@ -127,11 +127,14 @@ Common flags:
                                       'templates/Icarus:templates/DE0-Nano')
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
-  -f     --fsim                       Functional simulation with trace
+         --fsim                       Functional simulation with trace
   -l     --lsim                       Logical (HDL) simulation with trace
   -v     --verbose                    Verbose
   -o     --output-path=ITEM           Place the output into specified
                                       directory
+         --format=ITEM                Specify logical (HDL) or functional
+                                      simulation output format: md, json, csv
+                                      (default: 'md')
   -?     --help                       Display help message
   -V     --version                    Print version information
          --numeric-version            Print just the version number
@@ -139,18 +142,22 @@ Common flags:
 
 #### Logical simulation for a specific algorithm:
 ``` console
-$ stack exec nitta -- examples/teacup.lua -f -t=fx12.32
-temp_cup_1 time_0
-180.000    0.000 
-178.625    0.125 
-177.375    0.250 
-176.125    0.375 
-174.875    0.500 
-173.625    0.625 
-172.375    0.750 
-171.125    0.875 
-169.875    1.000 
-168.750    1.125 
+$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx12.32
+
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
+[NOTICE : NITTA] synthesis process...ok
+[NOTICE : NITTA] write target project to: "gen/main"...ok
 ```
 
 #### Synthesis a target system for a specific algorithm:

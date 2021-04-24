@@ -321,9 +321,11 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
     let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
         cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
-     in render $
-            hsep 0 left $
-                map (vcat left . map text) cycleFormattedTable
+     in "\n"
+            ++ render
+                ( hsep 0 left $
+                    map (vcat left . map text) cycleFormattedTable
+                )
 
 cntx2json cntx =
     let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
