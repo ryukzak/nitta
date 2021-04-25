@@ -48,8 +48,9 @@ parseRightExp fOut (Binop op a b) = do
     strFOut = map T.unpack fOut
 parseRightExp _ _ = undefined
 
-parseExpArg :: p -> String
-parseExpArg _ = undefined
+parseExpArg :: Exp -> String
+parseExpArg (Number _ text) = T.unpack text
+parseExpArg _ = undefined 
 
 processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, [Constant]) Int
 --Lua language Stat structure parsing
