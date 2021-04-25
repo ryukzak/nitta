@@ -241,6 +241,7 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
       NITTA.Model.ProcessorUnits.Tests.DSL
+      NITTA.Model.ProcessorUnits.Tests.DSL.Tests
       NITTA.Model.ProcessorUnits.Tests.Providers
       NITTA.Model.ProcessorUnits.Tests.Utils
       NITTA.Model.Tests.Internals

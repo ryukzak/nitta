@@ -81,8 +81,6 @@ data UnitTestState pu v x = UnitTestState
 
 type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) => StateT (UnitTestState pu v x) IO r
 
-type DSLFunctions pu v x t f = (Function f v, WithFunctions pu f) => DSLStatement pu v x t ()
-
 evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
 
 -- | Binds several provided functions to PU
@@ -109,11 +107,11 @@ assignNaive f cntxs = do
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues :: [(String, x)] -> DSLFunctions pu String x t f
+setValues :: (Function f String, WithFunctions pu f) => [(String, x)] -> DSLStatement pu String x t ()
 setValues = mapM_ (uncurry setValue)
 
 -- | set initital value for coSimulation input variables
-setValue :: String -> x -> DSLFunctions pu String x t f
+setValue :: (Function f String, WithFunctions pu f) => String -> x -> DSLStatement pu String x t ()
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when ((var, val) `elem` cntxCycle) $
@@ -186,7 +184,7 @@ breakLoop x i o = do
         [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
         _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
 
-assertBindFullness :: Show f => DSLFunctions pu v x t f
+assertBindFullness :: (Function f v, WithFunctions pu f, Show f) => DSLStatement pu v x t ()
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     isOk <- lift $ isFullyBinded unit functs
