@@ -17,7 +17,7 @@ import Language.Lua
 import NITTA.Intermediate.DataFlow
 
 data Constant = Constant {cName :: Text, cValueString :: Text, cValueType :: NumberType}
-  deriving (Eq)
+  deriving (Eq, Show)
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
