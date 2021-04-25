@@ -62,5 +62,20 @@ case_process_add_statement =
       result = DFCluster [DFLeaf (F{fun = F.Add (I "1") (I "2") (O (fromList ["a"])), funHistory = []})]
    in result @?= fst (execState (processStatement (pack "_") assignment) (DFCluster [], []))
 
+case_process_sub_statement =
+  let assignment = Assign [VarName (Name (pack "a"))] [Binop Sub (Number IntNum (pack "1")) (Number IntNum (pack "2"))]
+      result = DFCluster [DFLeaf (F{fun = F.Sub (I "1") (I "2") (O (fromList ["a"])), funHistory = []})]
+   in result @?= fst (execState (processStatement (pack "_") assignment) (DFCluster [], []))
+
+case_process_divide_statement =
+  let assignment = Assign [VarName (Name (pack "a"))] [Binop Div (Number IntNum (pack "1")) (Number IntNum (pack "2"))]
+      result = DFCluster [DFLeaf (F{fun = F.Division (I "1") (I "2") (O (fromList ["a"])) (O (fromList [""])), funHistory = []})]
+   in result @?= fst (execState (processStatement (pack "_") assignment) (DFCluster [], []))
+
+case_process_multiply_statement =
+  let assignment = Assign [VarName (Name (pack "a"))] [Binop Mul (Number IntNum (pack "1")) (Number IntNum (pack "2"))]
+      result = DFCluster [DFLeaf (F{fun = F.Multiply (I "1") (I "2") (O (fromList ["a"])), funHistory = []})]
+   in result @?= fst (execState (processStatement (pack "_") assignment) (DFCluster [], []))
+
 tests :: TestTree
 tests = $(testGroupGenerator)
