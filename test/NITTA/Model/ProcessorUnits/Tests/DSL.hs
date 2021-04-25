@@ -114,7 +114,7 @@ setValues = mapM_ (uncurry setValue)
 setValue :: (Function f String, WithFunctions pu f) => String -> x -> DSLStatement pu String x t ()
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
-    when ((var, val) `elem` cntxCycle) $
+    when (var `elem` map fst cntxCycle) $
         lift $ assertFailure $ "The variable '" <> show var <> "' is already set!"
     unless (isVarAvailable var unit) $
         lift $ assertFailure $ "It's not possible to set the variable '" <> show var <> "'! It's not present in process"

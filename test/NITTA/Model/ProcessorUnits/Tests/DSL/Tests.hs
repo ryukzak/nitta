@@ -74,7 +74,7 @@ tests =
                 assign $ multiply "a" "b" ["c", "d"]
                 setValue "e" 10
         , expectFail $
-            puUnitTestCase "should error: setValue variable is unavailable" u $ do
+            puUnitTestCase "should error: setValue variable is alreay set" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
                 setValue "a" 10
                 setValue "b" 11
