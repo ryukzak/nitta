@@ -42,7 +42,7 @@ case_find_startup_function =
 case_process_local_assignment_statement =
   let assignment = LocalAssign [Name $ pack "a"] (Just [Number IntNum (pack "2")])
       result = [Constant {cName = pack "a", cValueString = pack "2", cValueType = IntNum}]
-   in result @?= snd (execState (processStatement (pack "_") assignment) (DFCluster [],[]))
+   in result @?= snd (execState (processStatement (pack "_") assignment) (DFCluster [], []))
 
 case_process_assignment_statement =
   let assignment = Assign [VarName (Name $ pack "a")] [Number IntNum (pack "2")]
