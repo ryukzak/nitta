@@ -48,7 +48,7 @@ data EndpointSt v tp = EndpointSt
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{epRole} = variables epRole
 
-instance (Show v, Time t) => Show (EndpointSt v (TimeConstrain t)) where
+instance (Show v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
     show EndpointSt{epRole, epAt} = "?" ++ show epRole ++ "@(" ++ show epAt ++ ")"
 instance (Show v, Time t) => Show (EndpointSt v (Interval t)) where
     show EndpointSt{epRole, epAt} = "!" ++ show epRole ++ "@(" ++ show epAt ++ ")"
@@ -68,7 +68,7 @@ setAt epAt ep@EndpointSt{} = ep{epAt}
 updAt f ep@EndpointSt{epAt} = ep{epAt = f epAt}
 
 class EndpointProblem u v t | u -> v t where
-    endpointOptions :: u -> [EndpointSt v (TimeConstrain t)]
+    endpointOptions :: u -> [EndpointSt v (TimeConstraint t)]
     endpointDecision :: u -> EndpointSt v (Interval t) -> u
 
 data EndpointRole v

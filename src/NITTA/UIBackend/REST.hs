@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -23,6 +24,7 @@ module NITTA.UIBackend.REST (
     SynthesisAPI,
     synthesisServer,
     BackendCtx (..),
+    UnitEndpoints (..),
 ) where
 
 import Control.Monad.Except
@@ -131,7 +133,7 @@ type NodeInspectionAPI tag v x t =
                      )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
-                        :> Get '[JSON] [(tag, [EndpointSt v (TimeConstrain t)])]
+                        :> Get '[JSON] [UnitEndpoints tag v t]
                      )
                 :<|> ( Description "Microarchitecture description"
                         :> "microarchitecture"
@@ -225,11 +227,29 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
     writeProject prj
     view <$> runTestbench prj
 
+-- Helpers
+
+data UnitEndpoints tag v t = UnitEndpoints
+    { unitTag :: tag
+    , unitEndpoints :: [EndpointSt v (TimeConstraint t)]
+    }
+    deriving (Generic)
+instance (ToJSON tag, ToJSON t, Time t) => ToJSON (UnitEndpoints tag String t)
+instance ToSample (UnitEndpoints String String Int) where
+    toSamples _ =
+        singleSample
+            UnitEndpoints
+                { unitTag = "PU1"
+                , unitEndpoints =
+                    [ EndpointSt{epRole = Target "x", epAt = TimeConstraint (1 ... 10) (1 ... 1)}
+                    ]
+                }
+
 -- Debug
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-    { dbgEndpointOptions :: [(tag, [EndpointSt v (TimeConstrain t)])]
+    { dbgEndpointOptions :: [UnitEndpoints tag v t]
     , dbgFunctionLocks :: [(String, [Lock v])]
     , dbgCurrentStateFunctionLocks :: [(String, [Lock v])]
     , dbgPULocks :: [(String, [Lock v])]
@@ -239,7 +259,7 @@ data Debug tag v t = Debug
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
 instance ToSample (Debug String String Int)
-instance ToSample (EndpointSt [Char] (TimeConstrain Int)) where toSamples _ = noSamples
+instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples
 
@@ -267,7 +287,7 @@ debug BackendCtx{root} sid = liftIO $ do
             , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetUnit tree
             }
     where
-        endpointOptions' BusNetwork{bnPus} = map (second endpointOptions) $ M.assocs bnPus
+        endpointOptions' BusNetwork{bnPus} = map (uncurry UnitEndpoints . second endpointOptions) $ M.assocs bnPus
 
 -- API Description
 

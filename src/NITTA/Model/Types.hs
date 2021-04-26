@@ -20,7 +20,7 @@ Stability   : experimental
 module NITTA.Model.Types (
     VarValTime,
     Time,
-    TimeConstrain (..),
+    TimeConstraint (..),
     TaggedTime (..),
 ) where
 
@@ -40,7 +40,7 @@ type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, I
 instance (ToJSON t) => ToJSON (Interval t)
 
 -- |Time constrain for processor activity.
-data TimeConstrain t = TimeConstrain
+data TimeConstraint t = TimeConstraint
     { -- |Inclusive interval, when value available to transfer.
       tcAvailable :: Interval t
     , -- |Inclusive interval, possible for value transfers.
@@ -48,8 +48,8 @@ data TimeConstrain t = TimeConstrain
     }
     deriving (Eq, Generic)
 
-instance (Show t, Eq t, Bounded t) => Show (TimeConstrain t) where
-    show TimeConstrain{tcAvailable, tcDuration} = showInf tcAvailable ++ " /P " ++ showInf tcDuration
+instance (Show t, Eq t, Bounded t) => Show (TimeConstraint t) where
+    show TimeConstraint{tcAvailable, tcDuration} = showInf tcAvailable ++ " /P " ++ showInf tcDuration
         where
             showInf i =
                 let a = inf i
@@ -58,7 +58,7 @@ instance (Show t, Eq t, Bounded t) => Show (TimeConstrain t) where
                         then show a ++ "..∞"
                         else show a ++ ".." ++ show b
 
-instance (ToJSON tp) => ToJSON (TimeConstrain tp)
+instance (ToJSON tp) => ToJSON (TimeConstraint tp)
 
 -- |Forgoten implementation of tagged time for speculative if statement. Current - dead code.
 data TaggedTime tag t = TaggedTime

@@ -6,7 +6,7 @@ import { Graphviz } from "graphviz-react";
 import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
 import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
-import { PUEndpoints, Endpoint, EndpointDecision } from "services/HaskellApiService";
+import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
@@ -83,10 +83,10 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
 
     api
       .getEndpoints(selectedSID)
-      .then((response: AxiosResponse<PUEndpoints[]>) => {
+      .then((response: AxiosResponse<UnitEndpointsData[]>) => {
         let result: Endpoints = { sources: [], targets: [] };
-        response.data.forEach((eps: PUEndpoints) => {
-          eps[1].forEach((e: Endpoint) => {
+        response.data.forEach((eps: UnitEndpointsData) => {
+          eps.unitEndpoints.forEach((e: EndpointOptionData) => {
             let role = e.epRole;
             if (role.tag === "Source") {
               result.sources.push(...role.contents);

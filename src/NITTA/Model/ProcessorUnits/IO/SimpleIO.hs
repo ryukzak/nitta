@@ -127,10 +127,10 @@ instance
     EndpointProblem (SimpleIO i v x t) v t
     where
     endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =
-        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
+        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... 1)
             sendOpts = map (target . head . vars) sendQueue
          in receiveOpts ++ sendOpts
 

@@ -50,14 +50,14 @@ instance
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
         (TargetSystem (BusNetwork tag v x t) tag v x t)
-        (DataflowSt tag v (TimeConstrain t))
+        (DataflowSt tag v (TimeConstraint t))
         (DataflowSt tag v (Interval t))
         DataflowMetrics
     where
     decisions SynthesisState{sTarget} o = let d = dataflowOption2decision o in [(d, dataflowDecision sTarget d)]
 
     parameters SynthesisState{transferableVars, sTarget} DataflowSt{dfSource, dfTargets} _ =
-        let TimeConstrain{tcAvailable, tcDuration} = epAt $ snd dfSource
+        let TimeConstraint{tcAvailable, tcDuration} = epAt $ snd dfSource
          in DataflowMetrics
                 { pWaitTime = fromIntegral (inf tcAvailable)
                 , pRestrictedTime = fromEnum (sup tcDuration) /= maxBound
