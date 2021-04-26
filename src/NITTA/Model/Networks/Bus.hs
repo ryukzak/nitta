@@ -132,7 +132,7 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                     sources
         where
             netConstrain =
-                updAt $ \at@TimeConstrain{tcAvailable} ->
+                updAt $ \at@TimeConstraint{tcAvailable} ->
                     let a = max (nextTick bnProcess) $ inf tcAvailable
                         b = sup tcAvailable
                      in at{tcAvailable = a ... b}

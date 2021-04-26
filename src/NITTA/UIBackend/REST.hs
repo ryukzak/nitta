@@ -227,7 +227,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
 
 data UnitEndpoints tag v t = UnitEndpoints
     { unitTag :: tag
-    , unitEndpoints :: [EndpointSt v (TimeConstrain t)]
+    , unitEndpoints :: [EndpointSt v (TimeConstraint t)]
     }
     deriving (Generic)
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (UnitEndpoints tag String t)
@@ -237,7 +237,7 @@ instance ToSample (UnitEndpoints String String Int) where
             UnitEndpoints
                 { unitTag = "PU1"
                 , unitEndpoints =
-                    [ EndpointSt{epRole = Target "x", epAt = TimeConstrain (1 ... 10) (1 ... 1)}
+                    [ EndpointSt{epRole = Target "x", epAt = TimeConstraint (1 ... 10) (1 ... 1)}
                     ]
                 }
 
@@ -255,7 +255,7 @@ data Debug tag v t = Debug
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
 instance ToSample (Debug String String Int)
-instance ToSample (EndpointSt String (TimeConstrain Int)) where toSamples _ = noSamples
+instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples
 

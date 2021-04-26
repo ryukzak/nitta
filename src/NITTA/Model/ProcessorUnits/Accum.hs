@@ -157,8 +157,8 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         | toTarget tasks = targets
         | toSource tasks = sources
         where
-            targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
-            sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstrain (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
+            targets = map (\v -> EndpointSt (Target v) $ TimeConstraint (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
+            sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstraint (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
             tickSource True = tick + 1
             tickSource _ = tick + 3
     endpointOptions p@Accum{work, currentWork = Nothing} =

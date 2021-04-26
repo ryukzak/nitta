@@ -11,7 +11,7 @@ import {
   IResolveDeadlockView,
   NetworkDesc,
   UnitDesc,
-  TimeConstrain,
+  TimeConstraint,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import { UnitEndpoints, EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
@@ -35,7 +35,7 @@ export type OptimizeAccum = IOptimizeAccumView;
 export type ResolveDeadlock = IResolveDeadlockView;
 
 export type UnitEndpointsData = UnitEndpoints<string, string, number>;
-export type EndpointOptionData = EndpointSt<string, TimeConstrain<number>>;
+export type EndpointOptionData = EndpointSt<string, TimeConstraint<number>>;
 export type EndpointDecision = EndpointSt<string, Interval<number>>;
 export type Source = ISource<string>;
 export type Target = ITarget<string>;
