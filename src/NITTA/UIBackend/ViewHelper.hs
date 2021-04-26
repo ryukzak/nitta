@@ -11,6 +11,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -38,7 +40,6 @@ module NITTA.UIBackend.ViewHelper (
     countSuccess,
     countNotProcessed,
     getSynthesisInfo,
-    countDurationSuccess,
     TreeView,
     ShortNodeView,
     NodeView,
@@ -54,6 +55,7 @@ import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Maybe (catMaybes)
+import Data.List (nub, groupBy, sortOn)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Typeable
@@ -129,10 +131,6 @@ instance ToSample (Integer) where
     toSamples _ =
         singleSample 0
 
-instance ToSample ([Integer]) where
-    toSamples _ =
-        singleSample [0]
-
 data ShortNodeView = ShortNodeView
     { sid :: String
     , isLeaf :: Bool
@@ -158,12 +156,14 @@ data SynthesisInfo = SynthesisInfo
     , success :: Int
     , fail :: Int
     , notProcessed :: Int
+    , durationSuccess :: [(Int, Int)]
+    , stepsSuccess :: [(Int, Int)]
     }
     deriving (Generic, Show)
 
 instance ToSample (SynthesisInfo) where
     toSamples _ =
-        singleSample $ SynthesisInfo{nodes = 0, success = 0, fail = 0, notProcessed = 0}
+        singleSample $ SynthesisInfo{nodes = 0, success = 0, fail = 0, notProcessed = 0, durationSuccess = []}
 
 instance ToJSON ShortNodeView
 instance ToJSON SynthesisInfo
@@ -208,14 +208,36 @@ getSynthesisInfo tree = do
     success <- countSuccess tree
     fail <- countFail tree
     notProcessed <- countNotProcessed tree
-    return $ SynthesisInfo{nodes = nodes, success = success, fail = fail, notProcessed = notProcessed}
+    durationSuccess <- countDurationSuccess tree
+    stepsSuccess <- countStepsSuccess tree
+    return $
+      SynthesisInfo
+        {nodes = nodes, success = success, fail = fail, notProcessed = notProcessed, durationSuccess = durationSuccess, stepsSuccess = stepsSuccess}
 
-countDurationSuccess tree@Tree{sState = SynthesisState{sTarget}, sSubForestVar} = do
+
+
+concatDurationSuccess tree@Tree{sState = SynthesisState{sTarget}, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
-    subForestN <- maybe (return []) (\x -> concat <$> mapM countDurationSuccess x) subForestM
+    subForestN <- maybe (return []) (\x -> concat <$> mapM concatDurationSuccess x) subForestM
     let isSuccess = checkIsComplete tree && checkIsLeaf tree
-        duration = fromEnum $ processDuration sTarget
+        duration = processDuration sTarget
     return (if isSuccess then [duration] else [] ++ subForestN)
+
+countDurationSuccess tree = countEqual <$> concatDurationSuccess tree
+
+concatStepsSuccess tree@Tree{sID = SID sid, sSubForestVar} = do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+    subForestN <- maybe (return []) (\x -> concat <$> mapM concatStepsSuccess x) subForestM
+    let isSuccess = checkIsComplete tree && checkIsLeaf tree
+    return (if isSuccess then [length sid] else [] ++ subForestN)
+
+countStepsSuccess tree = countEqual <$> concatStepsSuccess tree
+
+countEqual lst = sortOn fst $ map (\uniqElem -> (uniqElem, foldl (\buff x -> if x==uniqElem then buff + 1 else buff) 0 lst)) $ nub lst
+
+groupByDurationSuccess tree = do
+    durations <- countDurationSuccess tree
+    return (groupBy (==) durations)
 
 viewNodeTreeShow tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
