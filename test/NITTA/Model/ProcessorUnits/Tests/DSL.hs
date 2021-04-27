@@ -49,12 +49,12 @@ import Data.CallStack
 import Data.List (find)
 import qualified Data.Set as S
 import NITTA.Intermediate.Types
-import qualified NITTA.Model.Networks.Types as N
+import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
-import qualified NITTA.Model.Types as TS
-import qualified NITTA.Project as P
+import NITTA.Model.Types
+import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
 import Test.Tasty (TestTree)
@@ -169,7 +169,7 @@ getDecisionSpecific role = do
         Just v -> return $ endpointOptionToDecision v
         Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
 
-getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TS.TimeConstrain t)]
+getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstrain t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
@@ -209,9 +209,9 @@ assertSynthesisDone = do
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
 
 assertCoSimulation ::
-    ( N.PUClasses pu String x Int
+    ( PUClasses pu String x Int
     , WithFunctions pu (F String x)
-    , P.Testable pu String x
+    , Testable pu String x
     , DefaultX pu x
     ) =>
     DSLStatement pu String x Int ()
