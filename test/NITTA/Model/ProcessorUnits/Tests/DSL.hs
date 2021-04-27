@@ -222,9 +222,10 @@ assertCoSimulation =
             unless (checkInputVars unit functs cntxCycle) $
                 lift $ assertFailure "you forgot to set initial values before coSimulation."
 
-            res <- lift $ puCoSim testName unit cntxCycle functs False
-            unless (P.tbStatus res) $
-                lift $ assertFailure "coSimulation failed."
+            report@TestbenchReport{tbStatus} <-
+                lift $ puCoSim testName unit cntxCycle functs False
+            unless tbStatus $
+                lift $ assertFailure $ "coSimulation failed: \n" <> show report
 
 inpVars fs = unionsMap inputs fs
 tracePU = do
