@@ -18,7 +18,6 @@ import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import NITTA.Intermediate.Types
 
 data Constant = Constant {cName :: T.Text, cValueString :: T.Text, cValueType :: NumberType}
   deriving (Eq, Show)
@@ -34,22 +33,26 @@ parseLeftExp = map $ \case
 --right part of lua statement
 parseRightExp fOut (Binop op a b) = do
   (graph, constants) <- get
-  put (addFuncToDataFlowGraph graph (getBinopFunc op), constants)
+  a' <- parseExpArg a
+  b' <- parseExpArg b
+  put (addFuncToDataFlowGraph graph (getBinopFunc op a' b'), constants)
   return 0
   where
-    getBinopFunc :: Binop -> F String Int
-    getBinopFunc Add = F.add a' b' strFOut
-    getBinopFunc Sub = F.sub a' b' strFOut
-    getBinopFunc Mul = F.multiply a' b' strFOut
-    getBinopFunc Div = F.division a' b' [head strFOut] (tail strFOut)
-    getBinopFunc o = error $ "unknown binop: " ++ show o
-    a' = parseExpArg a
-    b' = parseExpArg b
+    getBinopFunc Add a' b' = F.add a' b' strFOut
+    getBinopFunc Sub a' b' = F.sub a' b' strFOut
+    getBinopFunc Mul a' b' = F.multiply a' b' strFOut
+    getBinopFunc Div a' b' = F.division a' b' [head strFOut] (tail strFOut)
+    getBinopFunc o _ _ = error $ "unknown binop: " ++ show o
     strFOut = map T.unpack fOut
 parseRightExp _ _ = undefined
 
-parseExpArg :: Exp -> String
-parseExpArg (Number _ text) = T.unpack text
+parseExpArg :: Exp -> State (DataFlowGraph String Int, [Constant]) String
+parseExpArg (Number _ text) = undefined
+parseExpArg (Unop Neg (Number _ text)) = return ("-" ++ T.unpack text)
+parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
+  (_, constants) <- get
+  return undefined 
+
 parseExpArg _ = undefined 
 
 processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, [Constant]) Int
@@ -62,9 +65,7 @@ processStatement fn (LocalAssign names (Just exps)) =
 --Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
   processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = do
-  let [name] = parseLeftExp lexps
-  expConstant name n
+processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = addConstant (head $ parseLeftExp lexps) n
 processStatement _ (Assign [lexp] [rexps]) = do
   parseRightExp (parseLeftExp [lexp]) rexps
 processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
@@ -78,12 +79,12 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
     return 0
 processStatement _ _ = undefined
 
-expConstant :: T.Text -> Exp -> State (DataFlowGraph String Int, [Constant]) Int
-expConstant name (Number valueType valueString) = do
+addConstant :: T.Text -> Exp -> State (DataFlowGraph String Int, [Constant]) Int
+addConstant name (Number valueType valueString) = do
   (graph, constants) <- get
   put (graph, constants ++ [Constant {cName = name, cValueString = valueString, cValueType = valueType}])
   return 0
-expConstant _ _ = undefined
+addConstant _ _ = undefined
 
 buildAlg syntaxTree = fst $
   flip execState st $ do
