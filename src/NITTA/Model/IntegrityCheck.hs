@@ -57,8 +57,8 @@ checkIntegrity pu =
                 ]
 
         getTransportMap =
-            let filterTransport pu (InstructionStep ins)
-                    | Just v <- castInstruction pu ins = Just v
+            let filterTransport pu' (InstructionStep ins)
+                    | Just (Transport v _ _) <- castInstruction pu' ins = Just v
                     | otherwise = Nothing
                 filterTransport _ _ = Nothing
              in M.mapMaybe (filterTransport pu) getInstrMap
