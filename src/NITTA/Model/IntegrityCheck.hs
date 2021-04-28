@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -17,6 +18,7 @@ module NITTA.Model.IntegrityCheck (
 import Data.List (find)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import qualified Debug.Trace
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (Instruction (Transport))
@@ -56,7 +58,7 @@ checkIntegrity pu =
 
         getTransportMap =
             let filterTransport pu (InstructionStep ins)
-                    | Just var@(Transport v src trg) <- castInstruction pu ins = Just v
+                    | Just v <- castInstruction pu ins = Just v
                     | otherwise = Nothing
                 filterTransport _ _ = Nothing
              in M.mapMaybe (filterTransport pu) getInstrMap
@@ -105,8 +107,9 @@ checkCadToFunctionRelation cadFs cadSt pr = S.isSubsetOf makeCadVertical rels
                     $ M.toList cadFs
 
 -- FIX: S.isSubsetOf [] rels   ; produces True
-checkEndpointToIntermidiateRelation eps ifs pr = and $ S.isSubsetOf makeRelationList rels : [checkIfsEmpty, checkEpsEmpty]
+checkEndpointToIntermidiateRelation eps ifs pr = and [checkRels, checkIfsEmpty, checkEpsEmpty]
     where
+        checkRels = any (`S.isSubsetOf` rels) $ makeRelationList2 eps ifs
         checkIfsEmpty = not ((M.size eps > 0) && (M.size ifs == 0)) || error "Functions are empty. "
         checkEpsEmpty = not ((M.size ifs > 0) && (M.size eps == 0)) || error "Endpoints are empty. "
         rels = S.fromList $ filter isVertical $ relations pr
@@ -114,11 +117,7 @@ checkEndpointToIntermidiateRelation eps ifs pr = and $ S.isSubsetOf makeRelation
             map (uncurry Vertical) $
                 case find (\(k, _) -> Vertical h k `elem` rels) l of
                     Just res -> [(h, fst res)]
-                    Nothing -> findRelReverse (h, l)
-        findRelReverse (h, l) =
-            case find (\(k, _) -> Vertical k h `elem` rels) l of
-                Just res -> [(fst res, h)]
-                Nothing -> error $ "Can't find Endpoint for Function with pID: " <> show [h]
+                    Nothing -> error $ "Can't find Endpoint for Function with pID: " <> show [h]
         makeRelationList =
             S.fromList $
                 concatMap
@@ -131,6 +130,19 @@ checkEndpointToIntermidiateRelation eps ifs pr = and $ S.isSubsetOf makeRelation
                     )
                     $ M.toList ifs
 
+makeRelationList2 eps ifs =
+    let fuu =
+            map S.fromList $
+                concatMap
+                    ( \(h, f) ->
+                        sequence $
+                            concatMap
+                                ( \v -> [[Vertical h $ fst p | p <- eps M.! v]]
+                                )
+                                $ variables f
+                    )
+                    $ M.toList ifs
+     in Debug.Trace.traceShow fuu fuu
 checkInstructionToEndpointRelation ins eps pr = and $ makeRelationList <> [checkInsEmpty, checkEpsEmpty]
     where
         rels = S.fromList $ map (\(Vertical r1 r2) -> (r1, r2)) $ filter isVertical $ relations pr
