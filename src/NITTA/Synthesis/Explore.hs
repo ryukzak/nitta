@@ -108,7 +108,6 @@ subForest (objective function value less than zero).
 -}
 positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
 
--- |This node is Leaf
 checkIsLeaf
     Tree
         { sState =
@@ -123,13 +122,7 @@ checkIsLeaf
         } = True
 checkIsLeaf _ = False
 
-checkIsComplete
-    Tree
-        { sState =
-            SynthesisState
-                { sTarget
-                }
-        } = isSynthesisFinish sTarget
+checkIsComplete = isSynthesisComplete . sTarget . sState
 -- *Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =

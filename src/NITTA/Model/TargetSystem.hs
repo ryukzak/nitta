@@ -17,7 +17,7 @@ Stability   : experimental
 module NITTA.Model.TargetSystem (
     TargetSystem (..),
     processDuration,
-    isSynthesisFinish,
+    isSynthesisComplete,
 ) where
 
 import Control.Exception (assert)
@@ -50,8 +50,8 @@ processDuration TargetSystem{mUnit} = nextTick $ process mUnit
 {- |Synthesis process is finish when all variable from data flow are
 transferred.
 -}
-isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
-isSynthesisFinish TargetSystem{mUnit, mDataFlowGraph} =
+isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
+isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
 
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where

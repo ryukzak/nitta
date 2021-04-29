@@ -34,7 +34,6 @@ import Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Debug.Trace
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -69,21 +68,9 @@ type SynthesisAPI tag v x t =
         :> "synthesisTree"
         :> Get '[JSON] (TreeView ShortNodeView)
     )
-        :<|> ( Description "Count Nodes in synthesis graph"
-                :> "synthesis-nodes-count"
-                :> Get '[JSON] (Integer)
-             )
-        :<|> ( Description "Count success nodes in synthesis graph"
-                :> "synthesis-success-nodes-count"
-                :> Get '[JSON] (Integer)
-             )
-        :<|> ( Description "Count not processed nodes in synthesis graph"
-                :> "synthesis-not-processed-nodes-count"
-                :> Get '[JSON] (Integer)
-             )
         :<|> ( Description "Get synthesis info"
-                :> "synthesis-info"
-                :> Get '[JSON] (SynthesisInfo)
+                :> "tree-info"
+                :> Get '[JSON] TreeInfo
              )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -96,10 +83,7 @@ type SynthesisAPI tag v x t =
 
 synthesisServer ctx@BackendCtx{root} =
     liftIO (viewNodeTree root)
-        :<|> liftIO (countN root)
-        :<|> liftIO (countSuccess root)
-        :<|> liftIO (countNotProcessed root)
-        :<|> liftIO (getSynthesisInfo root)
+        :<|> liftIO (getTreeInfo root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid
