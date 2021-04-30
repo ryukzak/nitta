@@ -24,11 +24,10 @@ DSL Module for testing Processor Units (PU).
 
 * Example test case (numbers to the right correspond to the algorithm steps):
 
-
    puUnitTestCase "multiplier smoke test" pu $ do     | 1. Created test case for provided PU
 
             assign $ multiply "a" "b" ["c", "d"]      | 2. Bind function 'a * b = c = d' to PU
-            setValue "a" 2                            |    Set initial input values 
+            setValue "a" 2                            |    Set initial input values
             setValue "b" 7                            |    for further CoSimulation
 
             decideAt 1 2 $ consume "a"                | 3. Bind input variable "a" from 1 to 2 tick
@@ -44,7 +43,6 @@ DSL Module for testing Processor Units (PU).
    ...
    pu = multiplier True :: Multiplier String Int Int  | 1. Chose PU: Multiplier
 
-
 * Details on algorithm steps:
  1. You can use any PU which instantiated 'ProcessorUnit' and 'EndpointProblem' type class
 
@@ -54,7 +52,7 @@ DSL Module for testing Processor Units (PU).
                       Don't forget to call 'decideNaive' function.
    You can use assigns (assignsNaive) version of assign function to bind multiple functions at a time
 
- 3. You can bind variables from the function to PU, 
+ 3. You can bind variables from the function to PU,
     for first you need to wrap variables:
      a. 'consume' for input variable.
      b. 'provide' for output variables.
@@ -66,12 +64,11 @@ DSL Module for testing Processor Units (PU).
      c. decideNaiveSynthesis - runs naive synthesis (makes all available decisions).
                                Requires using 'assignNaive' function.
 
-    
- 4. Assert function could be at any place in the test case. 
+ 4. Assert function could be at any place in the test case.
     For a positive test case it usually at the end.
 
 * CoSimulation:
-   To run simulation use 'assertCoSimulation' function. 
+   To run simulation use 'assertCoSimulation' function.
    Don't forget to set initial input values with 'setValue' function.
 
 * Debug:
