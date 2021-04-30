@@ -123,6 +123,18 @@ tests =
             [("a", 1), ("b", 2), ("e", 4), ("f", -4), ("j", 8)]
             [ accFromStr "+a +b = c = d; +e -f = g; +j = k"
             ]
+        , luaTestCase
+            "test_accum_optimization_and_deadlock_resolve"
+            -- TODO: We need to check that synthesis process do all needed refactoring
+            [__i|
+                function sum(a, b, c)
+                    local d = a + b + c -- should AccumOptimization
+                    local e = d + 1 -- e and d should be buffered
+                    local f = d + 2
+                    sum(d, f, e)
+                end
+                sum(0,0,0)
+            |]
         , typedLuaTestCase
             (microarch ASync SlaveSPI)
             pFX22_32
