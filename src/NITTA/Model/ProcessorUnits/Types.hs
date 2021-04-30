@@ -214,7 +214,7 @@ data Relation
       -- function and apply the refactoring. The binding step should be
       -- connected to refactoring steps, including new binding steps.
       Horizontal {hPrev, hNext :: ProcessStepID}
-    deriving (Show, Eq, Generic, Ord)
+    deriving (Show, Generic, Ord)
 
 isVertical Vertical{} = True
 isVertical _ = False
@@ -223,6 +223,12 @@ isHorizontal Horizontal{} = True
 isHorizontal _ = False
 
 instance ToJSON Relation
+
+-- TODO: is it harmful?
+instance Eq Relation where
+    (Vertical vUp vDown) == (Vertical vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown && vDown == vUp2
+    (Horizontal vUp vDown) == (Horizontal vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown && vDown == vUp2
+    _ == _ = False
 
 whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps
     where

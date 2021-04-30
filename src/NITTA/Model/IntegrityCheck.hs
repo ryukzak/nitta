@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- |
 Module      : NITTA.Model.IntegrityCheck
@@ -15,16 +17,23 @@ module NITTA.Model.IntegrityCheck (
     checkIntegrity,
 ) where
 
+import Data.Data
 import Data.List (find)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Debug.Trace
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.Model.Networks.Bus (Instruction (Transport))
+import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
+
+class ProcessConsistent u where
+    checkProcessСonsistent :: u -> Either String ()
+
+instance ProcessConsistent (BusNetwork pu v x t) where
+    checkProcessСonsistent pu = Left "cc"
 
 checkIntegrity pu =
     let getInterMap =
@@ -89,6 +98,15 @@ checkIntegrity pu =
             , checkInstructionToEndpointRelation getInstrMap getEpMap $ process pu
             , checkCadToFunctionRelation getCadFunctions getCadSteps $ process pu
             ]
+
+getTransportMap2 pu =
+    let getTransport :: (Typeable a, Typeable v, Typeable x, Typeable t) => pu v x t -> a -> Maybe (Instruction (BusNetwork String v x t))
+        getTransport _ = cast
+        filterTransport pu' (InstructionStep ins)
+            | Just (Transport v _ _) <- getTransport pu' ins = Just v
+            | otherwise = Nothing
+        filterTransport _ _ = Nothing
+     in M.mapMaybe (filterTransport pu) $ getInstrMap pu
 
 -- at the moment check LoopBegin/End
 checkCadToFunctionRelation cadFs cadSt pr = S.isSubsetOf makeCadVertical rels
