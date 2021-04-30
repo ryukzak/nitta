@@ -232,4 +232,8 @@ $ find . -name '*.hs' | xargs fourmolu -m inplace
 
 # show modules dependency
 $ graphmod -q -p src | pbcopy
+
+# generate haddock for tests
+stack exec ghc-pkg unregister interpolate -- --force
+stack exec -- haddock test/**/*.hs -odocs -h
 ```
