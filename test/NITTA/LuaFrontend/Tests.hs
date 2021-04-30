@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -21,11 +22,60 @@ module NITTA.LuaFrontend.Tests (
     tests,
 ) where
 
+import Control.Exception (ErrorCall, catch)
 import Data.FileEmbed (embedStringFile)
 import Data.String.Interpolate
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Types
+import NITTA.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.ExpectedFailure
+import Test.Tasty.HUnit
 import Test.Tasty.TH
+
+case_lua_constant_declatation =
+    let src =
+            [__i|
+                function sum(a)
+                    local t = 2
+                    local r = -1
+                    sum(a + t + r)
+                end
+                sum(0)
+            |]
+        dfg =
+            [ add "a#0" "t#0" ["tmp_1#0"]
+            , add "tmp_1#0" "r#0" ["tmp_0#0"]
+            , loop 0 "tmp_0#0" ["a#0"]
+            , constant (-1) ["r#0"]
+            , constant 2 ["t#0"] :: F String Int
+            ]
+     in dfg @?= functions (frDataFlow $ lua2functions src)
+
+test_lua_two_name_for_same_constant =
+    let src =
+            [__i|
+                function sum(a)
+                    local t = 1
+                    local r = 1
+                    sum(a + t + r)
+                end
+                sum(0)
+            |]
+     in -- TODO: it is a correct code and should be translated to dataflow graph
+        -- correctly, but in the current LuaFrontend stage, it cannot be done
+        -- without a huge redesign of LuaFrontend
+        [ expectFail $
+            testCase "contant with same name in lua source code" $ do
+                catch
+                    ( do
+                        let !_ = functions $ frDataFlow $ lua2functions src :: [F String Int]
+                        return ()
+                    )
+                    (\(_ :: ErrorCall) -> assertFailure "fail")
+                assertBool "check temporal restriction" True
+        ]
 
 test_simple_recursion =
     [ luaTestCase

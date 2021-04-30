@@ -45,7 +45,7 @@ import NITTA.Project
 import qualified NITTA.Project as P
 import NITTA.Utils
 import System.Directory
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix
 import Test.QuickCheck
 
 {- |Execute co-simulation test for the specific process unit
@@ -65,15 +65,18 @@ puCoSim ::
     Bool ->
     IO (TestbenchReport String x)
 puCoSim name u cntxCycle alg needBind = do
-    wd <- getCurrentDirectory
+    pwd <- getCurrentDirectory
     let mname = toModuleName name
-        pTargetProjectPath = joinPath [wd, "gen", mname]
+        pTargetProjectPath = "gen" </> mname
+        pInProjectNittaPath = "."
         prj =
             Project
                 { pName = T.pack mname
                 , pLibPath = "hdl"
                 , pTargetProjectPath
-                , pNittaPath = "."
+                , pAbsTargetProjectPath = pwd </> pTargetProjectPath
+                , pInProjectNittaPath
+                , pAbsNittaPath = pwd </> pInProjectNittaPath </> pTargetProjectPath
                 , pUnit =
                     if needBind
                         then naiveSynthesis alg u

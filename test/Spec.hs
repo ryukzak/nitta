@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {- |
 Module      : Spec
@@ -13,11 +15,13 @@ Stability   : experimental
 -}
 module Spec where
 
+import Data.FileEmbed (embedStringFile)
 import Data.Maybe
 import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
+import NITTA.LuaFrontend.Tests.Providers
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
@@ -38,24 +42,36 @@ import Test.Tasty.Ingredients.Rerun
 main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
+    ci <- fromMaybe "" <$> lookupEnv "CI"
     defaultMainWithRerun $
         testGroup
             "NITTA"
-            [ NITTA.Intermediate.Functions.Accum.Tests.tests
-            , NITTA.Intermediate.Simulation.Tests.tests
-            , NITTA.Intermediate.Value.Tests.tests
-            , NITTA.LuaFrontend.Tests.tests
-            , NITTA.Model.Problems.Refactor.Tests.tests
-            , NITTA.Model.Problems.Refactor.Accum.Tests.tests
-            , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
-            , NITTA.Model.ProcessorUnits.Broken.Tests.tests
-            , NITTA.Model.ProcessorUnits.Divider.Tests.tests
-            , NITTA.Model.ProcessorUnits.Fram.Tests.tests
-            , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
-            , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
-            , NITTA.Model.ProcessorUnits.Accum.Tests.tests
-            , NITTA.Model.ProcessorUnits.Shift.Tests.tests
-            , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
-            , NITTA.Tests.tests
-            , NITTA.Utils.Tests.tests
-            ]
+            $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
+              , NITTA.Intermediate.Simulation.Tests.tests
+              , NITTA.Intermediate.Value.Tests.tests
+              , NITTA.LuaFrontend.Tests.tests
+              , NITTA.Model.Problems.Refactor.Tests.tests
+              , NITTA.Model.Problems.Refactor.Accum.Tests.tests
+              , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
+              , NITTA.Model.ProcessorUnits.Broken.Tests.tests
+              , NITTA.Model.ProcessorUnits.Divider.Tests.tests
+              , NITTA.Model.ProcessorUnits.Fram.Tests.tests
+              , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
+              , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
+              , NITTA.Model.ProcessorUnits.Accum.Tests.tests
+              , NITTA.Model.ProcessorUnits.Shift.Tests.tests
+              , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
+              , NITTA.Tests.tests
+              , NITTA.Utils.Tests.tests
+              ]
+                <> if ci == "true" then [ciOnlyTestGroup] else []
+
+ciOnlyTestGroup =
+    testGroup
+        "CI only"
+        [ typedLuaTestCase
+            (microarch Sync SlaveSPI)
+            pFX48_64
+            "sin_ident"
+            $(embedStringFile "examples/sin_ident/sin_ident.lua")
+        ]

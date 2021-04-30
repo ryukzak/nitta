@@ -235,7 +235,7 @@ getDecisionSpecific role = do
         Just v -> return $ endpointOptionToDecision v
         Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
 
-getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstrain t)]
+getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstraint t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
