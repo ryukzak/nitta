@@ -13,7 +13,7 @@
 {- |
 Module      : NITTA.Model.ProcessorUnits.Divider
 Description : Integral divider processor unit with pipeline
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -25,11 +25,10 @@ module NITTA.Model.ProcessorUnits.Divider (
     IOPorts (..),
 ) where
 
-import Control.Monad (void, when)
 import Data.Default
-import Data.List (partition, sortBy)
-import Data.Maybe (fromMaybe, isNothing)
-import Data.Set (Set, member)
+import Data.List (partition)
+import qualified Data.List as L
+import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
@@ -41,7 +40,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (Interval, inf, intersection, singleton, sup, (...))
+import Numeric.Interval.NonEmpty (singleton, sup, (...))
 
 data InputDesc
     = Numer
@@ -56,22 +55,19 @@ data OutputDesc
 data Divider v x t = Divider
     { jobs :: [Job v x t]
     , remains :: [F v x]
-    , targetIntervals :: [Interval t]
-    , sourceIntervals :: [Interval t]
     , process_ :: Process t (StepInfo v x t)
-    , latency :: t
     , pipeline :: t
     , mock :: Bool
     }
+
+instance (Show v, Show t) => Show (Divider v x t) where
+    show Divider{jobs} = show jobs
 
 divider pipeline mock =
     Divider
         { jobs = []
         , remains = []
-        , targetIntervals = []
-        , sourceIntervals = []
         , process_ = def
-        , latency = 1
         , pipeline
         , mock
         }
@@ -88,90 +84,32 @@ instance (Ord t) => WithFunctions (Divider v x t) (F v x) where
             ++ map function jobs
 
 data Job v x t
-    = Input
+    = WaitArguments
         { function :: F v x
-        , startAt :: t
-        , inputSeq :: [(InputDesc, v)]
+        , arguments :: [(InputDesc, v)]
         }
-    | InProgress
+    | WaitResults
         { function :: F v x
-        , startAt :: t
-        , finishAt :: t
-        }
-    | Output
-        { function :: F v x
-        , startAt :: t
-        , rottenAt :: Maybe t
-        , finishAt :: t
-        , outputRnd :: [(OutputDesc, Set v)]
+        , readyAt :: t
+        , restrict :: Maybe t
+        , results :: [(OutputDesc, S.Set v)]
         }
     deriving (Eq, Show)
 
-nextTargetTick Divider{targetIntervals = []} = 0
-nextTargetTick Divider{targetIntervals = int : _} = sup int + 1
+instance (Ord v) => Variables (Job v x t) v where
+    variables WaitArguments{arguments} = S.fromList $ map snd arguments
+    variables WaitResults{results} = S.unions $ map snd results
 
-nextSourceTick Divider{sourceIntervals = []} = 0
-nextSourceTick Divider{sourceIntervals = int : _} = sup int + 1
+isWaitArguments WaitArguments{} = True
+isWaitArguments _ = False
 
-findJob f jobs =
-    case partition f jobs of
-        ([i_], other) -> Just (i_, other)
-        ([], _) -> Nothing
-        _ -> error "findInput internal error"
-
-findInput = findJob (\case Input{} -> True; _ -> False)
-findOutput = findJob (\case Output{} -> True; _ -> False)
-
-findNextInProgress jobs
-    | let (inProgress, other) = partition (\case InProgress{} -> True; _ -> False) jobs
-      , let inProgress' =
-                sortBy
-                    ( \InProgress{finishAt = a} InProgress{finishAt = b} ->
-                        b `compare` a
-                    )
-                    inProgress =
-        case inProgress' of
-            [] -> Nothing
-            (j : js) -> Just (j, js ++ other)
-
-remain2input nextTick f
-    | Just (F.Division (I n) (I d) (O _q) (O _r)) <- castF f =
-        Input{function = f, startAt = nextTick, inputSeq = [(Numer, n), (Denom, d)]}
-remain2input _ _ = error "divider inProgress2Output internal error"
-
-inProgress2Output rottenAt InProgress{function, startAt, finishAt}
-    | Just (F.Division _ _ (O q) (O r)) <- castF function =
-        Output{function, rottenAt, startAt, finishAt, outputRnd = filter (not . null . snd) [(Quotient, q), (Remain, r)]}
-inProgress2Output _ _ = error "divider inProgress2Output internal error"
-
-resolveColisions [] opt = [opt]
-resolveColisions intervals opt@EndpointSt{epAt = tc@TimeConstraint{tcAvailable}}
-    | all (isNothing . intersection tcAvailable) intervals =
-        [opt]
-    | otherwise -- FIXME: we must prick out work point from intervals
-      , let from = maximum $ map sup intervals =
-        [opt{epAt = tc{tcAvailable = from ... inf tcAvailable}}]
-
-rottenTime Divider{pipeline, latency} jobs
-    | Just (InProgress{startAt}, _) <- findNextInProgress jobs =
-        Just (startAt + pipeline + latency)
-    | Just (Input{startAt}, _) <- findOutput jobs =
-        Just (startAt + pipeline + latency)
-    | otherwise = Nothing
-
-pushOutput pu@Divider{jobs}
-    | Just _ <- findOutput jobs = pu
-    | Just (ij, other) <- findNextInProgress jobs =
-        pu{jobs = inProgress2Output (rottenTime pu other) ij : other}
-    | otherwise = pu
+isWaitResults WaitResults{} = True
+isWaitResults _ = False
 
 instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
-            Right
-                pu
-                    { remains = f : remains
-                    }
+            Right pu{remains = f : remains}
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
 
@@ -184,129 +122,141 @@ instance ConstantFoldingProblem (Divider v x t) v x
 instance OptimizeAccumProblem (Divider v x t) v x
 instance ResolveDeadlockProblem (Divider v x t) v x
 
+function2WaitArguments f
+    | Just F.Division{F.denom = I denom, F.numer = I numer} <- castF f =
+        WaitArguments
+            { function = f
+            , arguments = [(Denom, denom), (Numer, numer)]
+            }
+    | otherwise = error $ "internal divider error: " <> show f
+
+function2WaitResults readyAt f
+    | Just F.Division{F.quotient = O quotient, F.remain = O remain} <- castF f =
+        WaitResults
+            { function = f
+            , readyAt
+            , restrict = Nothing
+            , results = filterEmptyResults [(Quotient, quotient), (Remain, remain)]
+            }
+    | otherwise = error "internal error"
+
+filterEmptyResults rs = filter (not . null . snd) rs
+
+firstWaitResults jobs =
+    let jobs' = filter isWaitResults jobs
+     in if null jobs'
+            then Nothing
+            else Just $ minimumOn readyAt jobs'
+
 instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
-    endpointOptions pu@Divider{targetIntervals, sourceIntervals, remains, jobs} =
-        concatMap (resolveColisions sourceIntervals) targets
-            ++ concatMap (resolveColisions targetIntervals) sources
-        where
-            target v =
-                EndpointSt
-                    (Target v)
-                    $ TimeConstraint (nextTargetTick pu ... maxBound) (singleton 1)
-            targets
-                | Just (Input{inputSeq = (_tag, v) : _}, _) <- findInput jobs =
-                    [target v]
-                | otherwise = map (target . snd . head . inputSeq . remain2input nextTick) remains
-
-            source Output{outputRnd, rottenAt, finishAt} =
-                map
-                    ( \(_tag, vs) ->
-                        EndpointSt
-                            (Source vs)
-                            $ TimeConstraint
-                                (max finishAt (nextSourceTick pu) ... fromMaybe maxBound rottenAt)
-                                (singleton 1)
-                    )
-                    outputRnd
-            source _ = error "Divider internal error: source."
-
-            sources
-                | Just (out, _) <- findOutput jobs = source out
-                | Just (ij, other) <- findNextInProgress jobs =
-                    source $ inProgress2Output (rottenTime pu other) ij
+    endpointOptions Divider{remains, jobs, process_} =
+        let executeNewFunction
+                | any isWaitArguments jobs = []
+                | otherwise = concatMap (map target . S.elems . inputs) remains
+            waitingArguments =
+                maybe [] (map target . S.elems . variables) $ L.find isWaitArguments jobs
+            waitResults
+                | Just WaitResults{readyAt, results, restrict} <- firstWaitResults jobs =
+                    let at = max readyAt (nextTick process_) ... fromMaybe maxBound restrict
+                     in map (sources at . snd) results
                 | otherwise = []
+         in concat [executeNewFunction, waitingArguments, waitResults]
+        where
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick process_ ... maxBound) (singleton 1)
+            sources at vs = EndpointSt (Source vs) $ TimeConstraint at (singleton 1)
 
-    -- FIXME: vertical relations
-    endpointDecision
-        pu@Divider{jobs, targetIntervals, remains, pipeline, latency}
-        d@EndpointSt{epRole = Target v, epAt}
-            | ([f], fs) <- partition (\f -> v `member` variables f) remains =
-                endpointDecision
+    endpointDecision pu@Divider{jobs, remains, pipeline} d@EndpointSt{epRole = Target v, epAt}
+        | ([f], remains') <- partition (S.member v . inputs) remains =
+            let pu' =
                     pu
-                        { remains = fs
-                        , jobs = remain2input (sup epAt) f : jobs
+                        { jobs = (function2WaitArguments f) : jobs
+                        , remains = remains'
                         }
-                    d
-            | Just (inp@Input{inputSeq = ((tag, nextV) : vs), function, startAt}, other) <- findInput jobs
-              , v == nextV
-              , let finishAt = sup epAt + pipeline + latency =
-                pushOutput
-                    pu
-                        { targetIntervals = epAt : targetIntervals
-                        , jobs =
-                            if null vs
-                                then InProgress{function, startAt, finishAt} : other
-                                else inp{inputSeq = vs} : other
-                        , process_ = execSchedule pu $ do
-                            _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Load tag
-                            updateTick (sup epAt)
-                        }
-    endpointDecision
-        pu@Divider{jobs, sourceIntervals}
-        d@EndpointSt{epRole = Source vs, epAt}
-            | Just (out@Output{outputRnd, startAt, function}, other) <- findOutput jobs
-              , (vss, [(tag, vs')]) <- partition (\(_tag, vs') -> null (vs `S.intersection` vs')) outputRnd
-              , let vss' =
-                        let tmp = vs' `S.difference` vs
-                         in if S.null tmp
-                                then vss
-                                else (tag, tmp) : vss =
-                pushOutput
-                    pu
-                        { sourceIntervals = epAt : sourceIntervals
-                        , jobs =
-                            if null vss'
-                                then other
-                                else out{outputRnd = vss'} : other
-                        , process_ = execSchedule pu $ do
-                            _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Out tag
-                            when (null vss') $ void $ scheduleFunction (startAt ... sup epAt) function
-                            updateTick (sup epAt)
-                        }
+             in endpointDecision pu' d
+        | ([WaitArguments{function, arguments}], jobs') <- partition (S.member v . variables) jobs =
+            let ([(tag, _v)], arguments') = partition ((== v) . snd) arguments
+                nextTick = sup epAt + 1
+             in case arguments' of
+                    [] ->
+                        let job' = function2WaitResults (nextTick + pipeline + 1) function
+                            restrictResults =
+                                map
+                                    ( \case
+                                        wa@WaitResults{restrict = Nothing} -> wa{restrict = Just (nextTick + pipeline)}
+                                        other -> other
+                                    )
+                         in pu
+                                { jobs = job' : restrictResults jobs'
+                                , process_ = execSchedule pu $ do
+                                    scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
+                                    scheduleInstruction_ (singleton nextTick) Do
+                                    updateTick $ nextTick + 1
+                                }
+                    _arguments' ->
+                        pu
+                            { jobs = WaitArguments{function, arguments = arguments'} : jobs'
+                            , process_ = execSchedule pu $ do
+                                scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
+                                updateTick nextTick
+                            }
+    endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
+        | ([job@WaitResults{results}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
+            let ([(tag, allVs)], results') = partition ((vs `S.isSubsetOf`) . snd) results
+                allVs' = allVs S.\\ vs
+                results'' = filterEmptyResults $ (tag, allVs') : results'
+                jobs'' =
+                    if null results''
+                        then jobs'
+                        else job{results = results''} : jobs'
+             in pu
+                    { jobs = jobs''
+                    , process_ = execSchedule pu $ do
+                        scheduleEndpoint_ d $ scheduleInstruction epAt $ Out tag
+                        updateTick (sup epAt + 1)
+                    }
     endpointDecision _ _ = error "divider decision internal error"
 
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)
         = Load InputDesc
+        | Do
         | Out OutputDesc
         deriving (Show)
 
     data Microcode (Divider v x t) = Microcode
-        { wrSignal :: Bool
-        , wrSelSignal :: Bool
+        { selSignal :: Bool
+        , wrSignal :: Bool
         , oeSignal :: Bool
-        , oeSelSignal :: Bool
         }
         deriving (Show, Eq, Ord)
 
     zipSignalTagsAndValues DividerPorts{..} Microcode{..} =
-        [ (wr, Bool wrSignal)
-        , (wrSel, Bool wrSelSignal)
+        [ (sel, Bool selSignal)
+        , (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
-        , (oeSel, Bool oeSelSignal)
         ]
 
-    usedPortTags DividerPorts{wr, wrSel, oe, oeSel} = [wr, wrSel, oe, oeSel]
+    usedPortTags DividerPorts{sel, wr, oe} = [sel, wr, oe]
 
-    takePortTags (wr : wrSel : oe : oeSel : _) _ = DividerPorts wr wrSel oe oeSel
+    takePortTags (sel : wr : oe : _) _ = DividerPorts sel wr oe
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Divider v x t)) where
     def =
         Microcode
-            { wrSignal = False
-            , wrSelSignal = False
+            { selSignal = False
+            , wrSignal = False
             , oeSignal = False
-            , oeSelSignal = False
             }
 instance UnambiguouslyDecode (Divider v x t) where
-    decodeInstruction (Load Numer) = def{wrSignal = True, wrSelSignal = False}
-    decodeInstruction (Load Denom) = def{wrSignal = True, wrSelSignal = True}
-    decodeInstruction (Out Quotient) = def{oeSignal = True, oeSelSignal = False}
-    decodeInstruction (Out Remain) = def{oeSignal = True, oeSelSignal = True}
+    decodeInstruction (Load Numer) = def{wrSignal = True, selSignal = False}
+    decodeInstruction (Load Denom) = def{wrSignal = True, selSignal = True}
+    decodeInstruction Do = def{wrSignal = True, oeSignal = True}
+    decodeInstruction (Out Quotient) = def{oeSignal = True, selSignal = False}
+    decodeInstruction (Out Remain) = def{oeSignal = True, selSignal = True}
 
 instance Connected (Divider v x t) where
-    data Ports (Divider v x t) = DividerPorts {wr, wrSel, oe, oeSel :: SignalTag}
+    data Ports (Divider v x t) = DividerPorts {sel, wr, oe :: SignalTag}
         deriving (Show)
 
 instance IOConnected (Divider v x t) where
@@ -332,7 +282,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
             , sigRst
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
-            , ctrlPorts = Just DividerPorts{oe, oeSel, wr, wrSel}
+            , ctrlPorts = Just DividerPorts{sel, wr, oe}
             } =
             [__i|
                 pu_div \#
@@ -345,12 +295,11 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )
+                    , .signal_sel( #{ sel } )
                     , .signal_wr( #{ wr } )
-                    , .signal_wr_sel( #{ wrSel } )
                     , .data_in( #{ dataIn } )
                     , .attr_in( #{ attrIn } )
                     , .signal_oe( #{ oe } )
-                    , .signal_oe_sel( #{ oeSel } )
                     , .data_out( #{ dataOut } )
                     , .attr_out( #{ attrOut } )
                     );
@@ -365,14 +314,13 @@ instance (VarValTime v x t) => Testable (Divider v x t) v x where
             snippetTestBench
                 prj
                 SnippetTestBenchConf
-                    { tbcSignals = ["oe", "oeSel", "wr", "wrSel"]
+                    { tbcSignals = ["sel", "wr", "oe"]
                     , tbcPorts =
                         DividerPorts
-                            { oe = SignalTag "oe"
-                            , oeSel = SignalTag "oeSel"
+                            { sel = SignalTag "sel"
                             , wr = SignalTag "wr"
-                            , wrSel = SignalTag "wrSel"
+                            , oe = SignalTag "oe"
                             }
-                    , tbcMC2verilogLiteral = \Microcode{oeSignal, oeSelSignal, wrSignal, wrSelSignal} ->
-                        [i|oe <= #{ bool2verilog oeSignal }; oeSel <= #{ bool2verilog oeSelSignal }; wr <= #{ bool2verilog wrSignal }; wrSel <= #{ bool2verilog wrSelSignal };|]
+                    , tbcMC2verilogLiteral = \Microcode{selSignal, wrSignal, oeSignal} ->
+                        [i|oe <= #{ bool2verilog oeSignal }; sel <= #{ bool2verilog selSignal }; wr <= #{ bool2verilog wrSignal }; |]
                     }
