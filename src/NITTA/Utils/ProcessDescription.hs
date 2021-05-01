@@ -21,10 +21,12 @@ module NITTA.Utils.ProcessDescription (
     execSchedule,
     execScheduleWithProcess,
     scheduleEndpoint,
+    scheduleEndpoint_,
     scheduleFunctionBind,
     scheduleFunctionRevoke,
     scheduleFunction,
     scheduleInstruction,
+    scheduleInstruction_,
     scheduleNestedStep,
     establishVerticalRelations,
     establishVerticalRelation,
@@ -141,10 +143,14 @@ scheduleEndpoint EndpointSt{epAt, epRole} codeGen = do
     establishVerticalRelations high low
     return high
 
+scheduleEndpoint_ ep codeGen = void $ scheduleEndpoint ep codeGen
+
 -- |Add to the process description information about instruction evaluation.
 scheduleInstruction ti instr = do
     Schedule{iProxy} <- get
     scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
+
+scheduleInstruction_ ti instr = void $ scheduleInstruction ti instr
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep tag step@Step{pInterval} = do
