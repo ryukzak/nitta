@@ -14,65 +14,87 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-DSL Module for testing Processor Units (PU).
+= Module description
 
-* Algorithm:
+DSL (domain-specific language) is a module for testing Processor Units (PU).
+
+= Algorithm
+
 1. Choose PU and provide it into puUnitTestCase.
 2. Assign function to this PU.
 3. Schedule computational process for every variable in function.
 4. Assert (check) the resulting PU.
 
-* Example test case (numbers to the right correspond to the algorithm steps):
+= Example
 
-   puUnitTestCase "multiplier smoke test" pu $ do     | 1. Created test case for provided PU
+Test case (numbers to the right correspond to the algorithm steps):
 
-            assign $ multiply "a" "b" ["c", "d"]      | 2. Bind function 'a * b = c = d' to PU
-            setValue "a" 2                            |    Set initial input values
-            setValue "b" 7                            |    for further CoSimulation
+@
+puUnitTestCase "multiplier smoke test" pu $ do     | 1. Created test case for provided PU
 
-            decideAt 1 2 $ consume "a"                | 3. Bind input variable "a" from 1 to 2 tick
-            decide $ consume "b"                      |    Bind input variable "b" at nearest tick
-            decideAt 5 5 $ provide ["c"]              |    Bind output variable "c" at 5 tick
-            decide $ provide ["d"]                    |    Bind output variable "d" at nearest tick
+         assign $ multiply "a" "b" ["c", "d"]      | 2. Bind function 'a * b = c = d' to PU
+         setValue "a" 2                            |    Set initial input values
+         setValue "b" 7                            |    for further CoSimulation
 
-            traceProcess                              |    Print current process state to console
+         decideAt 1 2 $ consume "a"                | 3. Bind input variable "a" from 1 to 2 tick
+         decide $ consume "b"                      |    Bind input variable "b" at nearest tick
+         decideAt 5 5 $ provide ["c"]              |    Bind output variable "c" at 5 tick
+         decide $ provide ["d"]                    |    Bind output variable "d" at nearest tick
 
-            assertSynthesisDone                       | 4. Check that all decisions are made
-            assertCoSimulation                        |    Run CoSimulation for current PU
+         traceProcess                              |    Print current process state to console
 
-   ...
-   pu = multiplier True :: Multiplier String Int Int  | 1. Chose PU: Multiplier
+         assertSynthesisDone                       | 4. Check that all decisions are made
+         assertCoSimulation                        |    Run CoSimulation for current PU
 
-* Details on algorithm steps:
- 1. You can use any PU which instantiated 'ProcessorUnit' and 'EndpointProblem' type class
+...
 
- 2. There are 2 types of assign:
-     a. assign      - binds function to PU right at the moment.
-     b. assignNaive - store function in Test State and binds it only at naive synthesis.
-                      Don't forget to call 'decideNaive' function.
-   You can use assigns (assignsNaive) version of assign function to bind multiple functions at a time
+pu = multiplier True :: Multiplier String Int Int  | 1. Chose PU: Multiplier
+@
 
- 3. You can bind variables from the function to PU,
-    for first you need to wrap variables:
-     a. 'consume' for input variable.
-     b. 'provide' for output variables.
+= Algorithm steps description
 
-    For second, you can pass wrapped variables to 'decide' function and
-    schedule (make synthesis decisions) them. There 3 types of 'decide':
-     a. decide               - bind variable at the next tick of PU (nearest).
-     b. decideAt             - bind variable at provided moment.
-     c. decideNaiveSynthesis - runs naive synthesis (makes all available decisions).
-                               Requires using 'assignNaive' function.
+* You can use any PU which instantiated with 'NITTA.Model.ProcessorUnits.Types.ProcessorUnit' and 'NITTA.Model.Problems.Endpoint.EndpointProblem' type class
 
- 4. Assert function could be at any place in the test case.
-    For a positive test case it usually at the end.
+* There are 4 functions for assign:
 
-* CoSimulation:
-   To run simulation use 'assertCoSimulation' function.
-   Don't forget to set initial input values with 'setValue' function.
+    * assign - binds function to PU right at the moment.
 
-* Debug:
-   For debugging use functions starting with trace*, e.g. 'tracePU'.
+    * assigns - binds like 'assign', but uses a list of functions as an input.
+
+    * assignNaive - store function in Test State and binds it only at naive synthesis.
+                    Don't forget to call 'decideNaive' function.
+
+    * assignsNaive - works like 'assignNaive', but uses a list of functions as an input.
+
+* You can bind variables from the function to PU:
+
+    * for first you need to wrap variables:
+
+        * consume - for input variable.
+
+        * provide - for output variables.
+
+    * For second, you can pass wrapped variables to 'decide' function and
+      schedule (make synthesis decisions) them. There 3 types of 'decide':
+
+        * decide               - bind variable at the next tick of PU (nearest).
+
+        * decideAt             - bind variable at provided moment.
+
+        * decideNaiveSynthesis - runs naive synthesis (makes all available decisions).
+                                 Requires using 'assignNaive' function.
+
+* Assert function could be at any place in the test case.
+   For a positive test case it usually at the end.
+
+= CoSimulation:
+
+To run simulation use 'assertCoSimulation' function.
+Don't forget to set initial input values with 'setValue' function.
+
+= Debug:
+
+For debugging use functions starting with trace*, e.g. 'tracePU'.
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
     puUnitTestCase,
