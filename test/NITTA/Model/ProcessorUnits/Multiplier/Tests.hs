@@ -83,7 +83,8 @@ tests =
             assertBindFullness
             decideAt 1 2 $ consume "a"
             decide $ consume "b"
-            decideAt 5 5 $ provide ["c"]
+            traceEndpoints
+            decideAt 6 6 $ provide ["c"]
             decide $ provide ["d"]
             assertSynthesisDone
         , puUnitTestCase "multiplier coSim smoke test" u $ do

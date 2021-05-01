@@ -228,12 +228,12 @@ doDecision endpSt = do
         then put st{unit = endpointDecision unit endpSt}
         else lift $ assertFailure $ "Such option isn't available: " <> show endpSt
 
-isEpOptionAvailable (EndpointSt v interv) pu =
-    let compIntervs = singleton (nextTick $ process pu) <=! interv
-        compEpRoles = case v of
-            (Target _) -> v `elem` map epRole (endpointOptions pu)
-            (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
-     in compIntervs && compEpRoles
+isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
+    case find (isSubroleOf role . epRole) $ endpointOptions pu of
+        Nothing -> False
+        Just EndpointSt{epAt = atB} ->
+            atA `isSubsetOf` tcAvailable atB
+                && member (width atA + 1) (tcDuration atB)
 
 -- |Bind all functions to processor unit and decide till decisions left.
 decideNaiveSynthesis :: DSLStatement pu v x t ()
