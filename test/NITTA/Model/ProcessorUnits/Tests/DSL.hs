@@ -30,25 +30,25 @@ DSL (domain-specific language) is a module for testing Processor Units (PU).
 Test case (numbers to the right correspond to the algorithm steps):
 
 @
-puUnitTestCase "multiplier smoke test" pu $ do     | 1. Created test case for provided PU
+puUnitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
 
-         assign $ multiply "a" "b" ["c", "d"]      | 2. Bind function 'a * b = c = d' to PU
-         setValue "a" 2                            |    Set initial input values
-         setValue "b" 7                            |    for further CoSimulation
+         assign $ multiply "a" "b" ["c", "d"]      -- 2. Bind function 'a * b = c = d' to PU
+         setValue "a" 2                            --    Set initial input values
+         setValue "b" 7                            --    for further CoSimulation
 
-         decideAt 1 2 $ consume "a"                | 3. Bind input variable "a" from 1 to 2 tick
-         decide $ consume "b"                      |    Bind input variable "b" at nearest tick
-         decideAt 5 5 $ provide ["c"]              |    Bind output variable "c" at 5 tick
-         decide $ provide ["d"]                    |    Bind output variable "d" at nearest tick
+         decideAt 1 2 $ consume "a"                -- 3. Bind input variable "a" from 1 to 2 tick
+         decide $ consume "b"                      --    Bind input variable "b" at nearest tick
+         decideAt 5 5 $ provide ["c"]              --    Bind output variable "c" at 5 tick
+         decide $ provide ["d"]                    --    Bind output variable "d" at nearest tick
 
-         traceProcess                              |    Print current process state to console
+         traceProcess                              --    Print current process state to console
 
-         assertSynthesisDone                       | 4. Check that all decisions are made
-         assertCoSimulation                        |    Run CoSimulation for current PU
+         assertSynthesisDone                       -- 4. Check that all decisions are made
+         assertCoSimulation                        --    Run CoSimulation for current PU
 
 ...
 
-pu = multiplier True :: Multiplier String Int Int  | 1. Chose PU: Multiplier
+pu = multiplier True :: Multiplier String Int Int  -- 1. Chose PU: Multiplier
 @
 
 = Algorithm steps description
