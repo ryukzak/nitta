@@ -21,8 +21,7 @@ import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
+import NITTA.LuaFrontend.Tests.Providers
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
@@ -33,7 +32,7 @@ import qualified NITTA.Model.ProcessorUnits.Fram.Tests
 import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
 import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
 import qualified NITTA.Model.ProcessorUnits.Shift.Tests
-import NITTA.Model.Tests.Microarchitecture
+import qualified NITTA.Model.ProcessorUnits.Tests.DSL.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.Tests
 import System.Environment (lookupEnv, setEnv)
@@ -44,7 +43,7 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     ci <- fromMaybe "" <$> lookupEnv "CI"
-    defaultMainWithRerun $ do
+    defaultMainWithRerun $
         testGroup
             "NITTA"
             $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
@@ -61,6 +60,7 @@ main = do
               , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
               , NITTA.Model.ProcessorUnits.Accum.Tests.tests
               , NITTA.Model.ProcessorUnits.Shift.Tests.tests
+              , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
               , NITTA.Tests.tests
               , NITTA.Utils.Tests.tests
               ]

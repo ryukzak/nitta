@@ -57,6 +57,8 @@ dependencies:
   - filepath
   - ginger
   - htoml
+  - intervals
+  - mtl
   - prettyprinter
   - process-extras
   - regex-compat
@@ -76,9 +78,7 @@ library:
     - hashable
     - hslogger
     - http-api-data
-    - intervals
     - language-lua
-    - mtl
     - network-simple
     - process
     - safe
@@ -126,7 +126,6 @@ executables:
       - cmdargs
       - directory
       - hslogger
-      - intervals
       - nitta
 
 

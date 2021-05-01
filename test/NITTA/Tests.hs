@@ -32,12 +32,14 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.TargetSystem ()
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.Model.Tests.Internals
+import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
+
+-- FIXME: avoid NITTA.Model.Tests.Internals usage
 
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 

@@ -93,6 +93,7 @@ instance (Show v) => Show (O v) where
 instance Variables (O v) v where
     variables (O vs) = vs
 
+showOut vs | S.null vs = "_"
 showOut vs = S.join " = " $ map show $ S.elems vs
 
 -- |Value of variable (constant or initial value).

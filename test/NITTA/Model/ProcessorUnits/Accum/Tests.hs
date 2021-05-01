@@ -19,14 +19,9 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.Intermediate.Types
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.Utils
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Model.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -164,6 +159,13 @@ tests =
             |]
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
+        , puUnitTestCase "accum smoke test" accumDef $ do
+            assign $ sub "a" "b" ["c"]
+            assertBindFullness
+            decide $ consume "a"
+            decide $ consume "b"
+            decide $ provide ["c"]
+            assertSynthesisDone
         ]
     where
         accumDef = def :: Accum String Int Int

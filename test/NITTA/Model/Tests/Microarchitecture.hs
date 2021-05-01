@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -23,9 +22,6 @@ module NITTA.Model.Tests.Microarchitecture (
     marchSPI,
     marchSPIDropData,
     maBroken,
-    algTestCase,
-    externalTestCntr,
-    runTargetSynthesisWithUniqName,
     microarch,
     IOUnit (..),
     pInt,
@@ -39,22 +35,15 @@ module NITTA.Model.Tests.Microarchitecture (
     pFX48_64,
     pAttrIntX32,
     pAttrFX22_32,
+    module NITTA.Model.Networks.Types,
 ) where
 
-import Control.Monad (void)
-import Data.Atomics.Counter (incrCounter, newCounter)
-import Data.Default
 import Data.Proxy
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.TargetSystem ()
-import NITTA.Synthesis
-import System.IO.Unsafe (unsafePerformIO)
-import Test.Tasty.HUnit
 
 pInt = Proxy :: Proxy Int
 
@@ -153,29 +142,11 @@ marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ioSync = ASync}
 
 -----------------------------------------------------------
 
--- |Dirty hack to avoid collision with parallel QuickCheck.
-externalTestCntr = unsafePerformIO $ newCounter 0
-{-# NOINLINE externalTestCntr #-}
-
-runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
-    i <- incrCounter 1 externalTestCntr
-    runTargetSynthesis t{tName = tName ++ "_" ++ show i}
-
-algTestCase n tMicroArch alg =
-    testCase n $
-        void $
-            runTargetSynthesisWithUniqName
-                (def :: TargetSynthesis _ _ _ Int)
-                    { tName = n
-                    , tMicroArch
-                    , tDFG = fsToDataFlowGraph alg
-                    }
-
 data IOUnit
     = MasterSPI
     | SlaveSPI
 
-microarch ioSync ioUnit = defineNetwork "net1" ioSync $ do
+microarch ioSync' ioUnit = defineNetwork "net1" ioSync' $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO
