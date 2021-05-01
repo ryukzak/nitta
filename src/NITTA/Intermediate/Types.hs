@@ -317,14 +317,15 @@ cntx2table cntx =
         hsep 1 left $
             map (vcat left . map text) $ cntx2list cntx
 
--- |
--- >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
--- >>> putStr $ cntx2md cntx
--- <BLANKLINE>
--- | Cycle  | x1   | x2   |
--- |:-------|:-----|:-----|
--- | 1      | 1.2  | 3.4  |
--- | 2      | 3.4  | 2.3  |
+{- |
+ >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> putStr $ cntx2md cntx
+ <BLANKLINE>
+ | Cycle  | x1   | x2   |
+ |:-------|:-----|:-----|
+ | 1      | 1.2  | 3.4  |
+ | 2      | 3.4  | 2.3  |
+-}
 cntx2md cntx@Cntx{cntxCycleNumber} =
     let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
@@ -335,18 +336,33 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
                     map (vcat left . map text) cycleFormattedTable
                 )
 
--- |
--- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
--- >>> cntx2json cntx
--- "[\n    {\n        \"x2\": 3.4,\n        \"x1\": 1.2\n    },\n    {\n        \"x2\": 2.3,\n        \"x1\": 3.4\n    }\n]"
+{- |
+ >>> import qualified Data.ByteString.Lazy.Char8 as BS
+ >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> BS.putStr $ cntx2json cntx
+ [
+     {
+         "x2": 3.4,
+         "x1": 1.2
+     },
+     {
+         "x2": 2.3,
+         "x1": 3.4
+     }
+]
+-}
 cntx2json cntx =
     let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
      in encodePretty $ map HM.fromList listHashMap
 
--- |
--- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
--- >>> cntx2csv cntx
--- "x1,x2\r\n1.2,3.4\r\n3.4,2.3\r\n"
+{- |
+ >>> import qualified Data.ByteString.Lazy.Char8 as BS
+ >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> BS.putStr $ cntx2csv cntx
+ x1,x2
+ 1.2,3.4
+ 3.4,2.3
+-}
 cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
 
 instance Default (Cntx v x) where
