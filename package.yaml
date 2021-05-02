@@ -52,6 +52,7 @@ dependencies:
   - MissingH
   - base
   - boxes
+  - bytestring
   - containers
   - data-default
   - filepath
@@ -73,6 +74,7 @@ library:
     - aeson
     - aeson-pretty
     - array
+    - cassava
     - directory
     - file-embed
     - hashable

@@ -23,6 +23,7 @@ module Main (main) where
 
 import Control.Exception
 import Control.Monad (when)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
@@ -64,6 +65,7 @@ data Nitta = Nitta
     , lsim :: Bool
     , verbose :: Bool
     , output_path :: FilePath
+    , format :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -81,6 +83,7 @@ nittaArgs =
         , lsim = False &= help "Logical (HDL) simulation with trace"
         , verbose = False &= help "Verbose"
         , output_path = "gen" &= help "Place the output into specified directory"
+        , format = "md" &= help "Specify logical (HDL) or functional simulation output format: md, json, csv (default: 'md')"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
     where
@@ -93,7 +96,7 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates} <-
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates, format} <-
         cmdArgs nittaArgs
     setupLogger verbose
 
@@ -118,7 +121,7 @@ main = do
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation n received src
+            when fsim $ functionalSimulation n received src format
 
             prj <-
                 synthesizeTargetSystem
@@ -135,10 +138,7 @@ main = do
                         Left msg -> error msg
                         Right p -> return p
 
-            when lsim $ do
-                TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-                putStrLn "Logical simulation (by IcarusVerilog):"
-                putCntx $ frPrettyCntx tbLogicalSimulationCntx
+            when lsim $ logicalSimulation format frPrettyCntx prj
         )
         $ parseFX type_
 
@@ -159,15 +159,23 @@ readSourceCode filename = do
     infoM "NITTA" $ "read source code from: " <> show filename <> "...ok"
     return src
 
-functionalSimulation n received src = do
+-- |Simulation on intermediate level (data-flow graph)
+functionalSimulation n received src format = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
-    putStrLn "Functional simulation:"
-    putCntx $ frPrettyCntx cntx
+    putCntx format $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
 
-putCntx cntx = putStr $ cntx2table cntx
+-- |Simulation on RTL level by a Verilog simulator.
+logicalSimulation format frPrettyCntx prj = do
+    TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
+    putCntx format $ frPrettyCntx tbLogicalSimulationCntx
+
+putCntx "md" cntx = putStr $ cntx2md cntx
+putCntx "json" cntx = BS.putStrLn $ cntx2json cntx
+putCntx "csv" cntx = BS.putStr $ cntx2csv cntx
+putCntx t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO
