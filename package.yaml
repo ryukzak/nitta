@@ -146,7 +146,6 @@ tests:
       - atomic-primops
       - call-stack
       - directory
-      - doctest
       - file-embed
       - genvalidity
       - genvalidity-property
