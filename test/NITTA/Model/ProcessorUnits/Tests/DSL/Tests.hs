@@ -34,6 +34,15 @@ tests =
                 decide $ consume "b"
                 decide $ provide ["c", "d"]
                 assertCoSimulation
+        , unitTestCase "check assertEndpoint success" u $ do
+            assign $ multiply "a" "b" ["c", "d"]
+            assertEndpoint 1 maxBound $ consume "a"
+            decide $ consume "a"
+        , expectFail $
+            unitTestCase "check assertEndpoint success" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                assertEndpoint 2 2 $ consume "a"
+                decide $ consume "a"
         , expectFail $
             unitTestCase "should fail coSim, when variables incorrect" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
