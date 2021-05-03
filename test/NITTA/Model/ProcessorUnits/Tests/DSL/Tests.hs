@@ -34,10 +34,26 @@ tests =
                 decide $ consume "b"
                 decide $ provide ["c", "d"]
                 assertCoSimulation
-        , unitTestCase "check assertEndpoint success" u $ do
+        , unitTestCase "check assertEndpoint with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertEndpoint 1 maxBound $ consume "a"
             decide $ consume "a"
+        , unitTestCase "check assertEndpoint with Source success" u $ do
+            assign $ multiply "a" "b" ["c", "d"]
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            assertEndpoint 5 maxBound $ provide ["c"]
+        , unitTestCase "check assertEndpoint with Source success" u $ do
+            assign $ multiply "a" "b" ["c", "d"]
+            decideAt 1 1 $ consume "a"
+            decideAt 2 2 $ consume "b"
+            decideAt 5 5 $ provide ["c"]
+            assertEndpoint 6 maxBound $ provide ["d"]
+        , expectFail $
+            unitTestCase "check assertEndpoint fail when wrong interval" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                assertEndpoint 2 2 $ consume "a"
+                decide $ consume "a"
         , expectFail $
             unitTestCase "check assertEndpoint success" u $ do
                 assign $ multiply "a" "b" ["c", "d"]

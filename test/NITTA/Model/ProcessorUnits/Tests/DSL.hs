@@ -227,7 +227,7 @@ doDecision endpSt = do
     let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt
+        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
 isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
     case find (isSubroleOf role . epRole) $ endpointOptions pu of
@@ -280,10 +280,11 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
 
+assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
-    case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
+    case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && isSubroleOf role epRole) opts of
         Nothing -> lift $ assertFailure $ "Endpoint not defined in: " <> show opts
         Just _ -> return ()
 
