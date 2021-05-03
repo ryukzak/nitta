@@ -20,7 +20,7 @@ DSL (domain-specific language) is a module for testing Processor Units (PU).
 
 = Algorithm
 
-1. Choose PU and provide it into puUnitTestCase.
+1. Choose PU and provide it into unitTestCase.
 2. Assign function to this PU.
 3. Schedule computational process for every variable in function.
 4. Assert (check) the resulting PU.
@@ -30,7 +30,7 @@ DSL (domain-specific language) is a module for testing Processor Units (PU).
 Test case (numbers to the right correspond to the algorithm steps):
 
 @
-puUnitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
+unitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
 
          assign $ multiply "a" "b" ["c", "d"]      -- 2. Bind function 'a * b = c = d' to PU
          setValue "a" 2                            --    Set initial input values
@@ -97,7 +97,7 @@ Don't forget to set initial input values with 'setValue' function.
 For debugging use functions starting with trace*, e.g. 'tracePU'.
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
-    puUnitTestCase,
+    unitTestCase,
     assign,
     assigns,
     assignNaive,
@@ -142,13 +142,13 @@ import Numeric.Interval.NonEmpty hiding (elem)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
-puUnitTestCase ::
+unitTestCase ::
     (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) =>
     String ->
     pu ->
     DSLStatement pu v x t () ->
     TestTree
-puUnitTestCase name pu alg = testCase name $ do
+unitTestCase name pu alg = testCase name $ do
     _ <- evalUnitTestState name pu alg
     assertBool "test failed" True
 

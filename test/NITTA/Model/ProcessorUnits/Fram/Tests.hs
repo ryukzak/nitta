@@ -35,7 +35,7 @@ tests =
             u
             []
             [constant 11 ["ovj"]]
-        , puUnitTestCase "test BreakLoop" u2 $ do
+        , unitTestCase "test BreakLoop" u2 $ do
             assign $ loop 10 "b" ["a"]
             setValue "b" 64
             breakLoop 10 "b" ["a"]

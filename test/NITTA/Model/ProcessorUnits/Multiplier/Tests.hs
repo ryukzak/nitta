@@ -78,7 +78,7 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , puUnitTestCase "multiplier smoke test" u $ do
+        , unitTestCase "multiplier smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertBindFullness
             decideAt 1 2 $ consume "a"
@@ -87,7 +87,7 @@ tests =
             decideAt 6 6 $ provide ["c"]
             decide $ provide ["d"]
             assertSynthesisDone
-        , puUnitTestCase "multiplier coSim smoke test" u $ do
+        , unitTestCase "multiplier coSim smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             setValue "a" 2
             setValue "b" 7
