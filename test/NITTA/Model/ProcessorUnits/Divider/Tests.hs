@@ -84,7 +84,6 @@ tests =
                 decideAt 2 2 $ consume "b"
                 decideAt 3 3 $ consume "e"
                 decideAt 4 4 $ consume "f"
-                traceEndpoints
                 decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
                 decideAt 13 13 $ provide ["g"]
                 assertCoSimulation

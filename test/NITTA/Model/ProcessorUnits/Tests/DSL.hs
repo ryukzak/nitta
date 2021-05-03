@@ -284,7 +284,7 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
-    case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && isSubroleOf role epRole) opts of
+    case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
         Nothing -> lift $ assertFailure $ "Endpoint not defined in: " <> show opts
         Just _ -> return ()
 

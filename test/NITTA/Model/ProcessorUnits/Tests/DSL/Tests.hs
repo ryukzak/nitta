@@ -42,7 +42,7 @@ tests =
             assign $ multiply "a" "b" ["c", "d"]
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
-            assertEndpoint 5 maxBound $ provide ["c"]
+            assertEndpoint 5 maxBound $ provide ["c", "d"]
         , unitTestCase "check assertEndpoint with Source success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             decideAt 1 1 $ consume "a"
