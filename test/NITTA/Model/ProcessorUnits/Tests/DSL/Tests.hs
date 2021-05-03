@@ -34,10 +34,19 @@ tests =
                 decide $ consume "b"
                 decide $ provide ["c", "d"]
                 assertCoSimulation
-        , unitTestCase "check assertEndpoint with Target success" u $ do
+        , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
+            assertAllEndpointRoles [consume "a", consume "b"]
             assertEndpoint 1 maxBound $ consume "a"
             decide $ consume "a"
+        , expectFail $
+            unitTestCase "check assertAllEndpointRoles and fail (too many)" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                assertAllEndpointRoles [consume "a", consume "b", consume "c"]
+        , expectFail $
+            unitTestCase "check assertAllEndpointRoles and fail (too less)" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                assertAllEndpointRoles [consume "a"]
         , unitTestCase "check assertEndpoint with Source success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             decideAt 1 1 $ consume "a"

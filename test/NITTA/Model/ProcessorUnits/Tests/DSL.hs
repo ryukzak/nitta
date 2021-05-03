@@ -118,6 +118,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertCoSimulation,
     assertSynthesisDone,
     assertEndpoint,
+    assertAllEndpointRoles,
 
     -- *Trace
     tracePU,
@@ -279,6 +280,12 @@ assertBindFullness = do
     isOk <- lift $ isFullyBinded unit functs
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
+
+assertAllEndpointRoles :: (Show (EndpointRole v)) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles roles = do
+    UnitTestState{unit} <- get
+    let opts = S.fromList $ map epRole $ endpointOptions unit
+    lift $ assertBool ("Actual endpoint roles: " <> show opts) $ opts == S.fromList roles
 
 assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
