@@ -25,6 +25,7 @@ module NITTA.Utils.ProcessDescription (
     scheduleEndpoint,
     scheduleEndpoint_,
     scheduleFunctionBind,
+    scheduleGroupBinding,
     scheduleFunctionRevoke,
     scheduleFunction,
     scheduleInstructionUnsafe,
@@ -129,6 +130,10 @@ establishVerticalRelation h l = do
 scheduleFunctionBind f = do
     schedule <- get
     scheduleStep (singleton $ nextTick schedule) $ CADStep $ "bind " <> show f
+
+scheduleGroupBinding (GroupBinding _ binds) = do
+    Schedule{schProcess = Process{nextTick}} <- get
+    scheduleStep (singleton nextTick) $ CADStep $ "group binding " <> show (map (\(Bind f _) -> f) binds)
 
 scheduleFunctionRevoke f = do
     schedule <- get

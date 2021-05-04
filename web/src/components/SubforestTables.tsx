@@ -26,6 +26,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   let known = [
     "RootView",
     "BindDecisionView",
+    "GroupBindDecisionView",
     "DataflowDecisionView",
     "BreakLoopView",
     "ConstantFoldingView",
@@ -37,7 +38,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
     <>
       <Table
         name="Binding"
-        nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
+        nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView" || e.decision.tag === "GroupBindDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
           objectiveColumn(),
@@ -66,7 +67,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
+        nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView" && e.decision.tag !== "GroupBindDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
           objectiveColumn(),

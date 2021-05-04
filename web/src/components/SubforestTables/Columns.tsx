@@ -3,7 +3,7 @@ import React, { ReactElement } from "react";
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { Bind, Dataflow, BreakLoop, OptimizeAccum, ConstantFolding, ResolveDeadlock } from "services/HaskellApiService";
+import { Bind,GroupBind, Dataflow, BreakLoop, OptimizeAccum, ConstantFolding, ResolveDeadlock } from "services/HaskellApiService";
 import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
 import { Interval, FView, DecisionView } from "services/gen/types";
 
@@ -109,6 +109,7 @@ export function objectiveColumn() {
 
 export function showDecision(decision: DecisionView): ReactElement {
   if (decision.tag === "BindDecisionView") return showBind(decision);
+  else if (decision.tag === "GroupBindDecisionView") return showGroupBind(decision);
   else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
@@ -123,6 +124,18 @@ export function showBind(decision: Bind): ReactElement {
       <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}
     </div>
   );
+}
+
+export function showGroupBind(decision: GroupBind): ReactElement {
+    let buffer = []
+    for (var bind of decision.contents) {
+      buffer.push(showDecision(bind));
+    }
+    return (
+        <div>
+            {buffer}
+        </div>
+    );
 }
 
 export function showDataflow(decision: Dataflow): ReactElement {

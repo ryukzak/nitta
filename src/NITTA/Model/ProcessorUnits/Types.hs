@@ -75,7 +75,7 @@ import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
 
 -- |Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
+type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
 
 {- |Process unit - part of NITTA process with can execute a function from
 intermediate representation:

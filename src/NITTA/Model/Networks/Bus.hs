@@ -42,6 +42,7 @@ import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
 import Data.Typeable
+import Debug.Trace
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
@@ -265,13 +266,17 @@ instance
     (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = concatMap optionsFor bnRemains
+    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null optionsList then groupBinding optionsList : concat optionsList else []
         where
             optionsFor f =
                 [ Bind f puTitle
                 | (puTitle, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
+            optionsList = map optionsFor bnRemains
+            groupBinding options
+                | not $ null $ filter (\x -> length x > 1) options = GroupBinding AllBinds $ concat options
+                | otherwise = GroupBinding NonAlternativeBinds $ concat options
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
         bn
@@ -280,6 +285,19 @@ instance
             , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
             , bnRemains = filter (/= f) bnRemains
             }
+    bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding NonAlternativeBinds binds) =
+        n
+            { -- { bnPus = bnPus'
+              -- , bnBinded = bnBinded'
+              bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
+            , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
+            , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
+            }
+
+-- where
+--   bnPus' = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag) bnPus binds
+--   bnBinded' = L.foldl' (\m (Bind f tag) -> registerBinding tag f) bnBinded binds
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus

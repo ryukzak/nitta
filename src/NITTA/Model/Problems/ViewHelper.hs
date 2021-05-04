@@ -40,6 +40,7 @@ data DecisionView
         { function :: FView
         , pu :: T.Text
         }
+    | GroupBindDecisionView [DecisionView]
     | DataflowDecisionView
         { source :: (T.Text, EndpointSt T.Text (Interval Int))
         , targets :: [(T.Text, EndpointSt T.Text (Interval Int))]
@@ -69,6 +70,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
             { function = view f
             , pu = toText pu
             }
+    view (GroupBinding _ binds) = GroupBindDecisionView $ map view binds
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
     view DataflowSt{dfSource, dfTargets} =

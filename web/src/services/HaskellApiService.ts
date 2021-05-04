@@ -17,16 +17,8 @@ import {
   Step,
   StepInfoView,
 } from "services/gen/types";
-import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
-import {
-  UnitEndpoints,
-  EndpointSt,
-  ISource,
-  ITarget,
-  GraphStructure,
-  GraphEdge,
-  TestbenchReport,
-} from "services/gen/types";
+import { NodeView, DecisionView, IRootView, IBindDecisionView, IGroupBindDecisionView, IDataflowDecisionView } from "services/gen/types";
+import { UnitEndpoints, EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
 export type SID = string;
@@ -39,6 +31,7 @@ export type Decision = DecisionView;
 export type Root = IRootView;
 
 export type Bind = IBindDecisionView;
+export type GroupBind = IGroupBindDecisionView;
 export type Dataflow = IDataflowDecisionView;
 
 export type BreakLoop = IBreakLoopView;

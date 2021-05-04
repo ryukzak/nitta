@@ -154,7 +154,10 @@ decisonAndContext parent@Tree{sState = ctx} o =
 
 nodeCtx parent nModel =
     let sBindOptions = bindOptions nModel
+        sBindOptionsF = filter (\case (Bind _ _) -> True; (GroupBinding _ _) -> False) $ bindOptions nModel
         sDataflowOptions = dataflowOptions nModel
+        bindFunction st (Bind f tag) = M.alter (return . maybe [tag] (tag :)) f st
+        bindFunction st (GroupBinding _ _) = st
      in SynthesisState
             { sTarget = nModel
             , sParent = parent
@@ -166,13 +169,13 @@ nodeCtx parent nModel =
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
             , bindingAlternative =
                 foldl
-                    (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)
+                    bindFunction
                     M.empty
                     sBindOptions
             , possibleDeadlockBinds =
                 S.fromList
                     [ f
-                    | (Bind f tag) <- sBindOptions
+                    | (Bind f tag) <- sBindOptionsF
                     , Lock{lockBy} <- locks f
                     , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
                     ]

@@ -101,6 +101,26 @@ instance
                     waves | all isJust waves -> Just $ maximum $ catMaybes waves
                     _ -> Nothing
                 }
+    parameters
+        SynthesisState
+            { bindingAlternative
+            , sTarget = sTarget@TargetSystem{mUnit}
+            , possibleDeadlockBinds
+            , bindWaves
+            }
+        (GroupBinding t binds)
+        _ =
+            BindMetrics
+                { pCritical = False
+                , pAlternative = if t == NonAlternativeBinds then 0 else 2
+                , pAllowDataFlow = toEnum $ length binds
+                , pRestless = 10
+                , pOutputNumber = 2
+                , pPossibleDeadlock = False
+                , pNumberOfBindedFunctions = toEnum $ length binds
+                , pPercentOfBindedInputs = 50
+                , pWave = Nothing
+                }
 
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
     estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
