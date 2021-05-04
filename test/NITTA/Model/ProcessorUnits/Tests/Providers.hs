@@ -70,7 +70,7 @@ puCoSimTestCase ::
     [F String x] ->
     TestTree
 puCoSimTestCase name u cntxCycle alg =
-    puUnitTestCase name u $ do
+    unitTestCase name u $ do
         assignsNaive alg cntxCycle
         decideNaiveSynthesis
         assertCoSimulation

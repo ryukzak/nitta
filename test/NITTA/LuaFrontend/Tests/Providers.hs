@@ -96,7 +96,7 @@ runLua ::
     T.Text ->
     IO (Either String ())
 runLua arch _proxy wd received src = do
-    report <-
+    reportE <-
         runTargetSynthesisWithUniqName
             (def :: TargetSynthesis String String x Int)
                 { tName = wd
@@ -104,11 +104,11 @@ runLua arch _proxy wd received src = do
                 , tSourceCode = Just src
                 , tReceivedValues = received
                 }
-    return $ case report of
-        Right TestbenchReport{tbStatus = True} -> Right ()
+    return $ case reportE of
         Left err -> Left $ "synthesis process fail" <> err
-        Right TestbenchReport{tbCompilerDump, tbPath}
+        Right TestbenchReport{tbStatus = True} -> Right ()
+        Right report@TestbenchReport{tbCompilerDump}
             | T.length tbCompilerDump > 2 ->
-                Left $ "icarus synthesis error: " <> tbPath
-        Right TestbenchReport{tbPath} ->
-            Left $ "icarus simulation error: " <> tbPath
+                Left $ "icarus synthesis error:\n" <> show report
+        Right report@TestbenchReport{} ->
+            Left $ "icarus simulation error:\n" <> show report

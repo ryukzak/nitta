@@ -52,16 +52,17 @@ nittaCoSimTestCase ::
     TestTree
 nittaCoSimTestCase n tMicroArch alg =
     testCase n $ do
-        report <-
+        reportE <-
             runTargetSynthesisWithUniqName
                 def
                     { tName = S.replace " " "_" n
                     , tMicroArch
                     , tDFG = fsToDataFlowGraph alg
                     }
-        case report of
-            Right report' -> assertBool "report with bad status" $ tbStatus report'
-            Left err -> assertFailure $ "can't get report: " ++ err
+        case reportE of
+            Right report@TestbenchReport{tbStatus} ->
+                assertBool ("report with bad status:\n" <> show report) tbStatus
+            Left err -> assertFailure $ "can't get report: " <> err
 
 algTestCase n tMicroArch alg =
     testCase n $

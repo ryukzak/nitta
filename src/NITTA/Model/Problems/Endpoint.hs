@@ -23,6 +23,7 @@ module NITTA.Model.Problems.Endpoint (
     endpointOptionToDecision,
     isSource,
     isTarget,
+    isSubroleOf,
     setAt,
     updAt,
 ) where
@@ -96,6 +97,10 @@ instance Variables (EndpointRole v) v where
     variables (Target v) = S.singleton v
 
 instance (ToJSON v) => ToJSON (EndpointRole v)
+
+isSubroleOf (Target a) (Target b) = a == b
+isSubroleOf (Source as) (Source bs) = as `S.isSubsetOf` bs
+isSubroleOf _ _ = False
 
 {- |The simplest way to convert an endpoint synthesis option to a endpoint
 decision.

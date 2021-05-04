@@ -159,7 +159,7 @@ tests =
             |]
         , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
         , puCoSimProp "co simulation" accumDef fsGen
-        , puUnitTestCase "accum smoke test" accumDef $ do
+        , unitTestCase "accum smoke test" accumDef $ do
             assign $ sub "a" "b" ["c"]
             assertBindFullness
             decide $ consume "a"

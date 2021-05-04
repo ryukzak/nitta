@@ -39,7 +39,7 @@ tests =
             , division "a1" "b1" ["c1"] ["d1"]
             , add "c1" "d1" ["e1"]
             ]
-        , puUnitTestCase "division simple" u2 $ do
+        , unitTestCase "division simple" u2 $ do
             assign $ division "a" "b" ["c"] ["d"]
             setValue "a" 64
             setValue "b" 12
@@ -48,7 +48,7 @@ tests =
             decideAt 10 10 $ provide ["c"]
             decideAt 11 11 $ provide ["d"]
             assertCoSimulation
-        , puUnitTestCase "division only mod" u2 $ do
+        , unitTestCase "division only mod" u2 $ do
             assign $ division "a" "b" ["c"] []
             setValue "a" 64
             setValue "b" 12
@@ -56,7 +56,7 @@ tests =
             decideAt 2 2 $ consume "b"
             decideAt 10 10 $ provide ["c"]
             assertCoSimulation
-        , puUnitTestCase "division only rem" u2 $ do
+        , unitTestCase "division only rem" u2 $ do
             assign $ division "a" "b" [] ["d"]
             setValue "a" 64
             setValue "b" 12
@@ -64,7 +64,7 @@ tests =
             decideAt 2 2 $ consume "b"
             decideAt 11 11 $ provide ["d"]
             assertCoSimulation
-        , puUnitTestCase "division success pipeline" u2 $ do
+        , unitTestCase "division success pipeline" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
             setValues [("a", 64), ("b", 12), ("e", 64), ("f", 12)]
@@ -76,7 +76,7 @@ tests =
             decideAt 9 9 $ provide ["g"]
             assertCoSimulation
         , expectFail $
-            puUnitTestCase "division failed pipeline" u2 $ do
+            unitTestCase "division failed pipeline" u2 $ do
                 assign $ division "a" "b" ["c"] []
                 assign $ division "e" "f" ["g"] []
                 setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
@@ -84,7 +84,6 @@ tests =
                 decideAt 2 2 $ consume "b"
                 decideAt 3 3 $ consume "e"
                 decideAt 4 4 $ consume "f"
-                traceEndpoints
                 decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
                 decideAt 13 13 $ provide ["g"]
                 assertCoSimulation

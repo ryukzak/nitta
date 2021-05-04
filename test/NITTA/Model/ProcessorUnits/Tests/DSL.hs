@@ -20,7 +20,7 @@ DSL (domain-specific language) is a module for testing Processor Units (PU).
 
 = Algorithm
 
-1. Choose PU and provide it into puUnitTestCase.
+1. Choose PU and provide it into unitTestCase.
 2. Assign function to this PU.
 3. Schedule computational process for every variable in function.
 4. Assert (check) the resulting PU.
@@ -30,7 +30,7 @@ DSL (domain-specific language) is a module for testing Processor Units (PU).
 Test case (numbers to the right correspond to the algorithm steps):
 
 @
-puUnitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
+unitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
 
          assign $ multiply "a" "b" ["c", "d"]      -- 2. Bind function 'a * b = c = d' to PU
          setValue "a" 2                            --    Set initial input values
@@ -97,7 +97,7 @@ Don't forget to set initial input values with 'setValue' function.
 For debugging use functions starting with trace*, e.g. 'tracePU'.
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
-    puUnitTestCase,
+    unitTestCase,
     assign,
     assigns,
     assignNaive,
@@ -117,6 +117,8 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
+    assertEndpoint,
+    assertAllEndpointRoles,
 
     -- *Trace
     tracePU,
@@ -142,13 +144,13 @@ import Numeric.Interval.NonEmpty hiding (elem)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
-puUnitTestCase ::
+unitTestCase ::
     (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) =>
     String ->
     pu ->
     DSLStatement pu v x t () ->
     TestTree
-puUnitTestCase name pu alg = testCase name $ do
+unitTestCase name pu alg = testCase name $ do
     _ <- evalUnitTestState name pu alg
     assertBool "test failed" True
 
@@ -226,14 +228,14 @@ doDecision endpSt = do
     let isAvailable = isEpOptionAvailable endpSt unit
     if isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt
+        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
-isEpOptionAvailable (EndpointSt v interv) pu =
-    let compIntervs = singleton (nextTick $ process pu) <=! interv
-        compEpRoles = case v of
-            (Target _) -> v `elem` map epRole (endpointOptions pu)
-            (Source s) -> S.isSubsetOf s $ unionsMap ((\case Source ss -> ss; _ -> S.empty) . epRole) $ endpointOptions pu
-     in compIntervs && compEpRoles
+isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
+    case find (isSubroleOf role . epRole) $ endpointOptions pu of
+        Nothing -> False
+        Just EndpointSt{epAt = atB} ->
+            atA `isSubsetOf` tcAvailable atB
+                && member (width atA + 1) (tcDuration atB)
 
 -- |Bind all functions to processor unit and decide till decisions left.
 decideNaiveSynthesis :: DSLStatement pu v x t ()
@@ -278,6 +280,20 @@ assertBindFullness = do
     isOk <- lift $ isFullyBinded unit functs
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
+
+assertAllEndpointRoles :: (Show (EndpointRole v)) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles roles = do
+    UnitTestState{unit} <- get
+    let opts = S.fromList $ map epRole $ endpointOptions unit
+    lift $ assertBool ("Actual endpoint roles: " <> show opts) $ opts == S.fromList roles
+
+assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+assertEndpoint a b role = do
+    UnitTestState{unit} <- get
+    let opts = endpointOptions unit
+    case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
+        Nothing -> lift $ assertFailure $ "Endpoint not defined in: " <> show opts
+        Just _ -> return ()
 
 isFullyBinded pu fs = do
     assertBool ("Outputs not equal, expected: " <> show fOuts <> "; actual: " <> show outs) $ outs == fOuts
