@@ -68,8 +68,8 @@ type SynthesisAPI tag v x t =
         :> "synthesisTree"
         :> Get '[JSON] (TreeView ShortNodeView)
     )
-        :<|> ( Description "Get synthesis info"
-                :> "tree-info"
+        :<|> ( Description "Get synthesis tree info"
+                :> "treeInfo"
                 :> Get '[JSON] TreeInfo
              )
         :<|> ( "node" :> Capture "sid" SID
