@@ -187,12 +187,12 @@ synthesizeTargetSystem
 
             synthesise root = do
                 infoM "NITTA" "synthesis process..."
-                leaf <- tSynthesisMethod root
-                let isLeaf = isComplete leaf
-                noticeM "NITTA" $ "synthesis process..." <> if isLeaf then "ok" else "fail"
+                node <- tSynthesisMethod root
+                let isSuccess = checkIsComplete node && checkIsLeaf node
+                noticeM "NITTA" $ "synthesis process..." <> if isSuccess then "ok" else "fail"
                 return $
-                    if isLeaf
-                        then Right leaf
+                    if isSuccess
+                        then Right node
                         else Left "synthesis process...fail"
 
             writeProject' leaf = do

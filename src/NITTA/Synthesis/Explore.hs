@@ -20,7 +20,8 @@ module NITTA.Synthesis.Explore (
     getTreePathIO,
     subForestIO,
     positiveSubForestIO,
-    isComplete,
+    checkIsComplete,
+    checkIsLeaf,
 ) where
 
 import Control.Concurrent.STM
@@ -107,8 +108,8 @@ subForest (objective function value less than zero).
 -}
 positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
 
--- |Is synthesis tree completed
-isComplete
+-- |This node is Leaf
+checkIsLeaf
     Tree
         { sState =
             SynthesisState
@@ -118,12 +119,17 @@ isComplete
                 , sResolveDeadlockOptions = []
                 , sOptimizeAccumOptions = []
                 , sConstantFoldingOptions = []
-                , sTarget
                 }
-        }
-        | isSynthesisFinish sTarget = True
-isComplete _ = False
+        } = True
+checkIsLeaf _ = False
 
+checkIsComplete
+    Tree
+        { sState =
+            SynthesisState
+                { sTarget
+                }
+        } = isSynthesisFinish sTarget
 -- *Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =

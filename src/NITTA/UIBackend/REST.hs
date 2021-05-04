@@ -34,6 +34,7 @@ import Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
+import Debug.Trace
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -67,23 +68,23 @@ type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
         :> "synthesisTree"
         :> Get '[JSON] (TreeView ShortNodeView)
-    ) :<|>
-    ( Description "lolkekdescription"
-        :> "synthesis-info"
-        :> Get '[JSON] (TreeView ShortNodeView)
-    ) :<|>
-    ( Description "Count Nodes in synthesis graph"
-        :> "synthesis-nodes-count"
-        :> Get '[JSON] (Integer)
-    ) :<|>
-    ( Description "Count success nodes in synthesis graph"
-        :> "synthesis-success-nodes-count"
-        :> Get '[JSON] (Integer)
-    ) :<|>
-    ( Description "Count not processed nodes in synthesis graph"
-        :> "synthesis-not-processed-nodes-count"
-        :> Get '[JSON] (Integer)
     )
+        :<|> ( Description "Count Nodes in synthesis graph"
+                :> "synthesis-nodes-count"
+                :> Get '[JSON] (Integer)
+             )
+        :<|> ( Description "Count success nodes in synthesis graph"
+                :> "synthesis-success-nodes-count"
+                :> Get '[JSON] (Integer)
+             )
+        :<|> ( Description "Count not processed nodes in synthesis graph"
+                :> "synthesis-not-processed-nodes-count"
+                :> Get '[JSON] (Integer)
+             )
+        :<|> ( Description "Get synthesis info"
+                :> "synthesis-info"
+                :> Get '[JSON] (SynthesisInfo)
+             )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
                         :<|> NodeInspectionAPI tag v x t
@@ -94,11 +95,11 @@ type SynthesisAPI tag v x t =
              )
 
 synthesisServer ctx@BackendCtx{root} =
-    liftIO (viewNodeTree root) :<|>
-    liftIO (viewNodeTreeShow root) :<|>
-    liftIO (countN root) :<|>
-    liftIO (countSuccess root) :<|>
-    liftIO (countNotProcessed root)
+    liftIO (viewNodeTree root)
+        :<|> liftIO (countN root)
+        :<|> liftIO (countSuccess root)
+        :<|> liftIO (countNotProcessed root)
+        :<|> liftIO (getSynthesisInfo root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid
@@ -229,7 +230,7 @@ type TestBenchAPI v x =
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
     pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath defProjectTemplates
-    unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
+    unless (checkIsComplete tree) $ error "test bench not allow for non complete synthesis"
     pwd <- getCurrentDirectory
     let prj =
             Project
