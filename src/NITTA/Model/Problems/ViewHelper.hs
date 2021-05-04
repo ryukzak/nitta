@@ -35,6 +35,7 @@ data DecisionView
         { function :: FView
         , pu :: T.Text
         }
+    | GroupBindDecisionView [DecisionView]
     | AllocationView
         { networkTag :: T.Text
         , processUnitTag :: T.Text
@@ -68,6 +69,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
             { function = view f
             , pu = toText pu
             }
+    view (GroupBinding _ binds) = GroupBindDecisionView $ map view binds
 
 instance (UnitTag tag) => Viewable (Allocation tag) DecisionView where
     view Allocation{networkTag, processUnitTag} =

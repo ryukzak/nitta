@@ -74,6 +74,9 @@ import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
+-- |Typeclass alias for processor unit tag or "name."
+type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
+
 -- |Class for processor unit tag or "name"
 class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag) => UnitTag tag where
     -- |Whether the value can be used as a template or not
