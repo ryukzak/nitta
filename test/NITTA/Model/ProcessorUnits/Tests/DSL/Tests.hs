@@ -135,6 +135,7 @@ tests =
                 decideAtUnsafe 1 1 $ consume "b"
                 decideAtUnsafe 10 10 $ provide ["c"]
                 assertCoSimulation
+            ]
         , testGroup
             "assertLocks"
             [ unitTestCase "assertLocks - success" u $ do
