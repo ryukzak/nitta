@@ -46,6 +46,7 @@ tests =
             decideAt 0 0 $ consume "a"
             decideAt 1 1 $ consume "b"
             -- traceProcess >> tracePU >> traceEndpoints
+            assertEndpoint 7 maxBound $ provide ["c"]
             decideAt 7 7 $ provide ["c"]
             decideAt 8 8 $ provide ["d"]
             assertCoSimulation
