@@ -69,6 +69,9 @@ jobs:
         timeout-minutes: 5
         run: yarn build
 
+      - name: Copy README.md to GH_PAGES_DIR
+        run: cp README.md ${{ env.GH_PAGES_DIR }}/
+
       - name: Publish generated content to GitHub Pages
         if: ${{ github.ref == 'refs/heads/master'}}
         uses: JamesIves/github-pages-deploy-action@4.1.1
