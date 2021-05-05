@@ -113,6 +113,29 @@ tests =
                 setValue "a" 10
                 setValue "b" 11
                 setValue "a" 15
+        , -- TODO: rewrite that tests to BrokenPU
+          testGroup
+            "decideAtUnsafe"
+            [ unitTestCase "check constrain existance" u $ do
+                assign $ multiply "a" "b" ["c"]
+                assertEndpoint 1 maxBound $ consume "a"
+                decideAtUnsafe 1 1 $ consume "a"
+            , expectFail $
+                unitTestCase "check that safe fail" u $ do
+                    assign $ multiply "a" "b" ["c"]
+                    assertEndpoint 1 maxBound $ consume "a"
+                    decideAt 0 0 $ consume "a"
+            , -- TODO: remove uneccessary restriction for Multiplier model
+              unitTestCase "check that unsafe pass" u $ do
+                assign $ multiply "a" "b" ["c"]
+                setValue "a" 2
+                setValue "b" 12
+                assertEndpoint 1 maxBound $ consume "a"
+                decideAtUnsafe 0 0 $ consume "a"
+                decideAtUnsafe 1 1 $ consume "b"
+                decideAtUnsafe 10 10 $ provide ["c"]
+                assertCoSimulation
+            ]
         ]
     where
         u = multiplier True :: Multiplier String Int Int

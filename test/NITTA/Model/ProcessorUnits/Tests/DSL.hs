@@ -108,6 +108,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- *Process Unit Control
     decide,
     decideAt,
+    decideAtUnsafe,
     consume,
     provide,
     breakLoop,
@@ -216,17 +217,20 @@ setValue var val = do
 decide :: EndpointRole v -> DSLStatement pu v x t ()
 decide role = do
     des <- epAt <$> getDecisionSpecific role
-    doDecision $ EndpointSt role des
+    doDecision False $ EndpointSt role des
 
 -- | Make synthesis decision with provided Endpoint Role and manually selected interval
 decideAt :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
-decideAt from to role = doDecision $ EndpointSt role (from ... to)
+decideAt from to role = doDecision False $ EndpointSt role (from ... to)
 
-doDecision :: EndpointSt v (Interval t) -> DSLStatement pu v x t ()
-doDecision endpSt = do
+decideAtUnsafe :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+decideAtUnsafe from to role = doDecision True $ EndpointSt role (from ... to)
+
+doDecision :: Bool -> EndpointSt v (Interval t) -> DSLStatement pu v x t ()
+doDecision unsafe endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
-    if isAvailable
+    if unsafe || isAvailable
         then put st{unit = endpointDecision unit endpSt}
         else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
