@@ -5,6 +5,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -41,6 +42,9 @@ module NITTA.Intermediate.Types (
     Cntx (..),
     showCntx,
     cntx2table,
+    cntx2md,
+    cntx2json,
+    cntx2csv,
     cntxReceivedBySlice,
     getCntx,
     updateCntx,
@@ -54,7 +58,10 @@ module NITTA.Intermediate.Types (
 ) where
 
 import Data.Aeson
+import Data.Aeson.Encode.Pretty
+import qualified Data.Csv as Csv
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -93,6 +100,7 @@ instance (Show v) => Show (O v) where
 instance Variables (O v) v where
     variables (O vs) = vs
 
+showOut vs | S.null vs = "_"
 showOut vs = S.join " = " $ map show $ S.elems vs
 
 -- |Value of variable (constant or initial value).
@@ -297,16 +305,66 @@ showCntx f Cntx{cntxProcess, cntxCycleNumber} =
                 , let Just (v', x') = vx'
                 ]
 
-cntx2table Cntx{cntxProcess, cntxCycleNumber} =
+cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ M.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
-        table = map (uncurry (:)) $ zip header (transpose body)
-     in render $
-            hsep 1 left $
-                map (vcat left . map text) table
+     in map (uncurry (:)) $ zip header (transpose body)
     where
         sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
+
+cntx2table cntx =
+    render $
+        hsep 1 left $
+            map (vcat left . map text) $ cntx2list cntx
+
+{- |
+ >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> putStr $ cntx2md cntx
+ <BLANKLINE>
+ | Cycle  | x1   | x2   |
+ |:-------|:-----|:-----|
+ | 1      | 1.2  | 3.4  |
+ | 2      | 3.4  | 2.3  |
+-}
+cntx2md cntx@Cntx{cntxCycleNumber} =
+    let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
+        maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
+     in "\n"
+            ++ render
+                ( hsep 0 left $
+                    map (vcat left . map text) cycleFormattedTable
+                )
+
+{- |
+ >>> import qualified Data.ByteString.Lazy.Char8 as BS
+ >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> BS.putStr $ cntx2json cntx
+ [
+     {
+         "x2": 3.4,
+         "x1": 1.2
+     },
+     {
+         "x2": 2.3,
+         "x1": 3.4
+     }
+]
+-}
+cntx2json cntx =
+    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
+     in encodePretty $ map HM.fromList listHashMap
+
+{- |
+ >>> import qualified Data.ByteString.Lazy.Char8 as BS
+ >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> BS.putStr $ cntx2csv cntx
+ x1,x2
+ 1.2,3.4
+ 3.4,2.3
+-}
+cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
 
 instance Default (Cntx v x) where
     def =

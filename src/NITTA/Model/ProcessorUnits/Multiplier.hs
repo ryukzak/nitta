@@ -471,7 +471,7 @@ includes three cases:
   hardware level.
 
 Note: an option don't specify moment for action but specify an available
-interval ('NITTA.Model.Types.TimeConstrain'). That describes the interval for
+interval ('NITTA.Model.Types.TimeConstraint'). That describes the interval for
 action start and restriction on process duration.
 
 __endpointDecision__ defines how to apply synthesis decision to the PU model.
@@ -492,13 +492,13 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
         | not $ null targets =
             let at = nextTick process_ + 1 ... maxBound
                 duration = 1 ... maxBound
-             in map (\v -> EndpointSt (Target v) $ TimeConstrain at duration) targets
+             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
     endpointOptions Multiplier{sources, currentWork = Just f, process_}
         | not $ null sources =
             let doneAt = inputsPushedAt process_ f + 3
                 at = max doneAt (nextTick process_ + 1) ... maxBound
                 duration = 1 ... maxBound
-             in [EndpointSt (Source $ S.fromList sources) $ TimeConstrain at duration]
+             in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
     endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}

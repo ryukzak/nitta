@@ -23,6 +23,7 @@ module NITTA.Model.Problems.Endpoint (
     endpointOptionToDecision,
     isSource,
     isTarget,
+    isSubroleOf,
     setAt,
     updAt,
 ) where
@@ -48,7 +49,7 @@ data EndpointSt v tp = EndpointSt
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{epRole} = variables epRole
 
-instance (Show v, Time t) => Show (EndpointSt v (TimeConstrain t)) where
+instance (Show v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
     show EndpointSt{epRole, epAt} = "?" ++ show epRole ++ "@(" ++ show epAt ++ ")"
 instance (Show v, Time t) => Show (EndpointSt v (Interval t)) where
     show EndpointSt{epRole, epAt} = "!" ++ show epRole ++ "@(" ++ show epAt ++ ")"
@@ -68,7 +69,7 @@ setAt epAt ep@EndpointSt{} = ep{epAt}
 updAt f ep@EndpointSt{epAt} = ep{epAt = f epAt}
 
 class EndpointProblem u v t | u -> v t where
-    endpointOptions :: u -> [EndpointSt v (TimeConstrain t)]
+    endpointOptions :: u -> [EndpointSt v (TimeConstraint t)]
     endpointDecision :: u -> EndpointSt v (Interval t) -> u
 
 data EndpointRole v
@@ -96,6 +97,10 @@ instance Variables (EndpointRole v) v where
     variables (Target v) = S.singleton v
 
 instance (ToJSON v) => ToJSON (EndpointRole v)
+
+isSubroleOf (Target a) (Target b) = a == b
+isSubroleOf (Source as) (Source bs) = as `S.isSubsetOf` bs
+isSubroleOf _ _ = False
 
 {- |The simplest way to convert an endpoint synthesis option to a endpoint
 decision.

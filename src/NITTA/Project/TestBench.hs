@@ -94,11 +94,11 @@ instance Show (TestbenchReport v x) where
                 [__i|
                     Project: #{ tbPath }
                     Files:
-                        #{ nest 4 $ pretty tbFiles }
+                        #{ nest 4 $ vsep $ map pretty tbFiles }
                     Functional blocks:
-                        #{ nest 4 $ pretty tbFunctions }
+                        #{ nest 4 $ vsep $ map pretty tbFunctions }
                     Steps:
-                        #{ nest 4 $ pretty tbSynthesisSteps }
+                        #{ nest 4 $ vsep $ map pretty tbSynthesisSteps }
                     compiler dump:
                         #{ nest 4 $ pretty tbCompilerDump }
                     simulation dump:

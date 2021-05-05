@@ -35,6 +35,7 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
 import NITTA.Synthesis
 import NITTA.UIBackend
+import NITTA.UIBackend.REST
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS
@@ -68,7 +69,7 @@ apiGenArgs =
 $(deriveTypeScript defaultOptions ''ViewPointID)
 $(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
-$(deriveTypeScript defaultOptions ''TimeConstrain)
+$(deriveTypeScript defaultOptions ''TimeConstraint)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReportView)
@@ -92,6 +93,7 @@ $(deriveTypeScript defaultOptions ''GraphStructure)
 
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
+$(deriveTypeScript defaultOptions ''UnitEndpoints)
 
 -- Microarchitecture
 $(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
@@ -129,7 +131,7 @@ main = do
                     [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
                     , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
                     , getTypeScriptDeclarations (Proxy :: Proxy Interval)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrain)
+                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstraint)
                     , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
                     , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
                     , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReportView)
@@ -151,6 +153,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
+                    , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpoints)
                     , -- Microarchitecture
                       getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
                     , getTypeScriptDeclarations (Proxy :: Proxy NetworkDesc)

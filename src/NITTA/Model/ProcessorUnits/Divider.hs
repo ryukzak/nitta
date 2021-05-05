@@ -145,7 +145,7 @@ inProgress2Output rottenAt InProgress{function, startAt, finishAt}
 inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 resolveColisions [] opt = [opt]
-resolveColisions intervals opt@EndpointSt{epAt = tc@TimeConstrain{tcAvailable}}
+resolveColisions intervals opt@EndpointSt{epAt = tc@TimeConstraint{tcAvailable}}
     | all (isNothing . intersection tcAvailable) intervals =
         [opt]
     | otherwise -- FIXME: we must prick out work point from intervals
@@ -192,7 +192,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
             target v =
                 EndpointSt
                     (Target v)
-                    $ TimeConstrain (nextTargetTick pu ... maxBound) (singleton 1)
+                    $ TimeConstraint (nextTargetTick pu ... maxBound) (singleton 1)
             targets
                 | Just (Input{inputSeq = (_tag, v) : _}, _) <- findInput jobs =
                     [target v]
@@ -203,7 +203,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                     ( \(_tag, vs) ->
                         EndpointSt
                             (Source vs)
-                            $ TimeConstrain
+                            $ TimeConstraint
                                 (max finishAt (nextSourceTick pu) ... fromMaybe maxBound rottenAt)
                                 (singleton 1)
                     )

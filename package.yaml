@@ -52,11 +52,14 @@ dependencies:
   - MissingH
   - base
   - boxes
+  - bytestring
   - containers
   - data-default
   - filepath
   - ginger
   - htoml
+  - intervals
+  - mtl
   - prettyprinter
   - process-extras
   - regex-compat
@@ -71,14 +74,13 @@ library:
     - aeson
     - aeson-pretty
     - array
+    - cassava
     - directory
     - file-embed
     - hashable
     - hslogger
     - http-api-data
-    - intervals
     - language-lua
-    - mtl
     - network-simple
     - process
     - safe
@@ -126,7 +128,6 @@ executables:
       - cmdargs
       - directory
       - hslogger
-      - intervals
       - nitta
 
 

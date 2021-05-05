@@ -280,9 +280,9 @@ instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
-        let target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
-            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
+        let target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... maxBound)
+            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
+            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick ... maxBound) (1 ... maxBound)
 
             fromRemain =
                 if any (\case ForBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory

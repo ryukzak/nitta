@@ -28,9 +28,7 @@ import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit

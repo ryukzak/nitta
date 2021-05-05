@@ -122,6 +122,8 @@ library
     , array
     , base
     , boxes
+    , bytestring
+    , cassava
     , containers
     , data-default
     , directory
@@ -169,6 +171,7 @@ executable nitta
       MissingH
     , base
     , boxes
+    , bytestring
     , cmdargs
     , containers
     , data-default
@@ -176,6 +179,8 @@ executable nitta
     , ginger
     , hslogger
     , htoml
+    , intervals
+    , mtl
     , nitta
     , prettyprinter
     , process-extras
@@ -198,6 +203,7 @@ executable nitta-api-gen
     , aeson-typescript
     , base
     , boxes
+    , bytestring
     , cmdargs
     , containers
     , data-default
@@ -207,6 +213,7 @@ executable nitta-api-gen
     , hslogger
     , htoml
     , intervals
+    , mtl
     , nitta
     , prettyprinter
     , process-extras
@@ -225,7 +232,7 @@ test-suite nitta-test
       NITTA.Intermediate.Tests.Functions
       NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
-      NITTA.LuaFrontend.Tests.Utils
+      NITTA.LuaFrontend.Tests.Providers
       NITTA.LuaFrontend.TestsNew
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
@@ -237,8 +244,13 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
+      NITTA.Model.ProcessorUnits.Tests.DSL
+      NITTA.Model.ProcessorUnits.Tests.DSL.Tests
+      NITTA.Model.ProcessorUnits.Tests.Providers
       NITTA.Model.ProcessorUnits.Tests.Utils
+      NITTA.Model.Tests.Internals
       NITTA.Model.Tests.Microarchitecture
+      NITTA.Model.Tests.Providers
       NITTA.Tests
       NITTA.Utils.Tests
       Paths_nitta
@@ -251,6 +263,7 @@ test-suite nitta-test
     , atomic-primops
     , base
     , boxes
+    , bytestring
     , call-stack
     , containers
     , data-default
@@ -261,6 +274,7 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
+    , intervals
     , language-lua
     , mtl
     , nitta

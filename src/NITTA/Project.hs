@@ -104,6 +104,7 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){cwd = Just workdir}
+        dump "" "" = ""
         dump out err = "stdout:\n" <> out <> "stderr:\n" <> err
 
 extractLogValues x0 text = mapMaybe f $ lines text

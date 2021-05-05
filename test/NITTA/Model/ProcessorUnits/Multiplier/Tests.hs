@@ -17,14 +17,9 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 ) where
 
 import Data.String.Interpolate
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.Intermediate.Types
-import NITTA.LuaFrontend.Tests.Utils
-import NITTA.Model.Networks.Types
-import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.Utils
-import NITTA.Model.Tests.Microarchitecture
+import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Model.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -83,6 +78,23 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
+        , unitTestCase "multiplier smoke test" u $ do
+            assign $ multiply "a" "b" ["c", "d"]
+            assertBindFullness
+            decideAt 1 2 $ consume "a"
+            decide $ consume "b"
+            traceEndpoints
+            decideAt 6 6 $ provide ["c"]
+            decide $ provide ["d"]
+            assertSynthesisDone
+        , unitTestCase "multiplier coSim smoke test" u $ do
+            assign $ multiply "a" "b" ["c", "d"]
+            setValue "a" 2
+            setValue "b" 7
+            decide $ consume "a"
+            decide $ consume "b"
+            decide $ provide ["c", "d"]
+            assertCoSimulation
         ]
     where
         u = multiplier True :: Multiplier String Int Int

@@ -106,13 +106,13 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
     endpointOptions Broken{targets = [v], process_} =
         let start = nextTick process_ + 1 ... maxBound
             dur = 1 ... maxBound
-         in [EndpointSt (Target v) $ TimeConstrain start dur]
+         in [EndpointSt (Target v) $ TimeConstraint start dur]
     endpointOptions Broken{doneAt = Just _, lostEndpointSource = True} = []
     endpointOptions Broken{sources, doneAt = Just at, process_}
         | not $ null sources =
             let start = max at (nextTick process_) ... maxBound
                 dur = 1 ... maxBound
-             in [EndpointSt (Source $ fromList sources) $ TimeConstrain start dur]
+             in [EndpointSt (Source $ fromList sources) $ TimeConstraint start dur]
     endpointOptions pu@Broken{remain, lostEndpointTarget = True}
         | not $ null remain = concatMap (endpointOptions . execution pu) $ tail remain
     endpointOptions pu@Broken{remain} = concatMap (endpointOptions . execution pu) remain

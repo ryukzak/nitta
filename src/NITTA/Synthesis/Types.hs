@@ -141,7 +141,7 @@ data SynthesisState m tag v x t = SynthesisState
     , sConstantFoldingOptions :: [ConstantFolding v x]
     , sBreakLoopOptions :: [BreakLoop v x]
     , -- |dataflow options cache
-      sDataflowOptions :: [DataflowSt tag v (TimeConstrain t)]
+      sDataflowOptions :: [DataflowSt tag v (TimeConstraint t)]
     , -- |a map from functions to possible processor unit tags
       bindingAlternative :: M.Map (F v x) [tag]
     , -- |a function set, which binding may cause dead lock

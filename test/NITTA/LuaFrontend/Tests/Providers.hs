@@ -10,18 +10,19 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests.Utils
+Module      : NITTA.LuaFrontend.Tests.Providers
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.LuaFrontend.Tests.Utils (
+module NITTA.LuaFrontend.Tests.Providers (
     luaTestCase,
     typedLuaTestCase,
     typedIOLuaTestCase,
     traceLuaSimulationTestCase,
+    module NITTA.Model.Tests.Microarchitecture,
 ) where
 
 import Data.CallStack
@@ -33,6 +34,7 @@ import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
+import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import NITTA.Synthesis
@@ -82,6 +84,8 @@ typedIOLuaTestCase arch proxy name received src = testCase name $ do
         Left err -> assertFailure err
         Right _ -> return ()
 
+-- Internals
+
 runLua ::
     forall x.
     (Val x, Integral x) =>
@@ -92,7 +96,7 @@ runLua ::
     T.Text ->
     IO (Either String ())
 runLua arch _proxy wd received src = do
-    report <-
+    reportE <-
         runTargetSynthesisWithUniqName
             (def :: TargetSynthesis String String x Int)
                 { tName = wd
@@ -100,11 +104,11 @@ runLua arch _proxy wd received src = do
                 , tSourceCode = Just src
                 , tReceivedValues = received
                 }
-    return $ case report of
-        Right TestbenchReport{tbStatus = True} -> Right ()
+    return $ case reportE of
         Left err -> Left $ "synthesis process fail" <> err
-        Right TestbenchReport{tbCompilerDump, tbPath}
+        Right TestbenchReport{tbStatus = True} -> Right ()
+        Right report@TestbenchReport{tbCompilerDump}
             | T.length tbCompilerDump > 2 ->
-                Left $ "icarus synthesis error: " <> tbPath
-        Right TestbenchReport{tbPath} ->
-            Left $ "icarus simulation error: " <> tbPath
+                Left $ "icarus synthesis error:\n" <> show report
+        Right report@TestbenchReport{} ->
+            Left $ "icarus simulation error:\n" <> show report

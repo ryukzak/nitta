@@ -18,11 +18,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Tests.Functions ()
-import NITTA.Intermediate.Types
-import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -39,6 +35,14 @@ tests =
             u
             []
             [constant 11 ["ovj"]]
+        , unitTestCase "test BreakLoop" u2 $ do
+            assign $ loop 10 "b" ["a"]
+            setValue "b" 64
+            breakLoop 10 "b" ["a"]
+            decideAt 1 1 $ provide ["a"]
+            decideAt 2 2 $ consume "b"
+            traceProcess
+            assertCoSimulation
         , puCoSimTestCase
             "loop function"
             u
