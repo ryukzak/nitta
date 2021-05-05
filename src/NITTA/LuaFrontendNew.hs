@@ -1,12 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module NITTA.LuaFrontendNew
   ( parseLuaSources,
 
     -- * Internal
-    Constant (..),
+    LuaValue (..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
@@ -14,13 +15,26 @@ module NITTA.LuaFrontendNew
 where
 
 import Control.Monad.State
+import qualified Data.Map as Map
 import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 
-data Constant = Constant {cName :: T.Text, cValueString :: T.Text, cValueType :: NumberType}
-  deriving (Eq, Show)
+data LuaValue = Constant {luaValueName :: T.Text, luaValueString :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int}
+              | Variable {luaValueName :: T.Text, luaValueString :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int, luaValueAssignCount :: Int}
+  deriving (Show)
+
+instance Eq LuaValue where
+  (==) Constant {luaValueName = a} Constant {luaValueName = b} = a == b
+  (==) Variable {luaValueName = a} Variable {luaValueName = b} = a == b
+  (==) _ _ = False
+
+instance Ord LuaValue where
+  (<=) Constant {luaValueName = a} Constant {luaValueName = b} = a == b
+  (<=) Constant {luaValueName = a} Variable {luaValueName = b} = a == b
+  (<=) Variable {luaValueName = a} Constant {luaValueName = b} = a <= b
+  (<=) Variable {luaValueName = a} Variable {luaValueName = b} = a <= b
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
@@ -46,16 +60,17 @@ parseRightExp fOut (Binop op a b) = do
     strFOut = map T.unpack fOut
 parseRightExp _ _ = undefined
 
-parseExpArg :: Exp -> State (DataFlowGraph String Int, [Constant]) String
-parseExpArg (Number _ text) = undefined
-parseExpArg (Unop Neg (Number _ text)) = return ("-" ++ T.unpack text)
+parseExpArg :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+parseExpArg (Number _ text) = return $ T.unpack text ++ "#0"
+parseExpArg (Unop Neg n) = do
+  val <- parseExpArg n
+  return ("-" ++ val)
 parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
   (_, constants) <- get
-  return undefined 
+  return undefined
+parseExpArg _ = undefined
 
-parseExpArg _ = undefined 
-
-processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, [Constant]) Int
+processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) Int
 --Lua language Stat structure parsing
 --LocalAssign
 processStatement _ (LocalAssign _names Nothing) = do
@@ -79,11 +94,22 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
     return 0
 processStatement _ _ = undefined
 
-addConstant :: T.Text -> Exp -> State (DataFlowGraph String Int, [Constant]) Int
+addConstant :: T.Text -> Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) Int
 addConstant name (Number valueType valueString) = do
   (graph, constants) <- get
-  put (graph, constants ++ [Constant {cName = name, cValueString = valueString, cValueType = valueType}])
+  case Map.lookup name constants of
+    Just _ -> do
+      let newValue = updateConstant $ Map.lookup name constants
+      put (addFuncToDataFlowGraph graph (F.constant (read $ T.unpack $ luaValueString newValue) [getConstantName newValue]), Map.insert name newValue constants)
+    Nothing -> do
+      put (graph, Map.insert name Constant {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0} constants)
   return 0
+  where
+    updateConstant (Just Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount}) = Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1}
+    updateConstant (Just Constant {luaValueName, luaValueString, luaValueType, luaValueAccessCount}) = Constant {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
+    updateConstant _ = undefined
+    getConstantName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
+    getConstantName Constant {luaValueName, luaValueAccessCount} = T.unpack luaValueName ++ "#" ++ show luaValueAccessCount
 addConstant _ _ = undefined
 
 buildAlg syntaxTree = fst $
@@ -91,7 +117,7 @@ buildAlg syntaxTree = fst $
     mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
   where
     (startupFunctionName, _, startupFunctionDef) = findStartupFunction syntaxTree
-    st = (DFCluster [], [])
+    st = (DFCluster [], Map.empty)
 
 findStartupFunction (Block statements Nothing)
   | [call] <- filter (\case FunCall {} -> True; _ -> False) statements,
