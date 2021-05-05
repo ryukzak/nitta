@@ -201,7 +201,7 @@ Multiplier {remain = [a * b = c = d], targets = [], sources = [], currentWork = 
     nextUid = 0
 , isMocked = True}
 >>> endpointOptions st1
-[?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
+[?Target "a"@(0..∞ /P 1..∞),?Target "b"@(0..∞ /P 1..∞)]
 
 As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: @a@ or
@@ -218,7 +218,7 @@ Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Jus
         1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
     relations =
         0) Vertical 0 1
-    nextTick = 2
+    nextTick = 3
     nextUid = 2
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st2
@@ -234,7 +234,7 @@ Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a
     relations =
         0) Vertical 2 3
         1) Vertical 0 1
-    nextTick = 3
+    nextTick = 4
     nextUid = 4
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st3
@@ -259,7 +259,7 @@ Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b
         0) Vertical 4 5
         1) Vertical 2 3
         2) Vertical 0 1
-    nextTick = 6
+    nextTick = 7
     nextUid = 6
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st4
@@ -286,7 +286,7 @@ Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, proc
         5) Vertical 4 5
         6) Vertical 2 3
         7) Vertical 0 1
-    nextTick = 7
+    nextTick = 8
     nextUid = 9
 , isMocked = True}
 >>> endpointOptions st5
