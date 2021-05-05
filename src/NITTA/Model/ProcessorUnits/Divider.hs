@@ -113,9 +113,28 @@ instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
 
-instance (Var v) => Locks (Divider v x t) v where
-    -- FIXME:
-    locks _ = []
+instance (Var v, Time t) => Locks (Divider v x t) v where
+    locks Divider{jobs, remains} = L.nub $ concat [byArguments, byResults]
+        where
+            byArguments
+                | Just wa@WaitArguments{function} <- L.find isWaitArguments jobs =
+                    [ Lock{lockBy, locked}
+                    | lockBy <- S.elems $ variables wa
+                    , locked <- S.elems $ unionsMap variables remains
+                    ]
+                        ++ [ Lock{lockBy, locked}
+                           | lockBy <- S.elems $ variables wa
+                           , locked <- S.elems $ outputs function
+                           ]
+                | otherwise = concatMap locks remains
+            byResults
+                | Just wr <- firstWaitResults jobs =
+                    let blocked = filter (\j -> isWaitResults j && j /= wr) jobs
+                     in [ Lock{lockBy, locked}
+                        | lockBy <- S.elems $ variables wr
+                        , locked <- S.elems $ unionsMap variables blocked
+                        ]
+                | otherwise = []
 
 instance BreakLoopProblem (Divider v x t) v x
 instance ConstantFoldingProblem (Divider v x t) v x

@@ -80,12 +80,35 @@ tests =
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
             setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
+            assertLocks
+                [ Lock{locked = "c", lockBy = "a"}
+                , Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "g", lockBy = "e"}
+                , Lock{locked = "g", lockBy = "f"}
+                ]
             decideAt 1 1 $ consume "a"
+            assertLocks
+                [ Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "e", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "b"}
+                , Lock{locked = "g", lockBy = "b"}
+                ]
             decideAt 2 2 $ consume "b"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "e"}
+                , Lock{locked = "g", lockBy = "f"}
+                ]
             decideAt 4 4 $ consume "e"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "f"}
+                ]
             decideAt 5 5 $ consume "f"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "c"}
+                ]
             assertEndpoint 8 10 $ provide ["c"]
             decideAt 10 10 $ provide ["c"] -- last tick
+            assertLocks []
             assertEndpoint 11 maxBound $ provide ["g"]
             decideAt 13 13 $ provide ["g"]
             assertCoSimulation
