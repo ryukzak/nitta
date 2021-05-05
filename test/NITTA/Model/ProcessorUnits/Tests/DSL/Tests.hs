@@ -135,6 +135,17 @@ tests =
                 decideAtUnsafe 1 1 $ consume "b"
                 decideAtUnsafe 10 10 $ provide ["c"]
                 assertCoSimulation
+        , testGroup
+            "assertLocks"
+            [ unitTestCase "assertLocks - success" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                decide $ consume "a"
+                assertLocks [Lock{locked = "c", lockBy = "b"}, Lock{locked = "d", lockBy = "b"}]
+            , expectFail $
+                unitTestCase "assertLocks - success" u $ do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decide $ consume "a"
+                    assertLocks [Lock{locked = "c", lockBy = "b"}]
             ]
         ]
     where

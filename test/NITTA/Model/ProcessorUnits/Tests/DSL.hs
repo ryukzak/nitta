@@ -120,6 +120,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertSynthesisDone,
     assertEndpoint,
     assertAllEndpointRoles,
+    assertLocks,
 
     -- *Trace
     tracePU,
@@ -315,6 +316,14 @@ assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+
+assertLocks :: (Locks pu v) => [Lock v] -> DSLStatement pu v x t ()
+assertLocks expectLocks = do
+    UnitTestState{unit} <- get
+    let actualLocks0 = locks unit
+        actualLocks = S.fromList actualLocks0
+    lift $ assertBool ("locks contain duplicates: " <> show actualLocks0) $ length actualLocks0 == S.size actualLocks
+    lift $ assertBool ("unexpected locks: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
 
 assertCoSimulation ::
     ( PUClasses pu String x Int
