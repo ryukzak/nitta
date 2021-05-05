@@ -32,7 +32,7 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.UIBackend

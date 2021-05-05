@@ -23,7 +23,6 @@ import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Types
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
 

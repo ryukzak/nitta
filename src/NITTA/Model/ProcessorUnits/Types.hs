@@ -69,7 +69,7 @@ import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
-import NITTA.Model.Types
+import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter

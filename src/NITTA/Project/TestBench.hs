@@ -39,7 +39,7 @@ import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils

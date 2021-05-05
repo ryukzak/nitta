@@ -10,14 +10,14 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Model.Types
+Module      : NITTA.Model.Time
 Description : Types for time description
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Types (
+module NITTA.Model.Time (
     VarValTime,
     Time,
     TimeConstraint (..),

@@ -25,7 +25,7 @@ import GHC.Generics
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Synthesis.Types
 
 data ConstantFoldingMetrics = ConstantFoldingMetrics
