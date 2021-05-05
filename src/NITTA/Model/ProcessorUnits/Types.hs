@@ -36,6 +36,7 @@ module NITTA.Model.ProcessorUnits.Types (
     descent,
     whatsHappen,
     extractInstructionAt,
+    withShift,
 
     -- *Control
     Controllable (..),
@@ -116,7 +117,7 @@ data Process t i = Process
       steps :: [Step t i]
     , -- |List of relationships between process steps (see 'Relation').
       relations :: [Relation]
-    , -- |Next free tick.
+    , -- |Next tick for instruction. Note: instruction /= endpoint.
       nextTick :: t
     , -- |Next process step ID
       nextUid :: ProcessStepID
@@ -221,6 +222,29 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
         inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
+
+{- |Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
+processor unit has buffered output, so we should provide @oe@ signal for one
+tick before data actually send to the bus. That raises the following cases:
+
+1. First usage. We can receive value immediately on nextTick
+
+    @
+    tick | Endpoint     | Instruction |
+     0   | Target "c"   | WR          | <- nextTick
+    @
+
+2. Not first usage. We need to wait for one tick from the last instruction due to the offset between instruction and data transfers.
+
+    @
+    tick | Endpoint     | Instruction |
+      8  |              | OE          |
+      9  | Source ["b"] |             | <- nextTick
+     10  | Target "c"   | WR          |
+    @
+-}
+0 `withShift` _offset = 0
+tick `withShift` offset = tick + offset
 
 ---------------------------------------------------------------------
 

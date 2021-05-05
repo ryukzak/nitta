@@ -25,14 +25,13 @@ module NITTA.Utils.ProcessDescription (
     scheduleFunctionBind,
     scheduleFunctionRevoke,
     scheduleFunction,
-    scheduleInstruction,
-    scheduleInstruction_,
+    scheduleInstructionUnsafe,
+    scheduleInstructionUnsafe_,
     scheduleNestedStep,
     establishVerticalRelations,
     establishVerticalRelation,
     getProcessSlice,
     castInstruction,
-    updateTick, -- TODO: must be hidded
 ) where
 
 import Control.Monad.State
@@ -40,7 +39,7 @@ import Data.Proxy (asProxyTypeOf)
 import Data.Typeable
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import Numeric.Interval.NonEmpty (singleton)
+import Numeric.Interval.NonEmpty (singleton, sup)
 
 -- |Process builder state.
 data Schedule pu v x t = Schedule
@@ -145,12 +144,26 @@ scheduleEndpoint EndpointSt{epAt, epRole} codeGen = do
 
 scheduleEndpoint_ ep codeGen = void $ scheduleEndpoint ep codeGen
 
--- |Add to the process description information about instruction evaluation.
-scheduleInstruction ti instr = do
+{- |Add to the process description information about instruction evaluation.
+Unsafe means: without instruction collision check and nextTick consistency.
+-}
+scheduleInstructionUnsafe ti instr = do
     Schedule{iProxy} <- get
-    scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    buf <- scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    updateTick $ sup ti + 1
+    return buf
+    where
+        updateTick tick = do
+            sch@Schedule{schProcess} <- get
+            put
+                sch
+                    { schProcess =
+                        schProcess
+                            { nextTick = tick
+                            }
+                    }
 
-scheduleInstruction_ ti instr = void $ scheduleInstruction ti instr
+scheduleInstructionUnsafe_ ti instr = void $ scheduleInstructionUnsafe ti instr
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep tag step@Step{pInterval} = do
@@ -167,14 +180,3 @@ getProcessSlice = do
 -- |Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)
 castInstruction _pu i = cast i
-
--- FIXME: deprecated, should be done as part of scheduling functions.
-updateTick tick = do
-    sch@Schedule{schProcess} <- get
-    put
-        sch
-            { schProcess =
-                schProcess
-                    { nextTick = tick
-                    }
-            }

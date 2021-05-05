@@ -491,13 +491,13 @@ It includes three cases:
 instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     endpointOptions Multiplier{targets, process_}
         | not $ null targets =
-            let at = nextTick process_ + 1 ... maxBound
+            let at = nextTick process_ ... maxBound
                 duration = 1 ... maxBound
              in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
     endpointOptions Multiplier{sources, currentWork = Just f, process_}
         | not $ null sources =
             let doneAt = inputsPushedAt process_ f + 3
-                at = max doneAt (nextTick process_ + 1) ... maxBound
+                at = max doneAt (nextTick process_) ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
@@ -512,8 +512,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
             let (_, process_') = runSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
                     -- that takes information about time from Process
-                    updateTick (sup epAt)
-                    scheduleEndpoint d $ scheduleInstruction epAt $ Load sel =
+                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -526,7 +525,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
           , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
           , -- Compututation process planning is carring on.
             let (_, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
+                    endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f
                         let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
@@ -535,7 +534,6 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
                         establishVerticalRelations high low
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
-                    updateTick (sup epAt)
                     return endpoints =
             pu
                 { process_ = process_'

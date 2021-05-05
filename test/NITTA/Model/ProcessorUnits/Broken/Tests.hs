@@ -35,7 +35,31 @@ tests =
         "Broken PU and negative tests"
         [ testGroup
             "positive tests"
-            [ puCoSimTestCase "broken buffer" u [("a", 42)] [brokenBuffer "a" ["b"]]
+            [ unitTestCase "one job unit test" u $ do
+                assign $ brokenBuffer "a" ["b", "c"]
+                setValue "a" 64
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b", "c"]
+                decideAt 3 3 $ provide ["b"]
+                assertEndpoint 4 maxBound $ provide ["c"]
+                decideAt 4 4 $ provide ["c"]
+                assertCoSimulation
+            , unitTestCase "two job unit test" u $ do
+                assign $ brokenBuffer "a" ["b"]
+                setValue "a" 64
+                assign $ brokenBuffer "d" ["e"]
+                setValue "d" 7
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b"]
+                decideAt 3 3 $ provide ["b"]
+                assertEndpoint 4 maxBound $ consume "d"
+                decideAt 4 4 $ consume "d"
+                assertEndpoint 7 maxBound $ provide ["e"]
+                decideAt 7 7 $ provide ["e"]
+                assertCoSimulation
+            , puCoSimTestCase "broken buffer" u [("a", 42)] [brokenBuffer "a" ["b"]]
             , puCoSimProp "puCoSimProp" u fsGen
             , nittaCoSimTestCase "nittaCoSimTestCase" (maBroken u) alg
             , finitePUSynthesisProp "finitePUSynthesisProp" u fsGen

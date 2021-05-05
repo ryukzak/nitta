@@ -49,7 +49,7 @@ import NITTA.Model.Types
 import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (sup, (...))
+import Numeric.Interval.NonEmpty ((...))
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
@@ -139,9 +139,8 @@ instance
             L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
           , let remainVars = allVars L.\\ S.elems vs
                 process_ = execSchedule sio $ do
-                    void $ scheduleEndpoint d $ scheduleInstruction (shiftI 0 epAt) $ Receiving $ null remainVars
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI 0 epAt) $ Receiving $ null remainVars
                     when (null remainVars) $ void $ scheduleFunction epAt function
-                    updateTick (sup epAt + 1)
                     return ()
                 receiveQueue'' =
                     if null remainVars
@@ -151,8 +150,7 @@ instance
     endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}
         | ([Q{function}], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
           , let (_, process_) = runSchedule sio $ do
-                    _ <- scheduleEndpoint d $ scheduleInstruction epAt Sending
-                    updateTick (sup epAt + 1)
+                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
                     scheduleFunction epAt function =
             sio
                 { sendQueue = sendQueue'

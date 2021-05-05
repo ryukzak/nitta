@@ -207,16 +207,14 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                          in pu
                                 { jobs = job' : restrictResults jobs'
                                 , process_ = execSchedule pu $ do
-                                    scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
-                                    scheduleInstruction_ (singleton nextTick) Do
-                                    updateTick $ nextTick + 1
+                                    scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
+                                    scheduleInstructionUnsafe_ (singleton nextTick) Do
                                 }
                     _arguments' ->
                         pu
                             { jobs = WaitArguments{function, arguments = arguments'} : jobs'
                             , process_ = execSchedule pu $ do
-                                scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
-                                updateTick nextTick
+                                scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
                             }
     endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
         | ([job@WaitResults{results}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
@@ -230,8 +228,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
              in pu
                     { jobs = jobs''
                     , process_ = execSchedule pu $ do
-                        scheduleEndpoint_ d $ scheduleInstruction epAt $ Out tag
-                        updateTick (sup epAt + 1)
+                        scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag
                     }
     endpointDecision _ _ = error "divider decision internal error"
 

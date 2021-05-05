@@ -150,10 +150,9 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
              in n
                     { bnPus = foldl applyDecision bnPus subDecisions
                     , bnProcess = execScheduleWithProcess n bnProcess $ do
-                        updateTick (sup (epAt src) + 1)
                         mapM_
                             ( \(targetTitle, ep) ->
-                                scheduleInstruction
+                                scheduleInstructionUnsafe
                                     (srcStart ... srcEnd)
                                     (Transport (oneOf $ variables ep) srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                             )

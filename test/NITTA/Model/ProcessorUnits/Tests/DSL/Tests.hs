@@ -38,7 +38,7 @@ tests =
         , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertAllEndpointRoles [consume "a", consume "b"]
-            assertEndpoint 1 maxBound $ consume "a"
+            assertEndpoint 0 maxBound $ consume "a"
             decide $ consume "a"
         , expectFail $
             unitTestCase "check assertAllEndpointRoles and fail (too many)" u $ do

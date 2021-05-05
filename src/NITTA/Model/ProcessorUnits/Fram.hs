@@ -280,7 +280,9 @@ instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
-        let target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... maxBound)
+        let target v =
+                let a = nextTick `withShift` 1
+                 in EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
             source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
             source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick ... maxBound) (1 ... maxBound)
 
@@ -312,8 +314,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_') = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -343,8 +344,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 (endpoints', process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    eps <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -367,8 +367,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
         | Just (addr, cell@Cell{job = Just Job{function, binds, endpoints}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
             let ((), process_) = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
-                    updateTick (sup epAt + 1)
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                     fPID <- scheduleFunction epAt function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
@@ -386,8 +385,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
         | Just (addr, cell@Cell{history}) <- findForBufferCell fram
           , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
             let (endpoints, process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
+                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                 cell' =
                     cell
                         { job = Just j{startAt = Just $ inf epAt, endpoints}
@@ -410,8 +408,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (fBegin ... sup epAt) function
                         establishVerticalRelations binds fPID

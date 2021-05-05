@@ -295,9 +295,9 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
-        ep = EndpointSt role (a ... b)
+        ep = EndpointSt{epAt = a ... b, epRole = role}
     case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
-        Nothing -> lift $ assertFailure $ "assertEndpoint: " <> show ep <> " not defined in: " <> show opts
+        Nothing -> lift $ assertFailure $ "assertEndpoint: '" <> show ep <> "' not defined in: " <> show opts
         Just _ -> return ()
 
 isFullyBinded pu fs = do
