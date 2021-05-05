@@ -377,7 +377,7 @@ controlSignalLiteral ix = [i|control_bus[#{ ix }]|]
 registerBinding tag f dict =
     M.alter (maybe (Just [f]) (Just . (f :))) tag dict
 
-programTicks BusNetwork{bnProcess = Process{nextTick}} = [-1 .. nextTick]
+programTicks bn = [-1 .. nextTick bn]
 
 bnExternalPorts pus =
     M.assocs $
@@ -544,7 +544,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
     testBenchImplementation
         Project
             { pName
-            , pUnit = n@BusNetwork{bnProcess, bnPus, ioSync, bnName}
+            , pUnit = n@BusNetwork{bnPus, ioSync, bnName}
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
@@ -554,7 +554,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 let tEnv =
                                         TestEnvironment
                                             { teCntx = pTestCntx
-                                            , teComputationDuration = fromEnum $ nextTick bnProcess
+                                            , teComputationDuration = fromEnum $ nextTick n
                                             }
                                  in testEnvironment ((T.pack . toString) tag) unit uEnv tEnv
                             )
@@ -570,7 +570,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                         ( \(cycleI, cycleCntx) ->
                             map
                                 (\t -> (cycleI, t, cntxToTransfer cycleCntx t))
-                                [0 .. nextTick bnProcess]
+                                [0 .. nextTick n]
                         )
                         $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
@@ -650,7 +650,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 @(posedge clk);
                                 while (!env_init_flag) @(posedge clk);
                                 #{ nest 8 assertions }
-                                repeat ( #{ 2 * nextTick bnProcess } ) @(posedge clk);
+                                repeat ( #{ 2 * nextTick n } ) @(posedge clk);
                                 $finish;
                             end
 

@@ -279,12 +279,12 @@ instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
-    endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
+    endpointOptions pu@Fram{remainBuffers, memory} =
         let target v =
-                let a = nextTick `withShift` 1
+                let a = nextTick pu `withShift` 1
                  in EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
-            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
-            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick ... maxBound) (1 ... maxBound)
+            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick pu ... maxBound) (1 ... maxBound)
+            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick pu ... maxBound) (1 ... maxBound)
 
             fromRemain =
                 if any (\case ForBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
@@ -294,10 +294,10 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
             foo Cell{state = NotUsed} = Nothing
             foo Cell{state = Done} = Nothing
             foo Cell{state = DoConstant vs} = Just $ source False vs
-            foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs
             foo Cell{state = ForBuffer} = Nothing
             foo Cell{state = NotBrokenLoop} = Nothing
-            foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs
             foo Cell{state = DoLoopTarget v} = Just $ target v
 
             fromCells = mapMaybe foo $ A.elems memory

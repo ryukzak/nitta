@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {- |
@@ -49,6 +51,9 @@ data Schedule pu v x t = Schedule
       -- for some function, the user needs to describe type explicitly.
       iProxy :: Proxy (Instruction pu)
     }
+
+instance {-# OVERLAPS #-} NextTick (Schedule pu v x t) t where
+    nextTick = nextTick . schProcess
 
 {- |Execute process builder and return new process description. The initial process state is getting
 from the PU by the 'process' function.
@@ -122,12 +127,12 @@ establishVerticalRelation h l = do
             }
 
 scheduleFunctionBind f = do
-    Schedule{schProcess = Process{nextTick}} <- get
-    scheduleStep (singleton nextTick) $ CADStep $ "bind " ++ show f
+    schedule <- get
+    scheduleStep (singleton $ nextTick schedule) $ CADStep $ "bind " <> show f
 
 scheduleFunctionRevoke f = do
-    Schedule{schProcess = Process{nextTick}} <- get
-    scheduleStep (singleton nextTick) $ CADStep $ "revoke " ++ show f
+    schedule <- get
+    scheduleStep (singleton $ nextTick schedule) $ CADStep $ "revoke " ++ show f
 
 -- |Add to the process description information about function evaluation.
 scheduleFunction ti f = scheduleStep ti $ FStep f
@@ -159,7 +164,7 @@ scheduleInstructionUnsafe ti instr = do
                 sch
                     { schProcess =
                         schProcess
-                            { nextTick = tick
+                            { nextTick_ = tick
                             }
                     }
 

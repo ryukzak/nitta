@@ -115,16 +115,16 @@ execution pu@Shift{target = Nothing, sources = [], remain} f
 execution _ _ = error "Not right arguments in execution function in shift module"
 
 instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
-    endpointOptions Shift{target = Just t, process_} =
-        [EndpointSt (Target t) $ TimeConstraint (nextTick process_ ... maxBound) (singleton 1)]
-    endpointOptions Shift{sources, process_, byteShiftDiv, byteShiftMod}
+    endpointOptions pu@Shift{target = Just t} =
+        [EndpointSt (Target t) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)]
+    endpointOptions pu@Shift{sources, byteShiftDiv, byteShiftMod}
         | not $ null sources
           , byteShiftDiv == 0 =
             let timeConstrain = TimeConstraint (startTime ... maxBound) (1 ... maxBound)
-                startTime = nextTick process_ + fromIntegral byteShiftMod + 2
+                startTime = nextTick pu + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
         | not $ null sources =
-            let endByteShift = nextTick process_ + fromIntegral byteShiftDiv
+            let endByteShift = nextTick pu + fromIntegral byteShiftDiv
                 timeConstrain = TimeConstraint (startTime ... maxBound) (1 ... maxBound)
                 startTime = endByteShift + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]

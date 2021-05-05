@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Types (
     ProcessorUnit (..),
     bind,
     allowToProcess,
+    NextTick (..),
 
     -- *Process description
     Process (..),
@@ -107,6 +108,12 @@ bind f pu = case tryBind f pu of
 
 allowToProcess f pu = isRight $ tryBind f pu
 
+class NextTick u t | u -> t where
+    nextTick :: u -> t
+
+instance (ProcessorUnit u v x t) => NextTick u t where
+    nextTick = nextTick . process
+
 ---------------------------------------------------------------------
 
 {- |Computational process description. It was designed in ISO 15926 style, with
@@ -118,7 +125,7 @@ data Process t i = Process
     , -- |List of relationships between process steps (see 'Relation').
       relations :: [Relation]
     , -- |Next tick for instruction. Note: instruction /= endpoint.
-      nextTick :: t
+      nextTick_ :: t
     , -- |Next process step ID
       nextUid :: ProcessStepID
     }
@@ -128,12 +135,12 @@ instance (Time t, Show i) => Show (Process t i) where
     show p =
         [__i|
             Process
-                steps     =
+                steps =
                     #{ nest 8 $ listShow $ reverse $ steps p }
                 relations =
                     #{ nest 8 $ listShow $ relations p }
-                nextTick  = #{ nextTick p }
-                nextUid   = #{ nextUid p }\n
+                nextTick = #{ nextTick p }
+                nextUid = #{ nextUid p }\n
         |]
         where
             listShow lst =
@@ -144,7 +151,10 @@ instance (Time t, Show i) => Show (Process t i) where
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
 instance (Default t) => Default (Process t i) where
-    def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
+    def = Process{steps = [], relations = [], nextTick_ = def, nextUid = def}
+
+instance {-# OVERLAPS #-} NextTick (Process t si) t where
+    nextTick = nextTick_
 
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps

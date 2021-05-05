@@ -126,11 +126,11 @@ instance
     (VarValTime v x t, SimpleIOInterface i) =>
     EndpointProblem (SimpleIO i v x t) v t
     where
-    endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =
-        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick + 1 ... maxBound) (1 ... maxBound)
+    endpointOptions pu@SimpleIO{receiveQueue, sendQueue} =
+        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick pu + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (1 ... 1)
             sendOpts = map (target . head . vars) sendQueue
          in receiveOpts ++ sendOpts
 
@@ -141,7 +141,6 @@ instance
                 process_ = execSchedule sio $ do
                     void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI 0 epAt) $ Receiving $ null remainVars
                     when (null remainVars) $ void $ scheduleFunction epAt function
-                    return ()
                 receiveQueue'' =
                     if null remainVars
                         then receiveQueue'

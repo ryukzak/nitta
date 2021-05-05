@@ -347,7 +347,7 @@ instance (Time t) => ToSample (Process t StepInfoView) where
                     , Vertical 2 3
                     , Vertical 0 1
                     ]
-                , nextTick = 5
+                , nextTick_ = 5
                 , nextUid = 7
                 }
             )

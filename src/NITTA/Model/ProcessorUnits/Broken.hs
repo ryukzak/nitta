@@ -103,14 +103,14 @@ execution _ _ = error "Broken: internal execution error."
 
 instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
     endpointOptions Broken{targets = [_], lostEndpointTarget = True} = []
-    endpointOptions Broken{targets = [v], process_} =
-        let start = nextTick process_ `withShift` 1 ... maxBound
+    endpointOptions pu@Broken{targets = [v]} =
+        let start = nextTick pu `withShift` 1 ... maxBound
             dur = 1 ... maxBound
          in [EndpointSt (Target v) $ TimeConstraint start dur]
     endpointOptions Broken{doneAt = Just _, lostEndpointSource = True} = []
-    endpointOptions Broken{sources, doneAt = Just at, process_}
+    endpointOptions pu@Broken{sources, doneAt = Just at}
         | not $ null sources =
-            let start = max at (nextTick process_ + 1) ... maxBound
+            let start = max at (nextTick pu + 1) ... maxBound
                 dur = 1 ... maxBound
              in [EndpointSt (Source $ fromList sources) $ TimeConstraint start dur]
     endpointOptions pu@Broken{remain, lostEndpointTarget = True}

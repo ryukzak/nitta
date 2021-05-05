@@ -153,10 +153,11 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     process = process_
 
 instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{currentWork = Just a@Job{tasks, calcEnd}, process_ = Process{nextTick = tick}}
+    endpointOptions pu@Accum{currentWork = Just a@Job{tasks, calcEnd}}
         | toTarget tasks = targets
         | toSource tasks = sources
         where
+            tick = nextTick pu
             targets = map (\v -> EndpointSt (Target v) $ TimeConstraint (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
             sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstraint (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
             tickSource True = tick + 1
