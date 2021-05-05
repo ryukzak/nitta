@@ -22,7 +22,6 @@ import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.LuaFrontend.TestsNew
-import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.LuaFrontend.Tests.Providers
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
