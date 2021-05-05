@@ -114,7 +114,7 @@ instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
     process = process_
 
 instance (Var v, Time t) => Locks (Divider v x t) v where
-    locks Divider{jobs, remains} = L.nub $ concat [byArguments, byResults]
+    locks Divider{jobs, remains} = L.nub $ byArguments ++ byResults
         where
             byArguments
                 | Just wa@WaitArguments{function} <- L.find isWaitArguments jobs =
@@ -188,7 +188,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
         | ([f], remains') <- partition (S.member v . inputs) remains =
             let pu' =
                     pu
-                        { jobs = (function2WaitArguments f) : jobs
+                        { jobs = function2WaitArguments f : jobs
                         , remains = remains'
                         }
              in endpointDecision pu' d
