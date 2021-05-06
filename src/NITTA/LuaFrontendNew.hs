@@ -71,6 +71,12 @@ parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
   addVariableAccess name
 parseExpArg _ = undefined
 
+addStartupFuncArgs :: Stat -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+addStartupFuncArgs (FunCall (NormalFunCall _ (Args args))) (FunAssign _ (FunBody names _ _)) = do
+  mapM_ (\(arg, Name name) -> addVariable name arg) $ zip args names
+  return ""
+addStartupFuncArgs _ _ = undefined
+
 --Lua language Stat structure parsing
 --LocalAssign
 processStatement _ (LocalAssign _names Nothing) = do
@@ -150,9 +156,10 @@ addVariableAccess name = do
 
 buildAlg syntaxTree = fst $
   flip execState st $ do
+    _ <- addStartupFuncArgs startupFunctionDef startupFunctionCall
     mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
   where
-    (startupFunctionName, _, startupFunctionDef) = findStartupFunction syntaxTree
+    (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree
     st = (DFCluster [], Map.empty)
 
 findStartupFunction (Block statements Nothing)
