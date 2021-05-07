@@ -85,7 +85,11 @@ instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) wher
                 |]
 
 data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
-    deriving (Show)
+
+-- deriving (Show)
+
+instance Show (Q v x) where
+    show Q{} = "Q" -- FIXME:
 
 instance
     (VarValTime v x t, SimpleIOInterface i) =>

@@ -64,7 +64,6 @@ import Data.Maybe
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics (Generic)
@@ -139,8 +138,8 @@ instance (Time t, Show i) => Show (Process t i) where
                     #{ nest 8 $ listShow $ reverse $ steps p }
                 relations =
                     #{ nest 8 $ listShow $ relations p }
-                nextTick = #{ nextTick p }
-                nextUid = #{ nextUid p }\n
+                nextTick  = #{ nextTick p }
+                nextUid   = #{ nextUid p }
         |]
         where
             listShow lst =
@@ -200,12 +199,12 @@ data StepInfo v x t where
 descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
 
-instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
+instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
-    show (FStep F{fun}) = "Intermediate: " <> S.replace "\"" "" (show fun)
-    show (EndpointRoleStep eff) = "Endpoint: " <> S.replace "\"" "" (show eff)
-    show (InstructionStep instr) = "Instruction: " <> S.replace "\"" "" (show instr)
-    show NestedStep{nTitle, nStep = Step{pDesc}} = S.replace "\"" "" ("@" <> toString nTitle <> " " <> show pDesc)
+    show (FStep F{fun}) = "Intermediate: " <> show fun
+    show (EndpointRoleStep eff) = "Endpoint: " <> show eff
+    show (InstructionStep instr) = "Instruction: " <> show instr
+    show NestedStep{nTitle, nStep = Step{pDesc}} = "@" <> toString nTitle <> " " <> show pDesc
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f

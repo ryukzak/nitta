@@ -68,7 +68,7 @@ data Broken v x t = Broken
     , unknownDataOut :: Bool
     }
 
-deriving instance (VarValTime v x t) => Show (Broken v x t)
+-- deriving instance (VarValTime v x t) => Show (Broken v x t)
 
 instance (Var v) => Locks (Broken v x t) v where
     locks Broken{remain, sources, targets} =
@@ -153,7 +153,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error $ "Broken decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error $ "Broken decision error" -- FIXME: \npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 instance Controllable (Broken v x t) where
     data Instruction (Broken v x t)

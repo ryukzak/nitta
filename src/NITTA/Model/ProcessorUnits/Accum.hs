@@ -75,15 +75,15 @@ data Accum v x t = Accum
       isInit :: Bool
     }
 
-instance (VarValTime v x t) => Show (Accum v x t) where
-    show a =
-        [__i|
-            Accum:
-                work                 = #{ work a }
-                currentWork          = #{ currentWork a }
-                process_             = #{ process_ a }
-                isInit               = #{ isInit a }
-        |]
+-- instance (VarValTime v x t) => Show (Accum v x t) where
+--     show a =
+--         [__i|
+--             Accum:
+--                 work                 = #{ work a }
+--                 currentWork          = #{ currentWork a }
+--                 process_             = #{ process_ a }
+--                 isInit               = #{ isInit a }
+--         |]
 
 instance (VarValTime v x t) => Default (Accum v x t) where
     def =
@@ -204,7 +204,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         where
             getJob = find (\Job{func} -> d `isIn` func)
             e `isIn` f = oneOf (variables e) `member` variables f
-    endpointDecision pu d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
+    endpointDecision pu d = error $ "error in Endpoint Decision function" -- FIXME ++ show pu ++ show d
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t) = AccumPorts {resetAcc, load, neg, oe :: SignalTag}

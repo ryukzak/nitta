@@ -33,6 +33,8 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import Data.List (delete)
 import Data.Set (elems, empty, fromList, intersection, union)
+import qualified Data.Set as S
+import Data.String.ToString
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
@@ -101,9 +103,9 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs =
-    "expected: " <> show (elems $ unionsMap variables fs)
+    "expected: " <> show (map toString $ elems $ unionsMap variables fs)
         <> " actual: "
-        <> show (elems $ processedVars pu)
+        <> show (map toString $ elems $ processedVars pu)
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 

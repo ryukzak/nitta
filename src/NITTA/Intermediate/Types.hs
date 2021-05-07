@@ -64,6 +64,7 @@ import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S hiding (split)
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Tuple
 import Data.Typeable
@@ -75,7 +76,9 @@ import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
 newtype I v = I v
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+
+instance (ToString v) => Show (I v) where show (I v) = toString v
 
 instance (Eq v) => Patch (I v) (v, v) where
     patch (v, v') i@(I v0)
@@ -92,14 +95,14 @@ newtype O v = O (S.Set v)
 instance (Ord v) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
-instance (Show v) => Show (O v) where
-    show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
+instance (ToString v) => Show (O v) where
+    show (O vs) = "(O " <> show (map toString $ S.elems vs) <> ")"
 
 instance Variables (O v) v where
     variables (O vs) = vs
 
 showOut vs | S.null vs = "_"
-showOut vs = S.join " = " $ map show $ S.elems vs
+showOut vs = S.join " = " $ map toString $ S.elems vs
 
 -- |Value of variable (constant or initial value).
 newtype X x = X x
@@ -121,7 +124,11 @@ data Lock v = Lock
     { locked :: v
     , lockBy :: v
     }
-    deriving (Show, Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic)
+
+instance (ToString v) => Show (Lock v) where
+    show Lock{locked, lockBy} =
+        "Lock{locked=" <> toString locked <> ", lockBy=" <> toString lockBy <> "}"
 
 instance (ToJSON v) => ToJSON (Lock v)
 
@@ -269,7 +276,11 @@ class FunctionSimulation f v x | f -> v x where
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
 newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
-    deriving (Show, Generic)
+    deriving (Generic)
+
+instance (ToString v, Show x) => Show (CycleCntx v x) where
+    show CycleCntx{cycleCntx} =
+        "{" <> S.join ", " (map (\(v, x) -> toString v <> ": " <> show x) $ HM.toList cycleCntx) <> "}"
 
 instance Default (CycleCntx v x) where
     def = CycleCntx HM.empty
@@ -361,11 +372,11 @@ cntxReceivedBySlice' received
 
 getCntx (CycleCntx cntx) v = case HM.lookup v cntx of
     Just x -> x
-    Nothing -> error $ "variable not defined: " <> show v
+    Nothing -> error $ "variable not defined: " <> toString v
 
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | HM.member v cntx = Left $ "variable value already defined: " <> show v
+    | HM.member v cntx = Left $ "variable value already defined: " <> toString v
     | otherwise = updateCntx (CycleCntx $ HM.insert v x cntx) vxs
 
 -----------------------------------------------------------
@@ -384,7 +395,10 @@ data Changeset v = Changeset
       -- > fromList [(c, {y, z})] -- one output variable to many
       changeO :: M.Map v (S.Set v)
     }
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (Var v) => Show (Changeset v) where
+    show Changeset{} = "Changeset" -- FIXME:
 
 instance Default (Changeset v) where
     def = Changeset def def

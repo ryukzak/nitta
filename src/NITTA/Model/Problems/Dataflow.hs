@@ -41,7 +41,7 @@ data DataflowSt tag v tp = DataflowSt
     }
     deriving (Generic)
 
-instance (ToString tag, Show v, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) where
+instance (ToString tag, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) where
     show DataflowSt{dfSource, dfTargets} =
         "DataflowSt{ dfSource=" <> show' dfSource <> ", dfTargets=" <> show (map show' dfTargets) <> "}"
         where
