@@ -431,12 +431,12 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     , process_
                     }
     endpointDecision Fram{memory} d =
-        error
-            [__i|
-                fram model internal error: #{ d }
-                cells state:
-                #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
-            |]
+        error "fram model internal error" -- FIXME:
+            -- [__i|
+            --     fram model internal error: #{ d }
+            --     cells state:
+            --     #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
+            -- |]fram model internal error
 
 ---------------------------------------------------------------------
 

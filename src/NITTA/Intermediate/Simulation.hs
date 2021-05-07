@@ -39,6 +39,13 @@ simulateDataFlowGraph ::
 simulateDataFlowGraph cycleN cycle0 transmission dfg =
     simulateAlg cycleN cycle0 transmission $ reorderAlgorithm $ functions dfg
 
+simulateAlg ::
+    (Var v, Val x) =>
+    Int ->
+    CycleCntx v x ->
+    [(v, [x])] ->
+    [F v x] ->
+    Cntx v x
 simulateAlg cycleN cycle0 transmission alg
     | let cycleConnections [] = []
           cycleConnections (f : fs)

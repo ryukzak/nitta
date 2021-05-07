@@ -31,6 +31,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.String.Interpolate
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
@@ -137,7 +138,6 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
 snippetTestBench ::
     forall m v x t.
     ( VarValTime v x t
-    , Show (EndpointRole v)
     , WithFunctions m (F v x)
     , ProcessorUnit m v x t
     , TargetSystemComponent m
@@ -184,7 +184,7 @@ snippetTestBench
                         | Just (Source vs) <- endpointAt t p =
                             let v = oneOf vs
                                 x = getCntx cycleCntx v
-                             in [i|@(posedge clk); assertWithAttr(0, 0, data_out, attr_out, #{ dataLiteral x }, #{ attrLiteral x }, #{ show v });|]
+                             in [i|@(posedge clk); assertWithAttr(0, 0, data_out, attr_out, #{ dataLiteral x }, #{ attrLiteral x }, "#{ toString v }");|]
                         | otherwise =
                             [i|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
             tbcSignals' = map (\x -> [i|reg #{x};|]) tbcSignals

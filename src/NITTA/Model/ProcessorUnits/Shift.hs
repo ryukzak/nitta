@@ -202,7 +202,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error $ "Shift decision error" -- FIXME: \npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 data Mode = Logic | Arithmetic deriving (Show, Eq)
 

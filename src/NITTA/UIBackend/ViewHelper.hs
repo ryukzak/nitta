@@ -288,12 +288,12 @@ instance ToSample (NodeView tag v x t) where
 newtype StepInfoView = StepInfoView String
     deriving (Generic)
 
-instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
+instance (Var v, Time t) => Viewable (StepInfo v x t) StepInfoView where
     view = StepInfoView . show
 
 instance ToJSON StepInfoView
 
-instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
+instance (Var v, Time t) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
     view p@Process{steps} = p{steps = map (\s@Step{pDesc} -> s{pDesc = view pDesc}) steps}
 
 -- Testbench

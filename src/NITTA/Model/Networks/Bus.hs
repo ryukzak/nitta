@@ -245,8 +245,8 @@ instance Controllable (BusNetwork tag v x t) where
 
     takePortTags _ _ = error "internal error"
 
-instance (Show v, ToString tag) => Show (Instruction (BusNetwork tag v x t)) where
-    show (Transport v src trg) = "Transport " <> show v <> " " <> toString src <> " " <> toString trg
+instance (ToString tag, Var v) => Show (Instruction (BusNetwork tag v x t)) where
+    show (Transport v src trg) = "Transport " <> toString v <> " " <> toString src <> " " <> toString trg
 
 instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =
@@ -580,7 +580,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                 assertion (cycleI, t, Nothing) =
                     [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
-                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
+                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, "#{ toString v }");|]
 
                 tbName = moduleName pName n <> "_tb"
              in Aggregate

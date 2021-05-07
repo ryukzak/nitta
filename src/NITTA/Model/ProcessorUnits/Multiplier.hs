@@ -353,7 +353,7 @@ data Multiplier v x t = Multiplier
       isMocked :: Bool
     }
 
-deriving instance (VarValTime v x t) => Show (Multiplier v x t)
+-- deriving instance (VarValTime v x t) => Show (Multiplier v x t)
 
 {- | Multiplier PU model constructor. Argument defines the computation unit's
 internal organization: using multiplier IP kernel (False) or mock (True). For
@@ -549,7 +549,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
           , Just f <- find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     -- If something went wrong.
-    endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error $ "Multiplier decision error" -- FIXME: \npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 -- TODO: optimize ArgumentSelector
 

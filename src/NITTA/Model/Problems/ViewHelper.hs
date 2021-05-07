@@ -82,17 +82,17 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
             epdView EndpointSt{epRole, epAt} =
                 EndpointSt
                     { epRole = case epRole of
-                        Source vs -> Source $ S.map show' vs
-                        Target v -> Target $ show' v
+                        Source vs -> Source $ S.map toText vs
+                        Target v -> Target $ toText v
                     , epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)
                     }
 
-instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
+instance (Var v, Val x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =
         BreakLoopView
-            { value = show' loopX
-            , outputs = map show' $ S.elems loopO
-            , input = show' loopI
+            { value = T.pack $ show loopX
+            , outputs = map toText $ S.elems loopO
+            , input = toText loopI
             }
 
 instance Viewable (ConstantFolding v x) DecisionView where
@@ -109,13 +109,13 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
+instance (Var v) => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
-            { newBuffer = show' newBuffer
-            , changeset = show' changeset
+            { newBuffer = T.pack $ show newBuffer
+            , changeset = T.pack $ show changeset
             }
 
 instance ToJSON DecisionView
 
-show' = T.replace "\"" "" . T.pack . show
+toText = T.pack . toString

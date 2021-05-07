@@ -131,7 +131,7 @@ instance (Ord v) => Patch (PU v x t) (O v, O v) where
 
 instance (Var v) => Locks (PU v x t) v where
     locks PU{unit, diff = Changeset{changeI, changeO}}
-        | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " ++ show changeI
+        | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " -- FIXME: ++ show changeI
         | otherwise =
             let (locked', locks') = L.partition (\Lock{locked} -> locked `M.member` changeO) $ locks unit
                 (lockBy', locks'') = L.partition (\Lock{lockBy} -> lockBy `M.member` changeO) locks'
