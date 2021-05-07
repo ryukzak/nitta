@@ -22,7 +22,6 @@ module NITTA.Intermediate.Types (
     I (..),
     O (..),
     X (..),
-    showOut,
 
     -- *Function description
     F (..),
@@ -96,13 +95,12 @@ instance (Ord v) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
 instance (ToString v) => Show (O v) where
-    show (O vs) = "(O " <> show (map toString $ S.elems vs) <> ")"
+    show (O vs)
+        | S.null vs = "_"
+        | otherwise = S.join " = " $ map toString $ S.elems vs
 
 instance Variables (O v) v where
     variables (O vs) = vs
-
-showOut vs | S.null vs = "_"
-showOut vs = S.join " = " $ map toString $ S.elems vs
 
 -- |Value of variable (constant or initial value).
 newtype X x = X x
