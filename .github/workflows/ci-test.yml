@@ -101,6 +101,15 @@ jobs:
       - name: Check formating
         run: find . -name '*.hs' | xargs fourmolu -m check
 
+  ts-codesyle-by-prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test ts and tsx code style by prettier
+        working-directory: ./web
+        run: |
+          yarn add -s prettier
+          yarn exec -s prettier -- --check src/**/*.{ts,tsx}
 
   nitta-hdl:
     runs-on: ubuntu-latest
