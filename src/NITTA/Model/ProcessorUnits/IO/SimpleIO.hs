@@ -79,8 +79,7 @@ instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) wher
                     isReceiveOver = #{ isReceiveOver io }
                     sendQueue     = #{ sendQueue io }
                     sendN         = #{ sendN io }
-                    process_      =
-                        #{ nest 4 $ viaShow $ process_ io }
+                    process_      = #{ nest 4 $ pretty $ process_ io }
                 |]
 
 data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
