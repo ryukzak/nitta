@@ -23,7 +23,7 @@ import qualified NITTA.Intermediate.Functions as F
 
 data LuaValue
   = Constant {luaValueName :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int}
-  | Variable {luaValueName :: T.Text, luaValueString :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int, luaValueAssignCount :: Int}
+  | Variable {luaValueName :: T.Text, luaValueString :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int, luaValueAssignCount :: Int, isStartupArgument :: Bool}
   deriving (Show)
 
 instance Eq LuaValue where
@@ -73,12 +73,13 @@ parseExpArg _ = undefined
 
 addStartupFuncArgs :: Stat -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args args))) (FunAssign _ (FunBody names _ _)) = do
-  mapM_ (\(arg, Name name) -> addVariable name arg) $ zip args names
+  mapM_ (\(arg, Name name) -> addVariable name arg True) $ zip args names
   return ""
 addStartupFuncArgs _ _ = undefined
 
 --Lua language Stat structure parsing
 --LocalAssign
+processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
 processStatement _ (LocalAssign _names Nothing) = do
   return ""
 processStatement fn (LocalAssign names (Just exps)) =
@@ -86,18 +87,23 @@ processStatement fn (LocalAssign names (Just exps)) =
 --Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
   processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = addVariable (head $ parseLeftExp lexps) n
+processStatement _ (Assign lexps@[_] [n@(Number _ _)]) = addVariable (head $ parseLeftExp lexps) n False
 processStatement _ (Assign [lexp] [rexp]) = do
   parseRightExp (parseLeftExp [lexp]) rexp
 processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
   mapM_ (\(var, expr) -> processStatement startupFunctionName (Assign [var] [expr])) $ zip vars exps
   return ""
 --startup function recursive call
-processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args _)))
+processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
   | fn == fName = do
-    (graph, constants) <- get
-    put (graph, constants)
+    mapM_ parseStartupArg args
     return ""
+  where
+    parseStartupArg arg = do
+      varName <- parseExpArg arg
+      (graph, constants) <- get
+      put (addFuncToDataFlowGraph graph (F.loop 2 "" [varName]), constants)
+      return ""
 processStatement _ _ = undefined
 
 addConstant :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
@@ -119,7 +125,7 @@ addConstant (Number valueType valueString) = do
     getConstantName _ = undefined
 addConstant _ = undefined
 
-addVariable name (Number valueType valueString) = do
+addVariable name (Number valueType valueString) isStartupArg = do
   (graph, constants) <- get
   case Map.lookup name constants of
     Just value -> do
@@ -127,16 +133,16 @@ addVariable name (Number valueType valueString) = do
       put (graph, Map.insert name newValue constants)
       return $ getVariableName newValue
     Nothing -> do
-      let value = Variable {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0, luaValueAssignCount = 0}
+      let value = Variable {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg }
       put (graph, Map.insert name value constants)
       return $ getVariableName value
   where
     updateConstant Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount} =
-      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1}
+      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = isStartupArg}
     updateConstant _ = undefined
     getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
     getVariableName _ = undefined
-addVariable _ _ = undefined
+addVariable _ _ _ = undefined
 
 addVariableAccess name = do
   (graph, constants) <- get
@@ -148,8 +154,8 @@ addVariableAccess name = do
       return oldName
     Nothing -> error ("variable '" ++ show name ++ " not found.")
   where
-    updateVariable Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount} =
-      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount}
+    updateVariable Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount, isStartupArgument} =
+      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount, isStartupArgument = isStartupArgument}
     updateVariable _ = undefined
     getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
     getVariableName _ = undefined
