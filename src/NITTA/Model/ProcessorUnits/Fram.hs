@@ -37,7 +37,6 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -56,7 +55,6 @@ data Fram v x t = Fram
       remainBuffers :: [(Buffer v x, Job v x t)]
     , process_ :: Process t (StepInfo v x t)
     }
-    deriving (Show)
 
 framWithSize size =
     Fram
@@ -429,11 +427,11 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     }
     endpointDecision Fram{memory} d =
         error "fram model internal error" -- FIXME:
-            -- [__i|
-            --     fram model internal error: #{ d }
-            --     cells state:
-            --     #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
-            -- |]fram model internal error
+        -- [__i|
+        --     fram model internal error: #{ d }
+        --     cells state:
+        --     #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
+        --   |  ]fram model internal error
 
 ---------------------------------------------------------------------
 

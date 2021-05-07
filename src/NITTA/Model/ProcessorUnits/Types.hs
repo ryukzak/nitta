@@ -130,22 +130,22 @@ data Process t i = Process
     }
     deriving (Generic)
 
-instance (Time t, Show i) => Show (Process t i) where
-    show p =
+instance (Time t, Show i) => Pretty (Process t i) where
+    pretty p =
         [__i|
-            Process
-                steps =
-                    #{ nest 8 $ listShow $ reverse $ steps p }
-                relations =
-                    #{ nest 8 $ listShow $ relations p }
-                nextTick  = #{ nextTick p }
-                nextUid   = #{ nextUid p }
+            Process:
+                steps: #{ showList' $ reverse $ steps p }
+                relations: #{ showList' $ relations p }
+                nextTick: #{ nextTick p }
+                nextUid: #{ nextUid p }
         |]
         where
-            listShow lst =
-                vsep $
-                    map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
-                        zip [0 :: Int ..] lst
+            showList' [] = pretty ""
+            showList' xs = line <> (indent 8 $ vsep lst)
+                where
+                    lst =
+                        map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
+                            zip [0 :: Int ..] xs
 
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
@@ -294,7 +294,7 @@ instance
     microcodeAt pu t = case extractInstructionAt pu t of
         [] -> def
         [instr] -> decodeInstruction instr
-        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ process pu }|]
+        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ pretty $ process pu }|]
 
 newtype SignalTag = SignalTag {signalTag :: T.Text} deriving (Eq, Ord)
 

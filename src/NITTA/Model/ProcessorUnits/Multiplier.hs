@@ -159,7 +159,7 @@ repl` command from the project directory. After that:
 [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
 [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
 Ok, 30 modules loaded.
-> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set
+> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set Prettyprinter.Render.Text
 > :set prompt "ESC[34mλ> ESC[m"
 @
 
@@ -167,19 +167,23 @@ Now create the function and multiplier model initial state. Unfortunately, it
 is not enough information for GHC deduction of its type, so let's define its
 implicitly.
 
+>>> :module +Prettyprinter.Render.Text
 >>> let f = F.multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
 a * b = c = d
 >>> let st0 = multiplier True :: Multiplier String Int Int
->>> st0
-Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps =
-<BLANKLINE>
-    relations =
-<BLANKLINE>
-    nextTick = 0
-    nextUid = 0
-, isMocked = True}
+>>> putDoc $ pretty st0
+Multiplier:
+    remain: []
+    targets: []
+    sources: []
+    currentWork: Nothing
+    isMocked: True
+    Process:
+        steps:
+        relations:
+        nextTick: 0
+        nextUid: 0
 >>> endpointOptions st0
 []
 
@@ -191,17 +195,20 @@ cannot be "lost" inside the model; 2) if a unit has its internal resources,
 there should be enough to finish schedule, even it is inefficient.
 
 >>> let Right st1 = tryBind f st0
->>> st1
-Multiplier {remain = [a * b = c = d], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps =
-<BLANKLINE>
-    relations =
-<BLANKLINE>
-    nextTick = 0
-    nextUid = 0
-, isMocked = True}
+>>> putDoc $ pretty st1
+Multiplier:
+    remain: [a * b = c = d]
+    targets: []
+    sources: []
+    currentWork: Nothing
+    isMocked: True
+    Process:
+        steps:
+        relations:
+        nextTick: 0
+        nextUid: 0
 >>> endpointOptions st1
-[?Target "a"@(0..∞ /P 1..∞),?Target "b"@(0..∞ /P 1..∞)]
+[?Target a@(0..∞ /P 1..∞),?Target b@(0..∞ /P 1..∞)]
 
 As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: @a@ or
@@ -211,34 +218,44 @@ loading of one argument needed only one tick, but it can continue for an
 arbitrary time. Choose the variant.
 
 >>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
->>> st2
-Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
-    steps =
-        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-    relations =
-        0) Vertical 0 1
-    nextTick = 3
-    nextUid = 2
-, isMocked = True}
+>>> putDoc $ pretty st2
+Multiplier:
+    remain: []
+    targets: ["b"]
+    sources: ["c","d"]
+    currentWork: Just a * b = c = d
+    isMocked: True
+    Process:
+        steps:
+            0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+        relations:
+            0) Vertical 0 1
+        nextTick: 3
+        nextUid: 2
 >>> mapM_ print $ endpointOptions st2
-?Target "b"@(3..∞ /P 1..∞)
+?Target b@(3..∞ /P 1..∞)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
->>> st3
-Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
-    steps =
-        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-    relations =
-        0) Vertical 2 3
-        1) Vertical 0 1
-    nextTick = 4
-    nextUid = 4
-, isMocked = True}
+>>> putDoc $ pretty st3
+Multiplier:
+    remain: []
+    targets: []
+    sources: ["c","d"]
+    currentWork: Just a * b = c = d
+    isMocked: True
+    Process:
+        steps:
+            0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+        relations:
+            0) Vertical 2 3
+            1) Vertical 0 1
+        nextTick: 4
+        nextUid: 4
 >>> mapM_ print $ endpointOptions st3
-?Source "c","d"@(6..∞ /P 1..∞)
+?Source c,d@(6..∞ /P 1..∞)
 
 After loading both arguments, we can see that the next option is unloading
 @c@ and @d@ variables. Note, these variables can be unloaded either
@@ -246,49 +263,59 @@ concurrently or sequentially (for details, see how the multiplier works
 inside). Consider the second option:
 
 >>> let st4 = endpointDecision st3 $ EndpointSt (Source $ S.fromList ["c"]) (6...6)
->>> st4
-Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b = c = d, process_ = Process
-    steps =
-        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-        4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
-        5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
-    relations =
-        0) Vertical 4 5
-        1) Vertical 2 3
-        2) Vertical 0 1
-    nextTick = 7
-    nextUid = 6
-, isMocked = True}
+>>> putDoc $ pretty st4
+Multiplier:
+    remain: []
+    targets: []
+    sources: ["d"]
+    currentWork: Just a * b = c = d
+    isMocked: True
+    Process:
+        steps:
+            0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+            4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
+            5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+        relations:
+            0) Vertical 4 5
+            1) Vertical 2 3
+            2) Vertical 0 1
+        nextTick: 6
+        nextUid: 6
 >>> mapM_ print $ endpointOptions st4
-?Source "d"@(7..∞ /P 1..∞)
+?Source d@(7..∞ /P 1..∞)
 >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ S.fromList ["d"]) (7...7)
->>> st5
-Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps =
-        0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-        1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
-        2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-        3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
-        4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
-        5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
-        6) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
-        7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
-        8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
-    relations =
-        0) Vertical 8 6
-        1) Vertical 8 4
-        2) Vertical 8 2
-        3) Vertical 8 0
-        4) Vertical 6 7
-        5) Vertical 4 5
-        6) Vertical 2 3
-        7) Vertical 0 1
-    nextTick = 8
-    nextUid = 9
-, isMocked = True}
+>>> putDoc $ pretty st5
+Multiplier:
+    remain: []
+    targets: []
+    sources: []
+    currentWork: Nothing
+    isMocked: True
+    Process:
+        steps:
+            0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+            4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
+            5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
+            6) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
+            7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
+            8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
+        relations:
+            0) Vertical 8 6
+            1) Vertical 8 4
+            2) Vertical 8 2
+            3) Vertical 8 0
+            4) Vertical 6 7
+            5) Vertical 4 5
+            6) Vertical 2 3
+            7) Vertical 0 1
+        nextTick: 7
+        nextUid: 9
 >>> endpointOptions st5
 []
 
@@ -319,6 +346,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
+import Prettyprinter
 
 {- |It is a PU model state representation, which describes each state of
 synthesis model for that PU.
@@ -353,7 +381,17 @@ data Multiplier v x t = Multiplier
       isMocked :: Bool
     }
 
--- deriving instance (VarValTime v x t) => Show (Multiplier v x t)
+instance (VarValTime v x t) => Pretty (Multiplier v x t) where
+    pretty Multiplier{remain, targets, sources, currentWork, process_, isMocked} =
+        [__i|
+            Multiplier:
+                remain: #{ remain }
+                targets: #{ map toString targets }
+                sources: #{ map toString sources }
+                currentWork: #{ currentWork }
+                isMocked: #{ isMocked }
+                #{ nest 4 $ pretty process_ }
+            |]
 
 {- | Multiplier PU model constructor. Argument defines the computation unit's
 internal organization: using multiplier IP kernel (False) or mock (True). For

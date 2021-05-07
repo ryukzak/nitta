@@ -143,6 +143,7 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
+import Prettyprinter (pretty)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
@@ -285,7 +286,7 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
 
-assertAllEndpointRoles :: (Show (EndpointRole v)) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> DSLStatement pu v x t ()
 assertAllEndpointRoles roles = do
     UnitTestState{unit} <- get
     let opts = S.fromList $ map epRole $ endpointOptions unit
@@ -365,5 +366,5 @@ traceEndpoints = do
 
 traceProcess = do
     UnitTestState{unit} <- get
-    lift $ putStrLn $ "Process: " <> show (process unit)
+    lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
     return ()
