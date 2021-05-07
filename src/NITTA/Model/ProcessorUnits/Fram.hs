@@ -47,6 +47,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
+import Prettyprinter
 
 data Fram v x t = Fram
     { -- |memory cell array
@@ -62,6 +63,14 @@ framWithSize size =
         , remainBuffers = []
         , process_ = def
         }
+
+instance (VarValTime v x t) => Pretty (Fram v x t) where
+    pretty Fram{memory} =
+        [__i|
+            Fram:
+                cells:
+                    #{ nest 8 $ vsep $ map (\(ix, c) -> viaShow ix <> ": " <> pretty (state c)) $ A.assocs memory }
+            |]
 
 instance (Default t, Default x) => Default (Fram v x t) where
     def =
@@ -91,7 +100,6 @@ data Cell v x t = Cell
     , history :: [F v x]
     , initialValue :: x
     }
-    deriving (Show)
 
 data Job v x t = Job
     { function :: F v x
@@ -156,7 +164,17 @@ data CellState v x t
     | NotBrokenLoop
     | DoLoopSource [v] (Job v x t)
     | DoLoopTarget v
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (VarValTime v x t) => Pretty (CellState v x t) where
+    pretty NotUsed = "NotUsed"
+    pretty Done = "Done"
+    pretty (DoConstant vs) = "DoConstant " <> viaShow (map toString vs)
+    pretty (DoBuffer vs) = "DoBuffer " <> viaShow (map toString vs)
+    pretty ForBuffer = "ForBuffer"
+    pretty NotBrokenLoop = "NotBrokenLoop"
+    pretty (DoLoopSource vs _job) = "DoLoopSource " <> viaShow (map toString vs)
+    pretty (DoLoopTarget v) = "DoLoopTarget " <> viaShow (toString v)
 
 isFree Cell{state = NotUsed} = True
 isFree _ = False
@@ -428,13 +446,8 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     { memory = memory A.// [(addr, cell')]
                     , process_
                     }
-    endpointDecision Fram{memory} d =
-        error "fram model internal error" -- FIXME:
-        -- [__i|
-        --     fram model internal error: #{ d }
-        --     cells state:
-        --     #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
-        --   |  ]fram model internal error
+    endpointDecision pu@Fram{} d =
+        error $ "fram model internal error on decision: " <> show d <> show (pretty pu)
 
 ---------------------------------------------------------------------
 
@@ -470,8 +483,7 @@ instance Controllable (Fram v x t) where
 
     takePortTags (oe : wr : xs) pu = FramPorts oe wr addr
         where
-            width = addrWidth pu
-            addr = take width xs
+            addr = take (addrWidth pu) xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Connected (Fram v x t) where
