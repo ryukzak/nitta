@@ -63,7 +63,6 @@ import qualified Data.Bits as B
 import Data.Default
 import qualified Data.Map as M
 import Data.Set (elems, fromList, union)
-import Data.String.ToString
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
@@ -146,8 +145,8 @@ and @LoopBegin@.
 data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq, Show)
 
 instance (Var v, Show x) => Label (Loop v x) where
-    label (Loop (X x) (O o) (I b)) =
-        "loop(" <> show x <> ", " <> toString b <> ") = " <> showOut o
+    label (Loop (X x) os i) =
+        "loop(" <> show x <> ", " <> show i <> ") = " <> show os
 loop :: (Var v, Val x) => x -> v -> [v] -> F v x
 loop x a bs = packF $ Loop (X x) (O $ fromList bs) $ I a
 isLoop f
@@ -172,7 +171,7 @@ instance (Var v) => FunctionSimulation (Loop v x) v x where
 
 data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq, Show)
 instance (Var v) => Label (LoopBegin v x) where
-    label (LoopBegin _ (O vs)) = "LoopBegin() = " <> showOut vs
+    label (LoopBegin _ os) = "LoopBegin() = " <> show os
 instance (Var v) => Function (LoopBegin v x) v where
     outputs (LoopBegin _ o) = variables o
     isInternalLockPossible _ = True
@@ -185,7 +184,7 @@ instance (Var v) => FunctionSimulation (LoopBegin v x) v x where
 
 data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq, Show)
 instance (Var v) => Label (LoopEnd v x) where
-    label (LoopEnd (Loop _ (O vs) _) (I v)) = "LoopEnd(" <> toString v <> ") pair out: " <> showOut vs
+    label (LoopEnd (Loop _ os _) i) = "LoopEnd(" <> show i <> ") pair out: " <> show os
 instance (Var v) => Function (LoopEnd v x) v where
     inputs (LoopEnd _ o) = variables o
     isInternalLockPossible _ = True
@@ -198,7 +197,7 @@ instance (Var v) => FunctionSimulation (LoopEnd v x) v x where
 data Buffer v x = Buffer (I v) (O v) deriving (Typeable, Eq)
 instance Label (Buffer v x) where label Buffer{} = "buf"
 instance (Var v) => Show (Buffer v x) where
-    show (Buffer (I k1) (O k2)) = "buffer(" <> toString k1 <> ")" <> " = " <> showOut k2
+    show (Buffer i os) = "buffer(" <> show i <> ")" <> " = " <> show os
 buffer :: (Var v, Val x) => v -> [v] -> F v x
 buffer a b = packF $ Buffer (I a) (O $ fromList b)
 
@@ -216,9 +215,9 @@ instance (Var v) => FunctionSimulation (Buffer v x) v x where
 data Add v x = Add (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Add v x) where label Add{} = "+"
 instance (Var v) => Show (Add v x) where
-    show (Add (I k1) (I k2) (O k3)) =
-        let lexp = toString k1 <> " + " <> toString k2
-            rexp = showOut k3
+    show (Add a b c) =
+        let lexp = show a <> " + " <> show b
+            rexp = show c
          in lexp <> " = " <> rexp
 add :: (Var v, Val x) => v -> v -> [v] -> F v x
 add a b c = packF $ Add (I a) (I b) $ O $ fromList c
@@ -240,9 +239,9 @@ instance (Var v, Num x) => FunctionSimulation (Add v x) v x where
 data Sub v x = Sub (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Sub v x) where label Sub{} = "-"
 instance (Var v) => Show (Sub v x) where
-    show (Sub (I k1) (I k2) (O k3)) =
-        let lexp = toString k1 <> " - " <> toString k2
-            rexp = showOut k3
+    show (Sub a b c) =
+        let lexp = show a <> " - " <> show b
+            rexp = show c
          in lexp <> " = " <> rexp
 sub :: (Var v, Val x) => v -> v -> [v] -> F v x
 sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
@@ -264,8 +263,8 @@ instance (Var v, Num x) => FunctionSimulation (Sub v x) v x where
 data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance (Var v) => Show (Multiply v x) where
-    show (Multiply (I k1) (I k2) (O k3)) =
-        toString k1 <> " * " <> toString k2 <> " = " <> showOut k3
+    show (Multiply a b c) =
+        show a <> " * " <> show b <> " = " <> show c
 multiply :: (Var v, Val x) => v -> v -> [v] -> F v x
 multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
 
@@ -290,9 +289,9 @@ data Division v x = Division
     deriving (Typeable, Eq)
 instance Label (Division v x) where label Division{} = "/"
 instance (Var v) => Show (Division v x) where
-    show (Division (I k1) (I k2) (O k3) (O k4)) =
-        let q = toString k1 <> " / " <> toString k2 <> " = " <> showOut k3
-            r = toString k1 <> " mod " <> toString k2 <> " = " <> showOut k4
+    show Division{denom, numer, quotient, remain} =
+        let q = show numer <> " / " <> show denom <> " = " <> show quotient
+            r = show numer <> " mod " <> show denom <> " = " <> show remain
          in q <> "; " <> r
 division :: (Var v, Val x) => v -> v -> [v] -> [v] -> F v x
 division d n q r =
@@ -321,7 +320,7 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)
 instance (Show x) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance (Var v, Show x) => Show (Constant v x) where
-    show (Constant (X x) (O k)) = "const(" <> show x <> ") = " <> showOut k
+    show (Constant (X x) os) = "const(" <> show x <> ") = " <> show os
 constant :: (Var v, Val x) => x -> [v] -> F v x
 constant x vs = packF $ Constant (X x) $ O $ fromList vs
 
@@ -342,8 +341,8 @@ data ShiftLR v x
     deriving (Typeable, Eq)
 
 instance (Var v) => Show (ShiftLR v x) where
-    show (ShiftL s (I i) (O o)) = toString i <> " << " <> show s <> " = " <> showOut o
-    show (ShiftR s (I i) (O o)) = toString i <> " >> " <> show s <> " = " <> showOut o
+    show (ShiftL s i os) = show i <> " << " <> show s <> " = " <> show os
+    show (ShiftR s i os) = show i <> " >> " <> show s <> " = " <> show os
 instance (Var v) => Label (ShiftLR v x) where label = show
 
 shiftL :: (Var v, Val x) => Int -> v -> [v] -> F v x
@@ -369,7 +368,7 @@ instance (Var v, B.Bits x) => FunctionSimulation (ShiftLR v x) v x where
 
 newtype Send v x = Send (I v) deriving (Typeable, Eq)
 instance (Var v) => Show (Send v x) where
-    show (Send (I k1)) = "send(" <> toString k1 <> ")"
+    show (Send i) = "send(" <> show i <> ")"
 instance Label (Send v x) where label Send{} = "send"
 send :: (Var v, Val x) => v -> F v x
 send a = packF $ Send $ I a
@@ -383,7 +382,7 @@ instance FunctionSimulation (Send v x) v x where
 
 newtype Receive v x = Receive (O v) deriving (Typeable, Eq)
 instance (Var v) => Show (Receive v x) where
-    show (Receive (O k1)) = "receive() = " <> showOut k1
+    show (Receive os) = "receive() = " <> show os
 instance Label (Receive v x) where label Receive{} = "receive"
 receive :: (Var v, Val x) => [v] -> F v x
 receive a = packF $ Receive $ O $ fromList a
@@ -405,7 +404,7 @@ data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, Eq)
 
 instance Label (BrokenBuffer v x) where label BrokenBuffer{} = "broken"
 instance (Var v) => Show (BrokenBuffer v x) where
-    show (BrokenBuffer (I k1) (O k2)) = "brokenBuffer(" <> toString k1 <> ")" <> " = " <> showOut k2
+    show (BrokenBuffer i os) = "brokenBuffer(" <> show i <> ")" <> " = " <> show os
 brokenBuffer :: (Var v, Val x) => v -> [v] -> F v x
 brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ fromList b)
 
