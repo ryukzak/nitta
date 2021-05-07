@@ -75,7 +75,7 @@ jobs:
         fail-on: suggestion
 
 
-  fourmolu:
+  hs-codestyle-by-fourmolu:
     runs-on: ubuntu-latest
     steps:
       - name: Cache haskell-stack and fourmolu
@@ -101,15 +101,17 @@ jobs:
       - name: Check formating
         run: find . -name '*.hs' | xargs fourmolu -m check
 
-  ts-codesyle-by-prettier:
+
+  ui-codestyle-by-prettier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Test ts and tsx code style by prettier
+      - name: Check ts and tsx code style by prettier
         working-directory: ./web
         run: |
           yarn add -s prettier
           yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+
 
   nitta-hdl:
     runs-on: ubuntu-latest
