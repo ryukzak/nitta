@@ -49,7 +49,7 @@ After compile-time eval optimization
 >>> loopRes = loop 1 "e" ["res"]
 >>> let fs = [a, b, res, loopRes] :: [F String Int]
 >>> constantFoldingDecision fs $ head $ constantFoldingOptions fs
-[Loop (X 1) (O [res]) (I e),const(3) = res]
+[loop(1, e) = res,const(3) = res]
 -}
 module NITTA.Model.Problems.Refactor.ConstantFolding (
     ConstantFolding (..),
