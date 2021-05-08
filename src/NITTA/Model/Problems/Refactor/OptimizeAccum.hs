@@ -52,7 +52,7 @@ after:
 >>> let loopRes = loop 1 "e" ["res"]
 >>> let fs = [a, b, c, tmp1, res, loopRes] :: [F String Int]
 >>> optimizeAccumDecision fs $ head $ optimizeAccumOptions fs
-[Acc(+a +b +c = res),const(1) = a,const(2) = b,const(3) = c,Loop (X 1) res e]
+[Acc(+a +b +c = res),const(1) = a,const(2) = b,const(3) = c,loop(1, e) = res]
 -}
 data OptimizeAccum v x = OptimizeAccum
     { refOld :: [F v x]

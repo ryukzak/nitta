@@ -142,8 +142,9 @@ following way: Loop function should be prepared before execution by
 automatical refactor @BreakLoop@, which replace Loop by @LoopEnd@
 and @LoopBegin@.
 -}
-data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq, Show)
+data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq)
 
+instance (Var v, Show x) => Show (Loop v x) where show = label
 instance (Var v, Show x) => Label (Loop v x) where
     label (Loop (X x) os i) =
         "loop(" <> show x <> ", " <> show i <> ") = " <> show os
