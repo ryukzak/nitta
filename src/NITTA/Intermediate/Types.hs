@@ -293,9 +293,6 @@ data Cntx v x = Cntx
     , cntxCycleNumber :: Int
     }
 
-instance (Var v, Val x) => Show (Cntx v x) where
-    show cntx = cntx2table $ showCntx (\v x -> Just (toString v, show x)) cntx
-
 showCntx f Cntx{cntxProcess, cntxCycleNumber} =
     Cntx
         { cntxProcess = map (CycleCntx . foo . cycleCntx) cntxProcess

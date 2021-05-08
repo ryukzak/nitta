@@ -57,30 +57,10 @@ simulationTests =
             ("c", [11, 12, 13, 14, 15])
         ]
 
-showTests =
-    testGroup
-        "show simulation result"
-        [ simulationTraceTestCase
-            "simple show"
-            [ loop 0 "b2" ["a1"]
-            , loop 1 "c" ["b1", "b2"]
-            , add "a1" "b1" ["c"]
-            ]
-            $ unlines
-                [ "a1 b1 b2 c"
-                , "0  1  1  1"
-                , "1  1  1  2"
-                , "1  2  2  3"
-                , "2  3  3  5"
-                , "3  5  5  8"
-                ]
-        ]
-
 tests =
     testGroup
         "intermediate simulation"
         [ simulationTests
-        , showTests
         ]
 
 simulationTestCase ::
@@ -96,17 +76,4 @@ simulationTestCase name received alg (v, expect) =
             Cntx{cntxProcess} = simulateDataFlowGraph 5 def received dfg
             cycles = take (length expect) cntxProcess
             actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
-         in expect @=? actual
-
-simulationTraceTestCase ::
-    HasCallStack =>
-    String ->
-    [F String Int] ->
-    String ->
-    TestTree
-simulationTraceTestCase name alg expect =
-    testCase name $
-        let dfg = fsToDataFlowGraph alg
-            cntx = simulateDataFlowGraph 5 def def dfg
-            actual = show cntx
          in expect @=? actual
