@@ -383,7 +383,11 @@ updateCntx (CycleCntx cntx) ((v, x) : vxs)
 class Patch f diff where
     patch :: diff -> f -> f
 
--- |Change set for patch.
+{- |Change set for patch.
+
+>>> Changeset (M.fromList [("a", "b"), ("c", "d")]) (M.fromList [("e", S.fromList ["f", "g"])]) :: Changeset String
+Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
+-}
 data Changeset v = Changeset
     { -- |change set for input variables (one to one)
       changeI :: M.Map v v
@@ -396,7 +400,10 @@ data Changeset v = Changeset
     deriving (Eq)
 
 instance (Var v) => Show (Changeset v) where
-    show Changeset{} = "Changeset" -- FIXME:
+    show Changeset{changeI, changeO} =
+        let changeI' = S.join ", " $ map (\(a, b) -> "(" <> toString a <> ", " <> toString b <> ")") $ M.assocs changeI
+            changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (map toString $ S.elems bs) <> "])") $ M.assocs changeO
+         in "Changeset{changeI=[" <> changeI' <> "], changeO=[" <> changeO' <> "]}"
 
 instance Default (Changeset v) where
     def = Changeset def def
