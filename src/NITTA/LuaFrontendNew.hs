@@ -48,8 +48,8 @@ parseLeftExp = map $ \case
 --right part of lua statement
 parseRightExp fOut (Binop op a b) = do
   (graph, constants) <- get
-  a' <- parseExpArg a
-  b' <- parseExpArg b
+  (a', _) <- parseExpArg a
+  (b', _) <- parseExpArg b
   put (addFuncToDataFlowGraph graph (getBinopFunc op a' b'), constants)
   return ""
   where
@@ -61,12 +61,12 @@ parseRightExp fOut (Binop op a b) = do
     strFOut = map T.unpack fOut
 parseRightExp _ _ = undefined
 
-parseExpArg :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+parseExpArg :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
 parseExpArg n@(Number _ _) = do
   addConstant n
 parseExpArg (Unop Neg n) = do
-  name <- parseExpArg n
-  return ([head name] ++ "-" ++ tail name)
+  (name, luaValue) <- parseExpArg n
+  return ([head name] ++ "-" ++ tail name, luaValue)
 parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
   addVariableAccess name
 parseExpArg _ = undefined
@@ -96,28 +96,33 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 --startup function recursive call
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
   | fn == fName = do
-    mapM_ parseStartupArg args
+    (_, constants) <- get
+    let startupVars = filter (\case Variable {isStartupArgument} -> isStartupArgument; _ -> False) $ map snd $ Map.toList constants
+    mapM_ parseStartupArg $ zip args startupVars
     return ""
   where
-    parseStartupArg arg = do
-      varName <- parseExpArg arg
+    parseStartupArg :: (Exp, LuaValue) -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+    parseStartupArg (arg, value) = do
+      (varName, luaValue) <- parseExpArg arg
       (graph, constants) <- get
-      put (addFuncToDataFlowGraph graph (F.loop 2 "" [varName]), constants)
+      put (addFuncToDataFlowGraph graph (F.loop (read $ T.unpack luaValue) (getDefaultName value) [varName]), constants)
       return ""
+    getDefaultName Variable {luaValueName} = T.unpack luaValueName ++ "^0#0"
+    getDefaultName _ = undefined
 processStatement _ _ = undefined
 
-addConstant :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+addConstant :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
 addConstant (Number valueType valueString) = do
   (graph, constants) <- get
   case Map.lookup valueString constants of
     Just value -> do
       let newValue = updateConstant value
       put (graph, Map.insert valueString newValue constants)
-      return $ getConstantName newValue
+      return $ (getConstantName newValue, luaValueName newValue)
     Nothing -> do
       let value = Constant {luaValueName = valueString, luaValueType = valueType, luaValueAccessCount = 0}
       put (graph, Map.insert valueString value constants)
-      return $ getConstantName value
+      return (getConstantName value, luaValueName value)
   where
     updateConstant Constant {luaValueName, luaValueType, luaValueAccessCount} = Constant {luaValueName = luaValueName, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
     updateConstant _ = undefined
@@ -125,6 +130,8 @@ addConstant (Number valueType valueString) = do
     getConstantName _ = undefined
 addConstant _ = undefined
 
+addVariable :: MonadState (a, Map.Map T.Text LuaValue) m =>
+T.Text -> Exp -> Bool -> m [Char]
 addVariable name (Number valueType valueString) isStartupArg = do
   (graph, constants) <- get
   case Map.lookup name constants of
@@ -133,7 +140,7 @@ addVariable name (Number valueType valueString) isStartupArg = do
       put (graph, Map.insert name newValue constants)
       return $ getVariableName newValue
     Nothing -> do
-      let value = Variable {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg }
+      let value = Variable {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg}
       put (graph, Map.insert name value constants)
       return $ getVariableName value
   where
@@ -151,7 +158,7 @@ addVariableAccess name = do
       let newValue = updateVariable value
       let oldName = getVariableName value
       put (addFuncToDataFlowGraph graph (F.constant (read $ T.unpack $ luaValueString newValue) [getVariableName newValue]), Map.insert name newValue constants)
-      return oldName
+      return (oldName, luaValueString value)
     Nothing -> error ("variable '" ++ show name ++ " not found.")
   where
     updateVariable Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount, isStartupArgument} =
