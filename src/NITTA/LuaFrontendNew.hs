@@ -130,8 +130,6 @@ addConstant (Number valueType valueString) = do
     getConstantName _ = undefined
 addConstant _ = undefined
 
-addVariable :: MonadState (a, Map.Map T.Text LuaValue) m =>
-T.Text -> Exp -> Bool -> m [Char]
 addVariable name (Number valueType valueString) isStartupArg = do
   (graph, constants) <- get
   case Map.lookup name constants of
