@@ -84,7 +84,7 @@ instance ToSample (TreeView ShortNodeView) where
                 { rootLabel =
                     ShortNodeView
                         { sid = show $ SID []
-                        , isLeaf = False
+                        , isLast = False
                         , isProcessed = True
                         , duration = 0
                         , score = 0 / 0
@@ -95,7 +95,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [0]
-                                , isLeaf = False
+                                , isLast = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 4052
@@ -107,7 +107,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [1]
-                                , isLeaf = False
+                                , isLast = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 3021
@@ -124,7 +124,7 @@ instance ToSample Integer where
 
 data ShortNodeView = ShortNodeView
     { sid :: String
-    , isLeaf :: Bool
+    , isLast :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
@@ -134,7 +134,7 @@ data ShortNodeView = ShortNodeView
 
 data NodeInfo = NodeInfo
     { sid :: String
-    , isLeaf :: Bool
+    , isLast :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
@@ -179,8 +179,8 @@ instance ToJSON TreeInfo
 getTreeInfo tree@Tree{sID = SID sid, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
-    let isSuccess = checkIsComplete tree && checkIsLeaf tree
-    let isFail = (not . checkIsComplete) tree && checkIsLeaf tree
+    let isSuccess = isComplete tree && isLeaf tree
+    let isFail = (not . isComplete) tree && isLeaf tree
     let duration = (fromEnum . processDuration . sTarget . sState) tree
     let successDepends value field =
             if not isSuccess
@@ -204,7 +204,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
             { rootLabel =
                 ShortNodeView
                     { sid = show sid
-                    , isLeaf = checkIsLeaf tree
+                    , isLast = isLeaf tree
                     , isProcessed = isJust subForestM
                     , duration = (fromEnum . processDuration . sTarget . sState) tree
                     , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
@@ -224,7 +224,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
 
 data NodeView tag v x t = NodeView
     { sid :: String
-    , isLeaf :: Bool
+    , isLast :: Bool
     , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
@@ -236,7 +236,7 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
     view tree@Tree{sID, sDecision} =
         NodeView
             { sid = show sID
-            , isLeaf = checkIsLeaf tree
+            , isLast = isLeaf tree
             , duration = (fromEnum . processDuration . sTarget . sState) tree
             , decision =
                 ( \case
@@ -265,7 +265,7 @@ instance ToSample (NodeView tag v x t) where
         samples
             [ NodeView
                 { sid = show $ SID [0, 1, 3, 1]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -285,7 +285,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -304,7 +304,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
@@ -312,7 +312,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
@@ -324,7 +324,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
@@ -336,7 +336,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isLast = False
                 , duration = 0
                 , parameters =
                     toJSON $
