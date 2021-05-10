@@ -38,6 +38,7 @@ import NITTA.Project.Template
 import NITTA.Project.TestBench
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
+import NITTA.Utils.Base
 import System.Directory
 import System.Exit
 import System.FilePath.Posix
@@ -109,8 +110,8 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             { tbStatus
             , tbPath = joinPath [wd, pTargetProjectPath]
             , tbFiles = files
-            , tbFunctions = map (T.pack . show) $ functions pUnit
-            , tbSynthesisSteps = map (T.pack . show) $ steps $ process pUnit
+            , tbFunctions = map showText $ functions pUnit
+            , tbSynthesisSteps = map showText $ steps $ process pUnit
             , tbCompilerDump
             , tbSimulationDump
             , tbFunctionalSimulationLog = map cycleCntx $ take cntxCycleNumber cntxProcess

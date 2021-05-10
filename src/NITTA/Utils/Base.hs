@@ -11,10 +11,14 @@ module NITTA.Utils.Base (
     oneOf,
     minimumOn,
     maximumOn,
+    toText,
+    showText,
 ) where
 
 import Data.List (maximumBy, minimumBy)
 import Data.Set (elems, unions)
+import Data.String.ToString
+import qualified Data.Text as T
 
 unionsMap f lst = unions $ map f lst
 
@@ -23,3 +27,7 @@ oneOf = head . elems
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
+
+toText v = T.pack $ toString v
+
+showText v = T.pack $ show v

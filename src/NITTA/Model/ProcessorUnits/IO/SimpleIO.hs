@@ -261,8 +261,8 @@ protocolDescription tag io d
                             toJSON
                                 ProtocolDescription
                                     { description = d
-                                    , interface = T.pack $ show $ typeRep (Proxy :: Proxy i)
-                                    , dataType = T.pack $ show $ typeRep (Proxy :: Proxy x)
+                                    , interface = showText $ typeRep (Proxy :: Proxy i)
+                                    , dataType = showText $ typeRep (Proxy :: Proxy x)
                                     , toNitta = map (oneOf . outputs) $ filter isReceive fbs
                                     , fromNitta = map (oneOf . inputs) $ filter isSend fbs
                                     }

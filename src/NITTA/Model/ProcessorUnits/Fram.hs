@@ -551,7 +551,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                         , .FRAM_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag fram }" )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
-                    , .signal_addr( { #{ T.intercalate ", " $ map (T.pack . show) addr } } )
+                    , .signal_addr( { #{ T.intercalate ", " $ map showText addr } } )
                     , .signal_wr( #{ wr } )
                     , .data_in( #{ dataIn } )
                     , .attr_in( #{ attrIn } )
