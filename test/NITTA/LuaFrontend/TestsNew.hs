@@ -78,5 +78,11 @@ case_process_multiply_statement =
       result = DFCluster [DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})]
    in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
+case_debug = 
+   let result = parseLuaSources $ T.pack "function sum(x)\n    y = 2 + x\n    sum(y)\nend\nsum(0)"
+       expected = DFCluster []
+   in expected @?= result
+
+
 tests :: TestTree
 tests = $(testGroupGenerator)

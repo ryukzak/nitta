@@ -46,19 +46,19 @@ parseLeftExp = map $ \case
   e -> error $ "bad left expression: " ++ show e
 
 --right part of lua statement
-parseRightExp fOut (Binop op a b) = do
-  (graph, constants) <- get
+parseRightExp fOut expr@(Binop op a b) = do
   (a', _) <- parseExpArg a
   (b', _) <- parseExpArg b
-  put (addFuncToDataFlowGraph graph (getBinopFunc op a' b'), constants)
+  resultName <- addVariable (head fOut) expr False
+  (graph, constants) <- get
+  put (addFuncToDataFlowGraph graph (getBinopFunc op a' b' [resultName]), constants)
   return ""
   where
-    getBinopFunc Add a' b' = F.add a' b' strFOut
-    getBinopFunc Sub a' b' = F.sub a' b' strFOut
-    getBinopFunc Mul a' b' = F.multiply a' b' strFOut
-    getBinopFunc Div a' b' = F.division a' b' [head strFOut] (tail strFOut)
-    getBinopFunc o _ _ = error $ "unknown binop: " ++ show o
-    strFOut = map T.unpack fOut
+    getBinopFunc Add a' b' resultName = F.add a' b' resultName
+    getBinopFunc Sub a' b' resultName = F.sub a' b' resultName
+    getBinopFunc Mul a' b' resultName = F.multiply a' b' resultName
+    getBinopFunc Div a' b' resultName = F.division a' b' [head resultName] (tail resultName)
+    getBinopFunc o _ _ _ = error $ "unknown binop: " ++ show o
 parseRightExp _ _ = undefined
 
 parseExpArg :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
@@ -117,11 +117,11 @@ addConstant (Number valueType valueString) = do
   case Map.lookup valueString constants of
     Just value -> do
       let newValue = updateConstant value
-      put (graph, Map.insert valueString newValue constants)
-      return $ (getConstantName newValue, luaValueName newValue)
+      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack valueString)) [getConstantName value]), Map.insert valueString newValue constants)
+      return (getConstantName newValue, luaValueName newValue)
     Nothing -> do
       let value = Constant {luaValueName = valueString, luaValueType = valueType, luaValueAccessCount = 0}
-      put (graph, Map.insert valueString value constants)
+      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack valueString)) [getConstantName value]), Map.insert valueString value constants)
       return (getConstantName value, luaValueName value)
   where
     updateConstant Constant {luaValueName, luaValueType, luaValueAccessCount} = Constant {luaValueName = luaValueName, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
@@ -147,7 +147,23 @@ addVariable name (Number valueType valueString) isStartupArg = do
     updateConstant _ = undefined
     getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
     getVariableName _ = undefined
-addVariable _ _ _ = undefined
+addVariable name _ _ = do
+  (graph, constants) <- get
+  case Map.lookup name constants of
+    Just value -> do
+      let newValue = updateConstant value
+      put (graph, Map.insert name newValue constants)
+      return $ getVariableName newValue
+    Nothing -> do
+      let value = Variable {luaValueName = name, luaValueString = "", luaValueType = IntNum, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = False}
+      put (graph, Map.insert name value constants)
+      return $ getVariableName value
+  where
+    updateConstant Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount} =
+      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = False}
+    updateConstant _ = undefined
+    getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
+    getVariableName _ = undefined
 
 addVariableAccess name = do
   (graph, constants) <- get
@@ -155,9 +171,9 @@ addVariableAccess name = do
     Just value -> do
       let newValue = updateVariable value
       let oldName = getVariableName value
-      put (addFuncToDataFlowGraph graph (F.constant (read $ T.unpack $ luaValueString newValue) [getVariableName newValue]), Map.insert name newValue constants)
+      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack (luaValueString value))) [getVariableName newValue]), Map.insert name newValue constants)
       return (oldName, luaValueString value)
-    Nothing -> error ("variable '" ++ show name ++ " not found.")
+    Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show constants)
   where
     updateVariable Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount, isStartupArgument} =
       Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount, isStartupArgument = isStartupArgument}
@@ -167,7 +183,7 @@ addVariableAccess name = do
 
 buildAlg syntaxTree = fst $
   flip execState st $ do
-    _ <- addStartupFuncArgs startupFunctionDef startupFunctionCall
+    _ <- addStartupFuncArgs startupFunctionCall startupFunctionDef
     mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
   where
     (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree
@@ -189,3 +205,5 @@ parseLuaSources src =
   let syntaxTree = getLuaBlockFromSources src
       alg = buildAlg syntaxTree
    in alg
+
+-- DFCluster [DFLeaf 2@const#0 + x#0 = y#0,DFLeaf Loop (X 0) (O [x#0]) (I y#0),DFLeaf const(2) = 2@const#0]
