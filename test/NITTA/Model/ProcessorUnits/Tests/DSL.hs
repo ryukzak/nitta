@@ -262,7 +262,7 @@ getDecisionSpecific role = do
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show (map toString $ S.elems s)
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show (vsToStringList s)
 
 getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstraint t)]
 getDecisionsFromEp = do

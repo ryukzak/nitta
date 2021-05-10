@@ -49,7 +49,7 @@ data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
 instance (Var v) => Show (Action v) where
     show (Push s (I v)) = show s <> toString v
-    show (Pull (O vs)) = S.join " " (map (("= " <>) . toString) $ elems vs)
+    show (Pull (O vs)) = S.join " " $ map ("= " <>) $ vsToStringList vs
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 

@@ -37,6 +37,7 @@ import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Time
+import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
@@ -81,7 +82,7 @@ data EndpointRole v
     deriving (Eq, Ord, Generic)
 
 instance (Var v) => Show (EndpointRole v) where
-    show (Source vs) = "Source " <> S.join "," (map toString $ S.elems vs)
+    show (Source vs) = "Source " <> S.join "," (vsToStringList vs)
     show (Target v) = "Target " <> toString v
 
 instance (Ord v) => Patch (EndpointRole v) (Changeset v) where
