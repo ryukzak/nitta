@@ -73,6 +73,7 @@ import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
@@ -99,7 +100,7 @@ instance (Ord v) => Patch (O v) (v, v) where
 instance (ToString v) => Show (O v) where
     show (O vs)
         | S.null vs = "_"
-        | otherwise = S.join " = " $ map toString $ S.elems vs
+        | otherwise = S.join " = " $ vsToStringList vs
 
 instance Variables (O v) v where
     variables (O vs) = vs
@@ -423,7 +424,7 @@ data Changeset v = Changeset
 instance (Var v) => Show (Changeset v) where
     show Changeset{changeI, changeO} =
         let changeI' = S.join ", " $ map (\(a, b) -> "(" <> toString a <> ", " <> toString b <> ")") $ M.assocs changeI
-            changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (map toString $ S.elems bs) <> "])") $ M.assocs changeO
+            changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (vsToStringList bs) <> "])") $ M.assocs changeO
          in "Changeset{changeI=[" <> changeI' <> "], changeO=[" <> changeO' <> "]}"
 
 instance Default (Changeset v) where
