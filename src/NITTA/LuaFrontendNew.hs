@@ -19,11 +19,12 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
+import NITTA.Intermediate.Types
 import qualified NITTA.Intermediate.Functions as F
 
 data LuaValue
-  = Constant {luaValueName :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int}
-  | Variable {luaValueName :: T.Text, luaValueString :: T.Text, luaValueType :: NumberType, luaValueAccessCount :: Int, luaValueAssignCount :: Int, isStartupArgument :: Bool}
+  = Constant {luaValueName :: T.Text, luaValueParsedFunction :: F String Int,  luaValueType :: NumberType, luaValueAccessCount :: Int}
+  | Variable {luaValueName :: T.Text, luaValueParsedFunction :: F String Int, luaValueAccessCount :: Int, luaValueAssignCount :: Int, isStartupArgument :: Bool}
   deriving (Show)
 
 instance Eq LuaValue where
@@ -46,13 +47,10 @@ parseLeftExp = map $ \case
   e -> error $ "bad left expression: " ++ show e
 
 --right part of lua statement
-parseRightExp fOut expr@(Binop op a b) = do
+parseRightExp fOut (Binop op a b) = do
   (a', _) <- parseExpArg a
   (b', _) <- parseExpArg b
-  resultName <- addVariable (head fOut) expr False
-  (graph, constants) <- get
-  put (addFuncToDataFlowGraph graph (getBinopFunc op a' b' [resultName]), constants)
-  return ""
+  addVariable (head fOut) (getBinopFunc op a' b' [""]) False
   where
     getBinopFunc Add a' b' resultName = F.add a' b' resultName
     getBinopFunc Sub a' b' resultName = F.sub a' b' resultName
@@ -116,21 +114,22 @@ addConstant (Number valueType valueString) = do
   (graph, constants) <- get
   case Map.lookup valueString constants of
     Just value -> do
-      let newValue = updateConstant value
-      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack valueString)) [getConstantName value]), Map.insert valueString newValue constants)
-      return (getConstantName newValue, luaValueName newValue)
+      let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (luaValueAccessCount value)]
+      let newValue = updateConstant value constant
+      put (graph, Map.insert valueString newValue constants)
+      return (getConstantName (luaValueName newValue) (luaValueAccessCount newValue), luaValueName newValue)
     Nothing -> do
-      let value = Constant {luaValueName = valueString, luaValueType = valueType, luaValueAccessCount = 0}
-      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack valueString)) [getConstantName value]), Map.insert valueString value constants)
-      return (getConstantName value, luaValueName value)
+      let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (0::Int)]
+      let value = Constant {luaValueName = valueString, luaValueParsedFunction = constant, luaValueType = valueType, luaValueAccessCount = 0}
+      put (addFuncToDataFlowGraph graph constant, Map.insert valueString value constants)
+      return (getConstantName (luaValueName value) (luaValueAccessCount value), luaValueName value)
   where
-    updateConstant Constant {luaValueName, luaValueType, luaValueAccessCount} = Constant {luaValueName = luaValueName, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
-    updateConstant _ = undefined
-    getConstantName Constant {luaValueName, luaValueAccessCount} = "!" ++ T.unpack luaValueName ++ "#" ++ show luaValueAccessCount
-    getConstantName _ = undefined
+    updateConstant Constant {luaValueName, luaValueType, luaValueAccessCount} constant = Constant {luaValueName = luaValueName, luaValueParsedFunction = constant, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
+    updateConstant _ _ = undefined
+    getConstantName luaValueName luaValueAccessCount = "!" ++ T.unpack luaValueName ++ "#" ++ show luaValueAccessCount
 addConstant _ = undefined
 
-addVariable name (Number valueType valueString) isStartupArg = do
+addVariable name func isStartupArg = do
   (graph, constants) <- get
   case Map.lookup name constants of
     Just value -> do
@@ -138,29 +137,12 @@ addVariable name (Number valueType valueString) isStartupArg = do
       put (graph, Map.insert name newValue constants)
       return $ getVariableName newValue
     Nothing -> do
-      let value = Variable {luaValueName = name, luaValueString = valueString, luaValueType = valueType, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg}
+      let value = Variable {luaValueName = name, luaValueParsedFunction = func, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg}
       put (graph, Map.insert name value constants)
       return $ getVariableName value
   where
-    updateConstant Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount} =
-      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = isStartupArg}
-    updateConstant _ = undefined
-    getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
-    getVariableName _ = undefined
-addVariable name _ _ = do
-  (graph, constants) <- get
-  case Map.lookup name constants of
-    Just value -> do
-      let newValue = updateConstant value
-      put (graph, Map.insert name newValue constants)
-      return $ getVariableName newValue
-    Nothing -> do
-      let value = Variable {luaValueName = name, luaValueString = "", luaValueType = IntNum, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = False}
-      put (graph, Map.insert name value constants)
-      return $ getVariableName value
-  where
-    updateConstant Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount} =
-      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = False}
+    updateConstant Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} =
+      Variable {luaValueName = luaValueName, luaValueParsedFunction = func, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = isStartupArg}
     updateConstant _ = undefined
     getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
     getVariableName _ = undefined
@@ -171,12 +153,12 @@ addVariableAccess name = do
     Just value -> do
       let newValue = updateVariable value
       let oldName = getVariableName value
-      put (addFuncToDataFlowGraph graph (F.constant (read (T.unpack (luaValueString value))) [getVariableName newValue]), Map.insert name newValue constants)
-      return (oldName, luaValueString value)
+      put (addFuncToDataFlowGraph graph (F.constant "" [getVariableName newValue]), Map.insert name newValue constants)
+      return (oldName, T.pack "")
     Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show constants)
   where
-    updateVariable Variable {luaValueName, luaValueString, luaValueType, luaValueAccessCount, luaValueAssignCount, isStartupArgument} =
-      Variable {luaValueName = luaValueName, luaValueString = luaValueString, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount, isStartupArgument = isStartupArgument}
+    updateVariable Variable {luaValueName, luaValueAccessCount, luaValueAssignCount, isStartupArgument, luaValueParsedFunction} =
+      Variable {luaValueName = luaValueName, luaValueParsedFunction = luaValueParsedFunction, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount, isStartupArgument = isStartupArgument}
     updateVariable _ = undefined
     getVariableName Variable {luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
     getVariableName _ = undefined
