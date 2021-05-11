@@ -43,6 +43,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
+import Prettyprinter
 
 data Broken v x t = Broken
     { remain :: [F v x]
@@ -68,7 +69,25 @@ data Broken v x t = Broken
     , unknownDataOut :: Bool
     }
 
--- deriving instance (VarValTime v x t) => Show (Broken v x t)
+instance (VarValTime v x t) => Pretty (Broken v x t) where
+    pretty Broken{..} =
+        [__i|
+            Broken:
+                remain:#{ remain }
+                targets:#{ map toString targets }
+                sources:#{ map toString sources }
+                currentWork: #{ currentWork }
+                currentWorkEndpoints: #{ currentWorkEndpoints }
+                brokeVerilog: #{ brokeVerilog }
+                wrongVerilogSimulationValue: #{ wrongVerilogSimulationValue }
+                wrongControlOnPush: #{ wrongControlOnPush }
+                wrongControlOnPull: #{ wrongControlOnPull }
+                lostEndpointTarget: #{ lostEndpointTarget }
+                lostEndpointSource: #{ lostEndpointSource }
+                wrongAttr: #{ wrongAttr }
+                unknownDataOut: #{ unknownDataOut }
+                #{ indent 4 $ pretty $ process_ }
+            |]
 
 instance (Var v) => Locks (Broken v x t) v where
     locks Broken{remain, sources, targets} =
@@ -153,7 +172,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error $ "Broken decision error" -- FIXME: \npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error [i|Broken internal decision: #{ d }, error: #{ pretty pu }|]
 
 instance Controllable (Broken v x t) where
     data Instruction (Broken v x t)
@@ -228,7 +247,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
 
     hardwareInstance
         tag
-        Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
+        pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
         UnitEnv
             { sigClk
             , ctrlPorts = Just BrokenPorts{..}
@@ -236,6 +255,9 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
             , valueOut = Just (dataOut, attrOut)
             } =
             [__i|
+                /*
+                #{ pretty pu }
+                */
                 pu_broken \#
                         ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                         , .ATTR_WIDTH( #{ attrWidth (def :: x) } )

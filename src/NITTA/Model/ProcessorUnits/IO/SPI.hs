@@ -237,7 +237,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
 
                             endDeviceInstance =
                                 [__i|
-                                    #{ comment $ show sio }
+                                    /*
+                                    #{ pretty sio }
+                                    */
                                     reg #{ tag }_io_test_start_transaction;
                                     reg  [#{ frameWidth }-1:0] #{ tag }_io_test_input;
                                     wire #{ tag }_io_test_ready;
@@ -334,7 +336,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
 
                             envInstance =
                                 [__i|
-                                    #{ comment $ show sio }
+                                    /*
+                                    #{ pretty sio }
+                                    */
                                     reg #{ tag }_io_test_start_transaction;
                                     reg  [#{ frameWidth }-1:0] #{ tag }_io_test_input;
                                     wire #{ tag }_io_test_ready;
