@@ -55,7 +55,7 @@ data BreakLoop v x = BreakLoop
     deriving (Generic, Eq)
 
 instance (Var v, Val x) => Show (BreakLoop v x) where
-    show BreakLoop{loopX, loopO, loopI} = "BreakLoop" -- FIXME
+    show = ("BreakLoop: " <>) . show . recLoop
 
 class BreakLoopProblem u v x | u -> v x where
     breakLoopOptions :: u -> [BreakLoop v x]

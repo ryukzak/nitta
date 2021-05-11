@@ -67,27 +67,30 @@ data SimpleIO i v x t = SimpleIO
     , process_ :: Process t (StepInfo v x t)
     }
 
-instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where
-    show io =
-        toString $
-            doc2text
-                [__i|
-                    bounceFilter  = #{ bounceFilter io }
-                    bufferSize    = #{ bufferSize io }
-                    receiveQueue  = #{ receiveQueue io }
-                    receiveN      = #{ receiveN io }
-                    isReceiveOver = #{ isReceiveOver io }
-                    sendQueue     = #{ sendQueue io }
-                    sendN         = #{ sendN io }
-                    process_      = #{ nest 4 $ pretty $ process_ io }
-                |]
+instance (VarValTime v x t, SimpleIOInterface i) => Pretty (SimpleIO i v x t) where
+    pretty io =
+        [__i|
+            SimpleIO:
+                bounceFilter: #{ bounceFilter io }
+                bufferSize: #{ bufferSize io }
+                receiveQueue: #{ receiveQueue io }
+                receiveN: #{ receiveN io }
+                isReceiveOver: #{ isReceiveOver io }
+                sendQueue: #{ sendQueue io }
+                sendN: #{ sendN io }
+                #{ indent 4 $ pretty $ process_ io }
+            |]
 
 data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
 
--- deriving (Show)
-
-instance Show (Q v x) where
-    show Q{} = "Q" -- FIXME:
+instance (Var v, Val x) => Show (Q v x) where
+    show Q{vars, function, cads} =
+        concat
+            [ "Q{"
+            , "vars: " <> concatMap toString vars <> ","
+            , "function: " <> show function <> ","
+            , "cads : " <> show cads <> "}"
+            ]
 
 instance
     (VarValTime v x t, SimpleIOInterface i) =>
@@ -162,7 +165,7 @@ instance
                 , isReceiveOver = (sendN - length sendQueue) >= (receiveN - length receiveQueue)
                 , process_
                 }
-    endpointDecision sio d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show sio
+    endpointDecision sio d = error [i|SimpleIO internal error, decision: #{ d }, model: #{ pretty sio }|]
 
 {- |Access to received data buffer was implemented like a queue. OE signal read
 received value multiple times __without changing__ "pointer" to the next value.
