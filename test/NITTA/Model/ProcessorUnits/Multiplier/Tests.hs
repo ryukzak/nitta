@@ -78,15 +78,25 @@ tests =
             |]
         , finitePUSynthesisProp "isFinish" u fsGen
         , puCoSimProp "multiplier_coSimulation" u fsGen
-        , unitTestCase "multiplier smoke test" u $ do
-            assign $ multiply "a" "b" ["c", "d"]
-            assertBindFullness
-            decideAt 1 2 $ consume "a"
-            decide $ consume "b"
-            traceEndpoints
-            decideAt 6 6 $ provide ["c"]
-            decide $ provide ["d"]
-            assertSynthesisDone
+        , unitTestCase "multiplier detail test" u $ do
+            assign $ multiply "a" "b" ["c"]
+            setValue "a" 2
+            setValue "b" 12
+
+            assertEndpoint 1 maxBound $ consume "a"
+            assertLocks [Lock{locked = "c", lockBy = "a"}, Lock{locked = "c", lockBy = "b"}]
+            decideAt 1 1 $ consume "a"
+
+            assertEndpoint 2 maxBound $ consume "b"
+            assertLocks [Lock{locked = "c", lockBy = "b"}]
+            decideAt 2 2 $ consume "b"
+
+            assertEndpoint 5 maxBound $ provide ["c"]
+            assertLocks []
+            decideAt 5 5 $ provide ["c"]
+
+            assertLocks []
+            assertCoSimulation
         , unitTestCase "multiplier coSim smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             setValue "a" 2

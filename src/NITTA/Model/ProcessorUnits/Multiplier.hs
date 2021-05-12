@@ -402,6 +402,7 @@ instance (Var v) => Locks (Multiplier v x t) v where
                | locked <- concatMap (S.elems . variables) remain
                , lockBy <- sources ++ targets
                ]
+            ++ concatMap locks remain
 
 {- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
 'ResolveDeadlockProblem', 'ConstantFoldingProblem') describes the possibility of PU to modify an
