@@ -34,12 +34,10 @@ module NITTA.UIBackend.ViewHelper (
     FView (..),
     Viewable (..),
     viewNodeTree,
-    getTreeInfo,
     TreeView,
     ShortNodeView,
     NodeView,
     StepInfoView (..),
-    TreeInfo (..),
     TestbenchReportView (..),
 ) where
 
@@ -61,6 +59,7 @@ import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
 import Servant.Docs
@@ -84,7 +83,7 @@ instance ToSample (TreeView ShortNodeView) where
                 { rootLabel =
                     ShortNodeView
                         { sid = show $ SID []
-                        , isLast = False
+                        , isTerminal = False
                         , isProcessed = True
                         , duration = 0
                         , score = 0 / 0
@@ -95,7 +94,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [0]
-                                , isLast = False
+                                , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 4052
@@ -107,7 +106,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [1]
-                                , isLast = False
+                                , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 3021
@@ -124,7 +123,7 @@ instance ToSample Integer where
 
 data ShortNodeView = ShortNodeView
     { sid :: String
-    , isLast :: Bool
+    , isTerminal :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
@@ -134,7 +133,7 @@ data ShortNodeView = ShortNodeView
 
 data NodeInfo = NodeInfo
     { sid :: String
-    , isLast :: Bool
+    , isTerminal :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
@@ -142,59 +141,12 @@ data NodeInfo = NodeInfo
     }
     deriving (Generic, Show)
 
-data TreeInfo = TreeInfo
-    { nodes :: Int
-    , success :: Int
-    , failed :: Int
-    , notProcessed :: Int
-    , durationSuccess :: HM.HashMap Int Int
-    , stepsSuccess :: HM.HashMap Int Int
-    }
-    deriving (Generic, Show)
-
-instance Semigroup TreeInfo where
-    (<>) synthesisInfo1 synthesisInfo2 =
-        let synthesisInfoList = [synthesisInfo1, synthesisInfo2]
-            durationSuccessList = map durationSuccess synthesisInfoList
-            stepsSuccessList = map stepsSuccess synthesisInfoList
-         in TreeInfo
-                { nodes = sum $ map nodes synthesisInfoList
-                , success = sum $ map success synthesisInfoList
-                , failed = sum $ map failed synthesisInfoList
-                , notProcessed = sum $ map notProcessed synthesisInfoList
-                , durationSuccess = if not $ null durationSuccessList then foldl1 (HM.unionWith (+)) durationSuccessList else HM.empty
-                , stepsSuccess = if not $ null stepsSuccessList then foldl1 (HM.unionWith (+)) stepsSuccessList else HM.empty
-                }
-
-instance Monoid TreeInfo where
-    mempty = TreeInfo{nodes = 0, success = 0, failed = 0, notProcessed = 0, durationSuccess = HM.empty, stepsSuccess = HM.empty}
+instance ToJSON ShortNodeView
+instance ToJSON TreeInfo
 
 instance ToSample TreeInfo where
     toSamples _ =
         singleSample mempty
-
-instance ToJSON ShortNodeView
-instance ToJSON TreeInfo
-
-getTreeInfo tree@Tree{sID = SID sid, sSubForestVar} = do
-    subForestM <- atomically $ tryReadTMVar sSubForestVar
-    subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
-    let isSuccess = isComplete tree && isLeaf tree
-    let isFail = (not . isComplete) tree && isLeaf tree
-    let duration = (fromEnum . processDuration . sTarget . sState) tree
-    let successDepends value field =
-            if not isSuccess
-                then field subForestInfo
-                else HM.alter (Just . maybe 1 (+ 1)) value $ field subForestInfo
-    return $
-        TreeInfo
-            { nodes = 1 + nodes subForestInfo
-            , success = if isSuccess then 1 else 0 + success subForestInfo
-            , failed = if isFail then 1 else 0 + failed subForestInfo
-            , notProcessed = maybe 1 (const 0) subForestM + notProcessed subForestInfo
-            , durationSuccess = successDepends duration durationSuccess
-            , stepsSuccess = successDepends (length sid) stepsSuccess
-            }
 
 viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
@@ -204,7 +156,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
             { rootLabel =
                 ShortNodeView
                     { sid = show sid
-                    , isLast = isLeaf tree
+                    , isTerminal = isLeaf tree
                     , isProcessed = isJust subForestM
                     , duration = (fromEnum . processDuration . sTarget . sState) tree
                     , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
@@ -224,7 +176,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
 
 data NodeView tag v x t = NodeView
     { sid :: String
-    , isLast :: Bool
+    , isTerminal :: Bool
     , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
@@ -236,7 +188,7 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
     view tree@Tree{sID, sDecision} =
         NodeView
             { sid = show sID
-            , isLast = isLeaf tree
+            , isTerminal = isLeaf tree
             , duration = (fromEnum . processDuration . sTarget . sState) tree
             , decision =
                 ( \case
@@ -265,7 +217,7 @@ instance ToSample (NodeView tag v x t) where
         samples
             [ NodeView
                 { sid = show $ SID [0, 1, 3, 1]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -285,7 +237,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -304,7 +256,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
@@ -312,7 +264,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
@@ -324,7 +276,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
@@ -336,7 +288,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLast = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $
