@@ -165,7 +165,7 @@ instance
                 , isReceiveOver = (sendN - length sendQueue) >= (receiveN - length receiveQueue)
                 , process_
                 }
-    endpointDecision sio d = error [i|SimpleIO internal error, decision: #{ d }, model: #{ pretty sio }|]
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 {- |Access to received data buffer was implemented like a queue. OE signal read
 received value multiple times __without changing__ "pointer" to the next value.

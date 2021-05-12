@@ -587,7 +587,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
           , Just f <- find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     -- If something went wrong.
-    endpointDecision pu d = error $ "Multiplier decision error" -- FIXME: \npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 -- TODO: optimize ArgumentSelector
 

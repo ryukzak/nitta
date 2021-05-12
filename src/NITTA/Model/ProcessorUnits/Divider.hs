@@ -263,7 +263,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                             when (null vss') $ void $ scheduleFunction (startAt ... sup epAt) function
                             updateTick (sup epAt)
                         }
-    endpointDecision _ _ = error "divider decision internal error"
+    endpointDecision _pu d = error [i|incorrect decision #{ d } for Divider|]
 
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)

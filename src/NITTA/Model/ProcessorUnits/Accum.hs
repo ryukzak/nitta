@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Accum (
     IOPorts (..),
 ) where
 
+import Control.Arrow
 import Control.Monad (when)
 import Data.Default
 import Data.List (find, partition, (\\))
@@ -43,6 +44,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
+import Prettyprinter
 
 {- |Type that contains expression:
 
@@ -62,7 +64,13 @@ data Job v x = Job
     , -- |Flag indicates when evaluation ended
       calcEnd :: Bool
     }
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance (Var v) => Show (Job v x) where
+    show Job{tasks, current, func, calcEnd} =
+        [i|Job{tasks=#{ show' tasks }, current=#{ show' current }, func=#{ func }, calcEnd=#{ calcEnd }}|]
+        where
+            show' = map (map (second toString))
 
 data Accum v x t = Accum
     { -- |List of jobs (expressions)
@@ -75,15 +83,15 @@ data Accum v x t = Accum
       isInit :: Bool
     }
 
--- instance (VarValTime v x t) => Show (Accum v x t) where
---     show a =
---         [__i|
---             Accum:
---                 work                 = #{ work a }
---                 currentWork          = #{ currentWork a }
---                 process_             = #{ process_ a }
---                 isInit               = #{ isInit a }
---         |]
+instance (VarValTime v x t) => Pretty (Accum v x t) where
+    pretty a =
+        [__i|
+            Accum:
+                work                 = #{ work a }
+                currentWork          = #{ currentWork a }
+                isInit               = #{ isInit a }
+                #{ indent 4 $ pretty $ process_ a }
+            |]
 
 instance (VarValTime v x t) => Default (Accum v x t) where
     def =
@@ -205,7 +213,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         where
             getJob = find (\Job{func} -> d `isIn` func)
             e `isIn` f = oneOf (variables e) `member` variables f
-    endpointDecision pu d = error $ "error in Endpoint Decision function" -- FIXME ++ show pu ++ show d
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t) = AccumPorts {resetAcc, load, neg, oe :: SignalTag}
