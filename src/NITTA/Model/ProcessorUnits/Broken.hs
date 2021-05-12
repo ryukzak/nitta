@@ -172,7 +172,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error [i|Broken internal decision: #{ d }, error: #{ pretty pu }|]
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 instance Controllable (Broken v x t) where
     data Instruction (Broken v x t)

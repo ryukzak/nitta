@@ -141,7 +141,7 @@ instance (Time t, Show i) => Pretty (Process t i) where
         |]
         where
             showList' [] = pretty ""
-            showList' xs = line <> (indent 8 $ vsep lst)
+            showList' xs = line <> indent 8 (vsep lst)
                 where
                     lst =
                         map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $

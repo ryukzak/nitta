@@ -443,8 +443,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     { memory = memory A.// [(addr, cell')]
                     , process_
                     }
-    endpointDecision pu@Fram{} d =
-        error $ "fram model internal error on decision: " <> show d <> show (pretty pu)
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 ---------------------------------------------------------------------
 
