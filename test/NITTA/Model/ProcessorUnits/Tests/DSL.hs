@@ -184,7 +184,7 @@ assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
-        Left err -> lift $ assertFailure err
+        Left err -> lift $ assertFailure $ "assign: " <> err
 
 {- | Store several provided functions and its initial values
 for naive coSimulation
@@ -233,7 +233,7 @@ doDecision unsafe endpSt = do
     let isAvailable = isEpOptionAvailable endpSt unit
     if unsafe || isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
+        else lift $ assertFailure $ "doDecision: such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
 isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
     case find (isSubroleOf role . epRole) $ endpointOptions pu of
@@ -296,8 +296,9 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
+        ep = EndpointSt role (a ... b)
     case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
-        Nothing -> lift $ assertFailure $ "Endpoint not defined in: " <> show opts
+        Nothing -> lift $ assertFailure $ "assertEndpoint: " <> show ep <> " not defined in: " <> show opts
         Just _ -> return ()
 
 isFullyBinded pu fs = do
@@ -322,8 +323,8 @@ assertLocks expectLocks = do
     UnitTestState{unit} <- get
     let actualLocks0 = locks unit
         actualLocks = S.fromList actualLocks0
-    lift $ assertBool ("locks contain duplicates: " <> show actualLocks0) $ length actualLocks0 == S.size actualLocks
-    lift $ assertBool ("unexpected locks: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
+    lift $ assertBool ("assertLocks: locks contain duplicates: " <> show actualLocks0) $ length actualLocks0 == S.size actualLocks
+    lift $ assertBool ("assertLocks: expected locks: " <> show expectLocks <> " actual: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
 
 assertCoSimulation ::
     ( PUClasses pu String x Int
