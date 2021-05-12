@@ -153,8 +153,7 @@ unitTestCase ::
     DSLStatement pu v x t () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
-    _ <- evalUnitTestState name pu alg
-    assertBool "test failed" True
+    void $ evalUnitTestState name pu alg
 
 -- | State of the processor unit used in test
 data UnitTestState pu v x = UnitTestState
