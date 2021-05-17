@@ -132,7 +132,7 @@ export function showDataflow(decision: Dataflow): ReactElement {
       from: <strong>{decision.source[0]}</strong> <br />
       {targets.map((target: [string, EndpointDecision], i: number) => (
         <div key={target[0]}>
-          {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong> <Icon.ArrowLeft />{" "}
+          {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong> <Icon.ArrowRight />{" "}
           <strong>{target[0]}</strong> @ {target[1].epAt[0]} ... {target[1].epAt[1]}
           <br />
         </div>
