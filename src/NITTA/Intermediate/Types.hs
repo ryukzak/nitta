@@ -67,6 +67,7 @@ import Data.Maybe
 import qualified Data.Set as S hiding (split)
 import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics
@@ -203,7 +204,7 @@ instance FunctionSimulation (F v x) v x where
     simulate cntx F{fun} = simulate cntx fun
 
 instance Label (F v x) where
-    label F{fun} = S.replace "\"" "" $ label fun
+    label F{fun} = label fun
 
 instance (Var v) => Locks (F v x) v where
     locks F{fun} = locks fun
@@ -241,7 +242,7 @@ instance (Patch b v) => Patch [b] v where
     patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
-    show F{fun} = S.replace "\"" "" $ show fun
+    show F{fun} = show fun
 
 instance (Var v) => Variables (F v x) v where
     variables F{fun} = inputs fun `S.union` outputs fun
@@ -252,16 +253,16 @@ castF F{fun} = cast fun
 
 -- |Helper for JSON serialization
 data FView = FView
-    { fvFun :: String
-    , fvHistory :: [String]
+    { fvFun :: T.Text
+    , fvHistory :: [T.Text]
     }
     deriving (Generic, Show)
 
 instance Viewable (F v x) FView where
     view F{fun, funHistory} =
         FView
-            { fvFun = S.replace "\"" "" $ show fun
-            , fvHistory = map (S.replace "\"" "" . show) funHistory
+            { fvFun = T.pack $ show fun
+            , fvHistory = map (T.pack . show) funHistory
             }
 
 instance ToJSON FView

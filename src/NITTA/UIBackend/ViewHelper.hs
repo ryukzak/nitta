@@ -154,7 +154,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
             }
 
 data NodeView tag v x t = NodeView
-    { sid :: String
+    { sid :: T.Text
     , isLeaf :: Bool
     , duration :: Int
     , parameters :: Value
@@ -166,7 +166,7 @@ data NodeView tag v x t = NodeView
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
     view tree@Tree{sID, sDecision, sState = SynthesisState{sTarget}} =
         NodeView
-            { sid = show sID
+            { sid = T.pack $ show sID
             , isLeaf = isComplete tree
             , duration = fromEnum $ processDuration sTarget
             , decision =
@@ -195,7 +195,7 @@ instance ToSample (NodeView tag v x t) where
     toSamples _ =
         samples
             [ NodeView
-                { sid = show $ SID [0, 1, 3, 1]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1]
                 , isLeaf = False
                 , duration = 0
                 , parameters =
@@ -215,7 +215,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1032
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
                 , duration = 0
                 , parameters =
@@ -234,7 +234,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 6]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1, 6]
                 , isLeaf = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
@@ -242,7 +242,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 5000
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
@@ -254,7 +254,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
@@ -266,7 +266,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
+                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
                 , duration = 0
                 , parameters =
@@ -285,11 +285,11 @@ instance ToSample (NodeView tag v x t) where
                 }
             ]
 
-newtype StepInfoView = StepInfoView String
+newtype StepInfoView = StepInfoView T.Text
     deriving (Generic)
 
 instance (Var v, Time t) => Viewable (StepInfo v x t) StepInfoView where
-    view = StepInfoView . show
+    view = StepInfoView . T.pack . show
 
 instance ToJSON StepInfoView
 
@@ -300,8 +300,8 @@ instance (Var v, Time t) => Viewable (Process t (StepInfo v x t)) (Process t Ste
 
 data TestbenchReportView v x = TestbenchReportView
     { tbStatus :: Bool
-    , tbPath :: String
-    , tbFiles :: [String]
+    , tbPath :: FilePath
+    , tbFiles :: [FilePath]
     , tbFunctions :: [T.Text]
     , tbSynthesisSteps :: [T.Text]
     , tbCompilerDump :: T.Text
