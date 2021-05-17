@@ -78,7 +78,7 @@ instance ToSample (TreeView ShortNodeView) where
             TreeNodeView
                 { rootLabel =
                     ShortNodeView
-                        { sid = show $ SID []
+                        { sid = showText $ SID []
                         , isTerminal = False
                         , isProcessed = True
                         , duration = 0
@@ -89,7 +89,7 @@ instance ToSample (TreeView ShortNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [0]
+                                { sid = showText $ SID [0]
                                 , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
@@ -101,7 +101,7 @@ instance ToSample (TreeView ShortNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [1]
+                                { sid = showText $ SID [1]
                                 , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
@@ -118,12 +118,12 @@ instance ToSample Integer where
         singleSample 0
 
 data ShortNodeView = ShortNodeView
-    { sid :: String
+    { sid :: T.Text
     , isTerminal :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
-    , decsionType :: String
+    , decsionType :: T.Text
     }
     deriving (Generic, Show)
 
@@ -151,7 +151,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
         TreeNodeView
             { rootLabel =
                 ShortNodeView
-                    { sid = show sid
+                    { sid = showText sid
                     , isTerminal = isLeaf tree
                     , isProcessed = isJust subForestM
                     , duration = (fromEnum . processDuration . sTarget . sState) tree
