@@ -80,7 +80,7 @@ instance ToSample (TreeView ShortNodeView) where
             TreeNodeView
                 { rootLabel =
                     ShortNodeView
-                        { sid = show $ SID []
+                        { sid = T.pack $ show $ SID []
                         , isLeaf = False
                         , isProcessed = True
                         , duration = 0
@@ -91,7 +91,7 @@ instance ToSample (TreeView ShortNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [0]
+                                { sid = T.pack $ show $ SID [0]
                                 , isLeaf = False
                                 , isProcessed = False
                                 , duration = 0
@@ -103,7 +103,7 @@ instance ToSample (TreeView ShortNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [1]
+                                { sid = T.pack $ show $ SID [1]
                                 , isLeaf = False
                                 , isProcessed = False
                                 , duration = 0
@@ -116,12 +116,12 @@ instance ToSample (TreeView ShortNodeView) where
                 }
 
 data ShortNodeView = ShortNodeView
-    { sid :: String
+    { sid :: T.Text
     , isLeaf :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
-    , decsionType :: String
+    , decsionType :: T.Text
     }
     deriving (Generic)
 
@@ -134,7 +134,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
         TreeNodeView
             { rootLabel =
                 ShortNodeView
-                    { sid = show sid
+                    { sid = T.pack $ show sid
                     , isLeaf = isComplete tree
                     , isProcessed = isJust subForestM
                     , duration = fromEnum $ processDuration sTarget
