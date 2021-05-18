@@ -21,6 +21,7 @@ module NITTA.Project (
     runTestbench,
 ) where
 
+import Control.Exception
 import Control.Monad.Identity (runIdentity)
 import Data.Default
 import qualified Data.HashMap.Strict as HM
@@ -68,8 +69,12 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
     let files = verilogProjectFiles prj
     wd <- getCurrentDirectory
 
-    (compileExitCode, compileOut, compileErr) <-
-        readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+    (compileExitCode, compileOut, compileErr) <- do
+        res <- try' $ readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+        case res of
+            Left _ -> error "iverilog is not available on your system\n try to install it:\n\t MacOS: $ brew install icarus-verilog \n\t Ubuntu: $ sudo apt-get install iverilog\n"
+            Right val -> return val
+
     let isCompileOk = compileExitCode == ExitSuccess && T.null compileErr
 
     (simExitCode, simOut, simErr) <-
@@ -103,6 +108,8 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) $ T.unpack simOut
             }
     where
+        try' :: IO a -> IO (Either IOException a)
+        try' = try
         createIVerilogProcess workdir files = (proc "iverilog" files){cwd = Just workdir}
         dump "" "" = ""
         dump out err = "stdout:\n" <> out <> "stderr:\n" <> err
