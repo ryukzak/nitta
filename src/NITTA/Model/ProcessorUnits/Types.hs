@@ -226,8 +226,8 @@ instance ToJSON Relation
 
 -- TODO: is it harmful?
 instance Eq Relation where
-    (Vertical vUp vDown) == (Vertical vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown && vDown == vUp2
-    (Horizontal vUp vDown) == (Horizontal vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown && vDown == vUp2
+    (Vertical vUp vDown) == (Vertical vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown2 && vDown == vUp2
+    (Horizontal vUp vDown) == (Horizontal vUp2 vDown2) = vUp == vUp2 && vDown == vDown2 || vUp == vDown2 && vDown == vUp2
     _ == _ = False
 
 whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps
