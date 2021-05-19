@@ -188,12 +188,22 @@ synthesizeTargetSystem
             synthesise root = do
                 infoM "NITTA" "synthesis process..."
                 node <- tSynthesisMethod root
-                let isSuccess = isComplete node && isLeaf node
-                noticeM "NITTA" $ "synthesis process..." <> if isSuccess then "ok" else "fail"
-                return $
-                    if isSuccess
-                        then Right node
-                        else Left "synthesis process...fail"
+                case (isComplete node, isLeaf node) of
+                    (True, True) -> do
+                        noticeM "NITTA" "synthesis process...ok"
+                        return $ Right node
+                    (False, True) -> do
+                        let msg = "synthesis process...fail; is not complete"
+                        noticeM "NITTA" msg
+                        return $ Left msg
+                    (True, False) -> do
+                        let msg = "synthesis process...fail; is not leaf"
+                        noticeM "NITTA" msg
+                        return $ Left msg
+                    (False, False) -> do
+                        let msg = "synthesis process...fail; is not complete; is not leaf"
+                        noticeM "NITTA" msg
+                        return $ Left msg
 
             writeProject' leaf = do
                 pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath tTemplates

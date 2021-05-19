@@ -47,9 +47,6 @@ instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (
 
 processDuration TargetSystem{mUnit} = nextTick $ process mUnit
 
-{- |Synthesis process is finish when all variable from data flow are
-transferred.
--}
 isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
