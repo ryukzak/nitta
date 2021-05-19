@@ -45,6 +45,7 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
@@ -68,6 +69,10 @@ type SynthesisAPI tag v x t =
         :> "synthesisTree"
         :> Get '[JSON] (TreeView ShortNodeView)
     )
+        :<|> ( Description "Get synthesis tree info"
+                :> "treeInfo"
+                :> Get '[JSON] TreeInfo
+             )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
                         :<|> NodeInspectionAPI tag v x t
@@ -79,6 +84,7 @@ type SynthesisAPI tag v x t =
 
 synthesisServer ctx@BackendCtx{root} =
     liftIO (viewNodeTree root)
+        :<|> liftIO (getTreeInfo root)
         :<|> \sid ->
             synthesisTreeNavigation ctx sid
                 :<|> nodeInspection ctx sid
