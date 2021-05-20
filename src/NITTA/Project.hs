@@ -3,6 +3,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Project
@@ -28,6 +30,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String.Interpolate (__i)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
@@ -70,9 +73,17 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
     wd <- getCurrentDirectory
 
     (compileExitCode, compileOut, compileErr) <- do
-        res <- try' $ readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+        res <- try $ readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
         case res of
-            Left _ -> error "iverilog is not available on your system\n try to install it:\n\t MacOS: $ brew install icarus-verilog \n\t Ubuntu: $ sudo apt-get install iverilog\n"
+            Left (_ :: IOException) ->
+                error
+                    ( [__i|iverilog is not available on your system
+                           try to install it:
+                                MacOS: $ brew install icarus-verilog
+                                Ubuntu: $ sudo apt-get install iverilog 
+                        |] ::
+                        String
+                    )
             Right val -> return val
 
     let isCompileOk = compileExitCode == ExitSuccess && T.null compileErr
@@ -108,8 +119,6 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) $ T.unpack simOut
             }
     where
-        try' :: IO a -> IO (Either IOException a)
-        try' = try
         createIVerilogProcess workdir files = (proc "iverilog" files){cwd = Just workdir}
         dump "" "" = ""
         dump out err = "stdout:\n" <> out <> "stderr:\n" <> err
