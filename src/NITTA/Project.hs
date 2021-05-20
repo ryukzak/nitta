@@ -3,6 +3,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Project
@@ -21,12 +23,14 @@ module NITTA.Project (
     runTestbench,
 ) where
 
+import Control.Exception
 import Control.Monad.Identity (runIdentity)
 import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String.Interpolate (__i)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
@@ -68,8 +72,20 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
     let files = verilogProjectFiles prj
     wd <- getCurrentDirectory
 
-    (compileExitCode, compileOut, compileErr) <-
-        readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+    (compileExitCode, compileOut, compileErr) <- do
+        res <- try $ readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) ""
+        case res of
+            Left (_ :: IOException) ->
+                error
+                    ( [__i|iverilog is not available on your system
+                           try to install it:
+                                MacOS: $ brew install icarus-verilog
+                                Ubuntu: $ sudo apt-get install iverilog 
+                        |] ::
+                        String
+                    )
+            Right val -> return val
+
     let isCompileOk = compileExitCode == ExitSuccess && T.null compileErr
 
     (simExitCode, simOut, simErr) <-
