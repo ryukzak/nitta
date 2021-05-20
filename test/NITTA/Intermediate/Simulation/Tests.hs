@@ -17,8 +17,8 @@ module NITTA.Intermediate.Simulation.Tests (
 
 import Data.CallStack
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import Data.List (permutations)
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
@@ -95,7 +95,7 @@ simulationTestCase name received alg (v, expect) =
         let dfg = fsToDataFlowGraph alg
             Cntx{cntxProcess} = simulateDataFlowGraph 5 def received dfg
             cycles = take (length expect) cntxProcess
-            actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
+            actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (HM.lookup v c)) cycles
          in expect @=? actual
 
 simulationTraceTestCase ::

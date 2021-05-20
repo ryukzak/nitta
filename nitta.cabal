@@ -1,10 +1,8 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: daf568e46eb043aadf18971ddd259b4aaf21d79deac6e8b8a2d5b591ae7ff396
 
 name:           nitta
 version:        0.0.0.1
@@ -189,6 +187,7 @@ executable nitta
     , string-interpolate
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010
 
 executable nitta-api-gen
@@ -222,6 +221,7 @@ executable nitta-api-gen
     , string-interpolate
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite nitta-test
@@ -290,4 +290,5 @@ test-suite nitta-test
     , tasty-th
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010

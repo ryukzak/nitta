@@ -43,8 +43,6 @@ module NITTA.UIBackend.ViewHelper (
 import Control.Concurrent.STM
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
-import Data.Hashable
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -311,10 +309,10 @@ data TestbenchReportView v x = TestbenchReportView
     }
     deriving (Generic)
 
-instance (Eq v, Hashable v) => Viewable (TestbenchReport v x) (TestbenchReportView v x) where
+instance Viewable (TestbenchReport v x) (TestbenchReportView v x) where
     view TestbenchReport{tbLogicalSimulationCntx, ..} =
         TestbenchReportView
-            { tbLogicalSimulationCntx = map (HM.fromList . M.assocs . cycleCntx) $ cntxProcess tbLogicalSimulationCntx
+            { tbLogicalSimulationCntx = map cycleCntx $ cntxProcess tbLogicalSimulationCntx
             , ..
             }
 

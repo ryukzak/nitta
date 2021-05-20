@@ -270,11 +270,11 @@ class FunctionSimulation f v x | f -> v x where
     -- |Receive a computational context and return changes (list of varible names and its new values).
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
-newtype CycleCntx v x = CycleCntx {cycleCntx :: M.Map v x}
+newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
     deriving (Show, Generic)
 
 instance Default (CycleCntx v x) where
-    def = CycleCntx def
+    def = CycleCntx HM.empty
 
 data Cntx v x = Cntx
     { -- |all variables on each process cycle
@@ -297,21 +297,21 @@ showCntx f Cntx{cntxProcess, cntxCycleNumber} =
         }
     where
         foo vx =
-            M.fromList
+            HM.fromList
                 [ (v', x')
-                | (v, x) <- M.assocs vx
+                | (v, x) <- HM.toList vx
                 , let vx' = f v x
                 , isJust vx'
                 , let Just (v', x') = vx'
                 ]
 
 cntx2list Cntx{cntxProcess, cntxCycleNumber} =
-    let header = sort $ M.keys $ cycleCntx $ head cntxProcess
+    let header = sort $ HM.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
      in map (uncurry (:)) $ zip header (transpose body)
     where
-        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
+        sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
 
 cntx2table cntx =
     render $
@@ -385,14 +385,14 @@ cntxReceivedBySlice' received
          in slice : cntxReceivedBySlice' received'
     | otherwise = repeat M.empty
 
-getCntx (CycleCntx cntx) v = case cntx M.!? v of
+getCntx (CycleCntx cntx) v = case HM.lookup v cntx of
     Just x -> x
     Nothing -> error $ "variable not defined: " <> show v
 
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | M.member v cntx = Left $ "variable value already defined: " <> show v
-    | otherwise = updateCntx (CycleCntx $ M.insert v x cntx) vxs
+    | HM.member v cntx = Left $ "variable value already defined: " <> show v
+    | otherwise = updateCntx (CycleCntx $ HM.insert v x cntx) vxs
 
 -----------------------------------------------------------
 
