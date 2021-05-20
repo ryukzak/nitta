@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
@@ -20,6 +21,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import Data.List (permutations)
 import Data.Maybe
+import Data.String.Interpolate
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Simulation
@@ -39,6 +41,7 @@ simulationTests =
             mapM_ (([l1, l2, a] @=?) . f) $ permutations [l1, l2, a]
         , simulationTestCase
             "fibonacci sequence"
+            7
             def
             [ loop 0 "b2" ["a1"]
             , loop 1 "c" ["b1", "b2"]
@@ -47,6 +50,7 @@ simulationTests =
             ("a1", [0, 1, 1, 2, 3, 5, 8])
         , simulationTestCase
             "send and receive"
+            5
             [ ("a", [1, 2, 3, 4, 5])
             ]
             [ receive ["a"]
@@ -57,41 +61,46 @@ simulationTests =
             ("c", [11, 12, 13, 14, 15])
         ]
 
--- FIXME:
--- showTests =
---     testGroup
---         "show simulation result"
---         [ simulationTraceTestCase
---             "simple show"
---             [ loop 0 "b2" ["a1"]
---             , loop 1 "c" ["b1", "b2"]
---             , add "a1" "b1" ["c"]
---             ]
---             [__i|
---                 \n| Cycle  | a1  | b1  | b2  | c  |\n|:-------|:----|:----|:----|:---|\n| 1      | 0   | 1   | 1   | 1  |\n| 2      | 1   | 1   | 1   | 2  |\n| 3      | 1   | 2   | 2   | 3  |\n| 4      | 2   | 3   | 3   | 5  |\n| 5      | 3   | 5   | 5   | 8  |\n"
---                 |]
---         ]
+showTests =
+    testGroup
+        "show simulation result"
+        [ simulationTraceTestCase
+            "simple show"
+            [ loop 0 "b2" ["a1"]
+            , loop 1 "c" ["b1", "b2"]
+            , add "a1" "b1" ["c"]
+            ]
+            [__i|
+                \n| Cycle  | a1  | b1  | b2  | c  |
+                |:-------|:----|:----|:----|:---|
+                | 1      | 0   | 1   | 1   | 1  |
+                | 2      | 1   | 1   | 1   | 2  |
+                | 3      | 1   | 2   | 2   | 3  |
+                | 4      | 2   | 3   | 3   | 5  |
+                | 5      | 3   | 5   | 5   | 8  |\n
+                |]
+        ]
 
 tests =
     testGroup
         "intermediate simulation"
         [ simulationTests
-        -- , showTests
+        , showTests
         ]
 
 simulationTestCase ::
     HasCallStack =>
     String ->
+    Int ->
     [(String, [Int])] ->
     [F String Int] ->
     (String, [Int]) ->
     TestTree
-simulationTestCase name received alg (v, expect) =
+simulationTestCase name n received alg (v, expect) =
     testCase name $
         let dfg = fsToDataFlowGraph alg
-            Cntx{cntxProcess} = simulateDataFlowGraph 5 def received dfg
-            cycles = take (length expect) cntxProcess
-            actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (HM.lookup v c)) cycles
+            Cntx{cntxProcess} = simulateDataFlowGraph n def received dfg
+            actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (HM.lookup v c)) cntxProcess
          in expect @=? actual
 
 simulationTraceTestCase ::

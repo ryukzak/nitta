@@ -52,7 +52,7 @@ simulateAlg cycleN cycle0 transmission alg
           fromPrevCycle = cycleConnections alg =
         Cntx
             { cntxReceived = M.fromList transmission
-            , cntxProcess = simulateAlg' fromPrevCycle cycle0 transmission alg
+            , cntxProcess = take cycleN $ simulateAlg' fromPrevCycle cycle0 transmission alg
             , cntxCycleNumber = cycleN
             }
 
