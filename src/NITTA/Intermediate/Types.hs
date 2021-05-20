@@ -310,7 +310,6 @@ cntx2table cntx =
 {- |
  >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
  >>> putStr $ log2md records
- <BLANKLINE>
  | Cycle  | x1   | x2   |
  |:-------|:-----|:-----|
  | 1      | 1.2  | 3.4  |
@@ -321,11 +320,10 @@ log2md records =
         cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
         cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
-     in "\n"
-            ++ render
-                ( hsep 0 left $
-                    map (vcat left . map text) cycleFormattedTable
-                )
+     in render
+            ( hsep 0 left $
+                map (vcat left . map text) cycleFormattedTable
+            )
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS

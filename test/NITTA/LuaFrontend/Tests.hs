@@ -249,14 +249,14 @@ test_trace_features =
             counter(0)
         |]
         [__i|
-                \n| Cycle  | i      |
-                |:-------|:-------|
-                | 1      | 0.000  |
-                | 2      | 1.000  |
-                | 3      | 2.000  |
-                | 4      | 3.000  |
-                | 5      | 4.000  |\n
-                |]
+            | Cycle  | i      |
+            |:-------|:-------|
+            | 1      | 0.000  |
+            | 2      | 1.000  |
+            | 3      | 2.000  |
+            | 4      | 3.000  |
+            | 5      | 4.000  |\n
+            |]
     , traceLuaSimulationTestCase
         pInt
         "specific fmt"
@@ -268,7 +268,7 @@ test_trace_features =
             counter(0)
          |]
         [__i|
-            \n| Cycle  | i  |
+            | Cycle  | i  |
             |:-------|:---|
             | 1      | 0  |
             | 2      | 1  |
@@ -288,7 +288,7 @@ test_trace_features =
             counter(0)
         |]
         [__i|
-            \n| Cycle  | i  | tmp  |
+            | Cycle  | i  | tmp  |
             |:-------|:---|:-----|
             | 1      | 0  | 1    |
             | 2      | 1  | 2    |
@@ -310,7 +310,7 @@ test_trace_features =
             counter(0, 2)
         |]
         [__i|
-            \n| Cycle  | i       | two  |
+            | Cycle  | i       | two  |
             |:-------|:--------|:-----|
             | 1      | 0.000   | 2.0  |
             | 2      | 3.000   | 2.0  |
@@ -347,7 +347,7 @@ test_trace_features =
             counter(0)
         |]
         [__i|
-            \n| Cycle  | i  |
+            | Cycle  | i  |
             |:-------|:---|
             | 1      | 1  |
             | 2      | 2  |
