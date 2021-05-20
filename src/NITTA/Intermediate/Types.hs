@@ -40,7 +40,6 @@ module NITTA.Intermediate.Types (
     FunctionSimulation (..),
     CycleCntx (..),
     Cntx (..),
-    showCntx,
     cntx2table,
     cntx2md,
     cntx2json,
@@ -284,26 +283,8 @@ data Cntx v x = Cntx
     , cntxCycleNumber :: Int
     }
 
-instance (Show v, Val x) => Show (Cntx v x) where
-    show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
-        where
-            show' = S.replace "\"" "" . show
-
-showCntx f Cntx{cntxProcess, cntxCycleNumber} =
-    Cntx
-        { cntxProcess = map (CycleCntx . foo . cycleCntx) cntxProcess
-        , cntxReceived = def
-        , cntxCycleNumber = cntxCycleNumber
-        }
-    where
-        foo vx =
-            HM.fromList
-                [ (v', x')
-                | (v, x) <- HM.toList vx
-                , let vx' = f v x
-                , isJust vx'
-                , let Just (v', x') = vx'
-                ]
+instance (Show x) => Show (Cntx String x) where
+    show Cntx{cntxProcess} = cntx2md def{cntxProcess = map (CycleCntx . HM.map show . cycleCntx) cntxProcess}
 
 cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ HM.keys $ cycleCntx $ head cntxProcess
@@ -319,7 +300,7 @@ cntx2table cntx =
             map (vcat left . map text) $ cntx2list cntx
 
 {- |
- >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> let cntx = Cntx (map (CycleCntx . HM.fromList) [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]) M.empty 2
  >>> putStr $ cntx2md cntx
  <BLANKLINE>
  | Cycle  | x1   | x2   |
@@ -339,7 +320,7 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> let cntx = Cntx [CycleCntx(HM.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(HM.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
  >>> BS.putStr $ cntx2json cntx
  [
      {
@@ -358,7 +339,7 @@ cntx2json cntx =
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
+ >>> let cntx = Cntx [CycleCntx(HM.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(HM.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
  >>> BS.putStr $ cntx2csv cntx
  x1,x2
  1.2,3.4

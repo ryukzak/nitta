@@ -8,7 +8,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -37,7 +36,6 @@ module NITTA.UIBackend.ViewHelper (
     ShortNodeView,
     NodeView,
     StepInfoView (..),
-    TestbenchReportView (..),
 ) where
 
 import Control.Concurrent.STM
@@ -54,7 +52,7 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (TestbenchReport (..))
+import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
@@ -296,32 +294,12 @@ instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t St
 
 -- Testbench
 
-data TestbenchReportView v x = TestbenchReportView
-    { tbStatus :: Bool
-    , tbPath :: String
-    , tbFiles :: [String]
-    , tbFunctions :: [T.Text]
-    , tbSynthesisSteps :: [T.Text]
-    , tbCompilerDump :: T.Text
-    , tbSimulationDump :: T.Text
-    , tbFunctionalSimulationCntx :: [HM.HashMap v x]
-    , tbLogicalSimulationCntx :: [HM.HashMap v x]
-    }
-    deriving (Generic)
+instance (ToJSONKey v, ToJSON v, ToJSON x) => ToJSON (TestbenchReport v x)
 
-instance Viewable (TestbenchReport v x) (TestbenchReportView v x) where
-    view TestbenchReport{tbLogicalSimulationCntx, ..} =
-        TestbenchReportView
-            { tbLogicalSimulationCntx = map cycleCntx $ cntxProcess tbLogicalSimulationCntx
-            , ..
-            }
-
-instance (ToJSONKey v, ToJSON x) => ToJSON (TestbenchReportView v x)
-
-instance ToSample (TestbenchReportView String Int) where
+instance ToSample (TestbenchReport String Int) where
     toSamples _ =
         singleSample
-            TestbenchReportView
+            TestbenchReport
                 { tbStatus = True
                 , tbCompilerDump = "stdout:\n" <> "stderr:\n"
                 , tbSimulationDump =
@@ -391,14 +369,14 @@ instance ToSample (TestbenchReportView String Int) where
                     , "Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}"
                     , "Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
                     ]
-                , tbFunctionalSimulationCntx =
+                , tbFunctionalSimulationLog =
                     replicate 2 $
                         HM.fromList
                             [ ("tmp_0#0", 0)
                             , ("u#0", 0)
                             , ("x#0", 0)
                             ]
-                , tbLogicalSimulationCntx =
+                , tbLogicalSimulationLog =
                     replicate 2 $
                         HM.fromList
                             [ ("tmp_0#0", 0)

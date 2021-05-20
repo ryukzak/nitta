@@ -22,7 +22,6 @@ module NITTA.Project (
 ) where
 
 import Control.Monad.Identity (runIdentity)
-import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe
@@ -98,8 +97,8 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
             , tbSynthesisSteps = map (T.pack . show) $ steps $ process pUnit
             , tbCompilerDump
             , tbSimulationDump
-            , tbFunctionalSimulationCntx = map cycleCntx $ take cntxCycleNumber cntxProcess
-            , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) $ T.unpack simOut
+            , tbFunctionalSimulationLog = map cycleCntx $ take cntxCycleNumber cntxProcess
+            , tbLogicalSimulationLog = log2hms $ extractLogValues (defX pUnit) $ T.unpack simOut
             }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){cwd = Just workdir}
@@ -112,18 +111,13 @@ extractLogValues x0 text = mapMaybe f $ lines text
             Just [c, _t, x, _e, v] -> Just (read c, v, read x)
             _ -> Nothing
 
-log2cntx lst0 =
-    Cntx
-        { cntxProcess
-        , cntxReceived = def
-        , cntxCycleNumber = length cntxProcess
-        }
+log2hms lst0 = cntxProcess
     where
         cntxProcess = inner (0 :: Int) lst0
         inner n lst
             | (xs, ys) <- L.partition (\(c, _v, _x) -> c == n) lst
               , not $ null xs =
-                let cycleCntx = CycleCntx $ HM.fromList $ map (\(_c, v, x) -> (v, x)) xs
+                let cycleCntx = HM.fromList $ map (\(_c, v, x) -> (v, x)) xs
                  in cycleCntx : inner (n + 1) ys
             | otherwise = []
 

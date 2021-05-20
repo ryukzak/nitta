@@ -52,9 +52,10 @@ traceLuaSimulationTestCase ::
     TestTree
 traceLuaSimulationTestCase _ name src expect =
     testCase name $
-        let FrontendResult{frDataFlow, frPrettyCntx} :: FrontendResult x = lua2functions src
+        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult x = lua2functions src
             cntx = simulateDataFlowGraph 5 def def frDataFlow
-            actual = cntx2table $ frPrettyCntx cntx
+            cntx' = def{cntxProcess = map CycleCntx $ frPrettyLog $ map cycleCntx $ cntxProcess cntx}
+            actual = cntx2table cntx'
          in expect @=? actual
 
 luaTestCase :: HasCallStack => String -> T.Text -> TestTree

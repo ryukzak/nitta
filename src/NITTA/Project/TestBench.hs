@@ -31,6 +31,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.String.Interpolate
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
@@ -75,12 +76,12 @@ data TestbenchReport v x = TestbenchReport
     , tbSynthesisSteps :: [T.Text]
     , tbCompilerDump :: T.Text
     , tbSimulationDump :: T.Text
-    , tbFunctionalSimulationCntx :: [HM.HashMap v x]
-    , tbLogicalSimulationCntx :: Cntx v x
+    , tbFunctionalSimulationLog :: [HM.HashMap v x]
+    , tbLogicalSimulationLog :: [HM.HashMap v x]
     }
     deriving (Generic)
 
-instance Show (TestbenchReport v x) where
+instance (ToString v, Show x) => Show (TestbenchReport v x) where
     show
         TestbenchReport
             { tbPath

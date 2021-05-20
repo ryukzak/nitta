@@ -102,7 +102,7 @@ main = do
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let FrontendResult{frDataFlow, frTrace, frPrettyCntx} = lua2functions src
+            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = lua2functions src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
@@ -137,8 +137,7 @@ main = do
                     >>= \case
                         Left msg -> error msg
                         Right p -> return p
-
-            when lsim $ logicalSimulation format frPrettyCntx prj
+            when lsim $ logicalSimulation format frPrettyLog prj
         )
         $ parseFX type_
 
@@ -161,16 +160,18 @@ readSourceCode filename = do
 
 -- |Simulation on intermediate level (data-flow graph)
 functionalSimulation n received src format = do
-    let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
+    let FrontendResult{frDataFlow, frPrettyLog} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
+        cntx' = def{cntxProcess = map CycleCntx $ frPrettyLog $ map cycleCntx $ cntxProcess cntx}
     infoM "NITTA" "run functional simulation..."
-    putCntx format $ frPrettyCntx cntx
+    putCntx format cntx'
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
-logicalSimulation format frPrettyCntx prj = do
-    TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-    putCntx format $ frPrettyCntx tbLogicalSimulationCntx
+logicalSimulation format prettyLog prj = do
+    TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
+    let cntx = def{cntxProcess = map CycleCntx $ prettyLog tbLogicalSimulationLog}
+    putCntx format cntx
 
 putCntx "md" cntx = putStr $ cntx2md cntx
 putCntx "json" cntx = BS.putStrLn $ cntx2json cntx
