@@ -40,7 +40,6 @@ module NITTA.Intermediate.Types (
     FunctionSimulation (..),
     CycleCntx (..),
     Cntx (..),
-    cntx2table,
     log2md,
     log2json,
     log2csv,
@@ -286,14 +285,6 @@ data Cntx v x = Cntx
 instance (Show x) => Show (Cntx String x) where
     show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
-cntx2list Cntx{cntxProcess, cntxCycleNumber} =
-    let header = sort $ HM.keys $ cycleCntx $ head cntxProcess
-        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-        row cntx = map snd $ zip header $ sortedValues cntx
-     in map (uncurry (:)) $ zip header (transpose body)
-    where
-        sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
-
 log2list cntxProcess =
     let header = sort $ HM.keys $ head cntxProcess
         body = map row cntxProcess
@@ -301,11 +292,6 @@ log2list cntxProcess =
      in map (uncurry (:)) $ zip header (transpose body)
     where
         sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
-
-cntx2table cntx =
-    render $
-        hsep 1 left $
-            map (vcat left . map text) $ cntx2list cntx
 
 {- |
  >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
