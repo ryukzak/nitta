@@ -162,21 +162,19 @@ readSourceCode filename = do
 functionalSimulation n received src format = do
     let FrontendResult{frDataFlow, frPrettyLog} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
-        cntx' = def{cntxProcess = map CycleCntx $ frPrettyLog $ map cycleCntx $ cntxProcess cntx}
     infoM "NITTA" "run functional simulation..."
-    putCntx format cntx'
+    putLog format $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
 logicalSimulation format prettyLog prj = do
     TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
-    let cntx = def{cntxProcess = map CycleCntx $ prettyLog tbLogicalSimulationLog}
-    putCntx format cntx
+    putLog format $ prettyLog tbLogicalSimulationLog
 
-putCntx "md" cntx = putStr $ cntx2md cntx
-putCntx "json" cntx = BS.putStrLn $ cntx2json cntx
-putCntx "csv" cntx = BS.putStr $ cntx2csv cntx
-putCntx t _ = error $ "not supported output format option: " <> t
+putLog "md" records = putStr $ log2md records
+putLog "json" records = BS.putStrLn $ log2json records
+putLog "csv" records = BS.putStr $ log2csv records
+putLog t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO

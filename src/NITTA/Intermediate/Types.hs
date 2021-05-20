@@ -41,9 +41,9 @@ module NITTA.Intermediate.Types (
     CycleCntx (..),
     Cntx (..),
     cntx2table,
-    cntx2md,
-    cntx2json,
-    cntx2csv,
+    log2md,
+    log2json,
+    log2csv,
     cntxReceivedBySlice,
     getCntx,
     updateCntx,
@@ -284,11 +284,19 @@ data Cntx v x = Cntx
     }
 
 instance (Show x) => Show (Cntx String x) where
-    show Cntx{cntxProcess} = cntx2md def{cntxProcess = map (CycleCntx . HM.map show . cycleCntx) cntxProcess}
+    show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
 cntx2list Cntx{cntxProcess, cntxCycleNumber} =
     let header = sort $ HM.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+        row cntx = map snd $ zip header $ sortedValues cntx
+     in map (uncurry (:)) $ zip header (transpose body)
+    where
+        sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
+
+log2list cntxProcess =
+    let header = sort $ HM.keys $ head cntxProcess
+        body = map row cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
      in map (uncurry (:)) $ zip header (transpose body)
     where
@@ -300,18 +308,19 @@ cntx2table cntx =
             map (vcat left . map text) $ cntx2list cntx
 
 {- |
- >>> let cntx = Cntx (map (CycleCntx . HM.fromList) [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]) M.empty 2
- >>> putStr $ cntx2md cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> putStr $ log2md records
  <BLANKLINE>
  | Cycle  | x1   | x2   |
  |:-------|:-----|:-----|
  | 1      | 1.2  | 3.4  |
  | 2      | 3.4  | 2.3  |
 -}
-cntx2md cntx@Cntx{cntxCycleNumber} =
-    let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
+log2md records =
+    let n = length records
+        cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
      in "\n"
             ++ render
                 ( hsep 0 left $
@@ -320,8 +329,8 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(HM.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(HM.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2json cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2json records
  [
      {
          "x2": 3.4,
@@ -333,19 +342,19 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
      }
 ]
 -}
-cntx2json cntx =
-    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
+log2json records =
+    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ log2list records
      in encodePretty $ map HM.fromList listHashMap
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(HM.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(HM.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2csv cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2csv records
  x1,x2
  1.2,3.4
  3.4,2.3
 -}
-cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
+log2csv records = Csv.encode $ transpose $ log2list records
 
 instance Default (Cntx v x) where
     def =
