@@ -37,35 +37,16 @@ instance ProcessConsistent (BusNetwork pu v x t) where
 checkIntegrity pu =
     let handleLefts l = case partitionEithers l of
             ([], _) -> True
-            -- (a, _) -> Debug.Trace.traceShow (concat a) False
-            (a, _) -> False
-     in handleLefts
+            (a, _) -> Debug.Trace.traceShow (concat a) False
+     in -- (a, _) -> False
+        handleLefts
             -- TODO: why so much calls(prints) in tests?
-            [ checkEndpointToIntermidiateRelation' (getEpMap pu) (getInterMap pu) pu
+            [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
             , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
             , checkCadToFunctionRelation (getCadFunctions pu) (getCadSteps pu) pu
             ]
 
--- at the moment check LoopBegin/End
-checkCadToFunctionRelation cadFs cadSt pu =
-    let consistent = S.isSubsetOf makeCadVertical rels
-        rels = S.fromList $ filter isVertical $ relations $ process pu
-        showLoop f = "bind " <> show f
-        makeCadVertical =
-            S.fromList $
-                concatMap
-                    ( \(h, f) ->
-                        concatMap
-                            ( \v -> [uncurry Vertical (fst $ cadSt M.! v, h)]
-                            )
-                            $ showLoop f
-                    )
-                    $ M.toList cadFs
-     in if consistent
-            then Right True
-            else Left $ "CAD functions not consistent. excess:" <> show (S.difference makeCadVertical rels) <> " act: " <> show (process pu)
-
-checkEndpointToIntermidiateRelation' eps ifs pu =
+checkEndpointToIntermidiateRelation eps ifs pu =
     let genRels = makeRelationList eps ifs
         rels = S.fromList $ filter isVertical $ relations $ process pu
         checkIfsEmpty = M.size eps > 0 && M.size ifs == 0
@@ -107,16 +88,6 @@ checkTransportToIntermidiateRelation pu ifs rels eps =
             then Right True
             else Left "Endpoint and Transport to Intermideate (function) not consistent"
 
--- M.Map  ProcessStepID (a, (ProcessStepID, Instruction (BusNetwork String a x1 t1)))
-getTransportMap pu =
-    let getTransport :: (Typeable a, Typeable v, Typeable x, Typeable t) => pu v x t -> a -> Maybe (Instruction (BusNetwork String v x t))
-        getTransport _ = cast
-        filterTransport pu' pid (InstructionStep ins)
-            | Just instr@(Transport v _ _) <- getTransport pu' ins = Just (v, (pid, instr))
-            | otherwise = Nothing
-        filterTransport _ _ _ = Nothing
-     in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
-
 makeRelationList eps ifs =
     map S.fromList $
         concatMap
@@ -148,6 +119,34 @@ checkInstructionToEndpointRelation ins eps pr =
             if consistent
                 then Right True
                 else Left "Instruction to Endpoint not consistent"
+
+-- at the moment check LoopBegin/End
+checkCadToFunctionRelation cadFs cadSt pu =
+    let consistent = S.isSubsetOf makeCadVertical rels
+        rels = S.fromList $ filter isVertical $ relations $ process pu
+        showLoop f = "bind " <> show f
+        makeCadVertical =
+            S.fromList $
+                concatMap
+                    ( \(h, f) ->
+                        concatMap
+                            ( \v -> [uncurry Vertical (cadSt M.! v, h)]
+                            )
+                            [showLoop f]
+                    )
+                    $ M.toList cadFs
+     in if consistent
+            then Right True
+            else
+                Left $
+                    "CAD functions not consistent. excess:"
+                        <> show (S.difference makeCadVertical rels)
+                        <> " act: "
+                        <> show (process pu)
+                        <> " \nfs: "
+                        <> show cadFs
+                        <> " \nst: "
+                        <> show cadSt
 
 getInterMap pu =
     M.fromList
@@ -181,6 +180,16 @@ getInstrMap pu =
             _ -> []
         ]
 
+-- M.Map  ProcessStepID (a, (ProcessStepID, Instruction (BusNetwork String a x1 t1)))
+getTransportMap pu =
+    let getTransport :: (Typeable a, Typeable v, Typeable x, Typeable t) => pu v x t -> a -> Maybe (Instruction (BusNetwork String v x t))
+        getTransport _ = cast
+        filterTransport pu' pid (InstructionStep ins)
+            | Just instr@(Transport v _ _) <- getTransport pu' ins = Just (v, (pid, instr))
+            | otherwise = Nothing
+        filterTransport _ _ _ = Nothing
+     in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
+
 -- (pid, f)
 getCadFunctions pu =
     let filterCad (_, f)
@@ -190,14 +199,11 @@ getCadFunctions pu =
             | otherwise = False
      in M.fromList $ filter filterCad $ M.toList $ getInterMap pu
 
--- TODO: add Maybe?
--- (Loop (pid, f)) , where Loop is show instance
 getCadSteps pu =
-    M.fromList $
-        concat
-            [ concatMap (\l -> [(l, (pID, step))]) pDesc'
-            | step@Step{pID} <- steps $ process pu
-            , pDesc' <- case getCAD step of
-                Just msg -> [msg]
-                _ -> []
-            ]
+    M.fromList
+        [ (pDesc', pID)
+        | step@Step{pID} <- steps $ process pu
+        , pDesc' <- case getCAD step of
+            Just msg -> [msg]
+            _ -> []
+        ]
