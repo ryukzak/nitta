@@ -179,7 +179,7 @@ putLog "csv" records = BS.putStr $ log2csv records
 putLog t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
-    -- addCustom "fram1" (framWithSize 16) FramIO
+    addCustom "fram1" (framWithSize 16) FramIO
     addCustom "fram2" (framWithSize 32) FramIO
     add "shift" ShiftIO
     add "mul" MultiplierIO
