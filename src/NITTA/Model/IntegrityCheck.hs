@@ -36,10 +36,10 @@ instance ProcessConsistent (BusNetwork pu v x t) where
 
 checkIntegrity pu =
     let handleLefts l = case partitionEithers l of
-            ([], _) -> True
-            (a, _) -> Debug.Trace.traceShow (concat a) False
-     in -- (a, _) -> False
-        handleLefts
+            ([], _) -> Debug.Trace.traceShow "Success" True
+            -- (a, _) -> Debug.Trace.traceShow ("Err msg: " <> concat a) False
+            (a, _) -> False
+     in handleLefts
             -- TODO: why so much calls(prints) in tests?
             [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
             , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
@@ -47,14 +47,35 @@ checkIntegrity pu =
             ]
 
 checkEndpointToIntermidiateRelation eps ifs pu =
-    let genRels = makeRelationList eps ifs
-        rels = S.fromList $ filter isVertical $ relations $ process pu
+    let rels = S.fromList $ filter isVertical $ relations $ process pu
         checkIfsEmpty = M.size eps > 0 && M.size ifs == 0
         checkEpsEmpty = M.size ifs > 0 && M.size eps == 0
+        makeRelationList =
+            map S.fromList $
+                concatMap
+                    ( \(h, f) ->
+                        sequence $
+                            concatMap
+                                ( \v -> [[Vertical h $ fst p | p <- eps M.! v]]
+                                )
+                                $ variables f
+                    )
+                    $ M.toList ifs
+        print =
+            Debug.Trace.traceShow
+                ( "\neps: "
+                    -- <> show eps
+                    <> "\nifs: "
+                    --- <> show ifs
+                    <> "\nproc: "
+                    <> show (process pu)
+                )
+                True
      in do
             when checkIfsEmpty $ Left "functions are empty"
             when checkEpsEmpty $ Left "eps are empty"
-            if any (`S.isSubsetOf` rels) genRels
+
+            if any (`S.isSubsetOf` rels) makeRelationList -- && print
                 then Right True
                 else checkTransportToIntermidiateRelation pu ifs rels eps
 
@@ -87,18 +108,6 @@ checkTransportToIntermidiateRelation pu ifs rels eps =
      in if any (`S.isSubsetOf` rels) makeRelationList
             then Right True
             else Left "Endpoint and Transport to Intermideate (function) not consistent"
-
-makeRelationList eps ifs =
-    map S.fromList $
-        concatMap
-            ( \(h, f) ->
-                sequence $
-                    concatMap
-                        ( \v -> [[Vertical h $ fst p | p <- eps M.! v]]
-                        )
-                        $ variables f
-            )
-            $ M.toList ifs
 
 checkInstructionToEndpointRelation ins eps pr =
     let checkInsEmpty = M.size eps > 0 && M.size ins == 0
