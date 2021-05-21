@@ -302,7 +302,7 @@ instance
     (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null optionsList then groupBinding optionsList : concat optionsList else []
+    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null optionsList then groupBinding optionsList ++ concat optionsList else []
         where
             optionsFor f =
                 [ Bind f puTitle
@@ -310,9 +310,16 @@ instance
                 , allowToProcess f pu
                 ]
             optionsList = map optionsFor bnRemains
+            compose [] buff = buff
+            compose (x:xs) [] = compose xs newbuff
+                where
+                    newbuff = [ [nvalue] | nvalue <- x ]
+            compose (x:xs) buff = compose xs newbuff
+                where
+                    newbuff = [ values ++ [nvalue] | values <- buff, nvalue <- x ]
             groupBinding options
-                | not $ null $ filter (\x -> length x > 1) options = GroupBinding AllBinds $ concat options
-                | otherwise = GroupBinding NonAlternativeBinds $ concat options
+                | not $ null $ filter (\x -> length x > 1) options = map (GroupBinding AllBinds) $ compose options []
+                | otherwise = [GroupBinding NonAlternativeBinds $ concat options]
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
         bn
@@ -322,6 +329,16 @@ instance
             , bnRemains = filter (/= f) bnRemains
             }
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding NonAlternativeBinds binds) =
+        n
+            { -- { bnPus = bnPus'
+              -- , bnBinded = bnBinded'
+              bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
+            , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
+            , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
+            }
+
+    bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding AllBinds binds) =
         n
             { -- { bnPus = bnPus'
               -- , bnBinded = bnBinded'
