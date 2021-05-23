@@ -119,8 +119,9 @@ isLeaf
                 , sResolveDeadlockOptions = []
                 , sOptimizeAccumOptions = []
                 , sConstantFoldingOptions = []
+                , sTarget
                 }
-        } = True
+        } = checkIntegrity $ mUnit sTarget
 isLeaf _ = False
 
 isComplete = isSynthesisComplete . sTarget . sState

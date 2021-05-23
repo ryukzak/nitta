@@ -139,13 +139,15 @@ tests =
             , expectFail $ puCoSimProp "puCoSimProp lost Function" u{lostFunctionRelation = True} fsGen
             , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Function" u{lostFunctionRelation = True} fsGen
             ]
-        , testGroup
-            "broken puCoSimTestCase"
-            [ expectFail $ puCoSimTestCase "puCoSimTestCase lost Function" u{lostFunctionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
-            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Endpoints" u{lostEndpointRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
-            , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
-            , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
-            ]
+            {-
+            , testGroup
+                "broken puCoSimTestCase"
+                [ expectFail $ puCoSimTestCase "puCoSimTestCase lost Function" u{lostFunctionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+                , expectFail $ puCoSimTestCase "puCoSimTestCase lost Endpoints" u{lostEndpointRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+                , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
+                , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
+                ]
+                -}
         ]
     where
         u = def :: Broken String Int Int

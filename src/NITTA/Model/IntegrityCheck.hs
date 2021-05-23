@@ -48,16 +48,12 @@ instance (ProcessorUnit u v x t, Typeable u, Ord u, ToString u, IsString u) => P
                 then Left $ concat $ lefts consistent
                 else Right ()
 
-handleLefts l = case partitionEithers l of
-    ([], _) -> True
-    -- ([], _) -> Debug.Trace.traceShow "Success" True
-    -- (a, _) -> Debug.Trace.traceShow ("Err msg: " <> concat a) False
-    (a, _) -> False
+handleLefts pu l =
+    not (any isLeft l) || error (concat (lefts l) <> show (process pu))
 
-checkIntegrity pu = handleLefts $ checkIntegrity' pu
+checkIntegrity pu = handleLefts pu $ checkIntegrity' pu
 
 checkIntegrity' pu =
-    -- TODO: why so much calls(prints) in tests?
     [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
     , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
     , checkCadToFunctionRelation (getCadFunctions pu) (getCadSteps pu) pu
