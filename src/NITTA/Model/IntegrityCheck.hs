@@ -21,22 +21,32 @@ import Data.Either
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String (IsString)
+import Data.String.ToString (ToString)
 import qualified Debug.Trace
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
 import NITTA.Model.ProcessorUnits
+import NITTA.Model.TargetSystem
 import NITTA.Utils
 
 class ProcessConsistent u where
-    checkProcessСonsistent :: u -> Either String ()
+    -- checkProcessСonsistent :: u -> Either String ()
+    checkProcessСonsistent :: u -> Bool
 
-instance ProcessConsistent (BusNetwork pu v x t) where
-    checkProcessСonsistent pu = Left "qc"
+instance {-# OVERLAPS #-} (ProcessorUnit u v x t) => ProcessConsistent (TargetSystem u tag v x t) where
+    -- checkProcessСonsistent pu = Left "ssss"
+    checkProcessСonsistent pu = False
+
+instance (ProcessorUnit u v x t, Typeable u, Ord u, ToString u, IsString u) => ProcessConsistent (BusNetwork u v x t) where
+    -- checkProcessСonsistent pu = Left "qc"
+    checkProcessСonsistent pu = checkIntegrity pu
 
 checkIntegrity pu =
     let handleLefts l = case partitionEithers l of
-            ([], _) -> Debug.Trace.traceShow "Success" True
+            ([], _) -> True
+            -- ([], _) -> Debug.Trace.traceShow "Success" True
             -- (a, _) -> Debug.Trace.traceShow ("Err msg: " <> concat a) False
             (a, _) -> False
      in handleLefts
@@ -50,61 +60,43 @@ checkEndpointToIntermidiateRelation eps ifs pu =
     let rels = S.fromList $ filter isVertical $ relations $ process pu
         checkIfsEmpty = M.size eps > 0 && M.size ifs == 0
         checkEpsEmpty = M.size ifs > 0 && M.size eps == 0
+        lookup' v = fromMaybe (showError "Endpoint to Intermidiate" "enpoint" v) $ eps M.!? v
         makeRelationList =
             map S.fromList $
                 concatMap
                     ( \(h, f) ->
                         sequence $
                             concatMap
-                                ( \v -> [[Vertical h $ fst p | p <- eps M.! v]]
+                                ( \v -> [[Vertical h $ fst p | p <- lookup' v]]
                                 )
                                 $ variables f
                     )
                     $ M.toList ifs
-        print =
-            Debug.Trace.traceShow
-                ( "\neps: "
-                    -- <> show eps
-                    <> "\nifs: "
-                    --- <> show ifs
-                    <> "\nproc: "
-                    <> show (process pu)
-                )
-                True
      in do
             when checkIfsEmpty $ Left "functions are empty"
             when checkEpsEmpty $ Left "eps are empty"
 
             if any (`S.isSubsetOf` rels) makeRelationList -- && print
                 then Right True
-                else checkTransportToIntermidiateRelation pu ifs rels eps
+                else checkTransportToIntermidiateRelation pu ifs rels
 
 -- Lazy variant which don't take into account relation between @PU
 -- TODO: add map with endpoints (as Source) to be sure that function is connected to endpoint after all
-checkTransportToIntermidiateRelation pu ifs rels eps =
+checkTransportToIntermidiateRelation pu ifs rels =
     -- TODO we don't know did we found relation for all variables in function
-    let transM = getTransportMap pu
+    let transMap = getTransportMap pu
         -- TODO: add smarter error handling
-        lookup v = fromMaybe (showErr v) $ transM M.!? v
+        lookup' v = fromMaybe (showError "Transport to Intermidiate" "transport" v) $ transMap M.!? v
         makeRelationList =
             map S.fromList $
                 concatMap
                     ( \(h, f) ->
                         concatMap
-                            ( \v -> [[Vertical h $ fst $ lookup v]]
+                            ( \v -> [[Vertical h $ fst $ lookup' v]]
                             )
                             $ variables f
                     )
                     $ M.toList ifs
-        showErr v =
-            error $
-                show " variable is not present: " <> show v <> " \n" <> show (process pu)
-                    <> "\nifs: "
-                    <> show ifs
-                    <> "\neps: "
-                    <> show (length eps)
-                    <> "\nrels: "
-                    <> show rels
      in if any (`S.isSubsetOf` rels) makeRelationList
             then Right True
             else Left "Endpoint and Transport to Intermideate (function) not consistent"
@@ -117,7 +109,7 @@ checkInstructionToEndpointRelation ins eps pr =
         consistent =
             and $
                 concatMap
-                    ( \(r1, r2) -> case eps' M.!? r1 of -- TODO could be two sided relation
+                    ( \(r1, r2) -> case eps' M.!? r1 of
                         Just _ | Just (InstructionStep _) <- ins M.!? r2 -> [True]
                         _ -> []
                     )
@@ -130,32 +122,24 @@ checkInstructionToEndpointRelation ins eps pr =
                 else Left "Instruction to Endpoint not consistent"
 
 -- at the moment check LoopBegin/End
-checkCadToFunctionRelation cadFs cadSt pu =
+checkCadToFunctionRelation cadFs cadSteps pu =
     let consistent = S.isSubsetOf makeCadVertical rels
         rels = S.fromList $ filter isVertical $ relations $ process pu
         showLoop f = "bind " <> show f
+        lookup' v = fromMaybe (showError "CAD" "steps" v) $ cadSteps M.!? v
         makeCadVertical =
             S.fromList $
                 concatMap
                     ( \(h, f) ->
                         concatMap
-                            ( \v -> [uncurry Vertical (cadSt M.! v, h)]
+                            ( \v -> [uncurry Vertical (lookup' v, h)]
                             )
                             [showLoop f]
                     )
                     $ M.toList cadFs
      in if consistent
             then Right True
-            else
-                Left $
-                    "CAD functions not consistent. excess:"
-                        <> show (S.difference makeCadVertical rels)
-                        <> " act: "
-                        <> show (process pu)
-                        <> " \nfs: "
-                        <> show cadFs
-                        <> " \nst: "
-                        <> show cadSt
+            else Left $ "CAD functions not consistent. Excess:" <> show (S.difference makeCadVertical rels)
 
 getInterMap pu =
     M.fromList
@@ -216,3 +200,12 @@ getCadSteps pu =
             Just msg -> [msg]
             _ -> []
         ]
+
+showError name mapName v =
+    error $
+        name
+            <> " relations contain error: "
+            <> show v
+            <> " is not present in "
+            <> mapName
+            <> " map."
