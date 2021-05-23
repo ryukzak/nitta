@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.IntegrityCheck
@@ -28,33 +29,39 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.TargetSystem
 import NITTA.Utils
 
 class ProcessConsistent u where
-    -- checkProcessСonsistent :: u -> Either String ()
-    checkProcessСonsistent :: u -> Bool
+    checkProcessСonsistent :: u -> Either String ()
 
-instance {-# OVERLAPS #-} (ProcessorUnit u v x t) => ProcessConsistent (TargetSystem u tag v x t) where
-    -- checkProcessСonsistent pu = Left "ssss"
-    checkProcessСonsistent pu = False
+instance (Typeable t, Typeable x, ProcessorUnit (pu v x t) v x2 t2) => ProcessConsistent (pu v x t) where
+    checkProcessСonsistent pu =
+        let consistent = checkIntegrity' pu
+         in if any isLeft consistent
+                then Left $ concat $ lefts consistent
+                else Right ()
 
 instance (ProcessorUnit u v x t, Typeable u, Ord u, ToString u, IsString u) => ProcessConsistent (BusNetwork u v x t) where
-    -- checkProcessСonsistent pu = Left "qc"
-    checkProcessСonsistent pu = checkIntegrity pu
+    checkProcessСonsistent pu =
+        let consistent = checkIntegrity' pu
+         in if any isLeft consistent
+                then Left $ concat $ lefts consistent
+                else Right ()
 
-checkIntegrity pu =
-    let handleLefts l = case partitionEithers l of
-            ([], _) -> True
-            -- ([], _) -> Debug.Trace.traceShow "Success" True
-            -- (a, _) -> Debug.Trace.traceShow ("Err msg: " <> concat a) False
-            (a, _) -> False
-     in handleLefts
-            -- TODO: why so much calls(prints) in tests?
-            [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
-            , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
-            , checkCadToFunctionRelation (getCadFunctions pu) (getCadSteps pu) pu
-            ]
+handleLefts l = case partitionEithers l of
+    ([], _) -> True
+    -- ([], _) -> Debug.Trace.traceShow "Success" True
+    -- (a, _) -> Debug.Trace.traceShow ("Err msg: " <> concat a) False
+    (a, _) -> False
+
+checkIntegrity pu = handleLefts $ checkIntegrity' pu
+
+checkIntegrity' pu =
+    -- TODO: why so much calls(prints) in tests?
+    [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
+    , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
+    , checkCadToFunctionRelation (getCadFunctions pu) (getCadSteps pu) pu
+    ]
 
 checkEndpointToIntermidiateRelation eps ifs pu =
     let rels = S.fromList $ filter isVertical $ relations $ process pu
@@ -75,17 +82,14 @@ checkEndpointToIntermidiateRelation eps ifs pu =
      in do
             when checkIfsEmpty $ Left "functions are empty"
             when checkEpsEmpty $ Left "eps are empty"
-
-            if any (`S.isSubsetOf` rels) makeRelationList -- && print
+            if any (`S.isSubsetOf` rels) makeRelationList
                 then Right True
                 else checkTransportToIntermidiateRelation pu ifs rels
 
--- Lazy variant which don't take into account relation between @PU
 -- TODO: add map with endpoints (as Source) to be sure that function is connected to endpoint after all
+--       it means: Endpoint (Source) -> Transport -> Function
 checkTransportToIntermidiateRelation pu ifs rels =
-    -- TODO we don't know did we found relation for all variables in function
     let transMap = getTransportMap pu
-        -- TODO: add smarter error handling
         lookup' v = fromMaybe (showError "Transport to Intermidiate" "transport" v) $ transMap M.!? v
         makeRelationList =
             map S.fromList $
@@ -121,7 +125,7 @@ checkInstructionToEndpointRelation ins eps pr =
                 then Right True
                 else Left "Instruction to Endpoint not consistent"
 
--- at the moment check LoopBegin/End
+-- now it checks LoopBegin/End
 checkCadToFunctionRelation cadFs cadSteps pu =
     let consistent = S.isSubsetOf makeCadVertical rels
         rels = S.fromList $ filter isVertical $ relations $ process pu
@@ -162,7 +166,6 @@ getEpMap pu =
                 _ -> []
             ]
 
--- Contains instructions
 getInstrMap pu =
     M.fromList
         [ (pID, instr)
@@ -173,7 +176,6 @@ getInstrMap pu =
             _ -> []
         ]
 
--- M.Map  ProcessStepID (a, (ProcessStepID, Instruction (BusNetwork String a x1 t1)))
 getTransportMap pu =
     let getTransport :: (Typeable a, Typeable v, Typeable x, Typeable t) => pu v x t -> a -> Maybe (Instruction (BusNetwork String v x t))
         getTransport _ = cast
@@ -183,7 +185,6 @@ getTransportMap pu =
         filterTransport _ _ _ = Nothing
      in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
 
--- (pid, f)
 getCadFunctions pu =
     let filterCad (_, f)
             | Just Loop{} <- castF f = True
