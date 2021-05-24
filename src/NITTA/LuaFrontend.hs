@@ -182,6 +182,7 @@ function2nitta Function{fName = "add", fIn = [a, b], fOut = [c], fValues = [], f
 function2nitta Function{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub <$> input a <*> input b <*> output c
 function2nitta Function{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division <$> input d <*> input n <*> output q <*> output r
+function2nitta Function{fName = "negative", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.negative <$> input i <*> output o
 function2nitta Function{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive <$> output o
 function2nitta Function{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s <$> input a <*> output c
 function2nitta Function{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s <$> input a <*> output c
@@ -346,10 +347,10 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
 rightExp diff out (PrefixExp (Paren e)) = rightExp diff out e
 rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [n]))))
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
-rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
-    -- FIXME: add negative function
-    let binop = Binop Sub (Number IntNum "0") expr
-     in rightExp diff [a] binop
+rightExp diff fOut (Unop Neg expr@(PrefixExp _)) = do
+    expr' <- expArg diff expr
+    let f = Function{fName = "negative", fIn = [expr'], fOut, fValues = [], fInt = []}
+    patchAndAddFunction f diff
 rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 expArg _diff n@(Number _ n') = expConstant (n' <> "@const") n
