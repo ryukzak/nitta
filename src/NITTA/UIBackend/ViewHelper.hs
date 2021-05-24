@@ -80,6 +80,7 @@ instance ToSample (TreeView ShortNodeView) where
                     ShortNodeView
                         { sid = show $ SID []
                         , isTerminal = False
+                        , isFinish = False
                         , isProcessed = True
                         , duration = 0
                         , score = 0 / 0
@@ -91,6 +92,7 @@ instance ToSample (TreeView ShortNodeView) where
                             ShortNodeView
                                 { sid = show $ SID [0]
                                 , isTerminal = False
+                                , isFinish = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 4052
@@ -103,6 +105,7 @@ instance ToSample (TreeView ShortNodeView) where
                             ShortNodeView
                                 { sid = show $ SID [1]
                                 , isTerminal = False
+                                , isFinish = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 3021
@@ -120,6 +123,7 @@ instance ToSample Integer where
 data ShortNodeView = ShortNodeView
     { sid :: String
     , isTerminal :: Bool
+    , isFinish :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
@@ -153,6 +157,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
                 ShortNodeView
                     { sid = show sid
                     , isTerminal = isLeaf tree
+                    , isFinish = isComplete tree
                     , isProcessed = isJust subForestM
                     , duration = (fromEnum . processDuration . sTarget . sState) tree
                     , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
