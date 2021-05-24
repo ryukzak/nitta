@@ -320,8 +320,6 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
             (qx, rx) = dx `quotRem` nx
          in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
 
-
-
 data Negative v x = Negative (I v) (O v) deriving (Typeable, Eq)
 instance Label (Negative v x) where label Negative{} = "-"
 instance (Show v) => Show (Negative v x) where
@@ -342,7 +340,7 @@ instance (Var v) => Locks (Negative v x) v where
 instance (Var v, Num x) => FunctionSimulation (Negative v x) v x where
     simulate cntx (Negative (I i) (O o)) =
         let x1 = cntx `getCntx` i
-            y = -x1
+            y = - x1
          in [(v, y) | v <- elems o]
 
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)
