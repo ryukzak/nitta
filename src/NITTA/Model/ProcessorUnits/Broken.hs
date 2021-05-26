@@ -42,6 +42,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
+import qualified Numeric.Interval.NonEmpty as I
 
 data Broken v x t = Broken
     { remain :: [F v x]
@@ -119,7 +120,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
 
     endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush} d@EndpointSt{epRole = Target v', epAt}
         | v == v' =
-            let workAt = shiftI (if wrongControlOnPush then 1 else 0) epAt
+            let workAt = epAt + I.singleton (if wrongControlOnPush then 1 else 0)
                 (newEndpoints, process_') = runSchedule pu $ do
                     scheduleEndpoint d $ scheduleInstructionUnsafe workAt Load
              in pu

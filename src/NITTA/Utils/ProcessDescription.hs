@@ -132,7 +132,7 @@ scheduleFunctionBind f = do
 
 scheduleFunctionRevoke f = do
     schedule <- get
-    scheduleStep (singleton $ nextTick schedule) $ CADStep $ "revoke " ++ show f
+    scheduleStep (singleton $ nextTick schedule) $ CADStep $ "revoke " <> show f
 
 -- |Add to the process description information about function evaluation.
 scheduleFunction ti f = scheduleStep ti $ FStep f
@@ -152,10 +152,10 @@ scheduleEndpoint_ ep codeGen = void $ scheduleEndpoint ep codeGen
 {- |Add to the process description information about instruction evaluation.
 Unsafe means: without instruction collision check and nextTick consistency.
 -}
-scheduleInstructionUnsafe ti instr = do
+scheduleInstructionUnsafe at instr = do
     Schedule{iProxy} <- get
-    buf <- scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
-    updateTick $ sup ti + 1
+    buf <- scheduleStep at $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    updateTick $ sup at + 1
     return buf
     where
         updateTick tick = do

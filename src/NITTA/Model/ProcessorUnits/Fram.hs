@@ -280,9 +280,9 @@ instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     endpointOptions pu@Fram{remainBuffers, memory} =
-        let target v =
-                let a = nextTick pu `withShift` 1
-                 in EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
+        let target v = EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
+                where
+                    a = nextTick pu `withShift` 1
             source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick pu ... maxBound) (1 ... maxBound)
             source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick pu ... maxBound) (1 ... maxBound)
 

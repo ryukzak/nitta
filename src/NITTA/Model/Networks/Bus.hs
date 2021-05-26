@@ -137,7 +137,7 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                         b = sup tcAvailable
                      in at{tcAvailable = a ... b}
 
-    dataflowDecision n@BusNetwork{bnProcess, bnPus} DataflowSt{dfSource = (srcTitle, src), dfTargets}
+    dataflowDecision bn@BusNetwork{bnProcess, bnPus} DataflowSt{dfSource = (srcTitle, src), dfTargets}
         | nextTick bnProcess > inf (epAt src) =
             error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show src
         | otherwise =
@@ -147,9 +147,9 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
 
                 subDecisions =
                     (srcTitle, EndpointSt (Source $ unionsMap (variables . snd) dfTargets) (epAt src)) : dfTargets
-             in n
+             in bn
                     { bnPus = foldl applyDecision bnPus subDecisions
-                    , bnProcess = execScheduleWithProcess n bnProcess $ do
+                    , bnProcess = execScheduleWithProcess bn bnProcess $ do
                         mapM_
                             ( \(targetTitle, ep) ->
                                 scheduleInstructionUnsafe
@@ -273,11 +273,11 @@ instance
                 , allowToProcess f pu
                 ]
 
-    bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
-        n
+    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
+        bn
             { bnPus = M.adjust (bind f) tag bnPus
             , bnBinded = registerBinding tag f bnBinded
-            , bnProcess = execScheduleWithProcess n bnProcess $ scheduleFunctionBind f
+            , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
             , bnRemains = filter (/= f) bnRemains
             }
 
@@ -544,7 +544,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
     testBenchImplementation
         Project
             { pName
-            , pUnit = n@BusNetwork{bnPus, ioSync, bnName}
+            , pUnit = bn@BusNetwork{bnPus, ioSync, bnName}
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
@@ -554,7 +554,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 let tEnv =
                                         TestEnvironment
                                             { teCntx = pTestCntx
-                                            , teComputationDuration = fromEnum $ nextTick n
+                                            , teComputationDuration = fromEnum $ nextTick bn
                                             }
                                  in testEnvironment ((T.pack . toString) tag) unit uEnv tEnv
                             )
@@ -570,7 +570,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                         ( \(cycleI, cycleCntx) ->
                             map
                                 (\t -> (cycleI, t, cntxToTransfer cycleCntx t))
-                                [0 .. nextTick n]
+                                [0 .. nextTick bn]
                         )
                         $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
@@ -581,7 +581,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                 assertion (cycleI, t, Just (v, x)) =
                     [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
 
-                tbName = moduleName pName n <> "_tb"
+                tbName = moduleName pName bn <> "_tb"
              in Aggregate
                     Nothing
                     [ Immediate (toString $ tbName <> ".v") $
@@ -592,12 +592,12 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
 
                         /*
                         Functions:
-                        #{ indent 4 $ vsep $ map viaShow $ functions n }
+                        #{ indent 4 $ vsep $ map viaShow $ functions bn }
                         */
 
                         /*
                         Steps:
-                        #{ indent 4 $ vsep $ map viaShow $ reverse $ steps $ process n }
+                        #{ indent 4 $ vsep $ map viaShow $ reverse $ steps $ process bn }
                         */
 
                         // system signals
@@ -608,7 +608,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                         #{ snippetClkGen }
 
                         // vcd dump
-                        #{ snippetDumpFile $ moduleName pName n }
+                        #{ snippetDumpFile $ moduleName pName bn }
 
 
                         ////////////////////////////////////////////////////////////
@@ -627,7 +627,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                         ////////////////////////////////////////////////////////////
                         // unit under test
 
-                        #{ moduleName pName n } \#
+                        #{ moduleName pName bn } \#
                                 ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                                 , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                                 ) #{ toString bnName }
@@ -650,7 +650,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 @(posedge clk);
                                 while (!env_init_flag) @(posedge clk);
                                 #{ nest 8 assertions }
-                                repeat ( #{ 2 * nextTick n } ) @(posedge clk);
+                                repeat ( #{ 2 * nextTick bn } ) @(posedge clk);
                                 $finish;
                             end
 
@@ -707,7 +707,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                 defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
 
                 cntxToTransfer cycleCntx t =
-                    case extractInstructionAt n t of
+                    case extractInstructionAt bn t of
                         Transport v _ _ : _ -> Just (v, getCntx cycleCntx v)
                         _ -> Nothing
 

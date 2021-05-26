@@ -50,6 +50,7 @@ import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty ((...))
+import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
@@ -130,7 +131,7 @@ instance
         let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick pu + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (I.singleton 1)
             sendOpts = map (target . head . vars) sendQueue
          in receiveOpts ++ sendOpts
 
@@ -139,7 +140,7 @@ instance
             L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
           , let remainVars = allVars L.\\ S.elems vs
                 process_ = execSchedule sio $ do
-                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI 0 epAt) $ Receiving $ null remainVars
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars
                     when (null remainVars) $ void $ scheduleFunction epAt function
                 receiveQueue'' =
                     if null remainVars
