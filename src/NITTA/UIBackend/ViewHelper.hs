@@ -178,6 +178,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
 data NodeView tag v x t = NodeView
     { sid :: T.Text
     , isTerminal :: Bool
+    , isFinish :: Bool
     , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
@@ -190,6 +191,7 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
         NodeView
             { sid = showText sID
             , isTerminal = isLeaf tree
+            , isFinish = isComplete tree
             , duration = fromEnum $ processDuration $ sTarget $ sState tree
             , decision =
                 ( \case
@@ -219,6 +221,7 @@ instance ToSample (NodeView tag v x t) where
             [ NodeView
                 { sid = showText $ SID [0, 1, 3, 1]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -239,6 +242,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -258,6 +262,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = showText $ SID [0, 1, 3, 1, 6]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
@@ -266,6 +271,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
@@ -278,6 +284,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
@@ -290,6 +297,7 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
