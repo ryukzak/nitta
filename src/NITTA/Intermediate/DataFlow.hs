@@ -18,7 +18,7 @@ Stability   : experimental
 module NITTA.Intermediate.DataFlow (
     DataFlowGraph (..),
     fsToDataFlowGraph,
-    addFuncToDataFlowGraph
+    addFuncToDataFlowGraph,
 ) where
 
 import qualified Data.List as L
