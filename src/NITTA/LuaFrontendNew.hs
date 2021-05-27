@@ -46,6 +46,9 @@ parseLeftExp (VarName (Name v)) = v
 parseLeftExp _ = undefined
 
 --right part of lua statement
+parseRightExp fOut (Number _ valueString) = do
+  name <- getFreeVariableName fOut
+  addVariable fOut (F.constant (read (T.unpack valueString)) [name]) False
 parseRightExp fOut (Binop op a b) = do
   (a', _) <- parseExpArg a
   (b', _) <- parseExpArg b

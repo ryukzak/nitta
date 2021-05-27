@@ -17,7 +17,6 @@ where
 
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.Set.Internal
 import Data.String.Interpolate
 import qualified Data.Text as T
 import Language.Lua
@@ -45,37 +44,54 @@ case_find_startup_function =
 
 case_process_local_assignment_statement =
   let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
-      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueString = T.pack "2", luaValueType = IntNum, luaValueAssignCount = 1, luaValueAccessCount = 0})]
+      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
    in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_assignment_statement =
   let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
-      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueString = T.pack "2", luaValueType = IntNum, luaValueAssignCount = 1, luaValueAccessCount = 0})]
+      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
    in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_multiple_assignments_statement =
   let assignment = Assign [VarName (Name $ T.pack "a"), VarName (Name $ T.pack "b")] [Number IntNum $ T.pack "2", Number FloatNum $ T.pack "2.5"]
-      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueString = T.pack "2", luaValueType = IntNum, luaValueAssignCount = 1, luaValueAccessCount = 0}), (T.pack "b", Variable {luaValueName = T.pack "b", luaValueString = T.pack "2.5", luaValueType = FloatNum, luaValueAssignCount = 1, luaValueAccessCount = 0})]
+      result = Map.fromList [(T.pack "a", Variable {luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})
+         , (T.pack "b", Variable {luaValueName = T.pack "b", luaValueParsedFunction = (F.constant 2 ["b^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
    in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_add_statement =
   let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
-      result = DFCluster [DFLeaf (F {fun = F.Add (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})]
+      result = DFCluster [
+           DFLeaf (F {fun = F.constant 1 ["!1#0"], funHistory = []})
+         , DFLeaf (F {fun = F.constant 2 ["!2#0"], funHistory = []})
+         --, DFLeaf (F {fun = F.Add (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+         ]
    in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_sub_statement =
   let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Sub (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
-      result = DFCluster [DFLeaf (F {fun = F.Sub (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})]
+      result = DFCluster [
+           DFLeaf (F {fun = F.constant 1 ["!1#0"], funHistory = []})
+         , DFLeaf (F {fun = F.constant 2 ["!2#0"], funHistory = []})
+         --, DFLeaf (F {fun = F.Sub (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+         ]
    in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_divide_statement =
   let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Div (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
-      result = DFCluster [DFLeaf (F {fun = F.Division (I "!1#0") (I "!2#0") (O (fromList ["a"])) (O (fromList [""])), funHistory = []})]
+      result = DFCluster [
+           DFLeaf (F {fun = F.constant 1 ["!1#0"], funHistory = []})
+         , DFLeaf (F {fun = F.constant 2 ["!2#0"], funHistory = []})
+         --, DFLeaf (F {fun = F.Division (I "!1#0") (I "!2#0") (O (fromList ["a"])) (O (fromList [""])), funHistory = []})
+         ]
    in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_multiply_statement =
   let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Mul (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
-      result = DFCluster [DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})]
+      result = DFCluster [
+           DFLeaf (F {fun = F.constant 1 ["!1#0"], funHistory = []})
+         , DFLeaf (F {fun = F.constant 2 ["!2#0"], funHistory = []})
+         --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+         ]
    in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_debug = 
