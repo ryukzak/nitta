@@ -43,20 +43,20 @@ case_find_startup_function =
 
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
-        result = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
+        result = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
      in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
-        result = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
+        result = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})]
      in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_process_multiple_assignments_statement =
     let assignment = Assign [VarName (Name $ T.pack "a"), VarName (Name $ T.pack "b")] [Number IntNum $ T.pack "2", Number FloatNum $ T.pack "2.5"]
         result =
             Map.fromList
-                [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = (F.constant 2 ["a^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})
-                , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueParsedFunction = (F.constant 2 ["b^0#0"]), luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})
+                [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})
+                , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueParsedFunction = F.constant 2 ["b^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False})
                 ]
      in snd (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
@@ -101,7 +101,7 @@ case_process_multiply_statement =
      in fst (execState (processStatement (T.pack "_") assignment) (DFCluster [], Map.empty)) @?= result
 
 case_debug =
-    let result = parseLuaSources $ T.pack "function sum(x)\n    y = 2 + x\n    sum(y)\nend\nsum(0)"
+    let result = parseLuaSources $ T.pack "function sum(x)\n    y = 2 + x\n    sum(y + x)\nend\nsum(0)"
         expected = DFCluster []
      in expected @?= result
 
