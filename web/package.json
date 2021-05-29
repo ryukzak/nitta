@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "NITTA Web UI",
   "private": true,
+  "proxy": "http://localhost:8080",
   "dependencies": {
     "@types/react-table": "^6.8.5",
     "axios": "^0.21.0",
