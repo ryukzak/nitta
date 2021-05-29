@@ -32,7 +32,6 @@ import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Refactor

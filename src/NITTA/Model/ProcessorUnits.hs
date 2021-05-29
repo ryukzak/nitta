@@ -118,6 +118,7 @@ interface.
 -}
 module NITTA.Model.ProcessorUnits (
     module NITTA.Model.ProcessorUnits.Types,
+    module NITTA.Model.Time,
     module NITTA.Model.ProcessorUnits.Accum,
     module NITTA.Model.ProcessorUnits.Broken,
     module NITTA.Model.ProcessorUnits.Divider,
@@ -128,6 +129,7 @@ module NITTA.Model.ProcessorUnits (
 ) where
 
 import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.Time
 
 import NITTA.Model.ProcessorUnits.Accum
 import NITTA.Model.ProcessorUnits.Broken

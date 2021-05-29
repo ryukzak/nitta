@@ -37,11 +37,12 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
+import qualified Numeric.Interval.NonEmpty as I
 
 data Broken v x t = Broken
     { remain :: [F v x]
@@ -103,14 +104,14 @@ execution _ _ = error "Broken: internal execution error."
 
 instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
     endpointOptions Broken{targets = [_], lostEndpointTarget = True} = []
-    endpointOptions Broken{targets = [v], process_} =
-        let start = nextTick process_ + 1 ... maxBound
+    endpointOptions pu@Broken{targets = [v]} =
+        let start = nextTick pu `withShift` 1 ... maxBound
             dur = 1 ... maxBound
          in [EndpointSt (Target v) $ TimeConstraint start dur]
     endpointOptions Broken{doneAt = Just _, lostEndpointSource = True} = []
-    endpointOptions Broken{sources, doneAt = Just at, process_}
+    endpointOptions pu@Broken{sources, doneAt = Just at}
         | not $ null sources =
-            let start = max at (nextTick process_) ... maxBound
+            let start = max at (nextTick pu + 1) ... maxBound
                 dur = 1 ... maxBound
              in [EndpointSt (Source $ fromList sources) $ TimeConstraint start dur]
     endpointOptions pu@Broken{remain, lostEndpointTarget = True}
@@ -118,16 +119,16 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
     endpointOptions pu@Broken{remain} = concatMap (endpointOptions . execution pu) remain
 
     endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush} d@EndpointSt{epRole = Target v', epAt}
-        | v == v'
-          , let (newEndpoints, process_') = runSchedule pu $ do
-                    updateTick (sup epAt)
-                    scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load =
-            pu
-                { process_ = process_'
-                , targets = []
-                , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
-                , doneAt = Just $ sup epAt + 3
-                }
+        | v == v' =
+            let workAt = epAt + I.singleton (if wrongControlOnPush then 1 else 0)
+                (newEndpoints, process_') = runSchedule pu $ do
+                    scheduleEndpoint d $ scheduleInstructionUnsafe workAt Load
+             in pu
+                    { process_ = process_'
+                    , targets = []
+                    , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
+                    , doneAt = Just $ sup epAt + 3
+                    }
     endpointDecision
         pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull}
         d@EndpointSt{epRole = Source v, epAt}
@@ -135,12 +136,11 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
               , let sources' = sources \\ elems v
               , sources' /= sources
               , let (newEndpoints, process_') = runSchedule pu $ do
-                        endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
+                        endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
                             establishVerticalRelations high low
-                        updateTick (sup epAt + 1)
                         return endpoints =
                 pu
                     { process_ = process_'

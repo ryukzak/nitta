@@ -494,5 +494,5 @@ instance (KnownNat m, KnownNat b) => FixedPointCompatible (FX m b) where
 instance (KnownNat m, KnownNat b) => Real (FX m b) where
     toRational x@FX{rawFX} = rawFX % 2 ^ scalingFactorPower x
 
-instance ToJSON (FX m b) where
-    toJSON (FX x) = toJSON $ show x
+instance (KnownNat m, KnownNat b) => ToJSON (FX m b) where
+    toJSON x@FX{} = toJSON (read $ show x :: Double)

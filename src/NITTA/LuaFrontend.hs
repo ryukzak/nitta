@@ -25,6 +25,7 @@ module NITTA.LuaFrontend (
 import Control.Monad.Identity
 import Control.Monad.State
 import Data.Bifunctor
+import qualified Data.HashMap.Strict as HM
 import Data.List (find, group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -35,14 +36,13 @@ import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import NITTA.Intermediate.Types hiding (patch)
 import NITTA.Utils (modify'_)
 import Text.Printf
 
 data FrontendResult x = FrontendResult
     { frDataFlow :: DataFlowGraph String x
     , frTrace :: [TraceVar]
-    , frPrettyCntx :: Cntx String x -> Cntx String String
+    , frPrettyLog :: [HM.HashMap String x] -> [HM.HashMap String String]
     }
 
 data TraceVar = TraceVar {tvFmt, tvVar :: Text}
@@ -56,16 +56,14 @@ type VarDict = M.Map Text ([String], [String])
 -- |List contains IO Function names to be printed by default.
 listFuncIO = ["send", "recieve"]
 
-prettyCntx traceVars cntx =
-    showCntx
-        ( \v0 x -> do
+prettyLog traceVars hms = map prettyHM hms
+    where
+        prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
+        prettyX (v0, x) = do
             -- variables names end on #0, #1..., so we trim this suffix
             let v = takeWhile (/= '#') v0
             fmt <- v2fmt M.!? v
             Just (v, printx fmt x)
-        )
-        cntx
-    where
         v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
         printx p x
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
@@ -101,7 +99,7 @@ lua2functions src =
      in FrontendResult
             { frDataFlow
             , frTrace
-            , frPrettyCntx = prettyCntx frTrace
+            , frPrettyLog = prettyLog frTrace
             }
     where
         varRow lst@(x : _) =

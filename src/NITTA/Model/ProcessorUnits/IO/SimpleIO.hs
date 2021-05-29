@@ -45,11 +45,12 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (sup, (...))
+import Numeric.Interval.NonEmpty ((...))
+import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
@@ -126,11 +127,11 @@ instance
     (VarValTime v x t, SimpleIOInterface i) =>
     EndpointProblem (SimpleIO i v x t) v t
     where
-    endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =
-        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick + 1 ... maxBound) (1 ... maxBound)
+    endpointOptions pu@SimpleIO{receiveQueue, sendQueue} =
+        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick pu + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (I.singleton 1)
             sendOpts = map (target . head . vars) sendQueue
          in receiveOpts ++ sendOpts
 
@@ -139,10 +140,8 @@ instance
             L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
           , let remainVars = allVars L.\\ S.elems vs
                 process_ = execSchedule sio $ do
-                    void $ scheduleEndpoint d $ scheduleInstruction (shiftI 0 epAt) $ Receiving $ null remainVars
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars
                     when (null remainVars) $ void $ scheduleFunction epAt function
-                    updateTick (sup epAt + 1)
-                    return ()
                 receiveQueue'' =
                     if null remainVars
                         then receiveQueue'
@@ -151,8 +150,7 @@ instance
     endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}
         | ([Q{function}], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
           , let (_, process_) = runSchedule sio $ do
-                    _ <- scheduleEndpoint d $ scheduleInstruction epAt Sending
-                    updateTick (sup epAt + 1)
+                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
                     scheduleFunction epAt function =
             sio
                 { sendQueue = sendQueue'

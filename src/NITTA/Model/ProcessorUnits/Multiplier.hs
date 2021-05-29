@@ -173,12 +173,12 @@ a * b = c = d
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
 Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps     =
+    steps =
 <BLANKLINE>
     relations =
 <BLANKLINE>
-    nextTick  = 0
-    nextUid   = 0
+    nextTick = 0
+    nextUid = 0
 , isMocked = True}
 >>> endpointOptions st0
 []
@@ -193,15 +193,15 @@ there should be enough to finish schedule, even it is inefficient.
 >>> let Right st1 = tryBind f st0
 >>> st1
 Multiplier {remain = [a * b = c = d], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps     =
+    steps =
 <BLANKLINE>
     relations =
 <BLANKLINE>
-    nextTick  = 0
-    nextUid   = 0
+    nextTick = 0
+    nextUid = 0
 , isMocked = True}
 >>> endpointOptions st1
-[?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
+[?Target "a"@(0..∞ /P 1..∞),?Target "b"@(0..∞ /P 1..∞)]
 
 As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: @a@ or
@@ -213,20 +213,20 @@ arbitrary time. Choose the variant.
 >>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
 >>> st2
 Multiplier {remain = [], targets = ["b"], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
-    steps     =
+    steps =
         0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
         1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
     relations =
         0) Vertical 0 1
-    nextTick  = 2
-    nextUid   = 2
+    nextTick = 3
+    nextUid = 2
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st2
 ?Target "b"@(3..∞ /P 1..∞)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> st3
 Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a * b = c = d, process_ = Process
-    steps     =
+    steps =
         0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
         1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
         2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
@@ -234,8 +234,8 @@ Multiplier {remain = [], targets = [], sources = ["c","d"], currentWork = Just a
     relations =
         0) Vertical 2 3
         1) Vertical 0 1
-    nextTick  = 3
-    nextUid   = 4
+    nextTick = 4
+    nextUid = 4
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st3
 ?Source "c","d"@(6..∞ /P 1..∞)
@@ -248,7 +248,7 @@ inside). Consider the second option:
 >>> let st4 = endpointDecision st3 $ EndpointSt (Source $ S.fromList ["c"]) (6...6)
 >>> st4
 Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b = c = d, process_ = Process
-    steps     =
+    steps =
         0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
         1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
         2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
@@ -259,15 +259,15 @@ Multiplier {remain = [], targets = [], sources = ["d"], currentWork = Just a * b
         0) Vertical 4 5
         1) Vertical 2 3
         2) Vertical 0 1
-    nextTick  = 6
-    nextUid   = 6
+    nextTick = 7
+    nextUid = 6
 , isMocked = True}
 >>> mapM_ print $ endpointOptions st4
 ?Source "d"@(7..∞ /P 1..∞)
 >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ S.fromList ["d"]) (7...7)
 >>> st5
 Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, process_ = Process
-    steps     =
+    steps =
         0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
         1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
         2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
@@ -286,8 +286,8 @@ Multiplier {remain = [], targets = [], sources = [], currentWork = Nothing, proc
         5) Vertical 4 5
         6) Vertical 2 3
         7) Vertical 0 1
-    nextTick  = 7
-    nextUid   = 9
+    nextTick = 8
+    nextUid = 9
 , isMocked = True}
 >>> endpointOptions st5
 []
@@ -314,7 +314,7 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
@@ -489,15 +489,15 @@ It includes three cases:
   same decision.
 -}
 instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
-    endpointOptions Multiplier{targets, process_}
+    endpointOptions pu@Multiplier{targets}
         | not $ null targets =
-            let at = nextTick process_ + 1 ... maxBound
+            let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
              in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
     endpointOptions Multiplier{sources, currentWork = Just f, process_}
         | not $ null sources =
             let doneAt = inputsPushedAt process_ f + 3
-                at = max doneAt (nextTick process_ + 1) ... maxBound
+                at = max doneAt (nextTick process_) ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
@@ -512,8 +512,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
             let (_, process_') = runSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
                     -- that takes information about time from Process
-                    updateTick (sup epAt)
-                    scheduleEndpoint d $ scheduleInstruction epAt $ Load sel =
+                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -526,7 +525,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
           , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
           , -- Compututation process planning is carring on.
             let (_, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
+                    endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f
                         let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
@@ -535,7 +534,6 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
                         establishVerticalRelations high low
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
-                    updateTick (sup epAt)
                     return endpoints =
             pu
                 { process_ = process_'

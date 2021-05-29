@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Types (
     ProcessorUnit (..),
     bind,
     allowToProcess,
+    NextTick (..),
 
     -- *Process description
     Process (..),
@@ -36,6 +37,7 @@ module NITTA.Model.ProcessorUnits.Types (
     descent,
     whatsHappen,
     extractInstructionAt,
+    withShift,
 
     -- *Control
     Controllable (..),
@@ -68,7 +70,7 @@ import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
-import NITTA.Model.Types
+import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
@@ -106,6 +108,12 @@ bind f pu = case tryBind f pu of
 
 allowToProcess f pu = isRight $ tryBind f pu
 
+class NextTick u t | u -> t where
+    nextTick :: u -> t
+
+instance (ProcessorUnit u v x t) => NextTick u t where
+    nextTick = nextTick . process
+
 ---------------------------------------------------------------------
 
 {- |Computational process description. It was designed in ISO 15926 style, with
@@ -116,8 +124,8 @@ data Process t i = Process
       steps :: [Step t i]
     , -- |List of relationships between process steps (see 'Relation').
       relations :: [Relation]
-    , -- |Next free tick.
-      nextTick :: t
+    , -- |Next tick for instruction. Note: instruction /= endpoint.
+      nextTick_ :: t
     , -- |Next process step ID
       nextUid :: ProcessStepID
     }
@@ -127,12 +135,12 @@ instance (Time t, Show i) => Show (Process t i) where
     show p =
         [__i|
             Process
-                steps     =
+                steps =
                     #{ nest 8 $ listShow $ reverse $ steps p }
                 relations =
                     #{ nest 8 $ listShow $ relations p }
-                nextTick  = #{ nextTick p }
-                nextUid   = #{ nextUid p }\n
+                nextTick = #{ nextTick p }
+                nextUid = #{ nextUid p }\n
         |]
         where
             listShow lst =
@@ -143,7 +151,10 @@ instance (Time t, Show i) => Show (Process t i) where
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
 instance (Default t) => Default (Process t i) where
-    def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
+    def = Process{steps = [], relations = [], nextTick_ = def, nextUid = def}
+
+instance {-# OVERLAPS #-} NextTick (Process t si) t where
+    nextTick = nextTick_
 
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
@@ -221,6 +232,29 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
         inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
+
+{- |Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
+processor unit has buffered output, so we should provide @oe@ signal for one
+tick before data actually send to the bus. That raises the following cases:
+
+1. First usage. We can receive value immediately on nextTick
+
+    @
+    tick | Endpoint     | Instruction |
+     0   | Target "c"   | WR          | <- nextTick
+    @
+
+2. Not first usage. We need to wait for one tick from the last instruction due to the offset between instruction and data transfers.
+
+    @
+    tick | Endpoint     | Instruction |
+      8  |              | OE          |
+      9  | Source ["b"] |             | <- nextTick
+     10  | Target "c"   | WR          |
+    @
+-}
+0 `withShift` _offset = 0
+tick `withShift` offset = tick + offset
 
 ---------------------------------------------------------------------
 

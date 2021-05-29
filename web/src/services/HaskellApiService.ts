@@ -22,7 +22,7 @@ import {
   ITarget,
   GraphStructure,
   GraphEdge,
-  TestbenchReportView,
+  TestbenchReport,
 } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
@@ -49,7 +49,7 @@ export type EndpointDecision = EndpointSt<string, Interval<number>>;
 export type Source = ISource<string>;
 export type Target = ITarget<string>;
 export type IntermediateGraph = GraphStructure<GraphEdge>;
-export type TestBenchReport = TestbenchReportView<string, number>;
+export type TestBenchReportData = TestbenchReport<string, number>;
 
 export type MicroarchitectureData = MicroarchitectureDesc<string>;
 export type NetworkData = NetworkDesc<string>;
@@ -85,7 +85,7 @@ export const api = {
   getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
   getEndpoints: (sid: SID): AxiosPromise<UnitEndpointsData[]> => jsAPI.getNodeBySidEndpoints(sid),
   getDebugInfo: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidDebug(sid),
-  runTestBench: (sid: SID, name: string, loopsNumber: number): AxiosPromise<TestBenchReport | null> =>
+  runTestBench: (sid: SID, name: string, loopsNumber: number): AxiosPromise<TestBenchReportData | null> =>
     jsAPI.postNodeBySidTestbench(sid, name, loopsNumber),
 
   // Synthesis methods
