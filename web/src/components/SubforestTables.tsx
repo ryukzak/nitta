@@ -1,4 +1,4 @@
-import React, { FC, useContext } from "react";
+import React, { FC, useContext, useMemo } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -12,13 +12,15 @@ import {
   parametersColumn,
   detailColumn,
   showDecision,
+  ScoresInfo,
 } from "components/SubforestTables/Columns";
 
 type SubforestTablesProps = {
   nodes: Node[];
 };
 
-export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
+export const SubforestTables: FC<SubforestTablesProps> = (props: { nodes: Node[] }) => {
+  const { nodes } = props;
   const appContext = useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
@@ -33,6 +35,14 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
     "ResolveDeadlockView",
   ];
 
+  const scoresInfo = useMemo<ScoresInfo>(() => {
+    const scores = nodes.map((n) => n.score);
+    return {
+      minScore: Math.min(...scores),
+      maxScore: Math.max(...scores),
+    };
+  }, [nodes]);
+
   return (
     <>
       <Table
@@ -40,7 +50,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
 
           textColumn("description", (e: Node) => showDecision(e.decision)),
 
@@ -69,7 +79,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
           detailColumn(),
@@ -80,7 +90,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source[0], 60),
           textColumn("description", (e: Node) => showDecision(e.decision)),
           textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime, 60),
@@ -98,7 +108,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           decisionColumn(),
           parametersColumn(),
           detailColumn(),
