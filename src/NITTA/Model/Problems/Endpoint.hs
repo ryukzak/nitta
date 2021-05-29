@@ -35,7 +35,7 @@ import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt

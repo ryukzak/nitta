@@ -139,7 +139,6 @@ import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
-import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
@@ -295,9 +294,9 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
-        ep = EndpointSt role (a ... b)
+        ep = EndpointSt{epAt = a ... b, epRole = role}
     case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
-        Nothing -> lift $ assertFailure $ "assertEndpoint: " <> show ep <> " not defined in: " <> show opts
+        Nothing -> lift $ assertFailure $ "assertEndpoint: '" <> show ep <> "' not defined in: " <> show opts
         Just _ -> return ()
 
 isFullyBinded pu fs = do

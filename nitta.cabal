@@ -81,7 +81,7 @@ library
       NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
       NITTA.Model.TargetSystem
-      NITTA.Model.Types
+      NITTA.Model.Time
       NITTA.Project
       NITTA.Project.Context
       NITTA.Project.Template

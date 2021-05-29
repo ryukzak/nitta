@@ -65,7 +65,7 @@ comment str = unlines $ map ("// " <>) $ lines str
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
-shiftI offset i = (I.inf i + offset) ... (I.sup i + offset)
+shiftI offset i = i + I.singleton offset
 
 bool2verilog True = "1'b1" :: T.Text
 bool2verilog False = "1'b0"

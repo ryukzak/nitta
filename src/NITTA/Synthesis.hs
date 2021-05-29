@@ -100,7 +100,7 @@ import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow

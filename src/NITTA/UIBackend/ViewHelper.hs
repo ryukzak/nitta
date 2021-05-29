@@ -52,7 +52,6 @@ import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
 import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis

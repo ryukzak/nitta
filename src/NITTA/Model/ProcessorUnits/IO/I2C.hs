@@ -31,7 +31,7 @@ import qualified Data.Text as T
 import NITTA.Intermediate.Value
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import Prettyprinter
 

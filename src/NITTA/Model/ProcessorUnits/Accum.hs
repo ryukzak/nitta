@@ -38,7 +38,7 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
@@ -153,10 +153,11 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     process = process_
 
 instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{currentWork = Just a@Job{tasks, calcEnd}, process_ = Process{nextTick = tick}}
+    endpointOptions pu@Accum{currentWork = Just a@Job{tasks, calcEnd}}
         | toTarget tasks = targets
         | toSource tasks = sources
         where
+            tick = nextTick pu
             targets = map (\v -> EndpointSt (Target v) $ TimeConstraint (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
             sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstraint (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
             tickSource True = tick + 1
@@ -172,8 +173,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 let job@Job{tasks = tasks', current = (((neg, _) : _) : _)} = endpointDecisionJob j v
                     sel = if isInit then ResetAndLoad neg else Load neg
                     (_, process_') = runSchedule pu $ do
-                        updateTick (sup epAt)
-                        scheduleEndpoint d $ scheduleInstruction epAt sel
+                        scheduleEndpoint d $ scheduleInstructionUnsafe epAt sel
                  in pu
                         { process_ = process_'
                         , currentWork = Just job{calcEnd = False}
@@ -186,13 +186,12 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 let job@Job{tasks = tasks'} = foldl endpointDecisionJob j (elems v)
                     a = inf $ stepsInterval $ relatedEndpoints process_ $ variables func
                     (_, process_') = runSchedule pu $ do
-                        endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt -1) Out
+                        endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt -1) Out
                         when (null tasks') $ do
                             high <- scheduleFunction (a ... sup epAt) func
                             let low = endpoints ++ map pID (relatedEndpoints process_ $ variables func)
                             establishVerticalRelations high low
 
-                        updateTick (sup epAt)
                         return endpoints
                  in pu
                         { process_ = process_'

@@ -39,7 +39,7 @@ import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils
@@ -155,7 +155,7 @@ snippetTestBench
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
-            p@Process{steps, nextTick} = process pUnit
+            p@Process{steps} = process pUnit
             fs = functions pUnit
             inst =
                 hardwareInstance
@@ -174,12 +174,12 @@ snippetTestBench
                             setValueBus = [i|data_in <= #{ dataLiteral x }; attr_in <= #{ attrLiteral x };|]
                          in setSignals <> " " <> setValueBus <> " @(posedge clk);"
                     )
-                    [0 .. nextTick + 1]
+                    [0 .. nextTick p + 1]
             targetVal t
                 | Just (Target v) <- endpointAt t p =
                     getCntx cycleCntx v
                 | otherwise = 0
-            busCheck = map busCheck' [0 .. nextTick + 1]
+            busCheck = map busCheck' [0 .. nextTick p + 1]
                 where
                     busCheck' t
                         | Just (Source vs) <- endpointAt t p =

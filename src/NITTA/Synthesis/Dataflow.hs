@@ -29,7 +29,6 @@ import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
 import NITTA.Synthesis.Types
 import NITTA.Utils
 import Numeric.Interval.NonEmpty (Interval, inf, sup)

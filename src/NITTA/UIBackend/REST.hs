@@ -42,7 +42,6 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Types
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
 import NITTA.Project.TestBench
 import NITTA.Synthesis
@@ -348,7 +347,7 @@ instance (Time t) => ToSample (Process t StepInfoView) where
                     , Vertical 2 3
                     , Vertical 0 1
                     ]
-                , nextTick = 5
+                , nextTick_ = 5
                 , nextUid = 7
                 }
             )
