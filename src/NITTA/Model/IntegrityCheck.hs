@@ -24,8 +24,6 @@ import Data.Either
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
-import Data.String (IsString)
-import Data.String.ToString (ToString)
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
@@ -36,15 +34,6 @@ class ProcessConsistent u where
     checkProcessСonsistent :: u -> Either String ()
 
 instance (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeable t) => ProcessConsistent (pu v x t) where
-    checkProcessСonsistent pu =
-        let isConsistent =
-                [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
-                , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
-                , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
-                ]
-         in checkResult isConsistent
-
-instance (ProcessorUnit u v x t, Typeable u, IsString u, ToString u, Ord u) => ProcessConsistent (BusNetwork u v x t) where
     checkProcessСonsistent pu =
         let isConsistent =
                 [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
