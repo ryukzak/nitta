@@ -165,7 +165,7 @@ addVariableAccess name = do
         Just value -> do
             let newValue = updateVariable value
             let oldName = getVariableName value
-            put (addFuncToDataFlowGraph graph (luaValueParsedFunction value), Map.insert name newValue constants)
+            put (updateGraph graph value, Map.insert name newValue constants)
             return (oldName, startupArgumentString value)
         Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show constants)
     where
@@ -174,6 +174,8 @@ addVariableAccess name = do
         updateVariable _ = undefined
         getVariableName Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
         getVariableName _ = undefined
+        updateGraph graph value | isStartupArgument value = graph -- do not add startup arg to graph explicitly
+                                | otherwise               = addFuncToDataFlowGraph graph (luaValueParsedFunction value)
 
 buildAlg syntaxTree = fst $
     flip execState st $ do
