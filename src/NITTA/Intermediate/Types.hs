@@ -40,11 +40,9 @@ module NITTA.Intermediate.Types (
     FunctionSimulation (..),
     CycleCntx (..),
     Cntx (..),
-    showCntx,
-    cntx2table,
-    cntx2md,
-    cntx2json,
-    cntx2csv,
+    log2md,
+    log2json,
+    log2csv,
     cntxReceivedBySlice,
     getCntx,
     updateCntx,
@@ -270,11 +268,11 @@ class FunctionSimulation f v x | f -> v x where
     -- |Receive a computational context and return changes (list of varible names and its new values).
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
-newtype CycleCntx v x = CycleCntx {cycleCntx :: M.Map v x}
+newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
     deriving (Show, Generic)
 
 instance Default (CycleCntx v x) where
-    def = CycleCntx def
+    def = CycleCntx HM.empty
 
 data Cntx v x = Cntx
     { -- |all variables on each process cycle
@@ -284,63 +282,39 @@ data Cntx v x = Cntx
     , cntxCycleNumber :: Int
     }
 
-instance (Show v, Val x) => Show (Cntx v x) where
-    show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
-        where
-            show' = S.replace "\"" "" . show
+instance (Show x) => Show (Cntx String x) where
+    show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
-showCntx f Cntx{cntxProcess, cntxCycleNumber} =
-    Cntx
-        { cntxProcess = map (CycleCntx . foo . cycleCntx) cntxProcess
-        , cntxReceived = def
-        , cntxCycleNumber = cntxCycleNumber
-        }
-    where
-        foo vx =
-            M.fromList
-                [ (v', x')
-                | (v, x) <- M.assocs vx
-                , let vx' = f v x
-                , isJust vx'
-                , let Just (v', x') = vx'
-                ]
-
-cntx2list Cntx{cntxProcess, cntxCycleNumber} =
-    let header = sort $ M.keys $ cycleCntx $ head cntxProcess
-        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+log2list cntxProcess =
+    let header = sort $ HM.keys $ head cntxProcess
+        body = map row cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
      in map (uncurry (:)) $ zip header (transpose body)
     where
-        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
-
-cntx2table cntx =
-    render $
-        hsep 1 left $
-            map (vcat left . map text) $ cntx2list cntx
+        sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
 
 {- |
- >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> putStr $ cntx2md cntx
- <BLANKLINE>
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> putStr $ log2md records
  | Cycle  | x1   | x2   |
  |:-------|:-----|:-----|
  | 1      | 1.2  | 3.4  |
  | 2      | 3.4  | 2.3  |
 -}
-cntx2md cntx@Cntx{cntxCycleNumber} =
-    let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
+log2md records =
+    let n = length records
+        cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
-     in "\n"
-            ++ render
-                ( hsep 0 left $
-                    map (vcat left . map text) cycleFormattedTable
-                )
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
+     in render
+            ( hsep 0 left $
+                map (vcat left . map text) cycleFormattedTable
+            )
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2json cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2json records
  [
      {
          "x2": 3.4,
@@ -352,19 +326,19 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
      }
 ]
 -}
-cntx2json cntx =
-    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
+log2json records =
+    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ log2list records
      in encodePretty $ map HM.fromList listHashMap
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2csv cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2csv records
  x1,x2
  1.2,3.4
  3.4,2.3
 -}
-cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
+log2csv records = Csv.encode $ transpose $ log2list records
 
 instance Default (Cntx v x) where
     def =
@@ -385,14 +359,14 @@ cntxReceivedBySlice' received
          in slice : cntxReceivedBySlice' received'
     | otherwise = repeat M.empty
 
-getCntx (CycleCntx cntx) v = case cntx M.!? v of
+getCntx (CycleCntx cntx) v = case HM.lookup v cntx of
     Just x -> x
     Nothing -> error $ "variable not defined: " <> show v
 
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | M.member v cntx = Left $ "variable value already defined: " <> show v
-    | otherwise = updateCntx (CycleCntx $ M.insert v x cntx) vxs
+    | HM.member v cntx = Left $ "variable value already defined: " <> show v
+    | otherwise = updateCntx (CycleCntx $ HM.insert v x cntx) vxs
 
 -----------------------------------------------------------
 

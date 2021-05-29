@@ -20,6 +20,7 @@ module NITTA.Intermediate.Simulation (
     reorderAlgorithm,
 ) where
 
+import qualified Data.HashMap.Strict as HM
 import Data.List (intersect, (\\))
 import qualified Data.Map.Strict as M
 import Data.Set (elems)
@@ -51,7 +52,7 @@ simulateAlg cycleN cycle0 transmission alg
           fromPrevCycle = cycleConnections alg =
         Cntx
             { cntxReceived = M.fromList transmission
-            , cntxProcess = simulateAlg' fromPrevCycle cycle0 transmission alg
+            , cntxProcess = take cycleN $ simulateAlg' fromPrevCycle cycle0 transmission alg
             , cntxCycleNumber = cycleN
             }
 
@@ -66,7 +67,7 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
                 foldl
                     ( \c (v, xs) ->
                         case xs of
-                            x : _ -> M.insert v x c
+                            x : _ -> HM.insert v x c
                             _ -> c
                     )
                     cycleCntx
@@ -81,9 +82,9 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
             )
         throwLoop (CycleCntx cntx) =
             CycleCntx $
-                M.fromList $
+                HM.fromList $
                     foldl
-                        ( \st (thrown, vs) -> map (\v -> (v, cntx M.! thrown)) vs ++ st
+                        ( \st (thrown, vs) -> map (\v -> (v, cntx HM.! thrown)) vs ++ st
                         )
                         []
                         fromPrevCycle

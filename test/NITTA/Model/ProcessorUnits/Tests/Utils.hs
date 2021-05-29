@@ -30,8 +30,8 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
 
 import Data.CallStack
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import Data.List (delete)
-import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions ()
@@ -82,7 +82,7 @@ puCoSim name u cntxCycle alg needBind = do
                         then naiveSynthesis alg u
                         else u
                 , pUnitEnv = def
-                , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                , pTestCntx = simulateAlg 5 (CycleCntx $ HM.fromList cntxCycle) [] alg
                 , pTemplates = ["templates/Icarus"]
                 }
     writeProject prj
@@ -124,7 +124,7 @@ algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
 initialCycleCntxGen fs = do
     let vs = elems $ unionsMap inputs fs
     xs <- infiniteListOf arbitrary
-    let vxs = M.fromList $ zip vs xs
+    let vxs = HM.fromList $ zip vs xs
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
 

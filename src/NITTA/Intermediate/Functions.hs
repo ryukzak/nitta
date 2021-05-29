@@ -61,7 +61,7 @@ module NITTA.Intermediate.Functions (
 
 import qualified Data.Bits as B
 import Data.Default
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as HM
 import Data.Set (elems, fromList, union)
 import qualified Data.String.Utils as S
 import Data.Typeable
@@ -164,7 +164,7 @@ instance (Var v) => Locks (Loop v x) v where
     locks (Loop _ (O as) (I b)) = [Lock{locked = b, lockBy = a} | a <- elems as]
 instance (Var v) => FunctionSimulation (Loop v x) v x where
     simulate CycleCntx{cycleCntx} (Loop (X x) (O vs) (I _)) =
-        case cycleCntx M.!? oneOf vs of
+        case oneOf vs `HM.lookup` cycleCntx of
             -- if output variables are defined - nothing to do (values thrown on upper level)
             Just _ -> []
             -- if output variables are not defined - set initial value
@@ -394,7 +394,7 @@ instance (Ord v) => Patch (Receive v x) (v, v) where
 instance (Var v) => Locks (Receive v x) v where locks _ = []
 instance (Var v, Val x) => FunctionSimulation (Receive v x) v x where
     simulate CycleCntx{cycleCntx} (Receive (O vs)) =
-        case cycleCntx M.!? oneOf vs of
+        case oneOf vs `HM.lookup` cycleCntx of
             -- if output variables are defined - nothing to do (values thrown on upper level)
             Just _ -> []
             -- if output variables are not defined - set initial value

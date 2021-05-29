@@ -44,6 +44,7 @@ import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
+import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.Timeline
@@ -210,7 +211,7 @@ type TestBenchAPI v x =
         :> "testbench"
         :> QueryParam' '[Required] "pName" String
         :> QueryParam' '[Required] "loopsNumber" Int
-        :> Post '[JSON] (TestbenchReportView v x)
+        :> Post '[JSON] (TestbenchReport v x)
 
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
@@ -231,7 +232,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
                 , pTemplates = defProjectTemplates
                 }
     writeProject prj
-    view <$> runTestbench prj
+    runTestbench prj
 
 -- Helpers
 

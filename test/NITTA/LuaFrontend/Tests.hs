@@ -248,14 +248,15 @@ test_trace_features =
             end
             counter(0)
         |]
-        $ unlines
-            [ "i    "
-            , "0.000"
-            , "1.000"
-            , "2.000"
-            , "3.000"
-            , "4.000"
-            ]
+        [__i|
+            | Cycle  | i      |
+            |:-------|:-------|
+            | 1      | 0.000  |
+            | 2      | 1.000  |
+            | 3      | 2.000  |
+            | 4      | 3.000  |
+            | 5      | 4.000  |\n
+            |]
     , traceLuaSimulationTestCase
         pInt
         "specific fmt"
@@ -266,14 +267,15 @@ test_trace_features =
             end
             counter(0)
          |]
-        $ unlines
-            [ "i"
-            , "0"
-            , "1"
-            , "2"
-            , "3"
-            , "4"
-            ]
+        [__i|
+            | Cycle  | i  |
+            |:-------|:---|
+            | 1      | 0  |
+            | 2      | 1  |
+            | 3      | 2  |
+            | 4      | 3  |
+            | 5      | 4  |\n
+            |]
     , traceLuaSimulationTestCase
         pInt
         "specific fmt and multiple variable"
@@ -285,14 +287,15 @@ test_trace_features =
             end
             counter(0)
         |]
-        $ unlines
-            [ "i tmp"
-            , "0 1  "
-            , "1 2  "
-            , "2 3  "
-            , "3 4  "
-            , "4 5  "
-            ]
+        [__i|
+            | Cycle  | i  | tmp  |
+            |:-------|:---|:-----|
+            | 1      | 0  | 1    |
+            | 2      | 1  | 2    |
+            | 3      | 2  | 3    |
+            | 4      | 3  | 4    |
+            | 5      | 4  | 5    |\n
+            |]
     , traceLuaSimulationTestCase
         pInt
         "default trace"
@@ -300,18 +303,21 @@ test_trace_features =
             function counter(i, two)
                 local one = 1
                 local tmp = i + one + two
+                debug.trace("%.3f", i)
+                debug.trace("%.1f", two)
                 counter(tmp, 2)
             end
             counter(0, 2)
         |]
-        $ unlines
-            [ "i      two  "
-            , "0.000  2.000"
-            , "3.000  2.000"
-            , "6.000  2.000"
-            , "9.000  2.000"
-            , "12.000 2.000"
-            ]
+        [__i|
+            | Cycle  | i       | two  |
+            |:-------|:--------|:-----|
+            | 1      | 0.000   | 2.0  |
+            | 2      | 3.000   | 2.0  |
+            | 3      | 6.000   | 2.0  |
+            | 4      | 9.000   | 2.0  |
+            | 5      | 12.000  | 2.0  |\n
+            |]
     , -- FIXME:
       -- , traceLuaSimulationTestCase pInt "variable before changing" [qc|
       --     function counter(i)
@@ -340,15 +346,16 @@ test_trace_features =
             end
             counter(0)
         |]
-        $ unlines
-            [ "i"
-            , "1"
-            , "2"
-            , "3"
-            , "4"
-            , "5"
-            ]
-            -- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
+        [__i|
+            | Cycle  | i  |
+            |:-------|:---|
+            | 1      | 1  |
+            | 2      | 2  |
+            | 3      | 3  |
+            | 4      | 4  |
+            | 5      | 5  |\n
+            |]
+        -- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
     ]
 
 -- TODO: actualize
