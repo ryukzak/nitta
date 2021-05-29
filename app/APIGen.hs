@@ -34,6 +34,7 @@ import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend
 import NITTA.UIBackend.REST
 import NITTA.UIBackend.Timeline
@@ -77,6 +78,7 @@ $(deriveTypeScript defaultOptions ''TestbenchReportView)
 $(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
+$(deriveTypeScript defaultOptions ''TreeInfo)
 $(deriveTypeScript defaultOptions ''ShortNodeView)
 
 $(deriveTypeScript defaultOptions ''NodeView)
@@ -146,6 +148,7 @@ main = do
                     , -- other
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy TreeInfo)
                     , getTypeScriptDeclarations (Proxy :: Proxy ShortNodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)

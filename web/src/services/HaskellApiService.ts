@@ -12,6 +12,7 @@ import {
   NetworkDesc,
   UnitDesc,
   TimeConstraint,
+  TreeInfo,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import {
@@ -70,6 +71,7 @@ export function synthesize<T extends Array<any>>(
 
 export const api = {
   getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => jsAPI.getSynthesisTree(),
+  getTreeInfo: (): AxiosPromise<TreeInfo> => jsAPI.getTreeInfo(),
 
   // Synthesis tree navigation
   getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidHistory(sid),
