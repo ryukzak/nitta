@@ -14,7 +14,9 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.IntegrityCheck where
+module NITTA.Model.IntegrityCheck (
+    ProcessConsistent (..),
+) where
 
 import Control.Monad
 import Data.Data
@@ -24,7 +26,6 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String (IsString)
 import Data.String.ToString (ToString)
-import qualified Debug.Trace
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
@@ -34,36 +35,34 @@ import NITTA.Utils
 class ProcessConsistent u where
     checkProcessСonsistent :: u -> Either String ()
 
-instance (Typeable t, Typeable x, ProcessorUnit (pu v x t) v x2 t2) => ProcessConsistent (pu v x t) where
+instance (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeable t) => ProcessConsistent (pu v x t) where
     checkProcessСonsistent pu =
-        let consistent = checkIntegrity' pu
-         in if any isLeft consistent
-                then Left $ concat $ lefts consistent
-                else Right ()
+        let isConsistent =
+                [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
+                , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
+                , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
+                ]
+         in checkResult isConsistent
 
-instance (ProcessorUnit u v x t, Typeable u, Ord u, ToString u, IsString u) => ProcessConsistent (BusNetwork u v x t) where
+instance (ProcessorUnit u v x t, Typeable u, IsString u, ToString u, Ord u) => ProcessConsistent (BusNetwork u v x t) where
     checkProcessСonsistent pu =
-        let consistent = checkIntegrity' pu
-         in if any isLeft consistent
-                then Left $ concat $ lefts consistent
-                else Right ()
+        let isConsistent =
+                [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
+                , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
+                , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
+                ]
+         in checkResult isConsistent
 
-handleLefts pu l =
-    not (any isLeft l) || error (concat (lefts l) <> show (process pu))
+checkResult res =
+    if any isLeft res
+        then Left $ concat $ lefts res
+        else Right ()
 
-checkIntegrity pu = handleLefts pu $ checkIntegrity' pu
-
-checkIntegrity' pu =
-    [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) pu
-    , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
-    , checkCadToFunctionRelation (getCadFunctions pu) (getCadSteps pu) pu
-    ]
-
-checkEndpointToIntermidiateRelation eps ifs pu =
-    let rels = S.fromList $ filter isVertical $ relations $ process pu
-        checkIfsEmpty = M.size eps > 0 && M.size ifs == 0
+checkEndpointToIntermidiateRelation eps ifs trans pu =
+    let checkIfsEmpty = M.size eps > 0 && M.size ifs == 0
         checkEpsEmpty = M.size ifs > 0 && M.size eps == 0
-        lookup' v = fromMaybe (showError "Endpoint to Intermidiate" "enpoint" v) $ eps M.!? v
+        rels = S.fromList $ filter isVertical $ relations $ process pu
+        lookup' v = fromMaybe (showError "Endpoint to Intermidiate" "enpoint" v pu) $ eps M.!? v
         makeRelationList =
             map S.fromList $
                 concatMap
@@ -76,17 +75,19 @@ checkEndpointToIntermidiateRelation eps ifs pu =
                     )
                     $ M.toList ifs
      in do
-            when checkIfsEmpty $ Left "functions are empty"
-            when checkEpsEmpty $ Left "eps are empty"
+            when checkEpsEmpty $
+                Left "endpoints are empty"
+            when checkIfsEmpty $
+                Left "functions are empty"
             if any (`S.isSubsetOf` rels) makeRelationList
                 then Right True
-                else checkTransportToIntermidiateRelation pu ifs rels
+                else checkTransportToIntermidiateRelation ifs rels trans pu
 
 -- TODO: add map with endpoints (as Source) to be sure that function is connected to endpoint after all
 --       it means: Endpoint (Source) -> Transport -> Function
-checkTransportToIntermidiateRelation pu ifs rels =
-    let transMap = getTransportMap pu
-        lookup' v = fromMaybe (showError "Transport to Intermidiate" "transport" v) $ transMap M.!? v
+-- TODO: remove pu
+checkTransportToIntermidiateRelation ifs rels transMap pu =
+    let lookup' v = fromMaybe (showError "Transport to Intermidiate" "transport" v pu) $ transMap M.!? v
         makeRelationList =
             map S.fromList $
                 concatMap
@@ -126,7 +127,8 @@ checkCadToFunctionRelation cadFs cadSteps pu =
     let consistent = S.isSubsetOf makeCadVertical rels
         rels = S.fromList $ filter isVertical $ relations $ process pu
         showLoop f = "bind " <> show f
-        lookup' v = fromMaybe (showError "CAD" "steps" v) $ cadSteps M.!? v
+        -- TODO: remove pu
+        lookup' v = fromMaybe (showError "CAD" "steps" v pu) $ cadSteps M.!? v
         makeCadVertical =
             S.fromList $
                 concatMap
@@ -181,7 +183,7 @@ getTransportMap pu =
         filterTransport _ _ _ = Nothing
      in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
 
-getCadFunctions pu =
+getCadFunctionsMap pu =
     let filterCad (_, f)
             | Just Loop{} <- castF f = True
             | Just (LoopBegin Loop{} _) <- castF f = True
@@ -189,7 +191,7 @@ getCadFunctions pu =
             | otherwise = False
      in M.fromList $ filter filterCad $ M.toList $ getInterMap pu
 
-getCadSteps pu =
+getCadStepsMap pu =
     M.fromList
         [ (pDesc', pID)
         | step@Step{pID} <- steps $ process pu
@@ -198,7 +200,7 @@ getCadSteps pu =
             _ -> []
         ]
 
-showError name mapName v =
+showError name mapName v pu =
     error $
         name
             <> " relations contain error: "
@@ -206,3 +208,5 @@ showError name mapName v =
             <> " is not present in "
             <> mapName
             <> " map."
+            <> "proc: "
+            <> show (process pu)
