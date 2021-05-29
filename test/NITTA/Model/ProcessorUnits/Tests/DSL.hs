@@ -118,6 +118,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertBindFullness,
     assertCoSimulation,
     assertSynthesisDone,
+    assertConsistency,
     assertEndpoint,
     assertAllEndpointRoles,
     assertLocks,
@@ -132,9 +133,11 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
 import Data.CallStack
+import Data.Either
 import Data.List (find)
 import qualified Data.Set as S
 import NITTA.Intermediate.Types
+import NITTA.Model.IntegrityCheck
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -316,6 +319,13 @@ assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+
+assertConsistency :: ProcessConsistent pu => DSLStatement pu v x t ()
+assertConsistency = do
+    UnitTestState{unit, testName} <- get
+    let res = checkProcessСonsistent unit
+    when (isLeft res) $
+        lift $ assertFailure $ testName <> " Process is not consistent: " <> show (fromLeft "no msg!" res)
 
 assertLocks :: (Locks pu v) => [Lock v] -> DSLStatement pu v x t ()
 assertLocks expectLocks = do
