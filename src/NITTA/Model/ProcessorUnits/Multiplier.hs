@@ -282,7 +282,7 @@ Multiplier:
             0) Vertical 4 5
             1) Vertical 2 3
             2) Vertical 0 1
-        nextTick: 6
+        nextTick: 7
         nextUid: 6
 >>> mapM_ print $ endpointOptions st4
 ?Source d@(7..∞ /P 1..∞)
@@ -314,7 +314,7 @@ Multiplier:
             5) Vertical 4 5
             6) Vertical 2 3
             7) Vertical 0 1
-        nextTick: 7
+        nextTick: 8
         nextUid: 9
 >>> endpointOptions st5
 []
