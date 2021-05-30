@@ -34,7 +34,16 @@ import NITTA.Utils.ProcessDescription
 class ProcessConsistent u where
     checkProcessСonsistent :: u -> Either String ()
 
-instance {-# OVERLAPS #-} (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeable t) => ProcessConsistent (pu v x t) where
+instance {-# OVERLAPS #-} (ProcessorUnit (pu v x t) v x2 t2) => ProcessConsistent (pu v x t) where
+    checkProcessСonsistent pu =
+        let isConsistent =
+                [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) M.empty pu
+                , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
+                , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
+                ]
+         in checkResult isConsistent
+
+instance  {-# INCOHERENT #-} (ProcessorUnit (pu v x t) v x2 t2, UnitTag (pu v x t)) => ProcessConsistent (BusNetwork (pu v x t) v x2 t2) where
     checkProcessСonsistent pu =
         let isConsistent =
                 [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
@@ -42,8 +51,6 @@ instance {-# OVERLAPS #-} (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeabl
                 , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
                 ]
          in checkResult isConsistent
-
-instance  {-# INCOHERENT #-} ProcessConsistent (BusNetwork u v x t) where
     checkProcessСonsistent pu =
         let isConsistent = [Left "Trying to run BusNetwork"]
          in checkResult isConsistent
