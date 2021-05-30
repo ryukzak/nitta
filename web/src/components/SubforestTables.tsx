@@ -19,8 +19,7 @@ type SubforestTablesProps = {
   nodes: Node[];
 };
 
-export const SubforestTables: FC<SubforestTablesProps> = (props: { nodes: Node[] }) => {
-  const { nodes } = props;
+export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   const appContext = useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
