@@ -118,6 +118,11 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
         ...GOOD_SCORE_COLOR.obj,
         a: (row.original.score - scoresInfo.minScore) / (scoresInfo.maxScore - scoresInfo.minScore),
       });
+
+      if (scoresInfo.minScore === scoresInfo.maxScore) {
+        cellColor.obj.a = 1;
+      }
+
       return (
         <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
           {row.original.score}
