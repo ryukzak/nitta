@@ -29,17 +29,23 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus (BusNetwork, Instruction (Transport))
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
+import NITTA.Utils.ProcessDescription
 
 class ProcessConsistent u where
     checkProcessСonsistent :: u -> Either String ()
 
-instance (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeable t) => ProcessConsistent (pu v x t) where
+instance {-# OVERLAPS #-} (ProcessorUnit (pu v x t) v x2 t2, Typeable x, Typeable t) => ProcessConsistent (pu v x t) where
     checkProcessСonsistent pu =
         let isConsistent =
                 [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
                 , checkInstructionToEndpointRelation (getInstrMap pu) (getEpMap pu) $ process pu
                 , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
                 ]
+         in checkResult isConsistent
+
+instance  {-# INCOHERENT #-} ProcessConsistent (BusNetwork u v x t) where
+    checkProcessСonsistent pu =
+        let isConsistent = [Left "Trying to run BusNetwork"]
          in checkResult isConsistent
 
 checkResult res =
@@ -171,6 +177,13 @@ getTransportMap pu =
             | otherwise = Nothing
         filterTransport _ _ _ = Nothing
      in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
+
+getTransportMapBus pu =
+            let filterTransport pu' (InstructionStep ins)
+                    | Just (Transport v _ _) <- castInstruction pu' ins = Just v
+                    | otherwise = Nothing
+                filterTransport _ _ = Nothing
+             in M.mapMaybe (filterTransport pu) $ getInstrMap pu
 
 getCadFunctionsMap pu =
     let filterCad (_, f)
