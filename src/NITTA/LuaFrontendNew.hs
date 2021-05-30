@@ -37,6 +37,14 @@ instance Ord LuaValue where
     (<=) Variable{luaValueName = a} Constant{luaValueName = b} = a <= b
     (<=) Variable{luaValueName = a} Variable{luaValueName = b} = a <= b
 
+
+
+data AlgBuilder = AlgBuilder
+    { algGraph :: DataFlowGraph String Int
+    , algBuffer ::  Map.Map T.Text LuaValue
+    , algVarGen :: Int
+    }
+
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
 
@@ -61,7 +69,7 @@ parseRightExp fOut (Binop op a b) = do
         getBinopFunc o _ _ _ = error $ "unknown binop: " ++ show o
 parseRightExp _ _ = undefined
 
-parseExpArg :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
+parseExpArg :: Exp -> State AlgBuilder (String, T.Text)
 parseExpArg n@(Number _ _) = do
     addConstant n
 parseExpArg (Unop Neg n) = do
@@ -69,9 +77,12 @@ parseExpArg (Unop Neg n) = do
     return ([head name] ++ "-" ++ tail name, luaValue)
 parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
     addVariableAccess name
+parseExpArg binop@Binop{} = do
+    name <- parseRightExp "tmp" binop
+    return (name, "")
 parseExpArg _ = undefined
 
-addStartupFuncArgs :: Stat -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+addStartupFuncArgs :: Stat -> Stat -> State AlgBuilder String
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
     mapM_ (\(Name name, Number _ valueString) -> addVariable name (F.constant (read (T.unpack valueString)) [T.unpack name ++ "^0#0"]) True valueString) $ zip names exps
     return ""
@@ -79,7 +90,7 @@ addStartupFuncArgs _ _ = undefined
 
 --Lua language Stat structure parsing
 --LocalAssign
-processStatement :: T.Text -> Stat -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+processStatement :: T.Text -> Stat -> State AlgBuilder String
 processStatement _ (LocalAssign _names Nothing) = do
     return ""
 processStatement fn (LocalAssign names (Just exps)) =
@@ -95,34 +106,34 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 --startup function recursive call
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName = do
-        (_, constants) <- get
-        let startupVars = filter (\case Variable{isStartupArgument} -> isStartupArgument; _ -> False) $ map snd $ Map.toList constants
+        AlgBuilder{algBuffer} <- get
+        let startupVars = filter (\case Variable{isStartupArgument} -> isStartupArgument; _ -> False) $ map snd $ Map.toList algBuffer
         mapM_ parseStartupArg $ zip args startupVars
         return ""
     where
-        parseStartupArg :: (Exp, LuaValue) -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) String
+        parseStartupArg :: (Exp, LuaValue) -> State AlgBuilder String
         parseStartupArg (arg, value) = do
             (varName, _) <- parseExpArg arg
-            (graph, constants) <- get
-            put (addFuncToDataFlowGraph graph (F.loop (read $ T.unpack $ startupArgumentString value) varName [getDefaultName value]), constants)
+            AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+            put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph (F.loop (read $ T.unpack $ startupArgumentString value) varName [getDefaultName value]), algBuffer = algBuffer, algVarGen = algVarGen}
             return ""
         getDefaultName Variable{luaValueName} = T.unpack luaValueName ++ "^0#0"
         getDefaultName _ = undefined
 processStatement _ _ = undefined
 
-addConstant :: Exp -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
+addConstant :: Exp -> State AlgBuilder (String, T.Text)
 addConstant (Number valueType valueString) = do
-    (graph, constants) <- get
-    case Map.lookup valueString constants of
+    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    case Map.lookup valueString algBuffer of
         Just value -> do
             let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (luaValueAccessCount value)]
             let newValue = updateConstant value constant
-            put (graph, Map.insert valueString newValue constants)
+            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert valueString newValue algBuffer, algVarGen = algVarGen}
             return (getConstantName (luaValueName newValue) (luaValueAccessCount newValue), luaValueName newValue)
         Nothing -> do
             let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (0 :: Int)]
             let value = Constant{luaValueName = valueString, luaValueParsedFunction = constant, luaValueType = valueType, luaValueAccessCount = 0}
-            put (addFuncToDataFlowGraph graph constant, Map.insert valueString value constants)
+            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert valueString value algBuffer, algVarGen = algVarGen}
             return (getConstantName (luaValueName value) (luaValueAccessCount value), luaValueName value)
     where
         updateConstant Constant{luaValueName, luaValueType, luaValueAccessCount} constant = Constant{luaValueName = luaValueName, luaValueParsedFunction = constant, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
@@ -131,8 +142,8 @@ addConstant (Number valueType valueString) = do
 addConstant _ = undefined
 
 getFreeVariableName name = do
-    (_, constants) <- get
-    case Map.lookup name constants of
+    AlgBuilder{algBuffer}   <- get
+    case Map.lookup name algBuffer of
         Just value -> do
             return $ getVariableName name (luaValueAccessCount value) (luaValueAssignCount value)
         Nothing -> do
@@ -141,15 +152,15 @@ getFreeVariableName name = do
         getVariableName luaValueName luaValueAccessCount luaValueAssignCount = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
 
 addVariable name func isStartupArg startupArgString = do
-    (graph, constants) <- get
-    case Map.lookup name constants of
+    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    case Map.lookup name algBuffer of
         Just value -> do
             let newValue = updateConstant value
-            put (graph, Map.insert name newValue constants)
+            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert name newValue algBuffer, algVarGen = algVarGen}
             return $ getVariableName newValue
         Nothing -> do
             let value = Variable{luaValueName = name, luaValueParsedFunction = func, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg, startupArgumentString = startupArgString }
-            put (graph, Map.insert name value constants)
+            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert name value algBuffer, algVarGen = algVarGen}
             return $ getVariableName value
     where
         updateConstant Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} =
@@ -158,16 +169,16 @@ addVariable name func isStartupArg startupArgString = do
         getVariableName Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
         getVariableName _ = undefined
 
-addVariableAccess :: T.Text -> State (DataFlowGraph String Int, Map.Map T.Text LuaValue) (String, T.Text)
+addVariableAccess :: T.Text -> State AlgBuilder (String, T.Text)
 addVariableAccess name = do
-    (graph, constants) <- get
-    case Map.lookup name constants of
+    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    case Map.lookup name algBuffer of
         Just value -> do
             let newValue = updateVariable value
             let oldName = getVariableName value
-            put (updateGraph graph value, Map.insert name newValue constants)
+            put AlgBuilder{algGraph = updateGraph algGraph value, algBuffer = Map.insert name newValue algBuffer, algVarGen = algVarGen }
             return (oldName, startupArgumentString value)
-        Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show constants)
+        Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show algBuffer)
     where
         updateVariable Variable{luaValueName, luaValueAccessCount, luaValueAssignCount, isStartupArgument, luaValueParsedFunction, startupArgumentString} =
             Variable{luaValueName = luaValueName, luaValueParsedFunction = luaValueParsedFunction, luaValueAccessCount = luaValueAccessCount + 1, luaValueAssignCount = luaValueAssignCount, isStartupArgument = isStartupArgument, startupArgumentString = startupArgumentString}
@@ -177,13 +188,18 @@ addVariableAccess name = do
         updateGraph graph value | isStartupArgument value = graph -- do not add startup arg to graph explicitly
                                 | otherwise               = addFuncToDataFlowGraph graph (luaValueParsedFunction value)
 
-buildAlg syntaxTree = fst $
+buildAlg syntaxTree = 
     flip execState st $ do
         _ <- addStartupFuncArgs startupFunctionCall startupFunctionDef
         mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef
     where
         (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree
-        st = (DFCluster [], Map.empty)
+        st =
+            AlgBuilder
+                { algGraph = DFCluster [] :: DataFlowGraph String Int
+                , algBuffer = Map.empty
+                , algVarGen = 0
+                }
 
 findStartupFunction (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
@@ -199,5 +215,5 @@ getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua 
 parseLuaSources :: T.Text -> DataFlowGraph String Int
 parseLuaSources src =
     let syntaxTree = getLuaBlockFromSources src
-        alg = buildAlg syntaxTree
-     in alg
+        AlgBuilder{algGraph} = buildAlg syntaxTree
+     in algGraph
