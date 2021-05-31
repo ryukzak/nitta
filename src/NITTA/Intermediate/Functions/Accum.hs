@@ -32,6 +32,7 @@ module NITTA.Intermediate.Functions.Accum (
 import Data.List (nub, partition)
 import Data.List.Split (splitWhen)
 import Data.Set (elems, fromList)
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Typeable
 import NITTA.Intermediate.Types
@@ -46,13 +47,13 @@ instance Show Sign where
 
 data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
-instance (Show v) => Show (Action v) where
-    show (Push s (I v)) = show s <> show v
-    show (Pull (O vs)) = S.join " " (map (("= " <>) . show) $ elems vs)
+instance (Var v) => Show (Action v) where
+    show (Push s (I v)) = show s <> toString v
+    show (Pull (O vs)) = S.join " " $ map ("= " <>) $ vsToStringList vs
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
-instance (Show v) => Show (Acc v x) where
+instance (Var v) => Show (Acc v x) where
     show (Acc acts) =
         let lastElement = last acts
             initElements = init acts

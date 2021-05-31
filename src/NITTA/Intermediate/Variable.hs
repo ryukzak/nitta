@@ -23,10 +23,11 @@ module NITTA.Intermediate.Variable (
 import Data.Hashable
 import Data.List (stripPrefix)
 import qualified Data.Set as S
+import Data.String.ToString
 import Data.Typeable
 
 -- |Variable identifier. Used for simplify type description.
-type Var v = (Typeable v, Ord v, Show v, Suffix v, Hashable v)
+type Var v = (Typeable v, Ord v, ToString v, Suffix v, Hashable v)
 
 -- |Type class of something, which is related to variables.
 class Variables a v | a -> v where

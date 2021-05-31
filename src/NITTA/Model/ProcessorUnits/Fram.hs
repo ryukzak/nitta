@@ -37,7 +37,6 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -48,6 +47,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
+import Prettyprinter
 
 data Fram v x t = Fram
     { -- |memory cell array
@@ -56,7 +56,6 @@ data Fram v x t = Fram
       remainBuffers :: [(Buffer v x, Job v x t)]
     , process_ :: Process t (StepInfo v x t)
     }
-    deriving (Show)
 
 framWithSize size =
     Fram
@@ -64,6 +63,14 @@ framWithSize size =
         , remainBuffers = []
         , process_ = def
         }
+
+instance (VarValTime v x t) => Pretty (Fram v x t) where
+    pretty Fram{memory} =
+        [__i|
+            Fram:
+                cells:
+                    #{ nest 8 $ vsep $ map (\(ix, c) -> viaShow ix <> ": " <> pretty (state c)) $ A.assocs memory }
+            |]
 
 instance (Default t, Default x) => Default (Fram v x t) where
     def =
@@ -93,7 +100,6 @@ data Cell v x t = Cell
     , history :: [F v x]
     , initialValue :: x
     }
-    deriving (Show)
 
 data Job v x t = Job
     { function :: F v x
@@ -158,7 +164,17 @@ data CellState v x t
     | NotBrokenLoop
     | DoLoopSource [v] (Job v x t)
     | DoLoopTarget v
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (VarValTime v x t) => Pretty (CellState v x t) where
+    pretty NotUsed = "NotUsed"
+    pretty Done = "Done"
+    pretty (DoConstant vs) = "DoConstant " <> viaShow (map toString vs)
+    pretty (DoBuffer vs) = "DoBuffer " <> viaShow (map toString vs)
+    pretty ForBuffer = "ForBuffer"
+    pretty NotBrokenLoop = "NotBrokenLoop"
+    pretty (DoLoopSource vs _job) = "DoLoopSource " <> viaShow (map toString vs)
+    pretty (DoLoopTarget v) = "DoLoopTarget " <> viaShow (toString v)
 
 isFree Cell{state = NotUsed} = True
 isFree _ = False
@@ -427,13 +443,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     { memory = memory A.// [(addr, cell')]
                     , process_
                     }
-    endpointDecision Fram{memory} d =
-        error
-            [__i|
-                fram model internal error: #{ d }
-                cells state:
-                #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
-            |]
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 ---------------------------------------------------------------------
 
@@ -469,8 +479,7 @@ instance Controllable (Fram v x t) where
 
     takePortTags (oe : wr : xs) pu = FramPorts oe wr addr
         where
-            width = addrWidth pu
-            addr = take width xs
+            addr = take (addrWidth pu) xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Connected (Fram v x t) where
@@ -541,7 +550,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                         , .FRAM_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag fram }" )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
-                    , .signal_addr( { #{ T.intercalate ", " $ map (T.pack . show) addr } } )
+                    , .signal_addr( { #{ T.intercalate ", " $ map showText addr } } )
                     , .signal_wr( #{ wr } )
                     , .data_in( #{ dataIn } )
                     , .attr_in( #{ attrIn } )

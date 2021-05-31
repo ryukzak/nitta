@@ -101,9 +101,9 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs =
-    "expected: " <> show (elems $ unionsMap variables fs)
+    "expected: " <> show (vsToStringList $ unionsMap variables fs)
         <> " actual: "
-        <> show (elems $ processedVars pu)
+        <> show (vsToStringList $ processedVars pu)
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 

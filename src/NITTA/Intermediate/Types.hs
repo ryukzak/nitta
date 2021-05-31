@@ -22,7 +22,6 @@ module NITTA.Intermediate.Types (
     I (..),
     O (..),
     X (..),
-    showOut,
 
     -- *Function description
     F (..),
@@ -64,18 +63,23 @@ import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S hiding (split)
+import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
 newtype I v = I v
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+
+instance (ToString v) => Show (I v) where show (I v) = toString v
 
 instance (Eq v) => Patch (I v) (v, v) where
     patch (v, v') i@(I v0)
@@ -92,14 +96,13 @@ newtype O v = O (S.Set v)
 instance (Ord v) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
-instance (Show v) => Show (O v) where
-    show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
+instance (ToString v) => Show (O v) where
+    show (O vs)
+        | S.null vs = "_"
+        | otherwise = S.join " = " $ vsToStringList vs
 
 instance Variables (O v) v where
     variables (O vs) = vs
-
-showOut vs | S.null vs = "_"
-showOut vs = S.join " = " $ map show $ S.elems vs
 
 -- |Value of variable (constant or initial value).
 newtype X x = X x
@@ -121,7 +124,11 @@ data Lock v = Lock
     { locked :: v
     , lockBy :: v
     }
-    deriving (Show, Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic)
+
+instance (ToString v) => Show (Lock v) where
+    show Lock{locked, lockBy} =
+        "Lock{locked=" <> toString locked <> ", lockBy=" <> toString lockBy <> "}"
 
 instance (ToJSON v) => ToJSON (Lock v)
 
@@ -195,7 +202,7 @@ instance FunctionSimulation (F v x) v x where
     simulate cntx F{fun} = simulate cntx fun
 
 instance Label (F v x) where
-    label F{fun} = S.replace "\"" "" $ label fun
+    label F{fun} = label fun
 
 instance (Var v) => Locks (F v x) v where
     locks F{fun} = locks fun
@@ -233,7 +240,7 @@ instance (Patch b v) => Patch [b] v where
     patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
-    show F{fun} = S.replace "\"" "" $ show fun
+    show F{fun} = show fun
 
 instance (Var v) => Variables (F v x) v where
     variables F{fun} = inputs fun `S.union` outputs fun
@@ -244,16 +251,16 @@ castF F{fun} = cast fun
 
 -- |Helper for JSON serialization
 data FView = FView
-    { fvFun :: String
-    , fvHistory :: [String]
+    { fvFun :: T.Text
+    , fvHistory :: [T.Text]
     }
     deriving (Generic, Show)
 
 instance Viewable (F v x) FView where
     view F{fun, funHistory} =
         FView
-            { fvFun = S.replace "\"" "" $ show fun
-            , fvHistory = map (S.replace "\"" "" . show) funHistory
+            { fvFun = showText fun
+            , fvHistory = map showText funHistory
             }
 
 instance ToJSON FView
@@ -269,7 +276,11 @@ class FunctionSimulation f v x | f -> v x where
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
 newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
-    deriving (Show, Generic)
+    deriving (Generic)
+
+instance (ToString v, Show x) => Show (CycleCntx v x) where
+    show CycleCntx{cycleCntx} =
+        "{" <> S.join ", " (map (\(v, x) -> toString v <> ": " <> show x) $ HM.toList cycleCntx) <> "}"
 
 instance Default (CycleCntx v x) where
     def = CycleCntx HM.empty
@@ -361,11 +372,11 @@ cntxReceivedBySlice' received
 
 getCntx (CycleCntx cntx) v = case HM.lookup v cntx of
     Just x -> x
-    Nothing -> error $ "variable not defined: " <> show v
+    Nothing -> error $ "variable not defined: " <> toString v
 
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | HM.member v cntx = Left $ "variable value already defined: " <> show v
+    | HM.member v cntx = Left $ "variable value already defined: " <> toString v
     | otherwise = updateCntx (CycleCntx $ HM.insert v x cntx) vxs
 
 -----------------------------------------------------------
@@ -374,7 +385,11 @@ updateCntx (CycleCntx cntx) ((v, x) : vxs)
 class Patch f diff where
     patch :: diff -> f -> f
 
--- |Change set for patch.
+{- |Change set for patch.
+
+>>> Changeset (M.fromList [("a", "b"), ("c", "d")]) (M.fromList [("e", S.fromList ["f", "g"])]) :: Changeset String
+Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
+-}
 data Changeset v = Changeset
     { -- |change set for input variables (one to one)
       changeI :: M.Map v v
@@ -384,7 +399,13 @@ data Changeset v = Changeset
       -- > fromList [(c, {y, z})] -- one output variable to many
       changeO :: M.Map v (S.Set v)
     }
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (Var v) => Show (Changeset v) where
+    show Changeset{changeI, changeO} =
+        let changeI' = S.join ", " $ map (\(a, b) -> "(" <> toString a <> ", " <> toString b <> ")") $ M.assocs changeI
+            changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (vsToStringList bs) <> "])") $ M.assocs changeO
+         in "Changeset{changeI=[" <> changeI' <> "], changeO=[" <> changeO' <> "]}"
 
 instance Default (Changeset v) where
     def = Changeset def def
