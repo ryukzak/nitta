@@ -56,6 +56,7 @@ import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 import Servant.Docs
 
@@ -182,7 +183,7 @@ data NodeView tag v x t = NodeView
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
     view tree@Tree{sID, sDecision} =
         NodeView
-            { sid = T.pack $ show sID
+            { sid = showText sID
             , isTerminal = isLeaf tree
             , duration = fromEnum $ processDuration $ sTarget $ sState tree
             , decision =
@@ -211,7 +212,7 @@ instance ToSample (NodeView tag v x t) where
     toSamples _ =
         samples
             [ NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1]
+                { sid = showText $ SID [0, 1, 3, 1]
                 , isTerminal = False
                 , duration = 0
                 , parameters =
@@ -231,7 +232,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1032
                 }
             , NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , duration = 0
                 , parameters =
@@ -250,7 +251,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1, 6]
+                { sid = showText $ SID [0, 1, 3, 1, 6]
                 , isTerminal = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
@@ -258,7 +259,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 5000
                 }
             , NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
@@ -270,7 +271,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
@@ -282,7 +283,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = T.pack $ show $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ SID [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , duration = 0
                 , parameters =
@@ -305,7 +306,7 @@ newtype StepInfoView = StepInfoView T.Text
     deriving (Generic)
 
 instance (Var v, Time t) => Viewable (StepInfo v x t) StepInfoView where
-    view = StepInfoView . T.pack . show
+    view = StepInfoView . showText
 
 instance ToJSON StepInfoView
 

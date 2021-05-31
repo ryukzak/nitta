@@ -20,7 +20,6 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import Data.List (permutations)
 import Data.Maybe
-import Data.String.Interpolate
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Simulation

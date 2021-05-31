@@ -259,8 +259,8 @@ data FView = FView
 instance Viewable (F v x) FView where
     view F{fun, funHistory} =
         FView
-            { fvFun = T.pack $ show fun
-            , fvHistory = map (T.pack . show) funHistory
+            { fvFun = showText fun
+            , fvHistory = map showText funHistory
             }
 
 instance ToJSON FView
