@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import * as React from "react";
+import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
@@ -14,12 +14,12 @@ import "components/Graphviz.scss";
 
 export interface IProcessViewProps {}
 
-export const ProcessView: React.FC<IProcessViewProps> = (props) => {
-  const { selectedSID } = React.useContext(AppContext) as IAppContext;
+export const ProcessView: FC<IProcessViewProps> = (props) => {
+  const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [process, setProcess] = React.useState<ProcessData | null>(null);
+  const [process, setProcess] = useState<ProcessData | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     api
       .getProcess(selectedSID)
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
