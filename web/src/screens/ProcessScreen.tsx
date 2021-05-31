@@ -61,7 +61,7 @@ export const ProcessScreen: FC = () => {
         <ProcessView />
       </div>
       <div className="col-lg-6">
-        <h3>Process Timeline (depricated)</h3>
+        <h3>Process Timeline (deprecated)</h3>
         <div className="p-3 d-flex flex-nowrap">
           <TimelineView
             timelines={data.timelines}

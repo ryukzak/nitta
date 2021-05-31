@@ -123,7 +123,7 @@ type NodeInspectionAPI tag v x t =
                         :> Get '[JSON] VisJS
                      )
                 -- TODO: Replace by raw process fetching or add typescript types.
-                :<|> ( Description "Computational process representation (depricated)"
+                :<|> ( Description "Computational process representation (deprecated)"
                         :> "processTimelines"
                         :> Get '[JSON] (ProcessTimelines t)
                      )
