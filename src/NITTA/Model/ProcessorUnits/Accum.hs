@@ -26,8 +26,8 @@ module NITTA.Model.ProcessorUnits.Accum (
     IOPorts (..),
 ) where
 
-import Control.Arrow
 import Control.Monad (when)
+import Data.Bifunctor
 import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe (fromMaybe)
