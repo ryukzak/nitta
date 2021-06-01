@@ -42,7 +42,7 @@ instance Ord LuaValue where
 data AlgBuilder = AlgBuilder
     { algGraph :: DataFlowGraph String Int
     , algBuffer ::  Map.Map T.Text LuaValue
-    , algVarGen :: Int
+    , algVarGen ::  Map.Map T.Text Int
     }
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
@@ -57,8 +57,8 @@ parseRightExp fOut (Number _ valueString) = do
     name <- getFreeVariableName fOut
     addVariable fOut (F.constant (read (T.unpack valueString)) [name]) False ""
 parseRightExp fOut (Binop op a b) = do
-    (a', _) <- parseExpArg a
-    (b', _) <- parseExpArg b
+    (a', _) <- parseExpArg fOut a
+    (b', _) <- parseExpArg fOut b
     name <- getFreeVariableName fOut
     addVariable fOut (getBinopFunc op a' b' [name]) False ""
     where
@@ -69,18 +69,30 @@ parseRightExp fOut (Binop op a b) = do
         getBinopFunc o _ _ _ = error $ "unknown binop: " ++ show o
 parseRightExp _ _ = undefined
 
-parseExpArg :: Exp -> State AlgBuilder (String, T.Text)
-parseExpArg n@(Number _ _) = do
+parseExpArg :: T.Text -> Exp -> State AlgBuilder (String, T.Text)
+parseExpArg _ n@(Number _ _) = do
     addConstant n
-parseExpArg (Unop Neg n) = do
-    (name, luaValue) <- parseExpArg n
+parseExpArg fOut (Unop Neg n) = do
+    (name, luaValue) <- parseExpArg fOut n
     return ([head name] ++ "-" ++ tail name, luaValue)
-parseExpArg (PrefixExp (PEVar (VarName (Name name)))) = do
+parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
     addVariableAccess name
-parseExpArg binop@Binop{} = do
-    name <- parseRightExp "tmp" binop
-    return (name, "")
-parseExpArg _ = undefined
+parseExpArg fOut binop@Binop{} = do
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp name binop
+    return (T.unpack name, "")
+parseExpArg _ _ = undefined
+
+getNextTmpVarName :: T.Text -> State AlgBuilder T.Text 
+getNextTmpVarName fOut = do 
+    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    case Map.lookup fOut algVarGen of
+        Just value -> do
+            put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut (value + 1) algVarGen}
+            return $ T.pack $ "_" <> T.unpack fOut <> show value
+        Nothing -> do
+            put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut 1 algVarGen}
+            return $ T.pack $ "_" <> T.unpack fOut
 
 addStartupFuncArgs :: Stat -> Stat -> State AlgBuilder String
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
@@ -113,7 +125,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
     where
         parseStartupArg :: (Exp, LuaValue) -> State AlgBuilder String
         parseStartupArg (arg, value) = do
-            (varName, _) <- parseExpArg arg
+            (varName, _) <- parseExpArg (T.pack "") arg
             AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
             put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph (F.loop (read $ T.unpack $ startupArgumentString value) varName [getDefaultName value]), algBuffer = algBuffer, algVarGen = algVarGen}
             return ""
@@ -198,7 +210,7 @@ buildAlg syntaxTree =
             AlgBuilder
                 { algGraph = DFCluster [] :: DataFlowGraph String Int
                 , algBuffer = Map.empty
-                , algVarGen = 0
+                , algVarGen = Map.empty
                 }
 
 findStartupFunction (Block statements Nothing)
