@@ -8,6 +8,7 @@ module NITTA.LuaFrontendNew (
 
     -- * Internal
     LuaValue (..),
+    AlgBuilder(..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
