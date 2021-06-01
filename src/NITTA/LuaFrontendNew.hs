@@ -8,7 +8,7 @@ module NITTA.LuaFrontendNew (
 
     -- * Internal
     LuaValue (..),
-    AlgBuilder(..),
+    AlgBuilder (..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
@@ -38,12 +38,10 @@ instance Ord LuaValue where
     (<=) Variable{luaValueName = a} Constant{luaValueName = b} = a <= b
     (<=) Variable{luaValueName = a} Variable{luaValueName = b} = a <= b
 
-
-
 data AlgBuilder = AlgBuilder
     { algGraph :: DataFlowGraph String Int
-    , algBuffer ::  Map.Map T.Text LuaValue
-    , algVarGen ::  Map.Map T.Text Int
+    , algBuffer :: Map.Map T.Text LuaValue
+    , algVarGen :: Map.Map T.Text Int
     }
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
@@ -81,12 +79,13 @@ parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
 parseExpArg fOut binop@Binop{} = do
     name <- getNextTmpVarName fOut
     _ <- parseRightExp name binop
+    _ <- addVariableAccess name
     return (T.unpack name, "")
 parseExpArg _ _ = undefined
 
-getNextTmpVarName :: T.Text -> State AlgBuilder T.Text 
-getNextTmpVarName fOut = do 
-    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+getNextTmpVarName :: T.Text -> State AlgBuilder T.Text
+getNextTmpVarName fOut = do
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup fOut algVarGen of
         Just value -> do
             put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut (value + 1) algVarGen}
@@ -127,7 +126,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         parseStartupArg :: (Exp, LuaValue) -> State AlgBuilder String
         parseStartupArg (arg, value) = do
             (varName, _) <- parseExpArg (T.pack "") arg
-            AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+            AlgBuilder{algGraph, algBuffer, algVarGen} <- get
             put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph (F.loop (read $ T.unpack $ startupArgumentString value) varName [getDefaultName value]), algBuffer = algBuffer, algVarGen = algVarGen}
             return ""
         getDefaultName Variable{luaValueName} = T.unpack luaValueName ++ "^0#0"
@@ -136,17 +135,17 @@ processStatement _ _ = undefined
 
 addConstant :: Exp -> State AlgBuilder (String, T.Text)
 addConstant (Number valueType valueString) = do
-    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup valueString algBuffer of
         Just value -> do
             let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (luaValueAccessCount value)]
             let newValue = updateConstant value constant
-            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert valueString newValue algBuffer, algVarGen = algVarGen}
+            put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph constant, algBuffer = Map.insert valueString newValue algBuffer, algVarGen = algVarGen}
             return (getConstantName (luaValueName newValue) (luaValueAccessCount newValue), luaValueName newValue)
         Nothing -> do
             let constant = F.constant (read (T.unpack valueString)) [getConstantName valueString (0 :: Int)]
             let value = Constant{luaValueName = valueString, luaValueParsedFunction = constant, luaValueType = valueType, luaValueAccessCount = 0}
-            put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert valueString value algBuffer, algVarGen = algVarGen}
+            put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph constant, algBuffer = Map.insert valueString value algBuffer, algVarGen = algVarGen}
             return (getConstantName (luaValueName value) (luaValueAccessCount value), luaValueName value)
     where
         updateConstant Constant{luaValueName, luaValueType, luaValueAccessCount} constant = Constant{luaValueName = luaValueName, luaValueParsedFunction = constant, luaValueType = luaValueType, luaValueAccessCount = luaValueAccessCount + 1}
@@ -155,7 +154,7 @@ addConstant (Number valueType valueString) = do
 addConstant _ = undefined
 
 getFreeVariableName name = do
-    AlgBuilder{algBuffer}   <- get
+    AlgBuilder{algBuffer} <- get
     case Map.lookup name algBuffer of
         Just value -> do
             return $ getVariableName name (luaValueAccessCount value) (luaValueAssignCount value)
@@ -165,31 +164,31 @@ getFreeVariableName name = do
         getVariableName luaValueName luaValueAccessCount luaValueAssignCount = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
 
 addVariable name func isStartupArg startupArgString = do
-    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup name algBuffer of
         Just value -> do
             let newValue = updateConstant value
             put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert name newValue algBuffer, algVarGen = algVarGen}
             return $ getVariableName newValue
         Nothing -> do
-            let value = Variable{luaValueName = name, luaValueParsedFunction = func, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg, startupArgumentString = startupArgString }
+            let value = Variable{luaValueName = name, luaValueParsedFunction = func, luaValueAccessCount = 0, luaValueAssignCount = 0, isStartupArgument = isStartupArg, startupArgumentString = startupArgString}
             put AlgBuilder{algGraph = algGraph, algBuffer = Map.insert name value algBuffer, algVarGen = algVarGen}
             return $ getVariableName value
     where
         updateConstant Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} =
-            Variable{luaValueName = luaValueName, luaValueParsedFunction = func, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = isStartupArg, startupArgumentString = startupArgString }
+            Variable{luaValueName = luaValueName, luaValueParsedFunction = func, luaValueAccessCount = luaValueAccessCount, luaValueAssignCount = luaValueAssignCount + 1, isStartupArgument = isStartupArg, startupArgumentString = startupArgString}
         updateConstant _ = undefined
         getVariableName Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
         getVariableName _ = undefined
 
 addVariableAccess :: T.Text -> State AlgBuilder (String, T.Text)
 addVariableAccess name = do
-    AlgBuilder{algGraph, algBuffer, algVarGen}   <- get
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup name algBuffer of
         Just value -> do
             let newValue = updateVariable value
             let oldName = getVariableName value
-            put AlgBuilder{algGraph = updateGraph algGraph value, algBuffer = Map.insert name newValue algBuffer, algVarGen = algVarGen }
+            put AlgBuilder{algGraph = updateGraph algGraph value, algBuffer = Map.insert name newValue algBuffer, algVarGen = algVarGen}
             return (oldName, startupArgumentString value)
         Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show algBuffer)
     where
@@ -198,10 +197,11 @@ addVariableAccess name = do
         updateVariable _ = undefined
         getVariableName Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
         getVariableName _ = undefined
-        updateGraph graph value | isStartupArgument value = graph -- do not add startup arg to graph explicitly
-                                | otherwise               = addFuncToDataFlowGraph graph (luaValueParsedFunction value)
+        updateGraph graph value
+            | isStartupArgument value = graph -- do not add startup arg to graph explicitly
+            | otherwise = addFuncToDataFlowGraph graph (luaValueParsedFunction value)
 
-buildAlg syntaxTree = 
+buildAlg syntaxTree =
     flip execState st $ do
         _ <- addStartupFuncArgs startupFunctionCall startupFunctionDef
         mapM_ (processStatement startupFunctionName) $ funAssignStatements startupFunctionDef

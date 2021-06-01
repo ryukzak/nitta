@@ -107,13 +107,25 @@ case_process_multiply_statement =
         AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
+case_temporary_variable =
+    let assignment = Assign [VarName (Name $ T.pack "a")] [Binop Add (Binop Add (Number IntNum $ T.pack "1") (Number IntNum $ T.pack "2")) (Number IntNum $ T.pack "3")]
+        expected =
+            DFCluster
+                [ DFLeaf (F{fun = F.constant 3 ["!3#0"], funHistory = []})
+                , DFLeaf (F{fun = F.add "!1#0" "!2#0" ["_a^0#0"], funHistory = []})
+                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
+                , DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
+                --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+                ]
+        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
 --case_debug =
 --   let result = parseLuaSources $ T.pack "function sum(x)\n    y = 2 + x\n    sum(y + x)\nend\nsum(0)"
 --        expected = DFCluster []
 --     in expected @?= result
 
-
-defaultAlgBuilder = AlgBuilder{algGraph = DFCluster [], algBuffer = Map.empty, algVarGen = Map.empty }
+defaultAlgBuilder = AlgBuilder{algGraph = DFCluster [], algBuffer = Map.empty, algVarGen = Map.empty}
 
 tests :: TestTree
 tests = $(testGroupGenerator)
