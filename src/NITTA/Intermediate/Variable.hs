@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -23,11 +24,13 @@ module NITTA.Intermediate.Variable (
 import Data.Hashable
 import Data.List (stripPrefix)
 import qualified Data.Set as S
+import Data.String
 import Data.String.ToString
+import qualified Data.Text as T
 import Data.Typeable
 
 -- |Variable identifier. Used for simplify type description.
-type Var v = (Typeable v, Ord v, ToString v, Suffix v, Hashable v)
+type Var v = (Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v)
 
 -- |Type class of something, which is related to variables.
 class Variables a v | a -> v where
@@ -52,3 +55,10 @@ instance Suffix String where
     countSuffix s
         | Just s' <- stripPrefix "@buf" s = 1 + countSuffix s'
         | otherwise = countSuffix $ drop 1 s
+
+instance Suffix T.Text where
+    bufferSuffix s = s <> "@buf"
+    countSuffix s | s == T.empty = 0
+    countSuffix s
+        | Just s' <- T.stripPrefix "@buf" s = 1 + countSuffix s'
+        | otherwise = countSuffix $ T.drop 1 s
