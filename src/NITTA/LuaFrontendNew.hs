@@ -66,6 +66,7 @@ parseRightExp fOut (Binop op a b) = do
         getBinopFunc Mul a' b' resultName = F.multiply a' b' resultName
         getBinopFunc Div a' b' resultName = F.division a' b' [head resultName] (tail resultName)
         getBinopFunc o _ _ _ = error $ "unknown binop: " ++ show o
+parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
 parseRightExp _ _ = undefined
 
 parseExpArg :: T.Text -> Exp -> State AlgBuilder (String, T.Text)
@@ -81,6 +82,7 @@ parseExpArg fOut binop@Binop{} = do
     _ <- parseRightExp name binop
     _ <- addVariableAccess name
     return (T.unpack name, "")
+parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
 parseExpArg _ _ = undefined
 
 getNextTmpVarName :: T.Text -> State AlgBuilder T.Text
