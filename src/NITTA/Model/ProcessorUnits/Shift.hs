@@ -59,7 +59,6 @@ data Shift v x t = Shift
     , -- |description of target computation process
       process_ :: Process t (StepInfo v x t)
     }
-    deriving (Show)
 
 instance (Var v) => Locks (Shift v x t) v where
     locks Shift{sources, target = Just t} =
@@ -200,7 +199,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision _pu d = error [i|incorrect decision #{ d } for Shift|]
 
 data Mode = Logic | Arithmetic deriving (Show, Eq)
 

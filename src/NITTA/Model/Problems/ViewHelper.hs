@@ -17,20 +17,20 @@ module NITTA.Model.Problems.ViewHelper (
 import Data.Aeson
 import Data.Bifunctor
 import qualified Data.Set as S
-import Data.String.ToString
 import qualified Data.Text as T
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils
 import Numeric.Interval.NonEmpty
 
 newtype IntervalView = IntervalView T.Text
     deriving (Generic)
 
 instance (Time t) => Viewable (Interval t) IntervalView where
-    view = IntervalView . T.replace (T.pack $ show (maxBound :: t)) "∞" . T.pack . show
+    view = IntervalView . T.replace (showText (maxBound :: t)) "∞" . showText
 
 instance ToJSON IntervalView
 
@@ -67,7 +67,7 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = (T.pack . toString) pu
+            , pu = toText pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
@@ -77,21 +77,21 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
             , targets = map view' dfTargets
             }
         where
-            view' = bimap (T.pack . toString) epdView
+            view' = bimap toText epdView
             epdView EndpointSt{epRole, epAt} =
                 EndpointSt
                     { epRole = case epRole of
-                        Source vs -> Source $ S.map show' vs
-                        Target v -> Target $ show' v
+                        Source vs -> Source $ S.map toText vs
+                        Target v -> Target $ toText v
                     , epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)
                     }
 
-instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
+instance (Var v, Val x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =
         BreakLoopView
-            { value = show' loopX
-            , outputs = map show' $ S.elems loopO
-            , input = show' loopI
+            { value = showText loopX
+            , outputs = map toText $ S.elems loopO
+            , input = toText loopI
             }
 
 instance Viewable (ConstantFolding v x) DecisionView where
@@ -108,13 +108,11 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
+instance (Var v) => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
-            { newBuffer = show' newBuffer
-            , changeset = show' changeset
+            { newBuffer = showText newBuffer
+            , changeset = showText changeset
             }
 
 instance ToJSON DecisionView
-
-show' = T.replace "\"" "" . T.pack . show

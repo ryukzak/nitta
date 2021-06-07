@@ -244,8 +244,8 @@ instance Controllable (BusNetwork tag v x t) where
 
     takePortTags _ _ = error "internal error"
 
-instance (Show v, ToString tag) => Show (Instruction (BusNetwork tag v x t)) where
-    show (Transport v src trg) = "Transport " <> show v <> " " <> toString src <> " " <> toString trg
+instance (ToString tag, Var v) => Show (Instruction (BusNetwork tag v x t)) where
+    show (Transport v src trg) = "Transport " <> toString v <> " " <> toString src <> " " <> toString trg
 
 instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =
@@ -394,7 +394,7 @@ externalPortsDecl ports =
     concatMap
         ( \(tag, (is, os, ios)) ->
             concat
-                [ ["// external ports for: " <> (T.pack . toString) tag]
+                [ ["// external ports for: " <> toText tag]
                 , map (", input " <>) is
                 , map (", output " <>) os
                 , map (", inout " <>) ios
@@ -403,7 +403,7 @@ externalPortsDecl ports =
         ports
 
 instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork tag v x t) where
-    moduleName _tag BusNetwork{bnName} = T.pack $ toString bnName
+    moduleName _tag BusNetwork{bnName} = toText bnName
 
     hardware tag pu@BusNetwork{..} =
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
@@ -470,7 +470,7 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
                 [ Immediate (toString $ mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-                    <> map (uncurry hardware . first (T.pack . toString)) (M.assocs bnPus)
+                    <> map (uncurry hardware . first toText) (M.assocs bnPus)
         where
             regInstance t =
                 [__i|
@@ -480,13 +480,13 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
-                let inst = hardwareInstance ((T.pack . toString) t) unit uEnv
-                    insts' = inst : regInstance ((T.pack . toString) t) : insts
-                    regs' = ((T.pack . toString) t <> "_attr_out", (T.pack . toString) t <> "_data_out") : regs
+                let inst = hardwareInstance (toText t) unit uEnv
+                    insts' = inst : regInstance (toText t) : insts
+                    regs' = (toText t <> "_attr_out", toText t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{}, ..} =
-        let subSW = map (uncurry software . first (T.pack . toString)) $ M.assocs bnPus
+        let subSW = map (uncurry software . first toText) $ M.assocs bnPus
             sw = [Immediate (toString $ mn <> ".dump") $ T.pack memoryDump]
          in Aggregate (Just $ toString mn) $ subSW ++ sw
         where
@@ -556,14 +556,14 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                             { teCntx = pTestCntx
                                             , teComputationDuration = fromEnum $ nextTick bn
                                             }
-                                 in testEnvironment ((T.pack . toString) tag) unit uEnv tEnv
+                                 in testEnvironment (toText tag) unit uEnv tEnv
                             )
                             $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
 
-                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag . first (T.pack . toString)) $ M.assocs bnPus
+                envInitFlags = map pretty $ mapMaybe (uncurry testEnvironmentInitFlag . first toText) $ M.assocs bnPus
 
                 tickWithTransfers =
                     map
@@ -579,7 +579,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                 assertion (cycleI, t, Nothing) =
                     [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
-                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
+                    [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, #{ toString bnName }.data_bus, #{ toString bnName }.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, "#{ toString v }");|]
 
                 tbName = moduleName pName bn <> "_tb"
              in Aggregate

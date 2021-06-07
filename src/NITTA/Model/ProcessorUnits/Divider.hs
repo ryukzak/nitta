@@ -230,7 +230,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                     , process_ = execSchedule pu $ do
                         scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag
                     }
-    endpointDecision _ _ = error "divider decision internal error"
+    endpointDecision _pu d = error [i|incorrect decision #{ d } for Divider|]
 
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)

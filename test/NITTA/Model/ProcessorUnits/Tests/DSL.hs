@@ -134,6 +134,7 @@ import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.List (find)
 import qualified Data.Set as S
+import Data.String.ToString
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
@@ -142,6 +143,7 @@ import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
+import Prettyprinter (pretty)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
@@ -260,7 +262,7 @@ getDecisionSpecific role = do
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show (vsToStringList s)
 
 getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstraint t)]
 getDecisionsFromEp = do
@@ -284,7 +286,7 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
 
-assertAllEndpointRoles :: (Show (EndpointRole v)) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> DSLStatement pu v x t ()
 assertAllEndpointRoles roles = do
     UnitTestState{unit} <- get
     let opts = S.fromList $ map epRole $ endpointOptions unit
@@ -300,15 +302,16 @@ assertEndpoint a b role = do
         Just _ -> return ()
 
 isFullyBinded pu fs = do
-    assertBool ("Outputs not equal, expected: " <> show fOuts <> "; actual: " <> show outs) $ outs == fOuts
-    assertBool ("Inputs not equal, expected: " <> show fInps <> "; actual: " <> show inps) $ inps == fInps
+    assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
+    assertBool ("Inputs not equal, expected: " <> show' fInps <> "; actual: " <> show' inps) $ inps == fInps
     return $ not $ null fu
     where
         fu = functions pu
-        outs = S.fromList $ map outputs fu
-        inps = S.fromList $ map inputs fu
-        fOuts = S.fromList $ map outputs fs
-        fInps = S.fromList $ map inputs fs
+        outs = unionsMap outputs fu
+        inps = unionsMap inputs fu
+        fOuts = unionsMap outputs fs
+        fInps = unionsMap inputs fs
+        show' = show . S.map toString
 
 assertSynthesisDone :: DSLStatement pu v x t ()
 assertSynthesisDone = do
@@ -363,5 +366,5 @@ traceEndpoints = do
 
 traceProcess = do
     UnitTestState{unit} <- get
-    lift $ putStrLn $ "Process: " <> show (process unit)
+    lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
     return ()

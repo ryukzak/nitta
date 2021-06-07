@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
@@ -21,7 +20,6 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import Data.List (permutations)
 import Data.Maybe
-import Data.String.Interpolate
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Simulation
@@ -61,31 +59,10 @@ simulationTests =
             ("c", [11, 12, 13, 14, 15])
         ]
 
-showTests =
-    testGroup
-        "show simulation result"
-        [ simulationTraceTestCase
-            "simple show"
-            [ loop 0 "b2" ["a1"]
-            , loop 1 "c" ["b1", "b2"]
-            , add "a1" "b1" ["c"]
-            ]
-            [__i|
-                | Cycle  | a1  | b1  | b2  | c  |
-                |:-------|:----|:----|:----|:---|
-                | 1      | 0   | 1   | 1   | 1  |
-                | 2      | 1   | 1   | 1   | 2  |
-                | 3      | 1   | 2   | 2   | 3  |
-                | 4      | 2   | 3   | 3   | 5  |
-                | 5      | 3   | 5   | 5   | 8  |\n
-                |]
-        ]
-
 tests =
     testGroup
         "intermediate simulation"
         [ simulationTests
-        , showTests
         ]
 
 simulationTestCase ::
@@ -101,17 +78,4 @@ simulationTestCase name n received alg (v, expect) =
         let dfg = fsToDataFlowGraph alg
             Cntx{cntxProcess} = simulateDataFlowGraph n def received dfg
             actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (HM.lookup v c)) cntxProcess
-         in expect @=? actual
-
-simulationTraceTestCase ::
-    HasCallStack =>
-    String ->
-    [F String Int] ->
-    String ->
-    TestTree
-simulationTraceTestCase name alg expect =
-    testCase name $
-        let dfg = fsToDataFlowGraph alg
-            cntx = simulateDataFlowGraph 5 def def dfg
-            actual = show cntx
          in expect @=? actual

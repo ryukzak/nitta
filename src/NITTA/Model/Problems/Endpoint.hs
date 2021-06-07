@@ -32,10 +32,12 @@ import Data.Aeson (ToJSON)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as S
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Time
+import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
@@ -49,10 +51,10 @@ data EndpointSt v tp = EndpointSt
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{epRole} = variables epRole
 
-instance (Show v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
-    show EndpointSt{epRole, epAt} = "?" ++ show epRole ++ "@(" ++ show epAt ++ ")"
-instance (Show v, Time t) => Show (EndpointSt v (Interval t)) where
-    show EndpointSt{epRole, epAt} = "!" ++ show epRole ++ "@(" ++ show epAt ++ ")"
+instance (Var v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
+    show EndpointSt{epRole, epAt} = "?" <> show epRole <> "@(" <> show epAt <> ")"
+instance (Var v, Time t) => Show (EndpointSt v (Interval t)) where
+    show EndpointSt{epRole, epAt} = "!" <> show epRole <> "@(" <> show epAt <> ")"
 
 instance (Ord v) => Patch (EndpointSt v tp) (Changeset v) where
     patch diff ep@EndpointSt{epRole} = ep{epRole = patch diff epRole}
@@ -79,13 +81,9 @@ data EndpointRole v
       Target v
     deriving (Eq, Ord, Generic)
 
-instance {-# OVERLAPPABLE #-} (Show v) => Show (EndpointRole v) where
-    show (Source vs) = "Source " ++ S.join "," (map show $ S.elems vs)
-    show (Target v) = "Target " ++ show v
-
-instance {-# OVERLAPS #-} Show (EndpointRole String) where
-    show (Source vs) = "Source " ++ S.join "," (S.elems vs)
-    show (Target v) = "Target " ++ v
+instance (Var v) => Show (EndpointRole v) where
+    show (Source vs) = "Source " <> S.join "," (vsToStringList vs)
+    show (Target v) = "Target " <> toString v
 
 instance (Ord v) => Patch (EndpointRole v) (Changeset v) where
     patch Changeset{changeI} (Target v) = Target $ fromMaybe v $ changeI M.!? v
