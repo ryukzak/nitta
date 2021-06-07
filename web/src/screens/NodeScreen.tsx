@@ -8,7 +8,7 @@ import { api } from "services/HaskellApiService";
 import { TreeInfo } from "services/gen/types";
 import { AxiosResponse } from "axios";
 import { JsonView } from "components/JsonView";
-import { RequestStatusInfo } from "components/RequestStatusInfo";
+import { RequestStatusInfo } from "components/utils/RequestStatusInfo";
 
 export interface INodeScreenProps {}
 
