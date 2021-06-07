@@ -105,7 +105,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   // each rerender
   const dot = algorithmGraph ? renderGraphJsonToDot(algorithmGraph, procState, endpoints) : undefined;
   return (
-    <div className="bg-light border edgeGraphContainer">
+    <div className="bg-light border graphvizContainer">
       {dot && (
         <>
           <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
