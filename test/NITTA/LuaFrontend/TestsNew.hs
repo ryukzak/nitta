@@ -44,13 +44,13 @@ case_find_startup_function =
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
         expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algBuffer} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int 
      in algBuffer @?= expected
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
         expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algBuffer} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algBuffer @?= expected
 
 case_process_multiple_assignments_statement =
@@ -60,7 +60,7 @@ case_process_multiple_assignments_statement =
                 [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
                 , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueParsedFunction = F.constant 2 ["b^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
                 ]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algBuffer} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algBuffer @?= expected
 
 case_process_add_statement =
@@ -71,7 +71,7 @@ case_process_add_statement =
                 , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
                 --, DFLeaf (F {fun = F.Add (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algGraph} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algGraph @?= expected
 
 case_process_sub_statement =
@@ -82,7 +82,7 @@ case_process_sub_statement =
                 , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
                 --, DFLeaf (F {fun = F.Sub (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algGraph} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algGraph @?= expected
 
 case_process_divide_statement =
@@ -93,7 +93,7 @@ case_process_divide_statement =
                 , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
                 --, DFLeaf (F {fun = F.Division (I "!1#0") (I "!2#0") (O (fromList ["a"])) (O (fromList [""])), funHistory = []})
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algGraph} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algGraph @?= expected
 
 case_process_multiply_statement =
@@ -104,7 +104,7 @@ case_process_multiply_statement =
                 , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
                 --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algGraph} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algGraph @?= expected
 
 case_temporary_variable =
@@ -117,7 +117,7 @@ case_temporary_variable =
                 , DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
                 --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+        AlgBuilder{algGraph} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algGraph @?= expected
 
 --case_debug =

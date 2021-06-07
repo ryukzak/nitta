@@ -22,25 +22,25 @@ import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 
-data LuaValue
-    = Constant {luaValueName :: T.Text, luaValueParsedFunction :: F String Int, luaValueType :: NumberType, luaValueAccessCount :: Int}
-    | Variable {luaValueName :: T.Text, luaValueParsedFunction :: F String Int, luaValueAccessCount :: Int, luaValueAssignCount :: Int, isStartupArgument :: Bool, startupArgumentString :: T.Text}
+data LuaValue t
+    = Constant {luaValueName :: T.Text, luaValueParsedFunction :: F String t, luaValueType :: NumberType, luaValueAccessCount :: Int}
+    | Variable {luaValueName :: T.Text, luaValueParsedFunction :: F String t, luaValueAccessCount :: Int, luaValueAssignCount :: Int, isStartupArgument :: Bool, startupArgumentString :: T.Text}
     deriving (Show)
 
-instance Eq LuaValue where
+instance Eq (LuaValue t) where
     (==) Constant{luaValueName = a} Constant{luaValueName = b} = a == b
     (==) Variable{luaValueName = a} Variable{luaValueName = b} = a == b
     (==) _ _ = False
 
-instance Ord LuaValue where
+instance Ord (LuaValue t) where
     (<=) Constant{luaValueName = a} Constant{luaValueName = b} = a == b
     (<=) Constant{luaValueName = a} Variable{luaValueName = b} = a == b
     (<=) Variable{luaValueName = a} Constant{luaValueName = b} = a <= b
     (<=) Variable{luaValueName = a} Variable{luaValueName = b} = a <= b
 
-data AlgBuilder = AlgBuilder
-    { algGraph :: DataFlowGraph String Int
-    , algBuffer :: Map.Map T.Text LuaValue
+data AlgBuilder t = AlgBuilder
+    { algGraph :: DataFlowGraph String t
+    , algBuffer :: Map.Map T.Text (LuaValue t)
     , algVarGen :: Map.Map T.Text Int
     }
 
@@ -79,7 +79,6 @@ parseRightExp fOut (Binop op a b) = do
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
 parseRightExp _ _ = undefined
 
-parseExpArg :: T.Text -> Exp -> State AlgBuilder (String, T.Text)
 parseExpArg _ n@(Number _ _) = do
     addConstant n
 parseExpArg fOut (Unop Neg n) = do
@@ -95,7 +94,6 @@ parseExpArg fOut binop@Binop{} = do
 parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
 parseExpArg _ _ = undefined
 
-getNextTmpVarName :: T.Text -> State AlgBuilder T.Text
 getNextTmpVarName fOut | T.isInfixOf "#" fOut = getNextTmpVarName (T.splitOn "#" fOut!!1)
                        | otherwise = do
     AlgBuilder{algGraph, algBuffer, algVarGen} <- get
@@ -107,7 +105,7 @@ getNextTmpVarName fOut | T.isInfixOf "#" fOut = getNextTmpVarName (T.splitOn "#"
             put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut 1 algVarGen}
             return $ T.pack $ "_0#" <> T.unpack fOut
 
-addStartupFuncArgs :: Stat -> Stat -> State AlgBuilder String
+addStartupFuncArgs :: Val t => Stat -> Stat -> State (AlgBuilder t) String
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
     mapM_ (\(Name name, Number _ valueString) -> addVariable name (F.constant (read (T.unpack valueString)) [T.unpack name ++ "^0#0"]) True valueString) $ zip names exps
     return ""
@@ -115,7 +113,6 @@ addStartupFuncArgs _ _ = undefined
 
 --Lua language Stat structure parsing
 --LocalAssign
-processStatement :: T.Text -> Stat -> State AlgBuilder String
 processStatement _ (LocalAssign _names Nothing) = do
     return ""
 processStatement fn (LocalAssign names (Just exps)) =
@@ -136,7 +133,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         mapM_ parseStartupArg $ zip args startupVars
         return ""
     where
-        parseStartupArg :: (Exp, LuaValue) -> State AlgBuilder String
+        parseStartupArg :: Val t => (Exp, LuaValue t) -> State (AlgBuilder t) String
         parseStartupArg (arg, value) = do
             (varName, _) <- parseExpArg (T.pack "loop") arg
             AlgBuilder{algGraph, algBuffer, algVarGen} <- get
@@ -146,7 +143,6 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         getDefaultName _ = undefined
 processStatement _ _ = undefined
 
-addConstant :: Exp -> State AlgBuilder (String, T.Text)
 addConstant (Number valueType valueString) = do
     AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup valueString algBuffer of
@@ -195,7 +191,6 @@ addVariable name func isStartupArg startupArgString = do
         getVariableName Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
         getVariableName _ = undefined
 
-addVariableAccess :: T.Text -> State AlgBuilder (String, T.Text)
 addVariableAccess name = do
     AlgBuilder{algGraph, algBuffer, algVarGen} <- get
     case Map.lookup name algBuffer of
@@ -223,7 +218,7 @@ buildAlg syntaxTree =
         (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree
         st =
             AlgBuilder
-                { algGraph = DFCluster [] :: DataFlowGraph String Int
+                { algGraph = DFCluster [] :: DataFlowGraph String t
                 , algBuffer = Map.empty
                 , algVarGen = Map.empty
                 }
@@ -239,7 +234,6 @@ findStartupFunction _ = error "can't find startup function in lua source code"
 
 getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
 
-parseLuaSources :: T.Text -> DataFlowGraph String Int
 parseLuaSources src =
     let syntaxTree = getLuaBlockFromSources src
         AlgBuilder{algGraph} = buildAlg syntaxTree
