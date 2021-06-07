@@ -1,34 +1,25 @@
-import React, { FC, useContext, useEffect, useState } from "react";
+import React, { FC, useCallback, useContext } from "react";
 import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { api } from "services/HaskellApiService";
-import { TreeInfo } from "services/gen/types";
-import { AxiosResponse } from "axios";
 import { JsonView } from "components/JsonView";
 import { RequestStatusInfo } from "components/utils/RequestStatusInfo";
+import { useApiRequest } from "hooks/useApiRequest";
 
 export interface INodeScreenProps {}
 
 export const NodeScreen: FC<INodeScreenProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
-
-  const [treeInfo, setTreeInfo] = useState<TreeInfo | null>(null);
-  const [treeInfoErrorMessage, setTreeInfoErrorMessage] = useState<string | null>(null);
-  const [treeInfoRefreshTrigger, setTreeInfoRefreshTrigger] = useState(false);
-  useEffect(() => {
-    setTreeInfoErrorMessage(null);
-    setTreeInfo(null);
-    api
-      .getTreeInfo()
-      .then((response: AxiosResponse<TreeInfo>) => setTreeInfo(response.data))
-      .catch((err: Error) => {
-        console.error(err);
-        setTreeInfoErrorMessage(`Couldn't load TreeInfo: ${err.message}`);
-      });
-  }, [selectedSID, treeInfoRefreshTrigger]);
+  const treeInfoRequest = useApiRequest({
+    requester: useCallback(() => {
+      return api.getTreeInfo();
+      // getTreeInfo result depends on selectedSID on server side, thus need to re-request the result when it's changed
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedSID]),
+  });
 
   if (!selectedSID) return <pre> synthesis is not selected </pre>;
 
@@ -38,13 +29,13 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
       <pre>{selectedSID}</pre>
 
       <h3>Tree info:</h3>
-      {treeInfo ? (
-        <JsonView src={treeInfo} />
+      {treeInfoRequest.response?.data ? (
+        <JsonView src={treeInfoRequest.response.data} />
       ) : (
         <div className="m-5">
           <RequestStatusInfo
-            errorMessage={treeInfoErrorMessage}
-            refreshButtonProps={{ onClick: () => setTreeInfoRefreshTrigger((v) => !v) }}
+            errorMessage={treeInfoRequest.errorMessage}
+            refreshButtonProps={{ onClick: treeInfoRequest.refreshRequestData }}
             isSpinnerCentered={false}
           />
         </div>
