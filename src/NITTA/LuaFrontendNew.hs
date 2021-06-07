@@ -94,16 +94,17 @@ parseExpArg fOut binop@Binop{} = do
 parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
 parseExpArg _ _ = undefined
 
-getNextTmpVarName fOut | T.isInfixOf "#" fOut = getNextTmpVarName (T.splitOn "#" fOut!!1)
-                       | otherwise = do
-    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
-    case Map.lookup fOut algVarGen of
-        Just value -> do
-            put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut (value + 1) algVarGen}
-            return $ T.pack $ "_" <> show value <> "#" <> T.unpack fOut 
-        Nothing -> do
-            put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut 1 algVarGen}
-            return $ T.pack $ "_0#" <> T.unpack fOut
+getNextTmpVarName fOut
+    | T.isInfixOf "#" fOut = getNextTmpVarName (T.splitOn "#" fOut !! 1)
+    | otherwise = do
+        AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+        case Map.lookup fOut algVarGen of
+            Just value -> do
+                put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut (value + 1) algVarGen}
+                return $ T.pack $ "_" <> show value <> "#" <> T.unpack fOut
+            Nothing -> do
+                put AlgBuilder{algGraph = algGraph, algBuffer = algBuffer, algVarGen = Map.insert fOut 1 algVarGen}
+                return $ T.pack $ "_0#" <> T.unpack fOut
 
 addStartupFuncArgs :: Val t => Stat -> Stat -> State (AlgBuilder t) String
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
@@ -162,14 +163,15 @@ addConstant (Number valueType valueString) = do
         getConstantName luaValueName luaValueAccessCount = "!" ++ T.unpack luaValueName ++ "#" ++ show luaValueAccessCount
 addConstant _ = undefined
 
-getFreeVariableName name | T.head name == '_' = do return $ T.unpack name
-                         |  otherwise         = do
-    AlgBuilder{algBuffer} <- get
-    case Map.lookup name algBuffer of
-        Just value -> do
-            return $ getVariableName name (luaValueAccessCount value) (luaValueAssignCount value)
-        Nothing -> do
-            return $ getVariableName name (0 :: Integer) (0 :: Integer)
+getFreeVariableName name
+    | T.head name == '_' = do return $ T.unpack name
+    | otherwise = do
+        AlgBuilder{algBuffer} <- get
+        case Map.lookup name algBuffer of
+            Just value -> do
+                return $ getVariableName name (luaValueAccessCount value) (luaValueAssignCount value)
+            Nothing -> do
+                return $ getVariableName name (0 :: Integer) (0 :: Integer)
     where
         getVariableName luaValueName luaValueAccessCount luaValueAssignCount = T.unpack luaValueName ++ "^" ++ show luaValueAssignCount ++ "#" ++ show luaValueAccessCount
 

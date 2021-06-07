@@ -44,7 +44,7 @@ case_find_startup_function =
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
         expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        AlgBuilder{algBuffer} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int 
+        AlgBuilder{algBuffer} = (execState (processStatement (T.pack "_") assignment) defaultAlgBuilder) :: AlgBuilder Int
      in algBuffer @?= expected
 
 case_process_assignment_statement =
@@ -136,8 +136,7 @@ case_lua_constant_declatation =
                 sum(0)
             |]
         dfg =
-            [ 
-              F.loop 0 "_0#loop" ["a^0#0"]
+            [ F.loop 0 "_0#loop" ["a^0#0"]
             , F.add "_1#loop" "r^0#0" ["_0#loop"]
             , F.constant (-1) ["r^0#0"]
             , F.add "a^0#0" "t^0#0" ["_1#loop"]
@@ -156,16 +155,13 @@ case_lua_two_name_for_same_constant =
                 sum(0)
             |]
         dfg =
-            [ 
-              F.loop 0 "_0#loop" ["a^0#0"]
+            [ F.loop 0 "_0#loop" ["a^0#0"]
             , F.add "_1#loop" "r^0#0" ["_0#loop"]
             , F.constant 1 ["r^0#0"]
             , F.add "a^0#0" "t^0#0" ["_1#loop"]
             , F.constant 1 ["t^0#0"] :: F String Int
             ]
      in functions (parseLuaSources src) @?= dfg
-
-
 
 defaultAlgBuilder = AlgBuilder{algGraph = DFCluster [], algBuffer = Map.empty, algVarGen = Map.empty}
 
