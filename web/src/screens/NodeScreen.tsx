@@ -6,8 +6,8 @@ import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { api } from "services/HaskellApiService";
 import { JsonView } from "components/JsonView";
-import { RequestStatusInfo } from "components/utils/RequestStatusInfo";
 import { useApiRequest } from "hooks/useApiRequest";
+import { RequestResult } from "components/utils/RequestResult";
 
 export interface INodeScreenProps {}
 
@@ -29,17 +29,11 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
       <pre>{selectedSID}</pre>
 
       <h3>Tree info:</h3>
-      {treeInfoRequest.response?.data ? (
-        <JsonView src={treeInfoRequest.response.data} />
-      ) : (
-        <div className="m-5">
-          <RequestStatusInfo
-            errorMessage={treeInfoRequest.errorMessage}
-            refreshButtonProps={{ onClick: treeInfoRequest.refreshRequestData }}
-            isSpinnerCentered={false}
-          />
-        </div>
-      )}
+      <RequestResult
+        result={treeInfoRequest.response}
+        resultRenderer={(result) => <JsonView src={result.data} />}
+        noResultRenderer={treeInfoRequest}
+      />
 
       <h3>Dataflow graph:</h3>
       <IntermediateView />
