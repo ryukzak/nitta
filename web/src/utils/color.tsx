@@ -29,3 +29,20 @@ export interface ColorObject {
   b: number;
   a?: number;
 }
+
+// https://github.com/mwaskom/seaborn/blob/e04b07eb3df135511e71e556c2bd34ef59ba08ba/seaborn/palettes.py#L19
+// "muted" pallete from seaborn
+export const CHART_COLOR_PALLETE = {
+  blue: Color.fromHex("#4878D0"),
+  orange: Color.fromHex("#EE854A"),
+  green: Color.fromHex("#6ACC64"),
+  red: Color.fromHex("#D65F5F"),
+  purple: Color.fromHex("#956CB4"),
+  brown: Color.fromHex("#8C613C"),
+  pink: Color.fromHex("#DC7EC0"),
+  gray: Color.fromHex("#797979"),
+  yellow: Color.fromHex("#D5BB67"),
+  lightblue: Color.fromHex("#82C6E2"),
+};
+
+export const CHART_COLORS = Object.values(CHART_COLOR_PALLETE);

@@ -8,6 +8,9 @@ import { api } from "services/HaskellApiService";
 import { JsonView } from "components/JsonView";
 import { useApiRequest } from "hooks/useApiRequest";
 import { RequestResult } from "components/utils/RequestResult";
+import { Col, Container, Row } from "react-bootstrap";
+import { SimpleNittaBarChart } from "components/utils/SimpleNittaBarChart";
+import { CHART_COLOR_PALLETE } from "utils/color";
 
 export interface INodeScreenProps {}
 
@@ -31,11 +34,33 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
       <h3>Tree info:</h3>
       <RequestResult
         result={treeInfoRequest.response}
-        resultRenderer={(result) => <JsonView src={result.data} />}
+        resultRenderer={(result) => (
+          <Container fluid>
+            <Row>
+              <Col md={4}>
+                <JsonView src={result.data} />
+              </Col>
+              <Col md={6} lg={4}>
+                <SimpleNittaBarChart
+                  data={result.data.durationSuccess}
+                  color={CHART_COLOR_PALLETE.blue}
+                  name="success nodes with duration"
+                />
+                <div className="mt-3">
+                  <SimpleNittaBarChart
+                    data={result.data.stepsSuccess}
+                    color={CHART_COLOR_PALLETE.orange}
+                    name="success nodes with steps"
+                  />
+                </div>
+              </Col>
+            </Row>
+          </Container>
+        )}
         noResultRenderer={treeInfoRequest}
       />
 
-      <h3>Dataflow graph:</h3>
+      <h3 className="mt-3">Dataflow graph:</h3>
       <IntermediateView />
 
       <MicroarchitectureView />
