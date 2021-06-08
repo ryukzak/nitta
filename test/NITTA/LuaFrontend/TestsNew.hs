@@ -163,6 +163,21 @@ case_lua_two_name_for_same_constant =
             ]
      in functions (parseLuaSources src) @?= dfg
 
+case_lua_negative_operator =
+    let src =
+            [__i|
+                function sum(a)
+                    b = -a
+                    sum(b)
+                end
+                sum(0)
+            |]
+        dfg =
+            [ F.loop 0 "b^0#0" ["a^0#0"]
+            , F.negative "a^0#0" ["b^0#0"] :: F String Int
+            ]
+     in functions (parseLuaSources src) @?= dfg
+
 defaultAlgBuilder = AlgBuilder{algGraph = DFCluster [], algBuffer = Map.empty, algVarGen = Map.empty}
 
 tests :: TestTree

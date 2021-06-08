@@ -77,6 +77,10 @@ parseRightExp fOut (Binop op a b) = do
         getBinopFunc Div a' b' resultName = F.division a' b' [head resultName] (tail resultName)
         getBinopFunc o _ _ _ = error $ "unknown binop: " ++ show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
+parseRightExp fOut (Unop Neg expr@(PrefixExp _)) = do
+    (expr', _) <- parseExpArg fOut expr
+    name <- getFreeVariableName fOut
+    addVariable fOut (F.negative expr' [name]) False ""
 parseRightExp _ _ = undefined
 
 parseExpArg _ n@(Number _ _) = do
@@ -164,7 +168,7 @@ addConstant (Number valueType valueString) = do
 addConstant _ = undefined
 
 getFreeVariableName name
-    | T.head name == '_' = do return $ T.unpack name
+    | T.head name == '_' = return $ T.unpack name
     | otherwise = do
         AlgBuilder{algBuffer} <- get
         case Map.lookup name algBuffer of
