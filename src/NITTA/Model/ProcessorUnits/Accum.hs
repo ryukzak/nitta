@@ -147,6 +147,7 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
         | Just (Add a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Plus b, Pull c]) : work}
         | Just (Sub a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Minus b, Pull c]) : work}
+        | Just (Negative a b) <- castF f = Right pu{work = tryBindJob (Acc [Push Minus a, Pull b]) : work}
         | Just f'@Acc{} <- castF f = Right pu{work = tryBindJob f' : work}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 

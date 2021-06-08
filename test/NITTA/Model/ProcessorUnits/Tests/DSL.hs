@@ -108,6 +108,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- *Process Unit Control
     decide,
     decideAt,
+    decideAtUnsafe,
     consume,
     provide,
     breakLoop,
@@ -119,6 +120,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertSynthesisDone,
     assertEndpoint,
     assertAllEndpointRoles,
+    assertLocks,
 
     -- *Trace
     tracePU,
@@ -151,8 +153,7 @@ unitTestCase ::
     DSLStatement pu v x t () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
-    _ <- evalUnitTestState name pu alg
-    assertBool "test failed" True
+    void $ evalUnitTestState name pu alg
 
 -- | State of the processor unit used in test
 data UnitTestState pu v x = UnitTestState
@@ -182,7 +183,7 @@ assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
-        Left err -> lift $ assertFailure err
+        Left err -> lift $ assertFailure $ "assign: " <> err
 
 {- | Store several provided functions and its initial values
 for naive coSimulation
@@ -216,19 +217,22 @@ setValue var val = do
 decide :: EndpointRole v -> DSLStatement pu v x t ()
 decide role = do
     des <- epAt <$> getDecisionSpecific role
-    doDecision $ EndpointSt role des
+    doDecision False $ EndpointSt role des
 
 -- | Make synthesis decision with provided Endpoint Role and manually selected interval
 decideAt :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
-decideAt from to role = doDecision $ EndpointSt role (from ... to)
+decideAt from to role = doDecision False $ EndpointSt role (from ... to)
 
-doDecision :: EndpointSt v (Interval t) -> DSLStatement pu v x t ()
-doDecision endpSt = do
+decideAtUnsafe :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+decideAtUnsafe from to role = doDecision True $ EndpointSt role (from ... to)
+
+doDecision :: Bool -> EndpointSt v (Interval t) -> DSLStatement pu v x t ()
+doDecision unsafe endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
-    if isAvailable
+    if unsafe || isAvailable
         then put st{unit = endpointDecision unit endpSt}
-        else lift $ assertFailure $ "Such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
+        else lift $ assertFailure $ "doDecision: such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
 isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
     case find (isSubroleOf role . epRole) $ endpointOptions pu of
@@ -291,8 +295,9 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
+        ep = EndpointSt role (a ... b)
     case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
-        Nothing -> lift $ assertFailure $ "Endpoint not defined in: " <> show opts
+        Nothing -> lift $ assertFailure $ "assertEndpoint: " <> show ep <> " not defined in: " <> show opts
         Just _ -> return ()
 
 isFullyBinded pu fs = do
@@ -311,6 +316,14 @@ assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (isProcessComplete unit functs && null (endpointOptions unit)) $
         lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+
+assertLocks :: (Locks pu v) => [Lock v] -> DSLStatement pu v x t ()
+assertLocks expectLocks = do
+    UnitTestState{unit} <- get
+    let actualLocks0 = locks unit
+        actualLocks = S.fromList actualLocks0
+    lift $ assertBool ("assertLocks: locks contain duplicates: " <> show actualLocks0) $ length actualLocks0 == S.size actualLocks
+    lift $ assertBool ("assertLocks: expected locks: " <> show expectLocks <> " actual: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
 
 assertCoSimulation ::
     ( PUClasses pu String x Int

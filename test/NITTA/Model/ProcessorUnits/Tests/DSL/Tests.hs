@@ -15,6 +15,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
     tests,
 ) where
 
+import Data.Default
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
@@ -113,6 +114,43 @@ tests =
                 setValue "a" 10
                 setValue "b" 11
                 setValue "a" 15
+        , testGroup
+            "decideAtUnsafe"
+            [ unitTestCase "check constrain existance" broken $ do
+                assign $ brokenBuffer "a" ["b"]
+                assertEndpoint 1 maxBound $ consume "a"
+                decideAt 1 1 $ consume "a"
+                assertEndpoint 4 maxBound $ provide ["b"]
+            , expectFail $
+                unitTestCase "check that safe decide fail on wrong decision" broken $ do
+                    assign $ brokenBuffer "a" ["b"]
+                    setValue "a" 1
+                    assertEndpoint 1 maxBound $ consume "a"
+                    decideAt 1 1 $ consume "a"
+                    assertEndpoint 4 maxBound $ provide ["b"]
+                    decideAt 3 3 $ provide ["b"]
+            , unitTestCase "check that unsafe decide success and test success pass" broken $ do
+                assign $ brokenBuffer "a" ["b"]
+                setValue "a" 1
+                assertEndpoint 1 maxBound $ consume "a"
+                decideAt 1 1 $ consume "a"
+                assertEndpoint 4 maxBound $ provide ["b"]
+                decideAtUnsafe 3 3 $ provide ["b"] -- incorrect decision
+                assertCoSimulation
+            ]
+        , testGroup
+            "assertLocks"
+            [ unitTestCase "assertLocks - success" u $ do
+                assign $ multiply "a" "b" ["c", "d"]
+                decide $ consume "a"
+                assertLocks [Lock{locked = "c", lockBy = "b"}, Lock{locked = "d", lockBy = "b"}]
+            , expectFail $
+                unitTestCase "assertLocks - fail" u $ do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decide $ consume "a"
+                    assertLocks [Lock{locked = "c", lockBy = "b"}]
+            ]
         ]
     where
         u = multiplier True :: Multiplier String Int Int
+        broken = def :: Broken String Int Int

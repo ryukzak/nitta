@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -58,6 +59,7 @@ import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval.NonEmpty
 import Servant.Docs
@@ -70,7 +72,7 @@ data TreeView a = TreeNodeView
     { rootLabel :: a
     , subForest :: [TreeView a]
     }
-    deriving (Generic)
+    deriving (Generic, Show)
 
 instance (ToJSON a) => ToJSON (TreeView a)
 
@@ -81,7 +83,7 @@ instance ToSample (TreeView ShortNodeView) where
                 { rootLabel =
                     ShortNodeView
                         { sid = show $ SID []
-                        , isLeaf = False
+                        , isTerminal = False
                         , isProcessed = True
                         , duration = 0
                         , score = 0 / 0
@@ -92,7 +94,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [0]
-                                , isLeaf = False
+                                , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 4052
@@ -104,7 +106,7 @@ instance ToSample (TreeView ShortNodeView) where
                         { rootLabel =
                             ShortNodeView
                                 { sid = show $ SID [1]
-                                , isLeaf = False
+                                , isTerminal = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 3021
@@ -115,19 +117,38 @@ instance ToSample (TreeView ShortNodeView) where
                     ]
                 }
 
+instance ToSample Integer where
+    toSamples _ =
+        singleSample 0
+
 data ShortNodeView = ShortNodeView
     { sid :: String
-    , isLeaf :: Bool
+    , isTerminal :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
     , decsionType :: String
     }
-    deriving (Generic)
+    deriving (Generic, Show)
+
+data NodeInfo = NodeInfo
+    { sid :: String
+    , isTerminal :: Bool
+    , isProcessed :: Bool
+    , duration :: Int
+    , score :: Float
+    , decsionType :: String
+    }
+    deriving (Generic, Show)
 
 instance ToJSON ShortNodeView
+instance ToJSON TreeInfo
 
-viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+instance ToSample TreeInfo where
+    toSamples _ =
+        singleSample mempty
+
+viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForest <- maybe (return []) (mapM viewNodeTree) subForestM
     return
@@ -135,9 +156,9 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
             { rootLabel =
                 ShortNodeView
                     { sid = show sid
-                    , isLeaf = isComplete tree
+                    , isTerminal = isLeaf tree
                     , isProcessed = isJust subForestM
-                    , duration = fromEnum $ processDuration sTarget
+                    , duration = (fromEnum . processDuration . sTarget . sState) tree
                     , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
                     , decsionType = case sDecision of
                         Root{} -> "root"
@@ -155,7 +176,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
 
 data NodeView tag v x t = NodeView
     { sid :: String
-    , isLeaf :: Bool
+    , isTerminal :: Bool
     , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
@@ -164,11 +185,11 @@ data NodeView tag v x t = NodeView
     deriving (Generic)
 
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
-    view tree@Tree{sID, sDecision, sState = SynthesisState{sTarget}} =
+    view tree@Tree{sID, sDecision} =
         NodeView
             { sid = show sID
-            , isLeaf = isComplete tree
-            , duration = fromEnum $ processDuration sTarget
+            , isTerminal = isLeaf tree
+            , duration = (fromEnum . processDuration . sTarget . sState) tree
             , decision =
                 ( \case
                     SynthesisDecision{decision} -> view decision
@@ -196,7 +217,7 @@ instance ToSample (NodeView tag v x t) where
         samples
             [ NodeView
                 { sid = show $ SID [0, 1, 3, 1]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -216,7 +237,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -235,7 +256,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
@@ -243,7 +264,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
@@ -255,7 +276,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
@@ -267,7 +288,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                , isTerminal = False
                 , duration = 0
                 , parameters =
                     toJSON $

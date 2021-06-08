@@ -90,6 +90,7 @@ library
       NITTA.Project.Types
       NITTA.Project.VerilogSnippets
       NITTA.Synthesis
+      NITTA.Synthesis.Analysis
       NITTA.Synthesis.Bind
       NITTA.Synthesis.BreakLoop
       NITTA.Synthesis.ConstantFolding

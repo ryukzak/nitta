@@ -43,10 +43,12 @@ tests =
             assign $ division "a" "b" ["c"] ["d"]
             setValue "a" 64
             setValue "b" 12
-            decideAt 1 1 $ consume "a" -- but I would like to write: decide $ consume "a"
-            decideAt 2 2 $ consume "b"
-            decideAt 10 10 $ provide ["c"]
-            decideAt 11 11 $ provide ["d"]
+            decideAt 0 0 $ consume "a"
+            decideAt 1 1 $ consume "b"
+            -- traceProcess >> tracePU >> traceEndpoints
+            assertEndpoint 7 maxBound $ provide ["c"]
+            decideAt 7 7 $ provide ["c"]
+            decideAt 8 8 $ provide ["d"]
             assertCoSimulation
         , unitTestCase "division only mod" u2 $ do
             assign $ division "a" "b" ["c"] []
@@ -54,7 +56,7 @@ tests =
             setValue "b" 12
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
-            decideAt 10 10 $ provide ["c"]
+            decideAt 8 8 $ provide ["c"]
             assertCoSimulation
         , unitTestCase "division only rem" u2 $ do
             assign $ division "a" "b" [] ["d"]
@@ -67,35 +69,62 @@ tests =
         , unitTestCase "division success pipeline" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
-            setValues [("a", 64), ("b", 12), ("e", 64), ("f", 12)]
-            decideAt 1 1 $ consume "a"
-            decideAt 2 2 $ consume "b"
+            setValues [("a", 10), ("b", 2), ("e", 9), ("f", 3)]
+            decideAt 0 0 $ consume "a"
+            decideAt 1 1 $ consume "b"
             decideAt 3 3 $ consume "e"
             decideAt 4 4 $ consume "f"
             decideAt 7 7 $ provide ["c"]
-            decideAt 9 9 $ provide ["g"]
+            decideAt 10 10 $ provide ["g"]
+            assertCoSimulation
+        , unitTestCase "division pipeline on last tick" u2 $ do
+            assign $ division "a" "b" ["c"] []
+            assign $ division "e" "f" ["g"] []
+            setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
+            assertLocks
+                [ Lock{locked = "c", lockBy = "a"}
+                , Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "g", lockBy = "e"}
+                , Lock{locked = "g", lockBy = "f"}
+                ]
+            decideAt 1 1 $ consume "a"
+            assertLocks
+                [ Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "e", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "b"}
+                , Lock{locked = "g", lockBy = "b"}
+                ]
+            decideAt 2 2 $ consume "b"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "e"}
+                , Lock{locked = "g", lockBy = "f"}
+                ]
+            decideAt 4 4 $ consume "e"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "f"}
+                ]
+            decideAt 5 5 $ consume "f"
+            assertLocks
+                [ Lock{locked = "g", lockBy = "c"}
+                ]
+            assertEndpoint 8 10 $ provide ["c"]
+            decideAt 10 10 $ provide ["c"] -- last tick
+            assertLocks []
+            assertEndpoint 11 maxBound $ provide ["g"]
+            decideAt 13 13 $ provide ["g"]
             assertCoSimulation
         , expectFail $
-            unitTestCase "division failed pipeline" u2 $ do
+            unitTestCase "division pipeline after result corrupted" u2 $ do
                 assign $ division "a" "b" ["c"] []
                 assign $ division "e" "f" ["g"] []
                 setValues [("a", 64), ("b", 12), ("e", 4), ("f", 2)]
                 decideAt 1 1 $ consume "a"
                 decideAt 2 2 $ consume "b"
-                decideAt 3 3 $ consume "e"
-                decideAt 4 4 $ consume "f"
-                decideAt 12 12 $ provide ["c"] -- should fail here, specific time matter (only here, in another case should use `decide`)
-                decideAt 13 13 $ provide ["g"]
-                assertCoSimulation
-        , -- FIXME: the test fail with following description:
-          --
-          -- > division failed pipeline:  - ?Source "c"@(7..∞ /P 1..1)
-          -- > FAIL (expected) (0.03s)
-          -- >       test/NITTA/Model/ProcessorUnits/Tests/PuUnitTestDsl.hs:160:
-          -- >       Simulation failed (expected failure)
-          --
-          -- wrong error place
-          puCoSimTestCase
+                decideAt 4 4 $ consume "e"
+                decideAt 5 5 $ consume "f"
+                assertEndpoint 8 10 $ provide ["c"]
+                decideAt 11 11 $ provide ["c"] -- fail here because out of available time
+        , puCoSimTestCase
             "division by zero"
             u2
             [("a", 64), ("b", 0)]
