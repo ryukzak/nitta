@@ -58,16 +58,17 @@ import Test.Tasty.QuickCheck (testProperty)
 -- |Execute co-simulation test for the specific process unit
 puCoSimTestCase ::
     ( HasCallStack
-    , PUClasses (pu String x Int) String x Int
-    , WithFunctions (pu String x Int) (F String x)
-    , P.Testable (pu String x Int) String x
-    , DefaultX (pu String x Int) x
+    , PUClasses (pu v x Int) v x Int
+    , WithFunctions (pu v x Int) (F v x)
+    , P.Testable (pu v x Int) v x
+    , DefaultX (pu v x Int) x
     , Typeable pu
+    , Var v
     ) =>
     String ->
-    pu String x Int ->
-    [(String, x)] ->
-    [F String x] ->
+    pu v x Int ->
+    [(v, x)] ->
+    [F v x] ->
     TestTree
 puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
