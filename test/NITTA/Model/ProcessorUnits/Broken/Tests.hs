@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -24,7 +23,6 @@ module NITTA.Model.ProcessorUnits.Broken.Tests (
 
 import Data.Default
 import Data.String.Interpolate
-import qualified Data.Text as T
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -137,8 +135,8 @@ tests =
             ]
         ]
     where
-        u = def :: Broken T.Text Int Int
-        u2 = def :: Broken T.Text (Attr (IntX 32)) Int
+        u = def :: Broken String Int Int
+        u2 = def :: Broken String (Attr (IntX 32)) Int
         alg = [loop 1 "b" ["a"], brokenBuffer "a" ["b"]]
         lua =
             [__i|

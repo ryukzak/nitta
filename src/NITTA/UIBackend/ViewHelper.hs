@@ -78,7 +78,7 @@ instance ToSample (TreeView ShortNodeView) where
             TreeNodeView
                 { rootLabel =
                     ShortNodeView
-                        { sid = showText $ SID []
+                        { sid = show $ SID []
                         , isTerminal = False
                         , isFinish = False
                         , isProcessed = True
@@ -90,7 +90,7 @@ instance ToSample (TreeView ShortNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = showText $ SID [0]
+                                { sid = show $ SID [0]
                                 , isTerminal = False
                                 , isFinish = False
                                 , isProcessed = False
@@ -103,7 +103,7 @@ instance ToSample (TreeView ShortNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = showText $ SID [1]
+                                { sid = show $ SID [1]
                                 , isTerminal = False
                                 , isFinish = False
                                 , isProcessed = False
@@ -121,13 +121,13 @@ instance ToSample Integer where
         singleSample 0
 
 data ShortNodeView = ShortNodeView
-    { sid :: T.Text
+    { sid :: String
     , isTerminal :: Bool
     , isFinish :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
-    , decsionType :: T.Text
+    , decsionType :: String
     }
     deriving (Generic, Show)
 
@@ -155,7 +155,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
         TreeNodeView
             { rootLabel =
                 ShortNodeView
-                    { sid = showText sid
+                    { sid = show sid
                     , isTerminal = isLeaf tree
                     , isFinish = isComplete tree
                     , isProcessed = isJust subForestM

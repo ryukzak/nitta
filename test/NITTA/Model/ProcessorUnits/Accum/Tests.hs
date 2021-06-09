@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -20,7 +19,6 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
-import qualified Data.Text as T
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -170,6 +168,6 @@ tests =
             assertSynthesisDone
         ]
     where
-        accumDef = def :: Accum T.Text Int Int
-        u2 = def :: Accum T.Text (Attr (IntX 8)) Int
+        accumDef = def :: Accum String Int Int
+        u2 = def :: Accum String (Attr (IntX 8)) Int
         fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]

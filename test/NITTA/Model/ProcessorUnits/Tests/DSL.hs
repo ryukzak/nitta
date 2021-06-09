@@ -167,7 +167,7 @@ data UnitTestState pu v x = UnitTestState
       -- 2. assignNaive - will be binded during naive synthesis.
       functs :: [F v x]
     , -- | Initial values for coSimulation
-      cntxCycle :: [(v, x)]
+      cntxCycle :: [(String, x)]
     }
     deriving (Show)
 
@@ -199,17 +199,17 @@ assignNaive f cntxs = do
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues :: (Function f v, WithFunctions pu f) => [(v, x)] -> DSLStatement pu v x t ()
+setValues :: (Function f String, WithFunctions pu f) => [(String, x)] -> DSLStatement pu String x t ()
 setValues = mapM_ (uncurry setValue)
 
 -- | set initital value for coSimulation input variables
-setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> DSLStatement pu v x t ()
+setValue :: (Function f String, WithFunctions pu f) => String -> x -> DSLStatement pu String x t ()
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when (var `elem` map fst cntxCycle) $
-        lift $ assertFailure $ "The variable '" <> toString var <> "' is already set!"
+        lift $ assertFailure $ "The variable '" <> show var <> "' is already set!"
     unless (isVarAvailable var unit) $
-        lift $ assertFailure $ "It's not possible to set the variable '" <> toString var <> "'! It's not present in process"
+        lift $ assertFailure $ "It's not possible to set the variable '" <> show var <> "'! It's not present in process"
     put pu{cntxCycle = (var, val) : cntxCycle}
     where
         isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ inpVars $ functions pu
@@ -328,13 +328,12 @@ assertLocks expectLocks = do
     lift $ assertBool ("assertLocks: expected locks: " <> show expectLocks <> " actual: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
 
 assertCoSimulation ::
-    ( PUClasses pu v x Int
-    , WithFunctions pu (F v x)
-    , Testable pu v x
+    ( PUClasses pu String x Int
+    , WithFunctions pu (F String x)
+    , Testable pu String x
     , DefaultX pu x
-    , Var v
     ) =>
-    DSLStatement pu v x Int ()
+    DSLStatement pu String x Int ()
 assertCoSimulation =
     let checkInputVars pu fs cntx = S.union (inpVars $ functions pu) (inpVars fs) == S.fromList (map fst cntx)
      in do
@@ -344,7 +343,6 @@ assertCoSimulation =
 
             report@TestbenchReport{tbStatus} <-
                 lift $ puCoSim testName unit cntxCycle functs False
-
             unless tbStatus $
                 lift $ assertFailure $ "coSimulation failed: \n" <> show report
 

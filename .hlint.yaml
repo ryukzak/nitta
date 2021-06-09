@@ -7,15 +7,13 @@
 - ignore: {name: "Use zipWith"}
 - ignore: {name: "Use tuple-section"}
 - ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
+- ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
 - ignore: {name: "Use camelCase", within: "NITTA.Intermediate.Value.Tests"}
 - ignore: {name: "Evaluate", within: "NITTA.Intermediate.Value.Tests"}
 - ignore: {name: "Use <$>", within: "NITTA.UIBackend.ViewHelper"}
 - ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.Tests.Microarchitecture"}
 - ignore: {name: "Use list comprehension", within: "Spec"}
-
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Multiplier.Tests"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Divider.Tests"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Tests.DSL.Tests"}
-- ignore: {name: "Reduce duplication", within: "NITTA.Utils.Tests" }
-- ignore: {name: "Reduce duplication", within: "NITTA.Tests" }

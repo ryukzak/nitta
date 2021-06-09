@@ -69,7 +69,7 @@ prepareJSAPI port path = do
                     { SJS.urlPrefix = [i|http://localhost:#{ port }|]
                     , SJS.moduleName = "jsAPI"
                     }
-    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI _ String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
 
 application receivedValues model outputPath = do
     root <- synthesisTreeRootIO model

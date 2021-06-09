@@ -34,7 +34,6 @@ import Data.List.Split (splitWhen)
 import Data.Set (elems, fromList)
 import Data.String.ToString
 import qualified Data.String.Utils as S
-import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
@@ -110,11 +109,11 @@ toBlocksSplit exprInput =
 
 accGen blocks =
     let partedExpr = map (partition (\(x : _) -> x /= '='))
-        signPush ('+' : name) = Push Plus (I $ T.pack name)
-        signPush ('-' : name) = Push Minus (I $ T.pack name)
+        signPush ('+' : name) = Push Plus (I name)
+        signPush ('-' : name) = Push Minus (I name)
         signPush _ = error "Error in matching + and -"
         pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
+        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_ : name) -> name : buff) [] lst
      in Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
 instance (Var v) => Locks (Acc v x) v where

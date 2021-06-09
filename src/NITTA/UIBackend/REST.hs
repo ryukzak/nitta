@@ -240,7 +240,7 @@ data UnitEndpoints tag v t = UnitEndpoints
     , unitEndpoints :: [EndpointSt v (TimeConstraint t)]
     }
     deriving (Generic)
-instance (ToJSON tag, ToJSON t, ToJSON v, Time t) => ToJSON (UnitEndpoints tag v t)
+instance (ToJSON tag, ToJSON t, Time t) => ToJSON (UnitEndpoints tag String t)
 instance ToSample (UnitEndpoints String String Int) where
     toSamples _ =
         singleSample
@@ -256,23 +256,20 @@ instance ToSample (UnitEndpoints String String Int) where
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
     { dbgEndpointOptions :: [UnitEndpoints tag v t]
-    , dbgFunctionLocks :: [(T.Text, [Lock v])]
-    , dbgCurrentStateFunctionLocks :: [(T.Text, [Lock v])]
-    , dbgPULocks :: [(tag, [Lock v])]
+    , dbgFunctionLocks :: [(String, [Lock v])]
+    , dbgCurrentStateFunctionLocks :: [(String, [Lock v])]
+    , dbgPULocks :: [(String, [Lock v])]
     }
     deriving (Generic)
 
-instance (ToJSON tag, ToJSON v, ToJSON t, Time t) => ToJSON (Debug tag v t)
+instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
-instance ToSample (Debug String String Int) -- where toSamples _ = noSamples
+instance ToSample (Debug String String Int)
 instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples
 
-instance (UnitTag tag) => ToSample (Lock tag) where
-    toSamples _ = singleSample Lock{locked = "b", lockBy = "a"}
-
-instance {-# OVERLAPS #-} (UnitTag tag) => ToSample [(T.Text, [Lock tag])] where
+instance {-# OVERLAPS #-} ToSample [(String, [Lock String])] where
     toSamples _ = singleSample [("PU or function tag", [Lock{locked = "b", lockBy = "a"}])]
 
 type DebugAPI tag v t =
@@ -283,15 +280,15 @@ type DebugAPI tag v t =
 
 debug BackendCtx{root} sid = liftIO $ do
     tree <- getTreeIO root sid
-    let dbgFunctionLocks = map (\f -> (f, locks f)) $ functions $ targetUnit tree
+    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetUnit tree
         already = transferred $ targetUnit tree
     return
         Debug
             { dbgEndpointOptions = endpointOptions' $ targetUnit tree
-            , dbgFunctionLocks = map (first showText) dbgFunctionLocks
+            , dbgFunctionLocks
             , dbgCurrentStateFunctionLocks =
-                [ (showText f, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
-                | (f, ls) <- dbgFunctionLocks
+                [ (tag, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
+                | (tag, ls) <- dbgFunctionLocks
                 ]
             , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetUnit tree
             }

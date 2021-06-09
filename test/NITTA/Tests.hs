@@ -4,11 +4,9 @@
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
@@ -28,7 +26,6 @@ import Control.Monad (void)
 import Data.Default
 import Data.Map.Strict (fromList)
 import qualified Data.Set as S
-import qualified Data.Text as T
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -43,6 +40,8 @@ import Test.Tasty.HUnit
 import Test.Tasty.TH
 
 -- FIXME: avoid NITTA.Model.Tests.Internals usage
+
+{-# ANN module "HLint: ignore Reduce duplication" #-}
 
 test_fibonacci =
     [ algTestCase
@@ -86,35 +85,26 @@ test_add_and_io =
                     }
     ]
 
-f1 = F.add "a" "b" ["c", "d"] :: F T.Text Int
-
-patchP :: (Patch a (T.Text, T.Text)) => (T.Text, T.Text) -> a -> a
-patchP = patch
-patchI :: (Patch a (I T.Text, I T.Text)) => (I T.Text, I T.Text) -> a -> a
-patchI = patch
-patchO :: (Patch a (O T.Text, O T.Text)) => (O T.Text, O T.Text) -> a -> a
-patchO = patch
-patchC :: (Patch a (Changeset T.Text)) => Changeset T.Text -> a -> a
-patchC = patch
+f1 = F.add "a" "b" ["c", "d"] :: F String Int
 
 test_patchFunction =
     [ testCase "non-patched function" $
         show f1 @?= "a + b = c = d"
     , testCase "direct patched function input" $
-        show (patchP ("a", "a'") f1) @?= "a' + b = c = d"
+        show (patch ("a", "a'") f1) @?= "a' + b = c = d"
     , testCase "direct patched function output" $
-        show (patchP ("c", "c'") f1) @?= "a + b = c' = d"
+        show (patch ("c", "c'") f1) @?= "a + b = c' = d"
     , testCase "diff patched function input by input" $
-        show (patchC def{changeI = fromList [("a", "a'")]} f1) @?= "a' + b = c = d"
+        show (patch def{changeI = fromList [("a", "a'")]} f1) @?= "a' + b = c = d"
     , testCase "diff non patched function input by output" $
-        show (patchC def{changeO = fromList [("a", S.singleton "a'")]} f1) @?= "a + b = c = d"
+        show (patch def{changeO = fromList [("a", S.singleton "a'")]} f1) @?= "a + b = c = d"
     , testCase "diff patched function output by output" $
-        show (patchC def{changeO = fromList [("c", S.singleton "c'")]} f1) @?= "a + b = c' = d"
+        show (patch def{changeO = fromList [("c", S.singleton "c'")]} f1) @?= "a + b = c' = d"
     , testCase "diff non patched function output by input" $
-        show (patchC def{changeI = fromList [("c", "c'")]} f1) @?= "a + b = c = d"
+        show (patch def{changeI = fromList [("c", "c'")]} f1) @?= "a + b = c = d"
     , testCase "diff non patched function output by input" $
         show
-            ( patchC
+            ( patch
                 def
                     { changeI = fromList [("b", "b'"), ("d", "d!")]
                     , changeO = fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
@@ -130,7 +120,7 @@ pu =
                 f1
                 PU
                     { diff = def
-                    , unit = def :: Accum T.Text Int Int
+                    , unit = def :: Accum String Int Int
                     , uEnv = undefined
                     }
      in pu'
@@ -139,13 +129,13 @@ test_patchEndpointOptions =
     [ testCase "non-patched function options" $
         show' opts @?= "[Target a,Target b]"
     , testCase "patched function options input by input" $
-        show' (patchC def{changeI = fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
+        show' (patch def{changeI = fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
     , testCase "non-patched function options input by output" $
-        show' (patchC def{changeO = fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
+        show' (patch def{changeO = fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
     , testCase "patched function options output by output" $
-        show' (patchC def{changeO = fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
+        show' (patch def{changeO = fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
     , testCase "non-patched function options output by input" $
-        show' (patchC def{changeI = fromList [("d", "d'")]} opts') @?= "[Source c,d]"
+        show' (patch def{changeI = fromList [("d", "d'")]} opts') @?= "[Source c,d]"
     ]
     where
         opts = endpointOptions pu
@@ -169,10 +159,10 @@ test_patchPUone2one =
     ]
     where
         -- F.add "a" "b" ["c", "d"] -> F.add "A" "b" ["c", "d"]
-        pu1 = patchI (I "a", I "A") pu
+        pu1 = patch (I "a", I "A") pu
         o1 = endpointOptions pu1
         -- F.add "A" "b" ["c", "d"] -> F.add "A" "b" ["c", "D"]
-        pu2 = patchO (O $ S.fromList ["d"], O $ S.fromList ["D"]) pu1
+        pu2 = patch (O $ S.fromList ["d"], O $ S.fromList ["D"]) pu1
         o2 = endpointOptions pu2
         -- F.add "A" "b" ["c", "D"] -> F.add ___ "b" ["c", "D"]
         pu3 = endpointDecision pu2 $ endpointOptionToDecision $ head o2
@@ -198,10 +188,10 @@ test_patchPUmany2one =
     ]
     where
         -- F.add "a" "b" ["c", "d"] -> F.add "A" "b" ["c", "d"]
-        pu1 = patchI (I "a", I "A") pu
+        pu1 = patch (I "a", I "A") pu
         o1 = endpointOptions pu1
         -- F.add "A" "b" ["c", "d"] -> F.add "A" "b" ["CD"]
-        pu2 = patchO (O $ S.fromList ["c", "d"], O $ S.fromList ["CD"]) pu1
+        pu2 = patch (O $ S.fromList ["c", "d"], O $ S.fromList ["CD"]) pu1
         o2 = endpointOptions pu2
         -- F.add "A" "b" ["CD"] -> F.add ___ "b" ["CD"]
         pu3 = endpointDecision pu2 $ endpointOptionToDecision $ head o2

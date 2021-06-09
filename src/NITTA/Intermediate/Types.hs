@@ -56,7 +56,6 @@ module NITTA.Intermediate.Types (
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
-import Data.Bifunctor
 import qualified Data.Csv as Csv
 import Data.Default
 import qualified Data.HashMap.Strict as HM
@@ -164,9 +163,6 @@ class Label a where
 
 instance Label String where
     label s = s
-
-instance Label T.Text where
-    label = toString
 
 -- |Type class of something, which is related to functions.
 class WithFunctions a f | a -> f where
@@ -300,9 +296,8 @@ data Cntx v x = Cntx
 instance (Show x) => Show (Cntx String x) where
     show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
-log2list cntxProcess0 =
-    let cntxProcess = map (HM.fromList . map (first toString) . HM.toList) cntxProcess0
-        header = sort $ HM.keys $ head cntxProcess
+log2list cntxProcess =
+    let header = sort $ HM.keys $ head cntxProcess
         body = map row cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
      in map (uncurry (:)) $ zip header (transpose body)

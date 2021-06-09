@@ -21,7 +21,7 @@ module NITTA.Model.Problems.Dataflow (
     dataflowOption2decision,
 ) where
 
-import Data.Bifunctor
+import Control.Arrow
 import Data.String.ToString
 import GHC.Generics
 import NITTA.Model.Problems.Endpoint

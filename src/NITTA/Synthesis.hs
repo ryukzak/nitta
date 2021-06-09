@@ -138,7 +138,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tSimulationCycleN :: Int
     }
 
-instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
+instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
     def =
         TargetSynthesis
             { tName = undefined
