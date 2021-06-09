@@ -138,9 +138,9 @@ endpointDecisionJob j@Job{tasks = tasks@(t : ts), current = (c : cs)} v
     | t \\ c /= t && length t > length c = j{tasks = updateTasks currentInsert tasks, current = currentInsert}
     | otherwise = j{tasks = updateTasks currentAdd tasks, current = currentAdd}
     where
-        ([val], _) = partition ((== v) . snd) t
-        currentInsert = (val : c) : cs
-        currentAdd = [val] : c : cs
+        (lst, _) = partition ((== v) . snd) t
+        currentInsert = (lst ++ c) : cs
+        currentAdd = lst : c : cs
 
 updateTasks (c : _) tasks@(t : ts)
     | null $ t \\ c = ts
