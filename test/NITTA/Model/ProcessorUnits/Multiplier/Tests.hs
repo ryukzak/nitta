@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -17,6 +18,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 ) where
 
 import Data.String.Interpolate
+import qualified Data.Text as T
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -107,8 +109,8 @@ tests =
             assertCoSimulation
         ]
     where
-        u = multiplier True :: Multiplier String Int Int
-        u2 = multiplier True :: Multiplier String (Attr (IntX 16)) Int
+        u = multiplier True :: Multiplier T.Text Int Int
+        u2 = multiplier True :: Multiplier T.Text (Attr (IntX 16)) Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Multiply _ _))

@@ -53,17 +53,18 @@ with or without "naive synthesis".
 -}
 puCoSim ::
     ( HasCallStack
-    , PUClasses pu String x Int
-    , WithFunctions pu (F String x)
-    , P.Testable pu String x
+    , PUClasses pu v x Int
+    , WithFunctions pu (F v x)
+    , P.Testable pu v x
     , DefaultX pu x
+    , Var v
     ) =>
     String ->
     pu ->
-    [(String, x)] ->
-    [F String x] ->
+    [(v, x)] ->
+    [F v x] ->
     Bool ->
-    IO (TestbenchReport String x)
+    IO (TestbenchReport v x)
 puCoSim name u cntxCycle alg needBind = do
     pwd <- getCurrentDirectory
     let mname = toModuleName name

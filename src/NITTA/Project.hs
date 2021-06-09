@@ -28,7 +28,9 @@ import Control.Monad.Identity (runIdentity)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe
+import Data.String
 import Data.String.Interpolate (__i)
+import Data.String.ToString
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import NITTA.Intermediate.Types
@@ -124,8 +126,8 @@ runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess
 
 extractLogValues x0 text = mapMaybe f $ lines text
     where
-        f s = case matchRegex (verilogAssertRE x0) s of
-            Just [c, _t, x, _e, v] -> Just (read c, v, read x)
+        f s = case matchRegex (verilogAssertRE x0) $ toString s of
+            Just [c, _t, x, _e, v] -> Just (read c, fromString $ toString v, read x)
             _ -> Nothing
 
 log2hms lst0 = cntxProcess
