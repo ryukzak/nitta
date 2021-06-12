@@ -35,6 +35,14 @@ import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
+    ( Acc(Acc, actions),
+      Action(Pull, Push),
+      Sign(Minus, Plus),
+      isPull,
+      isPush,
+      Sub(Sub),
+      Add(Add),
+      Neg(Neg) )
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -147,7 +155,7 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
         | Just (Add a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Plus b, Pull c]) : work}
         | Just (Sub a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Minus b, Pull c]) : work}
-        | Just (Negative a b) <- castF f = Right pu{work = tryBindJob (Acc [Push Minus a, Pull b]) : work}
+        | Just (Neg a b) <- castF f = Right pu{work = tryBindJob (Acc [Push Minus a, Pull b]) : work}
         | Just f'@Acc{} <- castF f = Right pu{work = tryBindJob f' : work}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 

@@ -35,8 +35,8 @@ module NITTA.Intermediate.Functions (
     shiftR,
     Sub (..),
     sub,
-    Negative (..),
-    negative,
+    Neg (..),
+    neg,
     module NITTA.Intermediate.Functions.Accum,
 
     -- *Memory
@@ -320,25 +320,25 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
             (qx, rx) = dx `quotRem` nx
          in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
 
-data Negative v x = Negative (I v) (O v) deriving (Typeable, Eq)
-instance Label (Negative v x) where label Negative{} = "-"
-instance (Show v) => Show (Negative v x) where
-    show (Negative (I i) (O o)) =
+data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
+instance Label (Neg v x) where label Neg{} = "-"
+instance (Show v) => Show (Neg v x) where
+    show (Neg (I i) (O o)) =
         let lexp = "-" <> show i
             rexp = showOut o
          in lexp <> " = " <> rexp
-negative :: (Var v, Val x) => v -> [v] -> F v x
-negative i o = packF $ Negative (I i) $ O $ fromList o
+neg :: (Var v, Val x) => v -> [v] -> F v x
+neg i o = packF $ Neg (I i) $ O $ fromList o
 
-instance (Ord v) => Function (Negative v x) v where
-    inputs (Negative i _) = variables i
-    outputs (Negative _ o) = variables o
-instance (Ord v) => Patch (Negative v x) (v, v) where
-    patch diff (Negative i o) = Negative (patch diff i) (patch diff o)
-instance (Var v) => Locks (Negative v x) v where
+instance (Ord v) => Function (Neg v x) v where
+    inputs (Neg i _) = variables i
+    outputs (Neg _ o) = variables o
+instance (Ord v) => Patch (Neg v x) (v, v) where
+    patch diff (Neg i o) = Neg (patch diff i) (patch diff o)
+instance (Var v) => Locks (Neg v x) v where
     locks = inputsLockOutputs
-instance (Var v, Num x) => FunctionSimulation (Negative v x) v x where
-    simulate cntx (Negative (I i) (O o)) =
+instance (Var v, Num x) => FunctionSimulation (Neg v x) v x where
+    simulate cntx (Neg (I i) (O o)) =
         let x1 = cntx `getCntx` i
             y = - x1
          in [(v, y) | v <- elems o]
