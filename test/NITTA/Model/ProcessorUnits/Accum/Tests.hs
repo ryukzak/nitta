@@ -22,6 +22,7 @@ import Data.String.Interpolate
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
+import NITTA.Intermediate.Functions as F
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -166,6 +167,20 @@ tests =
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
+        , unitTestCase "accum neg func test" accumDef $ do
+            assign $ F.neg "a" ["b"]
+            setValue "a" 2
+
+            assertEndpoint 1 maxBound $ consume "a"
+            assertLocks [Lock{locked = "b", lockBy = "a"}]
+            decideAt 1 1 $ consume "a"
+
+            assertEndpoint 5 maxBound $ provide ["b"]
+            assertLocks []
+            decideAt 5 5 $ provide ["b"]
+
+            assertLocks []
+            assertCoSimulation
         ]
     where
         accumDef = def :: Accum String Int Int
