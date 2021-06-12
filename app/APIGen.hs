@@ -32,6 +32,7 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
+import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Synthesis
@@ -95,6 +96,11 @@ $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''UnitEndpoints)
 
+$(deriveTypeScript defaultOptions ''Process)
+$(deriveTypeScript defaultOptions ''Step)
+$(deriveTypeScript defaultOptions ''Relation)
+$(deriveTypeScript defaultOptions ''StepInfoView)
+
 $(deriveTypeScript defaultOptions ''TestbenchReport)
 
 -- Microarchitecture
@@ -155,6 +161,11 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
                     , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpoints)
+                    , -- Process
+                      getTypeScriptDeclarations (Proxy :: Proxy Process)
+                    , getTypeScriptDeclarations (Proxy :: Proxy Step)
+                    , getTypeScriptDeclarations (Proxy :: Proxy Relation)
+                    , getTypeScriptDeclarations (Proxy :: Proxy StepInfoView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
                     , -- Microarchitecture
                       getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
