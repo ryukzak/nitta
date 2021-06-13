@@ -34,15 +34,16 @@ import Data.Set (elems, fromList, member)
 import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
-import NITTA.Intermediate.Functions
-    ( Acc(Acc, actions),
-      Action(Pull, Push),
-      Sign(Minus, Plus),
-      isPull,
-      isPush,
-      Sub(Sub),
-      Add(Add),
-      Neg(Neg) )
+import NITTA.Intermediate.Functions (
+    Acc (Acc, actions),
+    Action (Pull, Push),
+    Add (Add),
+    Neg (Neg),
+    Sign (Minus, Plus),
+    Sub (Sub),
+    isPull,
+    isPush,
+ )
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types

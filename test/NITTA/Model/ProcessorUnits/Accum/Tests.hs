@@ -19,10 +19,10 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
+import NITTA.Intermediate.Functions as F
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
-import NITTA.Intermediate.Functions as F
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
