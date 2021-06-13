@@ -21,11 +21,11 @@ module NITTA.Model.Problems.Dataflow (
     dataflowOption2decision,
 ) where
 
-import Control.Arrow
+import Data.Bifunctor
 import Data.String.ToString
 import GHC.Generics
 import NITTA.Model.Problems.Endpoint
-import NITTA.Model.Types
+import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 
 {- |Dataflow option (@tp ~ TimeConstraint t@) or decision (@tp Z Interval t@)
@@ -41,7 +41,7 @@ data DataflowSt tag v tp = DataflowSt
     }
     deriving (Generic)
 
-instance (ToString tag, Show v, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) where
+instance (ToString tag, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) where
     show DataflowSt{dfSource, dfTargets} =
         "DataflowSt{ dfSource=" <> show' dfSource <> ", dfTargets=" <> show (map show' dfTargets) <> "}"
         where

@@ -27,6 +27,7 @@ module NITTA.Model.ProcessorUnits.Accum (
 ) where
 
 import Control.Monad (when)
+import Data.Bifunctor
 import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe (fromMaybe)
@@ -34,15 +35,25 @@ import Data.Set (elems, fromList, member)
 import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
-import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Functions (
+    Acc (Acc, actions),
+    Action (Pull, Push),
+    Add (Add),
+    Neg (Neg),
+    Sign (Minus, Plus),
+    Sub (Sub),
+    isPull,
+    isPush,
+ )
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
+import Prettyprinter
 
 {- |Type that contains expression:
 
@@ -62,7 +73,13 @@ data Job v x = Job
     , -- |Flag indicates when evaluation ended
       calcEnd :: Bool
     }
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance (Var v) => Show (Job v x) where
+    show Job{tasks, current, func, calcEnd} =
+        [i|Job{tasks=#{ show' tasks }, current=#{ show' current }, func=#{ func }, calcEnd=#{ calcEnd }}|]
+        where
+            show' = map (map (second toString))
 
 data Accum v x t = Accum
     { -- |List of jobs (expressions)
@@ -75,15 +92,15 @@ data Accum v x t = Accum
       isInit :: Bool
     }
 
-instance (VarValTime v x t) => Show (Accum v x t) where
-    show a =
+instance (VarValTime v x t) => Pretty (Accum v x t) where
+    pretty a =
         [__i|
             Accum:
                 work                 = #{ work a }
                 currentWork          = #{ currentWork a }
-                process_             = #{ process_ a }
                 isInit               = #{ isInit a }
-        |]
+                #{ indent 4 $ pretty $ process_ a }
+            |]
 
 instance (VarValTime v x t) => Default (Accum v x t) where
     def =
@@ -130,9 +147,9 @@ endpointDecisionJob j@Job{tasks = tasks@(t : ts), current = (c : cs)} v
     | t \\ c /= t && length t > length c = j{tasks = updateTasks currentInsert tasks, current = currentInsert}
     | otherwise = j{tasks = updateTasks currentAdd tasks, current = currentAdd}
     where
-        ([val], _) = partition ((== v) . snd) t
-        currentInsert = (val : c) : cs
-        currentAdd = [val] : c : cs
+        (lst, _) = partition ((== v) . snd) t
+        currentInsert = (lst ++ c) : cs
+        currentAdd = lst : c : cs
 
 updateTasks (c : _) tasks@(t : ts)
     | null $ t \\ c = ts
@@ -147,17 +164,18 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
         | Just (Add a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Plus b, Pull c]) : work}
         | Just (Sub a b c) <- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Minus b, Pull c]) : work}
-        | Just (Negative a b) <- castF f = Right pu{work = tryBindJob (Acc [Push Minus a, Pull b]) : work}
+        | Just (Neg a b) <- castF f = Right pu{work = tryBindJob (Acc [Push Minus a, Pull b]) : work}
         | Just f'@Acc{} <- castF f = Right pu{work = tryBindJob f' : work}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
 
 instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{currentWork = Just a@Job{tasks, calcEnd}, process_ = Process{nextTick = tick}}
+    endpointOptions pu@Accum{currentWork = Just a@Job{tasks, calcEnd}}
         | toTarget tasks = targets
         | toSource tasks = sources
         where
+            tick = nextTick pu
             targets = map (\v -> EndpointSt (Target v) $ TimeConstraint (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
             sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstraint (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
             tickSource True = tick + 1
@@ -173,8 +191,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 let job@Job{tasks = tasks', current = (((neg, _) : _) : _)} = endpointDecisionJob j v
                     sel = if isInit then ResetAndLoad neg else Load neg
                     (_, process_') = runSchedule pu $ do
-                        updateTick (sup epAt)
-                        scheduleEndpoint d $ scheduleInstruction epAt sel
+                        scheduleEndpoint d $ scheduleInstructionUnsafe epAt sel
                  in pu
                         { process_ = process_'
                         , currentWork = Just job{calcEnd = False}
@@ -187,13 +204,12 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 let job@Job{tasks = tasks'} = foldl endpointDecisionJob j (elems v)
                     a = inf $ stepsInterval $ relatedEndpoints process_ $ variables func
                     (_, process_') = runSchedule pu $ do
-                        endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt -1) Out
+                        endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt -1) Out
                         when (null tasks') $ do
                             high <- scheduleFunction (a ... sup epAt) func
                             let low = endpoints ++ map pID (relatedEndpoints process_ $ variables func)
                             establishVerticalRelations high low
 
-                        updateTick (sup epAt)
                         return endpoints
                  in pu
                         { process_ = process_'
@@ -206,7 +222,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         where
             getJob = find (\Job{func} -> d `isIn` func)
             e `isIn` f = oneOf (variables e) `member` variables f
-    endpointDecision pu d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t) = AccumPorts {resetAcc, load, neg, oe :: SignalTag}

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -19,6 +20,8 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
+import qualified Data.Text as T
+import NITTA.Intermediate.Functions as F
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -130,7 +133,7 @@ tests =
                 function sum(a, b, c)
                     local d = a + b + c -- should AccumOptimization
                     local e = d + 1 -- e and d should be buffered
-                    local f = d + 2
+                    local f = -d
                     sum(d, f, e)
                 end
                 sum(0,0,0)
@@ -166,8 +169,22 @@ tests =
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
+        , unitTestCase "accum neg func test" accumDef $ do
+            assign $ F.neg "a" ["b"]
+            setValue "a" 2
+
+            assertEndpoint 1 maxBound $ consume "a"
+            --assertLocks [Lock{locked = "b", lockBy = "a"}]
+            decideAt 1 1 $ consume "a"
+
+            assertEndpoint 4 maxBound $ provide ["b"]
+            assertLocks []
+            decideAt 4 4 $ provide ["b"]
+
+            assertLocks []
+            assertCoSimulation
         ]
     where
-        accumDef = def :: Accum String Int Int
-        u2 = def :: Accum String (Attr (IntX 8)) Int
+        accumDef = def :: Accum T.Text Int Int
+        u2 = def :: Accum T.Text (Attr (IntX 8)) Int
         fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]

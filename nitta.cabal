@@ -82,7 +82,7 @@ library
       NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
       NITTA.Model.TargetSystem
-      NITTA.Model.Types
+      NITTA.Model.Time
       NITTA.Project
       NITTA.Project.Context
       NITTA.Project.Template
@@ -189,6 +189,7 @@ executable nitta
     , string-interpolate
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010
 
 executable nitta-api-gen
@@ -222,6 +223,7 @@ executable nitta-api-gen
     , string-interpolate
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite nitta-test
@@ -292,4 +294,5 @@ test-suite nitta-test
     , tasty-th
     , text
     , tostring
+    , unordered-containers
   default-language: Haskell2010

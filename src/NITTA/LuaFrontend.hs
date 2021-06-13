@@ -25,9 +25,11 @@ module NITTA.LuaFrontend (
 import Control.Monad.Identity
 import Control.Monad.State
 import Data.Bifunctor
+import qualified Data.HashMap.Strict as HM
 import Data.List (find, group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String
 import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Text (Text, pack, unpack)
@@ -35,14 +37,13 @@ import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import NITTA.Intermediate.Types hiding (patch)
 import NITTA.Utils (modify'_)
 import Text.Printf
 
-data FrontendResult x = FrontendResult
-    { frDataFlow :: DataFlowGraph String x
+data FrontendResult v x = FrontendResult
+    { frDataFlow :: DataFlowGraph v x
     , frTrace :: [TraceVar]
-    , frPrettyCntx :: Cntx String x -> Cntx String String
+    , frPrettyLog :: [HM.HashMap v x] -> [HM.HashMap String String]
     }
 
 data TraceVar = TraceVar {tvFmt, tvVar :: Text}
@@ -50,23 +51,18 @@ data TraceVar = TraceVar {tvFmt, tvVar :: Text}
 
 defaultFmt = "%.3f"
 
--- |Unique variable aliases for data flow.
-type VarDict = M.Map Text ([String], [String])
-
 -- |List contains IO Function names to be printed by default.
 listFuncIO = ["send", "recieve"]
 
-prettyCntx traceVars cntx =
-    showCntx
-        ( \v0 x -> do
-            -- variables names end on #0, #1..., so we trim this suffix
-            let v = takeWhile (/= '#') v0
-            fmt <- v2fmt M.!? v
-            Just (v, printx fmt x)
-        )
-        cntx
+prettyLog traceVars hms = map prettyHM hms
     where
-        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
+        prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
+        prettyX (v0, x) = do
+            -- variables names end on #0, #1..., so we trim this suffix
+            let v = takeWhile (/= '#') $ toString v0
+            fmt <- v2fmt M.!? v
+            Just (toString v, printx (T.unpack fmt) x)
+        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
         printx p x
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
             | 's' `elem` p = printf p $ show x
@@ -77,7 +73,6 @@ lua2functions src =
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
         ioVariables = getIOVariables defaultFmt algItems
-        varDict :: VarDict
         varDict =
             M.fromList $
                 map varRow $
@@ -101,14 +96,14 @@ lua2functions src =
      in FrontendResult
             { frDataFlow
             , frTrace
-            , frPrettyCntx = prettyCntx frTrace
+            , frPrettyLog = prettyLog frTrace
             }
     where
         varRow lst@(x : _) =
             let vs = zipWith f lst [0 :: Int ..]
              in (x, (vs, vs))
         varRow _ = undefined
-        f v ix = toString v <> "#" <> show ix
+        f v ix = fromString (toString v <> "#" <> show ix)
 
 getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
     where
@@ -182,7 +177,7 @@ function2nitta Function{fName = "add", fIn = [a, b], fOut = [c], fValues = [], f
 function2nitta Function{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub <$> input a <*> input b <*> output c
 function2nitta Function{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division <$> input d <*> input n <*> output q <*> output r
-function2nitta Function{fName = "negative", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.negative <$> input i <*> output o
+function2nitta Function{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg <$> input i <*> output o
 function2nitta Function{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive <$> output o
 function2nitta Function{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s <$> input a <*> output c
 function2nitta Function{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s <$> input a <*> output c
@@ -349,7 +344,7 @@ rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (Norm
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
 rightExp diff fOut (Unop Neg expr@(PrefixExp _)) = do
     expr' <- expArg diff expr
-    let f = Function{fName = "negative", fIn = [expr'], fOut, fValues = [], fInt = []}
+    let f = Function{fName = "neg", fIn = [expr'], fOut, fValues = [], fInt = []}
     patchAndAddFunction f diff
 rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
@@ -367,10 +362,9 @@ expArg diff binop@Binop{} = do
     c <- genVar "tmp"
     rightExp diff [c] binop
     return c
-expArg diff (Unop Neg expr@(PrefixExp _)) = do
+expArg diff expr@(Unop Neg (PrefixExp _)) = do
     c <- genVar "tmp"
-    let binop = Binop Sub (Number IntNum "0") expr
-    rightExp diff [c] binop
+    rightExp diff [c] expr
     return c
 expArg _diff a = error $ "expArg: " ++ show a
 -- *Internal

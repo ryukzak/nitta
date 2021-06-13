@@ -23,8 +23,6 @@ import NITTA.Utils
 import Test.Tasty
 import Test.Tasty.HUnit
 
-{-# ANN module "HLint: ignore Reduce duplication" #-}
-
 tests =
     testGroup
         "NITTA.Utils.Tests"

@@ -45,11 +45,12 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (sup, (...))
+import Numeric.Interval.NonEmpty ((...))
+import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
@@ -67,24 +68,30 @@ data SimpleIO i v x t = SimpleIO
     , process_ :: Process t (StepInfo v x t)
     }
 
-instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where
-    show io =
-        toString $
-            doc2text
-                [__i|
-                    bounceFilter  = #{ bounceFilter io }
-                    bufferSize    = #{ bufferSize io }
-                    receiveQueue  = #{ receiveQueue io }
-                    receiveN      = #{ receiveN io }
-                    isReceiveOver = #{ isReceiveOver io }
-                    sendQueue     = #{ sendQueue io }
-                    sendN         = #{ sendN io }
-                    process_      =
-                        #{ nest 4 $ viaShow $ process_ io }
-                |]
+instance (VarValTime v x t, SimpleIOInterface i) => Pretty (SimpleIO i v x t) where
+    pretty io =
+        [__i|
+            SimpleIO:
+                bounceFilter: #{ bounceFilter io }
+                bufferSize: #{ bufferSize io }
+                receiveQueue: #{ receiveQueue io }
+                receiveN: #{ receiveN io }
+                isReceiveOver: #{ isReceiveOver io }
+                sendQueue: #{ sendQueue io }
+                sendN: #{ sendN io }
+                #{ indent 4 $ pretty $ process_ io }
+            |]
 
 data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
-    deriving (Show)
+
+instance (Var v, Val x) => Show (Q v x) where
+    show Q{vars, function, cads} =
+        concat
+            [ "Q{"
+            , "vars: " <> concatMap toString vars <> ","
+            , "function: " <> show function <> ","
+            , "cads : " <> show cads <> "}"
+            ]
 
 instance
     (VarValTime v x t, SimpleIOInterface i) =>
@@ -126,11 +133,11 @@ instance
     (VarValTime v x t, SimpleIOInterface i) =>
     EndpointProblem (SimpleIO i v x t) v t
     where
-    endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =
-        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick + 1 ... maxBound) (1 ... maxBound)
+    endpointOptions pu@SimpleIO{receiveQueue, sendQueue} =
+        let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick pu + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (I.singleton 1)
             sendOpts = map (target . head . vars) sendQueue
          in receiveOpts ++ sendOpts
 
@@ -139,10 +146,8 @@ instance
             L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
           , let remainVars = allVars L.\\ S.elems vs
                 process_ = execSchedule sio $ do
-                    void $ scheduleEndpoint d $ scheduleInstruction (shiftI 0 epAt) $ Receiving $ null remainVars
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars
                     when (null remainVars) $ void $ scheduleFunction epAt function
-                    updateTick (sup epAt + 1)
-                    return ()
                 receiveQueue'' =
                     if null remainVars
                         then receiveQueue'
@@ -151,15 +156,14 @@ instance
     endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}
         | ([Q{function}], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
           , let (_, process_) = runSchedule sio $ do
-                    _ <- scheduleEndpoint d $ scheduleInstruction epAt Sending
-                    updateTick (sup epAt + 1)
+                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
                     scheduleFunction epAt function =
             sio
                 { sendQueue = sendQueue'
                 , isReceiveOver = (sendN - length sendQueue) >= (receiveN - length receiveQueue)
                 , process_
                 }
-    endpointDecision sio d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show sio
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 {- |Access to received data buffer was implemented like a queue. OE signal read
 received value multiple times __without changing__ "pointer" to the next value.
@@ -260,8 +264,8 @@ protocolDescription tag io d
                             toJSON
                                 ProtocolDescription
                                     { description = d
-                                    , interface = T.pack $ show $ typeRep (Proxy :: Proxy i)
-                                    , dataType = T.pack $ show $ typeRep (Proxy :: Proxy x)
+                                    , interface = showText $ typeRep (Proxy :: Proxy i)
+                                    , dataType = showText $ typeRep (Proxy :: Proxy x)
                                     , toNitta = map (oneOf . outputs) $ filter isReceive fbs
                                     , fromNitta = map (oneOf . inputs) $ filter isSend fbs
                                     }

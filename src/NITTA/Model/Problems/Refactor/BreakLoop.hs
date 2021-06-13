@@ -52,7 +52,10 @@ data BreakLoop v x = BreakLoop
     , -- |input variable
       loopI :: v
     }
-    deriving (Generic, Show, Eq)
+    deriving (Generic, Eq)
+
+instance (Var v, Val x) => Show (BreakLoop v x) where
+    show = ("BreakLoop: " <>) . show . recLoop
 
 class BreakLoopProblem u v x | u -> v x where
     breakLoopOptions :: u -> [BreakLoop v x]

@@ -134,15 +134,16 @@ import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.List (find)
 import qualified Data.Set as S
+import Data.String.ToString
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
-import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
+import Prettyprinter (pretty)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
@@ -166,7 +167,7 @@ data UnitTestState pu v x = UnitTestState
       -- 2. assignNaive - will be binded during naive synthesis.
       functs :: [F v x]
     , -- | Initial values for coSimulation
-      cntxCycle :: [(String, x)]
+      cntxCycle :: [(v, x)]
     }
     deriving (Show)
 
@@ -198,17 +199,17 @@ assignNaive f cntxs = do
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues :: (Function f String, WithFunctions pu f) => [(String, x)] -> DSLStatement pu String x t ()
+setValues :: (Function f v, WithFunctions pu f) => [(v, x)] -> DSLStatement pu v x t ()
 setValues = mapM_ (uncurry setValue)
 
 -- | set initital value for coSimulation input variables
-setValue :: (Function f String, WithFunctions pu f) => String -> x -> DSLStatement pu String x t ()
+setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> DSLStatement pu v x t ()
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when (var `elem` map fst cntxCycle) $
-        lift $ assertFailure $ "The variable '" <> show var <> "' is already set!"
+        lift $ assertFailure $ "The variable '" <> toString var <> "' is already set!"
     unless (isVarAvailable var unit) $
-        lift $ assertFailure $ "It's not possible to set the variable '" <> show var <> "'! It's not present in process"
+        lift $ assertFailure $ "It's not possible to set the variable '" <> toString var <> "'! It's not present in process"
     put pu{cntxCycle = (var, val) : cntxCycle}
     where
         isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ inpVars $ functions pu
@@ -261,7 +262,7 @@ getDecisionSpecific role = do
     des <- getDecisionsFromEp
     case find (\case EndpointSt{epRole} | S.isSubsetOf s $ variables epRole -> True; _ -> False) des of
         Just v -> return $ endpointOptionToDecision v
-        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show s
+        Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show (vsToStringList s)
 
 getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstraint t)]
 getDecisionsFromEp = do
@@ -285,7 +286,7 @@ assertBindFullness = do
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
 
-assertAllEndpointRoles :: (Show (EndpointRole v)) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> DSLStatement pu v x t ()
 assertAllEndpointRoles roles = do
     UnitTestState{unit} <- get
     let opts = S.fromList $ map epRole $ endpointOptions unit
@@ -295,21 +296,22 @@ assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
-        ep = EndpointSt role (a ... b)
+        ep = EndpointSt{epAt = a ... b, epRole = role}
     case find (\EndpointSt{epAt, epRole} -> tcAvailable epAt == (a ... b) && epRole == role) opts of
-        Nothing -> lift $ assertFailure $ "assertEndpoint: " <> show ep <> " not defined in: " <> show opts
+        Nothing -> lift $ assertFailure $ "assertEndpoint: '" <> show ep <> "' not defined in: " <> show opts
         Just _ -> return ()
 
 isFullyBinded pu fs = do
-    assertBool ("Outputs not equal, expected: " <> show fOuts <> "; actual: " <> show outs) $ outs == fOuts
-    assertBool ("Inputs not equal, expected: " <> show fInps <> "; actual: " <> show inps) $ inps == fInps
+    assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
+    assertBool ("Inputs not equal, expected: " <> show' fInps <> "; actual: " <> show' inps) $ inps == fInps
     return $ not $ null fu
     where
         fu = functions pu
-        outs = S.fromList $ map outputs fu
-        inps = S.fromList $ map inputs fu
-        fOuts = S.fromList $ map outputs fs
-        fInps = S.fromList $ map inputs fs
+        outs = unionsMap outputs fu
+        inps = unionsMap inputs fu
+        fOuts = unionsMap outputs fs
+        fInps = unionsMap inputs fs
+        show' = show . S.map toString
 
 assertSynthesisDone :: DSLStatement pu v x t ()
 assertSynthesisDone = do
@@ -326,12 +328,13 @@ assertLocks expectLocks = do
     lift $ assertBool ("assertLocks: expected locks: " <> show expectLocks <> " actual: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
 
 assertCoSimulation ::
-    ( PUClasses pu String x Int
-    , WithFunctions pu (F String x)
-    , Testable pu String x
+    ( PUClasses pu v x Int
+    , WithFunctions pu (F v x)
+    , Testable pu v x
     , DefaultX pu x
+    , Var v
     ) =>
-    DSLStatement pu String x Int ()
+    DSLStatement pu v x Int ()
 assertCoSimulation =
     let checkInputVars pu fs cntx = S.union (inpVars $ functions pu) (inpVars fs) == S.fromList (map fst cntx)
      in do
@@ -341,6 +344,7 @@ assertCoSimulation =
 
             report@TestbenchReport{tbStatus} <-
                 lift $ puCoSim testName unit cntxCycle functs False
+
             unless tbStatus $
                 lift $ assertFailure $ "coSimulation failed: \n" <> show report
 
@@ -364,5 +368,5 @@ traceEndpoints = do
 
 traceProcess = do
     UnitTestState{unit} <- get
-    lift $ putStrLn $ "Process: " <> show (process unit)
+    lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
     return ()

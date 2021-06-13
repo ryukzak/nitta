@@ -65,6 +65,7 @@ dependencies:
   - regex-compat
   - string-interpolate
   - text
+  - unordered-containers
   - tostring
 
 library:
@@ -91,7 +92,6 @@ library:
     - split
     - stm
     - transformers
-    - unordered-containers
     - utility-ht
     - validity
     - wai-cors

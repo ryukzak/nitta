@@ -31,6 +31,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.String.Interpolate
+import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
@@ -38,7 +39,7 @@ import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils
@@ -75,12 +76,12 @@ data TestbenchReport v x = TestbenchReport
     , tbSynthesisSteps :: [T.Text]
     , tbCompilerDump :: T.Text
     , tbSimulationDump :: T.Text
-    , tbFunctionalSimulationCntx :: [HM.HashMap v x]
-    , tbLogicalSimulationCntx :: Cntx v x
+    , tbFunctionalSimulationLog :: [HM.HashMap v x]
+    , tbLogicalSimulationLog :: [HM.HashMap v x]
     }
     deriving (Generic)
 
-instance Show (TestbenchReport v x) where
+instance (ToString v, Show x) => Show (TestbenchReport v x) where
     show
         TestbenchReport
             { tbPath
@@ -137,7 +138,6 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
 snippetTestBench ::
     forall m v x t.
     ( VarValTime v x t
-    , Show (EndpointRole v)
     , WithFunctions m (F v x)
     , ProcessorUnit m v x t
     , TargetSystemComponent m
@@ -154,7 +154,7 @@ snippetTestBench
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
-            p@Process{steps, nextTick} = process pUnit
+            p@Process{steps} = process pUnit
             fs = functions pUnit
             inst =
                 hardwareInstance
@@ -173,18 +173,18 @@ snippetTestBench
                             setValueBus = [i|data_in <= #{ dataLiteral x }; attr_in <= #{ attrLiteral x };|]
                          in setSignals <> " " <> setValueBus <> " @(posedge clk);"
                     )
-                    [0 .. nextTick + 1]
+                    [0 .. nextTick p + 1]
             targetVal t
                 | Just (Target v) <- endpointAt t p =
                     getCntx cycleCntx v
                 | otherwise = 0
-            busCheck = map busCheck' [0 .. nextTick + 1]
+            busCheck = map busCheck' [0 .. nextTick p + 1]
                 where
                     busCheck' t
                         | Just (Source vs) <- endpointAt t p =
                             let v = oneOf vs
                                 x = getCntx cycleCntx v
-                             in [i|@(posedge clk); assertWithAttr(0, 0, data_out, attr_out, #{ dataLiteral x }, #{ attrLiteral x }, #{ show v });|]
+                             in [i|@(posedge clk); assertWithAttr(0, 0, data_out, attr_out, #{ dataLiteral x }, #{ attrLiteral x }, "#{ toString v }");|]
                         | otherwise =
                             [i|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
             tbcSignals' = map (\x -> [i|reg #{x};|]) tbcSignals
