@@ -169,20 +169,13 @@ tests =
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
-        , unitTestCase "accum neg func test" accumDef $ do
+        , unitTestCase "accum neg smoke test" accumDef $ do
             assign $ F.neg "a" ["b"]
             setValue "a" 2
-
-            assertEndpoint 1 maxBound $ consume "a"
-            --assertLocks [Lock{locked = "b", lockBy = "a"}]
-            decideAt 1 1 $ consume "a"
-
-            assertEndpoint 4 maxBound $ provide ["b"]
-            assertLocks []
-            decideAt 4 4 $ provide ["b"]
-
-            assertLocks []
-            assertCoSimulation
+            assertBindFullness
+            decide $ consume "a"
+            decide $ provide ["b"]
+            assertSynthesisDone
         ]
     where
         accumDef = def :: Accum T.Text Int Int
