@@ -12,6 +12,7 @@ module NITTA.LuaFrontendNew (
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
+    lua2functionsNew
 ) where
 
 import Control.Monad.State
@@ -21,6 +22,7 @@ import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
+import NITTA.LuaFrontend
 
 data LuaValue t
     = Constant {luaValueName :: T.Text, luaValueParsedFunction :: F String t, luaValueType :: NumberType, luaValueAccessCount :: Int}
@@ -81,6 +83,19 @@ parseRightExp fOut (Unop Neg expr@(PrefixExp _)) = do
     (expr', _) <- parseExpArg fOut expr
     name <- getFreeVariableName fOut
     addVariable fOut (F.negative expr' [name]) False ""
+parseRightExp
+    fOut
+    ( PrefixExp
+            ( PEFunCall
+                    ( NormalFunCall
+                            (PEVar (VarName (Name fname)))
+                            (Args args)
+                        )
+                )
+        ) = do
+        fIn <- mapM (parseExpArg fOut) args
+        addFunction (T.unpack fname) (map fst fIn) $ T.unpack fOut
+        return  $ T.unpack fOut
 parseRightExp _ _ = undefined
 
 parseExpArg _ n@(Number _ _) = do
@@ -96,6 +111,10 @@ parseExpArg fOut binop@Binop{} = do
     _ <- addVariableAccess name
     return (T.unpack name, "")
 parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
+parseExpArg fOut call@(PrefixExp (PEFunCall _)) = do
+    c <- getNextTmpVarName fOut
+    varName <- parseRightExp c call
+    return (varName,"")
 parseExpArg _ _ = undefined
 
 getNextTmpVarName fOut
@@ -146,7 +165,25 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             return ""
         getDefaultName Variable{luaValueName} = T.unpack luaValueName ++ "^0#0"
         getDefaultName _ = undefined
+processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
+    fIn <- mapM (parseExpArg "tmp") args
+    addFunction (T.unpack fName) (map fst fIn) ""
+    return ""
 processStatement _ _ = undefined
+
+addFunction funcName [i] fOut | funcName == "buffer" = do
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+    put AlgBuilder {algGraph=addFuncToDataFlowGraph algGraph (F.buffer i [fOut]), algBuffer, algVarGen}
+addFunction funcName [i] fOut | funcName == "brokenBuffer" = do
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+    put AlgBuilder {algGraph=addFuncToDataFlowGraph algGraph (F.brokenBuffer i [fOut]), algBuffer, algVarGen}
+addFunction funcName [i] _ | funcName == "send" = do
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+    put AlgBuilder {algGraph=addFuncToDataFlowGraph algGraph (F.send i), algBuffer, algVarGen}
+addFunction funcName _ fOut | funcName == "receive" = do
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+    put AlgBuilder {algGraph=addFuncToDataFlowGraph algGraph (F.receive [fOut]), algBuffer, algVarGen}
+addFunction fName _ _ = error $ "unknown function" <> fName
 
 addConstant (Number valueType valueString) = do
     AlgBuilder{algGraph, algBuffer, algVarGen} <- get
@@ -244,3 +281,6 @@ parseLuaSources src =
     let syntaxTree = getLuaBlockFromSources src
         AlgBuilder{algGraph} = buildAlg syntaxTree
      in algGraph
+
+lua2functionsNew src =
+    FrontendResult {frDataFlow=parseLuaSources src, frTrace=[], frPrettyCntx=undefined}
