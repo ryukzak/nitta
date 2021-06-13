@@ -367,10 +367,9 @@ expArg diff binop@Binop{} = do
     c <- genVar "tmp"
     rightExp diff [c] binop
     return c
-expArg diff (Unop Neg expr@(PrefixExp _)) = do
+expArg diff expr@(Unop Neg (PrefixExp _)) = do
     c <- genVar "tmp"
-    let binop = Binop Sub (Number IntNum "0") expr
-    rightExp diff [c] binop
+    rightExp diff [c] expr
     return c
 expArg _diff a = error $ "expArg: " ++ show a
 -- *Internal

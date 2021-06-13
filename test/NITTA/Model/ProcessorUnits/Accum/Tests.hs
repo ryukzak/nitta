@@ -172,12 +172,12 @@ tests =
             setValue "a" 2
 
             assertEndpoint 1 maxBound $ consume "a"
-            assertLocks [Lock{locked = "b", lockBy = "a"}]
+            --assertLocks [Lock{locked = "b", lockBy = "a"}]
             decideAt 1 1 $ consume "a"
 
-            assertEndpoint 5 maxBound $ provide ["b"]
+            assertEndpoint 4 maxBound $ provide ["b"]
             assertLocks []
-            decideAt 5 5 $ provide ["b"]
+            decideAt 4 4 $ provide ["b"]
 
             assertLocks []
             assertCoSimulation
