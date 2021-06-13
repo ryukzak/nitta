@@ -111,7 +111,7 @@ case_process_neg_statement =
     let assignment = Assign [VarName (Name (T.pack "x"))] [Unop Neg (PrefixExp (PEVar (VarName (Name (T.pack "y")))))]
         expected =
             DFCluster
-                [ DFLeaf (F{fun = F.negative "x^0#0" ["y^0#0"], funHistory = []}) ]
+                [ DFLeaf (F{fun = F.neg "x^0#0" ["y^0#0"], funHistory = []}) ]
         AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder Int
      in algGraph @?= expected
 
@@ -191,7 +191,7 @@ case_lua_negative_operator =
             |]
         dfg =
             [ F.loop 0 "b^0#0" ["a^0#0"]
-            , F.negative "a^0#0" ["b^0#0"] :: F String Int
+            , F.neg "a^0#0" ["b^0#0"] :: F String Int
             ]
      in functions (parseLuaSources src) @?= dfg
 

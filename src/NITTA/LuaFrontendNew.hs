@@ -82,7 +82,7 @@ parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
 parseRightExp fOut (Unop Neg expr@(PrefixExp _)) = do
     (expr', _) <- parseExpArg fOut expr
     name <- getFreeVariableName fOut
-    addVariable fOut (F.negative expr' [name]) False ""
+    addVariable fOut (F.neg expr' [name]) False ""
 parseRightExp
     fOut
     ( PrefixExp
@@ -283,4 +283,4 @@ parseLuaSources src =
      in algGraph
 
 lua2functionsNew src =
-    FrontendResult {frDataFlow=parseLuaSources src, frTrace=[], frPrettyCntx=undefined}
+    FrontendResult {frDataFlow=parseLuaSources src, frTrace=[], frPrettyLog=undefined}
