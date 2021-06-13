@@ -42,8 +42,8 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Types
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
+import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.Timeline
@@ -123,7 +123,7 @@ type NodeInspectionAPI tag v x t =
                         :> Get '[JSON] VisJS
                      )
                 -- TODO: Replace by raw process fetching or add typescript types.
-                :<|> ( Description "Computational process representation (depricated)"
+                :<|> ( Description "Computational process representation (deprecated)"
                         :> "processTimelines"
                         :> Get '[JSON] (ProcessTimelines t)
                      )
@@ -210,7 +210,7 @@ type TestBenchAPI v x =
         :> "testbench"
         :> QueryParam' '[Required] "pName" String
         :> QueryParam' '[Required] "loopsNumber" Int
-        :> Post '[JSON] (TestbenchReportView v x)
+        :> Post '[JSON] (TestbenchReport v x)
 
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
@@ -231,7 +231,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
                 , pTemplates = defProjectTemplates
                 }
     writeProject prj
-    view <$> runTestbench prj
+    runTestbench prj
 
 -- Helpers
 
@@ -240,7 +240,7 @@ data UnitEndpoints tag v t = UnitEndpoints
     , unitEndpoints :: [EndpointSt v (TimeConstraint t)]
     }
     deriving (Generic)
-instance (ToJSON tag, ToJSON t, Time t) => ToJSON (UnitEndpoints tag String t)
+instance (ToJSON tag, ToJSON t, ToJSON v, Time t) => ToJSON (UnitEndpoints tag v t)
 instance ToSample (UnitEndpoints String String Int) where
     toSamples _ =
         singleSample
@@ -256,20 +256,23 @@ instance ToSample (UnitEndpoints String String Int) where
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
     { dbgEndpointOptions :: [UnitEndpoints tag v t]
-    , dbgFunctionLocks :: [(String, [Lock v])]
-    , dbgCurrentStateFunctionLocks :: [(String, [Lock v])]
-    , dbgPULocks :: [(String, [Lock v])]
+    , dbgFunctionLocks :: [(T.Text, [Lock v])]
+    , dbgCurrentStateFunctionLocks :: [(T.Text, [Lock v])]
+    , dbgPULocks :: [(tag, [Lock v])]
     }
     deriving (Generic)
 
-instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
+instance (ToJSON tag, ToJSON v, ToJSON t, Time t) => ToJSON (Debug tag v t)
 
-instance ToSample (Debug String String Int)
+instance ToSample (Debug String String Int) -- where toSamples _ = noSamples
 instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples
 
-instance {-# OVERLAPS #-} ToSample [(String, [Lock String])] where
+instance (UnitTag tag) => ToSample (Lock tag) where
+    toSamples _ = singleSample Lock{locked = "b", lockBy = "a"}
+
+instance {-# OVERLAPS #-} (UnitTag tag) => ToSample [(T.Text, [Lock tag])] where
     toSamples _ = singleSample [("PU or function tag", [Lock{locked = "b", lockBy = "a"}])]
 
 type DebugAPI tag v t =
@@ -280,15 +283,15 @@ type DebugAPI tag v t =
 
 debug BackendCtx{root} sid = liftIO $ do
     tree <- getTreeIO root sid
-    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetUnit tree
+    let dbgFunctionLocks = map (\f -> (f, locks f)) $ functions $ targetUnit tree
         already = transferred $ targetUnit tree
     return
         Debug
             { dbgEndpointOptions = endpointOptions' $ targetUnit tree
-            , dbgFunctionLocks
+            , dbgFunctionLocks = map (first showText) dbgFunctionLocks
             , dbgCurrentStateFunctionLocks =
-                [ (tag, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
-                | (tag, ls) <- dbgFunctionLocks
+                [ (showText f, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
+                | (f, ls) <- dbgFunctionLocks
                 ]
             , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetUnit tree
             }
@@ -347,7 +350,7 @@ instance (Time t) => ToSample (Process t StepInfoView) where
                     , Vertical 2 3
                     , Vertical 0 1
                     ]
-                , nextTick = 5
+                , nextTick_ = 5
                 , nextUid = 7
                 }
             )

@@ -36,7 +36,7 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
@@ -168,7 +168,7 @@ firstWaitResults jobs =
             else Just $ minimumOn readyAt jobs'
 
 instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
-    endpointOptions Divider{remains, jobs, process_} =
+    endpointOptions pu@Divider{remains, jobs} =
         let executeNewFunction
                 | any isWaitArguments jobs = []
                 | otherwise = concatMap (map target . S.elems . inputs) remains
@@ -176,12 +176,12 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                 maybe [] (map target . S.elems . variables) $ L.find isWaitArguments jobs
             waitResults
                 | Just WaitResults{readyAt, results, restrict} <- firstWaitResults jobs =
-                    let at = max readyAt (nextTick process_) ... fromMaybe maxBound restrict
+                    let at = max readyAt (nextTick pu) ... fromMaybe maxBound restrict
                      in map (sources at . snd) results
                 | otherwise = []
          in concat [executeNewFunction, waitingArguments, waitResults]
         where
-            target v = EndpointSt (Target v) $ TimeConstraint (nextTick process_ ... maxBound) (singleton 1)
+            target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)
             sources at vs = EndpointSt (Source vs) $ TimeConstraint at (singleton 1)
 
     endpointDecision pu@Divider{jobs, remains, pipeline} d@EndpointSt{epRole = Target v, epAt}
@@ -194,29 +194,27 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
              in endpointDecision pu' d
         | ([WaitArguments{function, arguments}], jobs') <- partition (S.member v . variables) jobs =
             let ([(tag, _v)], arguments') = partition ((== v) . snd) arguments
-                nextTick = sup epAt + 1
+                nextTick' = sup epAt + 1
              in case arguments' of
                     [] ->
-                        let job' = function2WaitResults (nextTick + pipeline + 1) function
+                        let job' = function2WaitResults (nextTick' + pipeline + 1) function
                             restrictResults =
                                 map
                                     ( \case
-                                        wa@WaitResults{restrict = Nothing} -> wa{restrict = Just (nextTick + pipeline)}
+                                        wa@WaitResults{restrict = Nothing} -> wa{restrict = Just (nextTick' + pipeline)}
                                         other -> other
                                     )
                          in pu
                                 { jobs = job' : restrictResults jobs'
                                 , process_ = execSchedule pu $ do
-                                    scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
-                                    scheduleInstruction_ (singleton nextTick) Do
-                                    updateTick $ nextTick + 1
+                                    scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
+                                    scheduleInstructionUnsafe_ (singleton nextTick') Do
                                 }
                     _arguments' ->
                         pu
                             { jobs = WaitArguments{function, arguments = arguments'} : jobs'
                             , process_ = execSchedule pu $ do
-                                scheduleEndpoint_ d $ scheduleInstruction epAt $ Load tag
-                                updateTick nextTick
+                                scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
                             }
     endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
         | ([job@WaitResults{results}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
@@ -230,10 +228,9 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
              in pu
                     { jobs = jobs''
                     , process_ = execSchedule pu $ do
-                        scheduleEndpoint_ d $ scheduleInstruction epAt $ Out tag
-                        updateTick (sup epAt + 1)
+                        scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag
                     }
-    endpointDecision _ _ = error "divider decision internal error"
+    endpointDecision _pu d = error [i|incorrect decision #{ d } for Divider|]
 
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)

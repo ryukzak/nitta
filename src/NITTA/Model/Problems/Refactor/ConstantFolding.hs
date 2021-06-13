@@ -49,7 +49,7 @@ After compile-time eval optimization
 >>> loopRes = loop 1 "e" ["res"]
 >>> let fs = [a, b, res, loopRes] :: [F String Int]
 >>> constantFoldingDecision fs $ head $ constantFoldingOptions fs
-[Loop (X 1) (O [res]) (I e),const(3) = res]
+[loop(1, e) = res,const(3) = res]
 -}
 module NITTA.Model.Problems.Refactor.ConstantFolding (
     ConstantFolding (..),
@@ -57,8 +57,8 @@ module NITTA.Model.Problems.Refactor.ConstantFolding (
 ) where
 
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
@@ -112,7 +112,7 @@ evalCluster [f] = [f]
 evalCluster fs = outputResult
     where
         (consts, [f]) = L.partition isConst fs
-        cntx = CycleCntx $ M.fromList $ concatMap (simulate def) consts
+        cntx = CycleCntx $ HM.fromList $ concatMap (simulate def) consts
         outputResult
             | null $ outputs f = fs
             | otherwise = map (\(v, x) -> constant x [v]) (simulate cntx f) <> consts

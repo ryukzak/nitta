@@ -32,7 +32,9 @@ module NITTA.Intermediate.Functions.Accum (
 import Data.List (nub, partition)
 import Data.List.Split (splitWhen)
 import Data.Set (elems, fromList)
+import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
@@ -46,13 +48,13 @@ instance Show Sign where
 
 data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
-instance (Show v) => Show (Action v) where
-    show (Push s (I v)) = show s <> show v
-    show (Pull (O vs)) = S.join " " (map (("= " <>) . show) $ elems vs)
+instance (Var v) => Show (Action v) where
+    show (Push s (I v)) = show s <> toString v
+    show (Pull (O vs)) = S.join " " $ map ("= " <>) $ vsToStringList vs
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
-instance (Show v) => Show (Acc v x) where
+instance (Var v) => Show (Acc v x) where
     show (Acc acts) =
         let lastElement = last acts
             initElements = init acts
@@ -108,11 +110,11 @@ toBlocksSplit exprInput =
 
 accGen blocks =
     let partedExpr = map (partition (\(x : _) -> x /= '='))
-        signPush ('+' : name) = Push Plus (I name)
-        signPush ('-' : name) = Push Minus (I name)
+        signPush ('+' : name) = Push Plus (I $ T.pack name)
+        signPush ('-' : name) = Push Minus (I $ T.pack name)
         signPush _ = error "Error in matching + and -"
         pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_ : name) -> name : buff) [] lst
+        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
      in Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
 instance (Var v) => Locks (Acc v x) v where

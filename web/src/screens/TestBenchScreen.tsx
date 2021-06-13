@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, FC } from "react";
 import { AxiosResponse, AxiosError } from "axios";
 
-import { api, TestBenchReport } from "services/HaskellApiService";
+import { api, TestBenchReportData } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
@@ -10,12 +10,12 @@ export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
-  const [testBenchDump, setTestBenchDump] = useState<TestBenchReport | null>(null);
+  const [testBenchDump, setTestBenchDump] = useState<TestBenchReportData | null>(null);
 
   useEffect(() => {
     api
       .runTestBench(appContext.selectedSID, "web_ui", 5)
-      .then((response: AxiosResponse<TestBenchReport | null>) => {
+      .then((response: AxiosResponse<TestBenchReportData | null>) => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
       })
@@ -53,8 +53,8 @@ export const TestBenchScreen: FC = () => {
       <hr />
       <h3>Simulation data:</h3>
       <TestBenchSimulationLog
-        functional={testBenchDump!.tbFunctionalSimulationCntx}
-        logical={testBenchDump!.tbLogicalSimulationCntx}
+        functional={testBenchDump!.tbFunctionalSimulationLog}
+        logical={testBenchDump!.tbLogicalSimulationLog}
       />
     </div>
   );

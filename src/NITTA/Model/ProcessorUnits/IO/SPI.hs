@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
 
 import Data.Aeson
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String.Interpolate
@@ -34,7 +35,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import Prettyprinter
@@ -224,7 +225,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                     |]
 
                             sendingAssert transmit =
-                                let xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                                let xs = map (\v -> fromMaybe def $ HM.lookup v transmit) sendedVariableSeq
                                  in [__i|
                                         @(posedge #{ tag }_io_test_start_transaction);
                                             $write( "#{ tag }_io_test_output actual: %H except: %H ({ #{ toVerilogLiteral xs } })",
@@ -236,7 +237,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
 
                             endDeviceInstance =
                                 [__i|
-                                    #{ comment $ show sio }
+                                    /*
+                                    #{ pretty sio }
+                                    */
                                     reg #{ tag }_io_test_start_transaction;
                                     reg  [#{ frameWidth }-1:0] #{ tag }_io_test_input;
                                     wire #{ tag }_io_test_ready;
@@ -321,7 +324,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                     |]
 
                             sendingAssert transmit =
-                                let xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                                let xs = map (\v -> fromMaybe def $ HM.lookup v transmit) sendedVariableSeq
                                  in [__i|
                                         @(posedge #{ tag }_io_test_ready);
                                             $display( "#{ tag }_io_test_output except: %H ({ #{ toVerilogLiteral xs } })", { #{ toVerilogLiteral xs } } );
@@ -333,7 +336,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
 
                             envInstance =
                                 [__i|
-                                    #{ comment $ show sio }
+                                    /*
+                                    #{ pretty sio }
+                                    */
                                     reg #{ tag }_io_test_start_transaction;
                                     reg  [#{ frameWidth }-1:0] #{ tag }_io_test_input;
                                     wire #{ tag }_io_test_ready;

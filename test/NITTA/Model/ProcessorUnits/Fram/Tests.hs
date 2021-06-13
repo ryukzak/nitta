@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -18,6 +19,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
+import qualified Data.Text as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
@@ -68,8 +70,8 @@ tests =
         , puCoSimProp "co simulation properties with attr" u2 fsGen
         ]
     where
-        u = def :: Fram String Int Int
-        u2 = def :: Fram String (Attr (IntX 32)) Int
+        u = def :: Fram T.Text Int Int
+        u2 = def :: Fram T.Text (Attr (IntX 32)) Int
         fsGen =
             algGen
                 [ fmap packF (arbitrary :: Gen (Constant _ _))

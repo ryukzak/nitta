@@ -38,7 +38,7 @@ tests =
         , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertAllEndpointRoles [consume "a", consume "b"]
-            assertEndpoint 1 maxBound $ consume "a"
+            assertEndpoint 0 maxBound $ consume "a"
             decide $ consume "a"
         , expectFail $
             unitTestCase "check assertAllEndpointRoles and fail (too many)" u $ do
@@ -118,24 +118,24 @@ tests =
             "decideAtUnsafe"
             [ unitTestCase "check constrain existance" broken $ do
                 assign $ brokenBuffer "a" ["b"]
-                assertEndpoint 1 maxBound $ consume "a"
-                decideAt 1 1 $ consume "a"
-                assertEndpoint 4 maxBound $ provide ["b"]
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b"]
             , expectFail $
                 unitTestCase "check that safe decide fail on wrong decision" broken $ do
                     assign $ brokenBuffer "a" ["b"]
                     setValue "a" 1
-                    assertEndpoint 1 maxBound $ consume "a"
-                    decideAt 1 1 $ consume "a"
-                    assertEndpoint 4 maxBound $ provide ["b"]
-                    decideAt 3 3 $ provide ["b"]
+                    assertEndpoint 0 maxBound $ consume "a"
+                    decideAt 0 0 $ consume "a"
+                    assertEndpoint 3 maxBound $ provide ["b"]
+                    decideAt 2 2 $ provide ["b"]
             , unitTestCase "check that unsafe decide success and test success pass" broken $ do
                 assign $ brokenBuffer "a" ["b"]
                 setValue "a" 1
-                assertEndpoint 1 maxBound $ consume "a"
-                decideAt 1 1 $ consume "a"
-                assertEndpoint 4 maxBound $ provide ["b"]
-                decideAtUnsafe 3 3 $ provide ["b"] -- incorrect decision
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b"]
+                decideAtUnsafe 2 2 $ provide ["b"] -- incorrect decision
                 assertCoSimulation
             ]
         , testGroup

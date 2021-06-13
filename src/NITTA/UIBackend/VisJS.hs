@@ -29,7 +29,6 @@ module NITTA.UIBackend.VisJS (
 import Data.Aeson
 import Data.Default
 import qualified Data.Set as S
-import qualified Data.String.Utils as S
 import GHC.Generics hiding (from, to)
 import qualified NITTA.Intermediate.Types as F
 import Servant.Docs
@@ -133,9 +132,9 @@ toVizJS F.F{fun, funHistory} =
     GraphStructure
         { nodes =
             [ def
-                { label = S.replace "\"" "" $ F.label fun
-                , function = S.replace "\"" "" $ show fun
-                , history = map (S.replace "\"" "" . show) funHistory
+                { label = F.label fun
+                , function = show fun
+                , history = map show funHistory
                 }
             ]
         , edges = mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)

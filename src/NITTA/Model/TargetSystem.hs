@@ -45,7 +45,7 @@ instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (
         assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) $ -- inconsistent TargetSystem
             functions mUnit
 
-processDuration TargetSystem{mUnit} = nextTick $ process mUnit
+processDuration TargetSystem{mUnit} = nextTick mUnit - 1
 
 isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =

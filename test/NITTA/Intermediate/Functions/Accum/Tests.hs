@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
@@ -17,6 +18,7 @@ module NITTA.Intermediate.Functions.Accum.Tests (
 ) where
 
 import Data.Set (fromList)
+import qualified Data.Text as T
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import Test.Tasty (testGroup)
@@ -73,4 +75,4 @@ tests =
              in b @?= a
         ]
     where
-        locksSet accExp = fromList $ locks (accFromStr accExp :: F String Int)
+        locksSet accExp = fromList $ locks (accFromStr accExp :: F T.Text Int)

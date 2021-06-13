@@ -37,17 +37,17 @@ import Data.Maybe
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
+import Prettyprinter
 
 data Fram v x t = Fram
     { -- |memory cell array
@@ -56,7 +56,6 @@ data Fram v x t = Fram
       remainBuffers :: [(Buffer v x, Job v x t)]
     , process_ :: Process t (StepInfo v x t)
     }
-    deriving (Show)
 
 framWithSize size =
     Fram
@@ -64,6 +63,14 @@ framWithSize size =
         , remainBuffers = []
         , process_ = def
         }
+
+instance (VarValTime v x t) => Pretty (Fram v x t) where
+    pretty Fram{memory} =
+        [__i|
+            Fram:
+                cells:
+                    #{ nest 8 $ vsep $ map (\(ix, c) -> viaShow ix <> ": " <> pretty (state c)) $ A.assocs memory }
+            |]
 
 instance (Default t, Default x) => Default (Fram v x t) where
     def =
@@ -93,7 +100,6 @@ data Cell v x t = Cell
     , history :: [F v x]
     , initialValue :: x
     }
-    deriving (Show)
 
 data Job v x t = Job
     { function :: F v x
@@ -158,7 +164,17 @@ data CellState v x t
     | NotBrokenLoop
     | DoLoopSource [v] (Job v x t)
     | DoLoopTarget v
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (VarValTime v x t) => Pretty (CellState v x t) where
+    pretty NotUsed = "NotUsed"
+    pretty Done = "Done"
+    pretty (DoConstant vs) = "DoConstant " <> viaShow (map toString vs)
+    pretty (DoBuffer vs) = "DoBuffer " <> viaShow (map toString vs)
+    pretty ForBuffer = "ForBuffer"
+    pretty NotBrokenLoop = "NotBrokenLoop"
+    pretty (DoLoopSource vs _job) = "DoLoopSource " <> viaShow (map toString vs)
+    pretty (DoLoopTarget v) = "DoLoopTarget " <> viaShow (toString v)
 
 isFree Cell{state = NotUsed} = True
 isFree _ = False
@@ -279,10 +295,12 @@ instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
-    endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
-        let target v = EndpointSt (Target v) $ TimeConstraint (nextTick ... maxBound) (1 ... maxBound)
-            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
-            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick ... maxBound) (1 ... maxBound)
+    endpointOptions pu@Fram{remainBuffers, memory} =
+        let target v = EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
+                where
+                    a = nextTick pu `withShift` 1
+            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick pu ... maxBound) (1 ... maxBound)
+            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick pu ... maxBound) (1 ... maxBound)
 
             fromRemain =
                 if any (\case ForBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
@@ -292,10 +310,10 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
             foo Cell{state = NotUsed} = Nothing
             foo Cell{state = Done} = Nothing
             foo Cell{state = DoConstant vs} = Just $ source False vs
-            foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs
             foo Cell{state = ForBuffer} = Nothing
             foo Cell{state = NotBrokenLoop} = Nothing
-            foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs
             foo Cell{state = DoLoopTarget v} = Just $ target v
 
             fromCells = mapMaybe foo $ A.elems memory
@@ -312,8 +330,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_') = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -343,8 +360,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 (endpoints', process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    eps <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -367,8 +383,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
         | Just (addr, cell@Cell{job = Just Job{function, binds, endpoints}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
             let ((), process_) = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
-                    updateTick (sup epAt + 1)
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                     fPID <- scheduleFunction epAt function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
@@ -386,8 +401,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
         | Just (addr, cell@Cell{history}) <- findForBufferCell fram
           , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
             let (endpoints, process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
+                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                 cell' =
                     cell
                         { job = Just j{startAt = Just $ inf epAt, endpoints}
@@ -410,8 +424,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_) = runSchedule fram $ do
-                    updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (fBegin ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -430,13 +443,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     { memory = memory A.// [(addr, cell')]
                     , process_
                     }
-    endpointDecision Fram{memory} d =
-        error
-            [__i|
-                fram model internal error: #{ d }
-                cells state:
-                #{ S.join "\n" $ map (\(ix, c) -> show ix <> ": " <> show (state c)) $ A.assocs memory }
-            |]
+    endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 ---------------------------------------------------------------------
 
@@ -472,8 +479,7 @@ instance Controllable (Fram v x t) where
 
     takePortTags (oe : wr : xs) pu = FramPorts oe wr addr
         where
-            width = addrWidth pu
-            addr = take width xs
+            addr = take (addrWidth pu) xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Connected (Fram v x t) where
@@ -544,7 +550,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                         , .FRAM_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag fram }" )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
-                    , .signal_addr( { #{ T.intercalate ", " $ map (T.pack . show) addr } } )
+                    , .signal_addr( { #{ T.intercalate ", " $ map showText addr } } )
                     , .signal_wr( #{ wr } )
                     , .data_in( #{ dataIn } )
                     , .attr_in( #{ attrIn } )

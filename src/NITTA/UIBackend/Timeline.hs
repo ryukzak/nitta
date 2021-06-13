@@ -33,7 +33,6 @@ import Data.String.ToString
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Types
 import Numeric.Interval.NonEmpty
 import Servant.Docs
 
@@ -133,7 +132,7 @@ timeline a b steps = map findSteps [a .. b]
             TimelinePoint
                 { pID = pID
                 , pTime = pInterval
-                , pInfo = S.replace "\"" "" $ case pDesc of
+                , pInfo = case pDesc of
                     NestedStep{nTitle, nStep = Step{pDesc = subDesc}} -> toString nTitle ++ " do " ++ show subDesc
                     _ -> show pDesc
                 }
