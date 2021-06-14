@@ -101,8 +101,11 @@ parseRightExp _ _ = undefined
 parseExpArg _ n@(Number _ _) = do
     addConstant n
 parseExpArg fOut (Unop Neg n) = do
-    (name, luaValue) <- parseExpArg fOut n
-    return ([head name] ++ "-" ++ tail name, luaValue)
+    c <- getNextTmpVarName fOut
+    (name, luaValue) <- parseExpArg c n
+    AlgBuilder{algGraph, algBuffer, algVarGen} <- get
+    put AlgBuilder{algGraph = addFuncToDataFlowGraph algGraph (F.neg name [T.unpack c]), algBuffer, algVarGen}
+    return (T.unpack c, luaValue)
 parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
     addVariableAccess name
 parseExpArg fOut binop@Binop{} = do
