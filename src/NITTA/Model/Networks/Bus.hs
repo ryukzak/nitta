@@ -310,6 +310,9 @@ instance
                 , allowToProcess f pu
                 ]
             optionsList = map optionsFor bnRemains
+
+            deleteSame lst = S.toList $ S.fromList lst
+
             compose [] buff = buff
             compose (x:xs) [] = compose xs newbuff
                 where
@@ -318,7 +321,7 @@ instance
                 where
                     newbuff = [ values ++ [nvalue] | values <- buff, nvalue <- x ]
             groupBinding options
-                | not $ null $ filter (\x -> length x > 1) options = map (GroupBinding AllBinds) $ compose options []
+                | not $ null $ filter (\x -> length x > 1) options = map (GroupBinding AllBinds) $ deleteSame $ compose options []
                 | otherwise = [GroupBinding NonAlternativeBinds $ concat options]
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
