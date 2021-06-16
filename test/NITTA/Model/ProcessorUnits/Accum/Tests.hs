@@ -21,10 +21,11 @@ import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
 import qualified Data.Text as T
-import NITTA.Intermediate.Functions as F
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
+import NITTA.Synthesis
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -126,18 +127,63 @@ tests =
             [("a", 1), ("b", 2), ("e", 4), ("f", -4), ("j", 8)]
             [ accFromStr "+a +b = c = d; +e -f = g; +j = k"
             ]
-        , luaTestCase
-            "test_accum_optimization_and_deadlock_resolve"
+        , unitTestCase "test_accum_optimization_and_deadlock_resolve" ts2 $ do
             -- TODO: We need to check that synthesis process do all needed refactoring
-            [__i|
-                function sum(a, b, c)
-                    local d = a + b + c -- should AccumOptimization
-                    local e = d + 1 -- e and d should be buffered
-                    local f = d + 2
-                    sum(d, f, e)
-                end
-                sum(0,0,0)
-            |]
+            setNetwork $ microarch ASync SlaveSPI
+            setBusType pAttrIntX32
+            assignLua luaTemplate
+            assertSynthesisRunAuto
+            traceDataflow
+            traceBus
+        , unitTestCase "negative optimisation test" tbr $ do
+            setNetwork $ maBroken ubr{wrongAttr = True}
+            setBusType pAttrIntX32
+            assignLua luaTemplate
+            traceDataflow
+            traceTransferOptions
+        , unitTestCase "bus network detailed test" tbr $ do
+            setNetwork $ maBroken ubr
+            setBusType pAttrIntX32
+            assignLua luaTemplate
+            bindInit
+            let loopDA = F.loop 0 "d#0" ["a#0"]
+                loopEC = F.loop 0 "e#0" ["c#0"]
+                loopFB = F.loop 0 "f#0" ["b#0"]
+            bindVariables [loopDA, loopEC, loopFB]
+            bindVariable (F.constant 1 ["1@const#0"])
+            bindVariable (F.constant 2 ["2@const#0"])
+            traceBindVariables
+            -- TODO: Does it bind both?
+            bindVariable (F.add "d#1" "2@const#0" ["f#0"])
+            traceBindVariables
+            -- works both variants
+            --transferVariables $ provide ["2@const#0"]
+            bindVariable (F.add "d#2" "1@const#0" ["e#0"])
+            bindVariable (F.add "a#0" "b#0" ["tmp_0#0"])
+            bindVariable (F.add "tmp_0#0" "c#0" ["d#0", "d#1", "d#2"])
+            transferVariables $ consume "2@const#0"
+            traceAvailableRefactor
+            applyBreakLoops [loopDA, loopEC, loopFB]
+            assertLoopBroken [loopDA, loopEC, loopFB]
+        , unitTestCase "transfer variable test" tbr $ do
+            setNetwork $ microarch ASync SlaveSPI
+            setBusType pAttrIntX32
+            assignLua luaTemplate
+            assertSynthesisRunAuto
+            traceDataflow
+            traceBus
+        , unitTestCase "fixpoint 22 32" ts $ do
+            setNetwork $ microarch ASync SlaveSPI
+            setBusType pFX22_32
+            assignLua
+                [__i|
+                      function f()
+                          send(0.5 - 0.25)
+                          send(-1.25 + 2.5)
+                      end
+                      f()
+                  |]
+            assertSynthesisDoneAuto
         , typedLuaTestCase
             (microarch ASync SlaveSPI)
             pFX22_32
@@ -303,6 +349,20 @@ tests =
             assertCoSimulation
         ]
     where
+        ts = def :: Val x => TargetSynthesis T.Text T.Text x Int
+        ts2 = def :: Val x => TargetSynthesis T.Text T.Text x Int
+        tbr = def :: Val x => TargetSynthesis T.Text T.Text x Int
+        ubr = def :: Broken T.Text (Attr (IntX 32)) Int
         accumDef = def :: Accum T.Text Int Int
         u2 = def :: Accum T.Text (Attr (IntX 8)) Int
         fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]
+        luaTemplate =
+            [__i|
+                function sum(a, b, c)
+                    local d = a + b + c -- should AccumOptimization
+                    local e = d + 1 -- e and d should be buffered
+                    local f = d + 2
+                    sum(d, f, e)
+                end
+                sum(0,0,0)
+            |]

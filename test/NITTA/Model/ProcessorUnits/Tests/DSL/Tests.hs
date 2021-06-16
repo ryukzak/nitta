@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
@@ -16,7 +18,11 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
+import Data.String.Interpolate
+import qualified Data.Text as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Model.Tests.Providers
+import NITTA.Synthesis
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
 
@@ -150,7 +156,74 @@ tests =
                     decide $ consume "a"
                     assertLocks [Lock{locked = "c", lockBy = "b"}]
             ]
+        , testGroup
+            "BusNetwork positive tests"
+            [ unitTestCase "assertLoopBroken ok when break applied" tbr $ do
+                breakLoopTemplate
+                bindInit
+                let loopEC = loop 0 "e#0" ["c#0"]
+                bindVariable loopEC
+                applyBreakLoop loopEC
+                assertLoopBroken [loopEC]
+            , unitTestCase "assertLoopBroken ok when auto synthesis" tbr $ do
+                setNetwork march
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a, b, c)
+                            local d = a + b + c -- should AccumOptimization
+                            local e = d + 1 -- e and d should be buffered
+                            local f = d + 2
+                            sum(d, f, e)
+                        end
+                        sum(0,0,0)
+                    |]
+                loopFs <- getLoopFunctions
+                assertSynthesisRunAuto
+                assertLoopBroken loopFs
+            ]
+        , testGroup
+            "BusNetwork negative tests"
+            [ expectFail $
+                unitTestCase "assertLoopBroken fail when func not binded" tbr $ do
+                    breakLoopTemplate
+                    bindInit
+                    let loopEC = loop 0 "e#0" ["c#0"]
+                    let loopDA = loop 0 "d#0" ["a#0"]
+                    bindVariables [loopEC, loopDA]
+                    assertLoopBroken [loopEC, loopDA]
+            , expectFail $
+                unitTestCase "assertLoopBroken fail when func binded" tbr $ do
+                    breakLoopTemplate
+                    bindInit
+                    let loopEC = loop 0 "e#0" ["c#0"]
+                    bindVariable loopEC
+                    assertLoopBroken [loopEC]
+            , expectFail $
+                unitTestCase "assertLoopBroken when func binded" tbr $ do
+                    -- TODO fix case: for unknown reason loop e -> c is not present in process:
+                    -- ["bind LoopBegin loop(0, e#0) = c#0 c#0","bind LoopEnd loop(0, e#0) = c#0 e#0"]
+                    breakLoopTemplate
+                    loopFs <- getLoopFunctions
+                    assertSynthesisRunAuto
+                    traceBus
+                    assertLoopBroken loopFs
+            ]
         ]
     where
+        tbr = def :: Val x => TargetSynthesis T.Text T.Text x Int
         u = multiplier True :: Multiplier String Int Int
         broken = def :: Broken String Int Int
+        breakLoopTemplate = do
+            setNetwork march
+            setBusType pInt
+            assignLua
+                [__i|
+                        function sum(a, c)
+                            local d = a + c 
+                            local m = 100
+                            local e = m + 1
+                            sum(d, e)
+                        end
+                        sum(0,0)
+                    |]

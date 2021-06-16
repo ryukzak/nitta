@@ -24,18 +24,16 @@ module NITTA.Tests (
     tests,
 ) where
 
-import Control.Monad (void)
 import Data.Default
 import Data.Map.Strict (fromList)
 import qualified Data.Set as S
 import qualified Data.Text as T
-import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.Tests.Internals
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
@@ -45,15 +43,20 @@ import Test.Tasty.TH
 -- FIXME: avoid NITTA.Model.Tests.Internals usage
 
 test_fibonacci =
-    [ algTestCase
-        "simple"
-        march
-        [ F.loop 0 "b2" ["a1"]
-        , F.loop 1 "c" ["b1", "b2"]
-        , F.add "a1" "b1" ["c"]
-        ]
-    , algTestCase "io_drop_data" (marchSPIDropData "spi" True pInt) algWithSend
-    , algTestCase "io_no_drop_data" (marchSPI "spi" True pInt) algWithSend
+    [ unitTestCase "simple" ts $ do
+        setNetwork march
+        assignFunction $ F.loop (0 :: Int) "b2" ["a1"]
+        assignFunction $ F.loop (1 :: Int) "c" ["b1", "b2"]
+        assignFunction $ F.add "a1" "b1" ["c"]
+        assertSynthesisDoneAuto
+    , unitTestCase "io_drop_data" ts $ do
+        setNetwork $ marchSPIDropData True pInt
+        assignFunctions algWithSend
+        assertSynthesisDoneAuto
+    , unitTestCase "io_no_drop_data" ts $ do
+        setNetwork $ marchSPI True pInt
+        assignFunctions algWithSend
+        assertSynthesisDoneAuto
     ]
     where
         algWithSend =
@@ -64,28 +67,29 @@ test_fibonacci =
             ]
 
 test_add_and_io =
-    [ testCase "receive 4 variables" $
-        void $
-            runTargetSynthesisWithUniqName
-                (def :: TargetSynthesis _ _ _ Int)
-                    { tName = "receive_4_variables"
-                    , tMicroArch = marchSPI "spi" True pInt
-                    , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25]), ("e", [0 .. 25]), ("f", [20 .. 30])]
-                    , tDFG =
-                        fsToDataFlowGraph
-                            [ F.receive ["a"]
-                            , F.receive ["b"]
-                            , F.receive ["e"]
-                            , F.receive ["f"]
-                            , F.accFromStr "+a +b = c = d; +e - f = g = h"
-                            , F.send "d"
-                            , F.send "c"
-                            , F.send "g"
-                            , F.send "h"
-                            ]
-                    }
+    [ unitTestCase "receive 4 variables" ts $ do
+        setNetwork $ marchSPI True pInt
+        assignFunctions
+            [ F.receive ["a"]
+            , F.receive ["b"]
+            , F.receive ["e"]
+            , F.receive ["f"]
+            , F.accFromStr "+a +b = c = d; +e - f = g = h"
+            , F.send "d"
+            , F.send "c"
+            , F.send "g"
+            , F.send "h"
+            ]
+        setRecievedValues
+            [ ("a", [10 .. 15])
+            , ("b", [20 .. 25])
+            , ("e", [0 .. 25])
+            , ("f", [20 .. 30])
+            ]
+        assertSynthesisDoneAuto
     ]
 
+ts = def :: TargetSynthesis _ _ _ _
 f1 = F.add "a" "b" ["c", "d"] :: F T.Text Int
 
 patchP :: (Patch a (T.Text, T.Text)) => (T.Text, T.Text) -> a -> a

@@ -23,6 +23,11 @@ module NITTA.LuaFrontend.Tests (
     tests,
 ) where
 
+import Control.Exception (ErrorCall, catch)
+import Data.Default
+import Data.FileEmbed (embedStringFile)
+import Data.String.Interpolate
+import qualified Data.Text as T
 import Control.Monad.State
 import Data.FileEmbed (embedStringFile)
 import qualified Data.HashMap.Strict as HM
@@ -33,6 +38,8 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Synthesis (TargetSynthesis)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
@@ -572,11 +579,11 @@ test_trace_features =
     ]
 
 test_examples =
-    [ typedLuaTestCase
-        (microarch Sync SlaveSPI)
-        pFX22_32
-        "teacup io wait"
-        $(embedStringFile "examples/teacup.lua")
+    [ unitTestCase "teacup io wait" ts $ do
+        setNetwork $ microarch Sync SlaveSPI
+        setBusType pFX22_32
+        assignLua $(embedStringFile "examples/teacup.lua")
+        assertSynthesisDoneAuto
     , typedLuaTestCase
         (microarch ASync SlaveSPI)
         pFX22_32
@@ -697,6 +704,8 @@ test_examples =
         "example spi3 lua"
         $(embedStringFile "examples/spi3.lua")
     ]
+
+ts = def :: Val x => TargetSynthesis T.Text T.Text x Int
 
 tests :: TestTree
 tests = $(testGroupGenerator)
