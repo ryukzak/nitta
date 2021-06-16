@@ -20,7 +20,7 @@ import {
   IAllocationView,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IGroupBindDecisionView, IDataflowDecisionView } from "services/gen/types";
-import { UnitEndpoints, EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReportView } from "services/gen/types";
+import { UnitEndpoints, EndpointSt, ISource, ITarget, GraphStructure, GraphEdge, TestbenchReport } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
 export type Sid = string;

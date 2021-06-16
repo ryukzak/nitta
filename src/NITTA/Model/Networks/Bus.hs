@@ -60,6 +60,7 @@ import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
+import Debug.Trace
 
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
@@ -311,7 +312,18 @@ instance
                 ]
             optionsList = map optionsFor bnRemains
 
-            deleteSame lst = S.toList $ S.fromList lst
+            puOptionsF = M.fromAscListWith (++) $
+                concatMap (\f -> [ (pu, [(f, puTitle)])
+                | (puTitle, pu) <- M.assocs bnPus
+                , allowToProcess f pu
+                ]) bnRemains
+            puOptions = M.elems puOptionsF
+
+            getF (Bind f _tag) = f
+
+            -- deleteSame listOfGroupBinding = S.toList $ S.fromList lst
+            --     where
+            --         groupedByTypes = [ filter  | Bind f tag <- lst]
 
             compose [] buff = buff
             compose (x:xs) [] = compose xs newbuff
@@ -321,7 +333,7 @@ instance
                 where
                     newbuff = [ values ++ [nvalue] | values <- buff, nvalue <- x ]
             groupBinding options
-                | not $ null $ filter (\x -> length x > 1) options = map (GroupBinding AllBinds) $ deleteSame $ compose options []
+                | not $ null $ filter (\x -> length x > 1) options = trace (show puOptions) $ map (GroupBinding AllBinds) $ compose options []
                 | otherwise = [GroupBinding NonAlternativeBinds $ concat options]
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
