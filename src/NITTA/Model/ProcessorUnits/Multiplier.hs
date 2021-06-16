@@ -547,7 +547,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
             -- requred because of realisation.
             let sel = if null targets' then B else A
           , --  Computation process planning is carried out.
-            let (_, process_') = runSchedule pu $ do
+            let process_' = execSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
                     -- that takes information about time from Process
                     scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
@@ -562,7 +562,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
           , sources' /= sources
           , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
           , -- Compututation process planning is carring on.
-            let (_, process_') = runSchedule pu $ do
+            let process_' = execSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f

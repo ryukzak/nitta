@@ -155,8 +155,8 @@ instance
             sio{receiveQueue = receiveQueue'', process_}
     endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}
         | ([Q{function}], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
-          , let (_, process_) = runSchedule sio $ do
-                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
+          , let process_ = execSchedule sio $ do
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
                     scheduleFunction epAt function =
             sio
                 { sendQueue = sendQueue'

@@ -143,7 +143,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
             let startByteShift = inf epAt + 1
                 numByteShiftMod = fromIntegral byteShiftMod
                 endByteShift = sup epAt + fromIntegral byteShiftDiv
-                (_, process_') = runSchedule pu $ do
+                process_' = execSchedule pu $ do
                     scheduleEndpoint d $ do
                         scheduleInstructionUnsafe_ epAt Init
                         case (byteShiftDiv, byteShiftMod) of
@@ -183,13 +183,12 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
               , let sources' = sources \\ elems v
               , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
               , sources' /= sources =
-                let (_, process_') = runSchedule pu $ do
+                let process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
-                        return endpoints
                  in pu
                         { process_ = process_'
                         , sources = sources'

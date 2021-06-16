@@ -329,7 +329,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 )
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
-                ((), process_') = runSchedule fram $ do
+                process_' = execSchedule fram $ do
                     endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
@@ -382,7 +382,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Target v, epAt}
         | Just (addr, cell@Cell{job = Just Job{function, binds, endpoints}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
-            let ((), process_) = runSchedule fram $ do
+            let process_ = execSchedule fram $ do
                     endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                     fPID <- scheduleFunction epAt function
                     establishVerticalRelations binds fPID
@@ -423,7 +423,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 )
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
-                ((), process_) = runSchedule fram $ do
+                process_ = execSchedule fram $ do
                     endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (fBegin ... sup epAt) function

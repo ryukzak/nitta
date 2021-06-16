@@ -185,7 +185,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     instr = case state of
                         Initialize -> ResetAndLoad neg
                         _ -> Load neg
-                    (_, process_') = runSchedule pu $ do
+                    process_' = execSchedule pu $ do
                         scheduleEndpoint d $ scheduleInstructionUnsafe epAt instr
                  in pu
                         { process_ = process_'
@@ -199,7 +199,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         d@EndpointSt{epRole = Source vs, epAt}
             | Just task <- sourceTask tasks =
                 let (_, task') = L.partition ((`S.member` vs) . snd) task
-                    (_, process_') = runSchedule pu $ do
+                    process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt - 1) Out
                         when (null task' && length tasks == 1) $ do
                             let endpoints' = relatedEndpoints process_ $ variables func
