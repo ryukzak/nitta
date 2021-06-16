@@ -19,3 +19,4 @@
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Tests.DSL.Tests"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Utils.Tests" }
 - ignore: {name: "Reduce duplication", within: "NITTA.Tests" }
+- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Accum.Tests" }
