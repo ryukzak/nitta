@@ -1,4 +1,4 @@
-# Reconfigurable real-time computational platform NITTA
+# NITTA - Tool for Hard Real-Time CGRA Processors
 
 [![Tests](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml/badge.svg?branch=master)](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
@@ -7,46 +7,39 @@
 
 ## Overview
 
+Kind: research pet project.
+
 Project status: early prototype.
 
-### Application area
+We develop the tool for generating and programming specialized non von Neumann CGRA processors for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
 
-- developing cyber-physical systems which are based on adaptive robust control algorithms and artificial intelligence with high requirements on latency and computational volume, power, and area consumption; 
-- developing hardware programmable accelerators and co-processors;
-- developing problem-oriented programmable ASIC; 
-- developing dynamically reconfigurable IP-core and soft-core for FPGA.
+- Provide high speed and parallel execution of irregular algorithms (where GPU is not applicable) in hard real-time (clock accuracy).
+- Make the processor reconfigurable for different application domains.
+- Provide a high-level language for application developers and fast compilation.
 
-### Project goals
+Our future users can resolve the following tasks:
 
-- rapid prototyping of control and cyber-physical systems;
-- hardware in the loop simulation;
-- target system synthesis and its components;
-- integration of the real-time system with non-real-time environment and automation of its interaction;
-- developing of IP-core for embedded systems and systems on a chip.
+- Development of embedded and cyber-physical systems.
+- Hardware and software testing and rapid prototyping (HIL and PIL).
+- Development of programmable accelerators and coprocessors.
 
-### Key features
+## Links
 
-- the orientation on model-driven engineering and not on software engineering; 
-- automation of most of the development stages, including algorithm and model design and functional simulation, prototyping and complex verification, complex automatization of cross-layer testing and synthesis and optimization of a target system;
-- deeply computational platform reconfiguration on hardware, software and tool levels, transparency of CAD system workflow.
+Project page: <https://ryukzak.github.io/projects/nitta/>
 
-### Contact
+Publication: <https://ryukzak.github.io/publications/> (with NITTA tag)
 
 Maintainer: Aleksandr Penskoi <aleksandr.penskoi@gmail.com>
 
-Project chat (telegram):  <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
+Project chat (telegram): <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 
 Project CI chat (telegram): <https://t.me/nitta_ci>
-
-### Publication
-
-Papers about the project you can find here (English and Russian): <https://nitta.io/nitta-corp/docs>.
 
 ## Install development dependency
 
 ### Mac OS X
 
-Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 
 ``` console
 $ brew install stack
@@ -61,14 +54,15 @@ $ brew tap homebrew/cask
 $ brew cask install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required developer tools.
+Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
 $ brew install npm
 $ npm install --global tern prettier
 ```
 
 ### Ubuntu
-Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
+
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 ``` console
 $ sudo apt-get install haskell-stack
 $ stack install hlint fourmolu
@@ -81,7 +75,7 @@ $ sudo apt-get install iverilog
 $ sudo apt-get install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required developer tools.
+Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
 $ sudo apt-get install npm
 $ npm install --global tern prettier yarn
