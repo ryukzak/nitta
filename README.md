@@ -116,38 +116,36 @@ For the fast rebuild, the project adds `--fast` flag.
 
 ``` console
 $ stack exec nitta -- --help
-nitta v0.0.0.1 - CAD for reconfigurable real-time ASIP
+nitta v0.0.0.1 - tool for hard real-time CGRA processors
 
 nitta [OPTIONS] FILE
 
+Target system configuration:
+  -t     --type=fxM.B                  Data type (default: 'fx32.32')
+         --io-sync=sync|async|onboard  IO synchronization mode
+         --templates=PATH[:PATH]       Target platform templates (default:
+                                       'templates/Icarus:templates/DE0-Nano')
 Common flags:
-  -t     --type=ITEM                  Data type (default: 'fx32.32')
-  -i     --io-sync=IOSYNCHRONIZATION  IO synchronization mode: sync, async,
-                                      onboard
-  -p     --port=INT                   Run nitta server for UI on specific
-                                      port (by default - not run)
-         --templates=ITEM             Specify target platform templates (':',
-                                      default:
-                                      'templates/Icarus:templates/DE0-Nano')
-  -n=INT                              Number of computation cycles for
-                                      simulation and testbench
-         --fsim                       Functional simulation with trace
-  -l     --lsim                       Logical (HDL) simulation with trace
-  -v     --verbose                    Verbose
-  -o     --output-path=ITEM           Place the output into specified
-                                      directory
-         --format=ITEM                Specify logical (HDL) or functional
-                                      simulation output format: md, json, csv
-                                      (default: 'md')
-  -?     --help                       Display help message
-  -V     --version                    Print version information
-         --numeric-version            Print just the version number
+  -p     --port=INT                    Run nitta server for UI on specific
+                                       port (by default - not run)
+  -o     --output-path=PATH            Target system path
+Simulation:
+  -n=INT                               Number of simulation cycles
+  -f     --fsim                        Functional simulation with trace
+  -l     --lsim                        Logical (HDL) simulation with trace
+         --format=md|json|csv          Simulation output format (default:
+                                       'md')
+Other:
+  -v     --verbose                     Verbose
+  -e     --extra-verbose               Extra verbose
+  -?     --help                        Display help message
+  -V     --version                     Print version information
+         --numeric-version             Print just the version number
 ```
 
 #### Logical simulation for a specific algorithm:
 ``` console
-$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx12.32
-
+$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | Cycle  | temp_cup_1  | time_0  |
 |:-------|:------------|:--------|
 | 1      | 180.000     | 0.000   |
@@ -160,31 +158,32 @@ $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx12.32
 | 8      | 171.125     | 0.875   |
 | 9      | 169.875     | 1.000   |
 | 10     | 168.750     | 1.125   |
-[NOTICE : NITTA] synthesis process...ok
-[NOTICE : NITTA] write target project to: "gen/main"...ok
 ```
 
 #### Synthesis a target system for a specific algorithm:
 ``` console
-$ stack exec nitta -- examples/teacup.lua -v
-read source code from: "examples/teacup.lua"...
-read source code from: "examples/teacup.lua"...ok
-will trace: 
-TraceVar {tvFmt = "%.3f", tvVar = "temp_cup_1"}
-TraceVar {tvFmt = "%.3f", tvVar = "time_0"}
-synthesis process...
-synthesis process...ok
-write target project to: "gen/main"...
-write target project to: "gen/main"...ok
-run logical synthesis...
-run logical simulation...ok
+$ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
+[NOTICE : NITTA] synthesis process...ok
+[NOTICE : NITTA] write target project to: "gen/main"...ok
+[NOTICE : NITTA] run testbench (gen/main)...ok
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
 ```
 
 #### Run with user interface:
 ``` console
 $ stack exec nitta -- examples/teacup.lua -p=8080
-Running NITTA server at http://localhost:8080 
-...
+Running NITTA server at http://localhost:8080 ...
 ```
 
 #### Testing
