@@ -32,7 +32,6 @@ module NITTA.Intermediate.Functions.Accum (
 
 import Data.List (nub, partition)
 import Data.List.Split (splitWhen)
-import Data.Set (elems, fromList)
 import qualified Data.Set as S
 import Data.String.ToString
 import qualified Data.String.Utils as S
@@ -90,7 +89,7 @@ fromPull (Pull (O vs)) = vs
 fromPull _ = error "Error in fromPull function in acc"
 
 instance (Ord v) => Function (Acc v x) v where
-    inputs (Acc lst) = fromList $ map fromPush $ filter isPush lst
+    inputs (Acc lst) = S.fromList $ map fromPush $ filter isPush lst
     outputs (Acc lst) = unionsMap fromPull $ filter isPull lst
 
 instance (Ord v) => Patch (Acc v x) (v, v) where
@@ -120,7 +119,7 @@ accGen blocks =
         signPush ('-' : name) = Push Minus (I $ T.pack name)
         signPush _ = error "Error in matching + and -"
         pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
+        pullCreate lst = Pull $ O $ S.fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
      in Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
 instance (Var v) => Locks (Acc v x) v where
@@ -139,4 +138,4 @@ instance (Var v, Num x) => FunctionSimulation (Acc v x) v x where
                     case sign of
                         Plus -> (buf + x, changes)
                         Minus -> (buf - x, changes)
-            eval (buf, changes) (Pull (O vs)) = (buf, [(v, buf) | v <- elems vs] ++ changes)
+            eval (buf, changes) (Pull (O vs)) = (buf, [(v, buf) | v <- S.elems vs] ++ changes)
