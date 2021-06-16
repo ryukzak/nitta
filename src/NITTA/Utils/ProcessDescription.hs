@@ -132,8 +132,8 @@ scheduleFunctionBind f = do
     scheduleStep (singleton $ nextTick schedule) $ CADStep $ "bind " <> show f
 
 scheduleGroupBinding (GroupBinding _ binds) = do
-    Schedule{schProcess = Process{nextTick}} <- get
-    scheduleStep (singleton nextTick) $ CADStep $ "group binding " <> show (map (\(Bind f _) -> f) binds)
+    schedule <- get
+    scheduleStep (singleton $ nextTick schedule) $ CADStep $ "group binding " <> show (map (\(Bind f _) -> f) binds)
 
 scheduleFunctionRevoke f = do
     schedule <- get
