@@ -58,19 +58,15 @@ tests =
                 a =
                     fromList
                         [ Lock{locked = "c", lockBy = "a"}
-                        , Lock{locked = "c", lockBy = "b"}
-                        , Lock{locked = "d", lockBy = "a"}
-                        , Lock{locked = "d", lockBy = "b"}
                         , Lock{locked = "e", lockBy = "a"}
-                        , Lock{locked = "e", lockBy = "b"}
+                        , Lock{locked = "d", lockBy = "a"}
                         , Lock{locked = "f", lockBy = "a"}
-                        , Lock{locked = "f", lockBy = "b"}
                         , Lock{locked = "k", lockBy = "a"}
+                        , Lock{locked = "c", lockBy = "b"}
+                        , Lock{locked = "e", lockBy = "b"}
+                        , Lock{locked = "d", lockBy = "b"}
+                        , Lock{locked = "f", lockBy = "b"}
                         , Lock{locked = "k", lockBy = "b"}
-                        , Lock{locked = "k", lockBy = "c"}
-                        , Lock{locked = "k", lockBy = "d"}
-                        , Lock{locked = "k", lockBy = "e"}
-                        , Lock{locked = "k", lockBy = "f"}
                         ]
              in b @?= a
         ]

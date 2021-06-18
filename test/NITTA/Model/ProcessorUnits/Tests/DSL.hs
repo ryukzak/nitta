@@ -135,6 +135,7 @@ import Data.CallStack
 import Data.List (find)
 import qualified Data.Set as S
 import Data.String.ToString
+import qualified Data.String.Utils as S
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
@@ -325,7 +326,9 @@ assertLocks expectLocks = do
     let actualLocks0 = locks unit
         actualLocks = S.fromList actualLocks0
     lift $ assertBool ("assertLocks: locks contain duplicates: " <> show actualLocks0) $ length actualLocks0 == S.size actualLocks
-    lift $ assertBool ("assertLocks: expected locks: " <> show expectLocks <> " actual: " <> show actualLocks0) $ actualLocks == S.fromList expectLocks
+    lift $ assertBool ("assertLocks:\n  expected locks:\n" <> show' expectLocks <> "\n  actual:\n" <> show' actualLocks0) $ actualLocks == S.fromList expectLocks
+    where
+        show' ls = S.join "\n" $ map (("    " <>) . show) ls
 
 assertCoSimulation ::
     ( PUClasses pu v x Int
@@ -349,6 +352,7 @@ assertCoSimulation =
                 lift $ assertFailure $ "coSimulation failed: \n" <> show report
 
 inpVars fs = unionsMap inputs fs
+
 tracePU = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "PU: " <> show unit

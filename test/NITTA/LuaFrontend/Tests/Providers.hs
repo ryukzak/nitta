@@ -105,7 +105,7 @@ runLua arch _proxy wd received src = do
                 , tReceivedValues = received
                 }
     return $ case reportE of
-        Left err -> Left $ "synthesis process fail" <> err
+        Left err -> Left $ "synthesis process fail: " <> err
         Right TestbenchReport{tbStatus = True} -> Right ()
         Right report@TestbenchReport{tbCompilerDump}
             | T.length tbCompilerDump > 2 ->
