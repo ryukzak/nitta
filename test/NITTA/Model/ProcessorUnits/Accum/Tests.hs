@@ -287,12 +287,20 @@ tests =
 
             assertCoSimulation
             assertSynthesisDone
-        , unitTestCase "accum neg smoke test" accumDef $ do
+        , unitTestCase "accum neg test" accumDef $ do
             assign $ F.neg "a" ["b"]
             setValue "a" 2
-            assertBindFullness
-            decide $ consume "a"
-            decide $ provide ["b"]
+
+            assertEndpoint 0 maxBound $ consume "a"
+            assertLocks [Lock{locked = "b", lockBy = "a"}]
+            decideAt 0 0 $ consume "a"
+
+            assertEndpoint 3 maxBound $ provide ["b"]
+            assertLocks []
+            decideAt 3 3 $ provide ["b"]
+
+            assertLocks []
+            assertCoSimulation
         ]
     where
         accumDef = def :: Accum T.Text Int Int
