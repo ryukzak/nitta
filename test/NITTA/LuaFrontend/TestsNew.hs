@@ -43,13 +43,13 @@ case_find_startup_function =
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
         expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
         expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
 case_process_multiple_assignments_statement =
@@ -59,73 +59,73 @@ case_process_multiple_assignments_statement =
                 [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
                 , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
                 ]
-        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
 case_process_add_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
-                ]
-        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+            [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_sub_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Sub (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "sub", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
-                ]
-        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+            [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "sub", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_divide_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Div (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "divide", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
-                ]
-        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+            [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "divide", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_multiply_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Mul (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "multiply", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
-                ]
-        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+            [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "multiply", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 --case_process_neg_statement =
 --   let assignment = Assign [VarName (Name (T.pack "x"))] [Unop Neg (PrefixExp (PEVar (VarName (Name (T.pack "y")))))]
 --       expected =
 --               [ Func{fIn = [T.pack "y"], fOut = [T.pack "a"], fValues = [], fName = "neg", fInt = []}]
---       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+--       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
 --    in algGraph @?= expected
 --
 --case_process_funcall_statement =
 --   let assignment = FunCall (NormalFunCall (PEVar (VarName (Name (T.pack "send")))) (Args [PrefixExp (PEVar (VarName (Name (T.pack "x"))))]))
 --       expected =
 --               [ Func{fIn = [T.pack "a"], fOut = [T.pack "a"], fValues = [], fName = "constant", fInt = []}]
---       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+--       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
 --    in algGraph @?= expected
 
 case_temporary_variable =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Binop Add (Binop Add (Number IntNum $ T.pack "1") (Number IntNum $ T.pack "2")) (Number IntNum $ T.pack "3")]
         expected =
-                [ Func{fIn = [T.pack "_0#a", T.pack "!3#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "3"], fValues = [3], fName = "constant", fInt = []}
-                , Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "_0#a"], fValues = [], fName = "add", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
-                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
-                ]
-        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+            [ Func{fIn = [T.pack "_0#a", T.pack "!3#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "3"], fValues = [3], fName = "constant", fInt = []}
+            , Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "_0#a"], fValues = [], fName = "add", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+            , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_lua_constant_declatation =
