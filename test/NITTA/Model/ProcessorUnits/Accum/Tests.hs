@@ -288,16 +288,16 @@ tests =
             assertCoSimulation
             assertSynthesisDone
         , unitTestCase "accum neg test" accumDef $ do
-            assign $ F.neg "a" ["b"]
+            assign $ F.neg "a" ["c"]
             setValue "a" 2
 
             assertEndpoint 0 maxBound $ consume "a"
-            assertLocks [Lock{locked = "b", lockBy = "a"}]
+            assertLocks [Lock{locked = "c", lockBy = "a"}]
             decideAt 0 0 $ consume "a"
 
-            assertEndpoint 3 maxBound $ provide ["b"]
+            assertEndpoint 3 maxBound $ provide ["c"]
             assertLocks []
-            decideAt 3 3 $ provide ["b"]
+            decideAt 3 3 $ provide ["c"]
 
             assertLocks []
             assertCoSimulation
