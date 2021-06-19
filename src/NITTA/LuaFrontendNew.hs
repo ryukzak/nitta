@@ -10,6 +10,7 @@ module NITTA.LuaFrontendNew (
     -- * Internal
     LuaValue (..),
     AlgBuilder (..),
+    Func (..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
@@ -33,7 +34,9 @@ data LuaValue s t
     deriving (Show)
 
 getUniqueLuaName Constant{luaValueName, luaValueAccessCount} = fromText $ "!" <> luaValueName <> "#" <> showText luaValueAccessCount
-getUniqueLuaName Variable{luaValueName, luaValueAssignCount, luaValueAccessCount} = fromText $ luaValueName <> "^" <> showText luaValueAssignCount <> "#" <> showText luaValueAccessCount
+getUniqueLuaName Variable{luaValueName, luaValueAssignCount, luaValueAccessCount}
+                    | T.head luaValueName == '_' = fromText luaValueName
+                    | otherwise                  = fromText $ luaValueName <> "^" <> showText luaValueAssignCount <> "#" <> showText luaValueAccessCount
 
 instance Eq (LuaValue s t) where
     (==) Constant{luaValueName = a} Constant{luaValueName = b} = a == b
@@ -53,6 +56,7 @@ data Func x = Func
     , fValues :: [x]
     , fInt :: [Int]
     }
+    deriving (Show, Eq)
 
 data AlgBuilder s t = AlgBuilder
     { algGraph :: [Func t]
@@ -141,6 +145,7 @@ getNextTmpVarName fOut
             Nothing -> do
                 put algBuilder{algVarGen = Map.insert fOut 1 algVarGen}
                 return $ T.pack $ "_0#" <> T.unpack fOut
+
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
     mapM_ (\(Name name, Number _ valueString) -> addToBuffer name valueString) $ zip names exps
     return ""
@@ -312,16 +317,15 @@ alg2graph AlgBuilder{algGraph, algBuffer} = flip execState (DFCluster []) $ do
         function2nitta Func{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
         function2nitta Func{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
         function2nitta Func{fName} = error $ "function not found: " ++ show fName
-        output v
-            | T.head v == '_' = []
-            | otherwise =
+        output v =
                 case Map.lookup v algBuffer of
                     Just Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} ->
                         [fromString (combineName luaValueName luaValueAssignCount i) | i <- [0 .. luaValueAccessCount -1]]
                     Just Constant{luaValueName, luaValueAccessCount} ->
                         [fromString ("!" <> T.unpack luaValueName <> "#" <> show i) | i <- [0 .. luaValueAccessCount]]
                     _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algBuffer
-        combineName name assignCount accessCount = T.unpack name ++ "^" ++ show assignCount ++ "#" ++ show accessCount
+        combineName name assignCount accessCount | T.head name == '_' = T.unpack name -- do not change temporary variables
+                                                 | otherwise          = T.unpack name ++ "^" ++ show assignCount ++ "#" ++ show accessCount
 
 getBuilder src =
     let syntaxTree = getLuaBlockFromSources src

@@ -19,7 +19,6 @@ import qualified Data.Map as Map
 import Data.String.Interpolate
 import qualified Data.Text as T
 import Language.Lua
-import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontendNew
@@ -43,104 +42,91 @@ case_find_startup_function =
 
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
-        expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algBuffer @?= expected
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
-        expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        expected = Map.fromList [(T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})]
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algBuffer @?= expected
 
 case_process_multiple_assignments_statement =
     let assignment = Assign [VarName (Name $ T.pack "a"), VarName (Name $ T.pack "b")] [Number IntNum $ T.pack "2", Number FloatNum $ T.pack "2.5"]
         expected =
             Map.fromList
-                [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueParsedFunction = F.constant 2 ["a^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
-                , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueParsedFunction = F.constant 2 ["b^0#0"], luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
+                [ (T.pack "a", Variable{luaValueName = T.pack "a", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
+                , (T.pack "b", Variable{luaValueName = T.pack "b", luaValueAssignCount = 0, luaValueAccessCount = 0, isStartupArgument = False, startupArgumentString = T.pack ""})
                 ]
-        AlgBuilder{algBuffer} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algBuffer @?= expected
 
 case_process_add_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
-                --, DFLeaf (F {fun = F.Add (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algGraph @?= expected
 
 case_process_sub_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Sub (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
-                --, DFLeaf (F {fun = F.Sub (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "sub", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algGraph @?= expected
 
 case_process_divide_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Div (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
-                --, DFLeaf (F {fun = F.Division (I "!1#0") (I "!2#0") (O (fromList ["a"])) (O (fromList [""])), funHistory = []})
+                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "divide", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algGraph @?= expected
 
 case_process_multiply_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Mul (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
-                --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+                [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "a"], fValues = [], fName = "multiply", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algGraph @?= expected
 
-case_process_neg_statement =
-    let assignment = Assign [VarName (Name (T.pack "x"))] [Unop Neg (PrefixExp (PEVar (VarName (Name (T.pack "y")))))]
-        expected =
-            DFCluster
-                [DFLeaf (F{fun = F.neg "x^0#0" ["y^0#0"], funHistory = []})]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
-     in algGraph @?= expected
-
-case_process_funcall_statement =
-    let assignment = FunCall (NormalFunCall (PEVar (VarName (Name (T.pack "send")))) (Args [PrefixExp (PEVar (VarName (Name (T.pack "x"))))]))
-        expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.send "x^0#0", funHistory = []})
-                ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
-     in algGraph @?= expected
+--case_process_neg_statement =
+--   let assignment = Assign [VarName (Name (T.pack "x"))] [Unop Neg (PrefixExp (PEVar (VarName (Name (T.pack "y")))))]
+--       expected =
+--               [ Func{fIn = [T.pack "y"], fOut = [T.pack "a"], fValues = [], fName = "neg", fInt = []}]
+--       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+--    in algGraph @?= expected
+--
+--case_process_funcall_statement =
+--   let assignment = FunCall (NormalFunCall (PEVar (VarName (Name (T.pack "send")))) (Args [PrefixExp (PEVar (VarName (Name (T.pack "x"))))]))
+--       expected =
+--               [ Func{fIn = [T.pack "a"], fOut = [T.pack "a"], fValues = [], fName = "constant", fInt = []}]
+--       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
+--    in algGraph @?= expected
 
 case_temporary_variable =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Binop Add (Binop Add (Number IntNum $ T.pack "1") (Number IntNum $ T.pack "2")) (Number IntNum $ T.pack "3")]
         expected =
-            DFCluster
-                [ DFLeaf (F{fun = F.constant 3 ["!3#0"], funHistory = []})
-                , DFLeaf (F{fun = F.add "!1#0" "!2#0" ["_0#a"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 2 ["!2#0"], funHistory = []})
-                , DFLeaf (F{fun = F.constant 1 ["!1#0"], funHistory = []})
-                --, DFLeaf (F {fun = F.Multiply (I "!1#0") (I "!2#0") (O (fromList ["a"])), funHistory = []})
+                [ Func{fIn = [T.pack "_0#a", T.pack "!3#0"], fOut = [T.pack "a"], fValues = [], fName = "add", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "3"], fValues = [3], fName = "constant", fInt = []}
+                , Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [T.pack "_0#a"], fValues = [], fName = "add", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "2"], fValues = [2], fName = "constant", fInt = []}
+                , Func{fIn = [], fOut = [T.pack "1"], fValues = [1], fName = "constant", fInt = []}
                 ]
-        AlgBuilder{algGraph} = execState (processStatement (T.pack "_") assignment) defaultAlgBuilder :: AlgBuilder String Int
+        (_str :: String, AlgBuilder{algGraph}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder 
      in algGraph @?= expected
-
---case_debug =
---   let result = parseLuaSources $ T.pack "function sum(x)\n    y = 2 + x\n    sum(y + x)\nend\nsum(0)"
---        expected = DFCluster []
---     in expected @?= result
 
 case_lua_constant_declatation =
     let src =
@@ -153,11 +139,11 @@ case_lua_constant_declatation =
                 sum(0)
             |]
         dfg =
-            [ F.loop 0 "_0#loop" ["a^0#0"]
-            , F.add "_1#loop" "r^0#0" ["_0#loop"]
+            [ F.constant 2 ["t^0#0"] :: F String Int
             , F.constant (-1) ["r^0#0"]
             , F.add "a^0#0" "t^0#0" ["_1#loop"]
-            , F.constant 2 ["t^0#0"] :: F String Int
+            , F.add "_1#loop" "r^0#0" ["_0#loop"]
+            , F.loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (parseLuaSources src) @?= dfg
 
@@ -172,11 +158,11 @@ case_lua_two_name_for_same_constant =
                 sum(0)
             |]
         dfg =
-            [ F.loop 0 "_0#loop" ["a^0#0"]
-            , F.add "_1#loop" "r^0#0" ["_0#loop"]
+            [ F.constant 1 ["t^0#0"] :: F String Int
             , F.constant 1 ["r^0#0"]
             , F.add "a^0#0" "t^0#0" ["_1#loop"]
-            , F.constant 1 ["t^0#0"] :: F String Int
+            , F.add "_1#loop" "r^0#0" ["_0#loop"]
+            , F.loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (parseLuaSources src) @?= dfg
 
@@ -190,12 +176,12 @@ case_lua_negative_operator =
                 sum(0)
             |]
         dfg =
-            [ F.loop 0 "b^0#0" ["a^0#0"]
-            , F.neg "a^0#0" ["b^0#0"] :: F String Int
+            [ F.neg "a^0#0" ["b^0#0"] :: F String Int
+            , F.loop 0 "b^0#0" ["a^0#0"]
             ]
      in functions (parseLuaSources src) @?= dfg
 
-defaultAlgBuilder = AlgBuilder{algGraph = DFCluster [], algBuffer = Map.empty, algVarGen = Map.empty}
+defaultAlgBuilder = AlgBuilder{algGraph = [], algBuffer = Map.empty, algVarGen = Map.empty} :: AlgBuilder String Int
 
 tests :: TestTree
 tests = $(testGroupGenerator)
