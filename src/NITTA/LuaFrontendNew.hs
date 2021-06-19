@@ -116,12 +116,10 @@ parseRightExp _ _ = undefined
 
 parseExpArg _ n@(Number _ _) = do
     addConstant n
-parseExpArg fOut (Unop Neg n) = do
-    c <- getNextTmpVarName fOut
-    luaValue <- parseExpArg c n
-    algBuilder@AlgBuilder{algGraph} <- get
-    put algBuilder{algGraph = Func{fIn = [getUniqueLuaName luaValue], fOut = [fromText c], fValues = [], fName = "neg", fInt = []} : algGraph}
-    return luaValue
+parseExpArg fOut expr@(Unop Neg _) = do
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp name expr
+    addVariableAccess name
 parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
     addVariableAccess name
 parseExpArg fOut binop@Binop{} = do
@@ -130,8 +128,9 @@ parseExpArg fOut binop@Binop{} = do
     addVariableAccess name
 parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
 parseExpArg fOut call@(PrefixExp (PEFunCall _)) = do
-    c <- getNextTmpVarName fOut
-    parseRightExp c call
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp name call
+    addVariableAccess name
 parseExpArg _ _ = undefined
 
 getNextTmpVarName fOut
@@ -194,17 +193,17 @@ processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args 
 processStatement _ _ = undefined
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
-    algBuilder@AlgBuilder{algGraph} <- get
-    put algBuilder{algGraph = Func{fIn = [i], fOut = [fOut], fValues = [], fName = "buffer", fInt = []} : algGraph}
+    _ <- addVariable fOut Func{fIn = [i], fOut = [fOut], fValues = [], fName = "buffer", fInt = []} False $ fromString ""
+    return ()
 addFunction funcName [i] fOut | toString funcName == "brokenBuffer" = do
-    algBuilder@AlgBuilder{algGraph} <- get
-    put algBuilder{algGraph = Func{fIn = [i], fOut = [fOut], fValues = [], fName = "brokenBuffer", fInt = []} : algGraph}
+    _ <- addVariable fOut Func{fIn = [i], fOut = [fOut], fValues = [], fName = "brokenBuffer", fInt = []} False $ fromString ""
+    return ()
 addFunction funcName [i] _ | toString funcName == "send" = do
     algBuilder@AlgBuilder{algGraph} <- get
     put algBuilder{algGraph = Func{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
-    algBuilder@AlgBuilder{algGraph} <- get
-    put algBuilder{algGraph = Func{fIn = [], fOut = [fOut], fValues = [], fName = "receive", fInt = []} : algGraph}
+    _ <- addVariable fOut Func{fIn = [], fOut = [fOut], fValues = [], fName = "brokenBuffer", fInt = []} False $ fromString ""
+    return ()
 addFunction fName _ _ = error $ "unknown function" <> fName
 
 addConstant (Number valueType valueString) = do
@@ -328,9 +327,9 @@ alg2graph AlgBuilder{algGraph, algBuffer} = flip execState (DFCluster []) $ do
             | T.head name == '_' = T.unpack name -- do not change temporary variables
             | otherwise = T.unpack name ++ "^" ++ show assignCount ++ "#" ++ show accessCount
 
-getBuilder src =
-    let syntaxTree = getLuaBlockFromSources src
-     in buildAlg syntaxTree
+--getBuilder src =
+--    let syntaxTree = getLuaBlockFromSources src
+--     in buildAlg syntaxTree
 
 lua2functionsNew src =
     FrontendResult{frDataFlow = parseLuaSources src, frTrace = [], frPrettyLog = undefined}
