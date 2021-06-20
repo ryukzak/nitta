@@ -62,6 +62,7 @@ data AlgBuilder s t = AlgBuilder
     { algGraph :: [Func t]
     , algBuffer :: Map.Map T.Text (LuaValue s t)
     , algVarGen :: Map.Map T.Text Int
+    , algAliases :: Map.Map T.Text T.Text
     }
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
@@ -112,7 +113,9 @@ parseRightExp
         fIn <- mapM (parseExpArg fOut) args
         addFunction (fromText fname) (map getUniqueLuaName fIn) $ fromText fOut
         return $ head fIn
-parseRightExp _ _ = undefined
+parseRightExp fOut (PrefixExp (PEVar (VarName (Name name)))) = do
+    addAlias fOut name
+parseRightExp _ expr = error $ "unknown expression : " <> show expr
 
 parseExpArg _ n@(Number _ _) = do
     addConstant n
@@ -231,8 +234,8 @@ addConstant (Number valueType valueString) = do
 addConstant _ = undefined
 
 addVariable name func isStartupArg startupArgString = do
-    algBuilder@AlgBuilder{algGraph, algBuffer} <- get
-    case Map.lookup name algBuffer of
+    algBuilder@AlgBuilder{algGraph, algBuffer, algAliases} <- get
+    case getLuaValueByName name algBuffer algAliases of
         Just value -> do
             let newValue = updateConstant value
             put
@@ -255,17 +258,30 @@ addVariable name func isStartupArg startupArgString = do
         updateConstant _ = undefined
 
 addVariableAccess name = do
-    algBuilder@AlgBuilder{algBuffer} <- get
-    case Map.lookup name algBuffer of
+    algBuilder@AlgBuilder{algBuffer, algAliases} <- get
+    case getLuaValueByName name algBuffer algAliases of
         Just value -> do
             let newValue = updateVariable value
-            put algBuilder{algBuffer = Map.insert name newValue algBuffer}
+            put algBuilder{algBuffer = Map.insert (luaValueName newValue) newValue algBuffer}
             return value
         Nothing -> error ("variable '" ++ show name ++ " not found. Constants list : " ++ show algBuffer)
     where
         updateVariable v@Variable{luaValueAccessCount} =
             v{luaValueAccessCount = luaValueAccessCount + 1}
         updateVariable _ = undefined
+
+addAlias from to = do
+    algBuilder@AlgBuilder{algAliases, algBuffer} <- get
+    case Map.lookup to algBuffer of
+        Just value -> do
+            put algBuilder{algAliases = Map.insert from to algAliases}
+            return value
+        Nothing -> error ("variable '" ++ show to ++ " not found. Constants list : " ++ show algBuffer)
+
+getLuaValueByName name buffer aliases =
+    case Map.lookup name aliases of
+        Just value ->  getLuaValueByName value buffer aliases
+        Nothing -> Map.lookup name buffer
 
 buildAlg syntaxTree =
     flip execState st $ do
@@ -278,6 +294,7 @@ buildAlg syntaxTree =
                 { algGraph = []
                 , algBuffer = Map.empty
                 , algVarGen = Map.empty
+                , algAliases = Map.empty
                 }
 
 findStartupFunction (Block statements Nothing)
@@ -295,7 +312,7 @@ parseLuaSources src =
     let syntaxTree = getLuaBlockFromSources src
      in alg2graph $ buildAlg syntaxTree
 
-alg2graph AlgBuilder{algGraph, algBuffer} = flip execState (DFCluster []) $ do
+alg2graph AlgBuilder{algGraph, algBuffer, algAliases} = flip execState (DFCluster []) $ do
     mapM addToGraph algGraph
     where
         addToGraph item = do
@@ -317,7 +334,7 @@ alg2graph AlgBuilder{algGraph, algBuffer} = flip execState (DFCluster []) $ do
         function2nitta Func{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
         function2nitta Func{fName} = error $ "function not found: " ++ show fName
         output v =
-            case Map.lookup v algBuffer of
+            case getLuaValueByName v algBuffer algAliases of
                 Just Variable{luaValueName, luaValueAccessCount, luaValueAssignCount} ->
                     [fromString (combineName luaValueName luaValueAssignCount i) | i <- [0 .. luaValueAccessCount -1]]
                 Just Constant{luaValueName, luaValueAccessCount} ->
@@ -327,9 +344,9 @@ alg2graph AlgBuilder{algGraph, algBuffer} = flip execState (DFCluster []) $ do
             | T.head name == '_' = T.unpack name -- do not change temporary variables
             | otherwise = T.unpack name ++ "^" ++ show assignCount ++ "#" ++ show accessCount
 
---getBuilder src =
---    let syntaxTree = getLuaBlockFromSources src
---     in buildAlg syntaxTree
+getBuilder src =
+    let syntaxTree = getLuaBlockFromSources src
+    in buildAlg syntaxTree
 
 lua2functionsNew src =
     FrontendResult{frDataFlow = parseLuaSources src, frTrace = [], frPrettyLog = undefined}
