@@ -35,7 +35,11 @@ Project chat (telegram): <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 
 Project CI chat (telegram): <https://t.me/nitta_ci>
 
-## Install development dependency
+## Contributing
+
+See: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Setup development environment
 
 ### Mac OS X
 
@@ -83,7 +87,7 @@ $ npm install --global tern prettier yarn
 
 ## Build
 
-Inside the project path:
+Inside the project path
 
 ### Build backend
 
@@ -106,81 +110,7 @@ $ stack exec nitta-api-gen # for REST API description
 
 For the fast rebuild, the project adds `--fast` flag.
 
-## Usage
-
-``` console
-$ stack exec nitta -- --help
-nitta v0.0.0.1 - tool for hard real-time CGRA processors
-
-nitta [OPTIONS] FILE
-
-Target system configuration:
-  -t     --type=fxM.B                  Data type (default: 'fx32.32')
-         --io-sync=sync|async|onboard  IO synchronization mode
-         --templates=PATH[:PATH]       Target platform templates (default:
-                                       'templates/Icarus:templates/DE0-Nano')
-Common flags:
-  -p     --port=INT                    Run nitta server for UI on specific
-                                       port (by default - not run)
-  -o     --output-path=PATH            Target system path
-Simulation:
-  -n=INT                               Number of simulation cycles
-  -f     --fsim                        Functional simulation with trace
-  -l     --lsim                        Logical (HDL) simulation with trace
-         --format=md|json|csv          Simulation output format (default:
-                                       'md')
-Other:
-  -v     --verbose                     Verbose
-  -e     --extra-verbose               Extra verbose
-  -?     --help                        Display help message
-  -V     --version                     Print version information
-         --numeric-version             Print just the version number
-```
-
-#### Logical simulation for a specific algorithm:
-``` console
-$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
-| Cycle  | temp_cup_1  | time_0  |
-|:-------|:------------|:--------|
-| 1      | 180.000     | 0.000   |
-| 2      | 178.625     | 0.125   |
-| 3      | 177.375     | 0.250   |
-| 4      | 176.125     | 0.375   |
-| 5      | 174.875     | 0.500   |
-| 6      | 173.625     | 0.625   |
-| 7      | 172.375     | 0.750   |
-| 8      | 171.125     | 0.875   |
-| 9      | 169.875     | 1.000   |
-| 10     | 168.750     | 1.125   |
-```
-
-#### Synthesis a target system for a specific algorithm:
-``` console
-$ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
-[NOTICE : NITTA] synthesis process...ok
-[NOTICE : NITTA] write target project to: "gen/main"...ok
-[NOTICE : NITTA] run testbench (gen/main)...ok
-| Cycle  | temp_cup_1  | time_0  |
-|:-------|:------------|:--------|
-| 1      | 180.000     | 0.000   |
-| 2      | 178.625     | 0.125   |
-| 3      | 177.375     | 0.250   |
-| 4      | 176.125     | 0.375   |
-| 5      | 174.875     | 0.500   |
-| 6      | 173.625     | 0.625   |
-| 7      | 172.375     | 0.750   |
-| 8      | 171.125     | 0.875   |
-| 9      | 169.875     | 1.000   |
-| 10     | 168.750     | 1.125   |
-```
-
-#### Run with user interface:
-``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080
-Running NITTA server at http://localhost:8080 ...
-```
-
-#### Testing
+### Testing
 ``` console
 $ stack build --test
 nitta-0.0.0.1: unregistering (dependencies changed)
@@ -202,7 +132,7 @@ nitta> Test suite nitta-test passed
 Completed 2 action(s).
 ```
 
-#### Build command examples
+### Other
 ``` console
 # build only one target
 $ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
@@ -241,3 +171,79 @@ $ graphmod -q -p src | pbcopy
 stack exec ghc-pkg unregister interpolate -- --force
 stack exec -- haddock test/**/*.hs -odocs -h
 ```
+
+
+## Usage
+
+``` console
+$ stack exec nitta -- --help
+nitta v0.0.0.1 - tool for hard real-time CGRA processors
+
+nitta [OPTIONS] FILE
+
+Target system configuration:
+  -t     --type=fxM.B                  Data type (default: 'fx32.32')
+         --io-sync=sync|async|onboard  IO synchronization mode
+         --templates=PATH[:PATH]       Target platform templates (default:
+                                       'templates/Icarus:templates/DE0-Nano')
+Common flags:
+  -p     --port=INT                    Run nitta server for UI on specific
+                                       port (by default - not run)
+  -o     --output-path=PATH            Target system path
+Simulation:
+  -n=INT                               Number of simulation cycles
+  -f     --fsim                        Functional simulation with trace
+  -l     --lsim                        Logical (HDL) simulation with trace
+         --format=md|json|csv          Simulation output format (default:
+                                       'md')
+Other:
+  -v     --verbose                     Verbose
+  -e     --extra-verbose               Extra verbose
+  -?     --help                        Display help message
+  -V     --version                     Print version information
+         --numeric-version             Print just the version number
+```
+
+### Logical simulation for a specific algorithm:
+``` console
+$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
+```
+
+### Synthesis a target system for a specific algorithm:
+``` console
+$ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
+[NOTICE : NITTA] synthesis process...ok
+[NOTICE : NITTA] write target project to: "gen/main"...ok
+[NOTICE : NITTA] run testbench (gen/main)...ok
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
+```
+
+### Run with user interface:
+``` console
+$ stack exec nitta -- examples/teacup.lua -p=8080
+Running NITTA server at http://localhost:8080 ...
+```
+
