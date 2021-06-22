@@ -1,0 +1,47 @@
+type = "fx32.32"
+ioSync = "Sync"
+
+[[networks]]
+name = "net1"
+
+[[networks.pus]]
+type = "Fram"
+name = "fram1"
+size = 16
+
+[[networks.pus]]
+type = "Fram"
+name = "fram2"
+size = 32
+
+[[networks.pus]]
+type = "Shift"
+name = "shift"
+sRight = true
+
+[[networks.pus]]
+type = "Multiplier"
+name = "mul"
+mock = true
+
+[[networks.pus]]
+type = "Accum"
+name = "accum"
+isInt = true
+
+[[networks.pus]]
+type = "Divider"
+name = "div"
+mock = true
+pipeline = 4
+
+[[networks.pus]]
+type = "SPI"
+name = "spi"
+mosi = "mosi"
+miso = "miso"
+sclk = "sclk"
+cs = "cs"
+isSlave = true
+bufferSize = 6
+bounceFilter = 0

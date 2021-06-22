@@ -37,7 +37,7 @@ import qualified Data.Text as T
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Model.Microarchitecture
+import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems

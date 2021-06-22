@@ -182,8 +182,11 @@ nitta v0.0.0.1 - tool for hard real-time CGRA processors
 nitta [OPTIONS] FILE
 
 Target system configuration:
-  -t     --type=fxM.B                  Data type (default: 'fx32.32')
-         --io-sync=sync|async|onboard  IO synchronization mode
+         --uarch=PATH                  Microarchitecture configuration file
+  -t     --type=fxM.B                  Overrides data type specified in
+                                       config file
+         --io-sync=sync|async|onboard  Overrides IO synchronization mode
+                                       specified in config file
          --templates=PATH[:PATH]       Target platform templates (default:
                                        'templates/Icarus:templates/DE0-Nano')
 Common flags:

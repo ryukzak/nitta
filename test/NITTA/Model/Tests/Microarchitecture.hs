@@ -41,7 +41,7 @@ module NITTA.Model.Tests.Microarchitecture (
 import Data.Proxy
 import qualified Data.Text as T
 import NITTA.Intermediate.Types
-import NITTA.Model.Microarchitecture
+import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
@@ -116,7 +116,7 @@ marchSPI isSlave _proxy = defineNetwork "net1" Sync $ do
                     , master_cs = OutputPortTag "cs"
                     }
 
--- FIXME: Support code like this in NITTA.Model.Microarchitecture. Such
+-- FIXME: Support code like this in NITTA.Model.Microarchitecture.Builder. Such
 -- functions should apply to modification of the target processor model at
 -- synthesis-time, so it should keep the model state.
 

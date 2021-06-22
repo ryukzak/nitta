@@ -21,10 +21,12 @@ Stability   : experimental
 -}
 module Main (main) where
 
+import Control.Applicative
 import Control.Exception
 import Control.Monad (when)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Default (def)
+import Data.Functor
 import Data.Maybe
 import Data.Proxy
 import qualified Data.String.Utils as S
@@ -35,13 +37,15 @@ import GHC.TypeLits
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
-import NITTA.Model.Microarchitecture
+import NITTA.Model.Microarchitecture.Builder
+import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis
 import NITTA.UIBackend
+import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
@@ -57,8 +61,9 @@ import Text.Regex
 -- |Command line interface.
 data Nitta = Nitta
     { filename :: FilePath
-    , type_ :: String
-    , io_sync :: IOSynchronization
+    , uarch :: Maybe FilePath
+    , type_ :: Maybe String
+    , io_sync :: Maybe IOSynchronization
     , port :: Int
     , templates :: String
     , n :: Int
@@ -82,11 +87,16 @@ nittaArgs =
         , port =
             0 &= help "Run nitta server for UI on specific port (by default - not run)"
                 &= groupname "Common flags"
+        , uarch =
+            Nothing &= typ "PATH" &= help "Microarchitecture configuration file"
+                &= explicit
+                &= name "uarch"
+                &= groupname "Target system configuration"
         , type_ =
-            "fx32.32" &= name "t" &= typ "fxM.B" &= help "Data type (default: 'fx32.32')"
+            Nothing &= name "t" &= typ "fxM.B" &= help "Overrides data type specified in config file"
                 &= groupname "Target system configuration"
         , io_sync =
-            Sync &= help "IO synchronization mode"
+            Nothing &= help "Overrides IO synchronization mode specified in config file"
                 &= explicit
                 &= name "io-sync"
                 &= typ "sync|async|onboard"
@@ -120,16 +130,16 @@ nittaArgs =
     where
         defTemplates = S.join ":" defProjectTemplates
 
-parseFX input =
-    let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
-        [m, b] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
-        convert = fromJust . someNatVal . read
-     in (convert m, convert b)
-
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
+    Nitta{port, filename, uarch, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
         cmdArgs nittaArgs
     setupLogger verbose extra_verbose
+
+    toml <- case uarch of
+        Nothing -> return Nothing
+        Just path -> T.readFile path <&> (Just . getToml)
+
+    let fromConf s = getFromTomlSection s =<< toml
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
@@ -137,7 +147,9 @@ main = do
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ma = (microarch io_sync :: BusNetwork T.Text T.Text (Attr (FX m b)) Int)
+                ioSync = fromJust $ io_sync <|> fromConf "ioSync" <|> Just Sync
+                confMa = toml >>= Just . mkMicroarchitecture ioSync
+                ma = fromJust $ confMa <|> Just (defMicroarch ioSync) :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -171,7 +183,13 @@ main = do
 
             when lsim $ logicalSimulation format frPrettyLog prj
         )
-        $ parseFX type_
+        $ parseFX . fromJust $ type_ <|> fromConf "type" <|> Just "fx32.32"
+
+parseFX input =
+    let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
+        [m, b] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
+        convert = fromJust . someNatVal . read
+     in (convert m, convert b)
 
 setupLogger verbose extra = do
     let level = case (verbose, extra) of
@@ -211,7 +229,18 @@ putLog "json" records = BS.putStrLn $ log2json records
 putLog "csv" records = BS.putStr $ log2csv records
 putLog t _ = error $ "not supported output format option: " <> t
 
-microarch ioSync = defineNetwork "net1" ioSync $ do
+warningIfUnexpectedPort expect port =
+    when (expect /= port) $
+        warningM "NITTA.UI" $
+            concat
+                [ "WARNING: expected backend port: "
+                , show expect
+                , " actual: "
+                , show port
+                , " (maybe you need regenerate API by nitta-api-gen)"
+                ]
+
+defMicroarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO
     addCustom "fram2" (framWithSize 32) FramIO
     add "shift" ShiftIO
@@ -225,14 +254,3 @@ microarch ioSync = defineNetwork "net1" ioSync $ do
             , slave_sclk = InputPortTag "sclk"
             , slave_cs = InputPortTag "cs"
             }
-
-warningIfUnexpectedPort expect port =
-    when (expect /= port) $
-        warningM "NITTA.UI" $
-            concat
-                [ "WARNING: expected backend port: "
-                , show expect
-                , " actual: "
-                , show port
-                , " (maybe you need regenerate API by nitta-api-gen)"
-                ]
