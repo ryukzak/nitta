@@ -1,0 +1,726 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE PartialTypeSignatures #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators #-}</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# OPTIONS -fno-warn-partial-type-signatures #-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">{- |
+Module      : NITTA.UIBackend
+Description : HTTP backend for the NITTA web UI
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.UIBackend</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.UIBackend.html#backendServer"><span class="hs-identifier">backendServer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.UIBackend.html#prepareJSAPI"><span class="hs-identifier">prepareJSAPI</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.UIBackend.html#restDocs"><span class="hs-identifier">restDocs</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.UIBackend.html#apiPath"><span class="hs-identifier">apiPath</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SomeException</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">try</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unless</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Either</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.IO.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">setLocaleEncoding</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">utf8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.html"><span class="hs-identifier">NITTA.Synthesis</span></a></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.UIBackend.REST.html"><span class="hs-identifier">NITTA.UIBackend.REST</span></a></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Network.Simple.TCP</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">connect</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Network.Wai.Handler.Warp</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">run</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Network.Wai.Middleware.Cors</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">simpleCors</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Servant</span></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Servant.Docs</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">path</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Servant.JS</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SJS</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath.Posix</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">joinPath</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span id="apiPath"><span class="annot"><span class="annottext">apiPath :: FilePath
+</span><a href="NITTA.UIBackend.html#apiPath"><span class="hs-identifier hs-var hs-var">apiPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; FilePath
+</span><span class="hs-identifier hs-var">joinPath</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-string">&quot;.&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;web&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;src&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;services&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;gen&quot;</span></span><span class="hs-special">]</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span id="restDocs"><span class="annot"><span class="annottext">restDocs :: a -&gt; FilePath
+</span><a href="NITTA.UIBackend.html#restDocs"><span class="hs-identifier hs-var hs-var">restDocs</span></a></span></span><span> </span><span id="local-6989586621680143383"><span class="annot"><span class="annottext">port :: a
+</span><a href="#local-6989586621680143383"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><span class="annottext">API -&gt; FilePath
+</span><span class="hs-identifier hs-var">markdown</span></span><span> </span><span class="annot"><span class="annottext">(API -&gt; FilePath) -&gt; API -&gt; FilePath
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-46"></span><span>        </span><span class="annot"><span class="annottext">[DocIntro]
+-&gt; Proxy
+     ((Description &quot;Get whole synthesis tree&quot;
+       :&gt; (&quot;synthesisTree&quot; :&gt; Get '[PrettyJSON] (TreeView ShortNodeView)))
+      :&lt;|&gt; ((Description &quot;Get synthesis tree info&quot;
+             :&gt; (&quot;treeInfo&quot; :&gt; Get '[PrettyJSON] TreeInfo))
+            :&lt;|&gt; (&quot;node&quot;
+                  :&gt; (Capture' '[] &quot;sid&quot; SID
+                      :&gt; ((Summary &quot;Synthesis tree navigation&quot;
+                           :&gt; ((Description
+                                  &quot;Get list of synthesis nodes from the root to the specific node&quot;
+                                :&gt; (&quot;history&quot;
+                                    :&gt; Get '[PrettyJSON] [NodeView FilePath FilePath Int Int]))
+                               :&lt;|&gt; ((Description &quot;Get edge to the parent&quot;
+                                      :&gt; (&quot;parentEdge&quot;
+                                          :&gt; Get
+                                               '[PrettyJSON]
+                                               (Maybe (NodeView FilePath FilePath Int Int))))
+                                     :&lt;|&gt; (Description &quot;Get sub forest&quot;
+                                           :&gt; (&quot;subForest&quot;
+                                               :&gt; Get
+                                                    '[PrettyJSON]
+                                                    [NodeView FilePath FilePath Int Int])))))
+                          :&lt;|&gt; ((Summary &quot;Synthesis node inspection&quot;
+                                 :&gt; ((Description &quot;Get node info\n(see: NITTA.Synthesis.Tree.Node)&quot;
+                                      :&gt; Get '[PrettyJSON] (NodeView FilePath FilePath Int Int))
+                                     :&lt;|&gt; ((Description
+                                              &quot;Intermidiate reperesentation of the current version of the algorithm&quot;
+                                            :&gt; (&quot;intermediateView&quot;
+                                                :&gt; Get '[PrettyJSON] (GraphStructure GraphEdge)))
+                                           :&lt;|&gt; ((Description
+                                                    &quot;Computational process representation (deprecated)&quot;
+                                                  :&gt; (&quot;processTimelines&quot;
+                                                      :&gt; Get '[PrettyJSON] (ProcessTimelines Int)))
+                                                 :&lt;|&gt; ((Description
+                                                          &quot;Process Description for specific process unit&quot;
+                                                        :&gt; (&quot;process&quot;
+                                                            :&gt; Get
+                                                                 '[PrettyJSON]
+                                                                 (Process Int StepInfoView)))
+                                                       :&lt;|&gt; ((Description
+                                                                &quot;Process Description for specific process unit&quot;
+                                                              :&gt; (&quot;microarchitecture&quot;
+                                                                  :&gt; (Capture' '[] &quot;tag&quot; FilePath
+                                                                      :&gt; (&quot;process&quot;
+                                                                          :&gt; Get
+                                                                               '[PrettyJSON]
+                                                                               (Process
+                                                                                  Int
+                                                                                  StepInfoView)))))
+                                                             :&lt;|&gt; ((Description
+                                                                      &quot;Enpoint options for all process units&quot;
+                                                                    :&gt; (&quot;endpoints&quot;
+                                                                        :&gt; Get
+                                                                             '[PrettyJSON]
+                                                                             [UnitEndpoints
+                                                                                FilePath
+                                                                                FilePath
+                                                                                Int]))
+                                                                   :&lt;|&gt; ((Description
+                                                                            &quot;Microarchitecture description&quot;
+                                                                          :&gt; (&quot;microarchitecture&quot;
+                                                                              :&gt; Get
+                                                                                   '[PrettyJSON]
+                                                                                   (MicroarchitectureDesc
+                                                                                      FilePath)))
+                                                                         :&lt;|&gt; (&quot;debug&quot;
+                                                                               :&gt; (Description
+                                                                                     &quot;Debuging interface to fast access to internal state (see NITTA.UIBackend.REST.Debug)&quot;
+                                                                                   :&gt; Get
+                                                                                        '[PrettyJSON]
+                                                                                        (Debug
+                                                                                           FilePath
+                                                                                           FilePath
+                                                                                           Int)))))))))))
+                                :&lt;|&gt; ((Summary
+                                         &quot;Get the report of testbench execution for the current node.&quot;
+                                       :&gt; (&quot;testbench&quot;
+                                           :&gt; (QueryParam' '[Required] &quot;pName&quot; FilePath
+                                               :&gt; (QueryParam' '[Required] &quot;loopsNumber&quot; Int
+                                                   :&gt; Post
+                                                        '[PrettyJSON]
+                                                        (TestbenchReport FilePath Int)))))
+                                      :&lt;|&gt; ((Summary
+                                               &quot;Synthesis methods is a method for full synthesis tree exploration. Usually, it is more complicated than synthesis practice, but it is not an essential difference.&quot;
+                                             :&gt; ((Description
+                                                    &quot;Composition of all available synthesis methods&quot;
+                                                  :&gt; (&quot;stateOfTheArtSynthesisIO&quot;
+                                                      :&gt; Post '[PrettyJSON] SID))
+                                                 :&lt;|&gt; ((&quot;simpleSynthesis&quot; :&gt; Post '[PrettyJSON] SID)
+                                                       :&lt;|&gt; (&quot;smartBindSynthesisIO&quot;
+                                                             :&gt; Post '[PrettyJSON] SID))))
+                                            :&lt;|&gt; (Summary
+                                                    &quot;SynthesisPractice is a set of small elements of the synthesis process.&quot;
+                                                  :&gt; ((Description
+                                                         &quot;Make the best synthesis step by the objective function&quot;
+                                                       :&gt; (&quot;bestStep&quot; :&gt; Post '[PrettyJSON] SID))
+                                                      :&lt;|&gt; ((Description
+                                                               &quot;Make all possible oblivious binds&quot;
+                                                             :&gt; (&quot;obviousBindThread&quot;
+                                                                 :&gt; Post '[PrettyJSON] SID))
+                                                            :&lt;|&gt; ((Description
+                                                                     &quot;Make all possible binds and refactorings&quot;
+                                                                   :&gt; (&quot;allBindsAndRefsIO&quot;
+                                                                       :&gt; Post '[PrettyJSON] SID))
+                                                                  :&lt;|&gt; (Description
+                                                                          &quot;Explore all best synthesis threads from current and `deep` nested levels.&quot;
+                                                                        :&gt; (&quot;allBestThreads&quot;
+                                                                            :&gt; (QueryParam'
+                                                                                  '[Required]
+                                                                                  &quot;deep&quot;
+                                                                                  Int
+                                                                                :&gt; Post
+                                                                                     '[PrettyJSON]
+                                                                                     SID)))))))))))))))
+-&gt; API
+forall k (api :: k). HasDocs api =&gt; [DocIntro] -&gt; Proxy api -&gt; API
+</span><span class="hs-identifier hs-var">docsWithIntros</span></span><span>
+</span><span id="line-47"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; [FilePath] -&gt; DocIntro
+</span><span class="hs-identifier hs-var">DocIntro</span></span><span>
+</span><span id="line-48"></span><span>                </span><span class="annot"><span class="hs-string">&quot;NITTA UI REST API description&quot;</span></span><span>
+</span><span id="line-49"></span><span>                </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="hs-string">&quot;Autogenerated by `nitta-api-gen`&quot;</span></span><span>
+</span><span id="line-50"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;Expected port: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680143383"><span class="hs-identifier hs-var">port</span></a></span><span>
+</span><span id="line-51"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;Request helper with axios can be finded here: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-string">&quot;`rest_api.js`&quot;</span></span><span>
+</span><span id="line-52"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;Typescript interfaces can be finded here: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-string">&quot;`types.ts`&quot;</span></span><span>
+</span><span id="line-53"></span><span>                </span><span class="hs-special">]</span><span>
+</span><span id="line-54"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>            </span><span class="annot"><span class="annottext">(Proxy
+   ((Description &quot;Get whole synthesis tree&quot;
+     :&gt; (&quot;synthesisTree&quot; :&gt; Get '[PrettyJSON] (TreeView ShortNodeView)))
+    :&lt;|&gt; ((Description &quot;Get synthesis tree info&quot;
+           :&gt; (&quot;treeInfo&quot; :&gt; Get '[PrettyJSON] TreeInfo))
+          :&lt;|&gt; (&quot;node&quot;
+                :&gt; (Capture' '[] &quot;sid&quot; SID
+                    :&gt; ((Summary &quot;Synthesis tree navigation&quot;
+                         :&gt; ((Description
+                                &quot;Get list of synthesis nodes from the root to the specific node&quot;
+                              :&gt; (&quot;history&quot;
+                                  :&gt; Get '[PrettyJSON] [NodeView FilePath FilePath Int Int]))
+                             :&lt;|&gt; ((Description &quot;Get edge to the parent&quot;
+                                    :&gt; (&quot;parentEdge&quot;
+                                        :&gt; Get
+                                             '[PrettyJSON]
+                                             (Maybe (NodeView FilePath FilePath Int Int))))
+                                   :&lt;|&gt; (Description &quot;Get sub forest&quot;
+                                         :&gt; (&quot;subForest&quot;
+                                             :&gt; Get
+                                                  '[PrettyJSON]
+                                                  [NodeView FilePath FilePath Int Int])))))
+                        :&lt;|&gt; ((Summary &quot;Synthesis node inspection&quot;
+                               :&gt; ((Description &quot;Get node info\n(see: NITTA.Synthesis.Tree.Node)&quot;
+                                    :&gt; Get '[PrettyJSON] (NodeView FilePath FilePath Int Int))
+                                   :&lt;|&gt; ((Description
+                                            &quot;Intermidiate reperesentation of the current version of the algorithm&quot;
+                                          :&gt; (&quot;intermediateView&quot;
+                                              :&gt; Get '[PrettyJSON] (GraphStructure GraphEdge)))
+                                         :&lt;|&gt; ((Description
+                                                  &quot;Computational process representation (deprecated)&quot;
+                                                :&gt; (&quot;processTimelines&quot;
+                                                    :&gt; Get '[PrettyJSON] (ProcessTimelines Int)))
+                                               :&lt;|&gt; ((Description
+                                                        &quot;Process Description for specific process unit&quot;
+                                                      :&gt; (&quot;process&quot;
+                                                          :&gt; Get
+                                                               '[PrettyJSON]
+                                                               (Process Int StepInfoView)))
+                                                     :&lt;|&gt; ((Description
+                                                              &quot;Process Description for specific process unit&quot;
+                                                            :&gt; (&quot;microarchitecture&quot;
+                                                                :&gt; (Capture' '[] &quot;tag&quot; FilePath
+                                                                    :&gt; (&quot;process&quot;
+                                                                        :&gt; Get
+                                                                             '[PrettyJSON]
+                                                                             (Process
+                                                                                Int
+                                                                                StepInfoView)))))
+                                                           :&lt;|&gt; ((Description
+                                                                    &quot;Enpoint options for all process units&quot;
+                                                                  :&gt; (&quot;endpoints&quot;
+                                                                      :&gt; Get
+                                                                           '[PrettyJSON]
+                                                                           [UnitEndpoints
+                                                                              FilePath
+                                                                              FilePath
+                                                                              Int]))
+                                                                 :&lt;|&gt; ((Description
+                                                                          &quot;Microarchitecture description&quot;
+                                                                        :&gt; (&quot;microarchitecture&quot;
+                                                                            :&gt; Get
+                                                                                 '[PrettyJSON]
+                                                                                 (MicroarchitectureDesc
+                                                                                    FilePath)))
+                                                                       :&lt;|&gt; (&quot;debug&quot;
+                                                                             :&gt; (Description
+                                                                                   &quot;Debuging interface to fast access to internal state (see NITTA.UIBackend.REST.Debug)&quot;
+                                                                                 :&gt; Get
+                                                                                      '[PrettyJSON]
+                                                                                      (Debug
+                                                                                         FilePath
+                                                                                         FilePath
+                                                                                         Int)))))))))))
+                              :&lt;|&gt; ((Summary
+                                       &quot;Get the report of testbench execution for the current node.&quot;
+                                     :&gt; (&quot;testbench&quot;
+                                         :&gt; (QueryParam' '[Required] &quot;pName&quot; FilePath
+                                             :&gt; (QueryParam' '[Required] &quot;loopsNumber&quot; Int
+                                                 :&gt; Post
+                                                      '[PrettyJSON]
+                                                      (TestbenchReport FilePath Int)))))
+                                    :&lt;|&gt; ((Summary
+                                             &quot;Synthesis methods is a method for full synthesis tree exploration. Usually, it is more complicated than synthesis practice, but it is not an essential difference.&quot;
+                                           :&gt; ((Description
+                                                  &quot;Composition of all available synthesis methods&quot;
+                                                :&gt; (&quot;stateOfTheArtSynthesisIO&quot;
+                                                    :&gt; Post '[PrettyJSON] SID))
+                                               :&lt;|&gt; ((&quot;simpleSynthesis&quot; :&gt; Post '[PrettyJSON] SID)
+                                                     :&lt;|&gt; (&quot;smartBindSynthesisIO&quot;
+                                                           :&gt; Post '[PrettyJSON] SID))))
+                                          :&lt;|&gt; (Summary
+                                                  &quot;SynthesisPractice is a set of small elements of the synthesis process.&quot;
+                                                :&gt; ((Description
+                                                       &quot;Make the best synthesis step by the objective function&quot;
+                                                     :&gt; (&quot;bestStep&quot; :&gt; Post '[PrettyJSON] SID))
+                                                    :&lt;|&gt; ((Description
+                                                             &quot;Make all possible oblivious binds&quot;
+                                                           :&gt; (&quot;obviousBindThread&quot;
+                                                               :&gt; Post '[PrettyJSON] SID))
+                                                          :&lt;|&gt; ((Description
+                                                                   &quot;Make all possible binds and refactorings&quot;
+                                                                 :&gt; (&quot;allBindsAndRefsIO&quot;
+                                                                     :&gt; Post '[PrettyJSON] SID))
+                                                                :&lt;|&gt; (Description
+                                                                        &quot;Explore all best synthesis threads from current and `deep` nested levels.&quot;
+                                                                      :&gt; (&quot;allBestThreads&quot;
+                                                                          :&gt; (QueryParam'
+                                                                                '[Required]
+                                                                                &quot;deep&quot;
+                                                                                Int
+                                                                              :&gt; Post
+                                                                                   '[PrettyJSON]
+                                                                                   SID)))))))))))))))
+ -&gt; API)
+-&gt; Proxy
+     ((Description &quot;Get whole synthesis tree&quot;
+       :&gt; (&quot;synthesisTree&quot; :&gt; Get '[PrettyJSON] (TreeView ShortNodeView)))
+      :&lt;|&gt; ((Description &quot;Get synthesis tree info&quot;
+             :&gt; (&quot;treeInfo&quot; :&gt; Get '[PrettyJSON] TreeInfo))
+            :&lt;|&gt; (&quot;node&quot;
+                  :&gt; (Capture' '[] &quot;sid&quot; SID
+                      :&gt; ((Summary &quot;Synthesis tree navigation&quot;
+                           :&gt; ((Description
+                                  &quot;Get list of synthesis nodes from the root to the specific node&quot;
+                                :&gt; (&quot;history&quot;
+                                    :&gt; Get '[PrettyJSON] [NodeView FilePath FilePath Int Int]))
+                               :&lt;|&gt; ((Description &quot;Get edge to the parent&quot;
+                                      :&gt; (&quot;parentEdge&quot;
+                                          :&gt; Get
+                                               '[PrettyJSON]
+                                               (Maybe (NodeView FilePath FilePath Int Int))))
+                                     :&lt;|&gt; (Description &quot;Get sub forest&quot;
+                                           :&gt; (&quot;subForest&quot;
+                                               :&gt; Get
+                                                    '[PrettyJSON]
+                                                    [NodeView FilePath FilePath Int Int])))))
+                          :&lt;|&gt; ((Summary &quot;Synthesis node inspection&quot;
+                                 :&gt; ((Description &quot;Get node info\n(see: NITTA.Synthesis.Tree.Node)&quot;
+                                      :&gt; Get '[PrettyJSON] (NodeView FilePath FilePath Int Int))
+                                     :&lt;|&gt; ((Description
+                                              &quot;Intermidiate reperesentation of the current version of the algorithm&quot;
+                                            :&gt; (&quot;intermediateView&quot;
+                                                :&gt; Get '[PrettyJSON] (GraphStructure GraphEdge)))
+                                           :&lt;|&gt; ((Description
+                                                    &quot;Computational process representation (deprecated)&quot;
+                                                  :&gt; (&quot;processTimelines&quot;
+                                                      :&gt; Get '[PrettyJSON] (ProcessTimelines Int)))
+                                                 :&lt;|&gt; ((Description
+                                                          &quot;Process Description for specific process unit&quot;
+                                                        :&gt; (&quot;process&quot;
+                                                            :&gt; Get
+                                                                 '[PrettyJSON]
+                                                                 (Process Int StepInfoView)))
+                                                       :&lt;|&gt; ((Description
+                                                                &quot;Process Description for specific process unit&quot;
+                                                              :&gt; (&quot;microarchitecture&quot;
+                                                                  :&gt; (Capture' '[] &quot;tag&quot; FilePath
+                                                                      :&gt; (&quot;process&quot;
+                                                                          :&gt; Get
+                                                                               '[PrettyJSON]
+                                                                               (Process
+                                                                                  Int
+                                                                                  StepInfoView)))))
+                                                             :&lt;|&gt; ((Description
+                                                                      &quot;Enpoint options for all process units&quot;
+                                                                    :&gt; (&quot;endpoints&quot;
+                                                                        :&gt; Get
+                                                                             '[PrettyJSON]
+                                                                             [UnitEndpoints
+                                                                                FilePath
+                                                                                FilePath
+                                                                                Int]))
+                                                                   :&lt;|&gt; ((Description
+                                                                            &quot;Microarchitecture description&quot;
+                                                                          :&gt; (&quot;microarchitecture&quot;
+                                                                              :&gt; Get
+                                                                                   '[PrettyJSON]
+                                                                                   (MicroarchitectureDesc
+                                                                                      FilePath)))
+                                                                         :&lt;|&gt; (&quot;debug&quot;
+                                                                               :&gt; (Description
+                                                                                     &quot;Debuging interface to fast access to internal state (see NITTA.UIBackend.REST.Debug)&quot;
+                                                                                   :&gt; Get
+                                                                                        '[PrettyJSON]
+                                                                                        (Debug
+                                                                                           FilePath
+                                                                                           FilePath
+                                                                                           Int)))))))))))
+                                :&lt;|&gt; ((Summary
+                                         &quot;Get the report of testbench execution for the current node.&quot;
+                                       :&gt; (&quot;testbench&quot;
+                                           :&gt; (QueryParam' '[Required] &quot;pName&quot; FilePath
+                                               :&gt; (QueryParam' '[Required] &quot;loopsNumber&quot; Int
+                                                   :&gt; Post
+                                                        '[PrettyJSON]
+                                                        (TestbenchReport FilePath Int)))))
+                                      :&lt;|&gt; ((Summary
+                                               &quot;Synthesis methods is a method for full synthesis tree exploration. Usually, it is more complicated than synthesis practice, but it is not an essential difference.&quot;
+                                             :&gt; ((Description
+                                                    &quot;Composition of all available synthesis methods&quot;
+                                                  :&gt; (&quot;stateOfTheArtSynthesisIO&quot;
+                                                      :&gt; Post '[PrettyJSON] SID))
+                                                 :&lt;|&gt; ((&quot;simpleSynthesis&quot; :&gt; Post '[PrettyJSON] SID)
+                                                       :&lt;|&gt; (&quot;smartBindSynthesisIO&quot;
+                                                             :&gt; Post '[PrettyJSON] SID))))
+                                            :&lt;|&gt; (Summary
+                                                    &quot;SynthesisPractice is a set of small elements of the synthesis process.&quot;
+                                                  :&gt; ((Description
+                                                         &quot;Make the best synthesis step by the objective function&quot;
+                                                       :&gt; (&quot;bestStep&quot; :&gt; Post '[PrettyJSON] SID))
+                                                      :&lt;|&gt; ((Description
+                                                               &quot;Make all possible oblivious binds&quot;
+                                                             :&gt; (&quot;obviousBindThread&quot;
+                                                                 :&gt; Post '[PrettyJSON] SID))
+                                                            :&lt;|&gt; ((Description
+                                                                     &quot;Make all possible binds and refactorings&quot;
+                                                                   :&gt; (&quot;allBindsAndRefsIO&quot;
+                                                                       :&gt; Post '[PrettyJSON] SID))
+                                                                  :&lt;|&gt; (Description
+                                                                          &quot;Explore all best synthesis threads from current and `deep` nested levels.&quot;
+                                                                        :&gt; (&quot;allBestThreads&quot;
+                                                                            :&gt; (QueryParam'
+                                                                                  '[Required]
+                                                                                  &quot;deep&quot;
+                                                                                  Int
+                                                                                :&gt; Post
+                                                                                     '[PrettyJSON]
+                                                                                     SID)))))))))))))))
+-&gt; API
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Proxy (SynthesisAPI FilePath FilePath Int Int)
+-&gt; Proxy (Pretty (SynthesisAPI FilePath FilePath Int Int))
+forall k (api :: k). Proxy api -&gt; Proxy (Pretty api)
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Proxy (SynthesisAPI FilePath FilePath Int Int)
+forall k (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.REST.html#SynthesisAPI"><span class="hs-identifier hs-type">SynthesisAPI</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span id="prepareJSAPI"><span class="annot"><span class="annottext">prepareJSAPI :: src -&gt; FilePath -&gt; IO ()
+</span><a href="NITTA.UIBackend.html#prepareJSAPI"><span class="hs-identifier hs-var hs-var">prepareJSAPI</span></a></span></span><span> </span><span id="local-6989586621680143375"><span class="annot"><span class="annottext">port :: src
+</span><a href="#local-6989586621680143375"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span id="local-6989586621680143374"><span class="annot"><span class="annottext">path :: FilePath
+</span><a href="#local-6989586621680143374"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680143373"><span class="annot"><span class="annottext">prefix :: Text
+</span><a href="#local-6989586621680143373"><span class="hs-identifier hs-var hs-var">prefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>            </span><span class="annot"><span class="">[__i|
+                import axios from 'axios';
+                var jsAPI = {};
+                export default jsAPI;
+                /* eslint no-useless-concat: &quot;off&quot; */
+            |]</span></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680143369"><span class="annot"><span class="annottext">axios' :: JavaScriptGenerator
+</span><a href="#local-6989586621680143369"><span class="hs-identifier hs-var hs-var">axios'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>            </span><span class="annot"><span class="annottext">AxiosOptions -&gt; CommonGeneratorOptions -&gt; JavaScriptGenerator
+</span><span class="hs-identifier hs-var">SJS.axiosWith</span></span><span>
+</span><span id="line-67"></span><span>                </span><span class="annot"><span class="annottext">AxiosOptions
+</span><span class="hs-identifier hs-var">SJS.defAxiosOptions</span></span><span>
+</span><span id="line-68"></span><span>                </span><span class="annot"><span class="annottext">CommonGeneratorOptions
+</span><span class="hs-identifier hs-var">SJS.defCommonGeneratorOptions</span></span><span>
+</span><span id="line-69"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">urlPrefix :: Text
+</span><span class="hs-identifier hs-var">SJS.urlPrefix</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="">[i|http://localhost:#{ port }|]</span></span><span>
+</span><span id="line-70"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">moduleName :: Text
+</span><span class="hs-identifier hs-var">SJS.moduleName</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;jsAPI&quot;</span></span><span>
+</span><span id="line-71"></span><span>                    </span><span class="hs-special">}</span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="annottext">Proxy (SynthesisAPI Any FilePath Int Int)
+-&gt; JavaScriptGenerator -&gt; FilePath -&gt; IO ()
+forall api.
+(HasForeign NoTypes NoContent api,
+ GenerateList NoContent (Foreign NoContent api)) =&gt;
+Proxy api -&gt; JavaScriptGenerator -&gt; FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">SJS.writeJSForAPI</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall _. Proxy (SynthesisAPI _ FilePath Int Int)
+forall k (t :: k). Proxy t
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.REST.html#SynthesisAPI"><span class="hs-identifier hs-type">SynthesisAPI</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680143373"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; JavaScriptGenerator -&gt; JavaScriptGenerator
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">JavaScriptGenerator
+</span><a href="#local-6989586621680143369"><span class="hs-identifier hs-var">axios'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; FilePath
+</span><span class="hs-identifier hs-var">joinPath</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680143374"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;rest_api.js&quot;</span></span><span class="hs-special">]</span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span id="application"><span class="annot"><span class="annottext">application :: [(_, [_])]
+-&gt; TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+-&gt; FilePath
+-&gt; IO Application
+</span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var hs-var">application</span></a></span></span><span> </span><span id="local-6989586621680143359"><span class="annot"><span class="annottext">receivedValues :: [(_, [_])]
+</span><a href="#local-6989586621680143359"><span class="hs-identifier hs-var">receivedValues</span></a></span></span><span> </span><span id="local-6989586621680143358"><span class="annot"><span class="annottext">model :: TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143358"><span class="hs-identifier hs-var">model</span></a></span></span><span> </span><span id="local-6989586621680143357"><span class="annot"><span class="annottext">outputPath :: FilePath
+</span><a href="#local-6989586621680143357"><span class="hs-identifier hs-var">outputPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621680143356"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork _ _ _ _) _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143356"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+-&gt; IO (Tree (TargetSystem (BusNetwork _ _ _ _) _ _ _ _) _ _ _ _)
+forall v tag t x.
+(Hashable v, Suffix v, ToString v, ToString tag, IsString v,
+ IsString tag, Bounded t, Val x, Typeable v, Typeable tag,
+ Typeable t, Show t, Default t, Integral t, Ord v, Ord tag) =&gt;
+TargetSystem (BusNetwork tag v x t) tag v x t
+-&gt; IO
+     (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+</span><a href="NITTA.Synthesis.Explore.html#synthesisTreeRootIO"><span class="hs-identifier hs-var">synthesisTreeRootIO</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143358"><span class="hs-identifier hs-var">model</span></a></span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><span class="annottext">Application -&gt; IO Application
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Application -&gt; IO Application) -&gt; Application -&gt; IO Application
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-77"></span><span>        </span><span class="annot"><span class="annottext">Proxy (SynthesisAPI _ _ _ _ :&lt;|&gt; (Get '[JSON] () :&lt;|&gt; Raw))
+-&gt; Server (SynthesisAPI _ _ _ _ :&lt;|&gt; (Get '[JSON] () :&lt;|&gt; Raw))
+-&gt; Application
+forall api.
+HasServer api '[] =&gt;
+Proxy api -&gt; Server api -&gt; Application
+</span><span class="hs-identifier hs-var">serve</span></span><span>
+</span><span id="line-78"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">forall k (t :: k). Proxy t
+forall _ _ _ _.
+Proxy (SynthesisAPI _ _ _ _ :&lt;|&gt; (Get '[JSON] () :&lt;|&gt; Raw))
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-79"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span>
+</span><span id="line-80"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="NITTA.UIBackend.REST.html#SynthesisAPI"><span class="hs-identifier hs-type">SynthesisAPI</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span>
+</span><span id="line-81"></span><span>                        </span><span class="annot"><span class="hs-operator hs-type">:&lt;|&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Get</span></span><span> </span><span class="hs-special">'</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">JSON</span></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- root</span><span>
+</span><span id="line-82"></span><span>                        </span><span class="annot"><span class="hs-operator hs-type">:&lt;|&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Raw</span></span><span>
+</span><span id="line-83"></span><span>                    </span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">BackendCtx _ _ _ _
+-&gt; Handler (TreeView ShortNodeView)
+   :&lt;|&gt; (Handler TreeInfo
+         :&lt;|&gt; (SID
+               -&gt; (Handler [NodeView _ _ _ _]
+                   :&lt;|&gt; (Handler (Maybe (NodeView _ _ _ _))
+                         :&lt;|&gt; Handler [NodeView _ _ _ _]))
+                  :&lt;|&gt; ((Handler (NodeView _ _ _ _)
+                         :&lt;|&gt; (Handler (GraphStructure GraphEdge)
+                               :&lt;|&gt; (Handler (ProcessTimelines _)
+                                     :&lt;|&gt; (Handler (Process _ StepInfoView)
+                                           :&lt;|&gt; ((_ -&gt; Handler (Process _ StepInfoView))
+                                                 :&lt;|&gt; (Handler [UnitEndpoints _ _ _]
+                                                       :&lt;|&gt; (Handler (MicroarchitectureDesc _)
+                                                             :&lt;|&gt; Handler (Debug _ _ _))))))))
+                        :&lt;|&gt; ((FilePath -&gt; Int -&gt; Handler (TestbenchReport _ _))
+                              :&lt;|&gt; ((Handler SID :&lt;|&gt; (Handler SID :&lt;|&gt; Handler SID))
+                                    :&lt;|&gt; (Handler SID
+                                          :&lt;|&gt; (Handler SID
+                                                :&lt;|&gt; (Handler SID :&lt;|&gt; (Int -&gt; Handler SID)))))))))
+forall tag v x a (m1 :: * -&gt; *) (m2 :: * -&gt; *) (m3 :: * -&gt; *)
+       (m4 :: * -&gt; *) (m5 :: * -&gt; *) (m6 :: * -&gt; *) (m7 :: * -&gt; *)
+       (m8 :: * -&gt; *) (m9 :: * -&gt; *) (m10 :: * -&gt; *) (m11 :: * -&gt; *)
+       (m12 :: * -&gt; *) (m13 :: * -&gt; *) (m14 :: * -&gt; *) (m15 :: * -&gt; *)
+       (m16 :: * -&gt; *) (m17 :: * -&gt; *) (m18 :: * -&gt; *) (m19 :: * -&gt; *)
+       (m20 :: * -&gt; *) (m21 :: * -&gt; *).
+(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
+ Hashable v, Val x, Bounded a, ToJSONKey v, ToJSON v, ToJSON x,
+ ToJSON a, Label v, MonadIO m1, MonadIO m2, MonadIO m3, MonadIO m4,
+ MonadIO m5, MonadIO m6, MonadIO m7, MonadIO m8, MonadIO m9,
+ MonadIO m10, MonadIO m11, MonadIO m12, MonadIO m13, MonadIO m14,
+ MonadIO m15, MonadIO m16, MonadIO m17, MonadIO m18, MonadIO m19,
+ MonadIO m20, MonadIO m21, Typeable tag, Typeable v, Typeable a,
+ Show a, Default a, Integral a, Ord tag, Ord v) =&gt;
+BackendCtx tag v x a
+-&gt; m2 (TreeView ShortNodeView)
+   :&lt;|&gt; (m1 TreeInfo
+         :&lt;|&gt; (SID
+               -&gt; (m4 [NodeView tag v x a]
+                   :&lt;|&gt; (m5 (Maybe (NodeView tag v x a))
+                         :&lt;|&gt; m3 [NodeView tag v x a]))
+                  :&lt;|&gt; ((m8 (NodeView tag v x a)
+                         :&lt;|&gt; (m7 (GraphStructure GraphEdge)
+                               :&lt;|&gt; (m6 (ProcessTimelines a)
+                                     :&lt;|&gt; (m9 (Process a StepInfoView)
+                                           :&lt;|&gt; ((tag -&gt; m10 (Process a StepInfoView))
+                                                 :&lt;|&gt; (m11 [UnitEndpoints tag v a]
+                                                       :&lt;|&gt; (m12 (MicroarchitectureDesc tag)
+                                                             :&lt;|&gt; m13 (Debug tag v a))))))))
+                        :&lt;|&gt; ((FilePath -&gt; Int -&gt; m14 (TestbenchReport v x))
+                              :&lt;|&gt; ((m15 SID :&lt;|&gt; (m16 SID :&lt;|&gt; m17 SID))
+                                    :&lt;|&gt; (m18 SID
+                                          :&lt;|&gt; (m19 SID :&lt;|&gt; (m20 SID :&lt;|&gt; (Int -&gt; m21 SID)))))))))
+</span><a href="NITTA.UIBackend.REST.html#synthesisServer"><span class="hs-identifier hs-var">synthesisServer</span></a></span><span> </span><span class="annot"><span class="annottext">BackendCtx :: forall tag v x t.
+DefTree tag v x t -&gt; [(v, [x])] -&gt; FilePath -&gt; BackendCtx tag v x t
+</span><a href="NITTA.UIBackend.REST.html#BackendCtx"><span class="hs-identifier hs-type hs-type">BackendCtx</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork _ _ _ _) _ _ _ _) _ _ _ _
+$sel:root:BackendCtx :: Tree (TargetSystem (BusNetwork _ _ _ _) _ _ _ _) _ _ _ _
+root :: Tree (TargetSystem (BusNetwork _ _ _ _) _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143350"><span class="hs-identifier hs-var hs-var">root</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[(_, [_])]
+$sel:receivedValues:BackendCtx :: [(_, [_])]
+receivedValues :: [(_, [_])]
+</span><a href="#local-6989586621680143349"><span class="hs-identifier hs-var hs-var">receivedValues</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
+$sel:outputPath:BackendCtx :: FilePath
+outputPath :: FilePath
+</span><a href="#local-6989586621680143348"><span class="hs-identifier hs-var hs-var">outputPath</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-86"></span><span>                </span><span class="annot"><span class="annottext">(Handler (TreeView ShortNodeView)
+ :&lt;|&gt; (Handler TreeInfo
+       :&lt;|&gt; (SID
+             -&gt; (Handler [NodeView _ _ _ _]
+                 :&lt;|&gt; (Handler (Maybe (NodeView _ _ _ _))
+                       :&lt;|&gt; Handler [NodeView _ _ _ _]))
+                :&lt;|&gt; ((Handler (NodeView _ _ _ _)
+                       :&lt;|&gt; (Handler (GraphStructure GraphEdge)
+                             :&lt;|&gt; (Handler (ProcessTimelines _)
+                                   :&lt;|&gt; (Handler (Process _ StepInfoView)
+                                         :&lt;|&gt; ((_ -&gt; Handler (Process _ StepInfoView))
+                                               :&lt;|&gt; (Handler [UnitEndpoints _ _ _]
+                                                     :&lt;|&gt; (Handler (MicroarchitectureDesc _)
+                                                           :&lt;|&gt; Handler (Debug _ _ _))))))))
+                      :&lt;|&gt; ((FilePath -&gt; Int -&gt; Handler (TestbenchReport _ _))
+                            :&lt;|&gt; ((Handler SID :&lt;|&gt; (Handler SID :&lt;|&gt; Handler SID))
+                                  :&lt;|&gt; (Handler SID
+                                        :&lt;|&gt; (Handler SID
+                                              :&lt;|&gt; (Handler SID :&lt;|&gt; (Int -&gt; Handler SID))))))))))
+-&gt; (Handler () :&lt;|&gt; Tagged Handler Application)
+-&gt; (Handler (TreeView ShortNodeView)
+    :&lt;|&gt; (Handler TreeInfo
+          :&lt;|&gt; (SID
+                -&gt; (Handler [NodeView _ _ _ _]
+                    :&lt;|&gt; (Handler (Maybe (NodeView _ _ _ _))
+                          :&lt;|&gt; Handler [NodeView _ _ _ _]))
+                   :&lt;|&gt; ((Handler (NodeView _ _ _ _)
+                          :&lt;|&gt; (Handler (GraphStructure GraphEdge)
+                                :&lt;|&gt; (Handler (ProcessTimelines _)
+                                      :&lt;|&gt; (Handler (Process _ StepInfoView)
+                                            :&lt;|&gt; ((_ -&gt; Handler (Process _ StepInfoView))
+                                                  :&lt;|&gt; (Handler [UnitEndpoints _ _ _]
+                                                        :&lt;|&gt; (Handler (MicroarchitectureDesc _)
+                                                              :&lt;|&gt; Handler (Debug _ _ _))))))))
+                         :&lt;|&gt; ((FilePath -&gt; Int -&gt; Handler (TestbenchReport _ _))
+                               :&lt;|&gt; ((Handler SID :&lt;|&gt; (Handler SID :&lt;|&gt; Handler SID))
+                                     :&lt;|&gt; (Handler SID
+                                           :&lt;|&gt; (Handler SID
+                                                 :&lt;|&gt; (Handler SID
+                                                       :&lt;|&gt; (Int -&gt; Handler SID))))))))))
+   :&lt;|&gt; (Handler () :&lt;|&gt; Tagged Handler Application)
+forall a b. a -&gt; b -&gt; a :&lt;|&gt; b
+</span><span class="hs-operator hs-var">:&lt;|&gt;</span></span><span> </span><span class="annot"><span class="annottext">ServerError -&gt; Handler ()
+forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ServerError
+</span><span class="hs-identifier hs-var">err301</span></span><span class="hs-special">{</span><span class="annot"><span class="annottext">errHeaders :: [Header]
+</span><a href="#local-6989586621680143344"><span class="hs-identifier hs-var">errHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-string">&quot;Location&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;index.html&quot;</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">}</span><span>
+</span><span id="line-87"></span><span>                </span><span class="annot"><span class="annottext">Handler ()
+-&gt; Tagged Handler Application
+-&gt; Handler () :&lt;|&gt; Tagged Handler Application
+forall a b. a -&gt; b -&gt; a :&lt;|&gt; b
+</span><span class="hs-operator hs-var">:&lt;|&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ServerT Raw Handler
+forall (m :: * -&gt; *). FilePath -&gt; ServerT Raw m
+</span><span class="hs-identifier hs-var">serveDirectoryWebApp</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[FilePath] -&gt; FilePath
+</span><span class="hs-identifier hs-var">joinPath</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-string">&quot;web&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;build&quot;</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span id="isLocalPortFree"><span class="annot"><span class="annottext">isLocalPortFree :: a -&gt; IO Bool
+</span><a href="NITTA.UIBackend.html#isLocalPortFree"><span class="hs-identifier hs-var hs-var">isLocalPortFree</span></a></span></span><span> </span><span id="local-6989586621680143341"><span class="annot"><span class="annottext">port :: a
+</span><a href="#local-6989586621680143341"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">Either SomeException () -&gt; Bool
+forall a b. Either a b -&gt; Bool
+</span><span class="hs-identifier hs-var">isLeft</span></span><span> </span><span class="annot"><span class="annottext">(Either SomeException () -&gt; Bool)
+-&gt; IO (Either SomeException ()) -&gt; IO Bool
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO () -&gt; IO (Either SomeException ())
+forall e a. Exception e =&gt; IO a -&gt; IO (Either e a)
+</span><span class="hs-identifier hs-var">try</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO (Either SomeException ()))
+-&gt; IO () -&gt; IO (Either SomeException ())
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; ((Socket, SockAddr) -&gt; IO ()) -&gt; IO ()
+forall (m :: * -&gt; *) r.
+(MonadIO m, MonadMask m) =&gt;
+FilePath -&gt; FilePath -&gt; ((Socket, SockAddr) -&gt; m r) -&gt; m r
+</span><span class="hs-identifier hs-var">connect</span></span><span> </span><span class="annot"><span class="hs-string">&quot;localhost&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680143341"><span class="hs-identifier hs-var">port</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- |Run backend server.</span><span>
+</span><span id="line-94"></span><span id="backendServer"><span class="annot"><span class="annottext">backendServer :: Int
+-&gt; [(_, [_])]
+-&gt; FilePath
+-&gt; TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+-&gt; IO ()
+</span><a href="NITTA.UIBackend.html#backendServer"><span class="hs-identifier hs-var hs-var">backendServer</span></a></span></span><span> </span><span id="local-6989586621680143338"><span class="annot"><span class="annottext">port :: Int
+</span><a href="#local-6989586621680143338"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span id="local-6989586621680143337"><span class="annot"><span class="annottext">receivedValues :: [(_, [_])]
+</span><a href="#local-6989586621680143337"><span class="hs-identifier hs-var">receivedValues</span></a></span></span><span> </span><span id="local-6989586621680143336"><span class="annot"><span class="annottext">outputPath :: FilePath
+</span><a href="#local-6989586621680143336"><span class="hs-identifier hs-var">outputPath</span></a></span></span><span> </span><span id="local-6989586621680143335"><span class="annot"><span class="annottext">modelState :: TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143335"><span class="hs-identifier hs-var">modelState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">noticeM</span></span><span> </span><span class="annot"><span class="hs-string">&quot;NITTA.UI&quot;</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="hs-string">&quot;Running NITTA server at http://localhost:&quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680143338"><span class="hs-identifier hs-var">port</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-string">&quot; ...&quot;</span></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-comment">-- on OS X, if we run system with busy port - application ignore that.</span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-comment">-- see: https://nitta.io/nitta-corp/nitta/issues/9</span><span>
+</span><span id="line-98"></span><span>    </span><span id="local-6989586621680143333"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680143333"><span class="hs-identifier hs-var">isFree</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; IO Bool
+forall a. Show a =&gt; a -&gt; IO Bool
+</span><a href="NITTA.UIBackend.html#isLocalPortFree"><span class="hs-identifier hs-var">isLocalPortFree</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680143338"><span class="hs-identifier hs-var">port</span></a></span><span>
+</span><span id="line-99"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
+forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
+</span><span class="hs-identifier hs-var">unless</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680143333"><span class="hs-identifier hs-var">isFree</span></a></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO ()
+forall a. HasCallStack =&gt; FilePath -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;resource busy (Port already in use)&quot;</span></span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621680143331"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680143331"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(_, [_])]
+-&gt; TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+-&gt; FilePath
+-&gt; IO Application
+forall _ _ _ _.
+(Hashable _, Suffix _, ToString _, ToString _, IsString _,
+ IsString _, Bounded _, Val _, ToJSONKey _, ToJSON _, ToJSON _,
+ ToJSON _, ToJSON _, FromHttpApiData _, Label _, Typeable _,
+ Typeable _, Typeable _, Show _, Default _, Integral _, Ord _,
+ Ord _) =&gt;
+[(_, [_])]
+-&gt; TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+-&gt; FilePath
+-&gt; IO Application
+</span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var">application</span></a></span><span> </span><span class="annot"><span class="annottext">[(_, [_])]
+</span><a href="#local-6989586621680143337"><span class="hs-identifier hs-var">receivedValues</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork _ _ _ _) _ _ _ _
+</span><a href="#local-6989586621680143335"><span class="hs-identifier hs-var">modelState</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680143336"><span class="hs-identifier hs-var">outputPath</span></a></span><span>
+</span><span id="line-101"></span><span>    </span><span class="annot"><span class="annottext">TextEncoding -&gt; IO ()
+</span><span class="hs-identifier hs-var">setLocaleEncoding</span></span><span> </span><span class="annot"><span class="annottext">TextEncoding
+</span><span class="hs-identifier hs-var">utf8</span></span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; Application -&gt; IO ()
+</span><span class="hs-identifier hs-var">run</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680143338"><span class="hs-identifier hs-var">port</span></a></span><span> </span><span class="annot"><span class="annottext">(Application -&gt; IO ()) -&gt; Application -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Middleware
+</span><span class="hs-identifier hs-var">simpleCors</span></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680143331"><span class="hs-identifier hs-var">app</span></a></span><span>
+</span><span id="line-103"></span></pre></body></html>

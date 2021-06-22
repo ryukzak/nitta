@@ -1,0 +1,204 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE AllowAmbiguousTypes #-}
+<span class="lineno">    2 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    4 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    5 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    6 </span>{-# LANGUAGE QuasiQuotes #-}
+<span class="lineno">    7 </span>{-# LANGUAGE ScopedTypeVariables #-}
+<span class="lineno">    8 </span>
+<span class="lineno">    9 </span>{- |
+<span class="lineno">   10 </span>Module      : NITTA.Project
+<span class="lineno">   11 </span>Description :
+<span class="lineno">   12 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   13 </span>License     : BSD3
+<span class="lineno">   14 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   15 </span>Stability   : experimental
+<span class="lineno">   16 </span>-}
+<span class="lineno">   17 </span>module NITTA.Project (
+<span class="lineno">   18 </span>    module NITTA.Project.Template,
+<span class="lineno">   19 </span>    module NITTA.Project.TestBench,
+<span class="lineno">   20 </span>    module NITTA.Project.Types,
+<span class="lineno">   21 </span>    module NITTA.Project.VerilogSnippets,
+<span class="lineno">   22 </span>    writeProject,
+<span class="lineno">   23 </span>    runTestbench,
+<span class="lineno">   24 </span>) where
+<span class="lineno">   25 </span>
+<span class="lineno">   26 </span>import Control.Exception
+<span class="lineno">   27 </span>import Control.Monad.Identity (runIdentity)
+<span class="lineno">   28 </span>import qualified Data.HashMap.Strict as HM
+<span class="lineno">   29 </span>import qualified Data.List as L
+<span class="lineno">   30 </span>import Data.Maybe
+<span class="lineno">   31 </span>import Data.String
+<span class="lineno">   32 </span>import Data.String.Interpolate (__i)
+<span class="lineno">   33 </span>import Data.String.ToString
+<span class="lineno">   34 </span>import qualified Data.Text as T
+<span class="lineno">   35 </span>import qualified Data.Text.IO as T
+<span class="lineno">   36 </span>import NITTA.Intermediate.Types
+<span class="lineno">   37 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   38 </span>import NITTA.Project.Context
+<span class="lineno">   39 </span>import NITTA.Project.Template
+<span class="lineno">   40 </span>import NITTA.Project.TestBench
+<span class="lineno">   41 </span>import NITTA.Project.Types
+<span class="lineno">   42 </span>import NITTA.Project.VerilogSnippets
+<span class="lineno">   43 </span>import NITTA.Utils.Base
+<span class="lineno">   44 </span>import System.Directory
+<span class="lineno">   45 </span>import System.Exit
+<span class="lineno">   46 </span>import System.FilePath.Posix
+<span class="lineno">   47 </span>import System.Log.Logger
+<span class="lineno">   48 </span>import System.Process.ListLike (CreateProcess (..), proc)
+<span class="lineno">   49 </span>import System.Process.Text
+<span class="lineno">   50 </span>import Text.Ginger hiding (length)
+<span class="lineno">   51 </span>import Text.Regex
+<span class="lineno">   52 </span>
+<span class="lineno">   53 </span>-- |Write project with all available parts.
+<span class="lineno">   54 </span><span class="decl"><span class="istickedoff">writeProject prj@Project{pTargetProjectPath} = do</span>
+<span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA&quot; $ <span class="nottickedoff">&quot;write target project to: \&quot;&quot; &lt;&gt; pTargetProjectPath &lt;&gt; &quot;\&quot;...&quot;</span></span>
+<span class="lineno">   56 </span><span class="spaces">    </span><span class="istickedoff">writeTargetSystem prj</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">writeTestBench prj</span>
+<span class="lineno">   58 </span><span class="spaces">    </span><span class="istickedoff">writeRenderedTemplates prj</span>
+<span class="lineno">   59 </span><span class="spaces">    </span><span class="istickedoff">noticeM &quot;NITTA&quot; $ <span class="nottickedoff">&quot;write target project to: \&quot;&quot; &lt;&gt; pTargetProjectPath &lt;&gt; &quot;\&quot;...ok&quot;</span></span></span>
+<span class="lineno">   60 </span>
+<span class="lineno">   61 </span><span class="decl"><span class="istickedoff">writeTargetSystem prj@Project{pName, pTargetProjectPath, pInProjectNittaPath, pUnit} = do</span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">createDirectoryIfMissing True $ pTargetProjectPath &lt;/&gt; pInProjectNittaPath</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">writeImplementation prj $ hardware <span class="nottickedoff">pName</span> pUnit</span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">writeImplementation prj $ software pName pUnit</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">copyLibraryFiles prj</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span><span class="decl"><span class="istickedoff">writeTestBench prj@Project{pTargetProjectPath, pInProjectNittaPath} = do</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">createDirectoryIfMissing True $ pTargetProjectPath &lt;/&gt; pInProjectNittaPath</span>
+<span class="lineno">   69 </span><span class="spaces">    </span><span class="istickedoff">writeImplementation prj $ testBenchImplementation prj</span></span>
+<span class="lineno">   70 </span>
+<span class="lineno">   71 </span><span class="decl"><span class="istickedoff">runTestbench prj@Project{pTargetProjectPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do</span>
+<span class="lineno">   72 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA&quot; $ <span class="nottickedoff">&quot;run logical synthesis(&quot; &lt;&gt; pTargetProjectPath &lt;&gt; &quot;)...&quot;</span></span>
+<span class="lineno">   73 </span><span class="spaces">    </span><span class="istickedoff">let files = verilogProjectFiles prj</span>
+<span class="lineno">   74 </span><span class="spaces">    </span><span class="istickedoff">wd &lt;- getCurrentDirectory</span>
+<span class="lineno">   75 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   76 </span><span class="spaces">    </span><span class="istickedoff">(compileExitCode, compileOut, compileErr) &lt;- do</span>
+<span class="lineno">   77 </span><span class="spaces">        </span><span class="istickedoff">res &lt;- try $ readCreateProcessWithExitCode (createIVerilogProcess pTargetProjectPath files) &quot;&quot;</span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">case res of</span>
+<span class="lineno">   79 </span><span class="spaces">            </span><span class="istickedoff">Left (_ :: IOException) -&gt;</span>
+<span class="lineno">   80 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">error</span></span>
+<span class="lineno">   81 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">( [__i|iverilog is not available on your system</span></span>
+<span class="lineno">   82 </span><span class="spaces">                           </span><span class="istickedoff"><span class="nottickedoff">try to install it:</span></span>
+<span class="lineno">   83 </span><span class="spaces">                                </span><span class="istickedoff"><span class="nottickedoff">MacOS: $ brew install icarus-verilog</span></span>
+<span class="lineno">   84 </span><span class="spaces">                                </span><span class="istickedoff"><span class="nottickedoff">Ubuntu: $ sudo apt-get install iverilog </span></span>
+<span class="lineno">   85 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">|] ::</span></span>
+<span class="lineno">   86 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">String</span></span>
+<span class="lineno">   87 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">)</span></span>
+<span class="lineno">   88 </span><span class="spaces">            </span><span class="istickedoff">Right val -&gt; return val</span>
+<span class="lineno">   89 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   90 </span><span class="spaces">    </span><span class="istickedoff">let isCompileOk = compileExitCode == ExitSuccess &amp;&amp; T.null compileErr</span>
+<span class="lineno">   91 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   92 </span><span class="spaces">    </span><span class="istickedoff">(simExitCode, simOut, simErr) &lt;-</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff">readCreateProcessWithExitCode (proc &quot;vvp&quot; [&quot;a.out&quot;]){cwd = Just pTargetProjectPath} &quot;&quot;</span>
+<span class="lineno">   94 </span><span class="spaces">    </span><span class="istickedoff">let isSimOk = simExitCode == ExitSuccess &amp;&amp; not (&quot;FAIL&quot; `T.isInfixOf` simOut)</span>
+<span class="lineno">   95 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   96 </span><span class="spaces">    </span><span class="istickedoff">let tbStatus = isCompileOk &amp;&amp; isSimOk</span>
+<span class="lineno">   97 </span><span class="spaces">        </span><span class="istickedoff">tbCompilerDump = dump compileOut compileErr</span>
+<span class="lineno">   98 </span><span class="spaces">        </span><span class="istickedoff">tbSimulationDump = dump simOut simErr</span>
+<span class="lineno">   99 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">if tbStatus</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">then noticeM &quot;NITTA&quot; $ <span class="nottickedoff">&quot;run testbench (&quot; &lt;&gt; pTargetProjectPath &lt;&gt; &quot;)...ok&quot;</span></span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">else do</span>
+<span class="lineno">  103 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; $ <span class="nottickedoff">&quot;run testbench (&quot; &lt;&gt; pTargetProjectPath &lt;&gt; &quot;)...fail&quot;</span></span>
+<span class="lineno">  104 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">&quot;-----------------------------------------------------------&quot;</span></span>
+<span class="lineno">  105 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">&quot;testbench compiler dump:&quot;</span></span>
+<span class="lineno">  106 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; $ <span class="nottickedoff">T.unpack tbCompilerDump</span></span>
+<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">&quot;-----------------------------------------------------------&quot;</span></span>
+<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">&quot;testbench simulation dump:&quot;</span></span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">noticeM &quot;NITTA&quot; $ <span class="nottickedoff">T.unpack tbSimulationDump</span></span>
+<span class="lineno">  110 </span><span class="spaces">    </span><span class="istickedoff">return</span>
+<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">TestbenchReport</span>
+<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">{ tbStatus</span>
+<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">, tbPath = joinPath [wd, pTargetProjectPath]</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">, tbFiles = files</span>
+<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">, tbFunctions = map showText $ functions pUnit</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">, tbSynthesisSteps = map showText $ steps $ process pUnit</span>
+<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">, tbCompilerDump</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">, tbSimulationDump</span>
+<span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">, tbFunctionalSimulationLog = <span class="nottickedoff">map cycleCntx $ take cntxCycleNumber cntxProcess</span></span>
+<span class="lineno">  120 </span><span class="spaces">            </span><span class="istickedoff">, tbLogicalSimulationLog = <span class="nottickedoff">log2hms $ extractLogValues (defX pUnit) $ T.unpack simOut</span></span>
+<span class="lineno">  121 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">createIVerilogProcess workdir files = (proc &quot;iverilog&quot; files){cwd = Just workdir}</span>
+<span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">dump &quot;&quot; &quot;&quot; = &quot;&quot;</span>
+<span class="lineno">  125 </span><span class="spaces">        </span><span class="istickedoff">dump out err = &quot;stdout:\n&quot; &lt;&gt; out &lt;&gt; &quot;stderr:\n&quot; &lt;&gt; err</span></span>
+<span class="lineno">  126 </span>
+<span class="lineno">  127 </span><span class="decl"><span class="nottickedoff">extractLogValues x0 text = mapMaybe f $ lines text</span>
+<span class="lineno">  128 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
+<span class="lineno">  129 </span><span class="spaces">        </span><span class="nottickedoff">f s = case matchRegex (verilogAssertRE x0) $ toString s of</span>
+<span class="lineno">  130 </span><span class="spaces">            </span><span class="nottickedoff">Just [c, _t, x, _e, v] -&gt; Just (read c, fromString $ toString v, read x)</span>
+<span class="lineno">  131 </span><span class="spaces">            </span><span class="nottickedoff">_ -&gt; Nothing</span></span>
+<span class="lineno">  132 </span>
+<span class="lineno">  133 </span><span class="decl"><span class="nottickedoff">log2hms lst0 = cntxProcess</span>
+<span class="lineno">  134 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
+<span class="lineno">  135 </span><span class="spaces">        </span><span class="nottickedoff">cntxProcess = inner (0 :: Int) lst0</span>
+<span class="lineno">  136 </span><span class="spaces">        </span><span class="nottickedoff">inner n lst</span>
+<span class="lineno">  137 </span><span class="spaces">            </span><span class="nottickedoff">| (xs, ys) &lt;- L.partition (\(c, _v, _x) -&gt; c == n) lst</span>
+<span class="lineno">  138 </span><span class="spaces">              </span><span class="nottickedoff">, not $ null xs =</span>
+<span class="lineno">  139 </span><span class="spaces">                </span><span class="nottickedoff">let cycleCntx = HM.fromList $ map (\(_c, v, x) -&gt; (v, x)) xs</span>
+<span class="lineno">  140 </span><span class="spaces">                 </span><span class="nottickedoff">in cycleCntx : inner (n + 1) ys</span>
+<span class="lineno">  141 </span><span class="spaces">            </span><span class="nottickedoff">| otherwise = []</span></span>
+<span class="lineno">  142 </span>
+<span class="lineno">  143 </span>-- |Ginger is powerfull but slow down testing two times.
+<span class="lineno">  144 </span><span class="decl"><span class="istickedoff">enableGingerForImplementation = True</span></span>
+<span class="lineno">  145 </span>
+<span class="lineno">  146 </span>-- |Write 'Implementation' to the file system.
+<span class="lineno">  147 </span><span class="decl"><span class="istickedoff">writeImplementation prj@Project{pTargetProjectPath = prjPath, pInProjectNittaPath = nittaPath} impl = writeImpl nittaPath impl</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  149 </span><span class="spaces">        </span><span class="istickedoff">writeImpl p (Immediate fn src0) | <span class="tickonlytrue">enableGingerForImplementation</span> = do</span>
+<span class="lineno">  150 </span><span class="spaces">            </span><span class="istickedoff">let src = T.unpack src0</span>
+<span class="lineno">  151 </span><span class="spaces">                </span><span class="istickedoff">implCtx = implementationContext prj p</span>
+<span class="lineno">  152 </span><span class="spaces">            </span><span class="istickedoff">template &lt;-</span>
+<span class="lineno">  153 </span><span class="spaces">                </span><span class="istickedoff">either <span class="nottickedoff">(error . formatParserError (Just src))</span> return &lt;$&gt; runIdentity $</span>
+<span class="lineno">  154 </span><span class="spaces">                    </span><span class="istickedoff">parseGinger <span class="nottickedoff">(const $ return Nothing)</span> <span class="nottickedoff">Nothing</span> src</span>
+<span class="lineno">  155 </span><span class="spaces">            </span><span class="istickedoff">T.writeFile (joinPath [prjPath, p, fn]) $ runGinger implCtx template</span>
+<span class="lineno">  156 </span><span class="spaces">        </span><span class="istickedoff">writeImpl p (Immediate fn src0) =</span>
+<span class="lineno">  157 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff">T.writeFile (joinPath [prjPath, p, fn]) $ T.replace &quot;{{ nitta.paths.nest }}&quot; (T.pack p) src0</span></span>
+<span class="lineno">  158 </span><span class="spaces">        </span><span class="istickedoff">writeImpl p (Aggregate p' subInstances) = do</span>
+<span class="lineno">  159 </span><span class="spaces">            </span><span class="istickedoff">let path = joinPath $ maybe [p] (\x -&gt; [p, x]) p'</span>
+<span class="lineno">  160 </span><span class="spaces">            </span><span class="istickedoff">createDirectoryIfMissing True $ joinPath [prjPath, path]</span>
+<span class="lineno">  161 </span><span class="spaces">            </span><span class="istickedoff">mapM_ (writeImpl path) subInstances</span>
+<span class="lineno">  162 </span><span class="spaces">        </span><span class="istickedoff">writeImpl _ (FromLibrary _) = return <span class="nottickedoff">()</span></span>
+<span class="lineno">  163 </span><span class="spaces">        </span><span class="istickedoff">writeImpl _ Empty = return <span class="nottickedoff">()</span></span></span>
+<span class="lineno">  164 </span>
+<span class="lineno">  165 </span>-- |Copy library files to target path.
+<span class="lineno">  166 </span><span class="decl"><span class="istickedoff">copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj</span>
+<span class="lineno">  167 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  168 </span><span class="spaces">        </span><span class="istickedoff">copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do</span>
+<span class="lineno">  169 </span><span class="spaces">            </span><span class="istickedoff">let fullNittaPath = pTargetProjectPath &lt;/&gt; pInProjectNittaPath</span>
+<span class="lineno">  170 </span><span class="spaces">            </span><span class="istickedoff">source &lt;- makeAbsolute $ joinPath [pLibPath, file]</span>
+<span class="lineno">  171 </span><span class="spaces">            </span><span class="istickedoff">target &lt;- makeAbsolute $ joinPath [fullNittaPath, &quot;lib&quot;, file]</span>
+<span class="lineno">  172 </span><span class="spaces">            </span><span class="istickedoff">createDirectoryIfMissing True $ takeDirectory target</span>
+<span class="lineno">  173 </span><span class="spaces">            </span><span class="istickedoff">copyFile source target</span>
+<span class="lineno">  174 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  175 </span><span class="spaces">        </span><span class="istickedoff">libraryFiles Project{pName, pUnit} =</span>
+<span class="lineno">  176 </span><span class="spaces">            </span><span class="istickedoff">L.nub $ concatMap (args <span class="nottickedoff">&quot;&quot;</span>) [hardware <span class="nottickedoff">pName</span> pUnit]</span>
+<span class="lineno">  177 </span><span class="spaces">            </span><span class="istickedoff">where</span>
+<span class="lineno">  178 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate (Just p') subInstances) = concatMap (args $ <span class="nottickedoff">joinPath [p, p']</span>) subInstances</span>
+<span class="lineno">  179 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate Nothing subInstances) = concatMap (args <span class="nottickedoff">p</span>) subInstances</span>
+<span class="lineno">  180 </span><span class="spaces">                </span><span class="istickedoff">args _ (FromLibrary fn) = [fn]</span>
+<span class="lineno">  181 </span><span class="spaces">                </span><span class="istickedoff">args _ _ = []</span></span>
+
+</pre>
+</body>
+</html>

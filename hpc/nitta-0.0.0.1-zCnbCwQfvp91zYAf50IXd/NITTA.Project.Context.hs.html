@@ -1,0 +1,91 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    2 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    3 </span>{-# LANGUAGE LambdaCase #-}
+<span class="lineno">    4 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    5 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    6 </span>{-# LANGUAGE ScopedTypeVariables #-}
+<span class="lineno">    7 </span>{-# LANGUAGE UndecidableInstances #-}
+<span class="lineno">    8 </span>{-# LANGUAGE NoMonomorphismRestriction #-}
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>{- |
+<span class="lineno">   11 </span>Module      : NITTA.Project.Context
+<span class="lineno">   12 </span>Description : Context for project template
+<span class="lineno">   13 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   14 </span>License     : BSD3
+<span class="lineno">   15 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   16 </span>Stability   : experimental
+<span class="lineno">   17 </span>-}
+<span class="lineno">   18 </span>module NITTA.Project.Context (
+<span class="lineno">   19 </span>    projectContext,
+<span class="lineno">   20 </span>    implementationContext,
+<span class="lineno">   21 </span>) where
+<span class="lineno">   22 </span>
+<span class="lineno">   23 </span>import qualified Data.Text as T
+<span class="lineno">   24 </span>import NITTA.Project.TestBench
+<span class="lineno">   25 </span>import NITTA.Project.Types
+<span class="lineno">   26 </span>import NITTA.Utils
+<span class="lineno">   27 </span>import Text.Ginger
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span><span class="decl"><span class="istickedoff">nittaContextDict</span>
+<span class="lineno">   30 </span><span class="spaces">    </span><span class="istickedoff">prj@Project</span>
+<span class="lineno">   31 </span><span class="spaces">        </span><span class="istickedoff">{ pName</span>
+<span class="lineno">   32 </span><span class="spaces">        </span><span class="istickedoff">, pUnit</span>
+<span class="lineno">   33 </span><span class="spaces">        </span><span class="istickedoff">, pUnitEnv</span>
+<span class="lineno">   34 </span><span class="spaces">        </span><span class="istickedoff">, pTargetProjectPath</span>
+<span class="lineno">   35 </span><span class="spaces">        </span><span class="istickedoff">, pInProjectNittaPath</span>
+<span class="lineno">   36 </span><span class="spaces">        </span><span class="istickedoff">, pAbsTargetProjectPath</span>
+<span class="lineno">   37 </span><span class="spaces">        </span><span class="istickedoff">, pAbsNittaPath</span>
+<span class="lineno">   38 </span><span class="spaces">        </span><span class="istickedoff">} =</span>
+<span class="lineno">   39 </span><span class="spaces">        </span><span class="istickedoff">dict</span>
+<span class="lineno">   40 </span><span class="spaces">            </span><span class="istickedoff">[ (&quot;instance&quot;, toGVal $ doc2text $ hardwareInstance (moduleName <span class="nottickedoff">pName</span> pUnit) pUnit pUnitEnv)</span>
+<span class="lineno">   41 </span><span class="spaces">            </span><span class="istickedoff">,</span>
+<span class="lineno">   42 </span><span class="spaces">                </span><span class="istickedoff">( &quot;paths&quot;</span>
+<span class="lineno">   43 </span><span class="spaces">                </span><span class="istickedoff">, dict</span>
+<span class="lineno">   44 </span><span class="spaces">                    </span><span class="istickedoff">[ (&quot;abs_project&quot;, toGVal <span class="nottickedoff">pAbsTargetProjectPath</span>)</span>
+<span class="lineno">   45 </span><span class="spaces">                    </span><span class="istickedoff">, (&quot;project&quot;, toGVal <span class="nottickedoff">pTargetProjectPath</span>)</span>
+<span class="lineno">   46 </span><span class="spaces">                    </span><span class="istickedoff">, (&quot;abs_nitta&quot;, toGVal pAbsNittaPath)</span>
+<span class="lineno">   47 </span><span class="spaces">                    </span><span class="istickedoff">, (&quot;nitta&quot;, toGVal <span class="nottickedoff">pInProjectNittaPath</span>)</span>
+<span class="lineno">   48 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
+<span class="lineno">   49 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">   50 </span><span class="spaces">            </span><span class="istickedoff">, (&quot;files&quot;, toGVal $ verilogProjectFiles prj)</span>
+<span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">,</span>
+<span class="lineno">   52 </span><span class="spaces">                </span><span class="istickedoff">( &quot;testbench&quot;</span>
+<span class="lineno">   53 </span><span class="spaces">                </span><span class="istickedoff">, dict</span>
+<span class="lineno">   54 </span><span class="spaces">                    </span><span class="istickedoff">[ (&quot;module_name&quot;, toGVal $ testBenchTopModuleName prj)</span>
+<span class="lineno">   55 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
+<span class="lineno">   56 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">   57 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>-- |projectContext - used for template generation
+<span class="lineno">   60 </span><span class="decl"><span class="istickedoff">projectContext prj = makeContextText $ \case</span>
+<span class="lineno">   61 </span><span class="spaces">    </span><span class="istickedoff">&quot;nitta&quot; -&gt; nittaContextDict prj</span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">unknown -&gt; <span class="nottickedoff">error $ &quot;template error, variable '&quot; &lt;&gt; T.unpack unknown &lt;&gt; &quot;' not defined (see 'NITTA.Project.Template')&quot;</span></span></span>
+<span class="lineno">   63 </span>
+<span class="lineno">   64 </span>-- |projectContext - used for Implementation generation
+<span class="lineno">   65 </span><span class="decl"><span class="istickedoff">implementationContext prj nest = makeContextText $ \case</span>
+<span class="lineno">   66 </span><span class="spaces">    </span><span class="istickedoff">&quot;nitta&quot; -&gt; nittaContextDict prj</span>
+<span class="lineno">   67 </span><span class="spaces">    </span><span class="istickedoff">&quot;impl&quot; -&gt; dict [(&quot;paths&quot;, dict [(&quot;nest&quot;, toGVal nest)])]</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">unknown -&gt; <span class="nottickedoff">error $ &quot;template error, variable '&quot; &lt;&gt; T.unpack unknown &lt;&gt; &quot;' not defined (see 'NITTA.Project.Template')&quot;</span></span></span>
+
+</pre>
+</body>
+</html>

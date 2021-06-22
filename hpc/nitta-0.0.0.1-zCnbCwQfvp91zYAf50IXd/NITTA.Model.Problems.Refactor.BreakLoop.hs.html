@@ -1,0 +1,97 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE DeriveGeneric #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    4 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    5 </span>{-# LANGUAGE FunctionalDependencies #-}
+<span class="lineno">    6 </span>{-# LANGUAGE GADTs #-}
+<span class="lineno">    7 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    8 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    9 </span>{-# LANGUAGE UndecidableInstances #-}
+<span class="lineno">   10 </span>
+<span class="lineno">   11 </span>{- |
+<span class="lineno">   12 </span>Module      : NITTA.Model.Problems.Refactor.BreakLoop
+<span class="lineno">   13 </span>Description : Refactoring for support computational loops
+<span class="lineno">   14 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   15 </span>License     : BSD3
+<span class="lineno">   16 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   17 </span>Stability   : experimental
+<span class="lineno">   18 </span>
+<span class="lineno">   19 </span>BreakLoop example:
+<span class="lineno">   20 </span>
+<span class="lineno">   21 </span>&gt; BreakLoop x o i
+<span class="lineno">   22 </span>
+<span class="lineno">   23 </span>before:
+<span class="lineno">   24 </span>
+<span class="lineno">   25 </span>&gt; l@( Loop (X x) (O o) (I i) )
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>after:
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>&gt; LoopEnd l (I i)
+<span class="lineno">   30 </span>&gt; LoopBegin l (O o)
+<span class="lineno">   31 </span>
+<span class="lineno">   32 </span>For more details: 'NITTA.Intermediate.Functions.Loop'
+<span class="lineno">   33 </span>-}
+<span class="lineno">   34 </span>module NITTA.Model.Problems.Refactor.BreakLoop (
+<span class="lineno">   35 </span>    BreakLoop (..),
+<span class="lineno">   36 </span>    BreakLoopProblem (..),
+<span class="lineno">   37 </span>    recLoop,
+<span class="lineno">   38 </span>    recLoopIn,
+<span class="lineno">   39 </span>    recLoopOut,
+<span class="lineno">   40 </span>) where
+<span class="lineno">   41 </span>
+<span class="lineno">   42 </span>import qualified Data.Set as S
+<span class="lineno">   43 </span>import GHC.Generics
+<span class="lineno">   44 </span>import NITTA.Intermediate.Functions
+<span class="lineno">   45 </span>import NITTA.Intermediate.Types
+<span class="lineno">   46 </span>
+<span class="lineno">   47 </span>data BreakLoop v x = BreakLoop
+<span class="lineno">   48 </span>    { -- |initial looped value
+<span class="lineno">   49 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">loopX</span></span></span> :: x
+<span class="lineno">   50 </span>    , -- |output variables
+<span class="lineno">   51 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">loopO</span></span></span> :: S.Set v
+<span class="lineno">   52 </span>    , -- |input variable
+<span class="lineno">   53 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">loopI</span></span></span> :: v
+<span class="lineno">   54 </span>    }
+<span class="lineno">   55 </span>    deriving (Generic, <span class="decl"><span class="nottickedoff">Eq</span></span>)
+<span class="lineno">   56 </span>
+<span class="lineno">   57 </span>instance (Var v, Val x) =&gt; Show (BreakLoop v x) where
+<span class="lineno">   58 </span>    <span class="decl"><span class="istickedoff">show = (&quot;BreakLoop: &quot; &lt;&gt;) . <span class="nottickedoff">show . recLoop</span></span></span>
+<span class="lineno">   59 </span>
+<span class="lineno">   60 </span>class BreakLoopProblem u v x | u -&gt; v x where
+<span class="lineno">   61 </span>    breakLoopOptions :: u -&gt; [BreakLoop v x]
+<span class="lineno">   62 </span>    <span class="decl"><span class="istickedoff">breakLoopOptions _ = []</span></span>
+<span class="lineno">   63 </span>
+<span class="lineno">   64 </span>    breakLoopDecision :: u -&gt; BreakLoop v x -&gt; u
+<span class="lineno">   65 </span>    <span class="decl"><span class="nottickedoff">breakLoopDecision _ _ = error &quot;not supported&quot;</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span><span class="decl"><span class="istickedoff">recLoop BreakLoop{loopX, loopO, loopI} =</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">packF $ Loop (X loopX) (O loopO) (I loopI)</span></span>
+<span class="lineno">   69 </span>
+<span class="lineno">   70 </span><span class="decl"><span class="istickedoff">recLoopIn BreakLoop{loopX, loopO, loopI} =</span>
+<span class="lineno">   71 </span><span class="spaces">    </span><span class="istickedoff">packF $ LoopEnd (Loop (X loopX) (O loopO) (I loopI)) (I loopI)</span></span>
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span><span class="decl"><span class="istickedoff">recLoopOut BreakLoop{loopX, loopO, loopI} =</span>
+<span class="lineno">   74 </span><span class="spaces">    </span><span class="istickedoff">packF $ LoopBegin (Loop (X loopX) (O loopO) (I loopI)) (O loopO)</span></span>
+
+</pre>
+</body>
+</html>

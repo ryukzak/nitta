@@ -1,0 +1,197 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE DeriveGeneric #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    4 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    5 </span>{-# LANGUAGE GADTs #-}
+<span class="lineno">    6 </span>{-# LANGUAGE MultiParamTypeClasses #-}
+<span class="lineno">    7 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    8 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>{- |
+<span class="lineno">   11 </span>Module      : NITTA.Model.Networks.Types
+<span class="lineno">   12 </span>Description : Types for processor unit network description.
+<span class="lineno">   13 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   14 </span>License     : BSD3
+<span class="lineno">   15 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   16 </span>Stability   : experimental
+<span class="lineno">   17 </span>-}
+<span class="lineno">   18 </span>module NITTA.Model.Networks.Types (
+<span class="lineno">   19 </span>    PU (..),
+<span class="lineno">   20 </span>    PUClasses,
+<span class="lineno">   21 </span>    IOSynchronization (..),
+<span class="lineno">   22 </span>    puInputPorts,
+<span class="lineno">   23 </span>    puOutputPorts,
+<span class="lineno">   24 </span>    puInOutPorts,
+<span class="lineno">   25 </span>) where
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>import Data.Aeson
+<span class="lineno">   28 </span>import qualified Data.List as L
+<span class="lineno">   29 </span>import qualified Data.Map.Strict as M
+<span class="lineno">   30 </span>import qualified Data.Set as S
+<span class="lineno">   31 </span>import Data.Typeable
+<span class="lineno">   32 </span>import GHC.Generics (Generic)
+<span class="lineno">   33 </span>import NITTA.Intermediate.Types
+<span class="lineno">   34 </span>import NITTA.Model.Problems
+<span class="lineno">   35 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   36 </span>import NITTA.Model.Time
+<span class="lineno">   37 </span>import NITTA.Project.TestBench
+<span class="lineno">   38 </span>import NITTA.Project.Types
+<span class="lineno">   39 </span>
+<span class="lineno">   40 </span>type PUClasses pu v x t =
+<span class="lineno">   41 </span>    ( ByTime pu t
+<span class="lineno">   42 </span>    , Connected pu
+<span class="lineno">   43 </span>    , IOConnected pu
+<span class="lineno">   44 </span>    , EndpointProblem pu v t
+<span class="lineno">   45 </span>    , BreakLoopProblem pu v x
+<span class="lineno">   46 </span>    , ConstantFoldingProblem pu v x
+<span class="lineno">   47 </span>    , OptimizeAccumProblem pu v x
+<span class="lineno">   48 </span>    , ResolveDeadlockProblem pu v x
+<span class="lineno">   49 </span>    , ProcessorUnit pu v x t
+<span class="lineno">   50 </span>    , Show (Instruction pu)
+<span class="lineno">   51 </span>    , Typeable pu
+<span class="lineno">   52 </span>    , UnambiguouslyDecode pu
+<span class="lineno">   53 </span>    , TargetSystemComponent pu
+<span class="lineno">   54 </span>    , Controllable pu
+<span class="lineno">   55 </span>    , IOTestBench pu v x
+<span class="lineno">   56 </span>    , Locks pu v
+<span class="lineno">   57 </span>    )
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>-- |Existential container for a processor unit .
+<span class="lineno">   60 </span>data PU v x t where
+<span class="lineno">   61 </span>    PU ::
+<span class="lineno">   62 </span>        (PUClasses pu v x t) =&gt;
+<span class="lineno">   63 </span>        { <span class="decl"><span class="nottickedoff">unit</span></span> :: pu
+<span class="lineno">   64 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">diff</span></span></span> :: Changeset v
+<span class="lineno">   65 </span>        , <span class="decl"><span class="nottickedoff">uEnv</span></span> :: UnitEnv pu
+<span class="lineno">   66 </span>        } -&gt;
+<span class="lineno">   67 </span>        PU v x t
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span>instance (Ord v) =&gt; EndpointProblem (PU v x t) v t where
+<span class="lineno">   70 </span>    <span class="decl"><span class="istickedoff">endpointOptions PU{diff, unit} =</span>
+<span class="lineno">   71 </span><span class="spaces">        </span><span class="istickedoff">map (patch diff) $ endpointOptions unit</span></span>
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span>    <span class="decl"><span class="istickedoff">endpointDecision PU{unit, diff, uEnv} d =</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
+<span class="lineno">   75 </span><span class="spaces">            </span><span class="istickedoff">{ unit = endpointDecision unit $ patch (reverseDiff diff) d</span>
+<span class="lineno">   76 </span><span class="spaces">            </span><span class="istickedoff">, diff</span>
+<span class="lineno">   77 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>instance BreakLoopProblem (PU v x t) v x where
+<span class="lineno">   81 </span>    <span class="decl"><span class="istickedoff">breakLoopOptions PU{unit} = breakLoopOptions unit</span></span>
+<span class="lineno">   82 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   83 </span><span class="spaces">        </span><span class="istickedoff">PU{unit = breakLoopDecision unit d, diff, uEnv}</span></span>
+<span class="lineno">   84 </span>
+<span class="lineno">   85 </span>instance OptimizeAccumProblem (PU v x t) v x where
+<span class="lineno">   86 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumOptions PU{unit} = optimizeAccumOptions unit</span></span>
+<span class="lineno">   87 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   88 </span><span class="spaces">        </span><span class="nottickedoff">PU{diff, unit = optimizeAccumDecision unit d, uEnv}</span></span>
+<span class="lineno">   89 </span>
+<span class="lineno">   90 </span>instance ResolveDeadlockProblem (PU v x t) v x where
+<span class="lineno">   91 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit</span></span>
+<span class="lineno">   92 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="nottickedoff">PU{unit = resolveDeadlockDecision unit d, diff, uEnv}</span></span>
+<span class="lineno">   94 </span>
+<span class="lineno">   95 </span>instance (VarValTime v x t) =&gt; ProcessorUnit (PU v x t) v x t where
+<span class="lineno">   96 </span>    <span class="decl"><span class="istickedoff">tryBind fb PU{diff, unit, uEnv} =</span>
+<span class="lineno">   97 </span><span class="spaces">        </span><span class="istickedoff">case tryBind fb unit of</span>
+<span class="lineno">   98 </span><span class="spaces">            </span><span class="istickedoff">Right unit' -&gt; Right PU{unit = unit', diff, uEnv}</span>
+<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">Left err -&gt; Left <span class="nottickedoff">err</span></span></span>
+<span class="lineno">  100 </span>    <span class="decl"><span class="istickedoff">process PU{unit, diff} =</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">let p = process unit</span>
+<span class="lineno">  102 </span><span class="spaces">         </span><span class="istickedoff">in p{steps = map (patch diff) $ steps p}</span></span>
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span>instance (Ord v) =&gt; Patch (PU v x t) (Changeset v) where
+<span class="lineno">  105 </span>    <span class="decl"><span class="istickedoff">patch diff' PU{unit, diff, uEnv} =</span>
+<span class="lineno">  106 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
+<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">{ unit</span>
+<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">, diff =</span>
+<span class="lineno">  109 </span><span class="spaces">                </span><span class="istickedoff">Changeset</span>
+<span class="lineno">  110 </span><span class="spaces">                    </span><span class="istickedoff">{ changeI = changeI diff' `M.union` changeI diff</span>
+<span class="lineno">  111 </span><span class="spaces">                    </span><span class="istickedoff">, changeO = changeO diff' `M.union` changeO diff</span>
+<span class="lineno">  112 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  115 </span>
+<span class="lineno">  116 </span>instance (Ord v) =&gt; Patch (PU v x t) (I v, I v) where
+<span class="lineno">  117 </span>    <span class="decl"><span class="istickedoff">patch (I v, I v') pu@PU{diff = diff@Changeset{changeI}} = pu{diff = diff{changeI = M.insert v v' changeI}}</span></span>
+<span class="lineno">  118 </span>
+<span class="lineno">  119 </span>instance (Ord v) =&gt; Patch (PU v x t) (O v, O v) where
+<span class="lineno">  120 </span>    <span class="decl"><span class="istickedoff">patch (O vs, O vs') pu@PU{diff = diff@Changeset{changeO}} =</span>
+<span class="lineno">  121 </span><span class="spaces">        </span><span class="istickedoff">pu</span>
+<span class="lineno">  122 </span><span class="spaces">            </span><span class="istickedoff">{ diff =</span>
+<span class="lineno">  123 </span><span class="spaces">                </span><span class="istickedoff">diff</span>
+<span class="lineno">  124 </span><span class="spaces">                    </span><span class="istickedoff">{ changeO =</span>
+<span class="lineno">  125 </span><span class="spaces">                        </span><span class="istickedoff">foldl</span>
+<span class="lineno">  126 </span><span class="spaces">                            </span><span class="istickedoff">(\s (v, v') -&gt; M.insert v (S.singleton v') s)</span>
+<span class="lineno">  127 </span><span class="spaces">                            </span><span class="istickedoff">changeO</span>
+<span class="lineno">  128 </span><span class="spaces">                            </span><span class="istickedoff">$ [(a, b) | b &lt;- S.elems vs', a &lt;- S.elems vs]</span>
+<span class="lineno">  129 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  130 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  131 </span>
+<span class="lineno">  132 </span>instance (Var v) =&gt; Locks (PU v x t) v where
+<span class="lineno">  133 </span>    <span class="decl"><span class="istickedoff">locks PU{unit, diff = diff@Changeset{changeI, changeO}}</span>
+<span class="lineno">  134 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlyfalse">not $ M.null changeI</span> = <span class="nottickedoff">error $ &quot;Locks (PU v x t) with non empty changeI: &quot; &lt;&gt; show diff</span></span>
+<span class="lineno">  135 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
+<span class="lineno">  136 </span><span class="spaces">            </span><span class="istickedoff">let (locked', locks') = L.partition (\Lock{locked} -&gt; locked `M.member` changeO) $ locks unit</span>
+<span class="lineno">  137 </span><span class="spaces">                </span><span class="istickedoff">(lockBy', locks'') = L.partition (\Lock{lockBy} -&gt; lockBy `M.member` changeO) locks'</span>
+<span class="lineno">  138 </span><span class="spaces">             </span><span class="istickedoff">in concat</span>
+<span class="lineno">  139 </span><span class="spaces">                    </span><span class="istickedoff">[ locks''</span>
+<span class="lineno">  140 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
+<span class="lineno">  141 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
+<span class="lineno">  142 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked, lockBy = v} | v &lt;- S.elems (changeO M.! lockBy)])</span>
+<span class="lineno">  143 </span><span class="spaces">                            </span><span class="istickedoff">lockBy'</span>
+<span class="lineno">  144 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
+<span class="lineno">  145 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
+<span class="lineno">  146 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked = v, lockBy} | v &lt;- S.elems (changeO M.! locked)])</span>
+<span class="lineno">  147 </span><span class="spaces">                            </span><span class="istickedoff">locked'</span>
+<span class="lineno">  148 </span><span class="spaces">                    </span><span class="istickedoff">]</span></span>
+<span class="lineno">  149 </span>
+<span class="lineno">  150 </span>instance TargetSystemComponent (PU v x t) where
+<span class="lineno">  151 </span>    <span class="decl"><span class="nottickedoff">moduleName name PU{unit} = moduleName name unit</span></span>
+<span class="lineno">  152 </span>    <span class="decl"><span class="istickedoff">hardware name PU{unit} = hardware <span class="nottickedoff">name</span> unit</span></span>
+<span class="lineno">  153 </span>    <span class="decl"><span class="istickedoff">software name PU{unit} = software name unit</span></span>
+<span class="lineno">  154 </span>    <span class="decl"><span class="nottickedoff">hardwareInstance name pu = hardwareInstance name pu</span></span>
+<span class="lineno">  155 </span>
+<span class="lineno">  156 </span>instance IOTestBench (PU v x t) v x where
+<span class="lineno">  157 </span>    <span class="decl"><span class="istickedoff">testEnvironmentInitFlag tag PU{unit} = testEnvironmentInitFlag tag <span class="nottickedoff">unit</span></span></span>
+<span class="lineno">  158 </span>
+<span class="lineno">  159 </span>    <span class="decl"><span class="nottickedoff">testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs</span></span>
+<span class="lineno">  160 </span>
+<span class="lineno">  161 </span>data IOSynchronization
+<span class="lineno">  162 </span>    = -- |IO cycle synchronously to process cycle
+<span class="lineno">  163 </span>      Sync
+<span class="lineno">  164 </span>    | -- |if IO cycle lag behiend - ignore them
+<span class="lineno">  165 </span>      ASync
+<span class="lineno">  166 </span>    | -- |defined by onboard signal (sync - false, async - true)
+<span class="lineno">  167 </span>      OnBoard
+<span class="lineno">  168 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>, Typeable, Generic)
+<span class="lineno">  169 </span>
+<span class="lineno">  170 </span>instance ToJSON IOSynchronization
+<span class="lineno">  171 </span>
+<span class="lineno">  172 </span><span class="decl"><span class="istickedoff">puInputPorts PU{uEnv} = envInputPorts uEnv</span></span>
+<span class="lineno">  173 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
+<span class="lineno">  174 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
+
+</pre>
+</body>
+</html>

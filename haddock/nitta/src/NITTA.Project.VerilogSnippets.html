@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-comment">{- |
+Module      : NITTA.Project.VerilogSnippets
+Description : Snippets for Verilog code-generation
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.VerilogSnippets</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Project.VerilogSnippets.html#snippetClkGen"><span class="hs-identifier">snippetClkGen</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Project.VerilogSnippets.html#snippetDumpFile"><span class="hs-identifier">snippetDumpFile</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="NITTA.Project.VerilogSnippets.html#snippetClkGen"><span class="hs-identifier hs-type">snippetClkGen</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-25"></span><span id="snippetClkGen"><span class="annot"><span class="annottext">snippetClkGen :: Text
+</span><a href="NITTA.Project.VerilogSnippets.html#snippetClkGen"><span class="hs-identifier hs-var hs-var">snippetClkGen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><span class="">[__i|
+        initial begin
+            clk = 1'b0;
+            rst = 1'b1;
+            repeat(4) \#1 clk = ~clk;
+            rst = 1'b0;
+            forever \#1 clk = ~clk;
+        end
+    |]</span></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><a href="NITTA.Project.VerilogSnippets.html#snippetDumpFile"><span class="hs-identifier hs-type">snippetDumpFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-37"></span><span id="snippetDumpFile"><span class="annot"><span class="annottext">snippetDumpFile :: Text -&gt; Text
+</span><a href="NITTA.Project.VerilogSnippets.html#snippetDumpFile"><span class="hs-identifier hs-var hs-var">snippetDumpFile</span></a></span></span><span> </span><span id="local-6989586621680121462"><span class="annot"><span class="annottext">mn :: Text
+</span><a href="#local-6989586621680121462"><span class="hs-identifier hs-var">mn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><span class="">[__i|
+        initial begin
+            $dumpfile(&quot;#{ mn }_tb.vcd&quot;);
+            $dumpvars(0, #{ mn }_tb);
+        end
+    |]</span></span><span>
+</span><span id="line-44"></span></pre></body></html>

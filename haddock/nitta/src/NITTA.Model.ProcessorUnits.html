@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{- |
+Module      : NITTA.Model.ProcessorUnits
+Description : Library of processor unit models
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+A Processor Unit is an element of a NITTA processor that performs data
+processing, storing, and transferring to and from external devices.
+
+= Model of a processor unit
+
+Model of a processor unit includes the following things:
+
+- the data type for representation process unit model state, which describes all
+  aspects of its computational process;
+
+- binding and process description (see 'ProcessorUnit' from
+  &quot;NITTA.Model.ProcessorUnits.Time&quot;);
+
+- sending and receiving data by the processor unit (see
+  &quot;NITTA.Model.Problems.Endpoint&quot;);
+
+- instructions and control signals (see 'Controllable', 'UnambiguouslyDecode',
+  and 'Connected' from &quot;NITTA.Model.ProcessorUnits.Time&quot;);
+
+- refactoring (see &quot;NITTA.Model.Problems.Refactor&quot;);
+
+- variables casuality (see 'Lock' from &quot;NITTA.Intermediate.Types&quot;);
+
+- simulation (see 'Simulatable' from &quot;NITTA.Model.ProcessorUnits.Time&quot;);
+
+- how to generate hardware with this processor unit ('TargetSystemComponent'
+  from &quot;NITTA.Project.Implementation&quot;);
+
+- how to test process unit (see 'Testable' from
+  &quot;NITTA.Project.TestBench&quot;);
+
+- IO signals and how to test IO if applicable (see 'IOConnected' from
+  'NITTA.Model.ProcessorUnits.Time' and 'IOTestBench' from
+  &quot;NITTA.Project.TestBench&quot;);
+
+- and some technical stuff for it.
+
+For a well-documented example, see &quot;NITTA.Model.ProcessorUnits.Multiplier&quot;.
+
+= HARDWARE INTERFACE of a processor unit
+
+== System signals
+
+- `clk` - clock signal;
+- `rst` - reset signal;
+- `signal_cycle`x - start of computational cycle (require for synchronization
+  reason).
+
+== Control signals
+
+Used for control over a processor unit. A specific set of control signals
+defined for each process unit individually. Usually, they include:
+
+- `signal_wr` - the signal for reading data from `data_in`;
+- `signal_oe` - the signal for writing data to `data_out`.
+
+== Databus
+
+These ports are used for transferring data between process units.
+
+Parameters:
+
+- `DATA_WIDTH` - machine word width;
+- `ATTR_WIDTH` - machine word attribute width;
+- `INVALID_ATTR` (default: 0) - index of invalid flag on machine word attribute.
+
+Input ports:
+
+- `input [DATA_WIDTH-1:0] data_in` - port for reciving data by a process unit:
+- `input [ATTR_WIDTH-1:0] attr_in` - port for receiving data attributes by a
+  process unit;
+- if `signal_wr` or similar are not set - value on data_in should be ingnored.
+
+Output ports:
+
+- `output [DATA_WIDTH-1:0] data_out` - port for sending data to a process unit;
+- `output [ATTR_WIDTH-1:0] attr_out` - port for sending data attributes to a process unit;
+- a processor unit can restrict the time when a value is available for reading;
+- if `signal_oe` or similar are not set - value on `data_out` should be 0, time
+  of `signal_oe` and actual data transfer may variate by the process unit
+  developer:
+
+    - with offset:
+
+        @
+        signal wave:
+
+        oe          - 0001000
+        dataout     - 0000*00
+        @
+
+    - without offset:
+
+        @
+        signal wave:
+
+        oe          - 0001000
+        dataout     - 000*000
+        @
+
+== External ports or IO ports
+
+Purpose: transferring data from and to the NITTA processor (ports simple
+forwarded across processor from environment to the processor unit).
+
+Acceptable port types: input, output, and input.
+
+The composition of ports is determined individually by the type of I/O
+interface.
+-}</span><span>
+</span><span id="line-119"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Model.ProcessorUnits</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-120"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Types</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-121"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html"><span class="hs-identifier">NITTA.Model.Time</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-122"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Accum.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Accum</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-123"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Broken.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Broken</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-124"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Divider.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Divider</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Fram.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Fram</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SPI.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.SPI</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Multiplier</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Shift.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Shift</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-129"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Types</span></a></span><span>
+</span><span id="line-132"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html"><span class="hs-identifier">NITTA.Model.Time</span></a></span><span>
+</span><span id="line-133"></span><span>
+</span><span id="line-134"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Accum.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Accum</span></a></span><span>
+</span><span id="line-135"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Broken.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Broken</span></a></span><span>
+</span><span id="line-136"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Divider.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Divider</span></a></span><span>
+</span><span id="line-137"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Fram.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Fram</span></a></span><span>
+</span><span id="line-138"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SPI.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.SPI</span></a></span><span>
+</span><span id="line-139"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Multiplier</span></a></span><span>
+</span><span id="line-140"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Shift.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Shift</span></a></span><span>
+</span><span id="line-141"></span></pre></body></html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE AllowAmbiguousTypes #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# OPTIONS -fno-warn-orphans #-}</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-comment">{- |
+Module      : NITTA.Project.Types
+Description : Types for a target project description and generation
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.Types</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier">Project</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#defProjectTemplates"><span class="hs-identifier">defProjectTemplates</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#TargetSystemComponent"><span class="hs-identifier">TargetSystemComponent</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#Implementation"><span class="hs-identifier">Implementation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier">UnitEnv</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#envInputPorts"><span class="hs-identifier">envInputPorts</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#envOutputPorts"><span class="hs-identifier">envOutputPorts</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#envInOutPorts"><span class="hs-identifier">envInOutPorts</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-29"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html"><span class="hs-identifier">NITTA.Intermediate.Value</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Types</span></a></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="hs-comment">{- |Target project for different purpose (testing, target system, etc). Should
+be writable to disk.
+-}</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- FIXME: collision between target project name and output directory. Maybe</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- pName or pTargetProjectPath should be maybe? Or both?</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">data</span><span> </span><span id="Project"><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-var">Project</span></a></span></span><span> </span><span id="local-6989586621680125114"><span class="annot"><a href="#local-6989586621680125114"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span id="local-6989586621680125113"><span class="annot"><a href="#local-6989586621680125113"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680125112"><span class="annot"><a href="#local-6989586621680125112"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Project"><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-var">Project</span></a></span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="hs-comment">-- |target project name</span><span>
+</span><span id="line-46"></span><span>      </span><span id="pName"><span class="annot"><span class="annottext">Project m v x -&gt; Text
+</span><a href="NITTA.Project.Types.html#pName"><span class="hs-identifier hs-var hs-var">pName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |IP-core library path</span><span>
+</span><span id="line-48"></span><span>      </span><span id="pLibPath"><span class="annot"><span class="annottext">Project m v x -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#pLibPath"><span class="hs-identifier hs-var hs-var">pLibPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |output path for target project</span><span>
+</span><span id="line-50"></span><span>      </span><span id="pTargetProjectPath"><span class="annot"><span class="annottext">Project m v x -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#pTargetProjectPath"><span class="hs-identifier hs-var hs-var">pTargetProjectPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |absolute output path for target project</span><span>
+</span><span id="line-52"></span><span>      </span><span id="pAbsTargetProjectPath"><span class="annot"><span class="annottext">Project m v x -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#pAbsTargetProjectPath"><span class="hs-identifier hs-var hs-var">pAbsTargetProjectPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |relative to the project path output path for NITTA processor inside target project</span><span>
+</span><span id="line-54"></span><span>      </span><span id="pInProjectNittaPath"><span class="annot"><span class="annottext">Project m v x -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#pInProjectNittaPath"><span class="hs-identifier hs-var hs-var">pInProjectNittaPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |absolute output path for NITTA processor inside target project</span><span>
+</span><span id="line-56"></span><span>      </span><span id="pAbsNittaPath"><span class="annot"><span class="annottext">Project m v x -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#pAbsNittaPath"><span class="hs-identifier hs-var hs-var">pAbsNittaPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)</span><span>
+</span><span id="line-58"></span><span>      </span><span id="pUnit"><span class="annot"><span class="annottext">Project m v x -&gt; m
+</span><a href="NITTA.Project.Types.html#pUnit"><span class="hs-identifier hs-var hs-var">pUnit</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680125114"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="pUnitEnv"><span class="annot"><span class="annottext">Project m v x -&gt; UnitEnv m
+</span><a href="NITTA.Project.Types.html#pUnitEnv"><span class="hs-identifier hs-var hs-var">pUnitEnv</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125114"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |testbench context with input values</span><span>
+</span><span id="line-61"></span><span>      </span><span id="pTestCntx"><span class="annot"><span class="annottext">Project m v x -&gt; Cntx v x
+</span><a href="NITTA.Project.Types.html#pTestCntx"><span class="hs-identifier hs-var hs-var">pTestCntx</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125113"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125112"><span class="hs-identifier hs-type">x</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |Target platform templates</span><span>
+</span><span id="line-63"></span><span>      </span><span id="pTemplates"><span class="annot"><span class="annottext">Project m v x -&gt; [FilePath]
+</span><a href="NITTA.Project.Types.html#pTemplates"><span class="hs-identifier hs-var hs-var">pTemplates</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="NITTA.Project.Types.html#defProjectTemplates"><span class="hs-identifier hs-type">defProjectTemplates</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
+</span><span id="line-67"></span><span id="defProjectTemplates"><span class="annot"><span class="annottext">defProjectTemplates :: [FilePath]
+</span><a href="NITTA.Project.Types.html#defProjectTemplates"><span class="hs-identifier hs-var hs-var">defProjectTemplates</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="hs-string">&quot;templates/Icarus&quot;</span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;templates/DE0-Nano&quot;</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">]</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span id="local-6989586621680125098"><span id="local-6989586621680125099"><span id="local-6989586621680125100"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680125095"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="#local-6989586621680125100"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#DefaultX"><span class="hs-identifier hs-type">DefaultX</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125099"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125098"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125100"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680125100"><span class="hs-identifier hs-type">x</span></a></span></span></span></span></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="hs-comment">-- |Type class for target components. Target -- a target system project or a testbench.</span><span>
+</span><span id="line-75"></span><span class="hs-keyword">class</span><span> </span><span id="TargetSystemComponent"><span class="annot"><a href="NITTA.Project.Types.html#TargetSystemComponent"><span class="hs-identifier hs-var">TargetSystemComponent</span></a></span></span><span> </span><span id="local-6989586621680125093"><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-comment">-- |Name of the structural hardware module or Verilog module name (network or process unit)</span><span>
+</span><span id="line-77"></span><span>    </span><span id="moduleName"><span class="annot"><a href="NITTA.Project.Types.html#moduleName"><span class="hs-identifier hs-type">moduleName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">-- |Software and other specification which depends on application algorithm</span><span>
+</span><span id="line-80"></span><span>    </span><span id="software"><span class="annot"><a href="NITTA.Project.Types.html#software"><span class="hs-identifier hs-type">software</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#Implementation"><span class="hs-identifier hs-type">Implementation</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-comment">-- |Hardware which depends on microarchitecture description and requires synthesis.</span><span>
+</span><span id="line-83"></span><span>    </span><span id="hardware"><span class="annot"><a href="NITTA.Project.Types.html#hardware"><span class="hs-identifier hs-type">hardware</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#Implementation"><span class="hs-identifier hs-type">Implementation</span></a></span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-comment">-- |Generate code for making an instance of the hardware module</span><span>
+</span><span id="line-86"></span><span>    </span><span id="hardwareInstance"><span class="annot"><a href="NITTA.Project.Types.html#hardwareInstance"><span class="hs-identifier hs-type">hardwareInstance</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125093"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Utils.html#Verilog"><span class="hs-identifier hs-type">Verilog</span></a></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- |Element of target system implementation</span><span>
+</span><span id="line-89"></span><span class="hs-keyword">data</span><span> </span><span id="Implementation"><span class="annot"><a href="NITTA.Project.Types.html#Implementation"><span class="hs-identifier hs-var">Implementation</span></a></span></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="hs-comment">-- |Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')</span><span>
+</span><span id="line-91"></span><span>      </span><span id="Immediate"><span class="annot"><a href="NITTA.Project.Types.html#Immediate"><span class="hs-identifier hs-var">Immediate</span></a></span></span><span> </span><span class="hs-special">{</span><span id="impFileName"><span class="annot"><span class="annottext">Implementation -&gt; FilePath
+</span><a href="NITTA.Project.Types.html#impFileName"><span class="hs-identifier hs-var hs-var">impFileName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">,</span><span> </span><span id="impText"><span class="annot"><span class="annottext">Implementation -&gt; Text
+</span><a href="NITTA.Project.Types.html#impText"><span class="hs-identifier hs-var hs-var">impText</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">}</span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-comment">-- |Fetch implementation from library</span><span>
+</span><span id="line-93"></span><span>      </span><span id="FromLibrary"><span class="annot"><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span></span><span> </span><span class="hs-special">{</span><span id="impFileName"><span class="annot"><a href="NITTA.Project.Types.html#impFileName"><span class="hs-identifier hs-var">impFileName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">}</span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-comment">-- |Aggregation of many implementation parts in separate paths</span><span>
+</span><span id="line-95"></span><span>      </span><span id="Aggregate"><span class="annot"><a href="NITTA.Project.Types.html#Aggregate"><span class="hs-identifier hs-var">Aggregate</span></a></span></span><span> </span><span class="hs-special">{</span><span id="impPath"><span class="annot"><span class="annottext">Implementation -&gt; Maybe FilePath
+</span><a href="NITTA.Project.Types.html#impPath"><span class="hs-identifier hs-var hs-var">impPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">,</span><span> </span><span id="subComponents"><span class="annot"><span class="annottext">Implementation -&gt; [Implementation]
+</span><a href="NITTA.Project.Types.html#subComponents"><span class="hs-identifier hs-var hs-var">subComponents</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Project.Types.html#Implementation"><span class="hs-identifier hs-type">Implementation</span></a></span><span class="hs-special">]</span><span class="hs-special">}</span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-comment">-- |Nothing</span><span>
+</span><span id="line-97"></span><span>      </span><span id="Empty"><span class="annot"><a href="NITTA.Project.Types.html#Empty"><span class="hs-identifier hs-var">Empty</span></a></span></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="hs-comment">{- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
+`data_bus`, `dataOut` into `accum_data_out`.
+-}</span><span>
+</span><span id="line-102"></span><span class="hs-keyword">data</span><span> </span><span id="UnitEnv"><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-var">UnitEnv</span></a></span></span><span> </span><span id="local-6989586621680125132"><span class="annot"><a href="#local-6989586621680125132"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnitEnv"><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-var">UnitEnv</span></a></span></span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="hs-comment">-- |clock signal</span><span>
+</span><span id="line-104"></span><span>      </span><span id="sigClk"><span class="annot"><span class="annottext">UnitEnv m -&gt; Text
+</span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var hs-var">sigClk</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |reset signal</span><span>
+</span><span id="line-106"></span><span>      </span><span id="sigRst"><span class="annot"><span class="annottext">UnitEnv m -&gt; Text
+</span><a href="NITTA.Project.Types.html#sigRst"><span class="hs-identifier hs-var hs-var">sigRst</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |posedge on computation cycle begin</span><span>
+</span><span id="line-108"></span><span>      </span><span id="sigCycleBegin"><span class="annot"><span class="annottext">UnitEnv m -&gt; Text
+</span><a href="NITTA.Project.Types.html#sigCycleBegin"><span class="hs-identifier hs-var hs-var">sigCycleBegin</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |positive on computation cycle</span><span>
+</span><span id="line-110"></span><span>      </span><span id="sigInCycle"><span class="annot"><span class="annottext">UnitEnv m -&gt; Text
+</span><a href="NITTA.Project.Types.html#sigInCycle"><span class="hs-identifier hs-var hs-var">sigInCycle</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |posedge on computation cycle end</span><span>
+</span><span id="line-112"></span><span>      </span><span id="sigCycleEnd"><span class="annot"><span class="annottext">UnitEnv m -&gt; Text
+</span><a href="NITTA.Project.Types.html#sigCycleEnd"><span class="hs-identifier hs-var hs-var">sigCycleEnd</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="ctrlPorts"><span class="annot"><span class="annottext">UnitEnv m -&gt; Maybe (Ports m)
+</span><a href="NITTA.Project.Types.html#ctrlPorts"><span class="hs-identifier hs-var hs-var">ctrlPorts</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Ports"><span class="hs-identifier hs-type">Ports</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125132"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="ioPorts"><span class="annot"><span class="annottext">UnitEnv m -&gt; Maybe (IOPorts m)
+</span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier hs-type">IOPorts</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125132"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="valueIn"><span class="annot"><span class="annottext">UnitEnv m -&gt; Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueIn"><span class="hs-identifier hs-var hs-var">valueIn</span></a></span></span><span class="hs-special">,</span><span> </span><span id="valueOut"><span class="annot"><span class="annottext">UnitEnv m -&gt; Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueOut"><span class="hs-identifier hs-var hs-var">valueOut</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span id="local-6989586621680125069"><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680125069"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>    </span><span id="local-6989586621680125066"><span class="annot"><span class="annottext">def :: UnitEnv m
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-120"></span><span>        </span><span class="annot"><span class="annottext">UnitEnv :: forall m.
+Text
+-&gt; Text
+-&gt; Text
+-&gt; Text
+-&gt; Text
+-&gt; Maybe (Ports m)
+-&gt; Maybe (IOPorts m)
+-&gt; Maybe (Text, Text)
+-&gt; Maybe (Text, Text)
+-&gt; UnitEnv m
+</span><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type hs-type">UnitEnv</span></a></span><span>
+</span><span id="line-121"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sigClk :: Text
+</span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var">sigClk</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;clk&quot;</span></span><span>
+</span><span id="line-122"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigRst :: Text
+</span><a href="NITTA.Project.Types.html#sigRst"><span class="hs-identifier hs-var">sigRst</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;rst&quot;</span></span><span>
+</span><span id="line-123"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigCycleBegin :: Text
+</span><a href="NITTA.Project.Types.html#sigCycleBegin"><span class="hs-identifier hs-var">sigCycleBegin</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;flag_cycle_begin&quot;</span></span><span>
+</span><span id="line-124"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigInCycle :: Text
+</span><a href="NITTA.Project.Types.html#sigInCycle"><span class="hs-identifier hs-var">sigInCycle</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;flag_in_cycle&quot;</span></span><span>
+</span><span id="line-125"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigCycleEnd :: Text
+</span><a href="NITTA.Project.Types.html#sigCycleEnd"><span class="hs-identifier hs-var">sigCycleEnd</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;flag_cycle_end&quot;</span></span><span>
+</span><span id="line-126"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ctrlPorts :: Maybe (Ports m)
+</span><a href="NITTA.Project.Types.html#ctrlPorts"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Ports m)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-127"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioPorts :: Maybe (IOPorts m)
+</span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (IOPorts m)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-128"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueIn :: Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueIn"><span class="hs-identifier hs-var">valueIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Text, Text)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-129"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueOut :: Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueOut"><span class="hs-identifier hs-var">valueOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Text, Text)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-130"></span><span>            </span><span class="hs-special">}</span></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span id="envInputPorts"><span class="annot"><span class="annottext">envInputPorts :: UnitEnv pu -&gt; [InputPortTag]
+</span><a href="NITTA.Project.Types.html#envInputPorts"><span class="hs-identifier hs-var hs-var">envInputPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span class="hs-special">{</span><span id="local-6989586621680125063"><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+ioPorts :: Maybe (IOPorts pu)
+ioPorts :: forall m. UnitEnv m -&gt; Maybe (IOPorts m)
+</span><a href="#local-6989586621680125063"><span class="hs-identifier hs-var hs-var">ioPorts</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(IOPorts pu -&gt; [InputPortTag])
+-&gt; Maybe (IOPorts pu) -&gt; [InputPortTag]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">IOPorts pu -&gt; [InputPortTag]
+forall pu. IOConnected pu =&gt; IOPorts pu -&gt; [InputPortTag]
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#inputPorts"><span class="hs-identifier hs-var">inputPorts</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+</span><a href="#local-6989586621680125063"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
+</span><span id="line-133"></span><span id="envOutputPorts"><span class="annot"><span class="annottext">envOutputPorts :: UnitEnv pu -&gt; [OutputPortTag]
+</span><a href="NITTA.Project.Types.html#envOutputPorts"><span class="hs-identifier hs-var hs-var">envOutputPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span class="hs-special">{</span><span id="local-6989586621680125060"><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+ioPorts :: Maybe (IOPorts pu)
+ioPorts :: forall m. UnitEnv m -&gt; Maybe (IOPorts m)
+</span><a href="#local-6989586621680125060"><span class="hs-identifier hs-var hs-var">ioPorts</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(IOPorts pu -&gt; [OutputPortTag])
+-&gt; Maybe (IOPorts pu) -&gt; [OutputPortTag]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">IOPorts pu -&gt; [OutputPortTag]
+forall pu. IOConnected pu =&gt; IOPorts pu -&gt; [OutputPortTag]
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#outputPorts"><span class="hs-identifier hs-var">outputPorts</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+</span><a href="#local-6989586621680125060"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
+</span><span id="line-134"></span><span id="envInOutPorts"><span class="annot"><span class="annottext">envInOutPorts :: UnitEnv pu -&gt; [InoutPortTag]
+</span><a href="NITTA.Project.Types.html#envInOutPorts"><span class="hs-identifier hs-var hs-var">envInOutPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span class="hs-special">{</span><span id="local-6989586621680125058"><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+ioPorts :: Maybe (IOPorts pu)
+ioPorts :: forall m. UnitEnv m -&gt; Maybe (IOPorts m)
+</span><a href="#local-6989586621680125058"><span class="hs-identifier hs-var hs-var">ioPorts</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(IOPorts pu -&gt; [InoutPortTag])
+-&gt; Maybe (IOPorts pu) -&gt; [InoutPortTag]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">IOPorts pu -&gt; [InoutPortTag]
+forall pu. IOConnected pu =&gt; IOPorts pu -&gt; [InoutPortTag]
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#inoutPorts"><span class="hs-identifier hs-var">inoutPorts</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (IOPorts pu)
+</span><a href="#local-6989586621680125058"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
+</span><span id="line-135"></span></pre></body></html>

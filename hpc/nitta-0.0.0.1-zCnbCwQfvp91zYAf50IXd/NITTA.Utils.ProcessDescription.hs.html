@@ -1,0 +1,210 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    2 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    3 </span>{-# LANGUAGE MultiParamTypeClasses #-}
+<span class="lineno">    4 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    5 </span>
+<span class="lineno">    6 </span>{- |
+<span class="lineno">    7 </span>Module      : NITTA.Utils.ProcessDescription
+<span class="lineno">    8 </span>Description : Utilities for process description.
+<span class="lineno">    9 </span>Copyright   : (c) Aleksandr Penskoi, 2019
+<span class="lineno">   10 </span>License     : BSD3
+<span class="lineno">   11 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   12 </span>Stability   : experimental
+<span class="lineno">   13 </span>
+<span class="lineno">   14 </span>A multilevel process is an object with a complex internal structure. Process description should
+<span class="lineno">   15 </span>contain every step (including start and finish time), and relations between them (Vertical or
+<span class="lineno">   16 </span>sequence). It is possible to define process manually, but, in practice, is preferred to use 'State'
+<span class="lineno">   17 </span>based builder from that module.
+<span class="lineno">   18 </span>
+<span class="lineno">   19 </span>It also agreed to the process inspection.
+<span class="lineno">   20 </span>-}
+<span class="lineno">   21 </span>module NITTA.Utils.ProcessDescription (
+<span class="lineno">   22 </span>    runSchedule,
+<span class="lineno">   23 </span>    execSchedule,
+<span class="lineno">   24 </span>    execScheduleWithProcess,
+<span class="lineno">   25 </span>    scheduleEndpoint,
+<span class="lineno">   26 </span>    scheduleEndpoint_,
+<span class="lineno">   27 </span>    scheduleFunctionBind,
+<span class="lineno">   28 </span>    scheduleFunctionRevoke,
+<span class="lineno">   29 </span>    scheduleFunction,
+<span class="lineno">   30 </span>    scheduleInstructionUnsafe,
+<span class="lineno">   31 </span>    scheduleInstructionUnsafe_,
+<span class="lineno">   32 </span>    scheduleNestedStep,
+<span class="lineno">   33 </span>    establishVerticalRelations,
+<span class="lineno">   34 </span>    establishVerticalRelation,
+<span class="lineno">   35 </span>    getProcessSlice,
+<span class="lineno">   36 </span>    castInstruction,
+<span class="lineno">   37 </span>) where
+<span class="lineno">   38 </span>
+<span class="lineno">   39 </span>import Control.Monad.State
+<span class="lineno">   40 </span>import Data.Proxy (asProxyTypeOf)
+<span class="lineno">   41 </span>import Data.Typeable
+<span class="lineno">   42 </span>import NITTA.Model.Problems
+<span class="lineno">   43 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   44 </span>import Numeric.Interval.NonEmpty (singleton, sup)
+<span class="lineno">   45 </span>
+<span class="lineno">   46 </span>-- |Process builder state.
+<span class="lineno">   47 </span>data Schedule pu v x t = Schedule
+<span class="lineno">   48 </span>    { -- |Defining process.
+<span class="lineno">   49 </span>      <span class="istickedoff"><span class="decl"><span class="istickedoff">schProcess</span></span></span> :: Process t (StepInfo v x t)
+<span class="lineno">   50 </span>    , -- |Proxy for process unit instruction, which is needed for API simplify. Without that,
+<span class="lineno">   51 </span>      -- for some function, the user needs to describe type explicitly.
+<span class="lineno">   52 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">iProxy</span></span></span> :: Proxy (Instruction pu)
+<span class="lineno">   53 </span>    }
+<span class="lineno">   54 </span>
+<span class="lineno">   55 </span>instance {-# OVERLAPS #-} NextTick (Schedule pu v x t) t where
+<span class="lineno">   56 </span>    <span class="decl"><span class="istickedoff">nextTick = nextTick . schProcess</span></span>
+<span class="lineno">   57 </span>
+<span class="lineno">   58 </span>{- |Execute process builder and return new process description. The initial process state is getting
+<span class="lineno">   59 </span>from the PU by the 'process' function.
+<span class="lineno">   60 </span>-}
+<span class="lineno">   61 </span><span class="decl"><span class="istickedoff">execSchedule pu st = snd $ runSchedule pu st</span></span>
+<span class="lineno">   62 </span>
+<span class="lineno">   63 </span>{- |Execute process builder and return new process description. The initial process state is passed
+<span class="lineno">   64 </span>explicetly.
+<span class="lineno">   65 </span>-}
+<span class="lineno">   66 </span><span class="decl"><span class="istickedoff">execScheduleWithProcess pu p st = snd $ runScheduleWithProcess <span class="nottickedoff">pu</span> p st</span></span>
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>{- |Execute process builder and return list of new step UID and new process description. The initial
+<span class="lineno">   69 </span>process state is getting from the PU by the 'process' function.
+<span class="lineno">   70 </span>-}
+<span class="lineno">   71 </span><span class="decl"><span class="istickedoff">runSchedule pu st = runScheduleWithProcess <span class="nottickedoff">pu</span> (process pu) st</span></span>
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span>{- |Execute process builder and return list of new step UID and new process description. The initial
+<span class="lineno">   74 </span>process state is passed explicetly.
+<span class="lineno">   75 </span>-}
+<span class="lineno">   76 </span><span class="decl"><span class="istickedoff">runScheduleWithProcess pu p st =</span>
+<span class="lineno">   77 </span><span class="spaces">    </span><span class="istickedoff">let (a, s) =</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="istickedoff">runState</span>
+<span class="lineno">   79 </span><span class="spaces">                </span><span class="istickedoff">st</span>
+<span class="lineno">   80 </span><span class="spaces">                </span><span class="istickedoff">Schedule</span>
+<span class="lineno">   81 </span><span class="spaces">                    </span><span class="istickedoff">{ schProcess = p</span>
+<span class="lineno">   82 </span><span class="spaces">                    </span><span class="istickedoff">, iProxy = <span class="nottickedoff">ip pu</span></span>
+<span class="lineno">   83 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">   84 </span><span class="spaces">     </span><span class="istickedoff">in (a, schProcess s)</span>
+<span class="lineno">   85 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">   86 </span><span class="spaces">        </span><span class="istickedoff">ip :: pu -&gt; Proxy (Instruction pu)</span>
+<span class="lineno">   87 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">ip _ = Proxy</span></span></span>
+<span class="lineno">   88 </span>
+<span class="lineno">   89 </span>-- |Add process step with passed the time and info.
+<span class="lineno">   90 </span><span class="decl"><span class="istickedoff">scheduleStep placeInTime stepInfo =</span>
+<span class="lineno">   91 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep' (\uid -&gt; Step uid placeInTime stepInfo)</span></span>
+<span class="lineno">   92 </span>
+<span class="lineno">   93 </span><span class="decl"><span class="istickedoff">scheduleStep' mkStep = do</span>
+<span class="lineno">   94 </span><span class="spaces">    </span><span class="istickedoff">sch@Schedule{schProcess = p@Process{nextUid, steps}} &lt;- get</span>
+<span class="lineno">   95 </span><span class="spaces">    </span><span class="istickedoff">put</span>
+<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">sch</span>
+<span class="lineno">   97 </span><span class="spaces">            </span><span class="istickedoff">{ schProcess =</span>
+<span class="lineno">   98 </span><span class="spaces">                </span><span class="istickedoff">p</span>
+<span class="lineno">   99 </span><span class="spaces">                    </span><span class="istickedoff">{ nextUid = succ nextUid</span>
+<span class="lineno">  100 </span><span class="spaces">                    </span><span class="istickedoff">, steps = mkStep nextUid : steps</span>
+<span class="lineno">  101 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  102 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  103 </span><span class="spaces">    </span><span class="istickedoff">return [nextUid]</span></span>
+<span class="lineno">  104 </span>
+<span class="lineno">  105 </span>{- |Add to the process description information about vertical relations, which are defined by the
+<span class="lineno">  106 </span> Cartesian product of high and low lists.
+<span class="lineno">  107 </span>-}
+<span class="lineno">  108 </span><span class="decl"><span class="istickedoff">establishVerticalRelations high low = do</span>
+<span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">sch@Schedule{schProcess = p@Process{relations}} &lt;- get</span>
+<span class="lineno">  110 </span><span class="spaces">    </span><span class="istickedoff">put</span>
+<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">sch</span>
+<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">{ schProcess =</span>
+<span class="lineno">  113 </span><span class="spaces">                </span><span class="istickedoff">p</span>
+<span class="lineno">  114 </span><span class="spaces">                    </span><span class="istickedoff">{ relations = [Vertical h l | h &lt;- high, l &lt;- low] ++ relations</span>
+<span class="lineno">  115 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  117 </span>
+<span class="lineno">  118 </span>-- |Add to the process description information about vertical relation.
+<span class="lineno">  119 </span><span class="decl"><span class="istickedoff">establishVerticalRelation h l = do</span>
+<span class="lineno">  120 </span><span class="spaces">    </span><span class="istickedoff">sch@Schedule{schProcess = p@Process{relations}} &lt;- get</span>
+<span class="lineno">  121 </span><span class="spaces">    </span><span class="istickedoff">put</span>
+<span class="lineno">  122 </span><span class="spaces">        </span><span class="istickedoff">sch</span>
+<span class="lineno">  123 </span><span class="spaces">            </span><span class="istickedoff">{ schProcess =</span>
+<span class="lineno">  124 </span><span class="spaces">                </span><span class="istickedoff">p</span>
+<span class="lineno">  125 </span><span class="spaces">                    </span><span class="istickedoff">{ relations = <span class="nottickedoff">Vertical h l : relations</span></span>
+<span class="lineno">  126 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  127 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  128 </span>
+<span class="lineno">  129 </span><span class="decl"><span class="istickedoff">scheduleFunctionBind f = do</span>
+<span class="lineno">  130 </span><span class="spaces">    </span><span class="istickedoff">schedule &lt;- get</span>
+<span class="lineno">  131 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep (singleton $ nextTick schedule) $ CADStep $ &quot;bind &quot; &lt;&gt; show f</span></span>
+<span class="lineno">  132 </span>
+<span class="lineno">  133 </span><span class="decl"><span class="istickedoff">scheduleFunctionRevoke f = do</span>
+<span class="lineno">  134 </span><span class="spaces">    </span><span class="istickedoff">schedule &lt;- get</span>
+<span class="lineno">  135 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep (singleton $ nextTick schedule) $ CADStep $ &quot;revoke &quot; &lt;&gt; show f</span></span>
+<span class="lineno">  136 </span>
+<span class="lineno">  137 </span>-- |Add to the process description information about function evaluation.
+<span class="lineno">  138 </span><span class="decl"><span class="istickedoff">scheduleFunction ti f = scheduleStep ti $ FStep f</span></span>
+<span class="lineno">  139 </span>
+<span class="lineno">  140 </span>{- |Add to the process description information about endpoint behaviour, and it's low-level
+<span class="lineno">  141 </span>implementation (on instruction level). Vertical relations connect endpoint level and instruction
+<span class="lineno">  142 </span>level steps.
+<span class="lineno">  143 </span>-}
+<span class="lineno">  144 </span><span class="decl"><span class="istickedoff">scheduleEndpoint EndpointSt{epAt, epRole} codeGen = do</span>
+<span class="lineno">  145 </span><span class="spaces">    </span><span class="istickedoff">high &lt;- scheduleStep epAt $ EndpointRoleStep epRole</span>
+<span class="lineno">  146 </span><span class="spaces">    </span><span class="istickedoff">low &lt;- codeGen</span>
+<span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">establishVerticalRelations high low</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">return high</span></span>
+<span class="lineno">  149 </span>
+<span class="lineno">  150 </span><span class="decl"><span class="istickedoff">scheduleEndpoint_ ep codeGen = void $ scheduleEndpoint ep codeGen</span></span>
+<span class="lineno">  151 </span>
+<span class="lineno">  152 </span>{- |Add to the process description information about instruction evaluation.
+<span class="lineno">  153 </span>Unsafe means: without instruction collision check and nextTick consistency.
+<span class="lineno">  154 </span>-}
+<span class="lineno">  155 </span><span class="decl"><span class="istickedoff">scheduleInstructionUnsafe at instr = do</span>
+<span class="lineno">  156 </span><span class="spaces">    </span><span class="istickedoff">Schedule{iProxy} &lt;- get</span>
+<span class="lineno">  157 </span><span class="spaces">    </span><span class="istickedoff">buf &lt;- scheduleStep at $ InstructionStep (instr `asProxyTypeOf` <span class="nottickedoff">iProxy</span>)</span>
+<span class="lineno">  158 </span><span class="spaces">    </span><span class="istickedoff">updateTick $ sup at + 1</span>
+<span class="lineno">  159 </span><span class="spaces">    </span><span class="istickedoff">return buf</span>
+<span class="lineno">  160 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  161 </span><span class="spaces">        </span><span class="istickedoff">updateTick tick = do</span>
+<span class="lineno">  162 </span><span class="spaces">            </span><span class="istickedoff">sch@Schedule{schProcess} &lt;- get</span>
+<span class="lineno">  163 </span><span class="spaces">            </span><span class="istickedoff">put</span>
+<span class="lineno">  164 </span><span class="spaces">                </span><span class="istickedoff">sch</span>
+<span class="lineno">  165 </span><span class="spaces">                    </span><span class="istickedoff">{ schProcess =</span>
+<span class="lineno">  166 </span><span class="spaces">                        </span><span class="istickedoff">schProcess</span>
+<span class="lineno">  167 </span><span class="spaces">                            </span><span class="istickedoff">{ nextTick_ = tick</span>
+<span class="lineno">  168 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  169 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
+<span class="lineno">  170 </span>
+<span class="lineno">  171 </span><span class="decl"><span class="istickedoff">scheduleInstructionUnsafe_ ti instr = void $ scheduleInstructionUnsafe ti instr</span></span>
+<span class="lineno">  172 </span>
+<span class="lineno">  173 </span>-- |Add to the process description information about nested step.
+<span class="lineno">  174 </span><span class="decl"><span class="istickedoff">scheduleNestedStep tag step@Step{pInterval} = do</span>
+<span class="lineno">  175 </span><span class="spaces">    </span><span class="istickedoff">pID &lt;- scheduleStep' (\uid -&gt; Step uid pInterval $ NestedStep tag step)</span>
+<span class="lineno">  176 </span><span class="spaces">    </span><span class="istickedoff">when (length pID /= 1) $ <span class="nottickedoff">error &quot;scheduleNestedStep internal error.&quot;</span></span>
+<span class="lineno">  177 </span><span class="spaces">    </span><span class="istickedoff">return $ <span class="nottickedoff">head pID</span></span></span>
+<span class="lineno">  178 </span>
+<span class="lineno">  179 </span>-- |Get a current slice of the computational process.
+<span class="lineno">  180 </span>getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
+<span class="lineno">  181 </span><span class="decl"><span class="istickedoff">getProcessSlice = do</span>
+<span class="lineno">  182 </span><span class="spaces">    </span><span class="istickedoff">Schedule{schProcess} &lt;- get</span>
+<span class="lineno">  183 </span><span class="spaces">    </span><span class="istickedoff">return schProcess</span></span>
+<span class="lineno">  184 </span>
+<span class="lineno">  185 </span>-- |Helper for instruction extraction from a rigid type variable.
+<span class="lineno">  186 </span>castInstruction :: (Typeable a, Typeable pu) =&gt; pu -&gt; a -&gt; Maybe (Instruction pu)
+<span class="lineno">  187 </span><span class="decl"><span class="istickedoff">castInstruction _pu i = cast i</span></span>
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE AllowAmbiguousTypes #-}
+<span class="lineno">    2 </span>{-# LANGUAGE DuplicateRecordFields #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    4 </span>{-# LANGUAGE InstanceSigs #-}
+<span class="lineno">    5 </span>{-# LANGUAGE LambdaCase #-}
+<span class="lineno">    6 </span>{-# LANGUAGE MultiParamTypeClasses #-}
+<span class="lineno">    7 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    8 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    9 </span>{-# LANGUAGE QuasiQuotes #-}
+<span class="lineno">   10 </span>{-# LANGUAGE RecordWildCards #-}
+<span class="lineno">   11 </span>{-# LANGUAGE ScopedTypeVariables #-}
+<span class="lineno">   12 </span>{-# LANGUAGE TupleSections #-}
+<span class="lineno">   13 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">   14 </span>
+<span class="lineno">   15 </span>{- |
+<span class="lineno">   16 </span>Module      : NITTA.Model.ProcessorUnits.Accum
+<span class="lineno">   17 </span>Description : Accumulator processor unit implementation
+<span class="lineno">   18 </span>Copyright   : (c) Aleksandr Penskoi, 2019
+<span class="lineno">   19 </span>License     : BSD3
+<span class="lineno">   20 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   21 </span>Stability   : experimental
+<span class="lineno">   22 </span>-}
+<span class="lineno">   23 </span>module NITTA.Model.ProcessorUnits.Accum (
+<span class="lineno">   24 </span>    Accum,
+<span class="lineno">   25 </span>    Ports (..),
+<span class="lineno">   26 </span>    IOPorts (..),
+<span class="lineno">   27 </span>) where
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>import Control.Monad (when)
+<span class="lineno">   30 </span>import Data.Bifunctor
+<span class="lineno">   31 </span>import Data.Default
+<span class="lineno">   32 </span>import Data.List (find, partition, (\\))
+<span class="lineno">   33 </span>import Data.Maybe (fromMaybe)
+<span class="lineno">   34 </span>import Data.Set (elems, fromList, member)
+<span class="lineno">   35 </span>import Data.String.Interpolate
+<span class="lineno">   36 </span>import Data.String.ToString
+<span class="lineno">   37 </span>import qualified Data.Text as T
+<span class="lineno">   38 </span>import NITTA.Intermediate.Functions
+<span class="lineno">   39 </span>import NITTA.Intermediate.Types
+<span class="lineno">   40 </span>import NITTA.Model.Problems
+<span class="lineno">   41 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   42 </span>import NITTA.Model.Time
+<span class="lineno">   43 </span>import NITTA.Project
+<span class="lineno">   44 </span>import NITTA.Utils
+<span class="lineno">   45 </span>import NITTA.Utils.ProcessDescription
+<span class="lineno">   46 </span>import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
+<span class="lineno">   47 </span>import Prettyprinter
+<span class="lineno">   48 </span>
+<span class="lineno">   49 </span>{- |Type that contains expression:
+<span class="lineno">   50 </span>
+<span class="lineno">   51 </span>@a + b = c@ is exression and it equals:
+<span class="lineno">   52 </span>    @[[(False, &quot;a&quot;), (False, &quot;b&quot;)], [(False, &quot;c&quot;)]]@
+<span class="lineno">   53 </span>
+<span class="lineno">   54 </span>@a + b = c; d - e = f@ is one expression too and it equals:
+<span class="lineno">   55 </span>    @[[(False, &quot;a&quot;), (False, &quot;b&quot;)], [(False, &quot;c&quot;)], [(False, &quot;d&quot;), (True, &quot;d&quot;)], [(False, &quot;f&quot;)]]@
+<span class="lineno">   56 </span>-}
+<span class="lineno">   57 </span>data Job v x = Job
+<span class="lineno">   58 </span>    { -- |Contains future parts expression to eval (c + d = e)
+<span class="lineno">   59 </span>      <span class="istickedoff"><span class="decl"><span class="istickedoff">tasks</span></span></span> :: [[(Bool, v)]]
+<span class="lineno">   60 </span>    , -- |Contain current parts expression (a + b = c)
+<span class="lineno">   61 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">current</span></span></span> :: [[(Bool, v)]]
+<span class="lineno">   62 </span>    , -- |Func of this expression
+<span class="lineno">   63 </span>      <span class="istickedoff"><span class="decl"><span class="istickedoff">func</span></span></span> :: F v x
+<span class="lineno">   64 </span>    , -- |Flag indicates when evaluation ended
+<span class="lineno">   65 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">calcEnd</span></span></span> :: Bool
+<span class="lineno">   66 </span>    }
+<span class="lineno">   67 </span>    deriving (<span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span>instance (Var v) =&gt; Show (Job v x) where
+<span class="lineno">   70 </span>    <span class="decl"><span class="nottickedoff">show Job{tasks, current, func, calcEnd} =</span>
+<span class="lineno">   71 </span><span class="spaces">        </span><span class="nottickedoff">[i|Job{tasks=#{ show' tasks }, current=#{ show' current }, func=#{ func }, calcEnd=#{ calcEnd }}|]</span>
+<span class="lineno">   72 </span><span class="spaces">        </span><span class="nottickedoff">where</span>
+<span class="lineno">   73 </span><span class="spaces">            </span><span class="nottickedoff">show' = map (map (second toString))</span></span>
+<span class="lineno">   74 </span>
+<span class="lineno">   75 </span>data Accum v x t = Accum
+<span class="lineno">   76 </span>    { -- |List of jobs (expressions)
+<span class="lineno">   77 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">work</span></span></span> :: [Job v x]
+<span class="lineno">   78 </span>    , -- |Current job
+<span class="lineno">   79 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentWork</span></span></span> :: Maybe (Job v x)
+<span class="lineno">   80 </span>    , -- |Process
+<span class="lineno">   81 </span>      <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
+<span class="lineno">   82 </span>    , -- |Flag is indicated when new job starts
+<span class="lineno">   83 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isInit</span></span></span> :: Bool
+<span class="lineno">   84 </span>    }
+<span class="lineno">   85 </span>
+<span class="lineno">   86 </span>instance (VarValTime v x t) =&gt; Pretty (Accum v x t) where
+<span class="lineno">   87 </span>    <span class="decl"><span class="nottickedoff">pretty a =</span>
+<span class="lineno">   88 </span><span class="spaces">        </span><span class="nottickedoff">[__i|</span>
+<span class="lineno">   89 </span><span class="spaces">            </span><span class="nottickedoff">Accum:</span>
+<span class="lineno">   90 </span><span class="spaces">                </span><span class="nottickedoff">work                 = #{ work a }</span>
+<span class="lineno">   91 </span><span class="spaces">                </span><span class="nottickedoff">currentWork          = #{ currentWork a }</span>
+<span class="lineno">   92 </span><span class="spaces">                </span><span class="nottickedoff">isInit               = #{ isInit a }</span>
+<span class="lineno">   93 </span><span class="spaces">                </span><span class="nottickedoff">#{ indent 4 $ pretty $ process_ a }</span>
+<span class="lineno">   94 </span><span class="spaces">            </span><span class="nottickedoff">|]</span></span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span>instance (VarValTime v x t) =&gt; Default (Accum v x t) where
+<span class="lineno">   97 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">   98 </span><span class="spaces">        </span><span class="istickedoff">Accum</span>
+<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">{ work = []</span>
+<span class="lineno">  100 </span><span class="spaces">            </span><span class="istickedoff">, currentWork = Nothing</span>
+<span class="lineno">  101 </span><span class="spaces">            </span><span class="istickedoff">, process_ = def</span>
+<span class="lineno">  102 </span><span class="spaces">            </span><span class="istickedoff">, isInit = <span class="nottickedoff">True</span></span>
+<span class="lineno">  103 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  104 </span>
+<span class="lineno">  105 </span>instance Default x =&gt; DefaultX (Accum v x t) x
+<span class="lineno">  106 </span>
+<span class="lineno">  107 </span><span class="decl"><span class="istickedoff">tryBindJob f@Acc{actions} =</span>
+<span class="lineno">  108 </span><span class="spaces">    </span><span class="istickedoff">Job</span>
+<span class="lineno">  109 </span><span class="spaces">        </span><span class="istickedoff">{ tasks = concat $ actionGroups actions</span>
+<span class="lineno">  110 </span><span class="spaces">        </span><span class="istickedoff">, current = []</span>
+<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">, func = packF f</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">, calcEnd = False</span>
+<span class="lineno">  113 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
+<span class="lineno">  114 </span>
+<span class="lineno">  115 </span><span class="decl"><span class="istickedoff">actionGroups [] = []</span>
+<span class="lineno">  116 </span><span class="spaces"></span><span class="istickedoff">actionGroups as =</span>
+<span class="lineno">  117 </span><span class="spaces">    </span><span class="istickedoff">let (pushs, as') = span isPush as</span>
+<span class="lineno">  118 </span><span class="spaces">        </span><span class="istickedoff">(pulls, as'') = span isPull as'</span>
+<span class="lineno">  119 </span><span class="spaces">     </span><span class="istickedoff">in [ map (\(Push sign (I v)) -&gt; (sign == Minus, v)) pushs</span>
+<span class="lineno">  120 </span><span class="spaces">        </span><span class="istickedoff">, concatMap (\(Pull (O vs)) -&gt; map (True,) $ elems vs) pulls</span>
+<span class="lineno">  121 </span><span class="spaces">        </span><span class="istickedoff">] :</span>
+<span class="lineno">  122 </span><span class="spaces">        </span><span class="istickedoff">actionGroups as''</span></span>
+<span class="lineno">  123 </span>
+<span class="lineno">  124 </span><span class="decl"><span class="istickedoff">endpointOptionsJob Job{tasks = []} = <span class="nottickedoff">[]</span></span>
+<span class="lineno">  125 </span><span class="spaces"></span><span class="istickedoff">endpointOptionsJob Job{tasks = (t : _), current = []} = map snd t</span>
+<span class="lineno">  126 </span><span class="spaces"></span><span class="istickedoff">endpointOptionsJob Job{tasks = (t : ts), current = (c : _)}</span>
+<span class="lineno">  127 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">null (t \\ c) &amp;&amp; <span class="nottickedoff">null ts</span></span> = <span class="nottickedoff">[]</span></span>
+<span class="lineno">  128 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">null $ t \\ c</span> = <span class="nottickedoff">map snd $ head ts</span></span>
+<span class="lineno">  129 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = map snd $ t \\ c</span></span>
+<span class="lineno">  130 </span>
+<span class="lineno">  131 </span><span class="decl"><span class="istickedoff">endpointDecisionJob j@Job{tasks = []} _ = <span class="nottickedoff">j</span></span>
+<span class="lineno">  132 </span><span class="spaces"></span><span class="istickedoff">endpointDecisionJob j@Job{tasks = tasks@(t : _), current = []} v = j{tasks = updateTasks current' tasks, current = current'}</span>
+<span class="lineno">  133 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  134 </span><span class="spaces">        </span><span class="istickedoff">([(neg, _)], _) = partition ((== v) . snd) t</span>
+<span class="lineno">  135 </span><span class="spaces">        </span><span class="istickedoff">current' = [[(neg, v)]]</span>
+<span class="lineno">  136 </span><span class="spaces"></span><span class="istickedoff">endpointDecisionJob j@Job{tasks = tasks@(t : ts), current = (c : cs)} v</span>
+<span class="lineno">  137 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">null $ t \\ c</span> = <span class="nottickedoff">endpointDecisionJob j{tasks = ts} v</span></span>
+<span class="lineno">  138 </span><span class="spaces">    </span><span class="istickedoff">| t \\ c /= t &amp;&amp; length t &gt; length c = j{tasks = updateTasks currentInsert tasks, current = currentInsert}</span>
+<span class="lineno">  139 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = j{tasks = updateTasks currentAdd tasks, current = currentAdd}</span>
+<span class="lineno">  140 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  141 </span><span class="spaces">        </span><span class="istickedoff">(lst, _) = partition ((== v) . snd) t</span>
+<span class="lineno">  142 </span><span class="spaces">        </span><span class="istickedoff">currentInsert = (lst ++ c) : <span class="nottickedoff">cs</span></span>
+<span class="lineno">  143 </span><span class="spaces">        </span><span class="istickedoff">currentAdd = lst : <span class="nottickedoff">c : cs</span></span></span>
+<span class="lineno">  144 </span>
+<span class="lineno">  145 </span><span class="decl"><span class="istickedoff">updateTasks (c : _) tasks@(t : ts)</span>
+<span class="lineno">  146 </span><span class="spaces">    </span><span class="istickedoff">| null $ t \\ c = ts</span>
+<span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = tasks</span>
+<span class="lineno">  148 </span><span class="spaces"></span><span class="istickedoff">updateTasks [] _ = <span class="nottickedoff">error &quot;Current is null&quot;</span></span>
+<span class="lineno">  149 </span><span class="spaces"></span><span class="istickedoff">updateTasks _ _ = <span class="nottickedoff">error &quot;Matching error updateTasks&quot;</span></span></span>
+<span class="lineno">  150 </span>
+<span class="lineno">  151 </span><span class="decl"><span class="istickedoff">toTarget = even . length</span></span>
+<span class="lineno">  152 </span><span class="decl"><span class="istickedoff">toSource = odd . length</span></span>
+<span class="lineno">  153 </span>
+<span class="lineno">  154 </span>instance (VarValTime v x t, Num x) =&gt; ProcessorUnit (Accum v x t) v x t where
+<span class="lineno">  155 </span>    <span class="decl"><span class="istickedoff">tryBind f pu@Accum{work}</span>
+<span class="lineno">  156 </span><span class="spaces">        </span><span class="istickedoff">| Just (Add a b c) &lt;- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Plus b, Pull c]) : work}</span>
+<span class="lineno">  157 </span><span class="spaces">        </span><span class="istickedoff">| Just (Sub a b c) &lt;- castF f = Right pu{work = tryBindJob (Acc [Push Plus a, Push Minus b, Pull c]) : work}</span>
+<span class="lineno">  158 </span><span class="spaces">        </span><span class="istickedoff">| Just f'@Acc{} &lt;- castF f = Right pu{work = tryBindJob f' : work}</span>
+<span class="lineno">  159 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Left $ <span class="nottickedoff">&quot;The function is unsupported by Accum: &quot; ++ show f</span></span></span>
+<span class="lineno">  160 </span>
+<span class="lineno">  161 </span>    <span class="decl"><span class="istickedoff">process = process_</span></span>
+<span class="lineno">  162 </span>
+<span class="lineno">  163 </span>instance (VarValTime v x t, Num x) =&gt; EndpointProblem (Accum v x t) v t where
+<span class="lineno">  164 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@Accum{currentWork = Just a@Job{tasks, calcEnd}}</span>
+<span class="lineno">  165 </span><span class="spaces">        </span><span class="istickedoff">| toTarget tasks = targets</span>
+<span class="lineno">  166 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">toSource tasks</span> = sources</span>
+<span class="lineno">  167 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  168 </span><span class="spaces">            </span><span class="istickedoff">tick = nextTick pu</span>
+<span class="lineno">  169 </span><span class="spaces">            </span><span class="istickedoff">targets = map (\v -&gt; EndpointSt (Target v) $ TimeConstraint (tick + 1 ... maxBound) (singleton 1)) (endpointOptionsJob a)</span>
+<span class="lineno">  170 </span><span class="spaces">            </span><span class="istickedoff">sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstraint (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]</span>
+<span class="lineno">  171 </span><span class="spaces">            </span><span class="istickedoff">tickSource True = tick + 1</span>
+<span class="lineno">  172 </span><span class="spaces">            </span><span class="istickedoff">tickSource _ = tick + 3</span>
+<span class="lineno">  173 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions p@Accum{work, currentWork = Nothing} =</span>
+<span class="lineno">  174 </span><span class="spaces">        </span><span class="istickedoff">concatMap (\a -&gt; endpointOptions p{currentWork = Just a}) work</span>
+<span class="lineno">  175 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions _ = <span class="nottickedoff">error &quot;Error in matching in endpointOptions function&quot;</span></span></span>
+<span class="lineno">  176 </span>
+<span class="lineno">  177 </span>    <span class="decl"><span class="istickedoff">endpointDecision</span>
+<span class="lineno">  178 </span><span class="spaces">        </span><span class="istickedoff">pu@Accum{currentWork = Just j@Job{tasks}, isInit}</span>
+<span class="lineno">  179 </span><span class="spaces">        </span><span class="istickedoff">d@EndpointSt{epRole = Target v, epAt}</span>
+<span class="lineno">  180 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">not (null tasks) &amp;&amp; toTarget tasks</span> =</span>
+<span class="lineno">  181 </span><span class="spaces">                </span><span class="istickedoff">let job@Job{tasks = tasks', current = (((neg, _) : _) : _)} = endpointDecisionJob j v</span>
+<span class="lineno">  182 </span><span class="spaces">                    </span><span class="istickedoff">sel = if isInit then ResetAndLoad neg else Load neg</span>
+<span class="lineno">  183 </span><span class="spaces">                    </span><span class="istickedoff">(_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  184 </span><span class="spaces">                        </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe epAt sel</span>
+<span class="lineno">  185 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>
+<span class="lineno">  186 </span><span class="spaces">                        </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  187 </span><span class="spaces">                        </span><span class="istickedoff">, currentWork = Just job{calcEnd = False}</span>
+<span class="lineno">  188 </span><span class="spaces">                        </span><span class="istickedoff">, isInit = null tasks'</span>
+<span class="lineno">  189 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  190 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision</span>
+<span class="lineno">  191 </span><span class="spaces">        </span><span class="istickedoff">pu@Accum{currentWork = Just j@Job{tasks, current, func}, process_}</span>
+<span class="lineno">  192 </span><span class="spaces">        </span><span class="istickedoff">d@EndpointSt{epRole = Source v, epAt}</span>
+<span class="lineno">  193 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">not (null current) &amp;&amp; toSource tasks</span> =</span>
+<span class="lineno">  194 </span><span class="spaces">                </span><span class="istickedoff">let job@Job{tasks = tasks'} = foldl endpointDecisionJob j (elems v)</span>
+<span class="lineno">  195 </span><span class="spaces">                    </span><span class="istickedoff">a = inf $ stepsInterval $ relatedEndpoints process_ $ variables func</span>
+<span class="lineno">  196 </span><span class="spaces">                    </span><span class="istickedoff">(_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  197 </span><span class="spaces">                        </span><span class="istickedoff">endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt -1) Out</span>
+<span class="lineno">  198 </span><span class="spaces">                        </span><span class="istickedoff">when (null tasks') $ do</span>
+<span class="lineno">  199 </span><span class="spaces">                            </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) func</span>
+<span class="lineno">  200 </span><span class="spaces">                            </span><span class="istickedoff">let low = endpoints ++ map <span class="nottickedoff">pID</span> (relatedEndpoints process_ $ variables func)</span>
+<span class="lineno">  201 </span><span class="spaces">                            </span><span class="istickedoff">establishVerticalRelations high low</span>
+<span class="lineno">  202 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  203 </span><span class="spaces">                        </span><span class="istickedoff">return <span class="nottickedoff">endpoints</span></span>
+<span class="lineno">  204 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>
+<span class="lineno">  205 </span><span class="spaces">                        </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  206 </span><span class="spaces">                        </span><span class="istickedoff">, currentWork = if null tasks' then Nothing else Just job{calcEnd = True}</span>
+<span class="lineno">  207 </span><span class="spaces">                        </span><span class="istickedoff">, isInit = null tasks'</span>
+<span class="lineno">  208 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  209 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Accum{work, currentWork = Nothing} d</span>
+<span class="lineno">  210 </span><span class="spaces">        </span><span class="istickedoff">| Just job &lt;- getJob work =</span>
+<span class="lineno">  211 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision pu{work = work \\ [job], currentWork = Just job{calcEnd = <span class="nottickedoff">False</span>}, isInit = True} d</span>
+<span class="lineno">  212 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  213 </span><span class="spaces">            </span><span class="istickedoff">getJob = find (\Job{func} -&gt; d `isIn` func)</span>
+<span class="lineno">  214 </span><span class="spaces">            </span><span class="istickedoff">e `isIn` f = oneOf (variables e) `member` variables f</span>
+<span class="lineno">  215 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
+<span class="lineno">  216 </span>
+<span class="lineno">  217 </span>instance Connected (Accum v x t) where
+<span class="lineno">  218 </span>    data Ports (Accum v x t) = AccumPorts {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">resetAcc</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">load</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">neg</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag}
+<span class="lineno">  219 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  220 </span>
+<span class="lineno">  221 </span>instance IOConnected (Accum v x t) where
+<span class="lineno">  222 </span>    data IOPorts (Accum v x t) = AccumIO deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  223 </span>
+<span class="lineno">  224 </span>instance Controllable (Accum v x t) where
+<span class="lineno">  225 </span>    data Instruction (Accum v x t) = ResetAndLoad Bool | Load Bool | Out deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  226 </span>
+<span class="lineno">  227 </span>    data Microcode (Accum v x t) = Microcode
+<span class="lineno">  228 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  229 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">resetAccSignal</span></span></span> :: Bool
+<span class="lineno">  230 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">loadSignal</span></span></span> :: Bool
+<span class="lineno">  231 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">negSignal</span></span></span> :: Maybe Bool
+<span class="lineno">  232 </span>        }
+<span class="lineno">  233 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  234 </span>
+<span class="lineno">  235 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues AccumPorts{..} Microcode{..} =</span>
+<span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">[ (resetAcc, Bool resetAccSignal)</span>
+<span class="lineno">  237 </span><span class="spaces">        </span><span class="istickedoff">, (load, Bool loadSignal)</span>
+<span class="lineno">  238 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  239 </span><span class="spaces">        </span><span class="istickedoff">, (neg, maybe Undef Bool negSignal)</span>
+<span class="lineno">  240 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  241 </span>
+<span class="lineno">  242 </span>    <span class="decl"><span class="istickedoff">usedPortTags AccumPorts{resetAcc, load, neg, oe} = [<span class="nottickedoff">resetAcc</span>, <span class="nottickedoff">load</span>, <span class="nottickedoff">neg</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  243 </span>
+<span class="lineno">  244 </span>    <span class="decl"><span class="istickedoff">takePortTags (resetAcc : load : neg : oe : _) _ = AccumPorts resetAcc load neg oe</span>
+<span class="lineno">  245 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  246 </span>
+<span class="lineno">  247 </span>instance Default (Microcode (Accum v x t)) where
+<span class="lineno">  248 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  249 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  250 </span><span class="spaces">            </span><span class="istickedoff">{ oeSignal = False</span>
+<span class="lineno">  251 </span><span class="spaces">            </span><span class="istickedoff">, resetAccSignal = False</span>
+<span class="lineno">  252 </span><span class="spaces">            </span><span class="istickedoff">, loadSignal = False</span>
+<span class="lineno">  253 </span><span class="spaces">            </span><span class="istickedoff">, negSignal = Nothing</span>
+<span class="lineno">  254 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  255 </span>
+<span class="lineno">  256 </span>instance UnambiguouslyDecode (Accum v x t) where
+<span class="lineno">  257 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (ResetAndLoad neg) = def{resetAccSignal = True, loadSignal = True, negSignal = Just neg}</span>
+<span class="lineno">  258 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Load neg) = def{resetAccSignal = False, loadSignal = True, negSignal = Just neg}</span>
+<span class="lineno">  259 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span></span>
+<span class="lineno">  260 </span>
+<span class="lineno">  261 </span>instance (Var v) =&gt; Locks (Accum v x t) v where
+<span class="lineno">  262 </span>    <span class="decl"><span class="istickedoff">locks Accum{currentWork = Nothing} = []</span>
+<span class="lineno">  263 </span><span class="spaces">    </span><span class="istickedoff">locks Accum{currentWork = Just job, work} = locks' job work</span>
+<span class="lineno">  264 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">locks' Job{tasks = []} _ = <span class="nottickedoff">[]</span></span>
+<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">locks' Job{current = []} _ = <span class="nottickedoff">[]</span></span>
+<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">locks' Job{tasks = (m : ms), current = (r : _)} other =</span>
+<span class="lineno">  268 </span><span class="spaces">                </span><span class="istickedoff">[ Lock{lockBy, locked}</span>
+<span class="lineno">  269 </span><span class="spaces">                </span><span class="istickedoff">| locked &lt;- concatMap (map snd) ms</span>
+<span class="lineno">  270 </span><span class="spaces">                </span><span class="istickedoff">, lockBy &lt;- map snd (m \\ r)</span>
+<span class="lineno">  271 </span><span class="spaces">                </span><span class="istickedoff">]</span>
+<span class="lineno">  272 </span><span class="spaces">                    </span><span class="istickedoff">++ [ Lock{lockBy, locked}</span>
+<span class="lineno">  273 </span><span class="spaces">                       </span><span class="istickedoff">| locked &lt;- concatMap (concatMap (map snd) . tasks) other</span>
+<span class="lineno">  274 </span><span class="spaces">                       </span><span class="istickedoff">, lockBy &lt;- map snd (m ++ r)</span>
+<span class="lineno">  275 </span><span class="spaces">                       </span><span class="istickedoff">]</span></span>
+<span class="lineno">  276 </span>
+<span class="lineno">  277 </span>instance (VarValTime v x t) =&gt; TargetSystemComponent (Accum v x t) where
+<span class="lineno">  278 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = &quot;pu_accum&quot;</span></span>
+<span class="lineno">  279 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_accum.v&quot;</span></span>
+<span class="lineno">  280 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  281 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  282 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  283 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
+<span class="lineno">  284 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  285 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  286 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
+<span class="lineno">  287 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just AccumPorts{..}</span>
+<span class="lineno">  288 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  289 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  290 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  291 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  292 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_accum \#</span></span></span>
+<span class="lineno">  293 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  294 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  295 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
+<span class="lineno">  296 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
+<span class="lineno">  297 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .rst( #{ sigRst } )</span></span></span>
+<span class="lineno">  298 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_resetAcc( #{ resetAcc } )</span></span></span>
+<span class="lineno">  299 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_load( #{ load } )</span></span></span>
+<span class="lineno">  300 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_neg( #{ neg } )</span></span></span>
+<span class="lineno">  301 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
+<span class="lineno">  302 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
+<span class="lineno">  303 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  304 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
+<span class="lineno">  305 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  306 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  307 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  308 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  309 </span>
+<span class="lineno">  310 </span>instance (Ord t) =&gt; WithFunctions (Accum v x t) (F v x) where
+<span class="lineno">  311 </span>    <span class="decl"><span class="istickedoff">functions Accum{process_, work} =</span>
+<span class="lineno">  312 </span><span class="spaces">        </span><span class="istickedoff">functions process_ ++ map func work</span></span>
+<span class="lineno">  313 </span>
+<span class="lineno">  314 </span>instance (VarValTime v x t) =&gt; Testable (Accum v x t) v x where
+<span class="lineno">  315 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  316 </span><span class="spaces">        </span><span class="istickedoff">let tbcSignalsConst = [&quot;resetAcc&quot;, &quot;load&quot;, &quot;oe&quot;, &quot;neg&quot;]</span>
+<span class="lineno">  317 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  318 </span><span class="spaces">            </span><span class="istickedoff">showMicrocode Microcode{resetAccSignal, loadSignal, oeSignal, negSignal} =</span>
+<span class="lineno">  319 </span><span class="spaces">                </span><span class="istickedoff">([i|resetAcc &lt;= #{ bool2verilog resetAccSignal };|] :: String)</span>
+<span class="lineno">  320 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| load &lt;= #{ bool2verilog loadSignal };|]</span>
+<span class="lineno">  321 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| oe &lt;= #{ bool2verilog oeSignal };|]</span>
+<span class="lineno">  322 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| neg &lt;= #{ bool2verilog $ fromMaybe False negSignal };|]</span>
+<span class="lineno">  323 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  324 </span><span class="spaces">            </span><span class="istickedoff">conf =</span>
+<span class="lineno">  325 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  326 </span><span class="spaces">                    </span><span class="istickedoff">{ tbcSignals = tbcSignalsConst</span>
+<span class="lineno">  327 </span><span class="spaces">                    </span><span class="istickedoff">, tbcPorts =</span>
+<span class="lineno">  328 </span><span class="spaces">                        </span><span class="istickedoff">AccumPorts</span>
+<span class="lineno">  329 </span><span class="spaces">                            </span><span class="istickedoff">{ resetAcc = SignalTag &quot;resetAcc&quot;</span>
+<span class="lineno">  330 </span><span class="spaces">                            </span><span class="istickedoff">, load = SignalTag &quot;load&quot;</span>
+<span class="lineno">  331 </span><span class="spaces">                            </span><span class="istickedoff">, oe = SignalTag &quot;oe&quot;</span>
+<span class="lineno">  332 </span><span class="spaces">                            </span><span class="istickedoff">, neg = SignalTag &quot;neg&quot;</span>
+<span class="lineno">  333 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  334 </span><span class="spaces">                    </span><span class="istickedoff">, tbcMC2verilogLiteral = T.pack . showMicrocode</span>
+<span class="lineno">  335 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  336 </span><span class="spaces">         </span><span class="istickedoff">in Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $ snippetTestBench prj conf</span></span>
+<span class="lineno">  337 </span>
+<span class="lineno">  338 </span>instance IOTestBench (Accum v x t) v x
+<span class="lineno">  339 </span>
+<span class="lineno">  340 </span>instance BreakLoopProblem (Accum v x t) v x
+<span class="lineno">  341 </span>instance ConstantFoldingProblem (Accum v x t) v x
+<span class="lineno">  342 </span>instance OptimizeAccumProblem (Accum v x t) v x
+<span class="lineno">  343 </span>instance ResolveDeadlockProblem (Accum v x t) v x
+
+</pre>
+</body>
+</html>

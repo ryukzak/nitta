@@ -1,0 +1,87 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    4 </span>{-# LANGUAGE FunctionalDependencies #-}
+<span class="lineno">    5 </span>{-# LANGUAGE GADTs #-}
+<span class="lineno">    6 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    7 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    8 </span>{-# LANGUAGE UndecidableInstances #-}
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>{- |
+<span class="lineno">   11 </span>Module      : NITTA.Intermediate.Variable
+<span class="lineno">   12 </span>Description : Types for variable representation
+<span class="lineno">   13 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   14 </span>License     : BSD3
+<span class="lineno">   15 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   16 </span>Stability   : experimental
+<span class="lineno">   17 </span>-}
+<span class="lineno">   18 </span>module NITTA.Intermediate.Variable (
+<span class="lineno">   19 </span>    Var,
+<span class="lineno">   20 </span>    Variables (..),
+<span class="lineno">   21 </span>    Suffix (..),
+<span class="lineno">   22 </span>) where
+<span class="lineno">   23 </span>
+<span class="lineno">   24 </span>import Data.Hashable
+<span class="lineno">   25 </span>import Data.List (stripPrefix)
+<span class="lineno">   26 </span>import qualified Data.Set as S
+<span class="lineno">   27 </span>import Data.String
+<span class="lineno">   28 </span>import Data.String.ToString
+<span class="lineno">   29 </span>import qualified Data.Text as T
+<span class="lineno">   30 </span>import Data.Typeable
+<span class="lineno">   31 </span>
+<span class="lineno">   32 </span>-- |Variable identifier. Used for simplify type description.
+<span class="lineno">   33 </span>type Var v = (Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v)
+<span class="lineno">   34 </span>
+<span class="lineno">   35 </span>-- |Type class of something, which is related to variables.
+<span class="lineno">   36 </span>class Variables a v | a -&gt; v where
+<span class="lineno">   37 </span>    -- |Get all related variables.
+<span class="lineno">   38 </span>    variables :: a -&gt; S.Set v
+<span class="lineno">   39 </span>
+<span class="lineno">   40 </span>-- |The type class for variable identifier modifications.
+<span class="lineno">   41 </span>class Suffix v where
+<span class="lineno">   42 </span>    -- |Make a buffered version of the variable. For example: @&quot;v&quot; -&gt; &quot;v@buf&quot;@
+<span class="lineno">   43 </span>    bufferSuffix :: v -&gt; v
+<span class="lineno">   44 </span>
+<span class="lineno">   45 </span>    -- |Buffer sequence length of a variable (@&quot;v&quot; -&gt; 0; &quot;v@buf&quot; -&gt; 1; &quot;b@buf@buf&quot; -&gt; 2@)
+<span class="lineno">   46 </span>    countSuffix :: v -&gt; Int
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>-- FIXME: unsafe, because can create duplicate variable. Solution options:
+<span class="lineno">   49 </span>--
+<span class="lineno">   50 </span>-- - unsafeIO and counter;
+<span class="lineno">   51 </span>-- - restriction on user's variable names + checking collision for each variable generation.
+<span class="lineno">   52 </span>instance Suffix String where
+<span class="lineno">   53 </span>    <span class="decl"><span class="istickedoff">bufferSuffix s = s ++ &quot;@buf&quot;</span></span>
+<span class="lineno">   54 </span>    <span class="decl"><span class="nottickedoff">countSuffix [] = 0</span>
+<span class="lineno">   55 </span><span class="spaces">    </span><span class="nottickedoff">countSuffix s</span>
+<span class="lineno">   56 </span><span class="spaces">        </span><span class="nottickedoff">| Just s' &lt;- stripPrefix &quot;@buf&quot; s = 1 + countSuffix s'</span>
+<span class="lineno">   57 </span><span class="spaces">        </span><span class="nottickedoff">| otherwise = countSuffix $ drop 1 s</span></span>
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>instance Suffix T.Text where
+<span class="lineno">   60 </span>    <span class="decl"><span class="istickedoff">bufferSuffix s = s &lt;&gt; &quot;@buf&quot;</span></span>
+<span class="lineno">   61 </span>    <span class="decl"><span class="istickedoff">countSuffix s | s == T.empty = 0</span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">countSuffix s</span>
+<span class="lineno">   63 </span><span class="spaces">        </span><span class="istickedoff">| Just s' &lt;- T.stripPrefix &quot;@buf&quot; s = 1 + countSuffix s'</span>
+<span class="lineno">   64 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = countSuffix $ T.drop 1 s</span></span>
+
+</pre>
+</body>
+</html>
