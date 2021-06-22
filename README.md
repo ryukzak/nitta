@@ -11,7 +11,7 @@ Kind: research pet project.
 
 Project status: early prototype.
 
-We develop the tool for generating and programming specialized non von Neumann CGRA processors for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
+We develop the tool for generating and programming specialized non-von Neumann CGRA processors used for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
 
 - Provide high speed and parallel execution of irregular algorithms (where GPU is not applicable) in hard real-time (clock accuracy).
 - Make the processor reconfigurable for different application domains.
@@ -221,7 +221,7 @@ $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | 10     | 168.750     | 1.125   |
 ```
 
-### Synthesis a target system for a specific algorithm:
+### Synthesis of a target system for a specific algorithm:
 ``` console
 $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 [NOTICE : NITTA] synthesis process...ok
