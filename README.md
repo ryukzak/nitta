@@ -27,7 +27,7 @@ Our future users can resolve the following tasks:
 
 Project page: <https://ryukzak.github.io/projects/nitta/>
 
-Publication: <https://ryukzak.github.io/publications/> (with NITTA tag)
+Publications: <https://ryukzak.github.io/publications/> (with NITTA tag)
 
 Maintainer: Aleksandr Penskoi <aleksandr.penskoi@gmail.com>
 
@@ -60,7 +60,7 @@ $ brew cask install gtkwave
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
-$ brew install npm
+$ brew install npm yarn
 $ npm install --global tern prettier
 ```
 
@@ -81,7 +81,7 @@ $ sudo apt-get install gtkwave
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
-$ sudo apt-get install npm
+$ sudo apt-get install npm yarn
 $ npm install --global tern prettier yarn
 ```
 
