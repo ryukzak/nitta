@@ -28,6 +28,7 @@ import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
@@ -106,7 +107,7 @@ main = do
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ma = (microarch io_sync :: BusNetwork String String (Attr (FX m b)) Int)
+                ma = (microarch io_sync :: BusNetwork T.Text T.Text (Attr (FX m b)) Int)
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -137,6 +138,7 @@ main = do
                     >>= \case
                         Left msg -> error msg
                         Right p -> return p
+
             when lsim $ logicalSimulation format frPrettyLog prj
         )
         $ parseFX type_

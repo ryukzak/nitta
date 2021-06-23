@@ -20,6 +20,7 @@ export const AppNavbar: FC<IAppNavbarProps> = (props) => {
         ></img>
         NITTA
       </Navbar.Brand>
+
       <Navbar.Collapse id="navbar-nav">
         <Nav className="mr-auto">
           {/* "as" property can help us to integrate React Router's NavLink */}
@@ -39,11 +40,10 @@ export const AppNavbar: FC<IAppNavbarProps> = (props) => {
             Debug
           </Nav.Link>
         </Nav>
-        <AppNavbarButtons />
       </Navbar.Collapse>
-      {/* <Navbar.Text className="mr-5 text-white">
-              Selected Node ID: {appContext.selectedSID || "None"}
-              </Navbar.Text> */}
+
+      <AppNavbarButtons />
+
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>
   );

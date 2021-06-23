@@ -29,6 +29,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.List (find, group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String
 import Data.String.ToString
 import qualified Data.String.Utils as S
 import Data.Text (Text, pack, unpack)
@@ -39,19 +40,16 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils (modify'_)
 import Text.Printf
 
-data FrontendResult x = FrontendResult
-    { frDataFlow :: DataFlowGraph String x
+data FrontendResult v x = FrontendResult
+    { frDataFlow :: DataFlowGraph v x
     , frTrace :: [TraceVar]
-    , frPrettyLog :: [HM.HashMap String x] -> [HM.HashMap String String]
+    , frPrettyLog :: [HM.HashMap v x] -> [HM.HashMap String String]
     }
 
 data TraceVar = TraceVar {tvFmt, tvVar :: Text}
     deriving (Show)
 
 defaultFmt = "%.3f"
-
--- |Unique variable aliases for data flow.
-type VarDict = M.Map Text ([String], [String])
 
 -- |List contains IO Function names to be printed by default.
 listFuncIO = ["send", "recieve"]
@@ -61,10 +59,10 @@ prettyLog traceVars hms = map prettyHM hms
         prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
         prettyX (v0, x) = do
             -- variables names end on #0, #1..., so we trim this suffix
-            let v = takeWhile (/= '#') v0
+            let v = takeWhile (/= '#') $ toString v0
             fmt <- v2fmt M.!? v
-            Just (v, printx fmt x)
-        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
+            Just (toString v, printx (T.unpack fmt) x)
+        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
         printx p x
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
             | 's' `elem` p = printf p $ show x
@@ -75,7 +73,6 @@ lua2functions src =
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
         ioVariables = getIOVariables defaultFmt algItems
-        varDict :: VarDict
         varDict =
             M.fromList $
                 map varRow $
@@ -106,7 +103,7 @@ lua2functions src =
             let vs = zipWith f lst [0 :: Int ..]
              in (x, (vs, vs))
         varRow _ = undefined
-        f v ix = toString v <> "#" <> show ix
+        f v ix = fromString (toString v <> "#" <> show ix)
 
 getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
     where

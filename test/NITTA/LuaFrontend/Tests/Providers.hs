@@ -52,7 +52,7 @@ traceLuaSimulationTestCase ::
     TestTree
 traceLuaSimulationTestCase _ name src expect =
     testCase name $
-        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult x = lua2functions src
+        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult String x = lua2functions src
             cntx = simulateDataFlowGraph 5 def def frDataFlow
             actual = log2md $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
          in expect @=? actual
@@ -62,7 +62,7 @@ luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pAttrIntX32 nam
 
 typedLuaTestCase ::
     (HasCallStack, Val x, Integral x) =>
-    BusNetwork String String x Int ->
+    BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->
     T.Text ->
@@ -71,14 +71,14 @@ typedLuaTestCase arch proxy name = typedIOLuaTestCase arch proxy name def
 
 typedIOLuaTestCase ::
     (HasCallStack, Val x, Integral x) =>
-    BusNetwork String String x Int ->
+    BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->
-    [(String, [x])] ->
+    [(T.Text, [x])] ->
     T.Text ->
     TestTree
 typedIOLuaTestCase arch proxy name received src = testCase name $ do
-    let wd = "lua_" ++ toModuleName name
+    let wd = "lua_" <> toModuleName name
     status <- runLua arch proxy wd received src
     case status of
         Left err -> assertFailure err
@@ -87,25 +87,25 @@ typedIOLuaTestCase arch proxy name received src = testCase name $ do
 -- Internals
 
 runLua ::
-    forall x.
-    (Val x, Integral x) =>
-    BusNetwork String String x Int ->
+    forall x v.
+    (Var v, Val x, Integral x) =>
+    BusNetwork T.Text v x Int ->
     Proxy x ->
     String ->
-    [(String, [x])] ->
+    [(v, [x])] ->
     T.Text ->
     IO (Either String ())
 runLua arch _proxy wd received src = do
     reportE <-
         runTargetSynthesisWithUniqName
-            (def :: TargetSynthesis String String x Int)
+            (def :: TargetSynthesis T.Text v x Int)
                 { tName = wd
                 , tMicroArch = arch
                 , tSourceCode = Just src
                 , tReceivedValues = received
                 }
     return $ case reportE of
-        Left err -> Left $ "synthesis process fail" <> err
+        Left err -> Left $ "synthesis process fail: " <> err
         Right TestbenchReport{tbStatus = True} -> Right ()
         Right report@TestbenchReport{tbCompilerDump}
             | T.length tbCompilerDump > 2 ->
