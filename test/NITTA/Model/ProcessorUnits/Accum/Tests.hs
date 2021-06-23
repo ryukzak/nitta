@@ -169,13 +169,138 @@ tests =
             decide $ consume "b"
             decide $ provide ["c"]
             assertSynthesisDone
-        , unitTestCase "accum neg smoke test" accumDef $ do
-            assign $ F.neg "a" ["b"]
-            setValue "a" 2
-            assertBindFullness
-            decide $ consume "a"
-            decide $ provide ["b"]
+        , unitTestCase "accum detail test" accumDef $ do
+            assign $
+                acc
+                    [ Push Plus $ I "a"
+                    , Push Plus $ I "b"
+                    , Pull $ O $ S.fromList ["c", "d"]
+                    , Push Plus $ I "e"
+                    , Pull $ O $ S.fromList ["f"]
+                    ]
+            setValues [("a", 2), ("b", 12), ("e", 3)]
+
+            assertLocks
+                [ Lock{locked = "c", lockBy = "a"}
+                , Lock{locked = "d", lockBy = "a"}
+                , Lock{locked = "e", lockBy = "a"}
+                , Lock{locked = "f", lockBy = "a"}
+                , Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "d", lockBy = "b"}
+                , Lock{locked = "e", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "b"}
+                ]
+            assertEndpoint 0 maxBound $ consume "a"
+            assertEndpoint 0 maxBound $ consume "b"
+            decideAt 0 0 $ consume "a"
+
+            assertLocks
+                [ Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "d", lockBy = "b"}
+                , Lock{locked = "e", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "b"}
+                ]
+            assertEndpoint 1 maxBound $ consume "b"
+            decideAt 1 1 $ consume "b"
+
+            assertLocks
+                [ Lock{locked = "e", lockBy = "c"}
+                , Lock{locked = "f", lockBy = "c"}
+                , Lock{locked = "e", lockBy = "d"}
+                , Lock{locked = "f", lockBy = "d"}
+                ]
+            assertEndpoint 4 maxBound $ provide ["c", "d"]
+            decideAt 4 4 $ provide ["c"]
+
+            assertLocks
+                [ Lock{locked = "e", lockBy = "d"}
+                , Lock{locked = "f", lockBy = "d"}
+                ]
+            assertEndpoint 5 maxBound $ provide ["d"]
+            decideAt 5 5 $ provide ["d"]
+
+            assertLocks [Lock{locked = "f", lockBy = "e"}]
+            assertEndpoint 6 maxBound $ consume "e"
+            decideAt 6 6 $ consume "e"
+
+            assertLocks []
+            assertEndpoint 9 maxBound $ provide ["f"]
+            decideAt 9 9 $ provide ["f"]
+
             assertSynthesisDone
+            assertCoSimulation
+        , unitTestCase "accum detail two function test" accumDef $ do
+            assign $ add "a" "b" ["c"]
+            setValue "a" 2
+            setValue "b" 12
+
+            assign $ add "d" "e" ["f"]
+            setValue "d" 3
+            setValue "e" 5
+
+            assertLocks
+                [ Lock{locked = "c", lockBy = "a"}
+                , Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "d"}
+                , Lock{locked = "f", lockBy = "e"}
+                ]
+            assertEndpoint 0 maxBound $ consume "a"
+            assertEndpoint 0 maxBound $ consume "b"
+            assertEndpoint 0 maxBound $ consume "d"
+            assertEndpoint 0 maxBound $ consume "e"
+            decideAt 0 0 $ consume "a"
+
+            assertLocks
+                [ Lock{locked = "c", lockBy = "b"}
+                , Lock{locked = "d", lockBy = "b"}
+                , Lock{locked = "e", lockBy = "b"}
+                , Lock{locked = "f", lockBy = "b"}
+                ]
+            assertEndpoint 1 maxBound $ consume "b"
+            assertAllEndpointRoles [consume "b"]
+            decideAt 1 1 $ consume "b"
+
+            assertLocks
+                [ Lock{locked = "d", lockBy = "c"}
+                , Lock{locked = "e", lockBy = "c"}
+                , Lock{locked = "f", lockBy = "c"}
+                ]
+            assertEndpoint 4 maxBound $ provide ["c"]
+            assertAllEndpointRoles [provide ["c"]]
+
+            decideAt 4 4 $ provide ["c"]
+            assertLocks
+                [ Lock{locked = "f", lockBy = "e"}
+                , Lock{locked = "f", lockBy = "d"}
+                ]
+            assertEndpoint 5 maxBound $ consume "d"
+            assertEndpoint 5 maxBound $ consume "e"
+            decideAt 5 5 $ consume "d"
+
+            assertLocks [Lock{locked = "f", lockBy = "e"}]
+            assertEndpoint 6 maxBound $ consume "e"
+            decideAt 6 6 $ consume "e"
+
+            assertLocks []
+            assertEndpoint 9 maxBound $ provide ["f"]
+            decideAt 9 9 $ provide ["f"]
+
+            assertCoSimulation
+            assertSynthesisDone
+        , unitTestCase "accum neg test" accumDef $ do
+            assign $ F.neg "a" ["c"]
+            setValue "a" 2
+
+            assertEndpoint 0 maxBound $ consume "a"
+            assertLocks [Lock{locked = "c", lockBy = "a"}]
+            decideAt 0 0 $ consume "a"
+
+            assertEndpoint 3 maxBound $ provide ["c"]
+            assertLocks []
+            decideAt 3 3 $ provide ["c"]
+
+            assertLocks []
+            assertCoSimulation
         ]
     where
         accumDef = def :: Accum T.Text Int Int
