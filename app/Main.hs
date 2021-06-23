@@ -65,6 +65,7 @@ data Nitta = Nitta
     , fsim :: Bool
     , lsim :: Bool
     , verbose :: Bool
+    , extra_verbose :: Bool
     , output_path :: FilePath
     , format :: String
     }
@@ -75,18 +76,47 @@ deriving instance Data IOSynchronization
 nittaArgs =
     Nitta
         { filename = def &= argPos 0 &= typFile
-        , type_ = "fx32.32" &= name "t" &= help "Data type (default: 'fx32.32')"
-        , io_sync = Sync &= help "IO synchronization mode: sync, async, onboard"
-        , port = 0 &= help "Run nitta server for UI on specific port (by default - not run)"
-        , templates = defTemplates &= help ("Specify target platform templates (':', default: '" <> defTemplates <> "')")
-        , n = 10 &= help "Number of computation cycles for simulation and testbench"
-        , fsim = False &= help "Functional simulation with trace"
-        , lsim = False &= help "Logical (HDL) simulation with trace"
-        , verbose = False &= help "Verbose"
-        , output_path = "gen" &= help "Place the output into specified directory"
-        , format = "md" &= help "Specify logical (HDL) or functional simulation output format: md, json, csv (default: 'md')"
+        , output_path =
+            "gen" &= typ "PATH" &= help "Target system path"
+                &= groupname "Common flags"
+        , port =
+            0 &= help "Run nitta server for UI on specific port (by default - not run)"
+                &= groupname "Common flags"
+        , type_ =
+            "fx32.32" &= name "t" &= typ "fxM.B" &= help "Data type (default: 'fx32.32')"
+                &= groupname "Target system configuration"
+        , io_sync =
+            Sync &= help "IO synchronization mode"
+                &= explicit
+                &= name "io-sync"
+                &= typ "sync|async|onboard"
+                &= groupname "Target system configuration"
+        , templates =
+            defTemplates &= typ "PATH[:PATH]" &= help ("Target platform templates (default: '" <> defTemplates <> "')")
+                &= groupname "Target system configuration"
+        , fsim =
+            False &= name "f" &= help "Functional simulation with trace"
+                &= groupname "Simulation"
+        , lsim =
+            False &= name "l" &= help "Logical (HDL) simulation with trace"
+                &= groupname "Simulation"
+        , format =
+            "md" &= help "Simulation output format (default: 'md')"
+                &= typ "md|json|csv"
+                &= groupname "Simulation"
+        , n =
+            10 &= help "Number of simulation cycles"
+                &= groupname "Simulation"
+        , verbose =
+            False &= help "Verbose"
+                &= groupname "Other"
+        , extra_verbose =
+            False &= help "Extra verbose"
+                &= groupname "Other"
         }
-        &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
+        &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
+        &= helpArg [groupname "Other"]
+        &= versionArg [groupname "Other"]
     where
         defTemplates = S.join ":" defProjectTemplates
 
@@ -97,9 +127,9 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates, format} <-
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
         cmdArgs nittaArgs
-    setupLogger verbose
+    setupLogger verbose extra_verbose
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
@@ -143,8 +173,11 @@ main = do
         )
         $ parseFX type_
 
-setupLogger verbose = do
-    let level = if verbose then DEBUG else NOTICE
+setupLogger verbose extra = do
+    let level = case (verbose, extra) of
+            (_, True) -> DEBUG
+            (True, _) -> NOTICE
+            _ -> WARNING
     h <-
         streamHandler stdout level >>= \lh ->
             return $
