@@ -25,15 +25,17 @@ externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
 {-# NOINLINE externalTestNamesMap #-}
-externalTestNamesMap = unsafePerformIO $ atomically SMap.empty
+externalTestNamesMap = unsafePerformIO $ SMap.fromList []
 
 uniqTestPath :: FilePath -> IO FilePath
 uniqTestPath filePath = do
-    countEither <- atomically $ SMap.lookup filePath externalTestNamesMap
+    atomically $ helper filePath
+    
+helper filePath = do
+    countEither <- SMap.lookup filePath externalTestNamesMap
     case countEither of
-        Nothing    -> atomically $ notExist filePath 
-        Just count -> atomically $ exist filePath count 
-
+        Nothing    -> notExist filePath 
+        Just count -> exist filePath count 
     where
         notExist :: FilePath -> STM FilePath
         notExist f = do
