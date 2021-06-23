@@ -1,5 +1,5 @@
 import { RequestStatusInfo } from "components/utils/RequestStatusInfo";
-import React, { ReactNode } from "react";
+import React from "react";
 
 export interface NoResultRendererData {
   errorMessage: string | null;
@@ -8,8 +8,8 @@ export interface NoResultRendererData {
 
 interface RequestResultProps<TResult> {
   result: TResult | null;
-  resultRenderer: (result: TResult) => ReactNode;
-  noResultRenderer: (() => ReactNode) | NoResultRendererData;
+  resultRenderer: (result: TResult) => JSX.Element;
+  noResultRenderer: (() => JSX.Element) | NoResultRendererData;
 }
 
 export function RequestResult<TResult>(props: RequestResultProps<TResult>) {
