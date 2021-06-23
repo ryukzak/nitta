@@ -17,13 +17,33 @@ module NITTA.Model.Tests.Internals (
 import Data.Atomics.Counter (incrCounter, newCounter)
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
+import GHC.Conc
+import Control.Concurrent.STM.Map as SMap
 
--- TODO: replace by function like: uniqTestPath :: FilePath -> IO FilePath
 
--- |Dirty hack to avoid collision with parallel QuickCheck.
 externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
+{-# NOINLINE externalTestNamesMap #-}
+externalTestNamesMap = unsafePerformIO $ atomically SMap.empty
+
+uniqTestPath :: FilePath -> IO FilePath
+uniqTestPath filePath = do
+    countEither <- atomically $ SMap.lookup filePath externalTestNamesMap
+    case countEither of
+        Nothing    -> atomically $ notExist filePath 
+        Just count -> atomically $ exist filePath count 
+
+    where
+        notExist :: FilePath -> STM FilePath
+        notExist f = do
+            SMap.insert f (0 :: Int) externalTestNamesMap
+            return f
+        exist :: FilePath -> Int -> STM FilePath
+        exist f count = do
+            SMap.insert f (count + 1) externalTestNamesMap
+            return (f <> "_" <> show (count + 1))
+
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
-    i <- incrCounter 1 externalTestCntr
-    runTargetSynthesis t{tName = tName <> "_" <> show i}
+    name <- uniqTestPath tName
+    runTargetSynthesis t{tName = name}
