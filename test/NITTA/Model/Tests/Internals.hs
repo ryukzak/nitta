@@ -14,9 +14,9 @@ module NITTA.Model.Tests.Internals (
     runTargetSynthesisWithUniqName,
 ) where
 
-import Control.Concurrent.STM.Map as SMap
 import Data.Atomics.Counter (incrCounter, newCounter)
-import GHC.Conc
+import Data.Map as M
+import GHC.Conc as Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -24,26 +24,23 @@ externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
 {-# NOINLINE externalTestNamesMap #-}
-externalTestNamesMap = unsafePerformIO $ SMap.fromList []
+externalTestNamesMap = unsafePerformIO $ newTVarIO M.empty
 
 uniqTestPath :: FilePath -> IO FilePath
 uniqTestPath filePath = do
-    atomically $ helper filePath
-
-helper filePath = do
-    countEither <- SMap.lookup filePath externalTestNamesMap
-    case countEither of
-        Nothing -> notExist filePath
-        Just count -> exist filePath count
+    m <- readTVarIO externalTestNamesMap
+    case M.lookup filePath m of
+        Nothing -> notExist filePath m
+        Just count -> exist filePath (count + 1) m
     where
-        notExist :: FilePath -> STM FilePath
-        notExist f = do
-            SMap.insert f (0 :: Int) externalTestNamesMap
+        notExist :: FilePath -> Map FilePath Int -> IO FilePath
+        notExist f m = do
+            _ <- return $ M.insert f (0 :: Int) m
             return f
-        exist :: FilePath -> Int -> STM FilePath
-        exist f count = do
-            SMap.insert f (count + 1) externalTestNamesMap
-            return (f <> "_" <> show (count + 1))
+        exist :: FilePath -> Int -> Map FilePath Int -> IO FilePath
+        exist f newCount m = do
+            _ <- return $ M.insert f newCount m
+            return (f <> "_" <> show newCount)
 
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
     name <- uniqTestPath tName
