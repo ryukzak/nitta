@@ -15,18 +15,21 @@ interface RequestResultProps<TResult> {
 export function RequestResult<TResult>(props: RequestResultProps<TResult>) {
   const { result, resultRenderer, noResultRenderer } = props;
 
-  const noResultDisplay =
-    typeof noResultRenderer === "function" ? (
-      noResultRenderer()
-    ) : (
-      <div className="my-5">
-        <RequestStatusInfo
-          errorMessage={noResultRenderer.errorMessage}
-          refreshButtonProps={{ onClick: noResultRenderer.refreshRequestData }}
-          isSpinnerCentered={false}
-        />
-      </div>
-    );
+  if (result) {
+    return resultRenderer(result);
+  }
 
-  return <>{result ? resultRenderer(result) : noResultDisplay}</>;
+  if (typeof noResultRenderer === "function") {
+    return noResultRenderer();
+  }
+
+  return (
+    <div className="my-5">
+      <RequestStatusInfo
+        errorMessage={noResultRenderer.errorMessage}
+        refreshButtonProps={{ onClick: noResultRenderer.refreshRequestData }}
+        isSpinnerCentered={false}
+      />
+    </div>
+  );
 }
