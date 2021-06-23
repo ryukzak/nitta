@@ -1,6 +1,9 @@
-name: test_nitta
+name: Tests
 
 on: [push]
+
+env:
+  GH_PAGES_DIR: gh-pages
 
 jobs:
 
@@ -31,7 +34,10 @@ jobs:
         run: sudo apt-get install iverilog
 
       - name: Build & test nitta backend
-        run: stack build --haddock --no-haddock-deps --test --keep-going --test-suite-timeout 600 --copy-bins
+        run: stack build --haddock --no-haddock-deps --test --keep-going --test-suite-timeout 600 --copy-bins --coverage
+
+      - name: Generate test coverage report
+        run: stack hpc report nitta
 
       - name: Check examples by doctest
         run: |
@@ -59,6 +65,28 @@ jobs:
         timeout-minutes: 5
         run: yarn build
 
+      - name: Copy doc to GH_PAGES_DIR
+        run: |
+          mkdir -p "${{ env.GH_PAGES_DIR }}/haddock/"
+          cp -r $(stack path --dist-dir)/doc/html/nitta "$_"
+
+      - name: Copy test coverage to GH_PAGES_DIR
+        run: cp -r $(stack path --local-hpc-root)/combined/custom ${{ env.GH_PAGES_DIR }}/hpc
+      
+      - name: Copy API doc to GH_PAGES_DIR
+        run: |
+          mkdir -p "${{ env.GH_PAGES_DIR }}/rest-api/"
+          cp ./web/src/services/gen/rest_api.markdown "$_"
+
+      - name: Copy README.md to GH_PAGES_DIR
+        run: cp README.md ${{ env.GH_PAGES_DIR }}/
+
+      - name: Publish generated content to GitHub Pages
+        if: ${{ github.ref == 'refs/heads/master'}}
+        uses: JamesIves/github-pages-deploy-action@4.1.1
+        with:
+          folder: ${{ env.GH_PAGES_DIR }}
+          branch: gh-pages
 
   hlint:
     runs-on: ubuntu-latest
