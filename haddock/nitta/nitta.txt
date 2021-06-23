@@ -945,6 +945,7 @@ instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Accum.Acc v x) v
 instance (NITTA.Intermediate.Variable.Var v, GHC.Num.Num x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Accum.Acc v x) v x
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Accum.Action v)
+instance NITTA.Intermediate.Variable.Variables (NITTA.Intermediate.Functions.Accum.Action v) v
 instance GHC.Show.Show NITTA.Intermediate.Functions.Accum.Sign
 
 
@@ -2264,7 +2265,7 @@ data Accum v x t
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
 data family IOPorts pu :: Type
-instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Accum.Job v x)
+instance GHC.Show.Show NITTA.Model.ProcessorUnits.Accum.JobState
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
 instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
@@ -2272,6 +2273,7 @@ instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
 instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
+instance NITTA.Model.Time.VarValTime v x t => GHC.Show.Show (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance NITTA.Model.Time.VarValTime v x t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.Accum.Accum v x t) x
 instance (NITTA.Model.Time.VarValTime v x t, GHC.Num.Num x) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x t
