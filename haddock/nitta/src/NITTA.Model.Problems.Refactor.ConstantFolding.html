@@ -64,11 +64,11 @@ After compile-time eval optimization
 </span><span id="line-64"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html"><span class="hs-identifier">NITTA.Intermediate.Functions</span></a></span><span>
 </span><span id="line-65"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
 </span><span id="line-66"></span><span>
-</span><span id="line-67"></span><span id="local-6989586621680124149"><span id="local-6989586621680124150"></span></span><span class="hs-keyword">data</span><span> </span><span id="ConstantFolding"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-var">ConstantFolding</span></a></span></span><span> </span><span id="local-6989586621680124205"><span class="annot"><a href="#local-6989586621680124205"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124204"><span class="annot"><a href="#local-6989586621680124204"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConstantFolding"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-var">ConstantFolding</span></a></span></span><span>
+</span><span id="line-67"></span><span id="local-6989586621680124237"><span id="local-6989586621680124238"></span></span><span class="hs-keyword">data</span><span> </span><span id="ConstantFolding"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-var">ConstantFolding</span></a></span></span><span> </span><span id="local-6989586621680124293"><span class="annot"><a href="#local-6989586621680124293"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124292"><span class="annot"><a href="#local-6989586621680124292"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConstantFolding"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-var">ConstantFolding</span></a></span></span><span>
 </span><span id="line-68"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="cRefOld"><span class="annot"><span class="annottext">ConstantFolding v x -&gt; [F v x]
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefOld"><span class="hs-identifier hs-var hs-var">cRefOld</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124205"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124204"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefOld"><span class="hs-identifier hs-var hs-var">cRefOld</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124293"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124292"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="cRefNew"><span class="annot"><span class="annottext">ConstantFolding v x -&gt; [F v x]
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefNew"><span class="hs-identifier hs-var hs-var">cRefNew</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124205"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124204"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefNew"><span class="hs-identifier hs-var hs-var">cRefNew</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124293"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124292"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-70"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-71"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. ConstantFolding v x -&gt; Rep (ConstantFolding v x) x)
 -&gt; (forall x. Rep (ConstantFolding v x) x -&gt; ConstantFolding v x)
@@ -81,7 +81,7 @@ forall v x x. Rep (ConstantFolding v x) x -&gt; ConstantFolding v x
 forall v x x. ConstantFolding v x -&gt; Rep (ConstantFolding v x) x
 $cto :: forall v x x. Rep (ConstantFolding v x) x -&gt; ConstantFolding v x
 $cfrom :: forall v x x. ConstantFolding v x -&gt; Rep (ConstantFolding v x) x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124137"><span id="local-6989586621680124139"><span id="local-6989586621680124141"><span class="annot"><span class="annottext">Int -&gt; ConstantFolding v x -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124225"><span id="local-6989586621680124227"><span id="local-6989586621680124229"><span class="annot"><span class="annottext">Int -&gt; ConstantFolding v x -&gt; ShowS
 [ConstantFolding v x] -&gt; ShowS
 ConstantFolding v x -&gt; String
 (Int -&gt; ConstantFolding v x -&gt; ShowS)
@@ -99,7 +99,7 @@ show :: ConstantFolding v x -&gt; String
 $cshow :: forall v x. ConstantFolding v x -&gt; String
 showsPrec :: Int -&gt; ConstantFolding v x -&gt; ShowS
 $cshowsPrec :: forall v x. Int -&gt; ConstantFolding v x -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124132"><span id="local-6989586621680124134"><span class="annot"><span class="annottext">ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124220"><span id="local-6989586621680124222"><span class="annot"><span class="annottext">ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool
 (ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool)
 -&gt; (ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool)
 -&gt; Eq (ConstantFolding v x)
@@ -111,28 +111,28 @@ $c/= :: forall v x. ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool
 $c== :: forall v x. ConstantFolding v x -&gt; ConstantFolding v x -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-72"></span><span>
-</span><span id="line-73"></span><span class="hs-keyword">class</span><span> </span><span id="ConstantFoldingProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFoldingProblem"><span class="hs-identifier hs-var">ConstantFoldingProblem</span></a></span></span><span> </span><span id="local-6989586621680124228"><span class="annot"><a href="#local-6989586621680124228"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680124227"><span class="annot"><a href="#local-6989586621680124227"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124226"><span class="annot"><a href="#local-6989586621680124226"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680124228"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124227"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124226"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span class="hs-keyword">class</span><span> </span><span id="ConstantFoldingProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFoldingProblem"><span class="hs-identifier hs-var">ConstantFoldingProblem</span></a></span></span><span> </span><span id="local-6989586621680124316"><span class="annot"><a href="#local-6989586621680124316"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680124315"><span class="annot"><a href="#local-6989586621680124315"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124314"><span class="annot"><a href="#local-6989586621680124314"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680124316"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124315"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124314"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-74"></span><span>    </span><span class="hs-comment">-- |Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done</span><span>
-</span><span id="line-75"></span><span>    </span><span id="constantFoldingOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingOptions"><span class="hs-identifier hs-type">constantFoldingOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124228"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124227"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124226"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-76"></span><span>    </span><span id="local-6989586621680124129"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingOptions"><span class="hs-identifier hs-var hs-var">constantFoldingOptions</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-75"></span><span>    </span><span id="constantFoldingOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingOptions"><span class="hs-identifier hs-type">constantFoldingOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124316"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124315"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124314"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-76"></span><span>    </span><span id="local-6989586621680124217"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingOptions"><span class="hs-identifier hs-var hs-var">constantFoldingOptions</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-77"></span><span>
 </span><span id="line-78"></span><span>    </span><span class="hs-comment">-- |Function takes 'ConstantFolding' and modify 'DataFlowGraph'</span></span><span>
-</span><span id="line-79"></span><span>    </span><span id="constantFoldingDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingDecision"><span class="hs-identifier hs-type">constantFoldingDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124228"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124227"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124226"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124228"><span class="hs-identifier hs-type">u</span></a></span><span>
-</span><span id="line-80"></span><span>    </span><span id="local-6989586621680124127"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingDecision"><span class="hs-identifier hs-var hs-var">constantFoldingDecision</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; u
+</span><span id="line-79"></span><span>    </span><span id="constantFoldingDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingDecision"><span class="hs-identifier hs-type">constantFoldingDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124316"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124315"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124314"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124316"><span class="hs-identifier hs-type">u</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span id="local-6989586621680124215"><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingDecision"><span class="hs-identifier hs-var hs-var">constantFoldingDecision</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; u
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;not implemented&quot;</span></span></span><span>
 </span><span id="line-81"></span><span>
-</span><span id="line-82"></span><span id="local-6989586621680124124"><span id="local-6989586621680124125"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124125"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124124"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFoldingProblem"><span class="hs-identifier hs-type">ConstantFoldingProblem</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124125"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124124"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><a href="#local-6989586621680124125"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124124"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-83"></span><span>    </span><span id="local-6989586621680124120"><span class="annot"><span class="annottext">constantFoldingOptions :: [F v x] -&gt; [ConstantFolding v x]
-</span><a href="#local-6989586621680124120"><span class="hs-identifier hs-var hs-var hs-var hs-var">constantFoldingOptions</span></a></span></span><span> </span><span id="local-6989586621680124119"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680124119"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-84"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680124118"><span class="annot"><span class="annottext">clusters :: [[F v x]]
-</span><a href="#local-6989586621680124118"><span class="hs-identifier hs-var hs-var">clusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [[F v x]]
+</span><span id="line-82"></span><span id="local-6989586621680124212"><span id="local-6989586621680124213"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124213"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124212"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFoldingProblem"><span class="hs-identifier hs-type">ConstantFoldingProblem</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124213"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124212"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><a href="#local-6989586621680124213"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124212"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-83"></span><span>    </span><span id="local-6989586621680124208"><span class="annot"><span class="annottext">constantFoldingOptions :: [F v x] -&gt; [ConstantFolding v x]
+</span><a href="#local-6989586621680124208"><span class="hs-identifier hs-var hs-var hs-var hs-var">constantFoldingOptions</span></a></span></span><span> </span><span id="local-6989586621680124207"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680124207"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-84"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680124206"><span class="annot"><span class="annottext">clusters :: [[F v x]]
+</span><a href="#local-6989586621680124206"><span class="hs-identifier hs-var hs-var">clusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [[F v x]]
 forall v x. (Typeable v, Typeable x, Ord v) =&gt; [F v x] -&gt; [[F v x]]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#selectClusters"><span class="hs-identifier hs-var">selectClusters</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124119"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-85"></span><span>            </span><span id="local-6989586621680124116"><span class="annot"><span class="annottext">evaluatedClusters :: [[F v x]]
-</span><a href="#local-6989586621680124116"><span class="hs-identifier hs-var hs-var">evaluatedClusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; [F v x]) -&gt; [[F v x]] -&gt; [[F v x]]
+</span><a href="#local-6989586621680124207"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-85"></span><span>            </span><span id="local-6989586621680124204"><span class="annot"><span class="annottext">evaluatedClusters :: [[F v x]]
+</span><a href="#local-6989586621680124204"><span class="hs-identifier hs-var hs-var">evaluatedClusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; [F v x]) -&gt; [[F v x]] -&gt; [[F v x]]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x]
 forall v x.
@@ -140,44 +140,44 @@ forall v x.
  Ord v) =&gt;
 [F v x] -&gt; [F v x]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#evalCluster"><span class="hs-identifier hs-var">evalCluster</span></a></span><span> </span><span class="annot"><span class="annottext">[[F v x]]
-</span><a href="#local-6989586621680124118"><span class="hs-identifier hs-var">clusters</span></a></span><span>
-</span><span id="line-86"></span><span>            </span><span id="local-6989586621680124114"><span class="annot"><span class="annottext">zipOfClusters :: [([F v x], [F v x])]
-</span><a href="#local-6989586621680124114"><span class="hs-identifier hs-var hs-var">zipOfClusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[[F v x]] -&gt; [[F v x]] -&gt; [([F v x], [F v x])]
+</span><a href="#local-6989586621680124206"><span class="hs-identifier hs-var">clusters</span></a></span><span>
+</span><span id="line-86"></span><span>            </span><span id="local-6989586621680124202"><span class="annot"><span class="annottext">zipOfClusters :: [([F v x], [F v x])]
+</span><a href="#local-6989586621680124202"><span class="hs-identifier hs-var hs-var">zipOfClusters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[[F v x]] -&gt; [[F v x]] -&gt; [([F v x], [F v x])]
 forall a b. [a] -&gt; [b] -&gt; [(a, b)]
 </span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="annot"><span class="annottext">[[F v x]]
-</span><a href="#local-6989586621680124118"><span class="hs-identifier hs-var">clusters</span></a></span><span> </span><span class="annot"><span class="annottext">[[F v x]]
-</span><a href="#local-6989586621680124116"><span class="hs-identifier hs-var">evaluatedClusters</span></a></span><span>
-</span><span id="line-87"></span><span>            </span><span id="local-6989586621680124113"><span class="annot"><span class="annottext">filteredZip :: [([F v x], [F v x])]
-</span><a href="#local-6989586621680124113"><span class="hs-identifier hs-var hs-var">filteredZip</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(([F v x], [F v x]) -&gt; Bool)
+</span><a href="#local-6989586621680124206"><span class="hs-identifier hs-var">clusters</span></a></span><span> </span><span class="annot"><span class="annottext">[[F v x]]
+</span><a href="#local-6989586621680124204"><span class="hs-identifier hs-var">evaluatedClusters</span></a></span><span>
+</span><span id="line-87"></span><span>            </span><span id="local-6989586621680124201"><span class="annot"><span class="annottext">filteredZip :: [([F v x], [F v x])]
+</span><a href="#local-6989586621680124201"><span class="hs-identifier hs-var hs-var">filteredZip</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(([F v x], [F v x]) -&gt; Bool)
 -&gt; [([F v x], [F v x])] -&gt; [([F v x], [F v x])]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-identifier">_</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">;</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[([F v x], [F v x])]
-</span><a href="#local-6989586621680124114"><span class="hs-identifier hs-var">zipOfClusters</span></a></span><span>
-</span><span id="line-88"></span><span>            </span><span id="local-6989586621680124112"><span class="annot"><span class="annottext">options :: [ConstantFolding v x]
-</span><a href="#local-6989586621680124112"><span class="hs-identifier hs-var hs-var">options</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ConstantFolding :: forall v x. [F v x] -&gt; [F v x] -&gt; ConstantFolding v x
+</span><a href="#local-6989586621680124202"><span class="hs-identifier hs-var">zipOfClusters</span></a></span><span>
+</span><span id="line-88"></span><span>            </span><span id="local-6989586621680124200"><span class="annot"><span class="annottext">options :: [ConstantFolding v x]
+</span><a href="#local-6989586621680124200"><span class="hs-identifier hs-var hs-var">options</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ConstantFolding :: forall v x. [F v x] -&gt; [F v x] -&gt; ConstantFolding v x
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type hs-type">ConstantFolding</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">cRefOld :: [F v x]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefOld"><span class="hs-identifier hs-var">cRefOld</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124110"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">cRefNew :: [F v x]
+</span><a href="#local-6989586621680124198"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">cRefNew :: [F v x]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#cRefNew"><span class="hs-identifier hs-var">cRefNew</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124109"><span class="hs-identifier hs-var">ec</span></a></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680124110"><span class="annot"><span class="annottext">c :: [F v x]
-</span><a href="#local-6989586621680124110"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124109"><span class="annot"><span class="annottext">ec :: [F v x]
-</span><a href="#local-6989586621680124109"><span class="hs-identifier hs-var">ec</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[([F v x], [F v x])]
-</span><a href="#local-6989586621680124113"><span class="hs-identifier hs-var">filteredZip</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124110"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; Bool
+</span><a href="#local-6989586621680124197"><span class="hs-identifier hs-var">ec</span></a></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680124198"><span class="annot"><span class="annottext">c :: [F v x]
+</span><a href="#local-6989586621680124198"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124197"><span class="annot"><span class="annottext">ec :: [F v x]
+</span><a href="#local-6989586621680124197"><span class="hs-identifier hs-var">ec</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[([F v x], [F v x])]
+</span><a href="#local-6989586621680124201"><span class="hs-identifier hs-var">filteredZip</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124198"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124109"><span class="hs-identifier hs-var">ec</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-89"></span><span>            </span><span id="local-6989586621680124107"><span class="annot"><span class="annottext">optionsFiltered :: [ConstantFolding v x]
-</span><a href="#local-6989586621680124107"><span class="hs-identifier hs-var hs-var">optionsFiltered</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ConstantFolding v x -&gt; Bool)
+</span><a href="#local-6989586621680124197"><span class="hs-identifier hs-var">ec</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-89"></span><span>            </span><span id="local-6989586621680124195"><span class="annot"><span class="annottext">optionsFiltered :: [ConstantFolding v x]
+</span><a href="#local-6989586621680124195"><span class="hs-identifier hs-var hs-var">optionsFiltered</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ConstantFolding v x -&gt; Bool)
 -&gt; [ConstantFolding v x] -&gt; [ConstantFolding v x]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">ConstantFolding v x -&gt; Bool
-</span><a href="#local-6989586621680124106"><span class="hs-identifier hs-var">isBlankOptions</span></a></span><span> </span><span class="annot"><span class="annottext">[ConstantFolding v x]
-</span><a href="#local-6989586621680124112"><span class="hs-identifier hs-var">options</span></a></span><span>
-</span><span id="line-90"></span><span>            </span><span id="local-6989586621680124106"><span class="annot"><span class="annottext">isBlankOptions :: ConstantFolding v x -&gt; Bool
-</span><a href="#local-6989586621680124106"><span class="hs-identifier hs-var hs-var">isBlankOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><a href="#local-6989586621680124194"><span class="hs-identifier hs-var">isBlankOptions</span></a></span><span> </span><span class="annot"><span class="annottext">[ConstantFolding v x]
+</span><a href="#local-6989586621680124200"><span class="hs-identifier hs-var">options</span></a></span><span>
+</span><span id="line-90"></span><span>            </span><span id="local-6989586621680124194"><span class="annot"><span class="annottext">isBlankOptions :: ConstantFolding v x -&gt; Bool
+</span><a href="#local-6989586621680124194"><span class="hs-identifier hs-var hs-var">isBlankOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool)
 -&gt; (ConstantFolding v x -&gt; Bool) -&gt; ConstantFolding v x -&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
@@ -191,67 +191,67 @@ forall u v x.
 ConstantFoldingProblem u v x =&gt;
 u -&gt; ConstantFolding v x -&gt; u
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingDecision"><span class="hs-identifier hs-var">constantFoldingDecision</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124119"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680124207"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-91"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[ConstantFolding v x]
-</span><a href="#local-6989586621680124107"><span class="hs-identifier hs-var">optionsFiltered</span></a></span><span>
+</span><a href="#local-6989586621680124195"><span class="hs-identifier hs-var">optionsFiltered</span></a></span><span>
 </span><span id="line-92"></span><span>
-</span><span id="line-93"></span><span>    </span><span id="local-6989586621680124102"><span class="annot"><span class="annottext">constantFoldingDecision :: [F v x] -&gt; ConstantFolding v x -&gt; [F v x]
-</span><a href="#local-6989586621680124102"><span class="hs-identifier hs-var hs-var hs-var hs-var">constantFoldingDecision</span></a></span></span><span> </span><span id="local-6989586621680124101"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680124101"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span class="hs-special">{</span><span id="local-6989586621680124100"><span class="annot"><span class="annottext">[F v x]
+</span><span id="line-93"></span><span>    </span><span id="local-6989586621680124190"><span class="annot"><span class="annottext">constantFoldingDecision :: [F v x] -&gt; ConstantFolding v x -&gt; [F v x]
+</span><a href="#local-6989586621680124190"><span class="hs-identifier hs-var hs-var hs-var hs-var">constantFoldingDecision</span></a></span></span><span> </span><span id="local-6989586621680124189"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680124189"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#ConstantFolding"><span class="hs-identifier hs-type">ConstantFolding</span></a></span><span class="hs-special">{</span><span id="local-6989586621680124188"><span class="annot"><span class="annottext">[F v x]
 cRefOld :: [F v x]
 cRefOld :: forall v x. ConstantFolding v x -&gt; [F v x]
-</span><a href="#local-6989586621680124100"><span class="hs-identifier hs-var hs-var">cRefOld</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124099"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124188"><span class="hs-identifier hs-var hs-var">cRefOld</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124187"><span class="annot"><span class="annottext">[F v x]
 cRefNew :: [F v x]
 cRefNew :: forall v x. ConstantFolding v x -&gt; [F v x]
-</span><a href="#local-6989586621680124099"><span class="hs-identifier hs-var hs-var">cRefNew</span></a></span></span><span class="hs-special">}</span><span>
+</span><a href="#local-6989586621680124187"><span class="hs-identifier hs-var hs-var">cRefNew</span></a></span></span><span class="hs-special">}</span><span>
 </span><span id="line-94"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124100"><span class="hs-identifier hs-var">cRefOld</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; Bool
+</span><a href="#local-6989586621680124188"><span class="hs-identifier hs-var">cRefOld</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124099"><span class="hs-identifier hs-var">cRefNew</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124099"><span class="hs-identifier hs-var">cRefNew</span></a></span><span>
+</span><a href="#local-6989586621680124187"><span class="hs-identifier hs-var">cRefNew</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124187"><span class="hs-identifier hs-var">cRefNew</span></a></span><span>
 </span><span id="line-95"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x]
 forall a a. (Ord a, Variables a a, Eq a) =&gt; [a] -&gt; [a]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#deleteExtraF"><span class="hs-identifier hs-var">deleteExtraF</span></a></span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; [F v x]) -&gt; [F v x] -&gt; [F v x]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124101"><span class="hs-identifier hs-var">fs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680124189"><span class="hs-identifier hs-var">fs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
 forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">L.\\</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124100"><span class="hs-identifier hs-var">cRefOld</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680124188"><span class="hs-identifier hs-var">cRefOld</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124099"><span class="hs-identifier hs-var">cRefNew</span></a></span></span></span><span>
+</span><a href="#local-6989586621680124187"><span class="hs-identifier hs-var">cRefNew</span></a></span></span></span><span>
 </span><span id="line-96"></span><span>
 </span><span id="line-97"></span><span id="isConst"><span class="annot"><span class="annottext">isConst :: F v x -&gt; Bool
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#isConst"><span class="hs-identifier hs-var hs-var">isConst</span></a></span></span><span> </span><span id="local-6989586621680124095"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680124095"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#isConst"><span class="hs-identifier hs-var hs-var">isConst</span></a></span></span><span> </span><span id="local-6989586621680124183"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680124183"><span class="hs-identifier hs-var">f</span></a></span></span><span>
 </span><span id="line-98"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Constant"><span class="hs-identifier hs-type">Constant</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Constant v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124095"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680124183"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-99"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
 </span><span id="line-100"></span><span>
 </span><span id="line-101"></span><span id="selectClusters"><span class="annot"><span class="annottext">selectClusters :: [F v x] -&gt; [[F v x]]
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#selectClusters"><span class="hs-identifier hs-var hs-var">selectClusters</span></a></span></span><span> </span><span id="local-6989586621680124092"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680124092"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-102"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680124091"><span class="annot"><span class="annottext">consts :: [F v x]
-</span><a href="#local-6989586621680124091"><span class="hs-identifier hs-var hs-var">consts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#selectClusters"><span class="hs-identifier hs-var hs-var">selectClusters</span></a></span></span><span> </span><span id="local-6989586621680124180"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680124180"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680124179"><span class="annot"><span class="annottext">consts :: [F v x]
+</span><a href="#local-6989586621680124179"><span class="hs-identifier hs-var hs-var">consts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Bool
 forall v x. (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#isConst"><span class="hs-identifier hs-var">isConst</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124092"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-103"></span><span>        </span><span id="local-6989586621680124090"><span class="annot"><span class="annottext">isIntersection :: Set a -&gt; Set a -&gt; Bool
-</span><a href="#local-6989586621680124090"><span class="hs-identifier hs-var hs-var">isIntersection</span></a></span></span><span> </span><span id="local-6989586621680124089"><span class="annot"><span class="annottext">a :: Set a
-</span><a href="#local-6989586621680124089"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680124088"><span class="annot"><span class="annottext">b :: Set a
-</span><a href="#local-6989586621680124088"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><a href="#local-6989586621680124180"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-103"></span><span>        </span><span id="local-6989586621680124178"><span class="annot"><span class="annottext">isIntersection :: Set a -&gt; Set a -&gt; Bool
+</span><a href="#local-6989586621680124178"><span class="hs-identifier hs-var hs-var">isIntersection</span></a></span></span><span> </span><span id="local-6989586621680124177"><span class="annot"><span class="annottext">a :: Set a
+</span><a href="#local-6989586621680124177"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680124176"><span class="annot"><span class="annottext">b :: Set a
+</span><a href="#local-6989586621680124176"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (Set a -&gt; Bool) -&gt; Set a -&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Bool
@@ -261,14 +261,14 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Set a
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-identifier hs-var">S.intersection</span></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680124089"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680124088"><span class="hs-identifier hs-var">b</span></a></span><span>
-</span><span id="line-104"></span><span>        </span><span id="local-6989586621680124085"><span class="annot"><span class="annottext">inputsAreConst :: f -&gt; Bool
-</span><a href="#local-6989586621680124085"><span class="hs-identifier hs-var hs-var">inputsAreConst</span></a></span></span><span> </span><span id="local-6989586621680124084"><span class="annot"><span class="annottext">f :: f
-</span><a href="#local-6989586621680124084"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f -&gt; Set v
+</span><a href="#local-6989586621680124177"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a
+</span><a href="#local-6989586621680124176"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-104"></span><span>        </span><span id="local-6989586621680124173"><span class="annot"><span class="annottext">inputsAreConst :: f -&gt; Bool
+</span><a href="#local-6989586621680124173"><span class="hs-identifier hs-var hs-var">inputsAreConst</span></a></span></span><span> </span><span id="local-6989586621680124172"><span class="annot"><span class="annottext">f :: f
+</span><a href="#local-6989586621680124172"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680124084"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Bool
+</span><a href="#local-6989586621680124172"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Bool
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Bool
 </span><span class="hs-operator hs-var">`S.isSubsetOf`</span></span><span> </span><span class="annot"><span class="annottext">[Set v] -&gt; Set v
 forall (f :: * -&gt; *) a. (Foldable f, Ord a) =&gt; f (Set a) -&gt; Set a
@@ -277,62 +277,62 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124091"><span class="hs-identifier hs-var">consts</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-105"></span><span>        </span><span id="local-6989586621680124079"><span class="annot"><span class="annottext">getInputConsts :: f -&gt; [F v x]
-</span><a href="#local-6989586621680124079"><span class="hs-identifier hs-var hs-var">getInputConsts</span></a></span></span><span> </span><span id="local-6989586621680124078"><span class="annot"><span class="annottext">f :: f
-</span><a href="#local-6989586621680124078"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680124179"><span class="hs-identifier hs-var">consts</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>        </span><span id="local-6989586621680124167"><span class="annot"><span class="annottext">getInputConsts :: f -&gt; [F v x]
+</span><a href="#local-6989586621680124167"><span class="hs-identifier hs-var hs-var">getInputConsts</span></a></span></span><span> </span><span id="local-6989586621680124166"><span class="annot"><span class="annottext">f :: f
+</span><a href="#local-6989586621680124166"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680124077"><span class="annot"><span class="annottext">c :: F v x
-</span><a href="#local-6989586621680124077"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680124165"><span class="annot"><span class="annottext">c :: F v x
+</span><a href="#local-6989586621680124165"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124077"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Bool
+</span><a href="#local-6989586621680124165"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Bool
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Bool
-</span><a href="#local-6989586621680124090"><span class="hs-operator hs-var">`isIntersection`</span></a></span><span> </span><span class="annot"><span class="annottext">f -&gt; Set v
+</span><a href="#local-6989586621680124178"><span class="hs-operator hs-var">`isIntersection`</span></a></span><span> </span><span class="annot"><span class="annottext">f -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680124078"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124091"><span class="hs-identifier hs-var">consts</span></a></span><span>
-</span><span id="line-106"></span><span>        </span><span id="local-6989586621680124076"><span class="annot"><span class="annottext">createCluster :: F v x -&gt; [F v x]
-</span><a href="#local-6989586621680124076"><span class="hs-identifier hs-var hs-var">createCluster</span></a></span></span><span> </span><span id="local-6989586621680124075"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680124075"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><a href="#local-6989586621680124166"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124179"><span class="hs-identifier hs-var">consts</span></a></span><span>
+</span><span id="line-106"></span><span>        </span><span id="local-6989586621680124164"><span class="annot"><span class="annottext">createCluster :: F v x -&gt; [F v x]
+</span><a href="#local-6989586621680124164"><span class="hs-identifier hs-var hs-var">createCluster</span></a></span></span><span> </span><span id="local-6989586621680124163"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680124163"><span class="hs-identifier hs-var">f</span></a></span></span><span>
 </span><span id="line-107"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Bool
 forall f. Function f v =&gt; f -&gt; Bool
-</span><a href="#local-6989586621680124085"><span class="hs-identifier hs-var">inputsAreConst</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124075"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124075"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680124173"><span class="hs-identifier hs-var">inputsAreConst</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680124163"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680124163"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; [F v x] -&gt; [F v x]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; [F v x]
 forall f. Function f v =&gt; f -&gt; [F v x]
-</span><a href="#local-6989586621680124079"><span class="hs-identifier hs-var">getInputConsts</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124075"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680124167"><span class="hs-identifier hs-var">getInputConsts</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680124163"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-108"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124075"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680124163"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-109"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; [F v x]) -&gt; [F v x] -&gt; [[F v x]]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; [F v x]
-</span><a href="#local-6989586621680124076"><span class="hs-identifier hs-var">createCluster</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124092"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680124164"><span class="hs-identifier hs-var">createCluster</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124180"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-110"></span><span>
 </span><span id="line-111"></span><span id="evalCluster"><span class="annot"><span class="annottext">evalCluster :: [F v x] -&gt; [F v x]
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#evalCluster"><span class="hs-identifier hs-var hs-var">evalCluster</span></a></span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621680124074"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680124074"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124074"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-112"></span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#evalCluster"><span class="hs-identifier hs-var">evalCluster</span></a></span><span> </span><span id="local-6989586621680124073"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680124073"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124072"><span class="hs-identifier hs-var">outputResult</span></a></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#evalCluster"><span class="hs-identifier hs-var hs-var">evalCluster</span></a></span></span><span> </span><span class="hs-special">[</span><span id="local-6989586621680124162"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680124162"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680124162"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#evalCluster"><span class="hs-identifier hs-var">evalCluster</span></a></span><span> </span><span id="local-6989586621680124161"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680124161"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124160"><span class="hs-identifier hs-var">outputResult</span></a></span><span>
 </span><span id="line-113"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-114"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680124071"><span class="annot"><span class="annottext">consts :: [F v x]
-</span><a href="#local-6989586621680124071"><span class="hs-identifier hs-var">consts</span></a></span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621680124070"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680124070"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; ([F v x], [F v x])
+</span><span id="line-114"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680124159"><span class="annot"><span class="annottext">consts :: [F v x]
+</span><a href="#local-6989586621680124159"><span class="hs-identifier hs-var">consts</span></a></span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span id="local-6989586621680124158"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680124158"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; ([F v x], [F v x])
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
 </span><span class="hs-identifier hs-var">L.partition</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Bool
 forall v x. (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#isConst"><span class="hs-identifier hs-var">isConst</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124073"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-115"></span><span>        </span><span id="local-6989586621680124068"><span class="annot"><span class="annottext">cntx :: CycleCntx v x
-</span><a href="#local-6989586621680124068"><span class="hs-identifier hs-var hs-var">cntx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap v x -&gt; CycleCntx v x
+</span><a href="#local-6989586621680124161"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-115"></span><span>        </span><span id="local-6989586621680124156"><span class="annot"><span class="annottext">cntx :: CycleCntx v x
+</span><a href="#local-6989586621680124156"><span class="hs-identifier hs-var hs-var">cntx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap v x -&gt; CycleCntx v x
 forall v x. HashMap v x -&gt; CycleCntx v x
 </span><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-var">CycleCntx</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap v x -&gt; CycleCntx v x) -&gt; HashMap v x -&gt; CycleCntx v x
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -349,9 +349,9 @@ CycleCntx v x -&gt; f -&gt; [(v, x)]
 </span><a href="NITTA.Intermediate.Types.html#simulate"><span class="hs-identifier hs-var">simulate</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124071"><span class="hs-identifier hs-var">consts</span></a></span><span>
-</span><span id="line-116"></span><span>        </span><span id="local-6989586621680124072"><span class="annot"><span class="annottext">outputResult :: [F v x]
-</span><a href="#local-6989586621680124072"><span class="hs-identifier hs-var hs-var">outputResult</span></a></span></span><span>
+</span><a href="#local-6989586621680124159"><span class="hs-identifier hs-var">consts</span></a></span><span>
+</span><span id="line-116"></span><span>        </span><span id="local-6989586621680124160"><span class="annot"><span class="annottext">outputResult :: [F v x]
+</span><a href="#local-6989586621680124160"><span class="hs-identifier hs-var hs-var">outputResult</span></a></span></span><span>
 </span><span id="line-117"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">(Set v -&gt; Bool) -&gt; Set v -&gt; Bool
@@ -359,47 +359,47 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124070"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124073"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680124158"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680124161"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-118"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((v, x) -&gt; F v x) -&gt; [(v, x)] -&gt; [F v x]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680124062"><span class="annot"><span class="annottext">v :: v
-</span><a href="#local-6989586621680124062"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124061"><span class="annot"><span class="annottext">x :: x
-</span><a href="#local-6989586621680124061"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; [v] -&gt; F v x
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680124150"><span class="annot"><span class="annottext">v :: v
+</span><a href="#local-6989586621680124150"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124149"><span class="annot"><span class="annottext">x :: x
+</span><a href="#local-6989586621680124149"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; [v] -&gt; F v x
 forall v x. (Var v, Val x) =&gt; x -&gt; [v] -&gt; F v x
 </span><a href="NITTA.Intermediate.Functions.html#constant"><span class="hs-identifier hs-var">constant</span></a></span><span> </span><span class="annot"><span class="annottext">x
-</span><a href="#local-6989586621680124061"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680124062"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CycleCntx v x -&gt; F v x -&gt; [(v, x)]
+</span><a href="#local-6989586621680124149"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680124150"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CycleCntx v x -&gt; F v x -&gt; [(v, x)]
 forall f v x.
 FunctionSimulation f v x =&gt;
 CycleCntx v x -&gt; f -&gt; [(v, x)]
 </span><a href="NITTA.Intermediate.Types.html#simulate"><span class="hs-identifier hs-var">simulate</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680124068"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680124070"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680124156"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680124158"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680124071"><span class="hs-identifier hs-var">consts</span></a></span><span>
+</span><a href="#local-6989586621680124159"><span class="hs-identifier hs-var">consts</span></a></span><span>
 </span><span id="line-119"></span><span>
 </span><span id="line-120"></span><span id="deleteExtraF"><span class="annot"><span class="annottext">deleteExtraF :: [a] -&gt; [a]
-</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#deleteExtraF"><span class="hs-identifier hs-var hs-var">deleteExtraF</span></a></span></span><span> </span><span id="local-6989586621680124059"><span class="annot"><span class="annottext">fs :: [a]
-</span><a href="#local-6989586621680124059"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#deleteExtraF"><span class="hs-identifier hs-var hs-var">deleteExtraF</span></a></span></span><span> </span><span id="local-6989586621680124147"><span class="annot"><span class="annottext">fs :: [a]
+</span><a href="#local-6989586621680124147"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-121"></span><span>    </span><span class="annot"><span class="annottext">[a] -&gt; [a]
 forall a. Eq a =&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">L.nub</span></span><span>
 </span><span id="line-122"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124057"><span class="hs-identifier hs-var">f1</span></a></span><span>
-</span><span id="line-123"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680124057"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124057"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680124059"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-124"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124056"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124056"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680124059"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680124145"><span class="hs-identifier hs-var">f1</span></a></span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680124145"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680124145"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680124147"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-124"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124144"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680124144"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680124147"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-125"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124057"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680124145"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124056"><span class="hs-identifier hs-var">f2</span></a></span><span>
+</span><a href="#local-6989586621680124144"><span class="hs-identifier hs-var">f2</span></a></span><span>
 </span><span id="line-126"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -408,11 +408,11 @@ forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124057"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Set a
+</span><a href="#local-6989586621680124145"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Set a
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">`S.intersection`</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680124056"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680124144"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-127"></span><span>        </span><span class="hs-special">]</span><span>
 </span><span id="line-128"></span></pre></body></html>
