@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml/badge.svg?branch=master)](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
-[![haddock](https://img.shields.io/badge/Doc-haddock-blue)](https://ryukzak.github.io/nitta/haddock/index.html)
+[![haddock](https://img.shields.io/badge/Doc-haddock-blue)](https://ryukzak.github.io/nitta/haddock/nitta/index.html)
 [![API Doc](https://img.shields.io/badge/Doc-API-blue)](https://github.com/ryukzak/nitta/blob/gh-pages/rest-api/rest_api.markdown)
 
 ## Overview
