@@ -566,7 +566,7 @@ span.spaces    { background: white }
 <span class="lineno">  547 </span><span class="spaces">            </span><span class="istickedoff">-- requred because of realisation.</span>
 <span class="lineno">  548 </span><span class="spaces">            </span><span class="istickedoff">let sel = if null targets' then B else A</span>
 <span class="lineno">  549 </span><span class="spaces">          </span><span class="istickedoff">, --  Computation process planning is carried out.</span>
-<span class="lineno">  550 </span><span class="spaces">            </span><span class="istickedoff">let (_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  550 </span><span class="spaces">            </span><span class="istickedoff">let process_' = execSchedule pu $ do</span>
 <span class="lineno">  551 </span><span class="spaces">                    </span><span class="istickedoff">-- this is required for correct work of automatically generated tests,</span>
 <span class="lineno">  552 </span><span class="spaces">                    </span><span class="istickedoff">-- that takes information about time from Process</span>
 <span class="lineno">  553 </span><span class="spaces">                    </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =</span>
@@ -581,7 +581,7 @@ span.spaces    { background: white }
 <span class="lineno">  562 </span><span class="spaces">          </span><span class="istickedoff">, <span class="tickonlytrue">sources' /= sources</span></span>
 <span class="lineno">  563 </span><span class="spaces">          </span><span class="istickedoff">, let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f</span>
 <span class="lineno">  564 </span><span class="spaces">          </span><span class="istickedoff">, -- Compututation process planning is carring on.</span>
-<span class="lineno">  565 </span><span class="spaces">            </span><span class="istickedoff">let (_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  565 </span><span class="spaces">            </span><span class="istickedoff">let process_' = execSchedule pu $ do</span>
 <span class="lineno">  566 </span><span class="spaces">                    </span><span class="istickedoff">endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out</span>
 <span class="lineno">  567 </span><span class="spaces">                    </span><span class="istickedoff">when (null sources') $ do</span>
 <span class="lineno">  568 </span><span class="spaces">                        </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) f</span>

@@ -204,7 +204,7 @@ span.spaces    { background: white }
 <span class="lineno">  185 </span><span class="spaces">                    </span><span class="istickedoff">instr = case state of</span>
 <span class="lineno">  186 </span><span class="spaces">                        </span><span class="istickedoff">Initialize -&gt; ResetAndLoad neg</span>
 <span class="lineno">  187 </span><span class="spaces">                        </span><span class="istickedoff">_ -&gt; Load neg</span>
-<span class="lineno">  188 </span><span class="spaces">                    </span><span class="istickedoff">(_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  188 </span><span class="spaces">                    </span><span class="istickedoff">process_' = execSchedule pu $ do</span>
 <span class="lineno">  189 </span><span class="spaces">                        </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe epAt instr</span>
 <span class="lineno">  190 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>
 <span class="lineno">  191 </span><span class="spaces">                        </span><span class="istickedoff">{ process_ = process_'</span>
@@ -218,7 +218,7 @@ span.spaces    { background: white }
 <span class="lineno">  199 </span><span class="spaces">        </span><span class="istickedoff">d@EndpointSt{epRole = Source vs, epAt}</span>
 <span class="lineno">  200 </span><span class="spaces">            </span><span class="istickedoff">| Just task &lt;- sourceTask tasks =</span>
 <span class="lineno">  201 </span><span class="spaces">                </span><span class="istickedoff">let (_, task') = L.partition ((`S.member` vs) . snd) task</span>
-<span class="lineno">  202 </span><span class="spaces">                    </span><span class="istickedoff">(_, process_') = runSchedule pu $ do</span>
+<span class="lineno">  202 </span><span class="spaces">                    </span><span class="istickedoff">process_' = execSchedule pu $ do</span>
 <span class="lineno">  203 </span><span class="spaces">                        </span><span class="istickedoff">endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt - 1) Out</span>
 <span class="lineno">  204 </span><span class="spaces">                        </span><span class="istickedoff">when (null task' &amp;&amp; length tasks == 1) $ do</span>
 <span class="lineno">  205 </span><span class="spaces">                            </span><span class="istickedoff">let endpoints' = relatedEndpoints process_ $ variables func</span>

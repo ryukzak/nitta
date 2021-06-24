@@ -54,11 +54,11 @@ after:
 &gt;&gt;&gt; optimizeAccumDecision fs $ head $ optimizeAccumOptions fs
 [Acc(+a +b +c = res),const(1) = a,const(2) = b,const(3) = c,loop(1, e) = res]
 -}</span><span>
-</span><span id="line-57"></span><span id="local-6989586621680124016"><span id="local-6989586621680124017"></span></span><span class="hs-keyword">data</span><span> </span><span id="OptimizeAccum"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-var">OptimizeAccum</span></a></span></span><span> </span><span id="local-6989586621680124109"><span class="annot"><a href="#local-6989586621680124109"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124108"><span class="annot"><a href="#local-6989586621680124108"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="OptimizeAccum"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-var">OptimizeAccum</span></a></span></span><span>
+</span><span id="line-57"></span><span id="local-6989586621680122755"><span id="local-6989586621680122756"></span></span><span class="hs-keyword">data</span><span> </span><span id="OptimizeAccum"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-var">OptimizeAccum</span></a></span></span><span> </span><span id="local-6989586621680122848"><span class="annot"><a href="#local-6989586621680122848"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680122847"><span class="annot"><a href="#local-6989586621680122847"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="OptimizeAccum"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-var">OptimizeAccum</span></a></span></span><span>
 </span><span id="line-58"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="refOld"><span class="annot"><span class="annottext">OptimizeAccum v x -&gt; [F v x]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refOld"><span class="hs-identifier hs-var hs-var">refOld</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124109"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124108"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refOld"><span class="hs-identifier hs-var hs-var">refOld</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122848"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122847"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="refNew"><span class="annot"><span class="annottext">OptimizeAccum v x -&gt; [F v x]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refNew"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124109"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124108"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refNew"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122848"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122847"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-60"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-61"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. OptimizeAccum v x -&gt; Rep (OptimizeAccum v x) x)
 -&gt; (forall x. Rep (OptimizeAccum v x) x -&gt; OptimizeAccum v x)
@@ -71,7 +71,7 @@ forall v x x. Rep (OptimizeAccum v x) x -&gt; OptimizeAccum v x
 forall v x x. OptimizeAccum v x -&gt; Rep (OptimizeAccum v x) x
 $cto :: forall v x x. Rep (OptimizeAccum v x) x -&gt; OptimizeAccum v x
 $cfrom :: forall v x x. OptimizeAccum v x -&gt; Rep (OptimizeAccum v x) x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680124004"><span id="local-6989586621680124006"><span id="local-6989586621680124008"><span class="annot"><span class="annottext">Int -&gt; OptimizeAccum v x -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680122743"><span id="local-6989586621680122745"><span id="local-6989586621680122747"><span class="annot"><span class="annottext">Int -&gt; OptimizeAccum v x -&gt; ShowS
 [OptimizeAccum v x] -&gt; ShowS
 OptimizeAccum v x -&gt; String
 (Int -&gt; OptimizeAccum v x -&gt; ShowS)
@@ -89,7 +89,7 @@ show :: OptimizeAccum v x -&gt; String
 $cshow :: forall v x. OptimizeAccum v x -&gt; String
 showsPrec :: Int -&gt; OptimizeAccum v x -&gt; ShowS
 $cshowsPrec :: forall v x. Int -&gt; OptimizeAccum v x -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680123999"><span id="local-6989586621680124001"><span class="annot"><span class="annottext">OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680122738"><span id="local-6989586621680122740"><span class="annot"><span class="annottext">OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool
 (OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool)
 -&gt; (OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool)
 -&gt; Eq (OptimizeAccum v x)
@@ -101,25 +101,25 @@ $c/= :: forall v x. OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool
 $c== :: forall v x. OptimizeAccum v x -&gt; OptimizeAccum v x -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-62"></span><span>
-</span><span id="line-63"></span><span class="hs-keyword">class</span><span> </span><span id="OptimizeAccumProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccumProblem"><span class="hs-identifier hs-var">OptimizeAccumProblem</span></a></span></span><span> </span><span id="local-6989586621680124121"><span class="annot"><a href="#local-6989586621680124121"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680124120"><span class="annot"><a href="#local-6989586621680124120"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680124119"><span class="annot"><a href="#local-6989586621680124119"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680124121"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124120"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124119"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-63"></span><span class="hs-keyword">class</span><span> </span><span id="OptimizeAccumProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccumProblem"><span class="hs-identifier hs-var">OptimizeAccumProblem</span></a></span></span><span> </span><span id="local-6989586621680122860"><span class="annot"><a href="#local-6989586621680122860"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680122859"><span class="annot"><a href="#local-6989586621680122859"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680122858"><span class="annot"><a href="#local-6989586621680122858"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680122860"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680122859"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122858"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-64"></span><span>    </span><span class="hs-comment">-- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done</span><span>
-</span><span id="line-65"></span><span>    </span><span id="optimizeAccumOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumOptions"><span class="hs-identifier hs-type">optimizeAccumOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124121"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124120"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124119"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-66"></span><span>    </span><span id="local-6989586621680123996"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumOptions"><span class="hs-identifier hs-var hs-var">optimizeAccumOptions</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-65"></span><span>    </span><span id="optimizeAccumOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumOptions"><span class="hs-identifier hs-type">optimizeAccumOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680122860"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122859"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122858"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-66"></span><span>    </span><span id="local-6989586621680122735"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumOptions"><span class="hs-identifier hs-var hs-var">optimizeAccumOptions</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-67"></span><span>
 </span><span id="line-68"></span><span>    </span><span class="hs-comment">-- |Function takes 'OptimizeAccum' and modify 'DataFlowGraph'</span></span><span>
-</span><span id="line-69"></span><span>    </span><span id="optimizeAccumDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumDecision"><span class="hs-identifier hs-type">optimizeAccumDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680124121"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124120"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680124119"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680124121"><span class="hs-identifier hs-type">u</span></a></span><span>
-</span><span id="line-70"></span><span>    </span><span id="local-6989586621680123994"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumDecision"><span class="hs-identifier hs-var hs-var">optimizeAccumDecision</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; u
+</span><span id="line-69"></span><span>    </span><span id="optimizeAccumDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumDecision"><span class="hs-identifier hs-type">optimizeAccumDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680122860"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122859"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122858"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680122860"><span class="hs-identifier hs-type">u</span></a></span><span>
+</span><span id="line-70"></span><span>    </span><span id="local-6989586621680122733"><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumDecision"><span class="hs-identifier hs-var hs-var">optimizeAccumDecision</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; u
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;not implemented&quot;</span></span></span><span>
 </span><span id="line-71"></span><span>
-</span><span id="line-72"></span><span id="local-6989586621680123991"><span id="local-6989586621680123992"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680123992"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680123991"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccumProblem"><span class="hs-identifier hs-type">OptimizeAccumProblem</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680123992"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680123991"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><a href="#local-6989586621680123992"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680123991"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-73"></span><span>    </span><span id="local-6989586621680123987"><span class="annot"><span class="annottext">optimizeAccumOptions :: [F v x] -&gt; [OptimizeAccum v x]
-</span><a href="#local-6989586621680123987"><span class="hs-identifier hs-var hs-var hs-var hs-var">optimizeAccumOptions</span></a></span></span><span> </span><span id="local-6989586621680123986"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680123986"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[OptimizeAccum v x]
-</span><a href="#local-6989586621680123985"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><span id="line-72"></span><span id="local-6989586621680122730"><span id="local-6989586621680122731"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122731"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122730"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccumProblem"><span class="hs-identifier hs-type">OptimizeAccumProblem</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122731"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122730"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><a href="#local-6989586621680122731"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122730"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621680122726"><span class="annot"><span class="annottext">optimizeAccumOptions :: [F v x] -&gt; [OptimizeAccum v x]
+</span><a href="#local-6989586621680122726"><span class="hs-identifier hs-var hs-var hs-var hs-var">optimizeAccumOptions</span></a></span></span><span> </span><span id="local-6989586621680122725"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680122725"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[OptimizeAccum v x]
+</span><a href="#local-6989586621680122724"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-74"></span><span>        </span><span class="hs-keyword">where</span><span>
-</span><span id="line-75"></span><span>            </span><span id="local-6989586621680123985"><span class="annot"><span class="annottext">res :: [OptimizeAccum v x]
-</span><a href="#local-6989586621680123985"><span class="hs-identifier hs-var hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-75"></span><span>            </span><span id="local-6989586621680122724"><span class="annot"><span class="annottext">res :: [OptimizeAccum v x]
+</span><a href="#local-6989586621680122724"><span class="hs-identifier hs-var hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-76"></span><span>                </span><span class="annot"><span class="annottext">[OptimizeAccum v x] -&gt; [OptimizeAccum v x]
 forall a. Eq a =&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">L.nub</span></span><span>
@@ -127,12 +127,12 @@ forall a. Eq a =&gt; [a] -&gt; [a]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type hs-type">OptimizeAccum</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">[F v x]
 refOld :: [F v x]
 refOld :: [F v x]
-</span><a href="#local-6989586621680123982"><span class="hs-identifier hs-var hs-var">refOld</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680122721"><span class="hs-identifier hs-var hs-var">refOld</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[F v x]
 refNew :: [F v x]
 refNew :: [F v x]
-</span><a href="#local-6989586621680123981"><span class="hs-identifier hs-var hs-var">refNew</span></a></span><span class="hs-special">}</span><span>
-</span><span id="line-78"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680123982"><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123982"><span class="hs-identifier hs-var">refOld</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [[F v x]]
+</span><a href="#local-6989586621680122720"><span class="hs-identifier hs-var hs-var">refNew</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-78"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680122721"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680122721"><span class="hs-identifier hs-var">refOld</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [[F v x]]
 forall a a. (Ord a, Ord a, Function a a) =&gt; [a] -&gt; [[a]]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#selectClusters"><span class="hs-identifier hs-var">selectClusters</span></a></span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; [[F v x]]) -&gt; [F v x] -&gt; [[F v x]]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -141,137 +141,137 @@ forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Bool
 forall v x. (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#isSupportByAccum"><span class="hs-identifier hs-var">isSupportByAccum</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123986"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-79"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680123981"><span class="annot"><span class="annottext">refNew :: [F v x]
-</span><a href="#local-6989586621680123981"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680122725"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-79"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680122720"><span class="annot"><span class="annottext">refNew :: [F v x]
+</span><a href="#local-6989586621680122720"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x]
 forall k x.
 (Ord k, Num x, Hashable k, Suffix k, ToString k, IsString k,
  Typeable x, Typeable k) =&gt;
 [F k x] -&gt; [F k x]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeCluster"><span class="hs-identifier hs-var">optimizeCluster</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123982"><span class="hs-identifier hs-var">refOld</span></a></span><span>
+</span><a href="#local-6989586621680122721"><span class="hs-identifier hs-var">refOld</span></a></span><span>
 </span><span id="line-80"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; Set (F v x)
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123982"><span class="hs-identifier hs-var">refOld</span></a></span><span> </span><span class="annot"><span class="annottext">Set (F v x) -&gt; Set (F v x) -&gt; Bool
+</span><a href="#local-6989586621680122721"><span class="hs-identifier hs-var">refOld</span></a></span><span> </span><span class="annot"><span class="annottext">Set (F v x) -&gt; Set (F v x) -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; Set (F v x)
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123981"><span class="hs-identifier hs-var">refNew</span></a></span><span>
+</span><a href="#local-6989586621680122720"><span class="hs-identifier hs-var">refNew</span></a></span><span>
 </span><span id="line-81"></span><span>                    </span><span class="hs-special">]</span><span>
 </span><span id="line-82"></span><span>
-</span><span id="line-83"></span><span>    </span><span id="local-6989586621680123975"><span class="annot"><span class="annottext">optimizeAccumDecision :: [F v x] -&gt; OptimizeAccum v x -&gt; [F v x]
-</span><a href="#local-6989586621680123975"><span class="hs-identifier hs-var hs-var hs-var hs-var">optimizeAccumDecision</span></a></span></span><span> </span><span id="local-6989586621680123974"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680123974"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span class="hs-special">{</span><span id="local-6989586621680123973"><span class="annot"><span class="annottext">[F v x]
+</span><span id="line-83"></span><span>    </span><span id="local-6989586621680122714"><span class="annot"><span class="annottext">optimizeAccumDecision :: [F v x] -&gt; OptimizeAccum v x -&gt; [F v x]
+</span><a href="#local-6989586621680122714"><span class="hs-identifier hs-var hs-var hs-var hs-var">optimizeAccumDecision</span></a></span></span><span> </span><span id="local-6989586621680122713"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680122713"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccum"><span class="hs-identifier hs-type">OptimizeAccum</span></a></span><span class="hs-special">{</span><span id="local-6989586621680122712"><span class="annot"><span class="annottext">[F v x]
 refOld :: [F v x]
 refOld :: forall v x. OptimizeAccum v x -&gt; [F v x]
-</span><a href="#local-6989586621680123973"><span class="hs-identifier hs-var hs-var">refOld</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680123972"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680122712"><span class="hs-identifier hs-var hs-var">refOld</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680122711"><span class="annot"><span class="annottext">[F v x]
 refNew :: [F v x]
 refNew :: forall v x. OptimizeAccum v x -&gt; [F v x]
-</span><a href="#local-6989586621680123972"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123972"><span class="hs-identifier hs-var">refNew</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680122711"><span class="hs-identifier hs-var hs-var">refNew</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680122711"><span class="hs-identifier hs-var">refNew</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123974"><span class="hs-identifier hs-var">fs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680122713"><span class="hs-identifier hs-var">fs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x] -&gt; [F v x]
 forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">L.\\</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680123973"><span class="hs-identifier hs-var">refOld</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><a href="#local-6989586621680122712"><span class="hs-identifier hs-var">refOld</span></a></span><span class="hs-special">)</span></span></span><span>
 </span><span id="line-84"></span><span>
 </span><span id="line-85"></span><span id="selectClusters"><span class="annot"><span class="annottext">selectClusters :: [a] -&gt; [[a]]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#selectClusters"><span class="hs-identifier hs-var hs-var">selectClusters</span></a></span></span><span> </span><span id="local-6989586621680123970"><span class="annot"><span class="annottext">fs :: [a]
-</span><a href="#local-6989586621680123970"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#selectClusters"><span class="hs-identifier hs-var hs-var">selectClusters</span></a></span></span><span> </span><span id="local-6989586621680122709"><span class="annot"><span class="annottext">fs :: [a]
+</span><a href="#local-6989586621680122709"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">([a] -&gt; [a] -&gt; Bool) -&gt; [[a]] -&gt; [[a]]
 forall a. (a -&gt; a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">L.nubBy</span></span><span>
-</span><span id="line-87"></span><span>        </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680123968"><span class="annot"><span class="annottext">a :: [a]
-</span><a href="#local-6989586621680123968"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680123967"><span class="annot"><span class="annottext">b :: [a]
-</span><a href="#local-6989586621680123967"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Set a
+</span><span id="line-87"></span><span>        </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680122707"><span class="annot"><span class="annottext">a :: [a]
+</span><a href="#local-6989586621680122707"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680122706"><span class="annot"><span class="annottext">b :: [a]
+</span><a href="#local-6989586621680122706"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Set a
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680123968"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
+</span><a href="#local-6989586621680122707"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Set a
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680123967"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680122706"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-88"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123966"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123965"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-89"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680123966"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123966"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680123970"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-90"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680123965"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123965"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680123970"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680122705"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680122704"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-89"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680122705"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680122705"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680122709"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-90"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680122704"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680122704"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680122709"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-91"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123965"><span class="hs-identifier hs-var">f'</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680122704"><span class="hs-identifier hs-var">f'</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123966"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680122705"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-92"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
 forall a f f. (Ord a, Function f a, Function f a) =&gt; f -&gt; f -&gt; Bool
-</span><a href="#local-6989586621680123964"><span class="hs-identifier hs-var">inputOutputIntersect</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123966"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123965"><span class="hs-identifier hs-var">f'</span></a></span><span>
+</span><a href="#local-6989586621680122703"><span class="hs-identifier hs-var">inputOutputIntersect</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680122705"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680122704"><span class="hs-identifier hs-var">f'</span></a></span><span>
 </span><span id="line-93"></span><span>        </span><span class="hs-special">]</span><span>
 </span><span id="line-94"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-95"></span><span>        </span><span id="local-6989586621680123964"><span class="annot"><span class="annottext">inputOutputIntersect :: f -&gt; f -&gt; Bool
-</span><a href="#local-6989586621680123964"><span class="hs-identifier hs-var hs-var">inputOutputIntersect</span></a></span></span><span> </span><span id="local-6989586621680123963"><span class="annot"><span class="annottext">f1 :: f
-</span><a href="#local-6989586621680123963"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span id="local-6989586621680123962"><span class="annot"><span class="annottext">f2 :: f
-</span><a href="#local-6989586621680123962"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
+</span><span id="line-95"></span><span>        </span><span id="local-6989586621680122703"><span class="annot"><span class="annottext">inputOutputIntersect :: f -&gt; f -&gt; Bool
+</span><a href="#local-6989586621680122703"><span class="hs-identifier hs-var hs-var">inputOutputIntersect</span></a></span></span><span> </span><span id="local-6989586621680122702"><span class="annot"><span class="annottext">f1 :: f
+</span><a href="#local-6989586621680122702"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span id="local-6989586621680122701"><span class="annot"><span class="annottext">f2 :: f
+</span><a href="#local-6989586621680122701"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Bool
-</span><a href="#local-6989586621680123961"><span class="hs-identifier hs-var">isIntersection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
+</span><a href="#local-6989586621680122700"><span class="hs-identifier hs-var">isIntersection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123963"><span class="hs-identifier hs-var">f1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
+</span><a href="#local-6989586621680122702"><span class="hs-identifier hs-var">f1</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123962"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680122701"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Bool
-</span><a href="#local-6989586621680123961"><span class="hs-identifier hs-var">isIntersection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
+</span><a href="#local-6989586621680122700"><span class="hs-identifier hs-var">isIntersection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123962"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
+</span><a href="#local-6989586621680122701"><span class="hs-identifier hs-var">f2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123963"><span class="hs-identifier hs-var">f1</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-96"></span><span>        </span><span id="local-6989586621680123961"><span class="annot"><span class="annottext">isIntersection :: Set a -&gt; Set a -&gt; Bool
-</span><a href="#local-6989586621680123961"><span class="hs-identifier hs-var hs-var">isIntersection</span></a></span></span><span> </span><span id="local-6989586621680123957"><span class="annot"><span class="annottext">a :: Set a
-</span><a href="#local-6989586621680123957"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680123956"><span class="annot"><span class="annottext">b :: Set a
-</span><a href="#local-6989586621680123956"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><a href="#local-6989586621680122702"><span class="hs-identifier hs-var">f1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>        </span><span id="local-6989586621680122700"><span class="annot"><span class="annottext">isIntersection :: Set a -&gt; Set a -&gt; Bool
+</span><a href="#local-6989586621680122700"><span class="hs-identifier hs-var hs-var">isIntersection</span></a></span></span><span> </span><span id="local-6989586621680122696"><span class="annot"><span class="annottext">a :: Set a
+</span><a href="#local-6989586621680122696"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680122695"><span class="annot"><span class="annottext">b :: Set a
+</span><a href="#local-6989586621680122695"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Bool
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Bool
 </span><span class="hs-identifier hs-var">S.disjoint</span></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680123957"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680123956"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621680122696"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Set a
+</span><a href="#local-6989586621680122695"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-97"></span><span>
 </span><span id="line-98"></span><span id="isSupportByAccum"><span class="annot"><span class="annottext">isSupportByAccum :: F v x -&gt; Bool
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#isSupportByAccum"><span class="hs-identifier hs-var hs-var">isSupportByAccum</span></a></span></span><span> </span><span id="local-6989586621680123953"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680123953"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#isSupportByAccum"><span class="hs-identifier hs-var hs-var">isSupportByAccum</span></a></span></span><span> </span><span id="local-6989586621680122692"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680122692"><span class="hs-identifier hs-var">f</span></a></span></span><span>
 </span><span id="line-99"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Add"><span class="hs-identifier hs-type">Add</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Add v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123953"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680122692"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-100"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Sub"><span class="hs-identifier hs-type">Sub</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Sub v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123953"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680122692"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-101"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Acc v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123953"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680122692"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-102"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
@@ -279,8 +279,8 @@ F v x -&gt; Maybe (f v x)
 </span><span id="line-103"></span><span>
 </span><span id="line-104"></span><span class="hs-comment">-- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label</span><span>
 </span><span id="line-105"></span><span id="containerMapCreate"><span class="annot"><span class="annottext">containerMapCreate :: [f] -&gt; Map k [f]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#containerMapCreate"><span class="hs-identifier hs-var hs-var">containerMapCreate</span></a></span></span><span> </span><span id="local-6989586621680123947"><span class="annot"><span class="annottext">fs :: [f]
-</span><a href="#local-6989586621680123947"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#containerMapCreate"><span class="hs-identifier hs-var hs-var">containerMapCreate</span></a></span></span><span> </span><span id="local-6989586621680122686"><span class="annot"><span class="annottext">fs :: [f]
+</span><a href="#local-6989586621680122686"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">[Map k [f]] -&gt; Map k [f]
 forall (f :: * -&gt; *) k a.
 (Foldable f, Ord k) =&gt;
@@ -291,24 +291,24 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span id="line-107"></span><span>        </span><span class="annot"><span class="annottext">(f -&gt; Map k [f]) -&gt; [f] -&gt; [Map k [f]]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span>
-</span><span id="line-108"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680123945"><span class="annot"><span class="annottext">f :: f
-</span><a href="#local-6989586621680123945"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680122684"><span class="annot"><span class="annottext">f :: f
+</span><a href="#local-6989586621680122684"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-109"></span><span>                </span><span class="annot"><span class="annottext">(Map k [f] -&gt; k -&gt; Map k [f]) -&gt; Map k [f] -&gt; [k] -&gt; Map k [f]
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-110"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680123943"><span class="annot"><span class="annottext">dataMap :: Map k [f]
-</span><a href="#local-6989586621680123943"><span class="hs-identifier hs-var">dataMap</span></a></span></span><span> </span><span id="local-6989586621680123942"><span class="annot"><span class="annottext">k :: k
-</span><a href="#local-6989586621680123942"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680122682"><span class="annot"><span class="annottext">dataMap :: Map k [f]
+</span><a href="#local-6989586621680122682"><span class="hs-identifier hs-var">dataMap</span></a></span></span><span> </span><span id="local-6989586621680122681"><span class="annot"><span class="annottext">k :: k
+</span><a href="#local-6989586621680122681"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-111"></span><span>                        </span><span class="annot"><span class="annottext">([f] -&gt; [f] -&gt; [f]) -&gt; k -&gt; [f] -&gt; Map k [f] -&gt; Map k [f]
 forall k a. Ord k =&gt; (a -&gt; a -&gt; a) -&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.insertWith</span></span><span> </span><span class="annot"><span class="annottext">[f] -&gt; [f] -&gt; [f]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">(++)</span></span><span> </span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680123942"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123945"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Map k [f]
-</span><a href="#local-6989586621680123943"><span class="hs-identifier hs-var">dataMap</span></a></span><span>
+</span><a href="#local-6989586621680122681"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">f
+</span><a href="#local-6989586621680122684"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Map k [f]
+</span><a href="#local-6989586621680122682"><span class="hs-identifier hs-var">dataMap</span></a></span><span>
 </span><span id="line-112"></span><span>                    </span><span class="hs-special">)</span><span>
 </span><span id="line-113"></span><span>                    </span><span class="annot"><span class="annottext">Map k [f]
 forall k a. Map k a
@@ -320,42 +320,42 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f -&gt; Set k
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123945"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680122684"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-115"></span><span>            </span><span class="hs-special">)</span><span>
 </span><span id="line-116"></span><span>            </span><span class="annot"><span class="annottext">[f]
-</span><a href="#local-6989586621680123947"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680122686"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-117"></span><span>
 </span><span id="line-118"></span><span class="hs-comment">-- |Takes container and refactor it, if it can be</span><span>
 </span><span id="line-119"></span><span id="optimizeCluster"><span class="annot"><span class="annottext">optimizeCluster :: [F k x] -&gt; [F k x]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeCluster"><span class="hs-identifier hs-var hs-var">optimizeCluster</span></a></span></span><span> </span><span id="local-6989586621680123938"><span class="annot"><span class="annottext">fs :: [F k x]
-</span><a href="#local-6989586621680123938"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F k x -&gt; [F k x]) -&gt; [F k x] -&gt; [F k x]
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeCluster"><span class="hs-identifier hs-var hs-var">optimizeCluster</span></a></span></span><span> </span><span id="local-6989586621680122677"><span class="annot"><span class="annottext">fs :: [F k x]
+</span><a href="#local-6989586621680122677"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F k x -&gt; [F k x]) -&gt; [F k x] -&gt; [F k x]
 forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">F k x -&gt; [F k x]
-</span><a href="#local-6989586621680123936"><span class="hs-identifier hs-var">refactored</span></a></span><span> </span><span class="annot"><span class="annottext">[F k x]
-</span><a href="#local-6989586621680123938"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680122675"><span class="hs-identifier hs-var">refactored</span></a></span><span> </span><span class="annot"><span class="annottext">[F k x]
+</span><a href="#local-6989586621680122677"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-120"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-121"></span><span>        </span><span id="local-6989586621680123935"><span class="annot"><span class="annottext">containerMap :: Map k [F k x]
-</span><a href="#local-6989586621680123935"><span class="hs-identifier hs-var hs-var">containerMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F k x] -&gt; Map k [F k x]
+</span><span id="line-121"></span><span>        </span><span id="local-6989586621680122674"><span class="annot"><span class="annottext">containerMap :: Map k [F k x]
+</span><a href="#local-6989586621680122674"><span class="hs-identifier hs-var hs-var">containerMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F k x] -&gt; Map k [F k x]
 forall k f. (Ord k, Function f k) =&gt; [f] -&gt; Map k [f]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#containerMapCreate"><span class="hs-identifier hs-var">containerMapCreate</span></a></span><span> </span><span class="annot"><span class="annottext">[F k x]
-</span><a href="#local-6989586621680123938"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680122677"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-122"></span><span>
-</span><span id="line-123"></span><span>        </span><span id="local-6989586621680123936"><span class="annot"><span class="annottext">refactored :: F k x -&gt; [F k x]
-</span><a href="#local-6989586621680123936"><span class="hs-identifier hs-var hs-var">refactored</span></a></span></span><span> </span><span id="local-6989586621680123934"><span class="annot"><span class="annottext">f :: F k x
-</span><a href="#local-6989586621680123934"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>        </span><span id="local-6989586621680122675"><span class="annot"><span class="annottext">refactored :: F k x -&gt; [F k x]
+</span><a href="#local-6989586621680122675"><span class="hs-identifier hs-var hs-var">refactored</span></a></span></span><span> </span><span id="local-6989586621680122673"><span class="annot"><span class="annottext">f :: F k x
+</span><a href="#local-6989586621680122673"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-124"></span><span>            </span><span class="annot"><span class="annottext">(k -&gt; [F k x]) -&gt; [k] -&gt; [F k x]
 forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span>
-</span><span id="line-125"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680123933"><span class="annot"><span class="annottext">o :: k
-</span><a href="#local-6989586621680123933"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-125"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680122672"><span class="annot"><span class="annottext">o :: k
+</span><a href="#local-6989586621680122672"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-126"></span><span>                    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[F k x] -&gt; k -&gt; Map k [F k x] -&gt; [F k x]
 forall k a. Ord k =&gt; a -&gt; k -&gt; Map k a -&gt; a
 </span><span class="hs-identifier hs-var">M.findWithDefault</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680123933"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">Map k [F k x]
-</span><a href="#local-6989586621680123935"><span class="hs-identifier hs-var">containerMap</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621680122672"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">Map k [F k x]
+</span><a href="#local-6989586621680122674"><span class="hs-identifier hs-var">containerMap</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-127"></span><span>                        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-128"></span><span>                        </span><span id="local-6989586621680123931"><span class="annot"><span class="annottext">matchedFUs :: [F k x]
-</span><a href="#local-6989586621680123931"><span class="hs-identifier hs-var">matchedFUs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(F k x -&gt; [F k x]) -&gt; [F k x] -&gt; [F k x]
+</span><span id="line-128"></span><span>                        </span><span id="local-6989586621680122670"><span class="annot"><span class="annottext">matchedFUs :: [F k x]
+</span><a href="#local-6989586621680122670"><span class="hs-identifier hs-var">matchedFUs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(F k x -&gt; [F k x]) -&gt; [F k x] -&gt; [F k x]
 forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">F k x -&gt; F k x -&gt; [F k x]
 forall x a.
@@ -363,8 +363,8 @@ forall x a.
  Typeable x, Typeable a) =&gt;
 F a x -&gt; F a x -&gt; [F a x]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refactorFunction"><span class="hs-identifier hs-var">refactorFunction</span></a></span><span> </span><span class="annot"><span class="annottext">F k x
-</span><a href="#local-6989586621680123934"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F k x]
-</span><a href="#local-6989586621680123931"><span class="hs-identifier hs-var">matchedFUs</span></a></span><span>
+</span><a href="#local-6989586621680122673"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F k x]
+</span><a href="#local-6989586621680122670"><span class="hs-identifier hs-var">matchedFUs</span></a></span><span>
 </span><span id="line-129"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-130"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set k -&gt; [k]
 forall a. Set a -&gt; [a]
@@ -373,28 +373,28 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">F k x -&gt; Set k
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F k x
-</span><a href="#local-6989586621680123934"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680122673"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-131"></span><span>
 </span><span id="line-132"></span><span id="refactorFunction"><span class="annot"><span class="annottext">refactorFunction :: F a x -&gt; F a x -&gt; [F a x]
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refactorFunction"><span class="hs-identifier hs-var hs-var">refactorFunction</span></a></span></span><span> </span><span id="local-6989586621680123929"><span class="annot"><span class="annottext">f' :: F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span id="local-6989586621680123928"><span class="annot"><span class="annottext">f :: F a x
-</span><a href="#local-6989586621680123928"><span class="hs-identifier hs-var">f</span></a></span></span><span>
-</span><span id="line-133"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span> </span><span id="local-6989586621680123927"><span class="annot"><span class="annottext">lst' :: [Action a]
-</span><a href="#local-6989586621680123927"><span class="hs-identifier hs-var">lst'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Acc a x)
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refactorFunction"><span class="hs-identifier hs-var hs-var">refactorFunction</span></a></span></span><span> </span><span id="local-6989586621680122668"><span class="annot"><span class="annottext">f' :: F a x
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span id="local-6989586621680122667"><span class="annot"><span class="annottext">f :: F a x
+</span><a href="#local-6989586621680122667"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span> </span><span id="local-6989586621680122666"><span class="annot"><span class="annottext">lst' :: [Action a]
+</span><a href="#local-6989586621680122666"><span class="hs-identifier hs-var">lst'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Acc a x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span>
-</span><span id="line-134"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span> </span><span id="local-6989586621680123926"><span class="annot"><span class="annottext">lst :: [Action a]
-</span><a href="#local-6989586621680123926"><span class="hs-identifier hs-var">lst</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Acc a x)
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span>
+</span><span id="line-134"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span> </span><span id="local-6989586621680122665"><span class="annot"><span class="annottext">lst :: [Action a]
+</span><a href="#local-6989586621680122665"><span class="hs-identifier hs-var">lst</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Acc a x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123928"><span class="hs-identifier hs-var">f</span></a></span><span>
-</span><span id="line-135"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680123925"><span class="annot"><span class="annottext">singleOutBool :: Bool
-</span><a href="#local-6989586621680123925"><span class="hs-identifier hs-var hs-var">singleOutBool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621680122667"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-135"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680122664"><span class="annot"><span class="annottext">singleOutBool :: Bool
+</span><a href="#local-6989586621680122664"><span class="hs-identifier hs-var hs-var">singleOutBool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Bool) -&gt; Int -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -405,38 +405,38 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span>
-</span><span id="line-136"></span><span>            </span><span id="local-6989586621680123923"><span class="annot"><span class="annottext">isOutInpIntersect :: Bool
-</span><a href="#local-6989586621680123923"><span class="hs-identifier hs-var hs-var">isOutInpIntersect</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span>
+</span><span id="line-136"></span><span>            </span><span id="local-6989586621680122662"><span class="annot"><span class="annottext">isOutInpIntersect :: Bool
+</span><a href="#local-6989586621680122662"><span class="hs-identifier hs-var hs-var">isOutInpIntersect</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-137"></span><span>                </span><span class="annot"><span class="annottext">(Action a -&gt; Bool) -&gt; [Action a] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">any</span></span><span>
 </span><span id="line-138"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-139"></span><span>                        </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680123919"><span class="annot"><span class="annottext">v :: a
-</span><a href="#local-6989586621680123919"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Set a -&gt; Bool
+</span><span id="line-139"></span><span>                        </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680122658"><span class="annot"><span class="annottext">v :: a
+</span><a href="#local-6989586621680122658"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Set a -&gt; Bool
 forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">elem</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680123919"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">(Set a -&gt; Bool) -&gt; Set a -&gt; Bool
+</span><a href="#local-6989586621680122658"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">(Set a -&gt; Bool) -&gt; Set a -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span>
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span>
 </span><span id="line-140"></span><span>                        </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
 </span><span id="line-141"></span><span>                    </span><span class="hs-special">)</span><span>
 </span><span id="line-142"></span><span>                    </span><span class="annot"><span class="annottext">[Action a]
-</span><a href="#local-6989586621680123926"><span class="hs-identifier hs-var">lst</span></a></span><span>
-</span><span id="line-143"></span><span>            </span><span id="local-6989586621680123917"><span class="annot"><span class="annottext">makeRefactor :: Bool
-</span><a href="#local-6989586621680123917"><span class="hs-identifier hs-var hs-var">makeRefactor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680123925"><span class="hs-identifier hs-var">singleOutBool</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680122665"><span class="hs-identifier hs-var">lst</span></a></span><span>
+</span><span id="line-143"></span><span>            </span><span id="local-6989586621680122656"><span class="annot"><span class="annottext">makeRefactor :: Bool
+</span><a href="#local-6989586621680122656"><span class="hs-identifier hs-var hs-var">makeRefactor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680122664"><span class="hs-identifier hs-var">singleOutBool</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680123923"><span class="hs-identifier hs-var">isOutInpIntersect</span></a></span><span>
+</span><a href="#local-6989586621680122662"><span class="hs-identifier hs-var">isOutInpIntersect</span></a></span><span>
 </span><span id="line-144"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680123917"><span class="hs-identifier hs-var">makeRefactor</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-145"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680123915"><span class="annot"><span class="annottext">subs :: v -&gt; Action v -&gt; Action v -&gt; Maybe (Action v)
-</span><a href="#local-6989586621680123915"><span class="hs-identifier hs-var hs-var">subs</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span id="local-6989586621680123912"><span class="annot"><span class="annottext">v :: I v
-</span><a href="#local-6989586621680123912"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122656"><span class="hs-identifier hs-var">makeRefactor</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-145"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680122654"><span class="annot"><span class="annottext">subs :: v -&gt; Action v -&gt; Action v -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122654"><span class="hs-identifier hs-var hs-var">subs</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span id="local-6989586621680122651"><span class="annot"><span class="annottext">v :: I v
+</span><a href="#local-6989586621680122651"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Action v -&gt; Maybe (Action v)) -&gt; Action v -&gt; Maybe (Action v)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -444,9 +444,9 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-var">Minus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123912"><span class="hs-identifier hs-var">v</span></a></span><span>
-</span><span id="line-146"></span><span>            </span><span class="annot"><a href="#local-6989586621680123915"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span id="local-6989586621680123911"><span class="annot"><span class="annottext">v :: I v
-</span><a href="#local-6989586621680123911"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122651"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-146"></span><span>            </span><span class="annot"><a href="#local-6989586621680122654"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-type">Minus</span></a></span><span> </span><span id="local-6989586621680122650"><span class="annot"><span class="annottext">v :: I v
+</span><a href="#local-6989586621680122650"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Action v -&gt; Maybe (Action v)) -&gt; Action v -&gt; Maybe (Action v)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -454,71 +454,71 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123911"><span class="hs-identifier hs-var">v</span></a></span><span>
-</span><span id="line-147"></span><span>            </span><span class="annot"><a href="#local-6989586621680123915"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span id="local-6989586621680123910"><span class="annot"><span class="annottext">push :: Action v
-</span><a href="#local-6989586621680123910"><span class="hs-identifier hs-var">push</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122650"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-147"></span><span>            </span><span class="annot"><a href="#local-6989586621680122654"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span id="local-6989586621680122649"><span class="annot"><span class="annottext">push :: Action v
+</span><a href="#local-6989586621680122649"><span class="hs-identifier hs-var">push</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Action v -&gt; Maybe (Action v)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Action v
-</span><a href="#local-6989586621680123910"><span class="hs-identifier hs-var">push</span></a></span><span>
-</span><span id="line-148"></span><span>            </span><span class="annot"><a href="#local-6989586621680123915"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span id="local-6989586621680123909"><span class="annot"><span class="annottext">v :: v
-</span><a href="#local-6989586621680123909"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621680123908"><span class="annot"><span class="annottext">pull :: Action v
-</span><a href="#local-6989586621680123908"><span class="hs-identifier hs-var">pull</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">v -&gt; Action v -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122649"><span class="hs-identifier hs-var">push</span></a></span><span>
+</span><span id="line-148"></span><span>            </span><span class="annot"><a href="#local-6989586621680122654"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span id="local-6989586621680122648"><span class="annot"><span class="annottext">v :: v
+</span><a href="#local-6989586621680122648"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621680122647"><span class="annot"><span class="annottext">pull :: Action v
+</span><a href="#local-6989586621680122647"><span class="hs-identifier hs-var">pull</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">v -&gt; Action v -&gt; Maybe (Action v)
 forall v. Ord v =&gt; v -&gt; Action v -&gt; Maybe (Action v)
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#deleteFromPull"><span class="hs-identifier hs-var">deleteFromPull</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123909"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Action v
-</span><a href="#local-6989586621680123908"><span class="hs-identifier hs-var">pull</span></a></span><span>
-</span><span id="line-149"></span><span>            </span><span class="annot"><a href="#local-6989586621680123915"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe (Action v)
+</span><a href="#local-6989586621680122648"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Action v
+</span><a href="#local-6989586621680122647"><span class="hs-identifier hs-var">pull</span></a></span><span>
+</span><span id="line-149"></span><span>            </span><span class="annot"><a href="#local-6989586621680122654"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe (Action v)
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;Pull can not be here&quot;</span></span><span>
 </span><span id="line-150"></span><span>
-</span><span id="line-151"></span><span>            </span><span id="local-6989586621680123905"><span class="annot"><span class="annottext">refactorAcc :: [Action v] -&gt; f -&gt; Action v -&gt; [Action v]
-</span><a href="#local-6989586621680123905"><span class="hs-identifier hs-var hs-var">refactorAcc</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span id="local-6989586621680123904"><span class="annot"><span class="annottext">o :: O v
-</span><a href="#local-6989586621680123904"><span class="hs-identifier hs-var">o</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">O v -&gt; Action v
+</span><span id="line-151"></span><span>            </span><span id="local-6989586621680122644"><span class="annot"><span class="annottext">refactorAcc :: [Action v] -&gt; f -&gt; Action v -&gt; [Action v]
+</span><a href="#local-6989586621680122644"><span class="hs-identifier hs-var hs-var">refactorAcc</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span id="local-6989586621680122643"><span class="annot"><span class="annottext">o :: O v
+</span><a href="#local-6989586621680122643"><span class="hs-identifier hs-var">o</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">O v -&gt; Action v
 forall v. O v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-var">Pull</span></a></span><span> </span><span class="annot"><span class="annottext">O v
-</span><a href="#local-6989586621680123904"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-152"></span><span>            </span><span class="annot"><a href="#local-6989586621680123905"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span id="local-6989586621680123903"><span class="annot"><span class="annottext">accList :: [Action v]
-</span><a href="#local-6989586621680123903"><span class="hs-identifier hs-var">accList</span></a></span></span><span> </span><span id="local-6989586621680123902"><span class="annot"><span class="annottext">accNew :: f
-</span><a href="#local-6989586621680123902"><span class="hs-identifier hs-var">accNew</span></a></span></span><span> </span><span id="local-6989586621680123901"><span class="annot"><span class="annottext">accOld :: Action v
-</span><a href="#local-6989586621680123901"><span class="hs-identifier hs-var">accOld</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span id="local-6989586621680123900"><span class="annot"><span class="annottext">s :: Sign
-</span><a href="#local-6989586621680123900"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680123899"><span class="annot"><span class="annottext">i :: I v
-</span><a href="#local-6989586621680123899"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680123898"><span class="annot"><span class="annottext">v :: v
-</span><a href="#local-6989586621680123898"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680122643"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-152"></span><span>            </span><span class="annot"><a href="#local-6989586621680122644"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span id="local-6989586621680122642"><span class="annot"><span class="annottext">accList :: [Action v]
+</span><a href="#local-6989586621680122642"><span class="hs-identifier hs-var">accList</span></a></span></span><span> </span><span id="local-6989586621680122641"><span class="annot"><span class="annottext">accNew :: f
+</span><a href="#local-6989586621680122641"><span class="hs-identifier hs-var">accNew</span></a></span></span><span> </span><span id="local-6989586621680122640"><span class="annot"><span class="annottext">accOld :: Action v
+</span><a href="#local-6989586621680122640"><span class="hs-identifier hs-var">accOld</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span id="local-6989586621680122639"><span class="annot"><span class="annottext">s :: Sign
+</span><a href="#local-6989586621680122639"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680122638"><span class="annot"><span class="annottext">i :: I v
+</span><a href="#local-6989586621680122638"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680122637"><span class="annot"><span class="annottext">v :: v
+</span><a href="#local-6989586621680122637"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-153"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">v -&gt; Set v -&gt; Bool
 forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">elem</span></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123898"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">(Set v -&gt; Bool) -&gt; Set v -&gt; Bool
+</span><a href="#local-6989586621680122637"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">(Set v -&gt; Bool) -&gt; Set v -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680123902"><span class="hs-identifier hs-var">accNew</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Action v -&gt; Maybe (Action v)) -&gt; [Action v] -&gt; [Action v]
+</span><a href="#local-6989586621680122641"><span class="hs-identifier hs-var">accNew</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Action v -&gt; Maybe (Action v)) -&gt; [Action v] -&gt; [Action v]
 forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; Action v -&gt; Action v -&gt; Maybe (Action v)
 forall v v. Ord v =&gt; v -&gt; Action v -&gt; Action v -&gt; Maybe (Action v)
-</span><a href="#local-6989586621680123915"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123898"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Action v
-</span><a href="#local-6989586621680123901"><span class="hs-identifier hs-var">accOld</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Action v]
-</span><a href="#local-6989586621680123903"><span class="hs-identifier hs-var">accList</span></a></span><span>
+</span><a href="#local-6989586621680122654"><span class="hs-identifier hs-var">subs</span></a></span><span> </span><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680122637"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Action v
+</span><a href="#local-6989586621680122640"><span class="hs-identifier hs-var">accOld</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Action v]
+</span><a href="#local-6989586621680122642"><span class="hs-identifier hs-var">accList</span></a></span><span>
 </span><span id="line-154"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Sign
-</span><a href="#local-6989586621680123900"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Sign -&gt; Sign -&gt; Bool
+</span><a href="#local-6989586621680122639"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Sign -&gt; Sign -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-var">Minus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-var">Minus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123899"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680122638"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-155"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Sign
-</span><a href="#local-6989586621680123900"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Sign -&gt; Sign -&gt; Bool
+</span><a href="#local-6989586621680122639"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Sign -&gt; Sign -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123899"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-156"></span><span>            </span><span class="annot"><a href="#local-6989586621680123905"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Action v]
+</span><a href="#local-6989586621680122638"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-156"></span><span>            </span><span class="annot"><a href="#local-6989586621680122644"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Action v]
 forall a. HasCallStack =&gt; a
 </span><span class="hs-identifier hs-var">undefined</span></span><span>
 </span><span id="line-157"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Acc a x -&gt; F a x
@@ -538,26 +538,26 @@ forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 forall v f.
 (Function f v, Ord v) =&gt;
 [Action v] -&gt; f -&gt; Action v -&gt; [Action v]
-</span><a href="#local-6989586621680123905"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span class="annot"><span class="annottext">[Action a]
-</span><a href="#local-6989586621680123927"><span class="hs-identifier hs-var">lst'</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Action a]
-</span><a href="#local-6989586621680123926"><span class="hs-identifier hs-var">lst</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-158"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680123894"><span class="annot"><span class="annottext">f1 :: F a x
-</span><a href="#local-6989586621680123894"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (F a x)
+</span><a href="#local-6989586621680122644"><span class="hs-identifier hs-var">refactorAcc</span></a></span><span> </span><span class="annot"><span class="annottext">[Action a]
+</span><a href="#local-6989586621680122666"><span class="hs-identifier hs-var">lst'</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Action a]
+</span><a href="#local-6989586621680122665"><span class="hs-identifier hs-var">lst</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680122633"><span class="annot"><span class="annottext">f1 :: F a x
+</span><a href="#local-6989586621680122633"><span class="hs-identifier hs-var">f1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (F a x)
 forall v x.
 (Typeable v, Typeable x, Hashable v, Suffix v, ToString v,
  IsString v, Ord v, Num x) =&gt;
 F v x -&gt; Maybe (F v x)
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#fromAddSub"><span class="hs-identifier hs-var">fromAddSub</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span>
-</span><span id="line-159"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680123892"><span class="annot"><span class="annottext">f2 :: F a x
-</span><a href="#local-6989586621680123892"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (F a x)
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span>
+</span><span id="line-159"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680122631"><span class="annot"><span class="annottext">f2 :: F a x
+</span><a href="#local-6989586621680122631"><span class="hs-identifier hs-var">f2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (F a x)
 forall v x.
 (Typeable v, Typeable x, Hashable v, Suffix v, ToString v,
  IsString v, Ord v, Num x) =&gt;
 F v x -&gt; Maybe (F v x)
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#fromAddSub"><span class="hs-identifier hs-var">fromAddSub</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123928"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680122667"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-160"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Bool) -&gt; Int -&gt; Bool
@@ -569,29 +569,29 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Set a
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; F a x -&gt; [F a x]
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; F a x -&gt; [F a x]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#refactorFunction"><span class="hs-identifier hs-var">refactorFunction</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123894"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123892"><span class="hs-identifier hs-var">f2</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-161"></span><span>        </span><span class="hs-special">[</span><span id="local-6989586621680123891"><span class="annot"><span class="annottext">fNew :: F a x
-</span><a href="#local-6989586621680123891"><span class="hs-identifier hs-var">fNew</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123891"><span class="hs-identifier hs-var">fNew</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680122633"><span class="hs-identifier hs-var">f1</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680122631"><span class="hs-identifier hs-var">f2</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-161"></span><span>        </span><span class="hs-special">[</span><span id="local-6989586621680122630"><span class="annot"><span class="annottext">fNew :: F a x
+</span><a href="#local-6989586621680122630"><span class="hs-identifier hs-var">fNew</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680122630"><span class="hs-identifier hs-var">fNew</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-162"></span><span>        </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123928"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680122667"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-163"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123928"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680123929"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680122667"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680122668"><span class="hs-identifier hs-var">f'</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-164"></span><span>
 </span><span id="line-165"></span><span id="deleteFromPull"><span class="annot"><span class="annottext">deleteFromPull :: v -&gt; Action v -&gt; Maybe (Action v)
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#deleteFromPull"><span class="hs-identifier hs-var hs-var">deleteFromPull</span></a></span></span><span> </span><span id="local-6989586621680123890"><span class="annot"><span class="annottext">v :: v
-</span><a href="#local-6989586621680123890"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680123888"><span class="annot"><span class="annottext">s :: Set v
-</span><a href="#local-6989586621680123888"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#deleteFromPull"><span class="hs-identifier hs-var hs-var">deleteFromPull</span></a></span></span><span> </span><span id="local-6989586621680122629"><span class="annot"><span class="annottext">v :: v
+</span><a href="#local-6989586621680122629"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Pull"><span class="hs-identifier hs-type">Pull</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680122627"><span class="annot"><span class="annottext">s :: Set v
+</span><a href="#local-6989586621680122627"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-166"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
 forall a. Set a -&gt; Bool
 </span><span class="hs-identifier hs-var">S.null</span></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680123886"><span class="hs-identifier hs-var">deleted</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Action v)
+</span><a href="#local-6989586621680122625"><span class="hs-identifier hs-var">deleted</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Action v)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-167"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
@@ -606,30 +606,30 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; O v
 forall v. Set v -&gt; O v
 </span><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-var">O</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680123886"><span class="hs-identifier hs-var">deleted</span></a></span><span>
+</span><a href="#local-6989586621680122625"><span class="hs-identifier hs-var">deleted</span></a></span><span>
 </span><span id="line-168"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-169"></span><span>        </span><span id="local-6989586621680123886"><span class="annot"><span class="annottext">deleted :: Set v
-</span><a href="#local-6989586621680123886"><span class="hs-identifier hs-var hs-var">deleted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">v -&gt; Set v -&gt; Set v
+</span><span id="line-169"></span><span>        </span><span id="local-6989586621680122625"><span class="annot"><span class="annottext">deleted :: Set v
+</span><a href="#local-6989586621680122625"><span class="hs-identifier hs-var hs-var">deleted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">v -&gt; Set v -&gt; Set v
 forall a. Ord a =&gt; a -&gt; Set a -&gt; Set a
 </span><span class="hs-identifier hs-var">S.delete</span></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123890"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680123888"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><a href="#local-6989586621680122629"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680122627"><span class="hs-identifier hs-var">s</span></a></span><span>
 </span><span id="line-170"></span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#deleteFromPull"><span class="hs-identifier hs-var">deleteFromPull</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-type">Push</span></a></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe (Action v)
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;delete only Pull&quot;</span></span><span>
 </span><span id="line-171"></span><span>
 </span><span id="line-172"></span><span id="fromAddSub"><span class="annot"><span class="annottext">fromAddSub :: F v x -&gt; Maybe (F v x)
-</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#fromAddSub"><span class="hs-identifier hs-var hs-var">fromAddSub</span></a></span></span><span> </span><span id="local-6989586621680123884"><span class="annot"><span class="annottext">f :: F v x
-</span><a href="#local-6989586621680123884"><span class="hs-identifier hs-var">f</span></a></span></span><span>
-</span><span id="line-173"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Add"><span class="hs-identifier hs-type">Add</span></a></span><span> </span><span id="local-6989586621680123883"><span class="annot"><span class="annottext">in1 :: I v
-</span><a href="#local-6989586621680123883"><span class="hs-identifier hs-var">in1</span></a></span></span><span> </span><span id="local-6989586621680123882"><span class="annot"><span class="annottext">in2 :: I v
-</span><a href="#local-6989586621680123882"><span class="hs-identifier hs-var">in2</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680123881"><span class="annot"><span class="annottext">out :: Set v
-</span><a href="#local-6989586621680123881"><span class="hs-identifier hs-var">out</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Add v x)
+</span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#fromAddSub"><span class="hs-identifier hs-var hs-var">fromAddSub</span></a></span></span><span> </span><span id="local-6989586621680122623"><span class="annot"><span class="annottext">f :: F v x
+</span><a href="#local-6989586621680122623"><span class="hs-identifier hs-var">f</span></a></span></span><span>
+</span><span id="line-173"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Add"><span class="hs-identifier hs-type">Add</span></a></span><span> </span><span id="local-6989586621680122622"><span class="annot"><span class="annottext">in1 :: I v
+</span><a href="#local-6989586621680122622"><span class="hs-identifier hs-var">in1</span></a></span></span><span> </span><span id="local-6989586621680122621"><span class="annot"><span class="annottext">in2 :: I v
+</span><a href="#local-6989586621680122621"><span class="hs-identifier hs-var">in2</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680122620"><span class="annot"><span class="annottext">out :: Set v
+</span><a href="#local-6989586621680122620"><span class="hs-identifier hs-var">out</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Add v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123884"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680122623"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-174"></span><span>        </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (F v x)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Maybe (F v x)) -&gt; F v x -&gt; Maybe (F v x)
@@ -647,11 +647,11 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123883"><span class="hs-identifier hs-var">in1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
+</span><a href="#local-6989586621680122622"><span class="hs-identifier hs-var">in1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123882"><span class="hs-identifier hs-var">in2</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Action v] -&gt; [Action v] -&gt; [Action v]
+</span><a href="#local-6989586621680122621"><span class="hs-identifier hs-var">in2</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Action v] -&gt; [Action v] -&gt; [Action v]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">O v -&gt; Action v
 forall v. O v -&gt; Action v
@@ -664,20 +664,20 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; Set v
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123879"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680123879"><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123879"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; [v]
+</span><a href="#local-6989586621680122618"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680122618"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680122618"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; [v]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680123881"><span class="hs-identifier hs-var">out</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-177"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Sub"><span class="hs-identifier hs-type">Sub</span></a></span><span> </span><span id="local-6989586621680123878"><span class="annot"><span class="annottext">in1 :: I v
-</span><a href="#local-6989586621680123878"><span class="hs-identifier hs-var">in1</span></a></span></span><span> </span><span id="local-6989586621680123877"><span class="annot"><span class="annottext">in2 :: I v
-</span><a href="#local-6989586621680123877"><span class="hs-identifier hs-var">in2</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680123876"><span class="annot"><span class="annottext">out :: Set v
-</span><a href="#local-6989586621680123876"><span class="hs-identifier hs-var">out</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Sub v x)
+</span><a href="#local-6989586621680122620"><span class="hs-identifier hs-var">out</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-177"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Sub"><span class="hs-identifier hs-type">Sub</span></a></span><span> </span><span id="local-6989586621680122617"><span class="annot"><span class="annottext">in1 :: I v
+</span><a href="#local-6989586621680122617"><span class="hs-identifier hs-var">in1</span></a></span></span><span> </span><span id="local-6989586621680122616"><span class="annot"><span class="annottext">in2 :: I v
+</span><a href="#local-6989586621680122616"><span class="hs-identifier hs-var">in2</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680122615"><span class="annot"><span class="annottext">out :: Set v
+</span><a href="#local-6989586621680122615"><span class="hs-identifier hs-var">out</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Sub v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123884"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680122623"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-178"></span><span>        </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (F v x)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Maybe (F v x)) -&gt; F v x -&gt; Maybe (F v x)
@@ -695,11 +695,11 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123878"><span class="hs-identifier hs-var">in1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
+</span><a href="#local-6989586621680122617"><span class="hs-identifier hs-var">in1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Sign -&gt; I v -&gt; Action v
 forall v. Sign -&gt; I v -&gt; Action v
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Push"><span class="hs-identifier hs-var">Push</span></a></span><span> </span><span class="annot"><span class="annottext">Sign
 </span><a href="NITTA.Intermediate.Functions.Accum.html#Minus"><span class="hs-identifier hs-var">Minus</span></a></span><span> </span><span class="annot"><span class="annottext">I v
-</span><a href="#local-6989586621680123877"><span class="hs-identifier hs-var">in2</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Action v] -&gt; [Action v] -&gt; [Action v]
+</span><a href="#local-6989586621680122616"><span class="hs-identifier hs-var">in2</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Action v] -&gt; [Action v] -&gt; [Action v]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">O v -&gt; Action v
 forall v. O v -&gt; Action v
@@ -712,20 +712,20 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; Set v
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123875"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680123875"><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680123875"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; [v]
+</span><a href="#local-6989586621680122614"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680122614"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680122614"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; [v]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680123876"><span class="hs-identifier hs-var">out</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680122615"><span class="hs-identifier hs-var">out</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-181"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.Accum.html#Acc"><span class="hs-identifier hs-type">Acc</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (Acc v x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123884"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (F v x)
+</span><a href="#local-6989586621680122623"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Maybe (F v x)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680123884"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680122623"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-182"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (F v x)
 forall a. Maybe a
