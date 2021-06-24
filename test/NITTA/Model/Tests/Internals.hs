@@ -14,33 +14,30 @@ module NITTA.Model.Tests.Internals (
     runTargetSynthesisWithUniqName,
 ) where
 
+import Control.Concurrent.STM.TVar
 import Data.Atomics.Counter (incrCounter, newCounter)
 import Data.Map as M
-import GHC.Conc as Conc
+import GHC.Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
 
 externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
-{-# NOINLINE externalTestNamesMap #-}
 externalTestNamesMap = unsafePerformIO $ newTVarIO M.empty
+{-# NOINLINE externalTestNamesMap #-}
 
 uniqTestPath :: FilePath -> IO FilePath
-uniqTestPath filePath = do
-    m <- readTVarIO externalTestNamesMap
-    case M.lookup filePath m of
-        Nothing -> notExist filePath m
-        Just count -> exist filePath (count + 1) m
-    where
-        notExist :: FilePath -> Map FilePath Int -> IO FilePath
-        notExist f m = do
-            _ <- return $ M.insert f (0 :: Int) m
-            return f
-        exist :: FilePath -> Int -> Map FilePath Int -> IO FilePath
-        exist f newCount m = do
-            _ <- return $ M.insert f newCount m
-            return (f <> "_" <> show newCount)
+uniqTestPath filePath =
+    atomically $ do
+        m <- readTVar externalTestNamesMap
+        case M.lookup filePath m of
+            Nothing -> do
+                writeTVar externalTestNamesMap $ M.insert filePath (0 :: Int) m
+                return filePath
+            Just count -> do
+                writeTVar externalTestNamesMap $ M.insert filePath ((count + 1) :: Int) m
+                return (filePath <> "_" <> show (count + 1))
 
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
     name <- uniqTestPath tName

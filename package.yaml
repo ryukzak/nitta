@@ -156,3 +156,4 @@ tests:
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
+      - stm

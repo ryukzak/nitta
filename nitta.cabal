@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cc31e12a0177cbecbd4a5d7ef2b3264644572990ae16d1ec2d47bda8361dad2c
+-- hash: 7966ddca9deb6484ee42e54ddc381e6b16a8ae22e40cb37052867b05d6b225cb
 
 name:           nitta
 version:        0.0.0.1
@@ -281,6 +281,7 @@ test-suite nitta-test
     , process-extras
     , regex-compat
     , split
+    , stm
     , string-interpolate
     , tasty
     , tasty-expected-failure
