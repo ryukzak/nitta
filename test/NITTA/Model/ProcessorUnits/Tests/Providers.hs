@@ -49,6 +49,7 @@ import qualified NITTA.Project as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
+import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck (testProperty)
@@ -92,18 +93,18 @@ puCoSimProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         pTestCntx <- initialCycleCntxGen fs
+        let n = unsafePerformIO $ uniqTestPath name
         return $
             monadicIO $
                 run $ do
                     unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
-                    i <- incrCounter 1 externalTestCntr
                     pwd <- getCurrentDirectory
-                    let pTargetProjectPath = "gen" </> (toModuleName name <> "_" <> show i)
+                    let pTargetProjectPath = "gen" </> toModuleName n
                         pInProjectNittaPath = "."
                         prj =
                             Project
-                                { pName = T.pack $ toModuleName name
+                                { pName = T.pack $ toModuleName n
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
                                 , pAbsTargetProjectPath = pwd </> pTargetProjectPath
