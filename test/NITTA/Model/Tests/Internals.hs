@@ -14,7 +14,7 @@ module NITTA.Model.Tests.Internals (
 ) where
 
 import Control.Concurrent.STM.TVar
-import Data.Map as M
+import qualified Data.Map as M
 import GHC.Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
