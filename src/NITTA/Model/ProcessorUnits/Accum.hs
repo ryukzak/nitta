@@ -35,7 +35,7 @@ import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
-import NITTA.Intermediate.Functions
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -109,7 +109,7 @@ instance (VarValTime v x t) => Default (Accum v x t) where
 
 instance Default x => DefaultX (Accum v x t) x
 
-registerAcc f@Acc{actions} pu@Accum{remainJobs} =
+registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
     pu
         { remainJobs =
             Job
@@ -122,10 +122,10 @@ registerAcc f@Acc{actions} pu@Accum{remainJobs} =
 
 actionGroups [] = []
 actionGroups as =
-    let (pushs, as') = span isPush as
-        (pulls, as'') = span isPull as'
-     in [ map (\(Push sign (I v)) -> (sign == Minus, v)) pushs
-        , concatMap (\(Pull (O vs)) -> map (True,) $ S.elems vs) pulls
+    let (pushs, as') = span F.isPush as
+        (pulls, as'') = span F.isPull as'
+     in [ map (\(F.Push sign (I v)) -> (sign == F.Minus, v)) pushs
+        , concatMap (\(F.Pull (O vs)) -> map (True,) $ S.elems vs) pulls
         ] :
         actionGroups as''
 
@@ -139,11 +139,13 @@ sourceTask tasks
 
 instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu
-        | Just (Add a b c) <- castF f =
-            Right $ registerAcc (Acc [Push Plus a, Push Plus b, Pull c]) pu
-        | Just (Sub a b c) <- castF f =
-            Right $ registerAcc (Acc [Push Plus a, Push Minus b, Pull c]) pu
-        | Just f'@Acc{} <- castF f =
+        | Just (F.Add a b c) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c]) pu
+        | Just (F.Sub a b c) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Minus b, F.Pull c]) pu
+        | Just (F.Neg a b) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Minus a, F.Pull b]) pu
+        | Just f'@F.Acc{} <- castF f =
             Right $ registerAcc f' pu
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 

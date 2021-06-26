@@ -35,6 +35,8 @@ module NITTA.Intermediate.Functions (
     shiftR,
     Sub (..),
     sub,
+    Neg (..),
+    neg,
     module NITTA.Intermediate.Functions.Accum,
 
     -- *Memory
@@ -317,6 +319,27 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
             nx = cntx `getCntx` n
             (qx, rx) = dx `quotRem` nx
          in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
+
+data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
+instance Label (Neg v x) where label Neg{} = "neg"
+instance (Var v) => Show (Neg v x) where
+    show (Neg i o) = "-" <> show i <> " = " <> show o
+
+neg :: (Var v, Val x) => v -> [v] -> F v x
+neg i o = packF $ Neg (I i) $ O $ fromList o
+
+instance (Ord v) => Function (Neg v x) v where
+    inputs (Neg i _) = variables i
+    outputs (Neg _ o) = variables o
+instance (Ord v) => Patch (Neg v x) (v, v) where
+    patch diff (Neg i o) = Neg (patch diff i) (patch diff o)
+instance (Var v) => Locks (Neg v x) v where
+    locks = inputsLockOutputs
+instance (Var v, Num x) => FunctionSimulation (Neg v x) v x where
+    simulate cntx (Neg (I i) (O o)) =
+        let x1 = cntx `getCntx` i
+            y = - x1
+         in [(v, y) | v <- elems o]
 
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)
 instance (Show x) => Label (Constant v x) where label (Constant (X x) _) = show x

@@ -205,6 +205,15 @@ test_assignment_and_reassignment =
             end
             counter(0)
         |]
+    , luaTestCase
+        "variable invertation"
+        [__i|
+                function sum(a)
+                    local b = -a
+                    sum(b)
+                end
+                sum(0)
+            |]
     ]
 
 test_complex_examples =

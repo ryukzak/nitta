@@ -98,6 +98,7 @@ selectClusters fs =
 isSupportByAccum f
     | Just Add{} <- castF f = True
     | Just Sub{} <- castF f = True
+    | Just Neg{} <- castF f = True
     | Just Acc{} <- castF f = True
     | otherwise = False
 
@@ -178,5 +179,9 @@ fromAddSub f
         Just $
             acc $
                 [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | Just (Neg in1 (O out)) <- castF f =
+        Just $
+            acc $
+                Push Minus in1 : [Pull $ O $ S.singleton o | o <- S.toList out]
     | Just Acc{} <- castF f = Just f
     | otherwise = Nothing

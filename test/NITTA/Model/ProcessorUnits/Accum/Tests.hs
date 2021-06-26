@@ -21,6 +21,7 @@ import Data.Default
 import qualified Data.Set as S
 import Data.String.Interpolate
 import qualified Data.Text as T
+import NITTA.Intermediate.Functions as F
 import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -286,6 +287,20 @@ tests =
 
             assertCoSimulation
             assertSynthesisDone
+        , unitTestCase "accum neg test" accumDef $ do
+            assign $ F.neg "a" ["c"]
+            setValue "a" 2
+
+            assertEndpoint 0 maxBound $ consume "a"
+            assertLocks [Lock{locked = "c", lockBy = "a"}]
+            decideAt 0 0 $ consume "a"
+
+            assertEndpoint 3 maxBound $ provide ["c"]
+            assertLocks []
+            decideAt 3 3 $ provide ["c"]
+
+            assertLocks []
+            assertCoSimulation
         ]
     where
         accumDef = def :: Accum T.Text Int Int
