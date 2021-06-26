@@ -23,6 +23,7 @@ module NITTA.Model.ProcessorUnits.Shift (
     Shift,
     Ports (..),
     IOPorts (..),
+    shift,
 ) where
 
 import Control.Monad (when)
@@ -67,18 +68,20 @@ instance (Var v) => Locks (Shift v x t) v where
         ]
     locks Shift{target = Nothing} = []
 
+shift sRight =
+    Shift
+        { remain = []
+        , target = Nothing
+        , sources = []
+        , sRight
+        , byteShiftDiv = 0
+        , byteShiftMod = 0
+        , currentWork = Nothing
+        , process_ = def
+        }
+
 instance Default t => Default (Shift v x t) where
-    def =
-        Shift
-            { remain = []
-            , target = Nothing
-            , sources = []
-            , sRight = True
-            , byteShiftDiv = 0
-            , byteShiftMod = 0
-            , currentWork = Nothing
-            , process_ = def
-            }
+    def = shift True
 
 instance BreakLoopProblem (Shift v x t) v x
 instance ConstantFoldingProblem (Shift v x t) v x

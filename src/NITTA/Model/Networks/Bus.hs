@@ -21,7 +21,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-For creating BusNetwork see 'NITTA.Model.Microarchitecture'.
+For creating BusNetwork see 'NITTA.Model.Microarchitecture.Builder'.
 -}
 module NITTA.Model.Networks.Bus (
     BusNetwork (..),

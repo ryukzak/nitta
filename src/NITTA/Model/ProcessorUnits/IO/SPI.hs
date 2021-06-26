@@ -46,11 +46,11 @@ instance SimpleIOInterface SPIinterface
 
 type SPI v x t = SimpleIO SPIinterface v x t
 
-anySPI :: (Time t) => Int -> SPI v x t
-anySPI bounceFilter =
+anySPI :: (Time t) => Int -> Maybe Int -> SPI v x t
+anySPI bounceFilter bufferSize =
     SimpleIO
         { bounceFilter
-        , bufferSize = Just 6 -- FIXME:
+        , bufferSize
         , receiveQueue = []
         , receiveN = 0
         , isReceiveOver = False
@@ -82,7 +82,7 @@ instance IOConnected (SPI v x t) where
     outputPorts SPIMaster{..} = [master_mosi, master_sclk, master_cs]
 
 instance (Time t) => Default (SPI v x t) where
-    def = anySPI 0
+    def = anySPI 0 $ Just 6
 
 instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_spi"

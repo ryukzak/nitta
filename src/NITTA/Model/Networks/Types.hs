@@ -168,6 +168,7 @@ data IOSynchronization
     deriving (Show, Read, Typeable, Generic)
 
 instance ToJSON IOSynchronization
+instance FromJSON IOSynchronization
 
 puInputPorts PU{uEnv} = envInputPorts uEnv
 puOutputPorts PU{uEnv} = envOutputPorts uEnv
