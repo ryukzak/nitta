@@ -2,46 +2,37 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
--- | CAD for reconfigurable real-time ASIP
+-- | Tool for Hard Real-Time CGRA Processors
 --   
---   Application area:
+--   Kind: research pet project.
 --   
---   <ul>
---   <li>developing cyber-physical systems which are based on adaptive
---   robust control algorithms and artificial intelligence with high
---   requirements on latency and computational volume, power and area
---   consumption;</li>
---   <li>developing hardware programmable accelerators and
---   co-processors;</li>
---   <li>developing dynamically reconfigurable IP-core and soft-core for
---   FPGA;</li>
---   <li>developing problem-oriented programmable ASIC.</li>
---   </ul>
+--   Project status: early prototype.
 --   
---   Project goals:
+--   We develop the tool for generating and programming specialized non-von
+--   Neumann CGRA processors used for cyclic execution of control and
+--   signal/data processing algorithms. These processors are based on the
+--   original Not Instruction Transport Triggered Architecture (NITTA).
+--   That allows us to:
 --   
 --   <ul>
---   <li>rapid prototyping of control and cyber-physical systems;</li>
---   <li>hardware in the loop simulation;</li>
---   <li>target system synthesis and its components;</li>
---   <li>integration of the real-time system with nonreal-time environment
---   and automation of its interaction;</li>
---   <li>developing of IP-core for embedded systems and systems on a
---   chip.</li>
+--   <li>Provide high speed and parallel execution of irregular algorithms
+--   (where GPU is not applicable) in hard real-time (clock accuracy).</li>
+--   <li>Make the processor reconfigurable for different application
+--   domains.</li>
+--   <li>Provide a high-level language for application developers and fast
+--   compilation.</li>
 --   </ul>
 --   
---   Key features:
+--   Our future users can resolve the following tasks:
 --   
 --   <ul>
---   <li>the orientation on model-driven engineering and not on software
---   engineering;</li>
---   <li>automation of most of the development stages, including algorithm
---   and model design and functional simulation, prototyping and complex
---   verification, complex automatisation of cross-layer testing and
---   synthesis and optimisation of a target system;</li>
---   <li>deeply computational platform reconfiguration on hardware,
---   software and tool levels, transparency of CAD system workflow.</li>
+--   <li>Development of embedded and cyber-physical systems.</li>
+--   <li>Hardware and software testing and rapid prototyping (HIL and
+--   PIL).</li>
+--   <li>Development of programmable accelerators and coprocessors.</li>
 --   </ul>
+--   
+--   Page: <a>https://ryukzak.github.io/projects/nitta/</a>
 @package nitta
 @version 0.0.0.1
 
