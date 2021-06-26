@@ -19,19 +19,19 @@ import GHC.Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
 
-externalTestNamesMap = unsafePerformIO $ newTVarIO M.empty
-{-# NOINLINE externalTestNamesMap #-}
+globalNameRegistry = unsafePerformIO $ newTVarIO M.empty
+{-# NOINLINE globalNameRegistry #-}
 
 uniqTestPath :: FilePath -> IO FilePath
 uniqTestPath name =
     atomically $ do
-        m <- readTVar externalTestNamesMap
-        case M.lookup name m of
+        nameRegistry <- readTVar globalNameRegistry
+        case M.lookup name nameRegistry of
             Nothing -> do
-                writeTVar externalTestNamesMap $ M.insert name (0 :: Int) m
+                writeTVar globalNameRegistry $ M.insert name (0 :: Int) nameRegistry
                 return name
             Just count -> do
-                writeTVar externalTestNamesMap $ M.adjust (+ 1) name m
+                writeTVar globalNameRegistry $ M.adjust (+ 1) name nameRegistry
                 return (name <> "_" <> show (count + 1))
 
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do

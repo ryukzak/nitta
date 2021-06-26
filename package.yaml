@@ -150,10 +150,10 @@ tests:
       - genvalidity-property
       - nitta
       - split
+      - stm
       - tasty
       - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
-      - stm
