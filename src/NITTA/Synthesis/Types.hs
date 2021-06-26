@@ -54,7 +54,7 @@ import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.UIBackend.ViewHelperCls
 import Servant
 

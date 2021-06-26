@@ -22,7 +22,6 @@ module NITTA.Intermediate.Types (
     I (..),
     O (..),
     X (..),
-    showOut,
 
     -- *Function description
     F (..),
@@ -40,11 +39,9 @@ module NITTA.Intermediate.Types (
     FunctionSimulation (..),
     CycleCntx (..),
     Cntx (..),
-    showCntx,
-    cntx2table,
-    cntx2md,
-    cntx2json,
-    cntx2csv,
+    log2md,
+    log2json,
+    log2csv,
     cntxReceivedBySlice,
     getCntx,
     updateCntx,
@@ -59,6 +56,7 @@ module NITTA.Intermediate.Types (
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
+import Data.Bifunctor
 import qualified Data.Csv as Csv
 import Data.Default
 import qualified Data.HashMap.Strict as HM
@@ -66,18 +64,23 @@ import Data.List (sort, sortOn, transpose)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S hiding (split)
+import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
 newtype I v = I v
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+
+instance (ToString v) => Show (I v) where show (I v) = toString v
 
 instance (Eq v) => Patch (I v) (v, v) where
     patch (v, v') i@(I v0)
@@ -94,14 +97,13 @@ newtype O v = O (S.Set v)
 instance (Ord v) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
-instance (Show v) => Show (O v) where
-    show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
+instance (ToString v) => Show (O v) where
+    show (O vs)
+        | S.null vs = "_"
+        | otherwise = S.join " = " $ vsToStringList vs
 
 instance Variables (O v) v where
     variables (O vs) = vs
-
-showOut vs | S.null vs = "_"
-showOut vs = S.join " = " $ map show $ S.elems vs
 
 -- |Value of variable (constant or initial value).
 newtype X x = X x
@@ -123,7 +125,11 @@ data Lock v = Lock
     { locked :: v
     , lockBy :: v
     }
-    deriving (Show, Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic)
+
+instance (ToString v) => Show (Lock v) where
+    show Lock{locked, lockBy} =
+        "Lock{locked=" <> toString locked <> ", lockBy=" <> toString lockBy <> "}"
 
 instance (ToJSON v) => ToJSON (Lock v)
 
@@ -158,6 +164,9 @@ class Label a where
 
 instance Label String where
     label s = s
+
+instance Label T.Text where
+    label = toString
 
 -- |Type class of something, which is related to functions.
 class WithFunctions a f | a -> f where
@@ -197,7 +206,7 @@ instance FunctionSimulation (F v x) v x where
     simulate cntx F{fun} = simulate cntx fun
 
 instance Label (F v x) where
-    label F{fun} = S.replace "\"" "" $ label fun
+    label F{fun} = label fun
 
 instance (Var v) => Locks (F v x) v where
     locks F{fun} = locks fun
@@ -235,7 +244,7 @@ instance (Patch b v) => Patch [b] v where
     patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
-    show F{fun} = S.replace "\"" "" $ show fun
+    show F{fun} = show fun
 
 instance (Var v) => Variables (F v x) v where
     variables F{fun} = inputs fun `S.union` outputs fun
@@ -246,16 +255,16 @@ castF F{fun} = cast fun
 
 -- |Helper for JSON serialization
 data FView = FView
-    { fvFun :: String
-    , fvHistory :: [String]
+    { fvFun :: T.Text
+    , fvHistory :: [T.Text]
     }
     deriving (Generic, Show)
 
 instance Viewable (F v x) FView where
     view F{fun, funHistory} =
         FView
-            { fvFun = S.replace "\"" "" $ show fun
-            , fvHistory = map (S.replace "\"" "" . show) funHistory
+            { fvFun = showText fun
+            , fvHistory = map showText funHistory
             }
 
 instance ToJSON FView
@@ -270,11 +279,15 @@ class FunctionSimulation f v x | f -> v x where
     -- |Receive a computational context and return changes (list of varible names and its new values).
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
-newtype CycleCntx v x = CycleCntx {cycleCntx :: M.Map v x}
-    deriving (Show, Generic)
+newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
+    deriving (Generic)
+
+instance (ToString v, Show x) => Show (CycleCntx v x) where
+    show CycleCntx{cycleCntx} =
+        "{" <> S.join ", " (map (\(v, x) -> toString v <> ": " <> show x) $ HM.toList cycleCntx) <> "}"
 
 instance Default (CycleCntx v x) where
-    def = CycleCntx def
+    def = CycleCntx HM.empty
 
 data Cntx v x = Cntx
     { -- |all variables on each process cycle
@@ -284,63 +297,40 @@ data Cntx v x = Cntx
     , cntxCycleNumber :: Int
     }
 
-instance (Show v, Val x) => Show (Cntx v x) where
-    show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
-        where
-            show' = S.replace "\"" "" . show
+instance (Show x) => Show (Cntx String x) where
+    show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
-showCntx f Cntx{cntxProcess, cntxCycleNumber} =
-    Cntx
-        { cntxProcess = map (CycleCntx . foo . cycleCntx) cntxProcess
-        , cntxReceived = def
-        , cntxCycleNumber = cntxCycleNumber
-        }
-    where
-        foo vx =
-            M.fromList
-                [ (v', x')
-                | (v, x) <- M.assocs vx
-                , let vx' = f v x
-                , isJust vx'
-                , let Just (v', x') = vx'
-                ]
-
-cntx2list Cntx{cntxProcess, cntxCycleNumber} =
-    let header = sort $ M.keys $ cycleCntx $ head cntxProcess
-        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+log2list cntxProcess0 =
+    let cntxProcess = map (HM.fromList . map (first toString) . HM.toList) cntxProcess0
+        header = sort $ HM.keys $ head cntxProcess
+        body = map row cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
      in map (uncurry (:)) $ zip header (transpose body)
     where
-        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
-
-cntx2table cntx =
-    render $
-        hsep 1 left $
-            map (vcat left . map text) $ cntx2list cntx
+        sortedValues cntx = map snd $ sortOn fst $ HM.toList cntx
 
 {- |
- >>>  let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> putStr $ cntx2md cntx
- <BLANKLINE>
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> putStr $ log2md records
  | Cycle  | x1   | x2   |
  |:-------|:-----|:-----|
  | 1      | 1.2  | 3.4  |
  | 2      | 3.4  | 2.3  |
 -}
-cntx2md cntx@Cntx{cntxCycleNumber} =
-    let cntx2listCycle = ("Cycle" : map show [1 .. cntxCycleNumber]) : cntx2list cntx
+log2md records =
+    let n = length records
+        cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (cntxCycleNumber + 2) "|"]
-     in "\n"
-            ++ render
-                ( hsep 0 left $
-                    map (vcat left . map text) cycleFormattedTable
-                )
+        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
+     in render
+            ( hsep 0 left $
+                map (vcat left . map text) cycleFormattedTable
+            )
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2json cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2json records
  [
      {
          "x2": 3.4,
@@ -352,19 +342,19 @@ cntx2md cntx@Cntx{cntxCycleNumber} =
      }
 ]
 -}
-cntx2json cntx =
-    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ cntx2list cntx
+log2json records =
+    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ log2list records
      in encodePretty $ map HM.fromList listHashMap
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
- >>> let cntx = Cntx [CycleCntx(M.fromList[("x1"::String,"1.2"::String), ("x2","3.4")]), CycleCntx(M.fromList[("x1","3.4"), ("x2","2.3")])] M.empty 2
- >>> BS.putStr $ cntx2csv cntx
+ >>> let records = map HM.fromList [[("x1"::String,"1.2"::String), ("x2","3.4")], [("x1","3.4"), ("x2","2.3")]]
+ >>> BS.putStr $ log2csv records
  x1,x2
  1.2,3.4
  3.4,2.3
 -}
-cntx2csv cntx = Csv.encode $ transpose $ cntx2list cntx
+log2csv records = Csv.encode $ transpose $ log2list records
 
 instance Default (Cntx v x) where
     def =
@@ -385,14 +375,14 @@ cntxReceivedBySlice' received
          in slice : cntxReceivedBySlice' received'
     | otherwise = repeat M.empty
 
-getCntx (CycleCntx cntx) v = case cntx M.!? v of
+getCntx (CycleCntx cntx) v = case HM.lookup v cntx of
     Just x -> x
-    Nothing -> error $ "variable not defined: " <> show v
+    Nothing -> error $ "variable not defined: " <> toString v
 
 updateCntx cycleCntx [] = Right cycleCntx
 updateCntx (CycleCntx cntx) ((v, x) : vxs)
-    | M.member v cntx = Left $ "variable value already defined: " <> show v
-    | otherwise = updateCntx (CycleCntx $ M.insert v x cntx) vxs
+    | HM.member v cntx = Left $ "variable value already defined: " <> toString v
+    | otherwise = updateCntx (CycleCntx $ HM.insert v x cntx) vxs
 
 -----------------------------------------------------------
 
@@ -400,7 +390,11 @@ updateCntx (CycleCntx cntx) ((v, x) : vxs)
 class Patch f diff where
     patch :: diff -> f -> f
 
--- |Change set for patch.
+{- |Change set for patch.
+
+>>> Changeset (M.fromList [("a", "b"), ("c", "d")]) (M.fromList [("e", S.fromList ["f", "g"])]) :: Changeset String
+Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
+-}
 data Changeset v = Changeset
     { -- |change set for input variables (one to one)
       changeI :: M.Map v v
@@ -410,7 +404,13 @@ data Changeset v = Changeset
       -- > fromList [(c, {y, z})] -- one output variable to many
       changeO :: M.Map v (S.Set v)
     }
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance (Var v) => Show (Changeset v) where
+    show Changeset{changeI, changeO} =
+        let changeI' = S.join ", " $ map (\(a, b) -> "(" <> toString a <> ", " <> toString b <> ")") $ M.assocs changeI
+            changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (vsToStringList bs) <> "])") $ M.assocs changeO
+         in "Changeset{changeI=[" <> changeI' <> "], changeO=[" <> changeO' <> "]}"
 
 instance Default (Changeset v) where
     def = Changeset def def

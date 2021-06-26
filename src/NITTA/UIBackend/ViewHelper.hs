@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -8,7 +9,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -37,14 +37,11 @@ module NITTA.UIBackend.ViewHelper (
     ShortNodeView,
     NodeView,
     StepInfoView (..),
-    TestbenchReportView (..),
 ) where
 
 import Control.Concurrent.STM
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
-import Data.Hashable
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -55,10 +52,11 @@ import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
-import NITTA.Project (TestbenchReport (..))
+import NITTA.Project.TestBench
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 import Servant.Docs
 
@@ -70,7 +68,7 @@ data TreeView a = TreeNodeView
     { rootLabel :: a
     , subForest :: [TreeView a]
     }
-    deriving (Generic)
+    deriving (Generic, Show)
 
 instance (ToJSON a) => ToJSON (TreeView a)
 
@@ -80,8 +78,9 @@ instance ToSample (TreeView ShortNodeView) where
             TreeNodeView
                 { rootLabel =
                     ShortNodeView
-                        { sid = show $ SID []
-                        , isLeaf = False
+                        { sid = showText $ SID []
+                        , isTerminal = False
+                        , isFinish = False
                         , isProcessed = True
                         , duration = 0
                         , score = 0 / 0
@@ -91,8 +90,9 @@ instance ToSample (TreeView ShortNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [0]
-                                , isLeaf = False
+                                { sid = showText $ SID [0]
+                                , isTerminal = False
+                                , isFinish = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 4052
@@ -103,8 +103,9 @@ instance ToSample (TreeView ShortNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = show $ SID [1]
-                                , isLeaf = False
+                                { sid = showText $ SID [1]
+                                , isTerminal = False
+                                , isFinish = False
                                 , isProcessed = False
                                 , duration = 0
                                 , score = 3021
@@ -115,29 +116,50 @@ instance ToSample (TreeView ShortNodeView) where
                     ]
                 }
 
+instance ToSample Integer where
+    toSamples _ =
+        singleSample 0
+
 data ShortNodeView = ShortNodeView
+    { sid :: T.Text
+    , isTerminal :: Bool
+    , isFinish :: Bool
+    , isProcessed :: Bool
+    , duration :: Int
+    , score :: Float
+    , decsionType :: T.Text
+    }
+    deriving (Generic, Show)
+
+data NodeInfo = NodeInfo
     { sid :: String
-    , isLeaf :: Bool
+    , isTerminal :: Bool
     , isProcessed :: Bool
     , duration :: Int
     , score :: Float
     , decsionType :: String
     }
-    deriving (Generic)
+    deriving (Generic, Show)
 
 instance ToJSON ShortNodeView
+instance ToJSON TreeInfo
 
-viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+instance ToSample TreeInfo where
+    toSamples _ =
+        singleSample mempty
+
+viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForest <- maybe (return []) (mapM viewNodeTree) subForestM
     return
         TreeNodeView
             { rootLabel =
                 ShortNodeView
-                    { sid = show sid
-                    , isLeaf = isComplete tree
+                    { sid = showText sid
+                    , isTerminal = isLeaf tree
+                    , isFinish = isComplete tree
                     , isProcessed = isJust subForestM
-                    , duration = fromEnum $ processDuration sTarget
+                    , duration = (fromEnum . processDuration . sTarget . sState) tree
                     , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
                     , decsionType = case sDecision of
                         Root{} -> "root"
@@ -154,8 +176,9 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
             }
 
 data NodeView tag v x t = NodeView
-    { sid :: String
-    , isLeaf :: Bool
+    { sid :: T.Text
+    , isTerminal :: Bool
+    , isFinish :: Bool
     , duration :: Int
     , parameters :: Value
     , decision :: DecisionView
@@ -164,11 +187,12 @@ data NodeView tag v x t = NodeView
     deriving (Generic)
 
 instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
-    view tree@Tree{sID, sDecision, sState = SynthesisState{sTarget}} =
+    view tree@Tree{sID, sDecision} =
         NodeView
-            { sid = show sID
-            , isLeaf = isComplete tree
-            , duration = fromEnum $ processDuration sTarget
+            { sid = showText sID
+            , isTerminal = isLeaf tree
+            , isFinish = isComplete tree
+            , duration = fromEnum $ processDuration $ sTarget $ sState tree
             , decision =
                 ( \case
                     SynthesisDecision{decision} -> view decision
@@ -195,8 +219,9 @@ instance ToSample (NodeView tag v x t) where
     toSamples _ =
         samples
             [ NodeView
-                { sid = show $ SID [0, 1, 3, 1]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -215,8 +240,9 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1032
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1, 5]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -234,16 +260,18 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 6]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1, 6]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , score = 5000
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1, 5]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
@@ -254,8 +282,9 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1, 5]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters = toJSON ConstantFoldingMetrics
                 , decision =
@@ -266,8 +295,9 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = show $ SID [0, 1, 3, 1, 5]
-                , isLeaf = False
+                { sid = showText $ SID [0, 1, 3, 1, 5]
+                , isTerminal = False
+                , isFinish = False
                 , duration = 0
                 , parameters =
                     toJSON $
@@ -285,45 +315,25 @@ instance ToSample (NodeView tag v x t) where
                 }
             ]
 
-newtype StepInfoView = StepInfoView String
+newtype StepInfoView = StepInfoView T.Text
     deriving (Generic)
 
-instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
-    view = StepInfoView . show
+instance (Var v, Time t) => Viewable (StepInfo v x t) StepInfoView where
+    view = StepInfoView . showText
 
 instance ToJSON StepInfoView
 
-instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
+instance (Var v, Time t) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
     view p@Process{steps} = p{steps = map (\s@Step{pDesc} -> s{pDesc = view pDesc}) steps}
 
 -- Testbench
 
-data TestbenchReportView v x = TestbenchReportView
-    { tbStatus :: Bool
-    , tbPath :: String
-    , tbFiles :: [String]
-    , tbFunctions :: [T.Text]
-    , tbSynthesisSteps :: [T.Text]
-    , tbCompilerDump :: T.Text
-    , tbSimulationDump :: T.Text
-    , tbFunctionalSimulationCntx :: [HM.HashMap v x]
-    , tbLogicalSimulationCntx :: [HM.HashMap v x]
-    }
-    deriving (Generic)
+instance (ToJSONKey v, ToJSON v, ToJSON x) => ToJSON (TestbenchReport v x)
 
-instance (Eq v, Hashable v) => Viewable (TestbenchReport v x) (TestbenchReportView v x) where
-    view TestbenchReport{tbLogicalSimulationCntx, ..} =
-        TestbenchReportView
-            { tbLogicalSimulationCntx = map (HM.fromList . M.assocs . cycleCntx) $ cntxProcess tbLogicalSimulationCntx
-            , ..
-            }
-
-instance (ToJSONKey v, ToJSON x) => ToJSON (TestbenchReportView v x)
-
-instance ToSample (TestbenchReportView String Int) where
+instance ToSample (TestbenchReport String Int) where
     toSamples _ =
         singleSample
-            TestbenchReportView
+            TestbenchReport
                 { tbStatus = True
                 , tbCompilerDump = "stdout:\n" <> "stderr:\n"
                 , tbSimulationDump =
@@ -393,14 +403,14 @@ instance ToSample (TestbenchReportView String Int) where
                     , "Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}"
                     , "Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
                     ]
-                , tbFunctionalSimulationCntx =
+                , tbFunctionalSimulationLog =
                     replicate 2 $
                         HM.fromList
                             [ ("tmp_0#0", 0)
                             , ("u#0", 0)
                             , ("x#0", 0)
                             ]
-                , tbLogicalSimulationCntx =
+                , tbLogicalSimulationLog =
                     replicate 2 $
                         HM.fromList
                             [ ("tmp_0#0", 0)

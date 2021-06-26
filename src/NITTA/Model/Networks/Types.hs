@@ -33,7 +33,7 @@ import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Project.Types
 
@@ -130,8 +130,8 @@ instance (Ord v) => Patch (PU v x t) (O v, O v) where
             }
 
 instance (Var v) => Locks (PU v x t) v where
-    locks PU{unit, diff = Changeset{changeI, changeO}}
-        | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " ++ show changeI
+    locks PU{unit, diff = diff@Changeset{changeI, changeO}}
+        | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " <> show diff
         | otherwise =
             let (locked', locks') = L.partition (\Lock{locked} -> locked `M.member` changeO) $ locks unit
                 (lockBy', locks'') = L.partition (\Lock{lockBy} -> lockBy `M.member` changeO) locks'

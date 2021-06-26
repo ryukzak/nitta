@@ -28,6 +28,7 @@ import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
@@ -64,6 +65,7 @@ data Nitta = Nitta
     , fsim :: Bool
     , lsim :: Bool
     , verbose :: Bool
+    , extra_verbose :: Bool
     , output_path :: FilePath
     , format :: String
     }
@@ -74,18 +76,47 @@ deriving instance Data IOSynchronization
 nittaArgs =
     Nitta
         { filename = def &= argPos 0 &= typFile
-        , type_ = "fx32.32" &= name "t" &= help "Data type (default: 'fx32.32')"
-        , io_sync = Sync &= help "IO synchronization mode: sync, async, onboard"
-        , port = 0 &= help "Run nitta server for UI on specific port (by default - not run)"
-        , templates = defTemplates &= help ("Specify target platform templates (':', default: '" <> defTemplates <> "')")
-        , n = 10 &= help "Number of computation cycles for simulation and testbench"
-        , fsim = False &= help "Functional simulation with trace"
-        , lsim = False &= help "Logical (HDL) simulation with trace"
-        , verbose = False &= help "Verbose"
-        , output_path = "gen" &= help "Place the output into specified directory"
-        , format = "md" &= help "Specify logical (HDL) or functional simulation output format: md, json, csv (default: 'md')"
+        , output_path =
+            "gen" &= typ "PATH" &= help "Target system path"
+                &= groupname "Common flags"
+        , port =
+            0 &= help "Run nitta server for UI on specific port (by default - not run)"
+                &= groupname "Common flags"
+        , type_ =
+            "fx32.32" &= name "t" &= typ "fxM.B" &= help "Data type (default: 'fx32.32')"
+                &= groupname "Target system configuration"
+        , io_sync =
+            Sync &= help "IO synchronization mode"
+                &= explicit
+                &= name "io-sync"
+                &= typ "sync|async|onboard"
+                &= groupname "Target system configuration"
+        , templates =
+            defTemplates &= typ "PATH[:PATH]" &= help ("Target platform templates (default: '" <> defTemplates <> "')")
+                &= groupname "Target system configuration"
+        , fsim =
+            False &= name "f" &= help "Functional simulation with trace"
+                &= groupname "Simulation"
+        , lsim =
+            False &= name "l" &= help "Logical (HDL) simulation with trace"
+                &= groupname "Simulation"
+        , format =
+            "md" &= help "Simulation output format (default: 'md')"
+                &= typ "md|json|csv"
+                &= groupname "Simulation"
+        , n =
+            10 &= help "Number of simulation cycles"
+                &= groupname "Simulation"
+        , verbose =
+            False &= help "Verbose"
+                &= groupname "Other"
+        , extra_verbose =
+            False &= help "Extra verbose"
+                &= groupname "Other"
         }
-        &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
+        &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
+        &= helpArg [groupname "Other"]
+        &= versionArg [groupname "Other"]
     where
         defTemplates = S.join ":" defProjectTemplates
 
@@ -96,17 +127,17 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path, templates, format} <-
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
         cmdArgs nittaArgs
-    setupLogger verbose
+    setupLogger verbose extra_verbose
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let FrontendResult{frDataFlow, frTrace, frPrettyCntx} = lua2functions src
+            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = lua2functions src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ma = (microarch io_sync :: BusNetwork String String (Attr (FX m b)) Int)
+                ma = (microarch io_sync :: BusNetwork T.Text T.Text (Attr (FX m b)) Int)
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -138,12 +169,15 @@ main = do
                         Left msg -> error msg
                         Right p -> return p
 
-            when lsim $ logicalSimulation format frPrettyCntx prj
+            when lsim $ logicalSimulation format frPrettyLog prj
         )
         $ parseFX type_
 
-setupLogger verbose = do
-    let level = if verbose then DEBUG else NOTICE
+setupLogger verbose extra = do
+    let level = case (verbose, extra) of
+            (_, True) -> DEBUG
+            (True, _) -> NOTICE
+            _ -> WARNING
     h <-
         streamHandler stdout level >>= \lh ->
             return $
@@ -161,21 +195,21 @@ readSourceCode filename = do
 
 -- |Simulation on intermediate level (data-flow graph)
 functionalSimulation n received src format = do
-    let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
+    let FrontendResult{frDataFlow, frPrettyLog} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
-    putCntx format $ frPrettyCntx cntx
+    putLog format $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
-logicalSimulation format frPrettyCntx prj = do
-    TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
-    putCntx format $ frPrettyCntx tbLogicalSimulationCntx
+logicalSimulation format prettyLog prj = do
+    TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
+    putLog format $ prettyLog tbLogicalSimulationLog
 
-putCntx "md" cntx = putStr $ cntx2md cntx
-putCntx "json" cntx = BS.putStrLn $ cntx2json cntx
-putCntx "csv" cntx = BS.putStr $ cntx2csv cntx
-putCntx t _ = error $ "not supported output format option: " <> t
+putLog "md" records = putStr $ log2md records
+putLog "json" records = BS.putStrLn $ log2json records
+putLog "csv" records = BS.putStr $ log2csv records
+putLog t _ = error $ "not supported output format option: " <> t
 
 microarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO

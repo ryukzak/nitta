@@ -29,7 +29,6 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
 import NITTA.Synthesis.Types
 
 data ResolveDeadlockMetrics = ResolveDeadlockMetrics

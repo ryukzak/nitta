@@ -30,8 +30,8 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
 
 import Data.CallStack
 import Data.Default
+import qualified Data.HashMap.Strict as HM
 import Data.List (delete)
-import qualified Data.Map.Strict as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions ()
@@ -53,17 +53,18 @@ with or without "naive synthesis".
 -}
 puCoSim ::
     ( HasCallStack
-    , PUClasses pu String x Int
-    , WithFunctions pu (F String x)
-    , P.Testable pu String x
+    , PUClasses pu v x Int
+    , WithFunctions pu (F v x)
+    , P.Testable pu v x
     , DefaultX pu x
+    , Var v
     ) =>
     String ->
     pu ->
-    [(String, x)] ->
-    [F String x] ->
+    [(v, x)] ->
+    [F v x] ->
     Bool ->
-    IO (TestbenchReport String x)
+    IO (TestbenchReport v x)
 puCoSim name u cntxCycle alg needBind = do
     pwd <- getCurrentDirectory
     let mname = toModuleName name
@@ -82,7 +83,7 @@ puCoSim name u cntxCycle alg needBind = do
                         then naiveSynthesis alg u
                         else u
                 , pUnitEnv = def
-                , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                , pTestCntx = simulateAlg 5 (CycleCntx $ HM.fromList cntxCycle) [] alg
                 , pTemplates = ["templates/Icarus"]
                 }
     writeProject prj
@@ -101,9 +102,9 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs =
-    "expected: " <> show (elems $ unionsMap variables fs)
+    "expected: " <> show (vsToStringList $ unionsMap variables fs)
         <> " actual: "
-        <> show (elems $ processedVars pu)
+        <> show (vsToStringList $ processedVars pu)
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
@@ -124,7 +125,7 @@ algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
 initialCycleCntxGen fs = do
     let vs = elems $ unionsMap inputs fs
     xs <- infiniteListOf arbitrary
-    let vxs = M.fromList $ zip vs xs
+    let vxs = HM.fromList $ zip vs xs
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
 

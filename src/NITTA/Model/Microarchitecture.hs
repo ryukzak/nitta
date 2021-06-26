@@ -29,7 +29,6 @@ import Data.Aeson
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
-import Data.String.ToString
 import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics
@@ -37,6 +36,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project
+import NITTA.Utils.Base
 
 data BuilderSt tag v x t = BuilderSt
     { signalBusWidth :: Int
@@ -88,7 +88,7 @@ addCustom tag pu ioports = do
                     { ctrlPorts = Just ports
                     , ioPorts = Just ioports
                     , valueIn = Just ("data_bus", "attr_bus")
-                    , valueOut = Just ((T.pack . toString) tag <> "_data_out", T.pack (toString tag) <> "_attr_out")
+                    , valueOut = Just (toText tag <> "_data_out", toText tag <> "_attr_out")
                     }
         usedPorts = usedPortTags ports
     put
@@ -129,7 +129,7 @@ microarchitectureDesc BusNetwork{bnName, bnPus, ioSync} =
         { networks =
             [ NetworkDesc
                 { networkTag = bnName
-                , valueType = T.pack $ show $ typeRep (Proxy :: Proxy x)
+                , valueType = showText $ typeRep (Proxy :: Proxy x)
                 , units =
                     map
                         ( \(tag, PU{unit}) ->

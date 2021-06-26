@@ -15,6 +15,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
     tests,
 ) where
 
+import Data.Default
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
@@ -37,7 +38,7 @@ tests =
         , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertAllEndpointRoles [consume "a", consume "b"]
-            assertEndpoint 1 maxBound $ consume "a"
+            assertEndpoint 0 maxBound $ consume "a"
             decide $ consume "a"
         , expectFail $
             unitTestCase "check assertAllEndpointRoles and fail (too many)" u $ do
@@ -113,27 +114,28 @@ tests =
                 setValue "a" 10
                 setValue "b" 11
                 setValue "a" 15
-        , -- TODO: rewrite that tests to BrokenPU
-          testGroup
+        , testGroup
             "decideAtUnsafe"
-            [ unitTestCase "check constrain existance" u $ do
-                assign $ multiply "a" "b" ["c"]
-                assertEndpoint 1 maxBound $ consume "a"
-                decideAtUnsafe 1 1 $ consume "a"
+            [ unitTestCase "check constrain existance" broken $ do
+                assign $ brokenBuffer "a" ["b"]
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b"]
             , expectFail $
-                unitTestCase "check that safe fail" u $ do
-                    assign $ multiply "a" "b" ["c"]
-                    assertEndpoint 1 maxBound $ consume "a"
+                unitTestCase "check that safe decide fail on wrong decision" broken $ do
+                    assign $ brokenBuffer "a" ["b"]
+                    setValue "a" 1
+                    assertEndpoint 0 maxBound $ consume "a"
                     decideAt 0 0 $ consume "a"
-            , -- TODO: remove uneccessary restriction for Multiplier model
-              unitTestCase "check that unsafe pass" u $ do
-                assign $ multiply "a" "b" ["c"]
-                setValue "a" 2
-                setValue "b" 12
-                assertEndpoint 1 maxBound $ consume "a"
-                decideAtUnsafe 0 0 $ consume "a"
-                decideAtUnsafe 1 1 $ consume "b"
-                decideAtUnsafe 10 10 $ provide ["c"]
+                    assertEndpoint 3 maxBound $ provide ["b"]
+                    decideAt 2 2 $ provide ["b"]
+            , unitTestCase "check that unsafe decide success and test success pass" broken $ do
+                assign $ brokenBuffer "a" ["b"]
+                setValue "a" 1
+                assertEndpoint 0 maxBound $ consume "a"
+                decideAt 0 0 $ consume "a"
+                assertEndpoint 3 maxBound $ provide ["b"]
+                decideAtUnsafe 2 2 $ provide ["b"] -- incorrect decision
                 assertCoSimulation
             ]
         , testGroup
@@ -143,7 +145,7 @@ tests =
                 decide $ consume "a"
                 assertLocks [Lock{locked = "c", lockBy = "b"}, Lock{locked = "d", lockBy = "b"}]
             , expectFail $
-                unitTestCase "assertLocks - success" u $ do
+                unitTestCase "assertLocks - fail" u $ do
                     assign $ multiply "a" "b" ["c", "d"]
                     decide $ consume "a"
                     assertLocks [Lock{locked = "c", lockBy = "b"}]
@@ -151,3 +153,4 @@ tests =
         ]
     where
         u = multiplier True :: Multiplier String Int Int
+        broken = def :: Broken String Int Int

@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Types (
     ProcessorUnit (..),
     bind,
     allowToProcess,
+    NextTick (..),
 
     -- *Process description
     Process (..),
@@ -36,6 +37,7 @@ module NITTA.Model.ProcessorUnits.Types (
     descent,
     whatsHappen,
     extractInstructionAt,
+    withShift,
 
     -- *Control
     Controllable (..),
@@ -62,13 +64,12 @@ import Data.Maybe
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
-import NITTA.Model.Types
+import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
@@ -106,6 +107,12 @@ bind f pu = case tryBind f pu of
 
 allowToProcess f pu = isRight $ tryBind f pu
 
+class NextTick u t | u -> t where
+    nextTick :: u -> t
+
+instance (ProcessorUnit u v x t) => NextTick u t where
+    nextTick = nextTick . process
+
 ---------------------------------------------------------------------
 
 {- |Computational process description. It was designed in ISO 15926 style, with
@@ -116,34 +123,37 @@ data Process t i = Process
       steps :: [Step t i]
     , -- |List of relationships between process steps (see 'Relation').
       relations :: [Relation]
-    , -- |Next free tick.
-      nextTick :: t
+    , -- |Next tick for instruction. Note: instruction /= endpoint.
+      nextTick_ :: t
     , -- |Next process step ID
       nextUid :: ProcessStepID
     }
     deriving (Generic)
 
-instance (Time t, Show i) => Show (Process t i) where
-    show p =
+instance (Time t, Show i) => Pretty (Process t i) where
+    pretty p =
         [__i|
-            Process
-                steps     =
-                    #{ nest 8 $ listShow $ reverse $ steps p }
-                relations =
-                    #{ nest 8 $ listShow $ relations p }
-                nextTick  = #{ nextTick p }
-                nextUid   = #{ nextUid p }\n
+            Process:
+                steps: #{ showList' $ reverse $ steps p }
+                relations: #{ showList' $ relations p }
+                nextTick: #{ nextTick p }
+                nextUid: #{ nextUid p }
         |]
         where
-            listShow lst =
-                vsep $
-                    map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
-                        zip [0 :: Int ..] lst
+            showList' [] = pretty ""
+            showList' xs = line <> indent 8 (vsep lst)
+                where
+                    lst =
+                        map (pretty . (\(ix, value) -> [i|#{ ix }) #{ value }|] :: T.Text)) $
+                            zip [0 :: Int ..] xs
 
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
 instance (Default t) => Default (Process t i) where
-    def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
+    def = Process{steps = [], relations = [], nextTick_ = def, nextUid = def}
+
+instance {-# OVERLAPS #-} NextTick (Process t si) t where
+    nextTick = nextTick_
 
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
@@ -189,12 +199,12 @@ data StepInfo v x t where
 descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
 
-instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
+instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
-    show (FStep F{fun}) = "Intermediate: " <> S.replace "\"" "" (show fun)
-    show (EndpointRoleStep eff) = "Endpoint: " <> S.replace "\"" "" (show eff)
-    show (InstructionStep instr) = "Instruction: " <> S.replace "\"" "" (show instr)
-    show NestedStep{nTitle, nStep = Step{pDesc}} = S.replace "\"" "" ("@" <> toString nTitle <> " " <> show pDesc)
+    show (FStep F{fun}) = "Intermediate: " <> show fun
+    show (EndpointRoleStep eff) = "Endpoint: " <> show eff
+    show (InstructionStep instr) = "Instruction: " <> show instr
+    show NestedStep{nTitle, nStep = Step{pDesc}} = "@" <> toString nTitle <> " " <> show pDesc
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f
@@ -221,6 +231,29 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
         inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
+
+{- |Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
+processor unit has buffered output, so we should provide @oe@ signal for one
+tick before data actually send to the bus. That raises the following cases:
+
+1. First usage. We can receive value immediately on nextTick
+
+    @
+    tick | Endpoint     | Instruction |
+     0   | Target "c"   | WR          | <- nextTick
+    @
+
+2. Not first usage. We need to wait for one tick from the last instruction due to the offset between instruction and data transfers.
+
+    @
+    tick | Endpoint     | Instruction |
+      8  |              | OE          |
+      9  | Source ["b"] |             | <- nextTick
+     10  | Target "c"   | WR          |
+    @
+-}
+0 `withShift` _offset = 0
+tick `withShift` offset = tick + offset
 
 ---------------------------------------------------------------------
 
@@ -261,7 +294,7 @@ instance
     microcodeAt pu t = case extractInstructionAt pu t of
         [] -> def
         [instr] -> decodeInstruction instr
-        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ process pu }|]
+        is -> error [i|instruction collision at #{ t } tick: #{ is } #{ pretty $ process pu }|]
 
 newtype SignalTag = SignalTag {signalTag :: T.Text} deriving (Eq, Ord)
 

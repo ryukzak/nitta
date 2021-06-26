@@ -9,7 +9,7 @@ type Tree = {
   name: string;
   sid: SID;
   attributes: GraphAttributes;
-  isLeaf: boolean;
+  isTerminal: boolean;
   isProcessed: boolean;
   children: Tree[];
   nodeSvgShape: GraphAttributes;
@@ -33,12 +33,12 @@ function synthesisTree2D3Tree(node: SynthesisTree, knownSID: Set<SID>): Tree {
     sid: label.sid,
     name: reLastSID.exec(label.sid)![0],
     isProcessed: label.isProcessed,
-    isLeaf: label.isLeaf,
+    isTerminal: label.isTerminal,
     attributes: {
       dec: label.decsionType,
       ch: label.duration + " / " + label.score,
     },
-    nodeSvgShape: label.isLeaf ? nodeShape("lime") : label.isProcessed ? nodeShape("black") : nodeShape("white"),
+    nodeSvgShape: label.isTerminal ? nodeShape("lime") : label.isProcessed ? nodeShape("black") : nodeShape("white"),
     children: childrens,
   };
 }
@@ -62,7 +62,7 @@ function selectCurrentNode(currentSID: SID, node: Tree): Tree {
     name: node.name,
     isProcessed: node.isProcessed,
     sid: node.sid,
-    isLeaf: node.isLeaf,
+    isTerminal: node.isTerminal,
     attributes: node.attributes,
     nodeSvgShape: currentSID === node.sid ? nodeShape("cyan") : node.nodeSvgShape,
     children: childrens,

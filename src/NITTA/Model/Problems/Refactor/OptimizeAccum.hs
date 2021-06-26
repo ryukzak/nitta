@@ -52,7 +52,7 @@ after:
 >>> let loopRes = loop 1 "e" ["res"]
 >>> let fs = [a, b, c, tmp1, res, loopRes] :: [F String Int]
 >>> optimizeAccumDecision fs $ head $ optimizeAccumOptions fs
-[Acc(+a +b +c = res),const(1) = a,const(2) = b,const(3) = c,Loop (X 1) (O [res]) (I e)]
+[Acc(+a +b +c = res),const(1) = a,const(2) = b,const(3) = c,loop(1, e) = res]
 -}
 data OptimizeAccum v x = OptimizeAccum
     { refOld :: [F v x]
@@ -98,6 +98,7 @@ selectClusters fs =
 isSupportByAccum f
     | Just Add{} <- castF f = True
     | Just Sub{} <- castF f = True
+    | Just Neg{} <- castF f = True
     | Just Acc{} <- castF f = True
     | otherwise = False
 
@@ -178,5 +179,9 @@ fromAddSub f
         Just $
             acc $
                 [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | Just (Neg in1 (O out)) <- castF f =
+        Just $
+            acc $
+                Push Minus in1 : [Pull $ O $ S.singleton o | o <- S.toList out]
     | Just Acc{} <- castF f = Just f
     | otherwise = Nothing

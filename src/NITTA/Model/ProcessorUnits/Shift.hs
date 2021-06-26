@@ -34,7 +34,7 @@ import NITTA.Intermediate.Functions hiding (remain)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Types
+import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
@@ -59,7 +59,6 @@ data Shift v x t = Shift
     , -- |description of target computation process
       process_ :: Process t (StepInfo v x t)
     }
-    deriving (Show)
 
 instance (Var v) => Locks (Shift v x t) v where
     locks Shift{sources, target = Just t} =
@@ -115,16 +114,16 @@ execution pu@Shift{target = Nothing, sources = [], remain} f
 execution _ _ = error "Not right arguments in execution function in shift module"
 
 instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
-    endpointOptions Shift{target = Just t, process_} =
-        [EndpointSt (Target t) $ TimeConstraint (nextTick process_ ... maxBound) (singleton 1)]
-    endpointOptions Shift{sources, process_, byteShiftDiv, byteShiftMod}
+    endpointOptions pu@Shift{target = Just t} =
+        [EndpointSt (Target t) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)]
+    endpointOptions pu@Shift{sources, byteShiftDiv, byteShiftMod}
         | not $ null sources
           , byteShiftDiv == 0 =
             let timeConstrain = TimeConstraint (startTime ... maxBound) (1 ... maxBound)
-                startTime = nextTick process_ + fromIntegral byteShiftMod + 2
+                startTime = nextTick pu + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
         | not $ null sources =
-            let endByteShift = nextTick process_ + fromIntegral byteShiftDiv
+            let endByteShift = nextTick pu + fromIntegral byteShiftDiv
                 timeConstrain = TimeConstraint (startTime ... maxBound) (1 ... maxBound)
                 startTime = endByteShift + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
@@ -144,26 +143,25 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
             let startByteShift = inf epAt + 1
                 numByteShiftMod = fromIntegral byteShiftMod
                 endByteShift = sup epAt + fromIntegral byteShiftDiv
-                (_, process_') = runSchedule pu $ do
-                    updateTick (sup epAt)
+                process_' = execSchedule pu $ do
                     scheduleEndpoint d $ do
-                        _ <- scheduleInstruction epAt Init
+                        scheduleInstructionUnsafe_ epAt Init
                         case (byteShiftDiv, byteShiftMod) of
                             (0, _) ->
-                                scheduleInstruction
+                                scheduleInstructionUnsafe
                                     (inf epAt + 1 ... sup epAt + numByteShiftMod)
                                     Work{shiftRight = sRight, stepByte = False, shiftType = Logic}
                             (_, 0) ->
-                                scheduleInstruction
+                                scheduleInstructionUnsafe
                                     (startByteShift ... endByteShift)
                                     Work{shiftRight = sRight, stepByte = True, shiftType = Logic}
                             _ ->
                                 do
                                     _ <-
-                                        scheduleInstruction
+                                        scheduleInstructionUnsafe
                                             (startByteShift ... endByteShift)
                                             Work{shiftRight = sRight, stepByte = True, shiftType = Logic}
-                                    scheduleInstruction
+                                    scheduleInstructionUnsafe
                                         (endByteShift + 1 ... endByteShift + numByteShiftMod)
                                         Work{shiftRight = sRight, stepByte = False, shiftType = Logic}
              in pu
@@ -185,14 +183,12 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
               , let sources' = sources \\ elems v
               , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
               , sources' /= sources =
-                let (_, process_') = runSchedule pu $ do
-                        updateTick (sup epAt)
-                        endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
+                let process_' = execSchedule pu $ do
+                        endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
-                        return endpoints
                  in pu
                         { process_ = process_'
                         , sources = sources'
@@ -202,7 +198,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
         | let v = oneOf $ variables d
           , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
-    endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision _pu d = error [i|incorrect decision #{ d } for Shift|]
 
 data Mode = Logic | Arithmetic deriving (Show, Eq)
 

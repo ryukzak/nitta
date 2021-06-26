@@ -32,7 +32,6 @@ import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Types
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Refactor
@@ -131,7 +130,7 @@ allBestThreadIO n tree = do
 
 bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
 bestLeaf tree leafs =
-    let successLeafs = filter isComplete leafs
+    let successLeafs = filter (\node -> isComplete node && isLeaf node) leafs
      in case successLeafs of
             _ : _ -> minimumOn (processDuration . sTarget . sState) successLeafs
             [] -> headDef tree leafs

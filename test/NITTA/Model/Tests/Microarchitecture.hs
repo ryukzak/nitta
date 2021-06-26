@@ -39,6 +39,7 @@ module NITTA.Model.Tests.Microarchitecture (
 ) where
 
 import Data.Proxy
+import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
@@ -67,7 +68,7 @@ pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 pFX48_64 = Proxy :: Proxy (FX 48 64)
 
-basic :: (Integral x, Val x) => Proxy x -> BusNetwork String String x Int
+basic :: (Integral x, Val x) => Proxy x -> BusNetwork T.Text T.Text x Int
 basic _proxy = defineNetwork "net1" ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
@@ -79,7 +80,7 @@ basic _proxy = defineNetwork "net1" ASync $ do
 march = basic pInt
 
 -- |Simple microarchitecture with broken PU for negative tests
-maBroken :: (Integral x, Val x) => Broken String x Int -> BusNetwork String String x Int
+maBroken :: (Integral x, Val x) => Broken T.Text x Int -> BusNetwork T.Text T.Text x Int
 maBroken brokenPU = defineNetwork "net1" ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
@@ -92,7 +93,7 @@ marchSPI ::
     ) =>
     Bool ->
     Proxy x ->
-    BusNetwork String String x Int
+    BusNetwork T.Text T.Text x Int
 marchSPI isSlave _proxy = defineNetwork "net1" Sync $ do
     add "fram1" FramIO
     add "fram2" FramIO
