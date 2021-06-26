@@ -282,6 +282,7 @@ test-suite nitta-test
     , process-extras
     , regex-compat
     , split
+    , stm
     , string-interpolate
     , tasty
     , tasty-expected-failure

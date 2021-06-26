@@ -96,15 +96,15 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
+                    uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
-                    i <- incrCounter 1 externalTestCntr
                     pwd <- getCurrentDirectory
-                    let pTargetProjectPath = "gen" </> (toModuleName name <> "_" <> show i)
+                    let pTargetProjectPath = "gen" </> toModuleName uniqueName
                         pInProjectNittaPath = "."
                         prj =
                             Project
-                                { pName = T.pack $ toModuleName name
+                                { pName = T.pack $ toModuleName uniqueName
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
                                 , pAbsTargetProjectPath = pwd </> pTargetProjectPath

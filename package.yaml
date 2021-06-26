@@ -150,6 +150,7 @@ tests:
       - genvalidity-property
       - nitta
       - split
+      - stm
       - tasty
       - tasty-expected-failure
       - tasty-hunit
