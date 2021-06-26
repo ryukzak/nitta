@@ -182,6 +182,6 @@ fromAddSub f
     | Just (Neg in1 (O out)) <- castF f =
         Just $
             acc $
-                Push Minus in1 : [Pull $ O $ S.fromList [o] | o <- S.toList out]
+                Push Minus in1 : [Pull $ O $ S.singleton o | o <- S.toList out]
     | Just Acc{} <- castF f = Just f
     | otherwise = Nothing
