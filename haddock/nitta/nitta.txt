@@ -981,6 +981,9 @@ shiftR :: (Var v, Val x) => Int -> v -> [v] -> F v x
 data Sub v x
 Sub :: I v -> I v -> O v -> Sub v x
 sub :: (Var v, Val x) => v -> v -> [v] -> F v x
+data Neg v x
+Neg :: I v -> O v -> Neg v x
+neg :: (Var v, Val x) => v -> [v] -> F v x
 data Constant v x
 Constant :: X x -> O v -> Constant v x
 constant :: (Var v, Val x) => x -> [v] -> F v x
@@ -1075,6 +1078,7 @@ instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Receiv
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Send v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.ShiftLR v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.Constant v x)
+instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Neg v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Division v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Multiply v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Sub v x)
@@ -1115,6 +1119,12 @@ instance (GHC.Show.Show x, GHC.Classes.Eq x, Data.Typeable.Internal.Typeable x) 
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Constant v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Constant v x) v
 instance NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Constant v x) v x
+instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Neg v x)
+instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Neg v x)
+instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Neg v x) v
+instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Neg v x) (v, v)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Neg v x) v
+instance (NITTA.Intermediate.Variable.Var v, GHC.Num.Num x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Neg v x) v x
 instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Division v x)
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Division v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Division v x) v
