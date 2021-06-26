@@ -769,6 +769,9 @@ relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (
 isFB :: Step t1 (StepInfo v x t2) -> Bool
 getFBs :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
 isInstruction :: StepInfo v x t -> Bool
+getToml :: Text -> Table
+getFromToml :: (FromJSON p, ToJSON a) => HashMap Text a -> p
+getFromTomlSection :: (FromJSON p, ToJSON a) => Text -> HashMap Text a -> p
 
 
 module NITTA.Project.Types
@@ -1529,6 +1532,7 @@ instance GHC.Generics.Generic NITTA.Model.Networks.Types.IOSynchronization
 instance GHC.Read.Read NITTA.Model.Networks.Types.IOSynchronization
 instance GHC.Show.Show NITTA.Model.Networks.Types.IOSynchronization
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Networks.Types.IOSynchronization
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Networks.Types.IOSynchronization
 instance GHC.Classes.Ord v => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.Networks.Types.PU v x t) v t
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Types.PU v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Types.PU v x t) v x
@@ -1651,6 +1655,7 @@ data Shift v x t
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
 data family IOPorts pu :: Type
+shift :: Default t => Bool -> Shift v x t
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Shift.Mode
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Shift.Mode
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Shift.Shift v x t))
@@ -2086,7 +2091,7 @@ instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => 
 
 module NITTA.Model.ProcessorUnits.IO.SPI
 type SPI v x t = SimpleIO SPIinterface v x t
-anySPI :: Time t => Int -> SPI v x t
+anySPI :: Time t => Int -> Maybe Int -> SPI v x t
 
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
@@ -2507,7 +2512,7 @@ instance NITTA.Model.Time.Time t => NITTA.UIBackend.ViewHelperCls.Viewable (Nume
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Problems.ViewHelper.IntervalView
 
 
--- | For creating BusNetwork see <a>Microarchitecture</a>.
+-- | For creating BusNetwork see <a>Builder</a>.
 module NITTA.Model.Networks.Bus
 data BusNetwork tag v x t
 BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) -> Map tag (PU v x t) -> Int -> IOSynchronization -> UnitEnv (BusNetwork tag v x t) -> BusNetwork tag v x t
@@ -2944,7 +2949,7 @@ instance (Data.Aeson.Types.ToJSON.ToJSONKey v, Data.Aeson.Types.ToJSON.ToJSON v,
 instance Servant.Docs.Internal.ToSample (NITTA.Project.TestBench.TestbenchReport GHC.Base.String GHC.Types.Int)
 
 
-module NITTA.Model.Microarchitecture
+module NITTA.Model.Microarchitecture.Builder
 
 -- | Define microarchitecture with BusNetwork
 defineNetwork :: (Default t, Ord tag) => tag -> IOSynchronization -> StateT (BuilderSt tag v x t) Identity a -> BusNetwork tag v x t
@@ -2968,12 +2973,12 @@ UnitDesc :: tag -> Text -> UnitDesc tag
 [$sel:unitTag:UnitDesc] :: UnitDesc tag -> tag
 [$sel:unitType:UnitDesc] :: UnitDesc tag -> Text
 microarchitectureDesc :: forall tag v x t. Typeable x => BusNetwork tag v x t -> MicroarchitectureDesc tag
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.MicroarchitectureDesc tag)
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.NetworkDesc tag)
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.UnitDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.MicroarchitectureDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.NetworkDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.UnitDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.NetworkDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.UnitDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.NetworkDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.UnitDesc tag)
 
 
 module NITTA.UIBackend.REST
@@ -3009,7 +3014,7 @@ instance Servant.Docs.Internal.ToParam (Servant.API.QueryParam.QueryParam' mods 
 instance Servant.Docs.Internal.ToParam (Servant.API.QueryParam.QueryParam' mods "loopsNumber" GHC.Types.Int)
 instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Types.SID
 instance NITTA.Model.Time.Time t => Servant.Docs.Internal.ToSample (NITTA.Model.ProcessorUnits.Types.Process t NITTA.UIBackend.ViewHelper.StepInfoView)
-instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample (NITTA.Model.Microarchitecture.MicroarchitectureDesc tag)
+instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
 
 
 module NITTA.UIBackend
@@ -3019,3 +3024,18 @@ backendServer :: (Hashable _1, Suffix _1, ToString _1, ToString _2, IsString _1,
 prepareJSAPI :: Interpolatable 'True src Text => src -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath
+
+module NITTA.Model.Microarchitecture.Config
+mkMicroarchitecture :: (IsString v, ToString v, Suffix v, Hashable v, Val x, ToJSON v, Typeable v, Ord v, ToJSON a) => IOSynchronization -> HashMap Text a -> BusNetwork Text v x Int
+instance GHC.Show.Show NITTA.Model.Microarchitecture.Config.MicroarchitectureConf
+instance GHC.Generics.Generic NITTA.Model.Microarchitecture.Config.MicroarchitectureConf
+instance GHC.Show.Show NITTA.Model.Microarchitecture.Config.NetworkConf
+instance GHC.Generics.Generic NITTA.Model.Microarchitecture.Config.NetworkConf
+instance GHC.Show.Show NITTA.Model.Microarchitecture.Config.PUConf
+instance GHC.Generics.Generic NITTA.Model.Microarchitecture.Config.PUConf
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Microarchitecture.Config.MicroarchitectureConf
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Microarchitecture.Config.MicroarchitectureConf
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Microarchitecture.Config.NetworkConf
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Microarchitecture.Config.NetworkConf
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Microarchitecture.Config.PUConf
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Microarchitecture.Config.PUConf

@@ -187,10 +187,11 @@ span.spaces    { background: white }
 <span class="lineno">  168 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>, Typeable, Generic)
 <span class="lineno">  169 </span>
 <span class="lineno">  170 </span>instance ToJSON IOSynchronization
-<span class="lineno">  171 </span>
-<span class="lineno">  172 </span><span class="decl"><span class="istickedoff">puInputPorts PU{uEnv} = envInputPorts uEnv</span></span>
-<span class="lineno">  173 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
-<span class="lineno">  174 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
+<span class="lineno">  171 </span>instance FromJSON IOSynchronization
+<span class="lineno">  172 </span>
+<span class="lineno">  173 </span><span class="decl"><span class="istickedoff">puInputPorts PU{uEnv} = envInputPorts uEnv</span></span>
+<span class="lineno">  174 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
+<span class="lineno">  175 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
 
 </pre>
 </body>

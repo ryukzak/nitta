@@ -65,11 +65,11 @@ span.spaces    { background: white }
 <span class="lineno">   46 </span>
 <span class="lineno">   47 </span>type SPI v x t = SimpleIO SPIinterface v x t
 <span class="lineno">   48 </span>
-<span class="lineno">   49 </span>anySPI :: (Time t) =&gt; Int -&gt; SPI v x t
-<span class="lineno">   50 </span><span class="decl"><span class="istickedoff">anySPI bounceFilter =</span>
+<span class="lineno">   49 </span>anySPI :: (Time t) =&gt; Int -&gt; Maybe Int -&gt; SPI v x t
+<span class="lineno">   50 </span><span class="decl"><span class="istickedoff">anySPI bounceFilter bufferSize =</span>
 <span class="lineno">   51 </span><span class="spaces">    </span><span class="istickedoff">SimpleIO</span>
 <span class="lineno">   52 </span><span class="spaces">        </span><span class="istickedoff">{ bounceFilter</span>
-<span class="lineno">   53 </span><span class="spaces">        </span><span class="istickedoff">, bufferSize = Just 6 -- FIXME:</span>
+<span class="lineno">   53 </span><span class="spaces">        </span><span class="istickedoff">, bufferSize</span>
 <span class="lineno">   54 </span><span class="spaces">        </span><span class="istickedoff">, receiveQueue = []</span>
 <span class="lineno">   55 </span><span class="spaces">        </span><span class="istickedoff">, receiveN = 0</span>
 <span class="lineno">   56 </span><span class="spaces">        </span><span class="istickedoff">, isReceiveOver = False</span>
@@ -101,7 +101,7 @@ span.spaces    { background: white }
 <span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">outputPorts SPIMaster{..} = [master_mosi, master_sclk, master_cs]</span></span>
 <span class="lineno">   83 </span>
 <span class="lineno">   84 </span>instance (Time t) =&gt; Default (SPI v x t) where
-<span class="lineno">   85 </span>    <span class="decl"><span class="istickedoff">def = anySPI 0</span></span>
+<span class="lineno">   85 </span>    <span class="decl"><span class="istickedoff">def = anySPI 0 $ Just 6</span></span>
 <span class="lineno">   86 </span>
 <span class="lineno">   87 </span>instance (ToJSON v, VarValTime v x t) =&gt; TargetSystemComponent (SPI v x t) where
 <span class="lineno">   88 </span>    <span class="decl"><span class="nottickedoff">moduleName _ _ = &quot;pu_spi&quot;</span></span>
