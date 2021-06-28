@@ -13,6 +13,7 @@ import {
   UnitDesc,
   Relation,
   TimeConstraint,
+  TreeInfo,
   Process,
   Step,
   StepInfoView,
@@ -78,6 +79,7 @@ export function synthesize<T extends Array<any>>(
 
 export const api = {
   getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => jsAPI.getSynthesisTree(),
+  getTreeInfo: (): AxiosPromise<TreeInfo> => jsAPI.getTreeInfo(),
 
   // Synthesis tree navigation
   getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidHistory(sid),
