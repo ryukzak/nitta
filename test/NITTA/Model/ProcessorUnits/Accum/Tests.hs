@@ -133,7 +133,7 @@ tests =
                 function sum(a, b, c)
                     local d = a + b + c -- should AccumOptimization
                     local e = d + 1 -- e and d should be buffered
-                    local f = -d
+                    local f = d + 2
                     sum(d, f, e)
                 end
                 sum(0,0,0)

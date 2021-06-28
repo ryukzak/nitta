@@ -23,6 +23,7 @@ module NITTA.Model.ProcessorUnits.Shift (
     Shift,
     Ports (..),
     IOPorts (..),
+    shift,
 ) where
 
 import Control.Monad (when)
@@ -67,18 +68,20 @@ instance (Var v) => Locks (Shift v x t) v where
         ]
     locks Shift{target = Nothing} = []
 
+shift sRight =
+    Shift
+        { remain = []
+        , target = Nothing
+        , sources = []
+        , sRight
+        , byteShiftDiv = 0
+        , byteShiftMod = 0
+        , currentWork = Nothing
+        , process_ = def
+        }
+
 instance Default t => Default (Shift v x t) where
-    def =
-        Shift
-            { remain = []
-            , target = Nothing
-            , sources = []
-            , sRight = True
-            , byteShiftDiv = 0
-            , byteShiftMod = 0
-            , currentWork = Nothing
-            , process_ = def
-            }
+    def = shift True
 
 instance BreakLoopProblem (Shift v x t) v x
 instance ConstantFoldingProblem (Shift v x t) v x
@@ -143,7 +146,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
             let startByteShift = inf epAt + 1
                 numByteShiftMod = fromIntegral byteShiftMod
                 endByteShift = sup epAt + fromIntegral byteShiftDiv
-                (_, process_') = runSchedule pu $ do
+                process_' = execSchedule pu $ do
                     scheduleEndpoint d $ do
                         scheduleInstructionUnsafe_ epAt Init
                         case (byteShiftDiv, byteShiftMod) of
@@ -183,13 +186,12 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
               , let sources' = sources \\ elems v
               , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
               , sources' /= sources =
-                let (_, process_') = runSchedule pu $ do
+                let process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
-                        return endpoints
                  in pu
                         { process_ = process_'
                         , sources = sources'

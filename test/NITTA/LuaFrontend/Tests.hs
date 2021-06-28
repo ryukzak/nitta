@@ -205,6 +205,15 @@ test_assignment_and_reassignment =
             end
             counter(0)
         |]
+    , luaTestCase
+        "variable invertation"
+        [__i|
+                function sum(a)
+                    local b = -a
+                    sum(b)
+                end
+                sum(0)
+            |]
     ]
 
 test_complex_examples =
@@ -358,7 +367,6 @@ test_trace_features =
         -- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
     ]
 
--- TODO: actualize
 test_examples =
     [ typedLuaTestCase
         (microarch Sync SlaveSPI)
@@ -384,17 +392,47 @@ test_examples =
         (microarch ASync SlaveSPI)
         pFX22_32
         "self sending 1 io drop"
-        $(embedStringFile "test/lua/self-send1.lua")
+        [__i|
+            function fib(a, b)
+              b = a + b
+              fib(a, b)
+            end
+            fib(0, 1)
+            |]
     , typedLuaTestCase
         (microarch Sync SlaveSPI)
         pFX22_32
         "self sending 2 io wait"
-        $(embedStringFile "test/lua/self-send2.lua")
+        [__i|
+            function pid(prev_err)
+                local temperature_desired = 50
+                local getValueSPI = receive()
+
+                err = temperature_desired - getValueSPI
+
+                local PID = err - prev_err
+                send(PID)
+
+                pid(err)
+            end
+            pid(0)
+            |]
     , typedLuaTestCase
         (microarch Sync SlaveSPI)
         pFX32_32
         "pu deadlock"
-        $(embedStringFile "test/lua/pu-deadlock.lua")
+        [__i|
+            function pid(I, prev_err)
+              err = 50 - 2
+
+              I = I + 1 * err
+              D = 0 * (err - prev_err)
+
+              pid(I, I + D)
+            end
+
+            pid(0, 0)
+            |]
     , -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
       -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
       --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
@@ -407,12 +445,36 @@ test_examples =
         (microarch Sync SlaveSPI)
         pFX32_32
         "fail io wait"
-        $(embedStringFile "test/lua/fail.lua")
+        [__i|
+            function f(a, b)
+                c = a + b
+                d = c + b
+                f(c, d)
+            end
+
+            f(0, 0)
+            |]
     , typedLuaTestCase
         (microarch Sync SlaveSPI)
         pFX32_32
         "spi many outputs"
-        $(embedStringFile "test/lua/spi-many-outputs.lua")
+        [__i|
+            function pid(I, prev_err)
+              local getValueSPI = receive()
+              err = 50 - getValueSPI
+
+              P = 2 * err
+              I = (I + 0 * err)
+              D = 0 * buffer(err - prev_err)
+
+              local PID = buffer(P + I) + D
+              send(PID)
+
+              pid(I, err)
+            end
+
+            pid(0, 0)
+            |]
     , -- , testCase "examples/pid.lua drop" $ either assertFailure return
       --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
       typedLuaTestCase

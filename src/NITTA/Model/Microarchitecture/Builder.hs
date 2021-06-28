@@ -7,14 +7,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
-Module      : NITTA.Model.Microarchitecture
+Module      : NITTA.Model.Microarchitecture.Builder
 Description : Create micro architecture functions
 Copyright   : (c) Daniil Prohorov, Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Microarchitecture (
+module NITTA.Model.Microarchitecture.Builder (
     defineNetwork,
     add,
     addCustom,

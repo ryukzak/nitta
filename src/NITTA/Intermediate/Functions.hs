@@ -321,12 +321,9 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
          in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
-instance Label (Neg v x) where label Neg{} = "-"
+instance Label (Neg v x) where label Neg{} = "neg"
 instance (Var v) => Show (Neg v x) where
-    show (Neg i o) =
-        let lexp = "-" <> show i
-            rexp = show o
-         in lexp <> " = " <> rexp
+    show (Neg i o) = "-" <> show i <> " = " <> show o
 
 neg :: (Var v, Val x) => v -> [v] -> F v x
 neg i o = packF $ Neg (I i) $ O $ fromList o

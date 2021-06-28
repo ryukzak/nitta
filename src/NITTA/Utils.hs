@@ -38,12 +38,19 @@ module NITTA.Utils (
     getFBs,
     isInstruction,
     module NITTA.Utils.Base,
+
+    -- *Toml
+    getToml,
+    getFromToml,
+    getFromTomlSection,
 ) where
 
 import Control.Monad.State (State, modify')
+import Data.Aeson
 import Data.Bits (setBit, testBit)
+import qualified Data.HashMap.Strict as HM
 import Data.List (sortOn)
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
@@ -55,6 +62,7 @@ import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
 import Prettyprinter
 import Prettyprinter.Render.Text
+import Text.Toml (parseTomlDoc)
 
 type Verilog = Doc ()
 doc2text :: Verilog -> T.Text
@@ -138,3 +146,16 @@ isInstruction (InstructionStep _) = True
 isInstruction _ = False
 
 stepStart Step{pInterval} = I.inf pInterval
+
+getToml text = either (error . show) id $ parseTomlDoc "parse error: " text
+
+getFromToml toml = getFromTomlSection T.empty toml
+
+getFromTomlSection section toml
+    | section == T.empty = unwrap $ fromJSON $ toJSON toml
+    | otherwise = case HM.lookup section toml of
+        Just s -> unwrap $ fromJSON $ toJSON s
+        Nothing -> error $ "section not found - " <> T.unpack section
+    where
+        unwrap (Success conf) = conf
+        unwrap (Error msg) = error msg
