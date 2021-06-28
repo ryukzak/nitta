@@ -6,7 +6,7 @@ import { api } from "services/HaskellApiService";
 import { useApiRequest } from "hooks/useApiRequest";
 import { RequestResult } from "components/utils/RequestResult";
 import { JsonView } from "components/JsonView";
-import { SimpleNittaBarChart } from "components/utils/SimpleNittaBarChart";
+import { MapHistogram } from "components/utils/MapHistogram";
 import { CHART_COLOR_PALLETE } from "utils/color";
 
 import "components/Graphviz.scss";
@@ -35,13 +35,13 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
               <JsonView src={result.data} />
             </Col>
             <Col md={6} lg={4}>
-              <SimpleNittaBarChart
+              <MapHistogram
                 data={result.data.durationSuccess}
                 color={CHART_COLOR_PALLETE.blue}
                 name="success nodes with duration"
               />
               <div className="mt-3">
-                <SimpleNittaBarChart
+                <MapHistogram
                   data={result.data.stepsSuccess}
                   color={CHART_COLOR_PALLETE.orange}
                   name="success nodes with steps"
