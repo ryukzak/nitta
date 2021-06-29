@@ -45,6 +45,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
+import Data.Typeable
 
 {- |Type that contains expression:
 
@@ -159,6 +160,7 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
+    unitType pu = typeOf pu
 
 instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointOptions pu@Accum{currentWork = Just a@Job{tasks, calcEnd}}

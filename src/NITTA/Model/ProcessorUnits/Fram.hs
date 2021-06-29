@@ -48,6 +48,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Prettyprinter
+import Data.Typeable
 
 data Fram v x t = Fram
     { -- |memory cell array
@@ -252,6 +253,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
         | otherwise = Left $ "unsupport or cells over: " ++ show f
 
     process Fram{process_} = process_
+    unitType pu = typeOf pu
 
 instance (Var v) => Locks (Fram v x t) v where
     -- FIXME:

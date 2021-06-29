@@ -101,6 +101,8 @@ instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
         let p = process unit
          in p{steps = map (patch diff) $ steps p}
 
+    unitType PU{unit} = unitType unit
+
 instance (Ord v) => Patch (PU v x t) (Changeset v) where
     patch diff' PU{unit, diff, uEnv} =
         PU
