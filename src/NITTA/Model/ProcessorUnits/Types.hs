@@ -73,6 +73,7 @@ import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
+import Data.Typeable
 
 -- |Typeclass alias for processor unit tag or "name."
 type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
@@ -129,6 +130,8 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     -- 'ProcessStepID' may change from one call to another.
     process :: u -> Process t (StepInfo v x t)
 
+    unitType :: u -> TypeRep
+    
     -- |Indicates what type of parallelism is supported by 'ProcessorUnit'
     parallelismType :: u -> ParallelismType
     parallelismType _ = None

@@ -115,6 +115,7 @@ instance
         | otherwise = Left $ "IO processor unit do not support: " ++ show f
 
     process = process_
+    unitType pu = typeOf pu
 
 instance BreakLoopProblem (SimpleIO i v x t) v x
 instance ConstantFoldingProblem (SimpleIO i v x t) v x

@@ -36,6 +36,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (singleton, sup, (...))
+import Data.Typeable
 
 data InputDesc
     = Numer
@@ -108,6 +109,7 @@ instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
     parallelismType _ = Pipeline
+    unitType pu = typeOf pu
 
 instance (Var v, Time t) => Locks (Divider v x t) v where
     locks Divider{jobs, remains} = L.nub $ byArguments ++ byResults

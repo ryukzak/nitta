@@ -37,6 +37,7 @@ import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
+import Data.Typeable
 
 data Broken v x t = Broken
     { remain :: [F v x]
@@ -106,6 +107,7 @@ instance (VarValTime v x t) => ProcessorUnit (Broken v x t) v x t where
         | Just F.BrokenBuffer{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Broken: " ++ show f
     process = process_
+    unitType pu = typeOf pu
 
 execution pu@Broken{targets = [], sources = [], remain, process_} f
     | Just (F.BrokenBuffer (I x) (O y)) <- castF f =

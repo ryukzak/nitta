@@ -266,6 +266,8 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
 
     puSize BusNetwork{bnPus} = sum $ map puSize $ M.elems bnPus
 
+    unitType pu = typeOf pu
+
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
         = Transport v tag tag
@@ -313,11 +315,16 @@ instance
             optionsList = map optionsFor bnRemains
 
             puOptionsF = M.fromAscListWith (++) $
-                concatMap (\f -> [ (pu, [(f, puTitle)])
+                concatMap (\f -> [ (unitType pu, [(f, puTitle)])
                 | (puTitle, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]) bnRemains
-            puOptions = M.elems puOptionsF
+            puOptionsOne option= (S.fromList fsts, S.fromList snds)
+              where
+                fsts = map fst option
+                snds = map snd option
+
+            puOptions = map puOptionsOne $ M.elems puOptionsF
 
             getF (Bind f _tag) = f
 

@@ -41,6 +41,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
+import Data.Typeable
 
 data Fram v x t = Fram
     { memory :: A.Array Int (Cell v x t)
@@ -245,6 +246,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
 
     process Fram{process_} = process_
     parallelismType _ = Full
+    unitType pu = typeOf pu
 
 instance (Var v) => Locks (Fram v x t) v where
     -- FIXME:

@@ -34,6 +34,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prelude hiding (init)
+import Data.Typeable
 
 data Shift v x t = Shift
     { remain :: [F v x]
@@ -89,6 +90,7 @@ instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
                 ShiftR{} -> Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Shift: " ++ show f
     process = process_
+    unitType pu = typeOf pu
 
 -- |This function carry out actual take functional block to work.
 execution pu@Shift{target = Nothing, sources = [], remain} f
