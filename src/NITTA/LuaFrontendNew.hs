@@ -28,7 +28,8 @@ import NITTA.LuaFrontend
 import NITTA.Utils.Base
 import Data.Hashable
 
-getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount} luaValueAccessCount
+getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount, luaValueVersionIsConstant} luaValueAccessCount
+    | luaValueVersionIsConstant         = fromText $ "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
     | T.head luaValueVersionName == '_' = fromText luaValueVersionName
     | otherwise = fromText $ luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
 
@@ -71,7 +72,6 @@ parseLeftExp (VarName (Name v)) = v
 parseLeftExp _ = undefined
 
 --right part of lua statement
-parseRightExp ::  (MonadState (AlgBuilder s t7) m, Read t7) => T.Text -> Exp -> m T.Text
 parseRightExp fOut (Binop ShiftL a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
     algBuilder@AlgBuilder{algGraph} <- get
@@ -148,13 +148,13 @@ getNextTmpVarName fOut
                 return $ T.pack $ "_0#" <> T.unpack fOut
 
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
-    mapM_ (\(Name name, Number _ valueString) -> addToBuffer name valueString) $ zip names exps
+    mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0..]
     return ""
     where
-        addToBuffer name _valueString = do
-            algBuilder@AlgBuilder{algVars, algBuffer} <- get
+        addToBuffer name _valueString serialNumber = do
+            algBuilder@AlgBuilder{algVars, algBuffer, algStartupArgs} <- get
             let value = LuaValueVersion{luaValueVersionName = name, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
-            put algBuilder{algBuffer = Map.insert name value algBuffer, algVars = Map.insert value [] algVars}
+            put algBuilder{algBuffer = Map.insert name value algBuffer, algVars = Map.insert value [] algVars, algStartupArgs = Map.insert serialNumber name algStartupArgs}
             return value
 addStartupFuncArgs _ _ = undefined
 
@@ -196,7 +196,6 @@ processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args 
     return $ fromString ""
 processStatement _ _ = undefined
 
-addFunction :: (MonadState (AlgBuilder s t1) m) => [Char] -> [T.Text] -> T.Text -> m ()
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
     _ <- addVariable [i] fOut [] "buffer" []
     return ()
