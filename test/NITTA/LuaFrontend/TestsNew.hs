@@ -52,15 +52,15 @@ case_process_assignment_statement =
         (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
-case_process_multiple_assignments_statement =
-    let assignment = Assign [VarName (Name $ T.pack "a"), VarName (Name $ T.pack "b")] [Number IntNum $ T.pack "2", Number FloatNum $ T.pack "2.5"]
-        expected =
-            Map.fromList
-                [ (T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})
-                , (T.pack "b", LuaValueVersion{luaValueVersionName = T.pack "b", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})
-                ]
-        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
-     in algBuffer @?= expected
+--case_process_multiple_assignments_statement =
+--    let assignment = Assign [VarName (Name $ T.pack "a"), VarName (Name $ T.pack "b")] [Number IntNum $ T.pack "2", Number FloatNum $ T.pack "2.5"]
+--        expected =
+--            Map.fromList
+--                [ (T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})
+--                , (T.pack "b", LuaValueVersion{luaValueVersionName = T.pack "b", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})
+--                ]
+--        (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
+--     in algBuffer @?= expected
 
 case_process_add_statement =
     let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
@@ -121,7 +121,7 @@ case_temporary_variable =
         expected =
             [ Func{fIn = [T.pack "_0#a", T.pack "!3#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "3", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [3], fName = "constant", fInt = []}
-            , Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "_a&", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
+            , Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "_0#a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]

@@ -228,7 +228,8 @@ addConstant (Number _valueType valueString) = do
             let resultName = getUniqueLuaVariableName lvv 0
             put
                 algBuilder
-                    { algVars = Map.insert lvv [resultName] algVars
+                    { algGraph = Func{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = "constant", fInt = []} : algGraph
+                    , algVars = Map.insert lvv [resultName] algVars
                     }
             return resultName
 addConstant _ = undefined
