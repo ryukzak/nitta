@@ -10,6 +10,7 @@ module NITTA.LuaFrontendNew (
     -- * Internal
     AlgBuilder (..),
     Func (..),
+    LuaValueVersion (..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
@@ -18,6 +19,7 @@ module NITTA.LuaFrontendNew (
 
 import Control.Monad.State
 import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
@@ -26,10 +28,9 @@ import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.LuaFrontend
 import NITTA.Utils.Base
-import Data.Hashable
 
 getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount, luaValueVersionIsConstant} luaValueAccessCount
-    | luaValueVersionIsConstant         = fromText $ "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
+    | luaValueVersionIsConstant = fromText $ "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
     | T.head luaValueVersionName == '_' = fromText luaValueVersionName
     | otherwise = fromText $ luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
 
@@ -42,18 +43,19 @@ data Func x = Func
     }
     deriving (Show, Eq)
 
-data LuaValueVersion = LuaValueVersion {
-    luaValueVersionName :: T.Text,
-    luaValueVersionAssignCount :: Int,
-    luaValueVersionIsConstant :: Bool
-} deriving (Show, Eq)
+data LuaValueVersion = LuaValueVersion
+    { luaValueVersionName :: T.Text
+    , luaValueVersionAssignCount :: Int
+    , luaValueVersionIsConstant :: Bool
+    }
+    deriving (Show, Eq)
 
 instance Hashable LuaValueVersion where
     hashWithSalt i LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount, luaValueVersionIsConstant} =
-        ((hashWithSalt i luaValueVersionName * 31)
-        + hashWithSalt i luaValueVersionAssignCount * 31)
-        + hashWithSalt i luaValueVersionIsConstant * 31
-
+        ( (hashWithSalt i luaValueVersionName * 31)
+            + hashWithSalt i luaValueVersionAssignCount * 31
+        )
+            + hashWithSalt i luaValueVersionIsConstant * 31
 
 data AlgBuilder s t = AlgBuilder
     { algGraph :: [Func t]
@@ -148,7 +150,7 @@ getNextTmpVarName fOut
                 return $ T.pack $ "_0#" <> T.unpack fOut
 
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
-    mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0..]
+    mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0 ..]
     return ""
     where
         addToBuffer name _valueString serialNumber = do
@@ -180,9 +182,9 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName = do
         AlgBuilder{algStartupArgs} <- get
-        let startupVarsNames = map ((\(Just x) -> x) . (`Map.lookup` algStartupArgs)) [0..(Map.size algStartupArgs)]
+        let startupVarsNames = map ((\(Just x) -> x) . (`Map.lookup` algStartupArgs)) [0 .. (Map.size algStartupArgs)]
         let startupVarsVersions = map (\x -> LuaValueVersion{luaValueVersionName = x, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}) startupVarsNames
-        mapM_ parseStartupArg $ zip3 args startupVarsVersions [0..]
+        mapM_ parseStartupArg $ zip3 args startupVarsVersions [0 ..]
         return $ fromString ""
     where
         parseStartupArg (arg, valueVersion, index) = do
@@ -206,7 +208,7 @@ addFunction funcName [i] _ | toString funcName == "send" = do
     algBuilder@AlgBuilder{algGraph} <- get
     put algBuilder{algGraph = Func{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
-    _ <- addVariable [] fOut  [] "brokenBuffer" []
+    _ <- addVariable [] fOut [] "brokenBuffer" []
     return ()
 addFunction fName _ _ = error $ "unknown function" <> fName
 
@@ -219,14 +221,15 @@ addConstant (Number _valueType valueString) = do
             put
                 algBuilder
                     { algGraph = Func{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = "constant", fInt = []} : algGraph
-                    , algVars = Map.insert lvv ( resultName : value) algVars
+                    , algVars = Map.insert lvv (resultName : value) algVars
                     }
             return resultName
         Nothing -> do
             let resultName = getUniqueLuaVariableName lvv 0
             put
                 algBuilder
-                    { algVars = Map.insert lvv [resultName] algVars }
+                    { algVars = Map.insert lvv [resultName] algVars
+                    }
             return resultName
 addConstant _ = undefined
 
@@ -275,7 +278,7 @@ addAlias from to = do
     algBuilder@AlgBuilder{algBuffer} <- get
     case getLuaValueByName to algBuffer of
         Just value -> do
-            put algBuilder{ algBuffer = Map.insert from value algBuffer }
+            put algBuilder{algBuffer = Map.insert from value algBuffer}
             return $ fromString ""
         Nothing -> error ("variable '" ++ show to ++ " not found. Constants list : " ++ show algBuffer)
 
