@@ -74,22 +74,22 @@ parseLeftExp (VarName (Name v)) = v
 parseLeftExp _ = undefined
 
 --right part of lua statement
-parseRightExp fOut (Binop ShiftL a (Number IntNum s)) = do
+parseRightExp [fOut] (Binop ShiftL a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
     algBuilder@AlgBuilder{algGraph} <- get
     put algBuilder{algGraph = Func{fIn = [varName], fOut = [], fValues = [], fName = "shiftL", fInt = [readText s]} : algGraph}
     return varName
-parseRightExp fOut (Binop ShiftR a (Number IntNum s)) = do
+parseRightExp [fOut] (Binop ShiftR a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
     algBuilder@AlgBuilder{algGraph, algBuffer} <- get
     let (Just lvv) = getLuaValueByName fOut algBuffer
     put algBuilder{algGraph = Func{fIn = [varName], fOut = [lvv], fValues = [], fName = "shiftR", fInt = [readText s]} : algGraph}
     return varName
-parseRightExp fOut (Number _ valueString) = do
-    addVariable [] fOut [readText valueString] "constant" []
-parseRightExp fOut (Binop op a b) = do
-    varNameA <- parseExpArg fOut a
-    varNameB <- parseExpArg fOut b
+parseRightExp [fOut] (Number _ valueString) = do
+    addVariable [] [fOut] [readText valueString] "constant" []
+parseRightExp fOut@(x : _) (Binop op a b) = do
+    varNameA <- parseExpArg x a
+    varNameB <- parseExpArg x b
     addVariable [varNameA, varNameB] fOut [] (getBinopFuncName op) []
     where
         getBinopFuncName Add = "add"
@@ -98,11 +98,11 @@ parseRightExp fOut (Binop op a b) = do
         getBinopFuncName Div = "divide"
         getBinopFuncName o = error $ "unknown binop: " ++ show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
-parseRightExp fOut (Unop Neg expr@(PrefixExp _)) = do
+parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
     varName <- parseExpArg fOut expr
-    addVariable [varName] fOut [] "neg" []
+    addVariable [varName] [fOut] [] "neg" []
 parseRightExp
-    fOut
+    [fOut]
     ( PrefixExp
             ( PEFunCall
                     ( NormalFunCall
@@ -112,9 +112,9 @@ parseRightExp
                 )
         ) = do
         fIn <- mapM (parseExpArg fOut) args
-        addFunction (fromText fname) fIn $ fromText fOut
+        addFunction (fromText fname) fIn [fromText fOut]
         return $ head fIn
-parseRightExp fOut (PrefixExp (PEVar (VarName (Name name)))) = do
+parseRightExp [fOut] (PrefixExp (PEVar (VarName (Name name)))) = do
     addAlias fOut name
 parseRightExp _ expr = error $ "unknown expression : " <> show expr
 
@@ -122,18 +122,18 @@ parseExpArg _ n@(Number _ _) = do
     addConstant n
 parseExpArg fOut expr@(Unop Neg _) = do
     name <- getNextTmpVarName fOut
-    _ <- parseRightExp name expr
+    _ <- parseRightExp [name] expr
     addVariableAccess name
 parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
     addVariableAccess name
 parseExpArg fOut binop@Binop{} = do
     name <- getNextTmpVarName fOut
-    _ <- parseRightExp name binop
+    _ <- parseRightExp [name] binop
     addVariableAccess name
 parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
 parseExpArg fOut call@(PrefixExp (PEFunCall _)) = do
     name <- getNextTmpVarName fOut
-    _ <- parseRightExp name call
+    _ <- parseRightExp [name] call
     addVariableAccess name
 parseExpArg _ _ = undefined
 
@@ -169,8 +169,8 @@ processStatement fn (LocalAssign names (Just exps)) =
 --Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
     processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-processStatement _ (Assign [lexp] [rexp]) = do
-    _ <- parseRightExp (parseLeftExp lexp) rexp
+processStatement _ (Assign lexp [rexp]) = do
+    _ <- parseRightExp (map parseLeftExp lexp) rexp
     return $ fromString ""
 processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
     mapM_ (\(VarName (Name name), expr) -> processStatement startupFunctionName (Assign [VarName (Name (getTempAlias name))] [expr])) $ zip vars exps
@@ -194,9 +194,9 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             return $ fromString ""
 processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (parseExpArg "tmp") args
-    addFunction (fromString $ T.unpack fName) fIn $ fromString ""
+    addFunction (fromString $ T.unpack fName) fIn [fromString ""]
     return $ fromString ""
-processStatement _ _ = undefined
+processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
     _ <- addVariable [i] fOut [] "buffer" []
@@ -234,29 +234,27 @@ addConstant (Number _valueType valueString) = do
             return resultName
 addConstant _ = undefined
 
+addVariable :: (MonadState (AlgBuilder s t) m, IsString b) => [T.Text] -> [T.Text] -> [t] -> [Char] -> [Int] -> m b
 addVariable fIn fOut fValues fName fInt = do
-    algBuilder@AlgBuilder{algGraph, algBuffer, algVars} <- get
-    case getLuaValueByName fOut algBuffer of
-        Just lvv@LuaValueVersion{luaValueVersionAssignCount} -> do
-            let luaValueVersion = lvv{luaValueVersionAssignCount = luaValueVersionAssignCount + 1}
-            let func = Func{fIn, fValues, fName, fInt, fOut = [luaValueVersion]}
-            put
-                algBuilder
-                    { algGraph = func : algGraph
-                    , algBuffer = Map.insert fOut luaValueVersion algBuffer
-                    , algVars = Map.insert lvv [] algVars
-                    }
-            return $ getUniqueLuaVariableName luaValueVersion 0
-        Nothing -> do
-            let lvv = LuaValueVersion{luaValueVersionName = fOut, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
-            let func = Func{fIn, fValues, fName, fInt, fOut = [lvv]}
-            put
-                algBuilder
-                    { algGraph = func : algGraph
-                    , algBuffer = Map.insert fOut lvv algBuffer
-                    , algVars = Map.insert lvv [] algVars
-                    }
-            return $ getUniqueLuaVariableName lvv 0
+    AlgBuilder{algBuffer} <- get
+    let luaValueVersions = map (\x -> nameToLuaValueVersion algBuffer x) fOut
+    let func = Func{fIn, fValues, fName, fInt, fOut = luaValueVersions}
+    mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueVersions
+    mapM_ addItemToVars luaValueVersions
+    algBuilder@AlgBuilder{algGraph} <- get
+    put algBuilder{algGraph = func : algGraph}
+    return $ getUniqueLuaVariableName (head luaValueVersions) 0
+    where
+        nameToLuaValueVersion algBuffer name =
+            case getLuaValueByName name algBuffer of
+                Just lvv@LuaValueVersion{luaValueVersionAssignCount} -> lvv{luaValueVersionAssignCount = luaValueVersionAssignCount + 1}
+                Nothing -> LuaValueVersion{luaValueVersionName = name, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+        addItemToBuffer name lvv = do
+            algBuilder@AlgBuilder{algBuffer} <- get
+            put algBuilder{algBuffer = Map.insert name lvv algBuffer}
+        addItemToVars name = do
+            algBuilder@AlgBuilder{algVars} <- get
+            put algBuilder{algVars = Map.insert name [] algVars}
 
 addVariableAccess name = do
     algBuilder@AlgBuilder{algVars} <- get
@@ -335,10 +333,10 @@ alg2graph AlgBuilder{algGraph, algBuffer, algVars} = flip execState (DFCluster [
         function2nitta Func{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c
         function2nitta Func{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
         function2nitta Func{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
-        function2nitta Func{fName} = error $ "function not found: " ++ show fName
+        function2nitta f = error $ "function not found: " ++ show f
         output v =
             case Map.lookup v algVars of
-                Just names -> names
+                Just names -> map fromText names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algBuffer
 
 --getBuilder src =
