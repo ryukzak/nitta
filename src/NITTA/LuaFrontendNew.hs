@@ -62,7 +62,7 @@ data AlgBuilder s t = AlgBuilder
     , algBuffer :: Map.HashMap T.Text LuaValueVersion
     , algVarGen :: Map.HashMap T.Text Int
     , algVars :: Map.HashMap LuaValueVersion [T.Text]
-    , algStartupArgs :: Map.HashMap Int T.Text
+    , algStartupArgs :: Map.HashMap Int (T.Text, T.Text)
     }
     deriving (Show)
 
@@ -76,15 +76,10 @@ parseLeftExp _ = undefined
 --right part of lua statement
 parseRightExp [fOut] (Binop ShiftL a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
-    algBuilder@AlgBuilder{algGraph} <- get
-    put algBuilder{algGraph = Func{fIn = [varName], fOut = [], fValues = [], fName = "shiftL", fInt = [readText s]} : algGraph}
-    return varName
+    addVariable [varName] [fOut] [] "shiftL" [readText s]
 parseRightExp [fOut] (Binop ShiftR a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
-    algBuilder@AlgBuilder{algGraph, algBuffer} <- get
-    let (Just lvv) = getLuaValueByName fOut algBuffer
-    put algBuilder{algGraph = Func{fIn = [varName], fOut = [lvv], fValues = [], fName = "shiftR", fInt = [readText s]} : algGraph}
-    return varName
+    addVariable [varName] [fOut] [] "shiftR" [readText s]
 parseRightExp [fOut] (Number _ valueString) = do
     addVariable [] [fOut] [readText valueString] "constant" []
 parseRightExp fOut@(x : _) (Binop op a b) = do
@@ -98,6 +93,7 @@ parseRightExp fOut@(x : _) (Binop op a b) = do
         getBinopFuncName Div = "divide"
         getBinopFuncName o = error $ "unknown binop: " ++ show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
+parseRightExp fOut (Unop Neg (Number numType name)) = parseRightExp fOut (Number numType ("-" <> name))
 parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
     varName <- parseExpArg fOut expr
     addVariable [varName] [fOut] [] "neg" []
@@ -153,10 +149,10 @@ addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody
     mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0 ..]
     return ""
     where
-        addToBuffer name _valueString serialNumber = do
+        addToBuffer name valueString serialNumber = do
             algBuilder@AlgBuilder{algVars, algBuffer, algStartupArgs} <- get
             let value = LuaValueVersion{luaValueVersionName = name, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
-            put algBuilder{algBuffer = Map.insert name value algBuffer, algVars = Map.insert value [] algVars, algStartupArgs = Map.insert serialNumber name algStartupArgs}
+            put algBuilder{algBuffer = Map.insert name value algBuffer, algVars = Map.insert value [] algVars, algStartupArgs = Map.insert serialNumber (name, valueString) algStartupArgs}
             return value
 addStartupFuncArgs _ _ = undefined
 
@@ -183,8 +179,8 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
     | fn == fName = do
         AlgBuilder{algStartupArgs} <- get
         let startupVarsNames = map ((\(Just x) -> x) . (`Map.lookup` algStartupArgs)) [0 .. (Map.size algStartupArgs)]
-        let startupVarsVersions = map (\x -> LuaValueVersion{luaValueVersionName = x, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}) startupVarsNames
-        mapM_ parseStartupArg $ zip3 args startupVarsVersions [0 ..]
+        let startupVarsVersions = map (\x -> LuaValueVersion{luaValueVersionName = fst x, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}) startupVarsNames
+        mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
         return $ fromString ""
     where
         parseStartupArg (arg, valueVersion, index) = do
@@ -208,7 +204,7 @@ addFunction funcName [i] _ | toString funcName == "send" = do
     algBuilder@AlgBuilder{algGraph} <- get
     put algBuilder{algGraph = Func{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
-    _ <- addVariable [] fOut [] "brokenBuffer" []
+    _ <- addVariable [] fOut [] "receive" []
     return ()
 addFunction fName _ _ = error $ "unknown function" <> fName
 
@@ -218,11 +214,7 @@ addConstant (Number _valueType valueString) = do
     case Map.lookup lvv algVars of
         Just value -> do
             let resultName = getUniqueLuaVariableName lvv (length value)
-            put
-                algBuilder
-                    { algGraph = Func{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = "constant", fInt = []} : algGraph
-                    , algVars = Map.insert lvv (resultName : value) algVars
-                    }
+            put algBuilder { algVars = Map.insert lvv (resultName : value) algVars }
             return resultName
         Nothing -> do
             let resultName = getUniqueLuaVariableName lvv 0
