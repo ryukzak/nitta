@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
 module NITTA.LuaFrontendNew (
-    parseLuaSources,
+    lua2functionsNew,
 
     -- * Internal
     AlgBuilder (..),
@@ -13,8 +13,7 @@ module NITTA.LuaFrontendNew (
     LuaValueVersion (..),
     findStartupFunction,
     getLuaBlockFromSources,
-    processStatement,
-    lua2functionsNew,
+    processStatement
 ) where
 
 import Control.Monad.State
@@ -63,8 +62,11 @@ data AlgBuilder s t = AlgBuilder
     , algVarGen :: Map.HashMap T.Text Int
     , algVars :: Map.HashMap LuaValueVersion [T.Text]
     , algStartupArgs :: Map.HashMap Int (T.Text, T.Text)
+    , algTraceFuncs :: [([T.Text], T.Text)]
     }
     deriving (Show)
+
+defaultFmt = "%.3f"
 
 funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
 funAssignStatements _ = error "funAssignStatements : not a function assignment"
@@ -192,6 +194,17 @@ processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args 
     fIn <- mapM (parseExpArg "tmp") args
     addFunction (fromString $ T.unpack fName) fIn [fromString ""]
     return $ fromString ""
+processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
+    fIn <- mapM (parseExpArg "debug") args
+    algBuilder@AlgBuilder{algTraceFuncs} <- get
+    case (fName, fIn) of
+        ("trace", tFmt : vs)
+            | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
+                put algBuilder{algTraceFuncs = (vs, T.replace "\"" "" tFmt) : algTraceFuncs}
+        ("trace", vs) -> do
+                put algBuilder{algTraceFuncs = (vs, defaultFmt) : algTraceFuncs}
+        _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
+    return ""
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
@@ -288,6 +301,7 @@ buildAlg syntaxTree =
                 , algVarGen = Map.empty
                 , algVars = Map.empty
                 , algStartupArgs = Map.empty
+                , algTraceFuncs = []
                 }
 
 findStartupFunction (Block statements Nothing)
@@ -300,10 +314,6 @@ findStartupFunction (Block statements Nothing)
 findStartupFunction _ = error "can't find startup function in lua source code"
 
 getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
-
-parseLuaSources src =
-    let syntaxTree = getLuaBlockFromSources src
-     in alg2graph $ buildAlg syntaxTree
 
 alg2graph AlgBuilder{algGraph, algBuffer, algVars} = flip execState (DFCluster []) $ do
     mapM addToGraph algGraph
@@ -336,7 +346,14 @@ alg2graph AlgBuilder{algGraph, algBuffer, algVars} = flip execState (DFCluster [
 --`    in buildAlg syntaxTree
 
 lua2functionsNew src =
-    FrontendResult{frDataFlow = parseLuaSources src, frTrace = [], frPrettyLog = undefined}
+    let syntaxTree = getLuaBlockFromSources src
+        algBuilder = buildAlg syntaxTree
+     in 
+        FrontendResult{frDataFlow = alg2graph algBuilder, frTrace = getFrTrace $ algTraceFuncs algBuilder, frPrettyLog = undefined}
+
+
+getFrTrace traceFuncs = [ TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars ]
+                    
 
 fromText t = fromString $ T.unpack t
 readText t = read $ T.unpack t

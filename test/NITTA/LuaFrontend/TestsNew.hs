@@ -22,6 +22,7 @@ import Language.Lua
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontendNew
+import NITTA.LuaFrontend
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.TH
@@ -145,7 +146,7 @@ case_lua_constant_declatation =
             , F.add (T.pack "_1#loop") (T.pack "r^0#0") [T.pack "_0#loop"]
             , F.loop 0 (T.pack "_0#loop") [T.pack "a^0#0"]
             ]
-     in functions (parseLuaSources src) @?= dfg
+     in functions (frDataFlow $ lua2functionsNew src) @?= dfg
 
 case_lua_two_name_for_same_constant =
     let src =
@@ -164,7 +165,7 @@ case_lua_two_name_for_same_constant =
             , F.add (T.pack "_1#loop") (T.pack "r^0#0") [T.pack "_0#loop"]
             , F.loop 0 (T.pack "_0#loop") [T.pack "a^0#0"]
             ]
-     in functions (parseLuaSources src) @?= dfg
+     in functions (frDataFlow $ lua2functionsNew src) @?= dfg
 
 case_lua_negative_operator =
     let src =
@@ -179,7 +180,7 @@ case_lua_negative_operator =
             [ F.neg (T.pack "a^0#0") [T.pack "b^0#0"] :: F T.Text Int
             , F.loop 0 (T.pack "b^0#0") [T.pack "a^0#0"]
             ]
-     in functions (parseLuaSources src) @?= dfg
+     in functions (frDataFlow $ lua2functionsNew src) @?= dfg
 
 defaultAlgBuilder = AlgBuilder{algGraph = [], algBuffer = Map.empty, algVarGen = Map.empty, algVars = Map.empty, algStartupArgs = Map.empty} :: AlgBuilder String Int
 
