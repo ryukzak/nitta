@@ -21,8 +21,8 @@ import qualified Data.Text as T
 import Language.Lua
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontendNew
 import NITTA.LuaFrontend
+import NITTA.LuaFrontendNew
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.TH

@@ -13,15 +13,15 @@ module NITTA.LuaFrontendNew (
     LuaValueVersion (..),
     findStartupFunction,
     getLuaBlockFromSources,
-    processStatement
+    processStatement,
 ) where
 
 import Control.Monad.State
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Map.Strict as Map
 import Data.Hashable
-import Data.String
+import qualified Data.Map.Strict as Map
 import Data.Maybe
+import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
 import Language.Lua
@@ -205,7 +205,7 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
                 put algBuilder{algTraceFuncs = (vs, T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
-                put algBuilder{algTraceFuncs = (vs, defaultFmt) : algTraceFuncs}
+            put algBuilder{algTraceFuncs = (vs, defaultFmt) : algTraceFuncs}
         _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
     return ""
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
@@ -230,7 +230,7 @@ addConstant (Number _valueType valueString) = do
     case HashMap.lookup lvv algVars of
         Just value -> do
             let resultName = getUniqueLuaVariableName lvv (length value)
-            put algBuilder { algVars = HashMap.insert lvv (resultName : value) algVars }
+            put algBuilder{algVars = HashMap.insert lvv (resultName : value) algVars}
             return resultName
         Nothing -> do
             let resultName = getUniqueLuaVariableName lvv 0
@@ -348,12 +348,10 @@ lua2functionsNew src =
     let syntaxTree = getLuaBlockFromSources src
         algBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ algTraceFuncs algBuilder
-     in 
-        FrontendResult{frDataFlow = alg2graph algBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+     in FrontendResult{frDataFlow = alg2graph algBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
 
+getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
 
-getFrTrace traceFuncs = [ TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars ]
-                    
 prettyLog traceVars hms = map prettyHM hms
     where
         prettyHM hm = HashMap.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HashMap.toList hm
