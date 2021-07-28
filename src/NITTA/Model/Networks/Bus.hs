@@ -269,42 +269,44 @@ instance
     (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null optionsList then groupBinding optionsList ++ concat optionsList else []
+    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null singleOptionsList then groupBinding singleOptionsList ++ concat singleOptionsList else []
         where
             optionsFor f =
                 [ Bind f puTitle
                 | (puTitle, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
-            optionsList = map optionsFor bnRemains
 
-            puOptionsF = M.fromAscListWith (++) $
+            singleOptionsList = map optionsFor bnRemains
+
+            puFunctionDict = M.fromAscListWith (++) $
                 concatMap (\f -> [ (unitType pu, [(f, puTitle)])
                 | (puTitle, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]) bnRemains
-            puOptionsOne option= (S.fromList fsts, S.fromList snds)
+
+            puOptionsOne option= (L.nub fsts, L.nub snds)
               where
                 fsts = map fst option
                 snds = map snd option
 
-            puOptions = map puOptionsOne $ M.elems puOptionsF
+            puOptions = map puOptionsOne $ M.elems puFunctionDict
 
-            getF (Bind f _tag) = f
+            prod a b = [ zip a s | s <- sequence $ replicate (length a) b]
 
-            -- deleteSame listOfGroupBinding = S.toList $ S.fromList lst
-            --     where
-            --         groupedByTypes = [ filter  | Bind f tag <- lst]
-
-            compose [] buff = buff
-            compose (x:xs) [] = compose xs newbuff
+            toCountDict lst = M.fromList $ L.nub $ map (\x -> (x, count lst x)) lst
                 where
-                    newbuff = [ [nvalue] | nvalue <- x ]
-            compose (x:xs) buff = compose xs newbuff
-                where
-                    newbuff = [ values ++ [nvalue] | values <- buff, nvalue <- x ]
+                    count lst x = length $ filter (==x) lst
+            fromCountDict dict = concatMap (\(value, count) -> replicate count value) $ M.toList dict
+
+            createDataMap elements = M.fromList $ map (\el -> (toCountDict $ map snd el, map fst el)) elements
+
+            listsOfValues = concatMap (uncurry prod) puOptions
+
+            afterFiltering = map (\(k, v) -> map (uncurry Bind ) $ zip v $ fromCountDict k )$ M.toList $ createDataMap listsOfValues
+
             groupBinding options
-                | not $ null $ filter (\x -> length x > 1) options = trace (show puOptions) $ map (GroupBinding AllBinds) $ compose options []
+                | not $ null $ filter (\x -> length x > 1) options = trace (show $ M.elems puFunctionDict) $ map (GroupBinding AllBinds) $ afterFiltering
                 | otherwise = [GroupBinding NonAlternativeBinds $ concat options]
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
