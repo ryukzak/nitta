@@ -198,16 +198,23 @@ processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args 
     addFunction (fromString $ T.unpack fName) fIn [fromString ""]
     return $ fromString ""
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
-    fIn <- mapM (parseExpArg "debug") args
-    algBuilder@AlgBuilder{algTraceFuncs} <- get
+    let fIn = map parseTraceArg args
+    algBuilder@AlgBuilder{algTraceFuncs, algBuffer} <- get
     case (fName, fIn) of
         ("trace", tFmt : vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
-                put algBuilder{algTraceFuncs = (vs, T.replace "\"" "" tFmt) : algTraceFuncs}
+                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ getUniqueLuaVariableName (fromMaybe undefined $ HashMap.lookup x algBuffer) 0) vs
+                put algBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
-            put algBuilder{algTraceFuncs = (vs, defaultFmt) : algTraceFuncs}
+            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ getUniqueLuaVariableName (fromMaybe undefined $ HashMap.lookup x algBuffer) 0) vs
+            put algBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
         _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
     return ""
+    where
+        parseTraceArg (String s) = s
+        parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
+        parseTraceArg _ = undefined
+
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
@@ -359,7 +366,7 @@ prettyLog traceVars hms = map prettyHM hms
             -- variables names end on #0, #1..., so we trim this suffix
             let v = takeWhile (/= '#') $ toString v0
             fmt <- v2fmt Map.!? v
-            Just (toString v, printx (T.unpack fmt) x)
+            Just (toString (takeWhile (/= '^') v), printx (T.unpack fmt) x)
         v2fmt = Map.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
         printx p x
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
