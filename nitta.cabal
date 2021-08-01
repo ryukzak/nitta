@@ -45,7 +45,6 @@ library
       NITTA.Intermediate.Value
       NITTA.Intermediate.Variable
       NITTA.LuaFrontend
-      NITTA.LuaFrontendNew
       NITTA.Model.Microarchitecture.Builder
       NITTA.Model.Microarchitecture.Config
       NITTA.Model.Networks.Bus
@@ -226,7 +225,6 @@ test-suite nitta-test
       NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Providers
-      NITTA.LuaFrontend.TestsNew
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
