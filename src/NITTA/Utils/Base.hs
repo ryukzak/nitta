@@ -13,11 +13,14 @@ module NITTA.Utils.Base (
     maximumOn,
     toText,
     showText,
+    readText,
+    fromText,
     vsToStringList,
 ) where
 
 import Data.List (maximumBy, minimumBy)
 import Data.Set (elems, unions)
+import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
 
@@ -29,7 +32,11 @@ minimumOn f = minimumBy (\a b -> f a `compare` f b)
 
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
+fromText t = fromString $ T.unpack t
+
 toText v = T.pack $ toString v
+
+readText t = read $ T.unpack t
 
 showText v = T.pack $ show v
 

@@ -46,6 +46,8 @@ data Func x = Func
     }
     deriving (Show, Eq)
 
+--Stores information about a particular version of a variable.
+--The version of a variable changes after assigning a new value to it.
 data LuaValueVersion = LuaValueVersion
     { luaValueVersionName :: T.Text
     , luaValueVersionAssignCount :: Int
@@ -70,12 +72,18 @@ instance Hashable LuaValueVersion where
             + hashWithSalt i luaValueVersionIsConstant * 31
 
 data AlgBuilder s t = AlgBuilder
-    { algGraph :: [Func t]
-    , algBuffer :: HashMap.HashMap T.Text LuaValueVersion
-    , algVarGen :: HashMap.HashMap T.Text Int
-    , algVars :: HashMap.HashMap LuaValueVersion [T.Text]
-    , algStartupArgs :: HashMap.HashMap Int (T.Text, T.Text)
-    , algTraceFuncs :: [([T.Text], T.Text)]
+    { -- a list containing all expressions to be added to the final graph
+      algGraph :: [Func t]
+    , -- a table that maps a variable name to the most recent corresponding LuaValueVersion
+      algBuffer :: HashMap.HashMap T.Text LuaValueVersion
+    , -- a table needed to generate unique temporary variable names
+      algVarGen :: HashMap.HashMap T.Text Int
+    , -- a table lists all uses of a particular LuaValueVersion
+      algVars :: HashMap.HashMap LuaValueVersion [T.Text]
+    , -- a table correlating the ordinal number of an argument with a variable storing its value and startup value of this variable
+      algStartupArgs :: HashMap.HashMap Int (T.Text, T.Text)
+    , -- a list that stores debug information about monitored variables and their display formats
+      algTraceFuncs :: [([T.Text], T.Text)]
     }
     deriving (Show)
 
@@ -381,6 +389,3 @@ prettyLog traceVars hms = map prettyHM hms
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
             | 's' `elem` p = printf p $ show x
             | otherwise = printf p x
-
-fromText t = fromString $ T.unpack t
-readText t = read $ T.unpack t
