@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
 module NITTA.LuaFrontend (
-    lua2functionsNew,
+    lua2functions,
     FrontendResult (..),
     TraceVar (..),
 
@@ -224,7 +224,6 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
         parseTraceArg (String s) = s
         parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
         parseTraceArg _ = undefined
-
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
@@ -361,7 +360,7 @@ alg2graph AlgBuilder{algGraph, algBuffer, algVars} = flip execState (DFCluster [
                 Just names -> map fromText names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algBuffer
 
-lua2functionsNew src =
+lua2functions src =
     let syntaxTree = getLuaBlockFromSources src
         algBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ algTraceFuncs algBuilder

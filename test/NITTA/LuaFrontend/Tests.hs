@@ -22,19 +22,19 @@ module NITTA.LuaFrontend.Tests (
     tests,
 ) where
 
-import Control.Exception (ErrorCall, catch)
+import Control.Monad.State
 import Data.FileEmbed (embedStringFile)
+import qualified Data.HashMap.Strict as HashMap
 import Data.String.Interpolate
+import Data.Text as T
+import Language.Lua
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 import Test.Tasty.TH
-import Language.Lua
-
 
 case_find_startup_function =
     let src =
@@ -52,13 +52,13 @@ case_find_startup_function =
 
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name $ T.pack "a"] (Just [Number IntNum (T.pack "2")])
-        expected = Map.fromList [(T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
+        expected = HashMap.fromList [(T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
         (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name $ T.pack "a")] [Number IntNum (T.pack "2")]
-        expected = Map.fromList [(T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
+        expected = HashMap.fromList [(T.pack "a", LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
         (_str :: String, AlgBuilder{algBuffer}) = runState (processStatement (T.pack "_") assignment) defaultAlgBuilder
      in algBuffer @?= expected
 
@@ -73,7 +73,7 @@ case_process_assignment_statement =
 --     in algBuffer @?= expected
 
 case_process_add_statement =
-    let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
+    let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Language.Lua.Add (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
             [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -83,7 +83,7 @@ case_process_add_statement =
      in algGraph @?= expected
 
 case_process_sub_statement =
-    let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Sub (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
+    let assignment = Assign [VarName (Name (T.pack "a"))] [Binop Language.Lua.Sub (Number IntNum (T.pack "1")) (Number IntNum (T.pack "2"))]
         expected =
             [ Func{fIn = [T.pack "!1#0", T.pack "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "sub", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -127,7 +127,7 @@ case_process_multiply_statement =
 --    in algGraph @?= expected
 
 case_temporary_variable =
-    let assignment = Assign [VarName (Name $ T.pack "a")] [Binop Add (Binop Add (Number IntNum $ T.pack "1") (Number IntNum $ T.pack "2")) (Number IntNum $ T.pack "3")]
+    let assignment = Assign [VarName (Name $ T.pack "a")] [Binop Language.Lua.Add (Binop Language.Lua.Add (Number IntNum $ T.pack "1") (Number IntNum $ T.pack "2")) (Number IntNum $ T.pack "3")]
         expected =
             [ Func{fIn = [T.pack "_0#a", T.pack "!3#0"], fOut = [LuaValueVersion{luaValueVersionName = T.pack "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , Func{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = T.pack "3", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [3], fName = "constant", fInt = []}
@@ -149,13 +149,13 @@ case_lua_two_name_for_same_constant =
                 sum(0)
             |]
         dfg =
-            [ F.constant 1 [T.pack "t^0#0"] :: F T.Text Int
-            , F.constant 1 [T.pack "r^0#0"]
-            , F.add (T.pack "a^0#0") (T.pack "t^0#0") [T.pack "_1#loop"]
-            , F.add (T.pack "_1#loop") (T.pack "r^0#0") [T.pack "_0#loop"]
-            , F.loop 0 (T.pack "_0#loop") [T.pack "a^0#0"]
+            [ constant 1 [T.pack "t^0#0"] :: F T.Text Int
+            , constant 1 [T.pack "r^0#0"]
+            , add (T.pack "a^0#0") (T.pack "t^0#0") [T.pack "_1#loop"]
+            , add (T.pack "_1#loop") (T.pack "r^0#0") [T.pack "_0#loop"]
+            , loop 0 (T.pack "_0#loop") [T.pack "a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functionsNew src) @?= dfg
+     in functions (frDataFlow $ lua2functions src) @?= dfg
 
 case_lua_negative_operator =
     let src =
@@ -167,13 +167,12 @@ case_lua_negative_operator =
                 sum(0)
             |]
         dfg =
-            [ F.neg (T.pack "a^0#0") [T.pack "b^0#0"] :: F T.Text Int
-            , F.loop 0 (T.pack "b^0#0") [T.pack "a^0#0"]
+            [ neg (T.pack "a^0#0") [T.pack "b^0#0"] :: F T.Text Int
+            , loop 0 (T.pack "b^0#0") [T.pack "a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functionsNew src) @?= dfg
+     in functions (frDataFlow $ lua2functions src) @?= dfg
 
-defaultAlgBuilder = AlgBuilder{algGraph = [], algBuffer = Map.empty, algVarGen = Map.empty, algVars = Map.empty, algStartupArgs = Map.empty, algTraceFuncs = []} :: AlgBuilder String Int
-
+defaultAlgBuilder = AlgBuilder{algGraph = [], algBuffer = HashMap.empty, algVarGen = HashMap.empty, algVars = HashMap.empty, algStartupArgs = HashMap.empty, algTraceFuncs = []} :: AlgBuilder String Int
 
 case_lua_constant_declatation =
     let src =
@@ -192,7 +191,7 @@ case_lua_constant_declatation =
             , add "_1#loop" "r^0#0" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functionsNew src) @?= dfVg
+     in functions (frDataFlow $ lua2functions src) @?= dfg
 
 --test_lua_two_name_for_same_constant =
 --    let src =
