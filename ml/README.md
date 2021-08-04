@@ -20,9 +20,9 @@ Python 3.7, Pandas for data processing, Tensorflow for ML.
 
 ### How to Run
 
-1. Make sure you have Python 3.7 installed.
+1. Make sure you have Python 3.7 installed or greater.
 2. _(optional)_ Create a `virtualenv` if you don't want to flood system interpreter with packages (tensorflow is >1GB though, so you may want not to have multiple instances of it).
 3. `cd <repo_root>/ml/prototype`
 4. `pip install -r requirements.txt`
-5. `jupyter notebook`
+5. `jupyter notebook` or `jupyter notebook nitta-ml-for-synthesis-prototype.ipynb`
 6. In browser open `nitta-ml-for-synthesis-prototype.ipynb` and have fun :)
