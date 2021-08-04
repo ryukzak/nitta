@@ -26,3 +26,4 @@ Python 3.7, Pandas for data processing, Tensorflow for ML.
 4. `pip install -r requirements.txt`
 5. `jupyter notebook` or `jupyter notebook nitta-ml-for-synthesis-prototype.ipynb`
 6. In browser open `nitta-ml-for-synthesis-prototype.ipynb` and have fun :)
+7. Smoke test: `jupyter nbconvert --to markdown --execute --ExecutePreprocessor.kernel_name=python3 --stdout nitta-ml-for-synthesis-prototype.ipynb`
