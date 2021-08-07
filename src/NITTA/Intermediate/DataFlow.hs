@@ -82,5 +82,5 @@ instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs
 
-addFuncToDataFlowGraph (DFCluster items) f = DFCluster (DFLeaf f : items)
-addFuncToDataFlowGraph leaf f = DFCluster [DFLeaf f, leaf]
+addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)
+addFuncToDataFlowGraph f leaf = DFCluster [DFLeaf f, leaf]

@@ -137,6 +137,7 @@ tests:
       - file-embed
       - genvalidity
       - genvalidity-property
+      - language-lua
       - nitta
       - split
       - stm
@@ -146,4 +147,3 @@ tests:
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
-      - language-lua
