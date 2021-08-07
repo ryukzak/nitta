@@ -54,13 +54,13 @@ case_find_startup_function =
 case_process_local_assignment_statement =
     let assignment = LocalAssign [Name "a"] (Just [Number IntNum "2"])
         expected = HM.fromList [("a", LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
-        (_str :: String, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algLatestLuaValueVersion @?= expected
 
 case_process_assignment_statement =
     let assignment = Assign [VarName (Name "a")] [Number IntNum "2"]
         expected = HM.fromList [("a", LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
-        (_str :: String, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algLatestLuaValueVersion @?= expected
 
 --case_process_multiple_assignments_statement =
@@ -80,7 +80,7 @@ case_process_add_statement =
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]
-        (_str :: String, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_sub_statement =
@@ -90,7 +90,7 @@ case_process_sub_statement =
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]
-        (_str :: String, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_divide_statement =
@@ -100,7 +100,7 @@ case_process_divide_statement =
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]
-        (_str :: String, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_process_multiply_statement =
@@ -110,7 +110,7 @@ case_process_multiply_statement =
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]
-        (_str :: String, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 --case_process_neg_statement =
@@ -136,7 +136,7 @@ case_temporary_variable =
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
             ]
-        (_str :: String, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
 case_lua_two_name_for_same_constant =
@@ -173,12 +173,16 @@ case_lua_negative_operator =
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
 
-defaultAlgBuilder = LuaAlgBuilder{algGraph = []
-                             , algLatestLuaValueVersion = HM.empty
-                             , algVarCounters = HM.empty
-                             , algVars = HM.empty
-                             , algStartupArgs = HM.empty
-                             , algTraceFuncs = [] } :: LuaAlgBuilder String Int
+defaultAlgBuilder =
+    LuaAlgBuilder
+        { algGraph = []
+        , algLatestLuaValueVersion = HM.empty
+        , algVarCounters = HM.empty
+        , algVars = HM.empty
+        , algStartupArgs = HM.empty
+        , algTraceFuncs = []
+        } ::
+        LuaAlgBuilder String Int
 
 case_lua_constant_declatation =
     let src =

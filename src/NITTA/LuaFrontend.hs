@@ -128,7 +128,6 @@ parseRightExp
         ) = do
         fIn <- mapM (parseExpArg fOut) args
         addFunction (fromText fname) fIn [fromText fOut]
-        return $ head fIn
 parseRightExp [fOut] (PrefixExp (PEVar (VarName (Name name)))) = do
     addAlias fOut name
 parseRightExp _ expr = error $ "unknown expression : " <> show expr
@@ -177,20 +176,19 @@ addStartupFuncArgs _ _ = undefined
 
 --Lua language Stat structure parsing
 --LocalAssign
+processStatement :: (MonadState (LuaAlgBuilder s t) m, Read t) => T.Text -> Stat -> m ()
 processStatement _ (LocalAssign _names Nothing) = do
-    return $ fromString ""
+    return ()
 processStatement fn (LocalAssign names (Just exps)) =
     processStatement fn $ Assign (map VarName names) exps
 --Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
     processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
 processStatement _ (Assign lexp [rexp]) = do
-    _ <- parseRightExp (map parseLeftExp lexp) rexp
-    return $ fromString ""
+    parseRightExp (map parseLeftExp lexp) rexp
 processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
     mapM_ (\(VarName (Name name), expr) -> processStatement startupFunctionName (Assign [VarName (Name (getTempAlias name))] [expr])) $ zip vars exps
     mapM_ (\(VarName (Name name)) -> addAlias name (getTempAlias name)) vars
-    return $ fromString ""
     where
         getTempAlias name = name <> "&"
 --startup function recursive call
@@ -200,17 +198,14 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         let startupVarsNames = map ((\(Just x) -> x) . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
         let startupVarsVersions = map (\x -> LuaValueVersion{luaValueVersionName = fst x, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}) startupVarsNames
         mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
-        return $ fromString ""
     where
         parseStartupArg (arg, valueVersion, index) = do
             varName <- parseExpArg (T.pack "loop") arg
             luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
             put luaAlgBuilder{algGraph = LuaStatement{fIn = [varName], fOut = [valueVersion], fValues = [index], fName = "loop", fInt = []} : algGraph}
-            return $ fromString ""
 processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (parseExpArg "tmp") args
     addFunction (fromString $ T.unpack fName) fIn [fromString ""]
-    return $ fromString ""
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
     let fIn = map parseTraceArg args
     luaAlgBuilder@LuaAlgBuilder{algTraceFuncs, algLatestLuaValueVersion} <- get
@@ -223,7 +218,6 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
             let vars = map (\x -> T.pack $ takeWhile (/= '#') $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
             put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
         _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
-    return ""
     where
         parseTraceArg (String s) = s
         parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
@@ -231,17 +225,14 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
-    _ <- addVariable [i] fOut [] "buffer" []
-    return ()
+    addVariable [i] fOut [] "buffer" []
 addFunction funcName [i] fOut | toString funcName == "brokenBuffer" = do
-    _ <- addVariable [i] fOut [] "brokenBuffer" []
-    return ()
+    addVariable [i] fOut [] "brokenBuffer" []
 addFunction funcName [i] _ | toString funcName == "send" = do
     luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
     put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
-    _ <- addVariable [] fOut [] "receive" []
-    return ()
+    addVariable [] fOut [] "receive" []
 addFunction fName _ _ = error $ "unknown function" <> fName
 
 addConstant (Number _valueType valueString) = do
@@ -270,7 +261,6 @@ addVariable fIn fOut fValues fName fInt = do
     mapM_ addItemToVars luaValueVersions
     luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
     put luaAlgBuilder{algGraph = func : algGraph}
-    return $ getUniqueLuaVariableName (head luaValueVersions) 0
     where
         nameToLuaValueVersion algLatestLuaValueVersion name =
             case getLuaValueByName name algLatestLuaValueVersion of
@@ -305,7 +295,6 @@ addAlias from to = do
     case getLuaValueByName to algLatestLuaValueVersion of
         Just value -> do
             put luaAlgBuilder{algLatestLuaValueVersion = HM.insert from value algLatestLuaValueVersion}
-            return $ fromString ""
         Nothing -> error ("variable '" ++ show to ++ " not found. Constants list : " ++ show algLatestLuaValueVersion)
 
 getLuaValueByName name buffer = HM.lookup name buffer
@@ -328,7 +317,6 @@ buildAlg syntaxTree =
                 }
         funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
         funAssignStatements _ = error "funAssignStatements : not a function assignment"
-
 
 findStartupFunction (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
