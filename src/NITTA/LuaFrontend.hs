@@ -329,7 +329,6 @@ buildAlg syntaxTree =
         funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
         funAssignStatements _ = error "funAssignStatements : not a function assignment"
 
-
 findStartupFunction (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
       , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements

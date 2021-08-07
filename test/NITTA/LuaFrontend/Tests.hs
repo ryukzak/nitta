@@ -173,12 +173,16 @@ case_lua_negative_operator =
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
 
-defaultAlgBuilder = LuaAlgBuilder{algGraph = []
-                             , algLatestLuaValueVersion = HM.empty
-                             , algVarCounters = HM.empty
-                             , algVars = HM.empty
-                             , algStartupArgs = HM.empty
-                             , algTraceFuncs = [] } :: LuaAlgBuilder String Int
+defaultAlgBuilder =
+    LuaAlgBuilder
+        { algGraph = []
+        , algLatestLuaValueVersion = HM.empty
+        , algVarCounters = HM.empty
+        , algVars = HM.empty
+        , algStartupArgs = HM.empty
+        , algTraceFuncs = []
+        } ::
+        LuaAlgBuilder String Int
 
 case_lua_constant_declatation =
     let src =
