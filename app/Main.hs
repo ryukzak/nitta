@@ -48,7 +48,6 @@ import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
-import qualified System.Console.CmdArgs.Explicit as CMD
 import qualified System.Environment as Env
 import System.Exit
 import System.FilePath.Posix
@@ -134,11 +133,9 @@ nittaArgs =
 
 getNittaArgs :: IO Nitta
 getNittaArgs = do
-    let mode = cmdArgsMode nittaArgs
-    result <- CMD.process mode <$> Env.getArgs
-    case result of
-        Left _ -> Env.withArgs ["--help"] (cmdArgs nittaArgs)
-        Right a -> cmdArgsApply a
+    let handleError :: ExitCode -> IO Nitta
+        handleError _ = Env.withArgs ["--help"] (cmdArgs nittaArgs)
+    catch (cmdArgs nittaArgs) handleError
 
 main = do
     Nitta{port, filename, uarch, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
