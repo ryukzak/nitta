@@ -1,0 +1,54 @@
+name: Haskell Sanity
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "test/**"
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+
+jobs:
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Set up HLint'
+      uses: rwe/actions-hlint-setup@v1
+
+    - name: 'Run HLint'
+      uses: rwe/actions-hlint-run@v2
+      with:
+        path: .
+        fail-on: suggestion
+
+
+  fourmolu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache haskell-stack and fourmolu
+        uses: actions/cache@v2.1.3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
+
+      - name: Install haskell-stack
+        uses: actions/setup-haskell@v1.1.3
+        with:
+          enable-stack: true
+
+      - name: Install fourmolu
+        run: |
+          mkdir -p ~/.stack
+          touch ~/.stack/config.yaml
+          echo 'allow-newer: true' >> ~/.stack/config.yaml
+          stack install fourmolu
+          echo ~/.local/bin >> $GITHUB_PATH
+
+      - uses: actions/checkout@v2
+      - name: Check formating
+        run: find . -name '*.hs' | xargs fourmolu -m check

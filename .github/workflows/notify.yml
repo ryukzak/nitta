@@ -1,5 +1,8 @@
-name: telegram notify
-on: [push]
+name: On Push [Request] Telegram Notify
+on:
+  push:
+  pull_request:
+
 jobs:
 
   build:
