@@ -32,10 +32,10 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
 import Text.Printf
 
-getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount, luaValueVersionIsConstant} luaValueAccessCount
-    | luaValueVersionIsConstant = fromText $ "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
-    | T.head luaValueVersionName == '_' = fromText luaValueVersionName
-    | otherwise = fromText $ luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueVersion{ luaValueVersionName, luaValueVersionIsConstant=True } luaValueAccessCount = "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueVersion{ luaValueVersionName, luaValueVersionAssignCount} luaValueAccessCount
+    | T.head luaValueVersionName == '_' = luaValueVersionName
+    | otherwise = luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
 
 data LuaStatement x = LuaStatement
     { fIn :: [T.Text]
@@ -127,7 +127,7 @@ parseRightExp
                 )
         ) = do
         fIn <- mapM (parseExpArg fOut) args
-        addFunction (fromText fname) fIn [fromText fOut]
+        addFunction fname fIn [fOut]
 parseRightExp [fOut] (PrefixExp (PEVar (VarName (Name name)))) = do
     addAlias fOut name
 parseRightExp _ expr = error $ "unknown expression : " <> show expr
@@ -176,7 +176,6 @@ addStartupFuncArgs _ _ = undefined
 
 --Lua language Stat structure parsing
 --LocalAssign
-processStatement :: (MonadState (LuaAlgBuilder s t) m, Read t) => T.Text -> Stat -> m ()
 processStatement _ (LocalAssign _names Nothing) = do
     return ()
 processStatement fn (LocalAssign names (Just exps)) =
@@ -212,10 +211,10 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
     case (fName, fIn) of
         ("trace", tFmt : vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
-                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
+                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
                 put luaAlgBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
-            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
+            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
             put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
         _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
     where
@@ -233,7 +232,7 @@ addFunction funcName [i] _ | toString funcName == "send" = do
     put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
     addVariable [] fOut [] "receive" []
-addFunction fName _ _ = error $ "unknown function" <> fName
+addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
 
 addConstant (Number _valueType valueString) = do
     luaAlgBuilder@LuaAlgBuilder{algGraph, algVars} <- get
@@ -336,23 +335,23 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueVersion, algVars} = flip exec
             graph <- get
             put (addFuncToDataFlowGraph (function2nitta item) graph)
             return $ fromString ""
-        function2nitta LuaStatement{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer (fromText i) $ output o
-        function2nitta LuaStatement{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer (fromText i) $ output o
+        function2nitta LuaStatement{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer i $ output o
+        function2nitta LuaStatement{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer i $ output o
         function2nitta LuaStatement{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x $ output o
-        function2nitta LuaStatement{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send (fromText i)
-        function2nitta LuaStatement{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)
-        function2nitta LuaStatement{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o
+        function2nitta LuaStatement{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send i
+        function2nitta LuaStatement{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add a b $ output c
+        function2nitta LuaStatement{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub a b $ output c
+        function2nitta LuaStatement{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply a b $ output c
+        function2nitta LuaStatement{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division d n (output q) (output r)
+        function2nitta LuaStatement{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg i $ output o
         function2nitta LuaStatement{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o
-        function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c
-        function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
-        function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
+        function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s a $ output c
+        function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s a $ output c
+        function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x a $ output c
         function2nitta f = error $ "function not found: " ++ show f
         output v =
             case HM.lookup v algVars of
-                Just names -> map fromText names
+                Just names -> names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueVersion
 
 lua2functions src =
