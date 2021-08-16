@@ -117,7 +117,7 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   return result;
 }
 
-function useAlgorithmGraph(selectedSID: string) {
+function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
   const [algorithmGraph, setAlgorithmGraph] = useState<IntermediateGraph | null>(null);
   const { response } = useApiRequest({
     requester: useCallback(() =>
