@@ -48,7 +48,7 @@ import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
-import System.Console.CmdArgs.Explicit (helpText, HelpFormat(HelpFormatDefault))
+import System.Console.CmdArgs.Explicit (HelpFormat (HelpFormatDefault), helpText)
 import System.Exit
 import System.FilePath.Posix
 import System.IO (stdout)
