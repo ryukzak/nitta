@@ -13,7 +13,7 @@ export function useApiResponse<TResponseResult, TResult>(
             return;
         }
         setResult(toResult(response.data))
-    }, [response]);
+    }, [response, defaultResult, toResult]);
     return result;
 }
 
