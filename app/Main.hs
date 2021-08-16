@@ -48,7 +48,7 @@ import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
-import qualified System.Environment as Env
+import System.Console.CmdArgs.Explicit (helpText, HelpFormat(HelpFormatDefault))
 import System.Exit
 import System.FilePath.Posix
 import System.IO (stdout)
@@ -134,7 +134,9 @@ nittaArgs =
 getNittaArgs :: IO Nitta
 getNittaArgs = do
     let handleError :: ExitCode -> IO Nitta
-        handleError _ = Env.withArgs ["--help"] (cmdArgs nittaArgs)
+        handleError exitCode = do
+            print $ helpText [] HelpFormatDefault $ cmdArgsMode nittaArgs
+            exitWith exitCode
     catch (cmdArgs nittaArgs) handleError
 
 main = do
