@@ -33,30 +33,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
 
   const algorithmGraph = useAlgorithmGraph(selectedSID);
   const procState = useProcState(selectedSID);
-  const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
-
-  // Updating graph
-  useEffect(() => {
-
-    api
-      .getEndpoints(selectedSID)
-      .then((response: AxiosResponse<UnitEndpointsData[]>) => {
-        let result: Endpoints = { sources: [], targets: [] };
-        response.data.forEach((eps: UnitEndpointsData) => {
-          eps.unitEndpoints.forEach((e: EndpointOptionData) => {
-            let role = e.epRole;
-            if (role.tag === "Source") {
-              result.sources.push(...role.contents);
-            }
-            if (role.tag === "Target") {
-              result.targets.push(role.contents);
-            }
-          });
-        });
-        setEndpoints(result);
-      })
-      .catch((err: AxiosError) => console.log(err));
-  }, [selectedSID]);
+  const endpoints = useEndpoints(selectedSID);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
@@ -198,4 +175,29 @@ function useProcState(selectedSID: string): ProcessState {
     setProcState(result);
   }, [response]);
   return procState
+}
+
+function useEndpoints(selectedSID: string): Endpoints {
+  const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
+  const { response } = useApiRequest({ requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]) });
+  useEffect(() => {
+    let result: Endpoints = { sources: [], targets: [] };
+    if (!response) {
+      setEndpoints(result);
+      return;
+    }
+    response.data.forEach((eps: UnitEndpointsData) => {
+      eps.unitEndpoints.forEach((e: EndpointOptionData) => {
+        let role = e.epRole;
+        if (role.tag === "Source") {
+          result.sources.push(...role.contents);
+        }
+        if (role.tag === "Target") {
+          result.targets.push(role.contents);
+        }
+      });
+    });
+    setEndpoints(result);
+  }, [response]);
+  return endpoints
 }
