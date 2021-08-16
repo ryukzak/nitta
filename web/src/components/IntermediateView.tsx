@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosError } from "axios";
-import React, { useContext, useState, useEffect, FC } from "react";
+import React, { useContext, useState, useEffect, FC, useCallback } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
@@ -10,6 +10,7 @@ import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "service
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
+import { useApiRequest } from "hooks/useApiRequest";
 
 /**
  * Component to display algorithm graph.
@@ -30,37 +31,12 @@ interface Endpoints {
 export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [algorithmGraph, setAlgorithmGraph] = useState<IntermediateGraph | null>(null);
+  const algorithmGraph = useAlgorithmGraph(selectedSID);
   const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
   const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
 
   // Updating graph
   useEffect(() => {
-    api
-      .getIntermediateView(selectedSID)
-      .then((response: AxiosResponse<IntermediateGraph>) => {
-        const graphData = response.data;
-        const newGraph: IntermediateGraph = {
-          nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
-            return {
-              id: index + 1,
-              label: String(nodeData.label),
-              function: nodeData.function,
-              history: nodeData.history,
-              nodeColor: "",
-              nodeShape: "",
-              fontSize: "",
-              nodeSize: "",
-            };
-          }),
-          edges: graphData.edges.map((edgeData: GraphEdge) => {
-            return edgeData;
-          }),
-        };
-        setAlgorithmGraph(newGraph);
-      })
-      .catch((err: AxiosError) => console.error(err));
-
     api
       .getRootPath(selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
@@ -181,4 +157,35 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   const wrap = (content: string) => `\t${content};`;
   let result = `digraph {\n${lines.map(wrap).join("\n")}\n}`;
   return result;
+}
+
+function useAlgorithmGraph(selectedSID: string) {
+  const [algorithmGraph, setAlgorithmGraph] = useState<IntermediateGraph | null>(null);
+  const { response } = useApiRequest({
+    requester: useCallback(() =>
+      api.getIntermediateView(selectedSID), [selectedSID])
+  })
+  if (!response) {
+    return null
+  }
+  const graphData = response.data;
+  const newGraph: IntermediateGraph = {
+    nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
+      return {
+        id: index + 1,
+        label: String(nodeData.label),
+        function: nodeData.function,
+        history: nodeData.history,
+        nodeColor: "",
+        nodeShape: "",
+        fontSize: "",
+        nodeSize: "",
+      };
+    }),
+    edges: graphData.edges.map((edgeData: GraphEdge) => {
+      return edgeData;
+    }),
+  };
+  setAlgorithmGraph(newGraph);
+  return algorithmGraph
 }
