@@ -3,10 +3,12 @@ name: Haskell Sanity
 on:
   push:
     paths:
+      - "app/**"
       - "src/**"
       - "test/**"
   pull_request:
     paths:
+      - "app/**"
       - "src/**"
       - "test/**"
 
