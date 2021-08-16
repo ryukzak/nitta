@@ -32,30 +32,11 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
   const algorithmGraph = useAlgorithmGraph(selectedSID);
-  const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
+  const procState = useProcState(selectedSID);
   const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
 
   // Updating graph
   useEffect(() => {
-    api
-      .getRootPath(selectedSID)
-      .then((response: AxiosResponse<Node[]>) => {
-        let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-        response.data.forEach((n: Node) => {
-          if (n.decision.tag === "DataflowDecisionView") {
-            let targets = (n.decision as Dataflow).targets;
-            targets.forEach((target: [string, EndpointDecision]) => {
-              result.transferedVars.push(target[1].epRole.contents as string);
-            });
-          }
-          if (n.decision.tag === "BindDecisionView") {
-            let d = n.decision as Bind;
-            result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
-          }
-        });
-        setProcState(result);
-      })
-      .catch((err: AxiosError) => console.log(err));
 
     api
       .getEndpoints(selectedSID)
@@ -188,4 +169,27 @@ function useAlgorithmGraph(selectedSID: string) {
   };
   setAlgorithmGraph(newGraph);
   return algorithmGraph
+}
+
+function useProcState(selectedSID: string): ProcessState {
+  const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
+  const { response } = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) })
+  if (!response) {
+    return procState
+  }
+  let result: ProcessState = { bindeFuns: [], transferedVars: [] };
+  response.data.forEach((n: Node) => {
+    if (n.decision.tag === "DataflowDecisionView") {
+      let targets = (n.decision as Dataflow).targets;
+      targets.forEach((target: [string, EndpointDecision]) => {
+        result.transferedVars.push(target[1].epRole.contents as string);
+      });
+    }
+    if (n.decision.tag === "BindDecisionView") {
+      let d = n.decision as Bind;
+      result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
+    }
+  });
+  setProcState(result);
+  return procState
 }
