@@ -146,8 +146,10 @@ function useAlgorithmGraph(selectedSID: string) {
     requester: useCallback(() =>
       api.getIntermediateView(selectedSID), [selectedSID])
   })
+  useEffect(() => {
   if (!response) {
-    return null
+      setAlgorithmGraph(null);
+      return;
   }
   const graphData = response.data;
   const newGraph: IntermediateGraph = {
@@ -168,6 +170,7 @@ function useAlgorithmGraph(selectedSID: string) {
     }),
   };
   setAlgorithmGraph(newGraph);
+  }, [response]);
   return algorithmGraph
 }
 
