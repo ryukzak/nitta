@@ -16,7 +16,7 @@ import { useApiRequest } from "hooks/useApiRequest";
  * Component to display algorithm graph.
  */
 
-export interface IIntermediateViewProps {}
+export interface IIntermediateViewProps { }
 
 interface ProcessState {
   bindeFuns: string[];
@@ -147,29 +147,29 @@ function useAlgorithmGraph(selectedSID: string) {
       api.getIntermediateView(selectedSID), [selectedSID])
   })
   useEffect(() => {
-  if (!response) {
+    if (!response) {
       setAlgorithmGraph(null);
       return;
-  }
-  const graphData = response.data;
-  const newGraph: IntermediateGraph = {
-    nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
-      return {
-        id: index + 1,
-        label: String(nodeData.label),
-        function: nodeData.function,
-        history: nodeData.history,
-        nodeColor: "",
-        nodeShape: "",
-        fontSize: "",
-        nodeSize: "",
-      };
-    }),
-    edges: graphData.edges.map((edgeData: GraphEdge) => {
-      return edgeData;
-    }),
-  };
-  setAlgorithmGraph(newGraph);
+    }
+    const graphData = response.data;
+    const newGraph: IntermediateGraph = {
+      nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
+        return {
+          id: index + 1,
+          label: String(nodeData.label),
+          function: nodeData.function,
+          history: nodeData.history,
+          nodeColor: "",
+          nodeShape: "",
+          fontSize: "",
+          nodeSize: "",
+        };
+      }),
+      edges: graphData.edges.map((edgeData: GraphEdge) => {
+        return edgeData;
+      }),
+    };
+    setAlgorithmGraph(newGraph);
   }, [response]);
   return algorithmGraph
 }
@@ -177,22 +177,25 @@ function useAlgorithmGraph(selectedSID: string) {
 function useProcState(selectedSID: string): ProcessState {
   const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
   const { response } = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) })
-  if (!response) {
-    return procState
-  }
-  let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-  response.data.forEach((n: Node) => {
-    if (n.decision.tag === "DataflowDecisionView") {
-      let targets = (n.decision as Dataflow).targets;
-      targets.forEach((target: [string, EndpointDecision]) => {
-        result.transferedVars.push(target[1].epRole.contents as string);
-      });
+  useEffect(() => {
+    let result: ProcessState = { bindeFuns: [], transferedVars: [] };
+    if (!response) {
+      setProcState(result);
+      return;
     }
-    if (n.decision.tag === "BindDecisionView") {
-      let d = n.decision as Bind;
-      result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
-    }
-  });
-  setProcState(result);
+    response.data.forEach((n: Node) => {
+      if (n.decision.tag === "DataflowDecisionView") {
+        let targets = (n.decision as Dataflow).targets;
+        targets.forEach((target: [string, EndpointDecision]) => {
+          result.transferedVars.push(target[1].epRole.contents as string);
+        });
+      }
+      if (n.decision.tag === "BindDecisionView") {
+        let d = n.decision as Bind;
+        result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
+      }
+    });
+    setProcState(result);
+  }, [response]);
   return procState
 }
