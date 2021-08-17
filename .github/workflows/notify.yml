@@ -1,5 +1,8 @@
-name: telegram notify
-on: [push]
+name: Telegram Notify
+on:
+  push:
+  pull_request:
+
 jobs:
 
   build:
@@ -13,9 +16,11 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         format: html
         args: |
-            Push by: <strong>${{ github.event.head_commit.author.name }}</strong>
-            In: <strong>${{github.repository}} ${{ github.ref }}</strong>
-            Pushed: ${{ join(github.event.commits[*].message, '; ') }}
+            Repository: <strong>${{github.event.repository.full_name}}</strong>
+            Ref: <strong>${{ github.ref }}</strong>
+            Event: <strong>${{ github.event_name }}</strong>
+            Info:    ${{ github.event.pull_request.title }}${{ join(github.event.commits[*].message, '; ') }}
+            ${{ github.event.pull_request.html_url }}
     - name: notification
       if: cancelled() == false
       uses: xinthink/action-telegram@v1.1
