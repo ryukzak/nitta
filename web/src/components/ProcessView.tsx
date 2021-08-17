@@ -1,13 +1,15 @@
 import { AxiosResponse, AxiosError } from "axios";
 import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
+// import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
 
 import "components/Graphviz.scss";
 
+import dynamic from 'next/dynamic'
+const Graphviz = dynamic(() => import('graphviz-react'), {ssr: false});
 /**
  * Component to display target process by GraphViz.
  */

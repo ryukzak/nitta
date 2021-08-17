@@ -27,7 +27,7 @@ export const AppNavbar: FC<IAppNavbarProps> = (props) => {
           <Nav.Link as={RouterNavLink} exact to="/node">
             Node
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/subforest">
+          <Nav.Link as={RouterNavLink} exact to="/subforest" data-testid="subforest-testid">
             Subforest
           </Nav.Link>
           <Nav.Link as={RouterNavLink} exact to="/process">

@@ -1,7 +1,7 @@
 import { AxiosResponse, AxiosError } from "axios";
 import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
+// import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
@@ -11,6 +11,9 @@ import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 
+import dynamic from 'next/dynamic'
+import { act } from "@testing-library/react";
+const Graphviz = dynamic(() => import('graphviz-react'), {ssr: false});
 /**
  * Component to display algorithm graph.
  */

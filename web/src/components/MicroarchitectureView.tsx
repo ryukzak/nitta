@@ -1,6 +1,6 @@
 import React, { useContext, useMemo, FC, useCallback } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
+// import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, MicroarchitectureData, NetworkData, UnitData } from "services/HaskellApiService";
@@ -10,6 +10,8 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 
+import dynamic from 'next/dynamic'
+const Graphviz = dynamic(() => import('graphviz-react'), {ssr: false});
 /**
  * Component to display a microarchitecture with available endpoints.
  */

@@ -42,7 +42,7 @@ export const SynthesisGraph: FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID)}>
+          <Button data-testid="forward-button" {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID)}>
             Forward
           </Button>
         </div>
