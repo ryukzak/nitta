@@ -71,6 +71,8 @@ data BusNetwork tag v x t = BusNetwork
       bnSignalBusWidth :: Int
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
+    , -- |Bus control signal tags available for binding
+      bnAvailPorts :: [SignalTag]
     }
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where
@@ -383,9 +385,9 @@ bnExternalPorts pus =
     M.assocs $
         M.map
             ( \pu ->
-                ( map inputPortTag $ puInputPorts pu
-                , map outputPortTag $ puOutputPorts pu
-                , map inoutPortTag $ puInOutPorts pu
+                ( map inputPortTag $ S.toList $ puInputPorts pu
+                , map outputPortTag $ S.toList $ puOutputPorts pu
+                , map inoutPortTag $ S.toList $ puInOutPorts pu
                 )
             )
             pus
@@ -503,8 +505,8 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
         | let io2v n = [i|, .#{ n }( #{ n } )|]
-              is = map (io2v . inputPortTag) $ inputPorts ioPorts
-              os = map (io2v . outputPortTag) $ outputPorts ioPorts =
+              is = map (io2v . inputPortTag) $ S.toList $ inputPorts ioPorts
+              os = map (io2v . outputPortTag) $ S.toList $ outputPorts ioPorts =
             [__i|
                     #{ tag } \#
                             ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
@@ -531,9 +533,9 @@ instance Connected (BusNetwork tag v x t) where
 
 instance IOConnected (BusNetwork tag v x t) where
     data IOPorts (BusNetwork tag v x t) = BusNetworkIO
-        { extInputs :: [InputPortTag]
-        , extOutputs :: [OutputPortTag]
-        , extInOuts :: [InoutPortTag]
+        { extInputs :: S.Set InputPortTag
+        , extOutputs :: S.Set OutputPortTag
+        , extInOuts :: S.Set InoutPortTag
         }
         deriving (Show)
     inputPorts = extInputs

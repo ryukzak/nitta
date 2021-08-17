@@ -29,6 +29,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
+import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -75,11 +76,11 @@ instance IOConnected (SPI v x t) where
             }
         deriving (Show)
 
-    inputPorts SPISlave{..} = [slave_mosi, slave_sclk, slave_cs]
-    inputPorts SPIMaster{..} = [master_miso]
+    inputPorts SPISlave{..} = S.fromList [slave_mosi, slave_sclk, slave_cs]
+    inputPorts SPIMaster{..} = S.fromList [master_miso]
 
-    outputPorts SPISlave{..} = [slave_miso]
-    outputPorts SPIMaster{..} = [master_mosi, master_sclk, master_cs]
+    outputPorts SPISlave{..} = S.fromList [slave_miso]
+    outputPorts SPIMaster{..} = S.fromList [master_mosi, master_sclk, master_cs]
 
 instance (Time t) => Default (SPI v x t) where
     def = anySPI 0 $ Just 6
