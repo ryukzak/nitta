@@ -52,7 +52,7 @@ traceLuaSimulationTestCase ::
     TestTree
 traceLuaSimulationTestCase _ name src expect =
     testCase name $
-        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult String x = lua2functions src
+        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult T.Text x = lua2functions src
             cntx = simulateDataFlowGraph 5 def def frDataFlow
             actual = log2md $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
          in expect @=? actual
@@ -87,18 +87,18 @@ typedIOLuaTestCase arch proxy name received src = testCase name $ do
 -- Internals
 
 runLua ::
-    forall x v.
-    (Var v, Val x, Integral x) =>
-    BusNetwork T.Text v x Int ->
+    forall x.
+    (Val x, Integral x) =>
+    BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->
-    [(v, [x])] ->
+    [(T.Text, [x])] ->
     T.Text ->
     IO (Either String ())
 runLua arch _proxy wd received src = do
     reportE <-
         runTargetSynthesisWithUniqName
-            (def :: TargetSynthesis T.Text v x Int)
+            (def :: TargetSynthesis T.Text T.Text x Int)
                 { tName = wd
                 , tMicroArch = arch
                 , tSourceCode = Just src

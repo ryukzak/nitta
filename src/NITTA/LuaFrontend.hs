@@ -32,8 +32,8 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
 import Text.Printf
 
-getUniqueLuaVariableName LuaValueVersion{ luaValueVersionName, luaValueVersionIsConstant=True } luaValueAccessCount = "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
-getUniqueLuaVariableName LuaValueVersion{ luaValueVersionName, luaValueVersionAssignCount} luaValueAccessCount
+getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionIsConstant = True} luaValueAccessCount = "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount} luaValueAccessCount
     | T.head luaValueVersionName == '_' = luaValueVersionName
     | otherwise = luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
 

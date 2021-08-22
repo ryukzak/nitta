@@ -29,6 +29,7 @@ import Control.Monad (void)
 import Data.CallStack
 import Data.Default
 import qualified Data.String.Utils as S
+import Data.Text as T
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -45,13 +46,12 @@ import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 nittaCoSimTestCase ::
     ( HasCallStack
     , UnitTag tag
-    , Var v
     , Val x
     , Integral x
     ) =>
     String ->
-    BusNetwork tag v x Int ->
-    [F v x] ->
+    BusNetwork tag T.Text x Int ->
+    [F T.Text x] ->
     TestTree
 nittaCoSimTestCase n tMicroArch alg =
     testCase n $ do

@@ -195,11 +195,30 @@ case_lua_constant_declatation =
                 sum(0)
             |]
         dfg =
-            [ constant 2 ["t^0#0"] :: F String Int
+            [ constant 2 ["t^0#0"] :: F T.Text Int
             , constant (-1) ["r^0#0"]
             , add "a^0#0" "t^0#0" ["_1#loop"]
             , add "_1#loop" "r^0#0" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
+            ]
+     in functions (frDataFlow $ lua2functions src) @?= dfg
+
+case_lua_complex_assignment =
+    let src =
+            [__i|
+                function sum(a, b)
+                    a, b = b + 2, a + 1
+                    sum(a, b)
+                end
+                sum(0, 0)
+            |]
+        dfg =
+            [ constant 2 ["!2#0"] :: F T.Text Int
+            , add "b^0#0" "!2#0" ["a&^0#0"]
+            , constant 1 ["!1#0"]
+            , add "a^0#0" "!1#0" ["b&^0#0"]
+            , loop 0 "a&^0#0" ["a^0#0"]
+            , loop 0 "b&^0#0" ["b^0#0"]
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
 
