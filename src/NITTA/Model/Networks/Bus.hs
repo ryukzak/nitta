@@ -71,8 +71,6 @@ data BusNetwork tag v x t = BusNetwork
       bnSignalBusWidth :: Int
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
-    , -- |Bus control signal tags available for binding
-      bnAvailPorts :: [SignalTag]
     }
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where

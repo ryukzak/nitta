@@ -29,7 +29,6 @@ import Control.Monad.State.Lazy
 import Data.Aeson
 import Data.Default
 import qualified Data.Map.Strict as M
-import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics
@@ -41,77 +40,70 @@ import NITTA.Utils.Base
 
 data BuilderSt tag v x t = BuilderSt
     { signalBusWidth :: Int
-    , availPorts :: [SignalTag]
-    , puProtos :: [(tag, PU v x t)]
+    , availSignals :: [SignalTag]
+    , pus :: [(tag, PU v x t)]
     }
 
-netIOPorts puProtos =
-    let setOfPorts ports = foldl (flip $ S.union . ports . snd) S.empty puProtos
-     in BusNetworkIO
-            { extInputs = setOfPorts puInputPorts
-            , extOutputs = setOfPorts puOutputPorts
-            , extInOuts = setOfPorts puInOutPorts
+netIOPorts pus =
+    BusNetworkIO
+        { extInputs = setOf puInputPorts
+        , extOutputs = setOf puOutputPorts
+        , extInOuts = setOf puInOutPorts
+        }
+    where
+        setOf ioPorts = unionsMap ioPorts pus
+
+modifyNetwork net@BusNetwork{bnPus, bnSignalBusWidth, bnEnv} builder =
+    let st0 =
+            BuilderSt
+                { signalBusWidth = bnSignalBusWidth
+                , availSignals = map (SignalTag . controlSignalLiteral) [bnSignalBusWidth :: Int ..]
+                , pus = M.toList bnPus
+                }
+        BuilderSt{signalBusWidth, pus} = execState builder st0
+     in net
+            { bnPus = M.fromList pus
+            , bnSignalBusWidth = signalBusWidth
+            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ map snd pus}
             }
 
-puEnv tag ports ioports =
+defineNetwork bnName ioSync builder =
+    let net =
+            BusNetwork
+                { bnName
+                , bnRemains = []
+                , bnBinded = M.empty
+                , bnProcess = def
+                , bnPus = M.empty
+                , bnSignalBusWidth = 0
+                , ioSync
+                , bnEnv = def
+                }
+     in modifyNetwork net builder
+
+puEnv tag ctrlPorts ioPorts =
     def
-        { ctrlPorts = Just ports
-        , ioPorts = Just ioports
+        { ctrlPorts = Just ctrlPorts
+        , ioPorts = Just ioPorts
         , valueIn = Just ("data_bus", "attr_bus")
         , valueOut = Just (toText tag <> "_data_out", toText tag <> "_attr_out")
         }
 
--- |Define microarchitecture with BusNetwork
-defineNetwork bnName ioSync builder =
-    let st0 =
-            BuilderSt
-                { signalBusWidth = 0
-                , availPorts = map (SignalTag . controlSignalLiteral) [0 :: Int ..]
-                , puProtos = []
-                }
-        BuilderSt{signalBusWidth, puProtos, availPorts} = flip execState st0 $ void builder
-     in BusNetwork
-            { bnName
-            , bnRemains = []
-            , bnBinded = M.empty
-            , bnProcess = def
-            , bnPus = M.fromList puProtos
-            , bnSignalBusWidth = signalBusWidth
-            , ioSync
-            , bnEnv = def{ioPorts = Just $ netIOPorts puProtos}
-            , bnAvailPorts = availPorts
-            }
-
-modifyNetwork net@BusNetwork{bnPus, bnSignalBusWidth, bnAvailPorts, bnEnv} builder =
-    let st0 =
-            BuilderSt
-                { signalBusWidth = bnSignalBusWidth
-                , availPorts = bnAvailPorts
-                , puProtos = M.toList bnPus
-                }
-        BuilderSt{signalBusWidth, puProtos, availPorts} = flip execState st0 $ void builder
-     in net
-            { bnPus = M.fromList puProtos
-            , bnSignalBusWidth = signalBusWidth
-            , bnAvailPorts = availPorts
-            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts puProtos}
+-- |Add PU with the custom initial state. Type specify by IOPorts.
+addCustom tag pu ioPorts = do
+    st@BuilderSt{signalBusWidth, availSignals, pus} <- get
+    let ctrlPorts = takePortTags availSignals pu
+        pu' = PU pu def $ puEnv tag ctrlPorts ioPorts
+        usedPortsLen = length $ usedPortTags ctrlPorts
+    put
+        st
+            { signalBusWidth = signalBusWidth + usedPortsLen
+            , availSignals = drop usedPortsLen availSignals
+            , pus = (tag, pu') : pus
             }
 
 -- |Add PU with the default initial state. Type specify by IOPorts.
 add tag ioport = addCustom tag def ioport
-
--- |Add PU with the custom initial state. Type specify by IOPorts.
-addCustom tag pu ioports = do
-    st@BuilderSt{signalBusWidth, availPorts, puProtos} <- get
-    let ports = takePortTags availPorts pu
-        pu' = PU pu def $ puEnv tag ports ioports
-        usedPortsLen = length $ usedPortTags ports
-    put
-        st
-            { signalBusWidth = signalBusWidth + usedPortsLen
-            , availPorts = drop usedPortsLen availPorts
-            , puProtos = (tag, pu') : puProtos
-            }
 
 data MicroarchitectureDesc tag = MicroarchitectureDesc
     { networks :: [NetworkDesc tag]
