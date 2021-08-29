@@ -123,6 +123,66 @@ case_process_divide_statement =
         (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
+-- | a, b = 1 / 2
+case_process_divide_mod_rem_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a"), Lua.VarName (Lua.Name "b")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    , LuaValueVersion{luaValueVersionName = "b", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | _, b = 1 / 2
+case_process_divide_rem_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "_"), Lua.VarName (Lua.Name "b")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueVersion{luaValueVersionName = "_", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    , LuaValueVersion{luaValueVersionName = "b", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a, _ = 1 / 2
+case_process_divide_mod_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a"), Lua.VarName (Lua.Name "_")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    , LuaValueVersion{luaValueVersionName = "_", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "1", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
 -- | a = 1 * 2
 case_process_multiply_statement =
     let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Mul (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
