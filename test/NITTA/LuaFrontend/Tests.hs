@@ -28,7 +28,7 @@ import Data.FileEmbed (embedStringFile)
 import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import Data.Text as T
-import Language.Lua
+import qualified Language.Lua as Lua
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
@@ -37,28 +37,45 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
-case_find_startup_function =
+case_find_startup_function_several_args =
     let src =
             [__i|
-                function sum(a)
+                function sum(a, b)
                     local t = 2
                     local r = -1
-                    sum(a + t + r)
+                    sum(b + t + r, a)
                 end
-                sum(1)
+                sum(1, 2)
             |]
-        (actualName, FunCall (NormalFunCall _ (Args actualArgValue)), FunAssign _ (FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
-        expectedValues = ("sum", [Name "a"], [Number IntNum "1"])
+        (actualName, Lua.FunCall (Lua.NormalFunCall _ (Lua.Args actualArgValue)), Lua.FunAssign _ (Lua.FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
+        expectedValues = ("sum", [Lua.Name "a", Lua.Name "b"], [Lua.Number Lua.IntNum "1", Lua.Number Lua.IntNum "2"])
      in (actualName, actualArg, actualArgValue) @?= expectedValues
 
+case_find_startup_function_no_args =
+    let src =
+            [__i|
+                function sum()
+                    t = receive()
+                    t = t + 1
+                    send(t)
+                    sum()
+                end
+                sum()
+            |]
+        (actualName, Lua.FunCall (Lua.NormalFunCall _ (Lua.Args actualArgValue)), Lua.FunAssign _ (Lua.FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
+        expectedValues = ("sum", [], [])
+     in (actualName, actualArg, actualArgValue) @?= expectedValues
+
+-- |local a = 2
 case_process_local_assignment_statement =
-    let assignment = LocalAssign [Name "a"] (Just [Number IntNum "2"])
+    let assignment = Lua.LocalAssign [Lua.Name "a"] (Just [Lua.Number Lua.IntNum "2"])
         expected = HM.fromList [("a", LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
         (_, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algLatestLuaValueVersion @?= expected
 
+-- |a = 2
 case_process_assignment_statement =
-    let assignment = Assign [VarName (Name "a")] [Number IntNum "2"]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Number Lua.IntNum "2"]
         expected = HM.fromList [("a", LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False})]
         (_, LuaAlgBuilder{algLatestLuaValueVersion}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algLatestLuaValueVersion @?= expected
@@ -73,8 +90,9 @@ case_process_assignment_statement =
 --        (_str :: String, AlgBuilder{algLatestLuaValueVersion}) = runState (processStatement ( "_") assignment) defaultAlgBuilder
 --     in algLatestLuaValueVersion @?= expected
 
+-- | a = 1 + 2
 case_process_add_statement =
-    let assignment = Assign [VarName (Name "a")] [Binop Language.Lua.Add (Number IntNum "1") (Number IntNum "2")]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Add (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
         expected =
             [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -83,8 +101,9 @@ case_process_add_statement =
         (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
+-- | a = 1 - 2
 case_process_sub_statement =
-    let assignment = Assign [VarName (Name "a")] [Binop Language.Lua.Sub (Number IntNum "1") (Number IntNum "2")]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Sub (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
         expected =
             [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "sub", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -93,8 +112,9 @@ case_process_sub_statement =
         (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
+-- | a = 1 / 2
 case_process_divide_statement =
-    let assignment = Assign [VarName (Name "a")] [Binop Div (Number IntNum "1") (Number IntNum "2")]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
         expected =
             [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "divide", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -103,8 +123,9 @@ case_process_divide_statement =
         (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algGraph @?= expected
 
+-- | a = 1 * 2
 case_process_multiply_statement =
-    let assignment = Assign [VarName (Name "a")] [Binop Mul (Number IntNum "1") (Number IntNum "2")]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Mul (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
         expected =
             [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "multiply", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "2", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [2], fName = "constant", fInt = []}
@@ -127,8 +148,9 @@ case_process_multiply_statement =
 --       (_str :: String, AlgBuilder{algGraph}) = runState (processStatement ( "_") assignment) defaultAlgBuilder
 --    in algGraph @?= expected
 
+-- | a = 1 + 2 + 3
 case_temporary_variable =
-    let assignment = Assign [VarName (Name "a")] [Binop Language.Lua.Add (Binop Language.Lua.Add (Number IntNum "1") (Number IntNum "2")) (Number IntNum "3")]
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Add (Lua.Binop Lua.Add (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")) (Lua.Number Lua.IntNum "3")]
         expected =
             [ LuaStatement{fIn = ["_0#a", "!3#0"], fOut = [LuaValueVersion{luaValueVersionName = "a", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}], fValues = [], fName = "add", fInt = []}
             , LuaStatement{fIn = [], fOut = [LuaValueVersion{luaValueVersionName = "3", luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}], fValues = [3], fName = "constant", fInt = []}

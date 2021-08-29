@@ -34,7 +34,6 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
-import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
@@ -45,12 +44,11 @@ import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 -- |Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
     ( HasCallStack
-    , UnitTag tag
     , Val x
     , Integral x
     ) =>
     String ->
-    BusNetwork tag T.Text x Int ->
+    BusNetwork T.Text T.Text x Int ->
     [F T.Text x] ->
     TestTree
 nittaCoSimTestCase n tMicroArch alg =

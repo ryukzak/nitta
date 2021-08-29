@@ -4,6 +4,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
+{- |
+Module      : NITTA.LuaFrontend
+Description : Lua frontend prototype
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+This module analyzes an abstract syntax tree of the Lua language source code, provided by Language.Lua module,
+and stores it into a NITTA's data flow graph.
+
+Supported Lua costructions are:
+ - simple math operators (addition, subtraction, multiplication and division);
+ - variable assignments;
+ - bitwise left and right shifts;
+ - recursive calls.
+-}
 module NITTA.LuaFrontend (
     lua2functions,
     FrontendResult (..),
