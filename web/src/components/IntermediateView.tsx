@@ -16,7 +16,7 @@ import { useApiResponse } from "hooks/useApiResponse";
  * Component to display algorithm graph.
  */
 
-export interface IIntermediateViewProps { }
+export interface IIntermediateViewProps {}
 
 interface ProcessState {
   bindeFuns: string[];
@@ -119,9 +119,8 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
 
 function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
   const response = useApiRequest({
-    requester: useCallback(() =>
-      api.getIntermediateView(selectedSID), [selectedSID])
-  })
+    requester: useCallback(() => api.getIntermediateView(selectedSID), [selectedSID]),
+  });
   const result = useApiResponse(response, makeGraphData, null);
   return result;
 }
@@ -143,12 +142,12 @@ function makeGraphData(graphData: IntermediateGraph): IntermediateGraph | null {
     edges: graphData.edges.map((edgeData: GraphEdge) => {
       return edgeData;
     }),
-  }
+  };
 }
 
 function useProcState(selectedSID: string): ProcessState {
-  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) })
-  const result = useApiResponse(response, makeProcState, defaultProcState)
+  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) });
+  const result = useApiResponse(response, makeProcState, defaultProcState);
   return result;
 }
 
