@@ -98,6 +98,8 @@ data LuaAlgBuilder s t = LuaAlgBuilder
       algVars :: HM.HashMap LuaValueVersion [T.Text]
     , -- | A table correlating the ordinal number of an argument with a variable storing its value and startup value of this variable.
       algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
+    , -- | A table correlating constant with LuaValueVersion which store this constant.
+      algConstants :: HM.HashMap T.Text LuaValueVersion
     , -- | A list that stores debug information about monitored variables and their display formats.
       algTraceFuncs :: [([T.Text], T.Text)]
     }
@@ -275,8 +277,16 @@ addVariable fIn fOut fValues fName fInt = do
     let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueVersions}
     mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueVersions
     mapM_ addItemToVars luaValueVersions
-    luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
-    put luaAlgBuilder{algGraph = func : algGraph}
+    luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueVersion = algLatestLuaValueVersion'} <- get
+    case T.unpack fName of
+        "constant" -> do
+            case HM.lookup (T.pack $ show $ head fValues) algConstants of
+                Just lvv -> do
+                    put luaAlgBuilder{algLatestLuaValueVersion = HM.insert (head fOut) lvv algLatestLuaValueVersion'}
+                Nothing -> do
+                    put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (T.pack $ show $ head fValues) (head luaValueVersions) algConstants}
+        _ -> do
+            put luaAlgBuilder{algGraph = func : algGraph}
     where
         nameToLuaValueVersion algLatestLuaValueVersion name =
             case getLuaValueByName name algLatestLuaValueVersion of
@@ -329,6 +339,7 @@ buildAlg syntaxTree =
                 , algVarCounters = HM.empty
                 , algVars = HM.empty
                 , algStartupArgs = HM.empty
+                , algConstants = HM.empty
                 , algTraceFuncs = []
                 }
         funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements

@@ -232,10 +232,9 @@ case_lua_two_name_for_same_constant =
                 sum(0)
             |]
         dfg =
-            [ constant 1 ["t^0#0"] :: F T.Text Int
-            , constant 1 ["r^0#0"]
+            [ constant 1 ["t^0#0", "t^0#1"] :: F T.Text Int
             , add "a^0#0" "t^0#0" ["_1#loop"]
-            , add "_1#loop" "r^0#0" ["_0#loop"]
+            , add "_1#loop" "t^0#1" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
@@ -262,6 +261,7 @@ defaultAlgBuilder =
         , algVarCounters = HM.empty
         , algVars = HM.empty
         , algStartupArgs = HM.empty
+        , algConstants = HM.empty
         , algTraceFuncs = []
         } ::
         LuaAlgBuilder String Int
@@ -303,30 +303,6 @@ case_lua_complex_assignment =
             , loop 0 "b&^0#0" ["b^0#0"]
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
-
---test_lua_two_name_for_same_constant =
---    let src =
---            [__i|
---                function sum(a)
---                    local t = 1
---                    local r = 1
---                    sum(a + t + r)
---                end
---                sum(0)
---            |]
---     in -- TODO: it is a correct code and should be translated to dataflow graph
---        -- correctly, but in the current LuaFrontend stage, it cannot be done
---        -- without a huge redesign of LuaFrontend
---        [ expectFail $
---            testCase "contant with same name in lua source code" $ do
---                catch
---                    ( do
---                        let !_ = functions $ frDataFlow $ lua2functionsNew src :: [F String Int]
---                        return ()
---                    )
---                    (\(_ :: ErrorCall) -> assertFailure "fail")
---                assertBool "check temporal restriction" True
---        ]
 
 test_simple_recursion =
     [ luaTestCase
