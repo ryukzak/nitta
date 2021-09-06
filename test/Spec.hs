@@ -35,6 +35,7 @@ import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Model.ProcessorUnits.Tests.DSL.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.Tests
+import qualified NITTA.XMILEFrontend.Tests
 import System.Environment (lookupEnv, setEnv)
 import Test.Tasty (testGroup)
 import Test.Tasty.Ingredients.Rerun
@@ -50,6 +51,7 @@ main = do
               , NITTA.Intermediate.Simulation.Tests.tests
               , NITTA.Intermediate.Value.Tests.tests
               , NITTA.LuaFrontend.Tests.tests
+              , NITTA.XMILEFrontend.Tests.tests
               , NITTA.Model.Problems.Refactor.Tests.tests
               , NITTA.Model.Problems.Refactor.Accum.Tests.tests
               , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
