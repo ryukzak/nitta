@@ -29,7 +29,7 @@ module NITTA.LuaFrontend (
     -- * Internal
     LuaAlgBuilder (..),
     LuaStatement (..),
-    LuaValueVersion (..),
+    LuaValueInstance (..),
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
@@ -49,14 +49,14 @@ import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
 import Text.Printf
 
-getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionIsConstant = True} luaValueAccessCount = "!" <> luaValueVersionName <> "#" <> showText luaValueAccessCount
-getUniqueLuaVariableName LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount} luaValueAccessCount
-    | T.head luaValueVersionName == '_' = luaValueVersionName
-    | otherwise = luaValueVersionName <> "^" <> showText luaValueVersionAssignCount <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueInstance{luaValueInstanceName, luaValueInstanceIsConstant = True} luaValueAccessCount = "!" <> luaValueInstanceName <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueInstance{luaValueInstanceName, luaValueInstanceAssignCount} luaValueAccessCount
+    | T.head luaValueInstanceName == '_' = luaValueInstanceName
+    | otherwise = luaValueInstanceName <> "^" <> showText luaValueInstanceAssignCount <> "#" <> showText luaValueAccessCount
 
 data LuaStatement x = LuaStatement
     { fIn :: [T.Text]
-    , fOut :: [LuaValueVersion]
+    , fOut :: [LuaValueInstance]
     , fName :: T.Text
     , fValues :: [x]
     , fInt :: [Int]
@@ -64,10 +64,10 @@ data LuaStatement x = LuaStatement
     deriving (Show, Eq)
 
 -- | Stores information about a particular version of a variable. The version of a variable changes after assigning a new value to it.
-data LuaValueVersion = LuaValueVersion
-    { luaValueVersionName :: T.Text
-    , luaValueVersionAssignCount :: Int
-    , luaValueVersionIsConstant :: Bool
+data LuaValueInstance = LuaValueInstance
+    { luaValueInstanceName :: T.Text
+    , luaValueInstanceAssignCount :: Int
+    , luaValueInstanceIsConstant :: Bool
     }
     deriving (Show, Eq)
 
@@ -80,26 +80,26 @@ data FrontendResult v x = FrontendResult
 data TraceVar = TraceVar {tvFmt, tvVar :: T.Text}
     deriving (Show)
 
-instance Hashable LuaValueVersion where
-    hashWithSalt i LuaValueVersion{luaValueVersionName, luaValueVersionAssignCount, luaValueVersionIsConstant} =
-        ( (hashWithSalt i luaValueVersionName * 31)
-            + hashWithSalt i luaValueVersionAssignCount * 31
+instance Hashable LuaValueInstance where
+    hashWithSalt i LuaValueInstance{luaValueInstanceName, luaValueInstanceAssignCount, luaValueInstanceIsConstant} =
+        ( (hashWithSalt i luaValueInstanceName * 31)
+            + hashWithSalt i luaValueInstanceAssignCount * 31
         )
-            + hashWithSalt i luaValueVersionIsConstant * 31
+            + hashWithSalt i luaValueInstanceIsConstant * 31
 
-data LuaAlgBuilder s t = LuaAlgBuilder
+data LuaAlgBuilder x = LuaAlgBuilder
     { -- | A list containing all expressions to be added to the final graph.
-      algGraph :: [LuaStatement t]
-    , -- | A table that maps a variable name to the most recent corresponding LuaValueVersion.
-      algLatestLuaValueVersion :: HM.HashMap T.Text LuaValueVersion
+      algGraph :: [LuaStatement x]
+    , -- | A table that maps a variable name to the most recent corresponding LuaValueInstance.
+      algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
     , -- | A table needed to generate unique temporary variable names.
       algVarCounters :: HM.HashMap T.Text Int
-    , -- | A table lists all uses of a particular LuaValueVersion.
-      algVars :: HM.HashMap LuaValueVersion [T.Text]
+    , -- | A table lists all uses of a particular LuaValueInstance.
+      algVars :: HM.HashMap LuaValueInstance [T.Text]
     , -- | A table correlating the ordinal number of an argument with a variable storing its value and startup value of this variable.
       algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
-    , -- | A table correlating constant with LuaValueVersion which store this constant.
-      algConstants :: HM.HashMap T.Text LuaValueVersion
+    , -- | A table correlating constant with LuaValueInstance which store this constant.
+      algConstants :: HM.HashMap T.Text LuaValueInstance
     , -- | A list that stores debug information about monitored variables and their display formats.
       algTraceFuncs :: [([T.Text], T.Text)]
     }
@@ -129,7 +129,7 @@ parseRightExp fOut@(x : _) (Binop op a b) = do
         getBinopFuncName Sub = "sub"
         getBinopFuncName Mul = "multiply"
         getBinopFuncName Div = "divide"
-        getBinopFuncName o = error $ "unknown binop: " ++ show o
+        getBinopFuncName o = error $ "unknown binop: " <> show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
 parseRightExp fOut (Unop Neg (Number numType name)) = parseRightExp fOut (Number numType ("-" <> name))
 parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
@@ -187,9 +187,9 @@ addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody
     return ""
     where
         addToBuffer name valueString serialNumber = do
-            luaAlgBuilder@LuaAlgBuilder{algVars, algLatestLuaValueVersion, algStartupArgs} <- get
-            let value = LuaValueVersion{luaValueVersionName = name, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
-            put luaAlgBuilder{algLatestLuaValueVersion = HM.insert name value algLatestLuaValueVersion, algVars = HM.insert value [] algVars, algStartupArgs = HM.insert serialNumber (name, valueString) algStartupArgs}
+            luaAlgBuilder@LuaAlgBuilder{algVars, algLatestLuaValueInstance, algStartupArgs} <- get
+            let value = LuaValueInstance{luaValueInstanceName = name, luaValueInstanceAssignCount = 0, luaValueInstanceIsConstant = False}
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name value algLatestLuaValueInstance, algVars = HM.insert value [] algVars, algStartupArgs = HM.insert serialNumber (name, valueString) algStartupArgs}
             return value
 addStartupFuncArgs _ _ = undefined
 
@@ -214,7 +214,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
     | fn == fName = do
         LuaAlgBuilder{algStartupArgs} <- get
         let startupVarsNames = map ((\(Just x) -> x) . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
-        let startupVarsVersions = map (\x -> LuaValueVersion{luaValueVersionName = fst x, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}) startupVarsNames
+        let startupVarsVersions = map (\x -> LuaValueInstance{luaValueInstanceName = fst x, luaValueInstanceAssignCount = 0, luaValueInstanceIsConstant = False}) startupVarsNames
         mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
     where
         parseStartupArg (arg, valueVersion, index) = do
@@ -226,16 +226,16 @@ processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args 
     addFunction (fromString $ T.unpack fName) fIn [fromString ""]
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
     let fIn = map parseTraceArg args
-    luaAlgBuilder@LuaAlgBuilder{algTraceFuncs, algLatestLuaValueVersion} <- get
+    luaAlgBuilder@LuaAlgBuilder{algTraceFuncs, algLatestLuaValueInstance} <- get
     case (fName, fIn) of
         ("trace", tFmt : vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
-                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
+                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
                 put luaAlgBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
-            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueVersion) 0) vs
+            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
             put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
-        _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
+        _ -> error $ "unknown debug method: " <> show fName <> " " <> show args
     where
         parseTraceArg (String s) = s
         parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
@@ -255,7 +255,7 @@ addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
 
 addConstant (Number _valueType valueString) = do
     luaAlgBuilder@LuaAlgBuilder{algGraph, algVars} <- get
-    let lvv = LuaValueVersion{luaValueVersionName = valueString, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = True}
+    let lvv = LuaValueInstance{luaValueInstanceName = valueString, luaValueInstanceAssignCount = 0, luaValueInstanceIsConstant = True}
     case HM.lookup lvv algVars of
         Just value -> do
             let resultName = getUniqueLuaVariableName lvv (length value)
@@ -272,56 +272,56 @@ addConstant (Number _valueType valueString) = do
 addConstant _ = undefined
 
 addVariable fIn fOut fValues fName fInt = do
-    LuaAlgBuilder{algLatestLuaValueVersion} <- get
-    let luaValueVersions = map (\x -> nameToLuaValueVersion algLatestLuaValueVersion x) fOut
-    let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueVersions}
-    mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueVersions
-    mapM_ addItemToVars luaValueVersions
-    luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueVersion = algLatestLuaValueVersion'} <- get
+    LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    let luaValueInstances = map (\x -> nameToLuaValueInstance algLatestLuaValueInstance x) fOut
+    let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueInstances}
+    mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueInstances
+    mapM_ addItemToVars luaValueInstances
+    luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueInstance = algLatestLuaValueInstance'} <- get
     case T.unpack fName of
         "constant" -> do
             case HM.lookup (T.pack $ show $ head fValues) algConstants of
                 Just lvv -> do
-                    put luaAlgBuilder{algLatestLuaValueVersion = HM.insert (head fOut) lvv algLatestLuaValueVersion'}
+                    put luaAlgBuilder{algLatestLuaValueInstance = HM.insert (head fOut) lvv algLatestLuaValueInstance'}
                 Nothing -> do
-                    put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (T.pack $ show $ head fValues) (head luaValueVersions) algConstants}
+                    put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (T.pack $ show $ head fValues) (head luaValueInstances) algConstants}
         _ -> do
             put luaAlgBuilder{algGraph = func : algGraph}
     where
-        nameToLuaValueVersion algLatestLuaValueVersion name =
-            case getLuaValueByName name algLatestLuaValueVersion of
-                Just lvv@LuaValueVersion{luaValueVersionAssignCount} -> lvv{luaValueVersionAssignCount = luaValueVersionAssignCount + 1}
-                Nothing -> LuaValueVersion{luaValueVersionName = name, luaValueVersionAssignCount = 0, luaValueVersionIsConstant = False}
+        nameToLuaValueInstance algLatestLuaValueInstance name =
+            case getLuaValueByName name algLatestLuaValueInstance of
+                Just lvv@LuaValueInstance{luaValueInstanceAssignCount} -> lvv{luaValueInstanceAssignCount = luaValueInstanceAssignCount + 1}
+                Nothing -> LuaValueInstance{luaValueInstanceName = name, luaValueInstanceAssignCount = 0, luaValueInstanceIsConstant = False}
         addItemToBuffer name lvv = do
-            luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueVersion} <- get
-            put luaAlgBuilder{algLatestLuaValueVersion = HM.insert name lvv algLatestLuaValueVersion}
+            luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} <- get
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name lvv algLatestLuaValueInstance}
         addItemToVars name = do
             luaAlgBuilder@LuaAlgBuilder{algVars} <- get
             put luaAlgBuilder{algVars = HM.insert name [] algVars}
 
 addVariableAccess name = do
     luaAlgBuilder@LuaAlgBuilder{algVars} <- get
-    luaValueVersion <- getLatestLuaValueVersionByName name
-    case HM.lookup luaValueVersion algVars of
+    luaValueInstance <- getLatestLuaValueInstanceByName name
+    case HM.lookup luaValueInstance algVars of
         Just value -> do
             let len = length value
-            let resultName = getUniqueLuaVariableName luaValueVersion len
-            put luaAlgBuilder{algVars = HM.insert luaValueVersion (resultName : value) algVars}
+            let resultName = getUniqueLuaVariableName luaValueInstance len
+            put luaAlgBuilder{algVars = HM.insert luaValueInstance (resultName : value) algVars}
             return resultName
-        Nothing -> error ("variable '" ++ show (luaValueVersionName luaValueVersion) ++ " not found. Constants list : " ++ show algVars)
+        Nothing -> error ("variable '" <> show (luaValueInstanceName luaValueInstance) <> " not found. Constants list : " <> show algVars)
 
-getLatestLuaValueVersionByName name = do
-    LuaAlgBuilder{algLatestLuaValueVersion} <- get
-    case HM.lookup name algLatestLuaValueVersion of
+getLatestLuaValueInstanceByName name = do
+    LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    case HM.lookup name algLatestLuaValueInstance of
         Just value -> return value
-        Nothing -> error $ "variable not found : '" ++ show name ++ "'."
+        Nothing -> error $ "variable not found : '" <> show name <> "'."
 
 addAlias from to = do
-    luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueVersion} <- get
-    case getLuaValueByName to algLatestLuaValueVersion of
+    luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    case getLuaValueByName to algLatestLuaValueInstance of
         Just value -> do
-            put luaAlgBuilder{algLatestLuaValueVersion = HM.insert from value algLatestLuaValueVersion}
-        Nothing -> error ("variable '" ++ show to ++ " not found. Constants list : " ++ show algLatestLuaValueVersion)
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert from value algLatestLuaValueInstance}
+        Nothing -> error ("variable '" <> show to <> " not found. Constants list : " <> show algLatestLuaValueInstance)
 
 getLuaValueByName name buffer = HM.lookup name buffer
 
@@ -335,7 +335,7 @@ buildAlg syntaxTree =
         emptyLuaAlgBuilder =
             LuaAlgBuilder
                 { algGraph = []
-                , algLatestLuaValueVersion = HM.empty
+                , algLatestLuaValueInstance = HM.empty
                 , algVarCounters = HM.empty
                 , algVars = HM.empty
                 , algStartupArgs = HM.empty
@@ -354,9 +354,9 @@ findStartupFunction (Block statements Nothing)
         (fnCall, call, funAssign)
 findStartupFunction _ = error "can't find startup function in lua source code"
 
-getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " ++ show e) id $ parseText chunk src
+getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " <> show e) id $ parseText chunk src
 
-alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueVersion, algVars} = flip execState (DFCluster []) $ do
+alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do
     mapM addToGraph algGraph
     where
         addToGraph item = do
@@ -376,11 +376,11 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueVersion, algVars} = flip exec
         function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s a $ output c
         function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s a $ output c
         function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x a $ output c
-        function2nitta f = error $ "function not found: " ++ show f
+        function2nitta f = error $ "function not found: " <> show f
         output v =
             case HM.lookup v algVars of
                 Just names -> names
-                _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueVersion
+                _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
 
 lua2functions src =
     let syntaxTree = getLuaBlockFromSources src
