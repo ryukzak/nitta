@@ -4,6 +4,7 @@ import "react-table/react-table.css";
 import { api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
+import Axios from "axios";
 
 export interface IDebugScreenProps {}
 
@@ -12,18 +13,36 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
 
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getDebugInfo(selectedSID)
+      .getDebugInfo(selectedSID, source.token)
       .then((response: any) => setDebugInfo(response.data))
-      .catch((err: any) => console.error(err));
+      .catch((err: any) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+    return () => {
+      source.cancel();
+    };
   }, [selectedSID]);
 
   const [synthesisNodeData, setSynthesisNodeData] = useState<any | null>(null);
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getNode(selectedSID)
+      .getNode(selectedSID, source.token)
       .then((response: any) => setSynthesisNodeData(response.data))
-      .catch((err: any) => console.error(err));
+      .catch((err: any) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+    return () => {
+      source.cancel();
+    };
   }, [selectedSID]);
 
   return (

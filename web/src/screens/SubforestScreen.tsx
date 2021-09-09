@@ -1,5 +1,5 @@
 import React, { FC, useContext, useEffect, useState } from "react";
-import { AxiosResponse } from "axios";
+import Axios, { AxiosResponse } from "axios";
 
 import { api, Node } from "services/HaskellApiService";
 
@@ -14,12 +14,22 @@ export const SubforestScreen: FC = () => {
   const [subforest, setSubforest] = useState<Node[] | null>(null);
 
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getSubforest(appContext.selectedSID)
+      .getSubforest(appContext.selectedSID, source.token)
       .then((response: AxiosResponse<Node[]>) => {
         setSubforest(response.data);
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [appContext.selectedSID]);
 
   if (!subforest) {

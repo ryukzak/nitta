@@ -1,4 +1,5 @@
-import React, { useContext, FC, useCallback } from "react";
+import Axios from "axios";
+import React, { useContext, FC, useCallback, useEffect } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -16,14 +17,21 @@ export interface ITreeInfoViewProps {}
 
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
+  const source = Axios.CancelToken.source();
 
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
-      return api.getTreeInfo();
+      return api.getTreeInfo(source.token);
       // getTreeInfo result depends on selectedSID on server side, thus need to re-request the result when it's changed
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedSID]),
   });
+
+  useEffect(() => {
+    return () => {
+      source.cancel();
+    };
+  }, [source]);
 
   return (
     <RequestResult

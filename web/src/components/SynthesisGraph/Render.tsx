@@ -1,4 +1,4 @@
-import { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse, AxiosError } from "axios";
 import React, { FC, useContext, useState, useEffect } from "react";
 import { Tree as D3Tree } from "react-d3-tree";
 
@@ -81,17 +81,27 @@ export const SynthesisGraphRender: FC = () => {
 
   useEffect(() => {
     const sid = appContext.selectedSID;
+    let source = Axios.CancelToken.source();
+
     if (knownSID.has(sid)) return;
     console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid})`);
     api
-      .getSynthesisTree()
+      .getSynthesisTree(source.token)
       .then((response: AxiosResponse<SynthesisTree>) => {
         let root = synthesisTree2D3Tree(response.data, knownSID);
         setSynthesisTree(root);
         knownSID.add(sidSeparator);
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [appContext.selectedSID, knownSID]);
 
   useEffect(() => {

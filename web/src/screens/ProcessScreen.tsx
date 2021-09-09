@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+import Axios, { AxiosError } from "axios";
 import React, { useEffect, useState, useContext, FC } from "react";
 
 import { api } from "services/HaskellApiService";
@@ -28,10 +28,12 @@ export const ProcessScreen: FC = () => {
   const [data, setData] = useState<ProcessTimelines<number> | null>(null);
 
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     setDetail([]);
     setHighlight({ up: [], current: [], down: [] });
     api
-      .getTimelines(appContext.selectedSID)
+      .getTimelines(appContext.selectedSID, source.token)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessScreen.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
@@ -47,7 +49,15 @@ export const ProcessScreen: FC = () => {
         setData(resort);
         setPIdIndex(pIdIndex);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [appContext.selectedSID]);
 
   if (!data) return <pre>LOADING</pre>;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, FC } from "react";
-import { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse, AxiosError } from "axios";
 
 import { api, TestBenchReportData } from "services/HaskellApiService";
 
@@ -13,15 +13,24 @@ export const TestBenchScreen: FC = () => {
   const [testBenchDump, setTestBenchDump] = useState<TestBenchReportData | null>(null);
 
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .runTestBench(appContext.selectedSID, "web_ui", 5)
+      .runTestBench(appContext.selectedSID, source.token, "web_ui", 5)
       .then((response: AxiosResponse<TestBenchReportData | null>) => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
       })
       .catch((err: AxiosError) => {
-        setRequestSuccess(false);
+        if (!Axios.isCancel(err)) {
+          setRequestSuccess(false);
+         console.log(err);
+        }
       });
+
+      return () => {
+        source.cancel();
+      }
   }, [appContext.selectedSID]);
 
   if (requestSuccess === null) {

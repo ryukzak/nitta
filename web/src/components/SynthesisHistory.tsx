@@ -1,4 +1,4 @@
-import { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse, AxiosError } from "axios";
 import React, { useEffect, useState, ReactElement, useContext, FC } from "react";
 import ReactTable, { Column } from "react-table";
 
@@ -21,8 +21,10 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
   };
 
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getRootPath(appContext.selectedSID)
+      .getRootPath(appContext.selectedSID, source.token)
       .then((response: AxiosResponse<Node[]>) => {
         let result = response.data;
         if (props.reverse) {
@@ -30,7 +32,15 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
         }
         setHistory(result);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [appContext.selectedSID, props.reverse]);
 
   function Table(props: { name: string; columns: Column[]; history: Node[] }) {

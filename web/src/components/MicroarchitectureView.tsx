@@ -1,6 +1,5 @@
-import React, { useContext, useMemo, FC, useCallback } from "react";
+import React, { useContext, useMemo, FC, useCallback, useEffect } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, MicroarchitectureData, NetworkData, UnitData } from "services/HaskellApiService";
@@ -10,6 +9,11 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 
+import dynamic from "next/dynamic";
+import Axios from "axios";
+
+const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
+
 /**
  * Component to display a microarchitecture with available endpoints.
  */
@@ -18,14 +22,21 @@ export interface IMicroarchitectureViewProps {}
 
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
+  const source = Axios.CancelToken.source();
 
   const maRequest = useApiRequest({
-    requester: useCallback(() => api.getMicroarchitecture(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getMicroarchitecture(selectedSID, source.token), [selectedSID, source.token]),
   });
 
   const endpointsRequest = useApiRequest({
-    requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID, source.token]),
   });
+
+  useEffect(() => {
+    return () => {
+      source.cancel();
+    };
+  }, [source]);
 
   const dot = useMemo(() => {
     if (maRequest.response && endpointsRequest.response) {

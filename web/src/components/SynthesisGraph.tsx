@@ -1,4 +1,4 @@
-import React, { useContext, useState, FC } from "react";
+import React, { useContext, useState, FC, useEffect } from "react";
 import { Popover, OverlayTrigger, Button } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
@@ -6,9 +6,18 @@ import { synthesize, api, reLastSID, sidSeparator } from "services/HaskellApiSer
 
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
+import Axios from "axios";
 
 export const SynthesisGraph: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
+
+  const source = Axios.CancelToken.source();
+
+  useEffect(() => {
+    return () => {
+      source.cancel();
+    };
+  }, [source]);
 
   const step = 100;
   const minHeight = 200;
@@ -42,7 +51,7 @@ export const SynthesisGraph: FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID)}>
+          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID, source.token)}>
             Forward
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosPromise, AxiosResponse, AxiosError, CancelToken } from "axios";
 import { IAppContext } from "app/AppContext";
 
 import jsAPI from "services/gen/rest_api";
@@ -73,38 +73,61 @@ export function synthesize<T extends Array<any>>(
       .then((response: AxiosResponse<SID>) => {
         context.setSID(response.data);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
   };
 }
 
 export const api = {
-  getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => jsAPI.getSynthesisTree(),
-  getTreeInfo: (): AxiosPromise<TreeInfo> => jsAPI.getTreeInfo(),
+  getSynthesisTree: (cancelToken: CancelToken): AxiosPromise<TreeView<ShortNodeView>> =>
+    jsAPI.getSynthesisTree(cancelToken),
+  getTreeInfo: (cancelToken: CancelToken): AxiosPromise<TreeInfo> => jsAPI.getTreeInfo(cancelToken),
 
   // Synthesis tree navigation
-  getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidHistory(sid),
-  getParentEdge: (sid: SID): AxiosPromise<Node> => jsAPI.getNodeBySidParentEdge(sid),
-  getSubforest: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidSubForest(sid),
+  getRootPath: (sid: SID, cancelToken: CancelToken): AxiosPromise<Node[]> =>
+    jsAPI.getNodeBySidHistory(sid, cancelToken),
+  getParentEdge: (sid: SID, cancelToken: CancelToken): AxiosPromise<Node> =>
+    jsAPI.getNodeBySidParentEdge(sid, cancelToken),
+  getSubforest: (sid: SID, cancelToken: CancelToken): AxiosPromise<Node[]> =>
+    jsAPI.getNodeBySidSubForest(sid, cancelToken),
 
   // Synthesis node inspections
-  getNode: (sid: SID): AxiosPromise<Node> => jsAPI.getNodeBySid(sid),
-  getMicroarchitecture: (sid: SID): AxiosPromise<MicroarchitectureData> => jsAPI.getNodeBySidMicroarchitecture(sid),
-  getIntermediateView: (sid: SID): AxiosPromise<IntermediateGraph> => jsAPI.getNodeBySidIntermediateView(sid),
-  getTimelines: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidProcessTimelines(sid),
-  getProcess: (sid: SID): AxiosPromise<ProcessData> => jsAPI.getNodeBySidProcess(sid),
-  getEndpoints: (sid: SID): AxiosPromise<UnitEndpointsData[]> => jsAPI.getNodeBySidEndpoints(sid),
-  getDebugInfo: (sid: SID): AxiosPromise<any> => jsAPI.getNodeBySidDebug(sid),
-  runTestBench: (sid: SID, name: string, loopsNumber: number): AxiosPromise<TestBenchReportData | null> =>
-    jsAPI.postNodeBySidTestbench(sid, name, loopsNumber),
+  getNode: (sid: SID, cancelToken: CancelToken): AxiosPromise<Node> => jsAPI.getNodeBySid(sid, cancelToken),
+  getMicroarchitecture: (sid: SID, cancelToken: CancelToken): AxiosPromise<MicroarchitectureData> =>
+    jsAPI.getNodeBySidMicroarchitecture(sid, cancelToken),
+  getIntermediateView: (sid: SID, cancelToken: CancelToken): AxiosPromise<IntermediateGraph> =>
+    jsAPI.getNodeBySidIntermediateView(sid, cancelToken),
+  getTimelines: (sid: SID, cancelToken: CancelToken): AxiosPromise<any> =>
+    jsAPI.getNodeBySidProcessTimelines(sid, cancelToken),
+  getProcess: (sid: SID, cancelToken: CancelToken): AxiosPromise<ProcessData> =>
+    jsAPI.getNodeBySidProcess(sid, cancelToken),
+  getEndpoints: (sid: SID, cancelToken: CancelToken): AxiosPromise<UnitEndpointsData[]> =>
+    jsAPI.getNodeBySidEndpoints(sid, cancelToken),
+  getDebugInfo: (sid: SID, cancelToken: CancelToken): AxiosPromise<any> => jsAPI.getNodeBySidDebug(sid, cancelToken),
+  runTestBench: (
+    sid: SID,
+    cancelToken: CancelToken,
+    name: string,
+    loopsNumber: number
+  ): AxiosPromise<TestBenchReportData | null> => jsAPI.postNodeBySidTestbench(sid, cancelToken, name, loopsNumber),
 
   // Synthesis methods
-  stateOfTheArtSynthesis: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidStateOfTheArtSynthesisIO(sid),
-  simpleSynthesis: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidSimpleSynthesis(sid),
-  smartBindSynthesisIO: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidSmartBindSynthesisIO(sid),
+  stateOfTheArtSynthesis: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidStateOfTheArtSynthesisIO(sid, cancelToken),
+  simpleSynthesis: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidSimpleSynthesis(sid, cancelToken),
+  smartBindSynthesisIO: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidSmartBindSynthesisIO(sid, cancelToken),
 
   // Synthesis practice
-  bestStep: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidBestStep(sid),
-  allBestThread: (sid: SID, n: number): AxiosPromise<SID> => jsAPI.postNodeBySidAllBestThreads(sid, n),
-  obviousBindThread: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidObviousBindThread(sid),
-  allBindsAndRefsIO: (sid: SID): AxiosPromise<SID> => jsAPI.postNodeBySidAllBindsAndRefsIO(sid),
+  bestStep: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> => jsAPI.postNodeBySidBestStep(sid, cancelToken),
+  allBestThread: (sid: SID, n: number, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidAllBestThreads(sid, n, cancelToken),
+  obviousBindThread: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidObviousBindThread(sid, cancelToken),
+  allBindsAndRefsIO: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
+    jsAPI.postNodeBySidAllBindsAndRefsIO(sid, cancelToken),
 };

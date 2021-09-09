@@ -1,7 +1,6 @@
-import { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse, AxiosError } from "axios";
 import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
@@ -10,6 +9,10 @@ import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "service
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
+
+import dynamic from "next/dynamic";
+
+const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
 
 /**
  * Component to display algorithm graph.
@@ -36,8 +39,10 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
 
   // Updating graph
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getIntermediateView(selectedSID)
+      .getIntermediateView(selectedSID, source.token)
       .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
         const newGraph: IntermediateGraph = {
@@ -59,10 +64,14 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         };
         setAlgorithmGraph(newGraph);
       })
-      .catch((err: AxiosError) => console.error(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.error(err);
+        }
+      });
 
     api
-      .getRootPath(selectedSID)
+      .getRootPath(selectedSID, source.token)
       .then((response: AxiosResponse<Node[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
         response.data.forEach((n: Node) => {
@@ -79,10 +88,14 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         });
         setProcState(result);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
 
     api
-      .getEndpoints(selectedSID)
+      .getEndpoints(selectedSID, source.token)
       .then((response: AxiosResponse<UnitEndpointsData[]>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach((eps: UnitEndpointsData) => {
@@ -98,7 +111,15 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         });
         setEndpoints(result);
       })
-      .catch((err: AxiosError) => console.log(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [selectedSID]);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on

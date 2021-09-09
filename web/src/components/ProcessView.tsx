@@ -1,13 +1,15 @@
-import { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse, AxiosError } from "axios";
 import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
-import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
 
 import "components/Graphviz.scss";
 
+import dynamic from "next/dynamic";
+
+const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
 /**
  * Component to display target process by GraphViz.
  */
@@ -20,10 +22,20 @@ export const ProcessView: FC<IProcessViewProps> = (props) => {
   const [process, setProcess] = useState<ProcessData | null>(null);
 
   useEffect(() => {
+    const source = Axios.CancelToken.source();
+
     api
-      .getProcess(selectedSID)
+      .getProcess(selectedSID, source.token)
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
-      .catch((err: AxiosError) => console.error(err));
+      .catch((err: AxiosError) => {
+        if (!Axios.isCancel(err)) {
+          console.error(err);
+        }
+      });
+
+    return () => {
+      source.cancel();
+    };
   }, [selectedSID]);
 
   if (!process) {

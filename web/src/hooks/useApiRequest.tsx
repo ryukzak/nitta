@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { AxiosResponse } from "axios";
+import Axios, { AxiosResponse } from "axios";
 
 interface UseApiRequestArgs<TResult> {
   requester: () => Promise<AxiosResponse<TResult>>;
@@ -29,8 +29,10 @@ export function useApiRequest<TResult>(args: UseApiRequestArgs<TResult>): UseApi
         setResponse(response);
       })
       .catch((err: Error) => {
-        console.error(err);
-        setErrorMessage(`Request failed: ${err.message}`);
+        if (!Axios.isCancel(err)) {
+          console.error(err);
+          setErrorMessage(`Request failed: ${err.message}`);
+        }
       });
   }, [args.requester]);
 
