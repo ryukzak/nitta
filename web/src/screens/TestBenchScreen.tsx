@@ -24,13 +24,13 @@ export const TestBenchScreen: FC = () => {
       .catch((err: AxiosError) => {
         if (!Axios.isCancel(err)) {
           setRequestSuccess(false);
-         console.log(err);
+          console.log(err);
         }
       });
 
-      return () => {
-        source.cancel();
-      }
+    return () => {
+      source.cancel();
+    };
   }, [appContext.selectedSID]);
 
   if (requestSuccess === null) {
