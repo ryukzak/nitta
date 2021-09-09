@@ -52,6 +52,13 @@ jobs:
       - name: Generate backend API
         run: stack exec nitta-api-gen -- -v
 
+      - name: Add request cancellation options into generated backend API (temporary hack)
+        run: |
+          cd web/src/services/gen/
+          sed -i -E "s/function\((.*)\)/function(\1, cancelToken)/g" rest_api.js
+          sed -i "s/(, /(/g" rest_api.js 
+          sed -i -E "s/(method: '.*')/\1, cancelToken: cancelToken/g" rest_api.js
+
       - name: Cache node_modules
         uses: actions/cache@v2.1.3
         with:

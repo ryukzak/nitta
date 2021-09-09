@@ -112,7 +112,7 @@ export const api = {
     cancelToken: CancelToken,
     name: string,
     loopsNumber: number
-  ): AxiosPromise<TestBenchReportData | null> => jsAPI.postNodeBySidTestbench(sid, cancelToken, name, loopsNumber),
+  ): AxiosPromise<TestBenchReportData | null> => jsAPI.postNodeBySidTestbench(sid, name, loopsNumber, cancelToken),
 
   // Synthesis methods
   stateOfTheArtSynthesis: (sid: SID, cancelToken: CancelToken): AxiosPromise<SID> =>
