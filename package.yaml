@@ -85,7 +85,7 @@ library:
     - validity
     - wai-cors
     - warp
-    - xeno
+    - hxt
 
     
 executables:
@@ -148,4 +148,4 @@ tests:
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
-      - xeno
+      - hxt

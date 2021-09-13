@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE Arrows #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : NITTA.XMILEFrontend
@@ -23,8 +25,10 @@ module NITTA.XMILEFrontend (
 ) where
 
 import Data.String.Interpolate
-import Data.Text.Encoding (encodeUtf8)
-import Xeno.DOM
+import Text.XML.HXT.Arrow.ReadDocument
+import Text.XML.HXT.Arrow.XmlState
+import Text.XML.HXT.Core
+import qualified Data.Text as T
 
 xmileSample =
     [__i| 
@@ -66,5 +70,34 @@ xmileSample =
                 </xmile>
             |]
 
-parseXMILE src =
-    parse $ encodeUtf8 src
+parseXMILE src = do
+    runX $ readString [withValidate no] src 
+       >>> removeAllWhiteSpace
+       >>> getXMILEState
+    
+getXMILEState = atTag "xmile" >>>
+    proc x -> do
+        simSpec <- parseSimSpec -< x
+        returnA -< XMILEAlgState {xasSimSpec = simSpec }
+
+
+parseSimSpec = atTag "sim_specs"  >>>
+    proc x -> do
+        stop <- text <<< atTag "stop" -< x
+        start <- text <<< atTag "start" -< x
+        dt <- text <<< atTag "dt" -< x
+        returnA -< SimSpec { ssStart = T.pack start, ssStop = T.pack stop, ssDt = T.pack dt }
+
+atTag tag = deep (isElem >>> hasName tag)
+text = getChildren >>> getText
+
+data SimSpec = SimSpec
+    { ssStart :: T.Text
+    , ssStop :: T.Text
+    , ssDt :: T.Text
+    } deriving Show
+
+data XMILEAlgState v x = XMILEAlgState
+    { xasSimSpec :: SimSpec
+    } deriving Show
+

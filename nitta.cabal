@@ -125,6 +125,7 @@ library
     , hslogger
     , htoml
     , http-api-data
+    , hxt
     , intervals
     , language-lua
     , mtl
@@ -149,7 +150,6 @@ library
     , validity
     , wai-cors
     , warp
-    , xeno
   default-language: Haskell2010
 
 executable nitta
@@ -268,6 +268,7 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
+    , hxt
     , intervals
     , language-lua
     , mtl
@@ -287,5 +288,4 @@ test-suite nitta-test
     , text
     , tostring
     , unordered-containers
-    , xeno
   default-language: Haskell2010
