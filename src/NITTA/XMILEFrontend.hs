@@ -1,16 +1,16 @@
+{-# LANGUAGE Arrows #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : NITTA.XMILEFrontend
@@ -25,12 +25,12 @@ module NITTA.XMILEFrontend (
 ) where
 
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
-import qualified Data.Text as T
 
-xmileSample =
+_xmileSample =
     [__i| 
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0">
@@ -71,33 +71,72 @@ xmileSample =
             |]
 
 parseXMILE src = do
-    runX $ readString [withValidate no] src 
-       >>> removeAllWhiteSpace
-       >>> getXMILEState
-    
-getXMILEState = atTag "xmile" >>>
-    proc x -> do
-        simSpec <- parseSimSpec -< x
-        returnA -< XMILEAlgState {xasSimSpec = simSpec }
+    runX $
+        readString [withValidate no] src
+            >>> removeAllWhiteSpace
+            >>> getXMILEState
 
+getXMILEState =
+    atTag "xmile"
+        >>> proc x -> do
+            simSpec <- parseSimSpec -< x
+            model <- parseModel -< x
+            returnA -< XMILEAlgState{xasSimSpec = simSpec, xasModel = model}
 
-parseSimSpec = atTag "sim_specs"  >>>
-    proc x -> do
-        stop <- text <<< atTag "stop" -< x
-        start <- text <<< atTag "start" -< x
-        dt <- text <<< atTag "dt" -< x
-        returnA -< SimSpec { ssStart = T.pack start, ssStop = T.pack stop, ssDt = T.pack dt }
+parseSimSpec =
+    atTag "sim_specs"
+        >>> proc x -> do
+            stop <- text <<< atTag "stop" -< x
+            start <- text <<< atTag "start" -< x
+            dt <- text <<< atTag "dt" -< x
+            returnA -< XMILESimSpec{xssStart = T.pack start, xssStop = T.pack stop, xssDt = T.pack dt}
+
+parseModel =
+    atTag "model"
+        >>> proc _ -> do
+            returnA -< XMILEModel{xmVariables = []}
 
 atTag tag = deep (isElem >>> hasName tag)
 text = getChildren >>> getText
 
-data SimSpec = SimSpec
-    { ssStart :: T.Text
-    , ssStop :: T.Text
-    , ssDt :: T.Text
-    } deriving Show
+data XMILESimSpec = XMILESimSpec
+    { xssStart :: T.Text
+    , xssStop :: T.Text
+    , xssDt :: T.Text
+    }
+    deriving (Show)
+
+newtype XMILEModel = XMILEModel
+    {xmVariables :: [XMILEVariable]}
+    deriving (Show)
+
+data XMILEVariable = XMILEVariable
+    { xvFlow :: XMILEFlow
+    , xvAux :: XMILEAux
+    , xvStock :: XMILEStock
+    }
+    deriving (Show)
+
+data XMILEFlow = XMILEFlow
+    { xfName :: T.Text
+    , xfEquation :: T.Text
+    }
+    deriving (Show)
+
+data XMILEAux = XMILEAux
+    { xaName :: T.Text
+    , xaEquation :: T.Text
+    }
+    deriving (Show)
+
+data XMILEStock = XMILEStock
+    { xsName :: T.Text
+    , xsEquation :: T.Text
+    }
+    deriving (Show)
 
 data XMILEAlgState v x = XMILEAlgState
-    { xasSimSpec :: SimSpec
-    } deriving Show
-
+    { xasSimSpec :: XMILESimSpec
+    , xasModel :: XMILEModel
+    }
+    deriving (Show)
