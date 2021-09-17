@@ -5,6 +5,7 @@ import ReactTable, { Column } from "react-table";
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Node, SID } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
+import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
 type Row = { original: Node; index: number };
 
@@ -33,9 +34,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
         setHistory(result);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     return () => {

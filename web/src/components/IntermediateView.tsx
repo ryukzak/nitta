@@ -11,6 +11,7 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 
 import dynamic from "next/dynamic";
+import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
 const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
 
@@ -65,9 +66,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         setAlgorithmGraph(newGraph);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.error(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     api
@@ -89,9 +88,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         setProcState(result);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     api
@@ -112,9 +109,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
         setEndpoints(result);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     return () => {

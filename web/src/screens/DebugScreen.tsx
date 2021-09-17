@@ -5,6 +5,7 @@ import { api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import Axios from "axios";
+import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
 
 export interface IDebugScreenProps {}
 
@@ -19,9 +20,7 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
       .getDebugInfo(selectedSID, source.token)
       .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
     return () => {
       source.cancel();
@@ -36,9 +35,7 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
       .getNode(selectedSID, source.token)
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
     return () => {
       source.cancel();

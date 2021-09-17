@@ -1,4 +1,4 @@
-import Axios, { AxiosPromise, AxiosResponse, AxiosError, CancelToken } from "axios";
+import { AxiosPromise, AxiosResponse, AxiosError, CancelToken } from "axios";
 import { IAppContext } from "app/AppContext";
 
 import jsAPI from "services/gen/rest_api";
@@ -29,6 +29,7 @@ import {
   TestbenchReport,
 } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
+import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
 
 export type SID = string;
 export const sidSeparator = "-";
@@ -74,9 +75,7 @@ export function synthesize<T extends Array<any>>(
         context.setSID(response.data);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
   };
 }

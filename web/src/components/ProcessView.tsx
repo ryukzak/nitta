@@ -8,6 +8,7 @@ import { api, ProcessData, StepData, RelationData } from "services/HaskellApiSer
 import "components/Graphviz.scss";
 
 import dynamic from "next/dynamic";
+import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
 const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
 /**
@@ -28,9 +29,7 @@ export const ProcessView: FC<IProcessViewProps> = (props) => {
       .getProcess(selectedSID, source.token)
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.error(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     return () => {

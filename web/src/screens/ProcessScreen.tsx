@@ -8,6 +8,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
 import "screens/ProcessScreen.scss";
+import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
 
 export interface Highlight {
   up: number[];
@@ -50,9 +51,7 @@ export const ProcessScreen: FC = () => {
         setPIdIndex(pIdIndex);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     return () => {

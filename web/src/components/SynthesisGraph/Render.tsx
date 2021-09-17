@@ -4,6 +4,7 @@ import { Tree as D3Tree } from "react-d3-tree";
 
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
+import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
 
 type Tree = {
   name: string;
@@ -94,9 +95,7 @@ export const SynthesisGraphRender: FC = () => {
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          console.log(err);
-        }
+        axiosErrorExceptionHandler(err);
       });
 
     return () => {

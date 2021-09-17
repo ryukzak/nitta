@@ -5,6 +5,7 @@ import { api, TestBenchReportData } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
+import axiosErrorHandlerWithCallback from "components/utils/axios_errors_handlers/AxiosErrorHandlerWithCallback";
 
 export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -22,10 +23,7 @@ export const TestBenchScreen: FC = () => {
         setRequestSuccess(true);
       })
       .catch((err: AxiosError) => {
-        if (!Axios.isCancel(err)) {
-          setRequestSuccess(false);
-          console.log(err);
-        }
+        axiosErrorHandlerWithCallback(err, () => setRequestSuccess(false));
       });
 
     return () => {
