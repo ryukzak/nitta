@@ -1,4 +1,5 @@
-import React, { useContext, useMemo, FC, useCallback, useEffect } from "react";
+import Axios from "axios";
+import React, { useContext, useMemo, FC, useCallback } from "react";
 import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -8,9 +9,9 @@ import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
+import useRequestCancellation from "hooks/useApiRequestCancellation";
 
 import dynamic from "next/dynamic";
-import Axios from "axios";
 
 const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
 
@@ -22,7 +23,9 @@ export interface IMicroarchitectureViewProps {}
 
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
+
   const source = Axios.CancelToken.source();
+  useRequestCancellation(source);
 
   const maRequest = useApiRequest({
     requester: useCallback(() => api.getMicroarchitecture(selectedSID, source.token), [selectedSID, source.token]),
@@ -31,12 +34,6 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) =>
   const endpointsRequest = useApiRequest({
     requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID, source.token]),
   });
-
-  useEffect(() => {
-    return () => {
-      source.cancel();
-    };
-  }, [source]);
 
   const dot = useMemo(() => {
     if (maRequest.response && endpointsRequest.response) {

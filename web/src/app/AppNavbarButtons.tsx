@@ -1,8 +1,9 @@
 import Axios from "axios";
-import React, { useContext, FC, useEffect } from "react";
+import React, { useContext, FC } from "react";
 import { DropdownButton, Dropdown } from "react-bootstrap";
 import { synthesize, api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
+import useRequestCancellation from "hooks/useApiRequestCancellation";
 
 import "./AppNavbar.scss";
 
@@ -14,12 +15,7 @@ export const AppNavbarButtons: FC = () => {
   };
 
   const source = Axios.CancelToken.source();
-
-  useEffect(() => {
-    return () => {
-      source.cancel();
-    };
-  }, [source]);
+  useRequestCancellation(source);
 
   return (
     <div className="d-flex">

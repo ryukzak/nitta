@@ -1,5 +1,5 @@
 import Axios from "axios";
-import React, { useContext, FC, useCallback, useEffect } from "react";
+import React, { useContext, FC, useCallback } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -9,6 +9,7 @@ import { RequestResult } from "components/utils/RequestResult";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { CHART_COLOR_PALLETE } from "utils/color";
+import useRequestCancellation from "hooks/useApiRequestCancellation";
 
 import "components/Graphviz.scss";
 import "react-table/react-table.css";
@@ -17,7 +18,9 @@ export interface ITreeInfoViewProps {}
 
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
+
   const source = Axios.CancelToken.source();
+  useRequestCancellation(source);
 
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
@@ -26,12 +29,6 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedSID]),
   });
-
-  useEffect(() => {
-    return () => {
-      source.cancel();
-    };
-  }, [source]);
 
   return (
     <RequestResult
