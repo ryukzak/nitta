@@ -48,6 +48,7 @@ import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
+import System.Console.CmdArgs.Explicit (HelpFormat (HelpFormatDefault), helpText)
 import System.Exit
 import System.FilePath.Posix
 import System.IO (stdout)
@@ -130,9 +131,17 @@ nittaArgs =
     where
         defTemplates = S.join ":" defProjectTemplates
 
+getNittaArgs :: IO Nitta
+getNittaArgs = do
+    let handleError :: ExitCode -> IO Nitta
+        handleError exitCode = do
+            print $ helpText [] HelpFormatDefault $ cmdArgsMode nittaArgs
+            exitWith exitCode
+    catch (cmdArgs nittaArgs) handleError
+
 main = do
     Nitta{port, filename, uarch, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
-        cmdArgs nittaArgs
+        getNittaArgs
     setupLogger verbose extra_verbose
 
     toml <- case uarch of
