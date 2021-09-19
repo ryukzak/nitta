@@ -254,12 +254,13 @@ addFunction funcName _ fOut | toString funcName == "receive" = do
 addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
 
 addConstant (Number _valueType valueString) = do
-    luaAlgBuilder@LuaAlgBuilder{algGraph, algVars} <- get
+    luaAlgBuilder@LuaAlgBuilder{algGraph, algVars, algConstants} <- get
     let lvv = LuaValueInstance{luaValueInstanceName = valueString, luaValueInstanceAssignCount = 0, luaValueInstanceIsConstant = True}
-    case HM.lookup lvv algVars of
+    case HM.lookup valueString algConstants of
         Just value -> do
-            let resultName = getUniqueLuaVariableName lvv (length value)
-            put luaAlgBuilder{algVars = HM.insert lvv (resultName : value) algVars}
+            let names = fromMaybe (error "lua constants parsing error") $ HM.lookup value algVars
+            let resultName = getUniqueLuaVariableName lvv $ length names
+            put luaAlgBuilder{algVars = HM.insert value (resultName : names) algVars}
             return resultName
         Nothing -> do
             let resultName = getUniqueLuaVariableName lvv 0
@@ -267,6 +268,7 @@ addConstant (Number _valueType valueString) = do
                 luaAlgBuilder
                     { algGraph = LuaStatement{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = "constant", fInt = []} : algGraph
                     , algVars = HM.insert lvv [resultName] algVars
+                    , algConstants = HM.insert valueString lvv algConstants
                     }
             return resultName
 addConstant _ = undefined

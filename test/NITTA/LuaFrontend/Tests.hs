@@ -213,14 +213,15 @@ case_lua_two_name_for_same_constant =
                 function sum(a)
                     local t = 1
                     local r = 1
-                    sum(a + t + r)
+                    sum(a + t + r + 1)
                 end
                 sum(0)
             |]
         dfg =
-            [ constant 1 ["t^0#0", "t^0#1"] :: F T.Text Int
-            , add "a^0#0" "t^0#0" ["_1#loop"]
-            , add "_1#loop" "t^0#1" ["_0#loop"]
+            [ constant 1 ["!1#2", "t^0#0", "t^0#1"] :: F T.Text Int
+            , add "a^0#0" "t^0#0" ["_2#loop"]
+            , add "_2#loop" "t^0#1" ["_1#loop"]
+            , add "_1#loop" "!1#2" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
