@@ -9,6 +9,7 @@ import "components/Graphviz.scss";
 
 import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
+/** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
 const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 /**
