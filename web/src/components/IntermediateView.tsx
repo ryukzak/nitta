@@ -1,3 +1,5 @@
+import Axios, { CancelToken } from "axios";
+import useRequestCancellation from "hooks/useApiRequestCancellation";
 import React, { useContext, FC, useCallback } from "react";
 import "react-table/react-table.css";
 
@@ -10,8 +12,6 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 import { useApiResponse } from "hooks/useApiResponse";
-
-import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
@@ -36,10 +36,12 @@ interface Endpoints {
 export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const algorithmGraph = useAlgorithmGraph(selectedSID);
-  const procState = useProcState(selectedSID);
-  const endpoints = useEndpoints(selectedSID);
+  const source = Axios.CancelToken.source();
+  useRequestCancellation(source);
 
+  const algorithmGraph = useAlgorithmGraph(selectedSID, source.token);
+  const procState = useProcState(selectedSID, source.token);
+  const endpoints = useEndpoints(selectedSID, source.token);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
@@ -123,9 +125,9 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   return result;
 }
 
-function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
+function useAlgorithmGraph(selectedSID: string, cancelToken: CancelToken): IntermediateGraph | null {
   const response = useApiRequest({
-    requester: useCallback(() => api.getIntermediateView(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getIntermediateView(selectedSID, cancelToken), [selectedSID, cancelToken]),
   });
   const result = useApiResponse(response, makeGraphData, null);
   return result;
@@ -151,8 +153,10 @@ function makeGraphData(graphData: IntermediateGraph): IntermediateGraph | null {
   };
 }
 
-function useProcState(selectedSID: string): ProcessState {
-  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) });
+function useProcState(selectedSID: string, cancelToken: CancelToken): ProcessState {
+  const response = useApiRequest({
+    requester: useCallback(() => api.getRootPath(selectedSID, cancelToken), [selectedSID, cancelToken]),
+  });
   const result = useApiResponse(response, makeProcState, defaultProcState);
   return result;
 }
@@ -176,8 +180,10 @@ function makeProcState(nodes: Node[]): ProcessState {
   return procState;
 }
 
-function useEndpoints(selectedSID: string): Endpoints {
-  const response = useApiRequest({ requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]) });
+function useEndpoints(selectedSID: string, cancelToken: CancelToken): Endpoints {
+  const response = useApiRequest({
+    requester: useCallback(() => api.getEndpoints(selectedSID, cancelToken), [selectedSID, cancelToken]),
+  });
   const result = useApiResponse(response, collectEndpoints, defaultEndpoints);
   return result;
 }
