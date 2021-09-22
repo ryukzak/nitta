@@ -6,11 +6,15 @@ on:
       - "app/**"
       - "src/**"
       - "test/**"
+      - ".hlint.yaml"
+      - "fourmolu.yaml"
   pull_request:
     paths:
       - "app/**"
       - "src/**"
       - "test/**"
+      - ".hlint.yaml"
+      - "fourmolu.yaml"
 
 jobs:
 
