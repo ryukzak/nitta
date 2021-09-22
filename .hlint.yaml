@@ -2,6 +2,18 @@
 # https://github.com/ndmitchell/hlint
 ##########################
 
+# Force NITTA.Utils.Base
+
+- warn: {lhs: "Data.Set.unions (map f l)", rhs: NITTA.Utils.Base.unionsMap x}
+- warn: {lhs: "head (Data.Set.elems s)", rhs: NITTA.Utils.Base.oneOf s}
+
+- warn: {lhs: "Data.Text.pack (Data.String.ToString.toString s)", rhs: NITTA.Utils.Base.toText s}
+- warn: {lhs: "Data.Text.pack (show s)", rhs: NITTA.Utils.Base.showText s}
+# - warn: {lhs: "fromString (Data.Text.unpack x)", rhs: fromText x}
+- warn: {lhs: "read (Data.Text.unpack t)", rhs: NITTA.Utils.Base.readText t}
+
+# Ignore:
+
 - ignore: {name: "Eta reduce"}
 - ignore: {name: "Avoid lambda"}
 - ignore: {name: "Use zipWith"}
