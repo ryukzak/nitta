@@ -46,7 +46,7 @@ extra-deps:
 - aeson-typescript-0.2.0.0
 - prettyprinter-1.7.0
 - github: ryukzak/servant-js # patched (pass cancellation token to axios)
-  commit: ec77151941561fb4ab6dc12e3fcd3ea781667ad5
+  commit: 77d77009b11a084db53deaab4d026262b680e58b
 
 allow-newer: true
 

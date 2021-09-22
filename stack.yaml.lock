@@ -33,16 +33,16 @@ packages:
   original:
     hackage: prettyprinter-1.7.0
 - completed:
-    size: 109786
-    url: https://github.com/ryukzak/servant-js/archive/ec77151941561fb4ab6dc12e3fcd3ea781667ad5.tar.gz
+    size: 109784
+    url: https://github.com/ryukzak/servant-js/archive/77d77009b11a084db53deaab4d026262b680e58b.tar.gz
     name: servant-js
     version: 0.9.4.2
-    sha256: 481faacb3c50123b64c030f0e82b068dc658cf79f15e979854937049cbddd8f4
+    sha256: 00a60c938d822fd60790d96ecfc2440162b8b4356cca0f1efce3a532751cfcec
     pantry-tree:
       size: 1995
-      sha256: 9e5e115f7b158917154c99a56f3e80357b7a223391eb583a80b5d945fd8cbbfb
+      sha256: 23bb4b35d273120a4a8ca4594fff15814fb847e1a9f331048311804eb7922044
   original:
-    url: https://github.com/ryukzak/servant-js/archive/ec77151941561fb4ab6dc12e3fcd3ea781667ad5.tar.gz
+    url: https://github.com/ryukzak/servant-js/archive/77d77009b11a084db53deaab4d026262b680e58b.tar.gz
 snapshots:
 - completed:
     size: 534126
