@@ -7,10 +7,10 @@ import { api, ProcessData, StepData, RelationData } from "services/HaskellApiSer
 
 import "components/Graphviz.scss";
 
-import dynamic from "next/dynamic";
 import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
-const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
+import dynamic from "next/dynamic";
+const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 /**
  * Component to display target process by GraphViz.
  */

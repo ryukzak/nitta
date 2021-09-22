@@ -12,8 +12,7 @@ import { useApiRequest } from "hooks/useApiRequest";
 import useRequestCancellation from "hooks/useApiRequestCancellation";
 
 import dynamic from "next/dynamic";
-
-const Graphviz = dynamic(() => import("../components/Graphviz"), { ssr: false });
+const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 
 /**
  * Component to display a microarchitecture with available endpoints.

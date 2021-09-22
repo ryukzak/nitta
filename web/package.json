@@ -10,7 +10,7 @@
     "bootstrap": "^5.0.1",
     "chart.js": "^3.3.2",
     "glyphicons-only-bootstrap": "^1.0.1",
-    "graphviz-react": "^1.0.4",
+    "graphviz-react": "^1.2.0",
     "http-method-enum": "^1.0.0",
     "http-status-codes": "^2.1.4",
     "next": "^10.0.0",
