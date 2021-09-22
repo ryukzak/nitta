@@ -34,7 +34,7 @@
     "@types/react-router-dom": "^5.1.6"
   },
   "scripts": {
-    "backstart": "cd .. && stack exec nitta -- --web examples/teacup.lua",
+    "backstart": "cd .. && stack exec nitta -- --port=8080 examples/teacup.lua",
     "start": "react-scripts --max_old_space_size=4096 start",
     "build": "react-scripts --max_old_space_size=4096 build",
     "test": "react-scripts test",

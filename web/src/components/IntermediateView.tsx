@@ -1,5 +1,4 @@
-import Axios, { AxiosResponse, AxiosError } from "axios";
-import React, { useContext, useState, useEffect, FC } from "react";
+import React, { useContext, FC, useCallback } from "react";
 import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
@@ -9,6 +8,8 @@ import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "service
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
+import { useApiRequest } from "hooks/useApiRequest";
+import { useApiResponse } from "hooks/useApiResponse";
 
 import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
@@ -35,88 +36,10 @@ interface Endpoints {
 export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [algorithmGraph, setAlgorithmGraph] = useState<IntermediateGraph | null>(null);
-  const [procState, setProcState] = useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
-  const [endpoints, setEndpoints] = useState<Endpoints>({ sources: [], targets: [] });
+  const algorithmGraph = useAlgorithmGraph(selectedSID);
+  const procState = useProcState(selectedSID);
+  const endpoints = useEndpoints(selectedSID);
 
-  // Updating graph
-  useEffect(() => {
-    const source = Axios.CancelToken.source();
-
-    api
-      .getIntermediateView(selectedSID, source.token)
-      .then((response: AxiosResponse<IntermediateGraph>) => {
-        const graphData = response.data;
-        const newGraph: IntermediateGraph = {
-          nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
-            return {
-              id: index + 1,
-              label: String(nodeData.label),
-              function: nodeData.function,
-              history: nodeData.history,
-              nodeColor: "",
-              nodeShape: "",
-              fontSize: "",
-              nodeSize: "",
-            };
-          }),
-          edges: graphData.edges.map((edgeData: GraphEdge) => {
-            return edgeData;
-          }),
-        };
-        setAlgorithmGraph(newGraph);
-      })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
-
-    api
-      .getRootPath(selectedSID, source.token)
-      .then((response: AxiosResponse<Node[]>) => {
-        let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-        response.data.forEach((n: Node) => {
-          if (n.decision.tag === "DataflowDecisionView") {
-            let targets = (n.decision as Dataflow).targets;
-            targets.forEach((target: [string, EndpointDecision]) => {
-              result.transferedVars.push(target[1].epRole.contents as string);
-            });
-          }
-          if (n.decision.tag === "BindDecisionView") {
-            let d = n.decision as Bind;
-            result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
-          }
-        });
-        setProcState(result);
-      })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
-
-    api
-      .getEndpoints(selectedSID, source.token)
-      .then((response: AxiosResponse<UnitEndpointsData[]>) => {
-        let result: Endpoints = { sources: [], targets: [] };
-        response.data.forEach((eps: UnitEndpointsData) => {
-          eps.unitEndpoints.forEach((e: EndpointOptionData) => {
-            let role = e.epRole;
-            if (role.tag === "Source") {
-              result.sources.push(...role.contents);
-            }
-            if (role.tag === "Target") {
-              result.targets.push(role.contents);
-            }
-          });
-        });
-        setEndpoints(result);
-      })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
-
-    return () => {
-      source.cancel();
-    };
-  }, [selectedSID]);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
@@ -198,4 +121,81 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   const wrap = (content: string) => `\t${content};`;
   let result = `digraph {\n${lines.map(wrap).join("\n")}\n}`;
   return result;
+}
+
+function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
+  const response = useApiRequest({
+    requester: useCallback(() => api.getIntermediateView(selectedSID), [selectedSID]),
+  });
+  const result = useApiResponse(response, makeGraphData, null);
+  return result;
+}
+
+function makeGraphData(graphData: IntermediateGraph): IntermediateGraph | null {
+  return {
+    nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
+      return {
+        id: index + 1,
+        label: String(nodeData.label),
+        function: nodeData.function,
+        history: nodeData.history,
+        nodeColor: "",
+        nodeShape: "",
+        fontSize: "",
+        nodeSize: "",
+      };
+    }),
+    edges: graphData.edges.map((edgeData: GraphEdge) => {
+      return edgeData;
+    }),
+  };
+}
+
+function useProcState(selectedSID: string): ProcessState {
+  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) });
+  const result = useApiResponse(response, makeProcState, defaultProcState);
+  return result;
+}
+
+const defaultProcState: ProcessState = { bindeFuns: [], transferedVars: [] };
+
+function makeProcState(nodes: Node[]): ProcessState {
+  let procState: ProcessState = { bindeFuns: [], transferedVars: [] };
+  nodes.forEach((n: Node) => {
+    if (n.decision.tag === "DataflowDecisionView") {
+      let targets = (n.decision as Dataflow).targets;
+      targets.forEach((target: [string, EndpointDecision]) => {
+        procState.transferedVars.push(target[1].epRole.contents as string);
+      });
+    }
+    if (n.decision.tag === "BindDecisionView") {
+      let d = n.decision as Bind;
+      procState.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
+    }
+  });
+  return procState;
+}
+
+function useEndpoints(selectedSID: string): Endpoints {
+  const response = useApiRequest({ requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]) });
+  const result = useApiResponse(response, collectEndpoints, defaultEndpoints);
+  return result;
+}
+
+const defaultEndpoints: Endpoints = { sources: [], targets: [] };
+
+function collectEndpoints(data: UnitEndpointsData[]): Endpoints {
+  let endpoints: Endpoints = { sources: [], targets: [] };
+  data.forEach((eps: UnitEndpointsData) => {
+    eps.unitEndpoints.forEach((e: EndpointOptionData) => {
+      let role = e.epRole;
+      if (role.tag === "Source") {
+        endpoints.sources.push(...role.contents);
+      }
+      if (role.tag === "Target") {
+        endpoints.targets.push(role.contents);
+      }
+    });
+  });
+  return endpoints;
 }
