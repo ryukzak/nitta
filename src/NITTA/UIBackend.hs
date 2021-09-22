@@ -64,6 +64,8 @@ prepareJSAPI port path = do
     let axios' =
             SJS.axiosWith
                 SJS.defAxiosOptions
+                    { SJS.withCancelTokenArg = Just "cancelToken"
+                    }
                 SJS.defCommonGeneratorOptions
                     { SJS.urlPrefix = [i|http://localhost:#{ port }|]
                     , SJS.moduleName = "jsAPI"
