@@ -22,6 +22,8 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
     anySPI,
     Ports (..),
     IOPorts (..),
+    spiMasterPorts,
+    spiSlavePorts,
 ) where
 
 import Data.Aeson
@@ -81,6 +83,22 @@ instance IOConnected (SPI v x t) where
 
     outputPorts SPISlave{..} = S.fromList [slave_miso]
     outputPorts SPIMaster{..} = S.fromList [master_mosi, master_sclk, master_cs]
+
+spiMasterPorts tag =
+    SPIMaster
+        { master_mosi = OutputPortTag $ tag <> "_mosi"
+        , master_miso = InputPortTag $ tag <> "_miso"
+        , master_sclk = OutputPortTag $ tag <> "_sclk"
+        , master_cs = OutputPortTag $ tag <> "_cs"
+        }
+
+spiSlavePorts tag =
+    SPISlave
+        { slave_mosi = InputPortTag $ tag <> "_mosi"
+        , slave_miso = OutputPortTag $ tag <> "_miso"
+        , slave_sclk = InputPortTag $ tag <> "_sclk"
+        , slave_cs = InputPortTag $ tag <> "_cs"
+        }
 
 instance (Time t) => Default (SPI v x t) where
     def = anySPI 0 $ Just 6

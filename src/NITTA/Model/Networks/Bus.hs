@@ -29,6 +29,7 @@ module NITTA.Model.Networks.Bus (
     IOPorts (..),
     bindedFunctions,
     controlSignalLiteral,
+    busNetwork,
 ) where
 
 import Control.Monad.State
@@ -72,6 +73,18 @@ data BusNetwork tag v x t = BusNetwork
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
     }
+
+busNetwork name iosync =
+    BusNetwork
+        { bnName = name
+        , bnRemains = []
+        , bnBinded = M.empty
+        , bnProcess = def
+        , bnPus = M.empty
+        , bnSignalBusWidth = 0
+        , ioSync = iosync
+        , bnEnv = def
+        }
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where
     variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded

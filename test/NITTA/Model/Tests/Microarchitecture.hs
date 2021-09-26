@@ -87,30 +87,16 @@ maBroken brokenPU = defineNetwork "net1" ASync $ do
     add "accum" AccumIO
     addCustom "broken" brokenPU BrokenIO
 
-withSlaveSPI net = modifyNetwork net $ do
-    add
-        "spi"
-        SPISlave
-            { slave_mosi = InputPortTag "mosi"
-            , slave_miso = OutputPortTag "miso"
-            , slave_sclk = InputPortTag "sclk"
-            , slave_cs = InputPortTag "cs"
-            }
+withSlaveSPI tag net = modifyNetwork net $ do
+    add tag $ spiSlavePorts tag
 
-withMasterSPI net = modifyNetwork net $ do
-    add
-        "spi"
-        SPIMaster
-            { master_mosi = OutputPortTag "mosi"
-            , master_miso = InputPortTag "miso"
-            , master_sclk = OutputPortTag "sclk"
-            , master_cs = OutputPortTag "cs"
-            }
+withMasterSPI tag net = modifyNetwork net $ do
+    add tag $ spiMasterPorts tag
 
-marchSPI True proxy = withSlaveSPI $ basic proxy
-marchSPI False proxy = withMasterSPI $ basic proxy
+marchSPI tag True proxy = withSlaveSPI tag $ basic proxy
+marchSPI tag False proxy = withMasterSPI tag $ basic proxy
 
-marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ioSync = ASync}
+marchSPIDropData tag isSlave proxy = (marchSPI tag isSlave proxy){ioSync = ASync}
 
 -----------------------------------------------------------
 
@@ -119,8 +105,8 @@ data IOUnit
     | SlaveSPI
 
 microarch ioSync' ioUnit =
-    let withSPI net SlaveSPI = withSlaveSPI net
-        withSPI net MasterSPI = withMasterSPI net
+    let withSPI net SlaveSPI = withSlaveSPI "spi" net
+        withSPI net MasterSPI = withMasterSPI "spi" net
      in defineNetwork
             "net1"
             ioSync'

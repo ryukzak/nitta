@@ -346,15 +346,15 @@ class IOConnected pu where
 
     -- |External input ports, which go outside of NITTA mUnit.
     inputPorts :: IOPorts pu -> S.Set InputPortTag
-    inputPorts _ = S.fromList []
+    inputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
     outputPorts :: IOPorts pu -> S.Set OutputPortTag
-    outputPorts _ = S.fromList []
+    outputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
     inoutPorts :: IOPorts pu -> S.Set InoutPortTag
-    inoutPorts _ = S.fromList []
+    inoutPorts _ = S.empty
 
 newtype InputPortTag = InputPortTag {inputPortTag :: T.Text} deriving (Eq, Ord)
 instance Show InputPortTag where show = toString . inputPortTag

@@ -41,7 +41,7 @@ import NITTA.Utils.Base
 data BuilderSt tag v x t = BuilderSt
     { signalBusWidth :: Int
     , availSignals :: [SignalTag]
-    , pus :: [(tag, PU v x t)]
+    , pus :: M.Map tag (PU v x t)
     }
 
 netIOPorts pus =
@@ -58,28 +58,16 @@ modifyNetwork net@BusNetwork{bnPus, bnSignalBusWidth, bnEnv} builder =
             BuilderSt
                 { signalBusWidth = bnSignalBusWidth
                 , availSignals = map (SignalTag . controlSignalLiteral) [bnSignalBusWidth :: Int ..]
-                , pus = M.toList bnPus
+                , pus = bnPus
                 }
         BuilderSt{signalBusWidth, pus} = execState builder st0
      in net
-            { bnPus = M.fromList pus
+            { bnPus = pus
             , bnSignalBusWidth = signalBusWidth
-            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ map snd pus}
+            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ M.elems pus}
             }
 
-defineNetwork bnName ioSync builder =
-    let net =
-            BusNetwork
-                { bnName
-                , bnRemains = []
-                , bnBinded = M.empty
-                , bnProcess = def
-                , bnPus = M.empty
-                , bnSignalBusWidth = 0
-                , ioSync
-                , bnEnv = def
-                }
-     in modifyNetwork net builder
+defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
 
 puEnv tag ctrlPorts ioPorts =
     def
@@ -99,7 +87,10 @@ addCustom tag pu ioPorts = do
         st
             { signalBusWidth = signalBusWidth + usedPortsLen
             , availSignals = drop usedPortsLen availSignals
-            , pus = (tag, pu') : pus
+            , pus =
+                if M.member tag pus
+                    then error "every PU must has uniq tag"
+                    else M.insert tag pu' pus
             }
 
 -- |Add PU with the default initial state. Type specify by IOPorts.
