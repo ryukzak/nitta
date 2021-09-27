@@ -8,7 +8,7 @@ import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { SynthesisHistory } from "components/SynthesisHistory";
 import { SubforestTables } from "components/SubforestTables";
-import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
 
 export const SubforestScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;

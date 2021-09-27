@@ -4,10 +4,9 @@ import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
+import { axiosErrorExceptionHandler } from "./utils/AxiosErrorHanders";
 
 import "components/Graphviz.scss";
-
-import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";

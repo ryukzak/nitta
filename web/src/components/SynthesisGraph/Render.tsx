@@ -4,7 +4,7 @@ import { Tree as D3Tree } from "react-d3-tree";
 
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
-import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
 
 type Tree = {
   name: string;

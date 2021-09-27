@@ -5,7 +5,7 @@ import ReactTable, { Column } from "react-table";
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Node, SID } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
-import axiosErrorExceptionHandler from "./utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "./utils/AxiosErrorHanders";
 
 type Row = { original: Node; index: number };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AxiosResponse } from "axios";
-import axiosErrorHandlerWithCallback from "components/utils/axios_errors_handlers/AxiosErrorHandlerWithCallback";
+import { axiosErrorHandlerWithCallback } from "components/utils/AxiosErrorHanders";
 
 interface UseApiRequestArgs<TResult> {
   requester: () => Promise<AxiosResponse<TResult>>;

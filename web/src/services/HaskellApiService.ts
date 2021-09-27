@@ -29,7 +29,7 @@ import {
   TestbenchReport,
 } from "services/gen/types";
 import { Interval, MicroarchitectureDesc } from "services/gen/types";
-import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
 
 export type SID = string;
 export const sidSeparator = "-";

@@ -5,7 +5,7 @@ import { api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import Axios from "axios";
-import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
 
 export interface IDebugScreenProps {}
 

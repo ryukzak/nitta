@@ -5,7 +5,7 @@ import { api, TestBenchReportData } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
-import axiosErrorHandlerWithCallback from "components/utils/axios_errors_handlers/AxiosErrorHandlerWithCallback";
+import { axiosErrorHandlerWithCallback } from "components/utils/AxiosErrorHanders";
 
 export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;

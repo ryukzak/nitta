@@ -8,7 +8,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
 import "screens/ProcessScreen.scss";
-import axiosErrorExceptionHandler from "components/utils/axios_errors_handlers/AxiosErrorHander";
+import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
 
 export interface Highlight {
   up: number[];
