@@ -2,6 +2,12 @@
 # https://github.com/ndmitchell/hlint
 ##########################
 
+- modules:
+  - {name: [Data.Set, Data.HashSet], as: S}
+  - {name: [Data.HashMap], as: HM}
+  - {name: [Data.Map, Data.Map.Strict], as: M}
+  - {name: [Data.List], as: L}
+
 # Force NITTA.Utils.Base
 
 - warn: {lhs: "Data.Set.unions (map f l)", rhs: NITTA.Utils.Base.unionsMap x}
