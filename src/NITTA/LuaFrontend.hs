@@ -32,12 +32,13 @@ import Data.Maybe
 import Data.String
 import Data.String.ToString
 import qualified Data.String.Utils as S
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, unpack)
 import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils (modify'_)
+import NITTA.Utils.Base
 import Text.Printf
 
 data FrontendResult v x = FrontendResult
@@ -120,7 +121,7 @@ buildAlg ast = flip execState st0 $ do
             AlgBuilder
                 { algItems = []
                 , algBuffer = []
-                , algVarGen = map (pack . show) [0 ..]
+                , algVarGen = map showText [0 ..]
                 , algVars = []
                 }
 
@@ -304,11 +305,11 @@ processStatement _fn st = error $ "statement: " ++ show st
 
 rightExp diff fOut (Binop ShiftL a (Number IntNum s)) = do
     a' <- expArg diff a
-    let f = Function{fName = "shiftL", fIn = [a'], fOut, fValues = [], fInt = [read $ unpack s :: Int]}
+    let f = Function{fName = "shiftL", fIn = [a'], fOut, fValues = [], fInt = [readText s :: Int]}
     patchAndAddFunction f diff
 rightExp diff fOut (Binop ShiftR a (Number IntNum s)) = do
     a' <- expArg diff a
-    let f = Function{fName = "shiftR", fIn = [a'], fOut, fValues = [], fInt = [read $ unpack s :: Int]}
+    let f = Function{fName = "shiftR", fIn = [a'], fOut, fValues = [], fInt = [readText s :: Int]}
     patchAndAddFunction f diff
 rightExp diff fOut (Binop op a b) = do
     a' <- expArg diff a
@@ -378,7 +379,7 @@ expConstant name (Number _ textX) = do
         Nothing -> do
             addItem
                 Constant
-                    { cX = read $ unpack textX
+                    { cX = readText textX
                     , cVar = name
                     , cTextX = textX
                     }

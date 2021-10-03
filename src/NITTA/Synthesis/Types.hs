@@ -45,7 +45,6 @@ import Data.Default
 import Data.List.Split
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -56,6 +55,7 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Servant
 
 -- |Default synthesis tree type.
@@ -105,7 +105,7 @@ instance ToJSON SID where
     toJSON sid = toJSON $ show sid
 
 instance FromHttpApiData SID where
-    parseUrlPiece = Right . read . T.unpack
+    parseUrlPiece = Right . readText
 
 -- |Synthesis tree
 data Tree m tag v x t = Tree
