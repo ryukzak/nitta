@@ -22,7 +22,7 @@ Stability   : experimental
 </span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span>
 </span><span id="line-23"></span><span>
 </span><span id="line-24"></span><span class="hs-comment">-- |Metrics of synthesis tree process</span><span>
-</span><span id="line-25"></span><span id="local-6989586621680148773"><span id="local-6989586621680148774"></span></span><span class="hs-keyword">data</span><span> </span><span id="TreeInfo"><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-var">TreeInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TreeInfo"><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-var">TreeInfo</span></a></span></span><span>
+</span><span id="line-25"></span><span id="local-6989586621680148731"><span id="local-6989586621680148732"></span></span><span class="hs-keyword">data</span><span> </span><span id="TreeInfo"><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-var">TreeInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TreeInfo"><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-var">TreeInfo</span></a></span></span><span>
 </span><span id="line-26"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="nodes"><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#nodes"><span class="hs-identifier hs-var hs-var">nodes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-27"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="success"><span class="annot"><span class="annottext">TreeInfo -&gt; Int
@@ -44,7 +44,7 @@ forall a.
 (forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
 $cto :: forall x. Rep TreeInfo x -&gt; TreeInfo
 $cfrom :: forall x. TreeInfo -&gt; Rep TreeInfo x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680148757"><span id="local-6989586621680148759"><span id="local-6989586621680148761"><span class="annot"><span class="annottext">Int -&gt; TreeInfo -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680148715"><span id="local-6989586621680148717"><span id="local-6989586621680148719"><span class="annot"><span class="annottext">Int -&gt; TreeInfo -&gt; ShowS
 [TreeInfo] -&gt; ShowS
 TreeInfo -&gt; String
 (Int -&gt; TreeInfo -&gt; ShowS)
@@ -59,27 +59,27 @@ showsPrec :: Int -&gt; TreeInfo -&gt; ShowS
 $cshowsPrec :: Int -&gt; TreeInfo -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-34"></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680148751"><span id="local-6989586621680148753"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-type">TreeInfo</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-36"></span><span>    </span><span id="local-6989586621680148749"><span class="annot"><span class="annottext">&lt;&gt; :: TreeInfo -&gt; TreeInfo -&gt; TreeInfo
-</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;&gt;)</span></span></span><span> </span><span id="local-6989586621680148748"><span class="annot"><span class="annottext">synthesisInfo1 :: TreeInfo
-</span><a href="#local-6989586621680148748"><span class="hs-identifier hs-var">synthesisInfo1</span></a></span></span><span> </span><span id="local-6989586621680148747"><span class="annot"><span class="annottext">synthesisInfo2 :: TreeInfo
-</span><a href="#local-6989586621680148747"><span class="hs-identifier hs-var">synthesisInfo2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-37"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148746"><span class="annot"><span class="annottext">synthesisInfoList :: [TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var hs-var">synthesisInfoList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148748"><span class="hs-identifier hs-var">synthesisInfo1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148747"><span class="hs-identifier hs-var">synthesisInfo2</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-38"></span><span>            </span><span id="local-6989586621680148745"><span class="annot"><span class="annottext">durationSuccessList :: [HashMap Int Int]
-</span><a href="#local-6989586621680148745"><span class="hs-identifier hs-var hs-var">durationSuccessList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(TreeInfo -&gt; HashMap Int Int) -&gt; [TreeInfo] -&gt; [HashMap Int Int]
+</span><span id="line-35"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680148709"><span id="local-6989586621680148711"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-type">TreeInfo</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-36"></span><span>    </span><span id="local-6989586621680148707"><span class="annot"><span class="annottext">&lt;&gt; :: TreeInfo -&gt; TreeInfo -&gt; TreeInfo
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;&gt;)</span></span></span><span> </span><span id="local-6989586621680148706"><span class="annot"><span class="annottext">synthesisInfo1 :: TreeInfo
+</span><a href="#local-6989586621680148706"><span class="hs-identifier hs-var">synthesisInfo1</span></a></span></span><span> </span><span id="local-6989586621680148705"><span class="annot"><span class="annottext">synthesisInfo2 :: TreeInfo
+</span><a href="#local-6989586621680148705"><span class="hs-identifier hs-var">synthesisInfo2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-37"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148704"><span class="annot"><span class="annottext">synthesisInfoList :: [TreeInfo]
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var hs-var">synthesisInfoList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">TreeInfo
+</span><a href="#local-6989586621680148706"><span class="hs-identifier hs-var">synthesisInfo1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TreeInfo
+</span><a href="#local-6989586621680148705"><span class="hs-identifier hs-var">synthesisInfo2</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-38"></span><span>            </span><span id="local-6989586621680148703"><span class="annot"><span class="annottext">durationSuccessList :: [HashMap Int Int]
+</span><a href="#local-6989586621680148703"><span class="hs-identifier hs-var hs-var">durationSuccessList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(TreeInfo -&gt; HashMap Int Int) -&gt; [TreeInfo] -&gt; [HashMap Int Int]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#durationSuccess"><span class="hs-identifier hs-var hs-var">durationSuccess</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
-</span><span id="line-39"></span><span>            </span><span id="local-6989586621680148744"><span class="annot"><span class="annottext">stepsSuccessList :: [HashMap Int Int]
-</span><a href="#local-6989586621680148744"><span class="hs-identifier hs-var hs-var">stepsSuccessList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(TreeInfo -&gt; HashMap Int Int) -&gt; [TreeInfo] -&gt; [HashMap Int Int]
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><span id="line-39"></span><span>            </span><span id="local-6989586621680148702"><span class="annot"><span class="annottext">stepsSuccessList :: [HashMap Int Int]
+</span><a href="#local-6989586621680148702"><span class="hs-identifier hs-var hs-var">stepsSuccessList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(TreeInfo -&gt; HashMap Int Int) -&gt; [TreeInfo] -&gt; [HashMap Int Int]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#stepsSuccess"><span class="hs-identifier hs-var hs-var">stepsSuccess</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
 </span><span id="line-40"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">TreeInfo :: Int
 -&gt; Int
 -&gt; Int
@@ -97,7 +97,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#nodes"><span class="hs-identifier hs-var hs-var">nodes</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
 </span><span id="line-42"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">success :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#success"><span class="hs-identifier hs-var">success</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
 forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
@@ -107,7 +107,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#success"><span class="hs-identifier hs-var hs-var">success</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
 </span><span id="line-43"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">failed :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#failed"><span class="hs-identifier hs-var">failed</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
 forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
@@ -117,7 +117,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#failed"><span class="hs-identifier hs-var hs-var">failed</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
 </span><span id="line-44"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">notProcessed :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#notProcessed"><span class="hs-identifier hs-var">notProcessed</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
 forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
@@ -127,7 +127,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#notProcessed"><span class="hs-identifier hs-var hs-var">notProcessed</span></a></span><span> </span><span class="annot"><span class="annottext">[TreeInfo]
-</span><a href="#local-6989586621680148746"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
+</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">synthesisInfoList</span></a></span><span>
 </span><span id="line-45"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">durationSuccess :: HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#durationSuccess"><span class="hs-identifier hs-var">durationSuccess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
@@ -135,7 +135,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int]
-</span><a href="#local-6989586621680148745"><span class="hs-identifier hs-var">durationSuccessList</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(HashMap Int Int -&gt; HashMap Int Int -&gt; HashMap Int Int)
+</span><a href="#local-6989586621680148703"><span class="hs-identifier hs-var">durationSuccessList</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(HashMap Int Int -&gt; HashMap Int Int -&gt; HashMap Int Int)
 -&gt; [HashMap Int Int] -&gt; HashMap Int Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">foldl1</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Int -&gt; Int -&gt; Int)
@@ -146,7 +146,7 @@ forall k v.
 </span><span class="hs-identifier hs-var">HM.unionWith</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">(+)</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int]
-</span><a href="#local-6989586621680148745"><span class="hs-identifier hs-var">durationSuccessList</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">HashMap Int Int
+</span><a href="#local-6989586621680148703"><span class="hs-identifier hs-var">durationSuccessList</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">HashMap Int Int
 forall k v. HashMap k v
 </span><span class="hs-identifier hs-var">HM.empty</span></span><span>
 </span><span id="line-46"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">stepsSuccess :: HashMap Int Int
@@ -156,7 +156,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int]
-</span><a href="#local-6989586621680148744"><span class="hs-identifier hs-var">stepsSuccessList</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(HashMap Int Int -&gt; HashMap Int Int -&gt; HashMap Int Int)
+</span><a href="#local-6989586621680148702"><span class="hs-identifier hs-var">stepsSuccessList</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">(HashMap Int Int -&gt; HashMap Int Int -&gt; HashMap Int Int)
 -&gt; [HashMap Int Int] -&gt; HashMap Int Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; a -&gt; a) -&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">foldl1</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Int -&gt; Int -&gt; Int)
@@ -167,13 +167,13 @@ forall k v.
 </span><span class="hs-identifier hs-var">HM.unionWith</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">(+)</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[HashMap Int Int]
-</span><a href="#local-6989586621680148744"><span class="hs-identifier hs-var">stepsSuccessList</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">HashMap Int Int
+</span><a href="#local-6989586621680148702"><span class="hs-identifier hs-var">stepsSuccessList</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">HashMap Int Int
 forall k v. HashMap k v
 </span><span class="hs-identifier hs-var">HM.empty</span></span><span>
 </span><span id="line-47"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-48"></span><span>
-</span><span id="line-49"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680148730"><span id="local-6989586621680148732"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-type">TreeInfo</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-50"></span><span>    </span><span id="local-6989586621680148728"><span class="annot"><span class="annottext">mempty :: TreeInfo
+</span><span id="line-49"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680148688"><span id="local-6989586621680148690"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Analysis.html#TreeInfo"><span class="hs-identifier hs-type">TreeInfo</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>    </span><span id="local-6989586621680148686"><span class="annot"><span class="annottext">mempty :: TreeInfo
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">mempty</span></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-51"></span><span>        </span><span class="annot"><span class="annottext">TreeInfo :: Int
 -&gt; Int
@@ -202,15 +202,15 @@ forall k v. HashMap k v
 </span><span id="line-58"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-59"></span><span>
 </span><span id="line-60"></span><span id="getTreeInfo"><span class="annot"><span class="annottext">getTreeInfo :: Tree (TargetSystem u tag v x t) tag v x t -&gt; IO TreeInfo
-</span><a href="NITTA.Synthesis.Analysis.html#getTreeInfo"><span class="hs-identifier hs-var hs-var">getTreeInfo</span></a></span></span><span> </span><span id="local-6989586621680148727"><span class="annot"><span class="annottext">tree :: Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">sID :: forall m tag v x t. Tree m tag v x t -&gt; SID
-</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span id="local-6989586621680148723"><span class="annot"><span class="annottext">sid :: [Int]
-</span><a href="#local-6989586621680148723"><span class="hs-identifier hs-var">sid</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680148722"><span class="annot"><span class="annottext">TMVar [Tree (TargetSystem u tag v x t) tag v x t]
+</span><a href="NITTA.Synthesis.Analysis.html#getTreeInfo"><span class="hs-identifier hs-var hs-var">getTreeInfo</span></a></span></span><span> </span><span id="local-6989586621680148685"><span class="annot"><span class="annottext">tree :: Tree (TargetSystem u tag v x t) tag v x t
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">sID :: forall m tag v x t. Tree m tag v x t -&gt; SID
+</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span id="local-6989586621680148681"><span class="annot"><span class="annottext">sid :: [Int]
+</span><a href="#local-6989586621680148681"><span class="hs-identifier hs-var">sid</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680148680"><span class="annot"><span class="annottext">TMVar [Tree (TargetSystem u tag v x t) tag v x t]
 sSubForestVar :: forall m tag v x t. Tree m tag v x t -&gt; TMVar [Tree m tag v x t]
 sSubForestVar :: TMVar [Tree (TargetSystem u tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Types.html#sSubForestVar"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-61"></span><span>    </span><span id="local-6989586621680148720"><span class="annot"><span class="annottext">Maybe [Tree (TargetSystem u tag v x t) tag v x t]
-</span><a href="#local-6989586621680148720"><span class="hs-identifier hs-var">subForestM</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM (Maybe [Tree (TargetSystem u tag v x t) tag v x t])
+</span><span id="line-61"></span><span>    </span><span id="local-6989586621680148678"><span class="annot"><span class="annottext">Maybe [Tree (TargetSystem u tag v x t) tag v x t]
+</span><a href="#local-6989586621680148678"><span class="hs-identifier hs-var">subForestM</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM (Maybe [Tree (TargetSystem u tag v x t) tag v x t])
 -&gt; IO (Maybe [Tree (TargetSystem u tag v x t) tag v x t])
 forall a. STM a -&gt; IO a
 </span><span class="hs-identifier hs-var">atomically</span></span><span> </span><span class="annot"><span class="annottext">(STM (Maybe [Tree (TargetSystem u tag v x t) tag v x t])
@@ -222,9 +222,9 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; STM (Maybe [Tree (TargetSystem u tag v x t) tag v x t])
 forall a. TMVar a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryReadTMVar</span></span><span> </span><span class="annot"><span class="annottext">TMVar [Tree (TargetSystem u tag v x t) tag v x t]
-</span><a href="#local-6989586621680148722"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span>
-</span><span id="line-62"></span><span>    </span><span id="local-6989586621680148717"><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO TreeInfo
+</span><a href="#local-6989586621680148680"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span id="local-6989586621680148675"><span class="annot"><span class="annottext">TreeInfo
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO TreeInfo
 -&gt; ([Tree (TargetSystem u tag v x t) tag v x t] -&gt; IO TreeInfo)
 -&gt; Maybe [Tree (TargetSystem u tag v x t) tag v x t]
 -&gt; IO TreeInfo
@@ -249,20 +249,20 @@ forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 (a -&gt; m b) -&gt; t a -&gt; m (t b)
 </span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t -&gt; IO TreeInfo
 </span><a href="NITTA.Synthesis.Analysis.html#getTreeInfo"><span class="hs-identifier hs-var">getTreeInfo</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe [Tree (TargetSystem u tag v x t) tag v x t]
-</span><a href="#local-6989586621680148720"><span class="hs-identifier hs-var">subForestM</span></a></span><span>
-</span><span id="line-63"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148713"><span class="annot"><span class="annottext">isSuccess :: Bool
-</span><a href="#local-6989586621680148713"><span class="hs-identifier hs-var hs-var">isSuccess</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
+</span><a href="#local-6989586621680148678"><span class="hs-identifier hs-var">subForestM</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148671"><span class="annot"><span class="annottext">isSuccess :: Bool
+</span><a href="#local-6989586621680148671"><span class="hs-identifier hs-var hs-var">isSuccess</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
 forall u v1 x1 t1 tag1 tag2 v2 x2 t2.
 ProcessorUnit u v1 x1 t1 =&gt;
 Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier hs-var">isComplete</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
 forall m tag v x t. Tree m tag v x t -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var">isLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-64"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148711"><span class="annot"><span class="annottext">isFail :: Bool
-</span><a href="#local-6989586621680148711"><span class="hs-identifier hs-var hs-var">isFail</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148669"><span class="annot"><span class="annottext">isFail :: Bool
+</span><a href="#local-6989586621680148669"><span class="hs-identifier hs-var hs-var">isFail</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool)
 -&gt; (Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool)
 -&gt; Tree (TargetSystem u tag v x t) tag v x t
@@ -273,13 +273,13 @@ forall u v1 x1 t1 tag1 tag2 v2 x2 t2.
 ProcessorUnit u v1 x1 t1 =&gt;
 Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier hs-var">isComplete</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
 forall m tag v x t. Tree m tag v x t -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var">isLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-65"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148710"><span class="annot"><span class="annottext">duration :: Int
-</span><a href="#local-6989586621680148710"><span class="hs-identifier hs-var hs-var">duration</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148668"><span class="annot"><span class="annottext">duration :: Int
+</span><a href="#local-6989586621680148668"><span class="hs-identifier hs-var hs-var">duration</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Int
 forall a. Enum a =&gt; a -&gt; Int
 </span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Int) -&gt; a -&gt; Int
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -301,17 +301,17 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; SynthesisState (TargetSystem u tag v x t) tag v x t
 forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var hs-var">sState</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem u tag v x t) tag v x t
-</span><a href="#local-6989586621680148727"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-66"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148706"><span class="annot"><span class="annottext">successDepends :: k -&gt; (TreeInfo -&gt; HashMap k v) -&gt; HashMap k v
-</span><a href="#local-6989586621680148706"><span class="hs-identifier hs-var hs-var">successDepends</span></a></span></span><span> </span><span id="local-6989586621680148705"><span class="annot"><span class="annottext">value :: k
-</span><a href="#local-6989586621680148705"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621680148704"><span class="annot"><span class="annottext">field :: TreeInfo -&gt; HashMap k v
-</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">field</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680148685"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680148664"><span class="annot"><span class="annottext">successDepends :: k -&gt; (TreeInfo -&gt; HashMap k v) -&gt; HashMap k v
+</span><a href="#local-6989586621680148664"><span class="hs-identifier hs-var hs-var">successDepends</span></a></span></span><span> </span><span id="local-6989586621680148663"><span class="annot"><span class="annottext">value :: k
+</span><a href="#local-6989586621680148663"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621680148662"><span class="annot"><span class="annottext">field :: TreeInfo -&gt; HashMap k v
+</span><a href="#local-6989586621680148662"><span class="hs-identifier hs-var">field</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-67"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680148713"><span class="hs-identifier hs-var">isSuccess</span></a></span><span>
+</span><a href="#local-6989586621680148671"><span class="hs-identifier hs-var">isSuccess</span></a></span><span>
 </span><span id="line-68"></span><span>                </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap k v
-</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148662"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-69"></span><span>                </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">(Maybe v -&gt; Maybe v) -&gt; k -&gt; HashMap k v -&gt; HashMap k v
 forall k v.
 (Eq k, Hashable k) =&gt;
@@ -325,11 +325,11 @@ forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 </span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; v -&gt; v
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680148705"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap k v -&gt; HashMap k v) -&gt; HashMap k v -&gt; HashMap k v
+</span><a href="#local-6989586621680148663"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap k v -&gt; HashMap k v) -&gt; HashMap k v -&gt; HashMap k v
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap k v
-</span><a href="#local-6989586621680148704"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148662"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-70"></span><span>    </span><span class="annot"><span class="annottext">TreeInfo -&gt; IO TreeInfo
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(TreeInfo -&gt; IO TreeInfo) -&gt; TreeInfo -&gt; IO TreeInfo
@@ -348,21 +348,21 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#nodes"><span class="hs-identifier hs-var hs-var">nodes</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-73"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">success :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#success"><span class="hs-identifier hs-var">success</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680148713"><span class="hs-identifier hs-var">isSuccess</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680148671"><span class="hs-identifier hs-var">isSuccess</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#success"><span class="hs-identifier hs-var hs-var">success</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-74"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">failed :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#failed"><span class="hs-identifier hs-var">failed</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680148711"><span class="hs-identifier hs-var">isFail</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680148669"><span class="hs-identifier hs-var">isFail</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#failed"><span class="hs-identifier hs-var hs-var">failed</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-75"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">notProcessed :: Int
 </span><a href="NITTA.Synthesis.Analysis.html#notProcessed"><span class="hs-identifier hs-var">notProcessed</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 -&gt; ([Tree (TargetSystem u tag v x t) tag v x t] -&gt; Int)
@@ -372,28 +372,28 @@ forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 </span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="hs-number">1</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; [Tree (TargetSystem u tag v x t) tag v x t] -&gt; Int
 forall a b. a -&gt; b -&gt; a
 </span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe [Tree (TargetSystem u tag v x t) tag v x t]
-</span><a href="#local-6989586621680148720"><span class="hs-identifier hs-var">subForestM</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680148678"><span class="hs-identifier hs-var">subForestM</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; Int
 </span><a href="NITTA.Synthesis.Analysis.html#notProcessed"><span class="hs-identifier hs-var hs-var">notProcessed</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo
-</span><a href="#local-6989586621680148717"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
+</span><a href="#local-6989586621680148675"><span class="hs-identifier hs-var">subForestInfo</span></a></span><span>
 </span><span id="line-76"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">durationSuccess :: HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#durationSuccess"><span class="hs-identifier hs-var">durationSuccess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (TreeInfo -&gt; HashMap Int Int) -&gt; HashMap Int Int
 forall k v.
 (Eq k, Hashable k, Num v) =&gt;
 k -&gt; (TreeInfo -&gt; HashMap k v) -&gt; HashMap k v
-</span><a href="#local-6989586621680148706"><span class="hs-identifier hs-var">successDepends</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680148710"><span class="hs-identifier hs-var">duration</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
+</span><a href="#local-6989586621680148664"><span class="hs-identifier hs-var">successDepends</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680148668"><span class="hs-identifier hs-var">duration</span></a></span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#durationSuccess"><span class="hs-identifier hs-var hs-var">durationSuccess</span></a></span><span>
 </span><span id="line-77"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">stepsSuccess :: HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#stepsSuccess"><span class="hs-identifier hs-var">stepsSuccess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; (TreeInfo -&gt; HashMap Int Int) -&gt; HashMap Int Int
 forall k v.
 (Eq k, Hashable k, Num v) =&gt;
 k -&gt; (TreeInfo -&gt; HashMap k v) -&gt; HashMap k v
-</span><a href="#local-6989586621680148706"><span class="hs-identifier hs-var">successDepends</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Int] -&gt; Int
+</span><a href="#local-6989586621680148664"><span class="hs-identifier hs-var">successDepends</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Int] -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680148723"><span class="hs-identifier hs-var">sid</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
+</span><a href="#local-6989586621680148681"><span class="hs-identifier hs-var">sid</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TreeInfo -&gt; HashMap Int Int
 </span><a href="NITTA.Synthesis.Analysis.html#stepsSuccess"><span class="hs-identifier hs-var hs-var">stepsSuccess</span></a></span><span>
 </span><span id="line-78"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-79"></span></pre></body></html>

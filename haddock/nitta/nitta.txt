@@ -82,6 +82,8 @@ minimumOn :: (Foldable t1, Ord a) => (t2 -> a) -> t1 t2 -> t2
 maximumOn :: (Foldable t1, Ord a) => (t2 -> a) -> t1 t2 -> t2
 toText :: ToString a => a -> Text
 showText :: Show a => a -> Text
+readText :: Read a => Text -> a
+fromText :: IsString a => Text -> a
 vsToStringList :: ToString a => Set a -> [String]
 
 
