@@ -39,7 +39,7 @@ test_multiple_receives =
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
                     { tName = "receive_two_variables"
-                    , tMicroArch = marchSPI True pInt
+                    , tMicroArch = marchSPI "spi" True pInt
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph
@@ -54,7 +54,7 @@ test_multiple_receives =
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
                     { tName = "receive_variable_two_times"
-                    , tMicroArch = marchSPI True pInt
+                    , tMicroArch = marchSPI "spi" True pInt
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph

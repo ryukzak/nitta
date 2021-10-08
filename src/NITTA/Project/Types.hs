@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -29,6 +28,7 @@ module NITTA.Project.Types (
 ) where
 
 import Data.Default
+import qualified Data.Set as S
 import qualified Data.Text as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
@@ -129,6 +129,11 @@ instance Default (UnitEnv m) where
             , valueOut = Nothing
             }
 
-envInputPorts UnitEnv{ioPorts} = concatMap inputPorts ioPorts
-envOutputPorts UnitEnv{ioPorts} = concatMap outputPorts ioPorts
-envInOutPorts UnitEnv{ioPorts} = concatMap inoutPorts ioPorts
+envInputPorts UnitEnv{ioPorts = Just ports} = inputPorts ports
+envInputPorts UnitEnv{ioPorts = Nothing} = S.empty
+
+envOutputPorts UnitEnv{ioPorts = Just ports} = outputPorts ports
+envOutputPorts UnitEnv{ioPorts = Nothing} = S.empty
+
+envInOutPorts UnitEnv{ioPorts = Just ports} = inoutPorts ports
+envInOutPorts UnitEnv{ioPorts = Nothing} = S.empty

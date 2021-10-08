@@ -52,8 +52,8 @@ test_fibonacci =
         , F.loop 1 "c" ["b1", "b2"]
         , F.add "a1" "b1" ["c"]
         ]
-    , algTestCase "io_drop_data" (marchSPIDropData True pInt) algWithSend
-    , algTestCase "io_no_drop_data" (marchSPI True pInt) algWithSend
+    , algTestCase "io_drop_data" (marchSPIDropData "spi" True pInt) algWithSend
+    , algTestCase "io_no_drop_data" (marchSPI "spi" True pInt) algWithSend
     ]
     where
         algWithSend =
@@ -69,7 +69,7 @@ test_add_and_io =
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
                     { tName = "receive_4_variables"
-                    , tMicroArch = marchSPI True pInt
+                    , tMicroArch = marchSPI "spi" True pInt
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25]), ("e", [0 .. 25]), ("f", [20 .. 30])]
                     , tDFG =
                         fsToDataFlowGraph

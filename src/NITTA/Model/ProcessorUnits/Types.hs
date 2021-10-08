@@ -61,6 +61,7 @@ import Data.Either
 import Data.Kind
 import qualified Data.List as L
 import Data.Maybe
+import qualified Data.Set as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
@@ -344,16 +345,16 @@ class IOConnected pu where
     data IOPorts pu :: Type
 
     -- |External input ports, which go outside of NITTA mUnit.
-    inputPorts :: IOPorts pu -> [InputPortTag]
-    inputPorts _ = []
+    inputPorts :: IOPorts pu -> S.Set InputPortTag
+    inputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
-    outputPorts :: IOPorts pu -> [OutputPortTag]
-    outputPorts _ = []
+    outputPorts :: IOPorts pu -> S.Set OutputPortTag
+    outputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
-    inoutPorts :: IOPorts pu -> [InoutPortTag]
-    inoutPorts _ = []
+    inoutPorts :: IOPorts pu -> S.Set InoutPortTag
+    inoutPorts _ = S.empty
 
 newtype InputPortTag = InputPortTag {inputPortTag :: T.Text} deriving (Eq, Ord)
 instance Show InputPortTag where show = toString . inputPortTag

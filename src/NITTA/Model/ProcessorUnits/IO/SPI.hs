@@ -22,6 +22,8 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
     anySPI,
     Ports (..),
     IOPorts (..),
+    spiMasterPorts,
+    spiSlavePorts,
 ) where
 
 import Data.Aeson
@@ -29,6 +31,7 @@ import Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
+import qualified Data.Set as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -75,11 +78,27 @@ instance IOConnected (SPI v x t) where
             }
         deriving (Show)
 
-    inputPorts SPISlave{..} = [slave_mosi, slave_sclk, slave_cs]
-    inputPorts SPIMaster{..} = [master_miso]
+    inputPorts SPISlave{..} = S.fromList [slave_mosi, slave_sclk, slave_cs]
+    inputPorts SPIMaster{..} = S.fromList [master_miso]
 
-    outputPorts SPISlave{..} = [slave_miso]
-    outputPorts SPIMaster{..} = [master_mosi, master_sclk, master_cs]
+    outputPorts SPISlave{..} = S.fromList [slave_miso]
+    outputPorts SPIMaster{..} = S.fromList [master_mosi, master_sclk, master_cs]
+
+spiMasterPorts tag =
+    SPIMaster
+        { master_mosi = OutputPortTag $ tag <> "_mosi"
+        , master_miso = InputPortTag $ tag <> "_miso"
+        , master_sclk = OutputPortTag $ tag <> "_sclk"
+        , master_cs = OutputPortTag $ tag <> "_cs"
+        }
+
+spiSlavePorts tag =
+    SPISlave
+        { slave_mosi = InputPortTag $ tag <> "_mosi"
+        , slave_miso = OutputPortTag $ tag <> "_miso"
+        , slave_sclk = InputPortTag $ tag <> "_sclk"
+        , slave_cs = InputPortTag $ tag <> "_cs"
+        }
 
 instance (Time t) => Default (SPI v x t) where
     def = anySPI 0 $ Just 6
