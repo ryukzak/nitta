@@ -35,18 +35,18 @@ span.spaces    { background: white }
 <span class="lineno">   16 </span>-}
 <span class="lineno">   17 </span>module NITTA.Model.Microarchitecture.Builder (
 <span class="lineno">   18 </span>    defineNetwork,
-<span class="lineno">   19 </span>    add,
-<span class="lineno">   20 </span>    addCustom,
-<span class="lineno">   21 </span>    MicroarchitectureDesc (..),
-<span class="lineno">   22 </span>    NetworkDesc (..),
-<span class="lineno">   23 </span>    UnitDesc (..),
-<span class="lineno">   24 </span>    microarchitectureDesc,
-<span class="lineno">   25 </span>) where
-<span class="lineno">   26 </span>
-<span class="lineno">   27 </span>import Control.Monad.State.Lazy
-<span class="lineno">   28 </span>import Data.Aeson
-<span class="lineno">   29 </span>import Data.Default
-<span class="lineno">   30 </span>import qualified Data.List as L
+<span class="lineno">   19 </span>    modifyNetwork,
+<span class="lineno">   20 </span>    add,
+<span class="lineno">   21 </span>    addCustom,
+<span class="lineno">   22 </span>    MicroarchitectureDesc (..),
+<span class="lineno">   23 </span>    NetworkDesc (..),
+<span class="lineno">   24 </span>    UnitDesc (..),
+<span class="lineno">   25 </span>    microarchitectureDesc,
+<span class="lineno">   26 </span>) where
+<span class="lineno">   27 </span>
+<span class="lineno">   28 </span>import Control.Monad.State.Lazy
+<span class="lineno">   29 </span>import Data.Aeson
+<span class="lineno">   30 </span>import Data.Default
 <span class="lineno">   31 </span>import qualified Data.Map.Strict as M
 <span class="lineno">   32 </span>import qualified Data.Text as T
 <span class="lineno">   33 </span>import Data.Typeable
@@ -59,109 +59,107 @@ span.spaces    { background: white }
 <span class="lineno">   40 </span>
 <span class="lineno">   41 </span>data BuilderSt tag v x t = BuilderSt
 <span class="lineno">   42 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">signalBusWidth</span></span></span> :: Int
-<span class="lineno">   43 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">availPorts</span></span></span> :: [SignalTag]
-<span class="lineno">   44 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">puProtos</span></span></span> :: [(tag, PU v x t)]
-<span class="lineno">   45 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">netEnv</span></span></span> :: UnitEnv (BusNetwork tag v x t)
-<span class="lineno">   46 </span>    }
-<span class="lineno">   47 </span>
-<span class="lineno">   48 </span>-- |Define microarchitecture with BusNetwork
-<span class="lineno">   49 </span><span class="decl"><span class="istickedoff">defineNetwork bnName ioSync builder =</span>
-<span class="lineno">   50 </span><span class="spaces">    </span><span class="istickedoff">let defEnv = def</span>
-<span class="lineno">   51 </span><span class="spaces">        </span><span class="istickedoff">st0 =</span>
-<span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">BuilderSt</span>
-<span class="lineno">   53 </span><span class="spaces">                </span><span class="istickedoff">{ signalBusWidth = 0</span>
-<span class="lineno">   54 </span><span class="spaces">                </span><span class="istickedoff">, availPorts = map (SignalTag . controlSignalLiteral) [0 :: Int ..]</span>
-<span class="lineno">   55 </span><span class="spaces">                </span><span class="istickedoff">, puProtos = []</span>
-<span class="lineno">   56 </span><span class="spaces">                </span><span class="istickedoff">, netEnv = defEnv</span>
-<span class="lineno">   57 </span><span class="spaces">                </span><span class="istickedoff">}</span>
-<span class="lineno">   58 </span><span class="spaces">        </span><span class="istickedoff">BuilderSt{signalBusWidth, puProtos} = flip execState st0 $ void builder</span>
-<span class="lineno">   59 </span><span class="spaces">        </span><span class="istickedoff">netIOPorts =</span>
-<span class="lineno">   60 </span><span class="spaces">            </span><span class="istickedoff">BusNetworkIO</span>
-<span class="lineno">   61 </span><span class="spaces">                </span><span class="istickedoff">{ extInputs = L.nub $ concatMap (puInputPorts . snd) puProtos</span>
-<span class="lineno">   62 </span><span class="spaces">                </span><span class="istickedoff">, extOutputs = L.nub $ concatMap (puOutputPorts . snd) puProtos</span>
-<span class="lineno">   63 </span><span class="spaces">                </span><span class="istickedoff">, extInOuts = <span class="nottickedoff">L.nub $ concatMap (puInOutPorts . snd) puProtos</span></span>
-<span class="lineno">   64 </span><span class="spaces">                </span><span class="istickedoff">}</span>
-<span class="lineno">   65 </span><span class="spaces">     </span><span class="istickedoff">in BusNetwork</span>
-<span class="lineno">   66 </span><span class="spaces">            </span><span class="istickedoff">{ bnName</span>
-<span class="lineno">   67 </span><span class="spaces">            </span><span class="istickedoff">, bnRemains = []</span>
-<span class="lineno">   68 </span><span class="spaces">            </span><span class="istickedoff">, bnBinded = M.empty</span>
-<span class="lineno">   69 </span><span class="spaces">            </span><span class="istickedoff">, bnProcess = def</span>
-<span class="lineno">   70 </span><span class="spaces">            </span><span class="istickedoff">, bnPus = M.fromList puProtos</span>
-<span class="lineno">   71 </span><span class="spaces">            </span><span class="istickedoff">, bnSignalBusWidth = signalBusWidth</span>
-<span class="lineno">   72 </span><span class="spaces">            </span><span class="istickedoff">, ioSync</span>
-<span class="lineno">   73 </span><span class="spaces">            </span><span class="istickedoff">, bnEnv = defEnv{ioPorts = Just netIOPorts}</span>
-<span class="lineno">   74 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">   75 </span>
-<span class="lineno">   76 </span>-- |Add PU with the default initial state. Type specify by IOPorts.
-<span class="lineno">   77 </span><span class="decl"><span class="istickedoff">add tag ioport = addCustom tag def ioport</span></span>
-<span class="lineno">   78 </span>
-<span class="lineno">   79 </span>-- |Add PU with the custom initial state. Type specify by IOPorts.
-<span class="lineno">   80 </span><span class="decl"><span class="istickedoff">addCustom tag pu ioports = do</span>
-<span class="lineno">   81 </span><span class="spaces">    </span><span class="istickedoff">st@BuilderSt{signalBusWidth, availPorts, puProtos, netEnv} &lt;- get</span>
-<span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">let ports = takePortTags availPorts pu</span>
-<span class="lineno">   83 </span><span class="spaces">        </span><span class="istickedoff">pu' =</span>
-<span class="lineno">   84 </span><span class="spaces">            </span><span class="istickedoff">PU</span>
-<span class="lineno">   85 </span><span class="spaces">                </span><span class="istickedoff">pu</span>
-<span class="lineno">   86 </span><span class="spaces">                </span><span class="istickedoff">def</span>
-<span class="lineno">   87 </span><span class="spaces">                </span><span class="istickedoff">netEnv</span>
-<span class="lineno">   88 </span><span class="spaces">                    </span><span class="istickedoff">{ ctrlPorts = Just ports</span>
-<span class="lineno">   89 </span><span class="spaces">                    </span><span class="istickedoff">, ioPorts = Just ioports</span>
-<span class="lineno">   90 </span><span class="spaces">                    </span><span class="istickedoff">, valueIn = Just (&quot;data_bus&quot;, &quot;attr_bus&quot;)</span>
-<span class="lineno">   91 </span><span class="spaces">                    </span><span class="istickedoff">, valueOut = Just (toText tag &lt;&gt; &quot;_data_out&quot;, toText tag &lt;&gt; &quot;_attr_out&quot;)</span>
-<span class="lineno">   92 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff">usedPorts = usedPortTags ports</span>
-<span class="lineno">   94 </span><span class="spaces">    </span><span class="istickedoff">put</span>
-<span class="lineno">   95 </span><span class="spaces">        </span><span class="istickedoff">st</span>
-<span class="lineno">   96 </span><span class="spaces">            </span><span class="istickedoff">{ signalBusWidth = signalBusWidth + length usedPorts</span>
-<span class="lineno">   97 </span><span class="spaces">            </span><span class="istickedoff">, availPorts = drop (length usedPorts) availPorts</span>
-<span class="lineno">   98 </span><span class="spaces">            </span><span class="istickedoff">, puProtos = (tag, pu') : puProtos</span>
-<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  100 </span>
-<span class="lineno">  101 </span>data MicroarchitectureDesc tag = MicroarchitectureDesc
-<span class="lineno">  102 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">networks</span></span></span> :: [NetworkDesc tag]
-<span class="lineno">  103 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">ioSyncMode</span></span></span> :: IOSynchronization
-<span class="lineno">  104 </span>    }
-<span class="lineno">  105 </span>    deriving (Generic)
+<span class="lineno">   43 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">availSignals</span></span></span> :: [SignalTag]
+<span class="lineno">   44 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pus</span></span></span> :: M.Map tag (PU v x t)
+<span class="lineno">   45 </span>    }
+<span class="lineno">   46 </span>
+<span class="lineno">   47 </span><span class="decl"><span class="istickedoff">netIOPorts pus =</span>
+<span class="lineno">   48 </span><span class="spaces">    </span><span class="istickedoff">BusNetworkIO</span>
+<span class="lineno">   49 </span><span class="spaces">        </span><span class="istickedoff">{ extInputs = setOf puInputPorts</span>
+<span class="lineno">   50 </span><span class="spaces">        </span><span class="istickedoff">, extOutputs = setOf puOutputPorts</span>
+<span class="lineno">   51 </span><span class="spaces">        </span><span class="istickedoff">, extInOuts = <span class="nottickedoff">setOf puInOutPorts</span></span>
+<span class="lineno">   52 </span><span class="spaces">        </span><span class="istickedoff">}</span>
+<span class="lineno">   53 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">   54 </span><span class="spaces">        </span><span class="istickedoff">setOf ioPorts = unionsMap ioPorts pus</span></span>
+<span class="lineno">   55 </span>
+<span class="lineno">   56 </span><span class="decl"><span class="istickedoff">modifyNetwork net@BusNetwork{bnPus, bnSignalBusWidth, bnEnv} builder =</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">let st0 =</span>
+<span class="lineno">   58 </span><span class="spaces">            </span><span class="istickedoff">BuilderSt</span>
+<span class="lineno">   59 </span><span class="spaces">                </span><span class="istickedoff">{ signalBusWidth = bnSignalBusWidth</span>
+<span class="lineno">   60 </span><span class="spaces">                </span><span class="istickedoff">, availSignals = map (SignalTag . controlSignalLiteral) [bnSignalBusWidth :: Int ..]</span>
+<span class="lineno">   61 </span><span class="spaces">                </span><span class="istickedoff">, pus = bnPus</span>
+<span class="lineno">   62 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">   63 </span><span class="spaces">        </span><span class="istickedoff">BuilderSt{signalBusWidth, pus} = execState builder st0</span>
+<span class="lineno">   64 </span><span class="spaces">     </span><span class="istickedoff">in net</span>
+<span class="lineno">   65 </span><span class="spaces">            </span><span class="istickedoff">{ bnPus = pus</span>
+<span class="lineno">   66 </span><span class="spaces">            </span><span class="istickedoff">, bnSignalBusWidth = signalBusWidth</span>
+<span class="lineno">   67 </span><span class="spaces">            </span><span class="istickedoff">, bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ M.elems pus}</span>
+<span class="lineno">   68 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   69 </span>
+<span class="lineno">   70 </span><span class="decl"><span class="istickedoff">defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder</span></span>
+<span class="lineno">   71 </span>
+<span class="lineno">   72 </span><span class="decl"><span class="istickedoff">puEnv tag ctrlPorts ioPorts =</span>
+<span class="lineno">   73 </span><span class="spaces">    </span><span class="istickedoff">def</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="istickedoff">{ ctrlPorts = Just ctrlPorts</span>
+<span class="lineno">   75 </span><span class="spaces">        </span><span class="istickedoff">, ioPorts = Just ioPorts</span>
+<span class="lineno">   76 </span><span class="spaces">        </span><span class="istickedoff">, valueIn = Just (&quot;data_bus&quot;, &quot;attr_bus&quot;)</span>
+<span class="lineno">   77 </span><span class="spaces">        </span><span class="istickedoff">, valueOut = Just (toText tag &lt;&gt; &quot;_data_out&quot;, toText tag &lt;&gt; &quot;_attr_out&quot;)</span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>-- |Add PU with the custom initial state. Type specify by IOPorts.
+<span class="lineno">   81 </span><span class="decl"><span class="istickedoff">addCustom tag pu ioPorts = do</span>
+<span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">st@BuilderSt{signalBusWidth, availSignals, pus} &lt;- get</span>
+<span class="lineno">   83 </span><span class="spaces">    </span><span class="istickedoff">let ctrlPorts = takePortTags availSignals pu</span>
+<span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">pu' = PU pu def $ puEnv tag ctrlPorts ioPorts</span>
+<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">usedPortsLen = length $ usedPortTags ctrlPorts</span>
+<span class="lineno">   86 </span><span class="spaces">    </span><span class="istickedoff">put</span>
+<span class="lineno">   87 </span><span class="spaces">        </span><span class="istickedoff">st</span>
+<span class="lineno">   88 </span><span class="spaces">            </span><span class="istickedoff">{ signalBusWidth = signalBusWidth + usedPortsLen</span>
+<span class="lineno">   89 </span><span class="spaces">            </span><span class="istickedoff">, availSignals = drop usedPortsLen availSignals</span>
+<span class="lineno">   90 </span><span class="spaces">            </span><span class="istickedoff">, pus =</span>
+<span class="lineno">   91 </span><span class="spaces">                </span><span class="istickedoff">if <span class="tickonlyfalse">M.member tag pus</span></span>
+<span class="lineno">   92 </span><span class="spaces">                    </span><span class="istickedoff">then <span class="nottickedoff">error &quot;every PU must has uniq tag&quot;</span></span>
+<span class="lineno">   93 </span><span class="spaces">                    </span><span class="istickedoff">else M.insert tag pu' pus</span>
+<span class="lineno">   94 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span>-- |Add PU with the default initial state. Type specify by IOPorts.
+<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">add tag ioport = addCustom tag def ioport</span></span>
+<span class="lineno">   98 </span>
+<span class="lineno">   99 </span>data MicroarchitectureDesc tag = MicroarchitectureDesc
+<span class="lineno">  100 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">networks</span></span></span> :: [NetworkDesc tag]
+<span class="lineno">  101 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">ioSyncMode</span></span></span> :: IOSynchronization
+<span class="lineno">  102 </span>    }
+<span class="lineno">  103 </span>    deriving (Generic)
+<span class="lineno">  104 </span>
+<span class="lineno">  105 </span>instance (ToJSON tag) =&gt; ToJSON (MicroarchitectureDesc tag)
 <span class="lineno">  106 </span>
-<span class="lineno">  107 </span>instance (ToJSON tag) =&gt; ToJSON (MicroarchitectureDesc tag)
-<span class="lineno">  108 </span>
-<span class="lineno">  109 </span>data NetworkDesc tag = NetworkDesc
-<span class="lineno">  110 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">networkTag</span></span></span> :: tag
-<span class="lineno">  111 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">valueType</span></span></span> :: T.Text
-<span class="lineno">  112 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">units</span></span></span> :: [UnitDesc tag]
-<span class="lineno">  113 </span>    }
-<span class="lineno">  114 </span>    deriving (Generic)
+<span class="lineno">  107 </span>data NetworkDesc tag = NetworkDesc
+<span class="lineno">  108 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">networkTag</span></span></span> :: tag
+<span class="lineno">  109 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">valueType</span></span></span> :: T.Text
+<span class="lineno">  110 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">units</span></span></span> :: [UnitDesc tag]
+<span class="lineno">  111 </span>    }
+<span class="lineno">  112 </span>    deriving (Generic)
+<span class="lineno">  113 </span>
+<span class="lineno">  114 </span>instance (ToJSON tag) =&gt; ToJSON (NetworkDesc tag)
 <span class="lineno">  115 </span>
-<span class="lineno">  116 </span>instance (ToJSON tag) =&gt; ToJSON (NetworkDesc tag)
-<span class="lineno">  117 </span>
-<span class="lineno">  118 </span>data UnitDesc tag = UnitDesc
-<span class="lineno">  119 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitTag</span></span></span> :: tag
-<span class="lineno">  120 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitType</span></span></span> :: T.Text
-<span class="lineno">  121 </span>    }
-<span class="lineno">  122 </span>    deriving (Generic)
+<span class="lineno">  116 </span>data UnitDesc tag = UnitDesc
+<span class="lineno">  117 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitTag</span></span></span> :: tag
+<span class="lineno">  118 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitType</span></span></span> :: T.Text
+<span class="lineno">  119 </span>    }
+<span class="lineno">  120 </span>    deriving (Generic)
+<span class="lineno">  121 </span>
+<span class="lineno">  122 </span>instance (ToJSON tag) =&gt; ToJSON (UnitDesc tag)
 <span class="lineno">  123 </span>
-<span class="lineno">  124 </span>instance (ToJSON tag) =&gt; ToJSON (UnitDesc tag)
-<span class="lineno">  125 </span>
-<span class="lineno">  126 </span>microarchitectureDesc :: forall tag v x t. (Typeable x) =&gt; BusNetwork tag v x t -&gt; MicroarchitectureDesc tag
-<span class="lineno">  127 </span><span class="decl"><span class="nottickedoff">microarchitectureDesc BusNetwork{bnName, bnPus, ioSync} =</span>
-<span class="lineno">  128 </span><span class="spaces">    </span><span class="nottickedoff">MicroarchitectureDesc</span>
-<span class="lineno">  129 </span><span class="spaces">        </span><span class="nottickedoff">{ networks =</span>
-<span class="lineno">  130 </span><span class="spaces">            </span><span class="nottickedoff">[ NetworkDesc</span>
-<span class="lineno">  131 </span><span class="spaces">                </span><span class="nottickedoff">{ networkTag = bnName</span>
-<span class="lineno">  132 </span><span class="spaces">                </span><span class="nottickedoff">, valueType = showText $ typeRep (Proxy :: Proxy x)</span>
-<span class="lineno">  133 </span><span class="spaces">                </span><span class="nottickedoff">, units =</span>
-<span class="lineno">  134 </span><span class="spaces">                    </span><span class="nottickedoff">map</span>
-<span class="lineno">  135 </span><span class="spaces">                        </span><span class="nottickedoff">( \(tag, PU{unit}) -&gt;</span>
-<span class="lineno">  136 </span><span class="spaces">                            </span><span class="nottickedoff">UnitDesc</span>
-<span class="lineno">  137 </span><span class="spaces">                                </span><span class="nottickedoff">{ unitTag = tag</span>
-<span class="lineno">  138 </span><span class="spaces">                                </span><span class="nottickedoff">, unitType = T.pack $ takeWhile (' ' /=) $ show $ typeOf unit</span>
-<span class="lineno">  139 </span><span class="spaces">                                </span><span class="nottickedoff">}</span>
-<span class="lineno">  140 </span><span class="spaces">                        </span><span class="nottickedoff">)</span>
-<span class="lineno">  141 </span><span class="spaces">                        </span><span class="nottickedoff">$ M.assocs bnPus</span>
-<span class="lineno">  142 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  143 </span><span class="spaces">            </span><span class="nottickedoff">]</span>
-<span class="lineno">  144 </span><span class="spaces">        </span><span class="nottickedoff">, ioSyncMode = ioSync</span>
-<span class="lineno">  145 </span><span class="spaces">        </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  124 </span>microarchitectureDesc :: forall tag v x t. (Typeable x) =&gt; BusNetwork tag v x t -&gt; MicroarchitectureDesc tag
+<span class="lineno">  125 </span><span class="decl"><span class="nottickedoff">microarchitectureDesc BusNetwork{bnName, bnPus, ioSync} =</span>
+<span class="lineno">  126 </span><span class="spaces">    </span><span class="nottickedoff">MicroarchitectureDesc</span>
+<span class="lineno">  127 </span><span class="spaces">        </span><span class="nottickedoff">{ networks =</span>
+<span class="lineno">  128 </span><span class="spaces">            </span><span class="nottickedoff">[ NetworkDesc</span>
+<span class="lineno">  129 </span><span class="spaces">                </span><span class="nottickedoff">{ networkTag = bnName</span>
+<span class="lineno">  130 </span><span class="spaces">                </span><span class="nottickedoff">, valueType = showText $ typeRep (Proxy :: Proxy x)</span>
+<span class="lineno">  131 </span><span class="spaces">                </span><span class="nottickedoff">, units =</span>
+<span class="lineno">  132 </span><span class="spaces">                    </span><span class="nottickedoff">map</span>
+<span class="lineno">  133 </span><span class="spaces">                        </span><span class="nottickedoff">( \(tag, PU{unit}) -&gt;</span>
+<span class="lineno">  134 </span><span class="spaces">                            </span><span class="nottickedoff">UnitDesc</span>
+<span class="lineno">  135 </span><span class="spaces">                                </span><span class="nottickedoff">{ unitTag = tag</span>
+<span class="lineno">  136 </span><span class="spaces">                                </span><span class="nottickedoff">, unitType = T.pack $ takeWhile (' ' /=) $ show $ typeOf unit</span>
+<span class="lineno">  137 </span><span class="spaces">                                </span><span class="nottickedoff">}</span>
+<span class="lineno">  138 </span><span class="spaces">                        </span><span class="nottickedoff">)</span>
+<span class="lineno">  139 </span><span class="spaces">                        </span><span class="nottickedoff">$ M.assocs bnPus</span>
+<span class="lineno">  140 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  141 </span><span class="spaces">            </span><span class="nottickedoff">]</span>
+<span class="lineno">  142 </span><span class="spaces">        </span><span class="nottickedoff">, ioSyncMode = ioSync</span>
+<span class="lineno">  143 </span><span class="spaces">        </span><span class="nottickedoff">}</span></span>
 
 </pre>
 </body>

@@ -36,9 +36,9 @@ Stability   : experimental
 </span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Interval.NonEmpty</span></span><span>
 </span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Servant.Docs</span></span><span>
 </span><span id="line-38"></span><span>
-</span><span id="line-39"></span><span id="local-6989586621680144896"><span id="local-6989586621680144897"></span></span><span class="hs-keyword">data</span><span> </span><span id="ProcessTimelines"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-var">ProcessTimelines</span></a></span></span><span> </span><span id="local-6989586621680145015"><span class="annot"><a href="#local-6989586621680145015"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ProcessTimelines"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-var">ProcessTimelines</span></a></span></span><span>
+</span><span id="line-39"></span><span id="local-6989586621680146686"><span id="local-6989586621680146687"></span></span><span class="hs-keyword">data</span><span> </span><span id="ProcessTimelines"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-var">ProcessTimelines</span></a></span></span><span> </span><span id="local-6989586621680146805"><span class="annot"><a href="#local-6989586621680146805"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ProcessTimelines"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-var">ProcessTimelines</span></a></span></span><span>
 </span><span id="line-40"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Atimelines%3AProcessTimelines"><span class="annot"><span class="annottext">ProcessTimelines t -&gt; [TimelineWithViewPoint t]
-</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Atimelines%3AProcessTimelines"><span class="hs-identifier hs-var hs-var">timelines</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680145015"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Atimelines%3AProcessTimelines"><span class="hs-identifier hs-var hs-var">timelines</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146805"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-41"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AverticalRelations%3AProcessTimelines"><span class="annot"><span class="annottext">ProcessTimelines t -&gt; [(ProcessStepID, ProcessStepID)]
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AverticalRelations%3AProcessTimelines"><span class="hs-identifier hs-var hs-var">verticalRelations</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#ProcessStepID"><span class="hs-identifier hs-type">ProcessStepID</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#ProcessStepID"><span class="hs-identifier hs-type">ProcessStepID</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-42"></span><span>    </span><span class="hs-special">}</span><span>
@@ -55,11 +55,11 @@ $cto :: forall t x. Rep (ProcessTimelines t) x -&gt; ProcessTimelines t
 $cfrom :: forall t x. ProcessTimelines t -&gt; Rep (ProcessTimelines t) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-44"></span><span>
-</span><span id="line-45"></span><span id="local-6989586621680144888"><span id="local-6989586621680144889"></span></span><span class="hs-keyword">data</span><span> </span><span id="TimelineWithViewPoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-var">TimelineWithViewPoint</span></a></span></span><span> </span><span id="local-6989586621680145003"><span class="annot"><a href="#local-6989586621680145003"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TimelineWithViewPoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-var">TimelineWithViewPoint</span></a></span></span><span>
+</span><span id="line-45"></span><span id="local-6989586621680146678"><span id="local-6989586621680146679"></span></span><span class="hs-keyword">data</span><span> </span><span id="TimelineWithViewPoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-var">TimelineWithViewPoint</span></a></span></span><span> </span><span id="local-6989586621680146793"><span class="annot"><a href="#local-6989586621680146793"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TimelineWithViewPoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-var">TimelineWithViewPoint</span></a></span></span><span>
 </span><span id="line-46"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AtimelineViewpoint%3ATimelineWithViewPoint"><span class="annot"><span class="annottext">TimelineWithViewPoint t -&gt; ViewPointID
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AtimelineViewpoint%3ATimelineWithViewPoint"><span class="hs-identifier hs-var hs-var">timelineViewpoint</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span><span>
 </span><span id="line-47"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AtimelinePoints%3ATimelineWithViewPoint"><span class="annot"><span class="annottext">TimelineWithViewPoint t -&gt; [[TimelinePoint t]]
-</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AtimelinePoints%3ATimelineWithViewPoint"><span class="hs-identifier hs-var hs-var">timelinePoints</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680145003"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AtimelinePoints%3ATimelineWithViewPoint"><span class="hs-identifier hs-var hs-var">timelinePoints</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146793"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
 </span><span id="line-48"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-49"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x.
  TimelineWithViewPoint t -&gt; Rep (TimelineWithViewPoint t) x)
@@ -82,14 +82,14 @@ $cfrom :: forall t x.
 TimelineWithViewPoint t -&gt; Rep (TimelineWithViewPoint t) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-50"></span><span>
-</span><span id="line-51"></span><span id="local-6989586621680144882"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144877"><span id="local-6989586621680144880"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-52"></span><span>    </span><span id="local-6989586621680144875"><span class="annot"><span class="annottext">show :: ProcessTimelines t -&gt; String
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144873"><span class="annot"><span class="annottext">[TimelineWithViewPoint t]
+</span><span id="line-51"></span><span id="local-6989586621680146672"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146667"><span id="local-6989586621680146670"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146672"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146672"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>    </span><span id="local-6989586621680146665"><span class="annot"><span class="annottext">show :: ProcessTimelines t -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146663"><span class="annot"><span class="annottext">[TimelineWithViewPoint t]
 timelines :: [TimelineWithViewPoint t]
 $sel:timelines:ProcessTimelines :: forall t. ProcessTimelines t -&gt; [TimelineWithViewPoint t]
-</span><a href="#local-6989586621680144873"><span class="hs-identifier hs-var hs-var">timelines</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-53"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680144872"><span class="annot"><span class="annottext">vpLength :: ProcessStepID
-</span><a href="#local-6989586621680144872"><span class="hs-identifier hs-var hs-var">vpLength</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID] -&gt; ProcessStepID
+</span><a href="#local-6989586621680146663"><span class="hs-identifier hs-var hs-var">timelines</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-53"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680146662"><span class="annot"><span class="annottext">vpLength :: ProcessStepID
+</span><a href="#local-6989586621680146662"><span class="hs-identifier hs-var hs-var">vpLength</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID] -&gt; ProcessStepID
 forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">([ProcessStepID] -&gt; ProcessStepID)
 -&gt; [ProcessStepID] -&gt; ProcessStepID
@@ -114,29 +114,29 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TimelineWithViewPoint t -&gt; ViewPointID
 forall t. TimelineWithViewPoint t -&gt; ViewPointID
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AtimelineViewpoint%3ATimelineWithViewPoint"><span class="hs-identifier hs-var hs-var">timelineViewpoint</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[TimelineWithViewPoint t]
-</span><a href="#local-6989586621680144873"><span class="hs-identifier hs-var">timelines</span></a></span><span>
-</span><span id="line-54"></span><span>            </span><span id="local-6989586621680144868"><span class="annot"><span class="annottext">normalizeVP :: ShowS
-</span><a href="#local-6989586621680144868"><span class="hs-identifier hs-var hs-var">normalizeVP</span></a></span></span><span> </span><span id="local-6989586621680144867"><span class="annot"><span class="annottext">s :: String
-</span><a href="#local-6989586621680144867"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680144867"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680146663"><span class="hs-identifier hs-var">timelines</span></a></span><span>
+</span><span id="line-54"></span><span>            </span><span id="local-6989586621680146658"><span class="annot"><span class="annottext">normalizeVP :: ShowS
+</span><a href="#local-6989586621680146658"><span class="hs-identifier hs-var hs-var">normalizeVP</span></a></span></span><span> </span><span id="local-6989586621680146657"><span class="annot"><span class="annottext">s :: String
+</span><a href="#local-6989586621680146657"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680146657"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">ProcessStepID -&gt; Char -&gt; String
 forall a. ProcessStepID -&gt; a -&gt; [a]
 </span><span class="hs-identifier hs-var">replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680144872"><span class="hs-identifier hs-var">vpLength</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID -&gt; ProcessStepID -&gt; ProcessStepID
+</span><a href="#local-6989586621680146662"><span class="hs-identifier hs-var">vpLength</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID -&gt; ProcessStepID -&gt; ProcessStepID
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ProcessStepID
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; ProcessStepID
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680144867"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-char">' '</span></span><span>
-</span><span id="line-55"></span><span>            </span><span id="local-6989586621680144865"><span class="annot"><span class="annottext">line :: ViewPointID -&gt; [[TimelinePoint t]] -&gt; String
-</span><a href="#local-6989586621680144865"><span class="hs-identifier hs-var hs-var">line</span></a></span></span><span> </span><span id="local-6989586621680144864"><span class="annot"><span class="annottext">vp :: ViewPointID
-</span><a href="#local-6989586621680144864"><span class="hs-identifier hs-var">vp</span></a></span></span><span> </span><span id="local-6989586621680144863"><span class="annot"><span class="annottext">tl :: [[TimelinePoint t]]
-</span><a href="#local-6989586621680144863"><span class="hs-identifier hs-var">tl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
-</span><a href="#local-6989586621680144868"><span class="hs-identifier hs-var">normalizeVP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ViewPointID -&gt; String
+</span><a href="#local-6989586621680146657"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-char">' '</span></span><span>
+</span><span id="line-55"></span><span>            </span><span id="local-6989586621680146655"><span class="annot"><span class="annottext">line :: ViewPointID -&gt; [[TimelinePoint t]] -&gt; String
+</span><a href="#local-6989586621680146655"><span class="hs-identifier hs-var hs-var">line</span></a></span></span><span> </span><span id="local-6989586621680146654"><span class="annot"><span class="annottext">vp :: ViewPointID
+</span><a href="#local-6989586621680146654"><span class="hs-identifier hs-var">vp</span></a></span></span><span> </span><span id="local-6989586621680146653"><span class="annot"><span class="annottext">tl :: [[TimelinePoint t]]
+</span><a href="#local-6989586621680146653"><span class="hs-identifier hs-var">tl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ShowS
+</span><a href="#local-6989586621680146658"><span class="hs-identifier hs-var">normalizeVP</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ViewPointID -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">ViewPointID
-</span><a href="#local-6989586621680144864"><span class="hs-identifier hs-var">vp</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680146654"><span class="hs-identifier hs-var">vp</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="hs-string">&quot;\t&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
@@ -145,7 +145,7 @@ forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">[TimelinePoint t] -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[[TimelinePoint t]]
-</span><a href="#local-6989586621680144863"><span class="hs-identifier hs-var">tl</span></a></span><span>
+</span><a href="#local-6989586621680146653"><span class="hs-identifier hs-var">tl</span></a></span><span>
 </span><span id="line-56"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
 forall a. [a] -&gt; [[a]] -&gt; [a]
 </span><span class="hs-identifier hs-var">S.join</span></span><span> </span><span class="annot"><span class="hs-string">&quot;\n&quot;</span></span><span> </span><span class="annot"><span class="annottext">([String] -&gt; String) -&gt; [String] -&gt; String
@@ -153,21 +153,21 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(TimelineWithViewPoint t -&gt; String)
 -&gt; [TimelineWithViewPoint t] -&gt; [String]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span id="local-6989586621680144860"><span class="annot"><span class="annottext">vp :: ViewPointID
-</span><a href="#local-6989586621680144860"><span class="hs-identifier hs-var">vp</span></a></span></span><span> </span><span id="local-6989586621680144859"><span class="annot"><span class="annottext">tl :: [[TimelinePoint t]]
-</span><a href="#local-6989586621680144859"><span class="hs-identifier hs-var">tl</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ViewPointID -&gt; [[TimelinePoint t]] -&gt; String
-</span><a href="#local-6989586621680144865"><span class="hs-identifier hs-var">line</span></a></span><span> </span><span class="annot"><span class="annottext">ViewPointID
-</span><a href="#local-6989586621680144860"><span class="hs-identifier hs-var">vp</span></a></span><span> </span><span class="annot"><span class="annottext">[[TimelinePoint t]]
-</span><a href="#local-6989586621680144859"><span class="hs-identifier hs-var">tl</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[TimelineWithViewPoint t]
-</span><a href="#local-6989586621680144873"><span class="hs-identifier hs-var">timelines</span></a></span></span><span>
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span id="local-6989586621680146650"><span class="annot"><span class="annottext">vp :: ViewPointID
+</span><a href="#local-6989586621680146650"><span class="hs-identifier hs-var">vp</span></a></span></span><span> </span><span id="local-6989586621680146649"><span class="annot"><span class="annottext">tl :: [[TimelinePoint t]]
+</span><a href="#local-6989586621680146649"><span class="hs-identifier hs-var">tl</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ViewPointID -&gt; [[TimelinePoint t]] -&gt; String
+</span><a href="#local-6989586621680146655"><span class="hs-identifier hs-var">line</span></a></span><span> </span><span class="annot"><span class="annottext">ViewPointID
+</span><a href="#local-6989586621680146650"><span class="hs-identifier hs-var">vp</span></a></span><span> </span><span class="annot"><span class="annottext">[[TimelinePoint t]]
+</span><a href="#local-6989586621680146649"><span class="hs-identifier hs-var">tl</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[TimelineWithViewPoint t]
+</span><a href="#local-6989586621680146663"><span class="hs-identifier hs-var">timelines</span></a></span></span><span>
 </span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span id="local-6989586621680144857"><span id="local-6989586621680144858"></span></span><span class="hs-keyword">data</span><span> </span><span id="ViewPointID"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-var">ViewPointID</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ViewPointID"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-var">ViewPointID</span></a></span></span><span>
+</span><span id="line-58"></span><span id="local-6989586621680146647"><span id="local-6989586621680146648"></span></span><span class="hs-keyword">data</span><span> </span><span id="ViewPointID"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-var">ViewPointID</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ViewPointID"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-var">ViewPointID</span></a></span></span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Alevel%3AViewPointID"><span class="annot"><span class="annottext">ViewPointID -&gt; String
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Alevel%3AViewPointID"><span class="hs-identifier hs-var hs-var">level</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
 </span><span id="line-60"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Acomponent%3AViewPointID"><span class="annot"><span class="annottext">ViewPointID -&gt; [String]
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Acomponent%3AViewPointID"><span class="hs-identifier hs-var hs-var">component</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span>
 </span><span id="line-61"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-62"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680144850"><span id="local-6989586621680144852"><span class="annot"><span class="annottext">ViewPointID -&gt; ViewPointID -&gt; Bool
+</span><span id="line-62"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680146640"><span id="local-6989586621680146642"><span class="annot"><span class="annottext">ViewPointID -&gt; ViewPointID -&gt; Bool
 (ViewPointID -&gt; ViewPointID -&gt; Bool)
 -&gt; (ViewPointID -&gt; ViewPointID -&gt; Bool) -&gt; Eq ViewPointID
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -175,7 +175,7 @@ forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
 $c/= :: ViewPointID -&gt; ViewPointID -&gt; Bool
 == :: ViewPointID -&gt; ViewPointID -&gt; Bool
 $c== :: ViewPointID -&gt; ViewPointID -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144834"><span id="local-6989586621680144836"><span id="local-6989586621680144838"><span id="local-6989586621680144840"><span id="local-6989586621680144842"><span id="local-6989586621680144844"><span id="local-6989586621680144846"><span class="annot"><span class="annottext">Eq ViewPointID
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146624"><span id="local-6989586621680146626"><span id="local-6989586621680146628"><span id="local-6989586621680146630"><span id="local-6989586621680146632"><span id="local-6989586621680146634"><span id="local-6989586621680146636"><span class="annot"><span class="annottext">Eq ViewPointID
 Eq ViewPointID =&gt;
 (ViewPointID -&gt; ViewPointID -&gt; Ordering)
 -&gt; (ViewPointID -&gt; ViewPointID -&gt; Bool)
@@ -224,29 +224,29 @@ $cto :: forall x. Rep ViewPointID x -&gt; ViewPointID
 $cfrom :: forall x. ViewPointID -&gt; Rep ViewPointID x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144826"><span id="local-6989586621680144829"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-65"></span><span>    </span><span id="local-6989586621680144825"><span class="annot"><span class="annottext">show :: ViewPointID -&gt; String
-</span><a href="#local-6989586621680144825"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144824"><span class="annot"><span class="annottext">String
+</span><span id="line-64"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146616"><span id="local-6989586621680146619"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-65"></span><span>    </span><span id="local-6989586621680146615"><span class="annot"><span class="annottext">show :: ViewPointID -&gt; String
+</span><a href="#local-6989586621680146615"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146614"><span class="annot"><span class="annottext">String
 level :: String
 $sel:level:ViewPointID :: ViewPointID -&gt; String
-</span><a href="#local-6989586621680144824"><span class="hs-identifier hs-var hs-var">level</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144823"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621680146614"><span class="hs-identifier hs-var hs-var">level</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146613"><span class="annot"><span class="annottext">[String]
 component :: [String]
 $sel:component:ViewPointID :: ViewPointID -&gt; [String]
-</span><a href="#local-6989586621680144823"><span class="hs-identifier hs-var hs-var">component</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
+</span><a href="#local-6989586621680146613"><span class="hs-identifier hs-var hs-var">component</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
 forall a. [a] -&gt; [[a]] -&gt; [a]
 </span><span class="hs-identifier hs-var">S.join</span></span><span> </span><span class="annot"><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680144823"><span class="hs-identifier hs-var">component</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680146613"><span class="hs-identifier hs-var">component</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="hs-string">&quot;@&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680144824"><span class="hs-identifier hs-var">level</span></a></span><span>
+</span><a href="#local-6989586621680146614"><span class="hs-identifier hs-var">level</span></a></span><span>
 </span><span id="line-66"></span><span>
-</span><span id="line-67"></span><span id="local-6989586621680144821"><span id="local-6989586621680144822"></span></span><span class="hs-keyword">data</span><span> </span><span id="TimelinePoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-var">TimelinePoint</span></a></span></span><span> </span><span id="local-6989586621680144912"><span class="annot"><a href="#local-6989586621680144912"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TimelinePoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-var">TimelinePoint</span></a></span></span><span>
+</span><span id="line-67"></span><span id="local-6989586621680146611"><span id="local-6989586621680146612"></span></span><span class="hs-keyword">data</span><span> </span><span id="TimelinePoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-var">TimelinePoint</span></a></span></span><span> </span><span id="local-6989586621680146702"><span class="annot"><a href="#local-6989586621680146702"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TimelinePoint"><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-var">TimelinePoint</span></a></span></span><span>
 </span><span id="line-68"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3ApID%3ATimelinePoint"><span class="annot"><span class="annottext">TimelinePoint t -&gt; ProcessStepID
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApID%3ATimelinePoint"><span class="hs-identifier hs-var hs-var">pID</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#ProcessStepID"><span class="hs-identifier hs-type">ProcessStepID</span></a></span><span>
 </span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ApTime%3ATimelinePoint"><span class="annot"><span class="annottext">TimelinePoint t -&gt; Interval t
-</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApTime%3ATimelinePoint"><span class="hs-identifier hs-var hs-var">pTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Interval</span></span><span> </span><span class="annot"><a href="#local-6989586621680144912"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApTime%3ATimelinePoint"><span class="hs-identifier hs-var hs-var">pTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Interval</span></span><span> </span><span class="annot"><a href="#local-6989586621680146702"><span class="hs-identifier hs-type">t</span></a></span><span>
 </span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3ApInfo%3ATimelinePoint"><span class="annot"><span class="annottext">TimelinePoint t -&gt; String
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApInfo%3ATimelinePoint"><span class="hs-identifier hs-var hs-var">pInfo</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
 </span><span id="line-71"></span><span>    </span><span class="hs-special">}</span><span>
@@ -263,9 +263,9 @@ $cto :: forall t x. Rep (TimelinePoint t) x -&gt; TimelinePoint t
 $cfrom :: forall t x. TimelinePoint t -&gt; Rep (TimelinePoint t) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-73"></span><span>
-</span><span id="line-74"></span><span id="local-6989586621680144814"><span class="hs-keyword">instance</span><span> </span><span class="hs-pragma">{-# OVERLAPS</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span id="local-6989586621680144809"><span id="local-6989586621680144812"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144814"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144814"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-75"></span><span>    </span><span id="local-6989586621680144808"><span class="annot"><span class="annottext">show :: [TimelinePoint t] -&gt; String
-</span><a href="#local-6989586621680144808"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;.&quot;</span></span><span>
+</span><span id="line-74"></span><span id="local-6989586621680146604"><span class="hs-keyword">instance</span><span> </span><span class="hs-pragma">{-# OVERLAPS</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span id="local-6989586621680146599"><span id="local-6989586621680146602"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146604"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146604"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621680146598"><span class="annot"><span class="annottext">show :: [TimelinePoint t] -&gt; String
+</span><a href="#local-6989586621680146598"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;.&quot;</span></span><span>
 </span><span id="line-76"></span><span>    </span><span class="hs-comment">-- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} &lt;- descent pDesc = &quot;^&quot;</span><span>
 </span><span id="line-77"></span><span>    </span><span class="hs-comment">-- show ( Single Step{ pDesc } ) | EndpointRoleStep Target{} &lt;- descent pDesc = &quot;v&quot;</span><span>
 </span><span id="line-78"></span><span>
@@ -278,15 +278,15 @@ $cfrom :: forall t x. TimelinePoint t -&gt; Rep (TimelinePoint t) x
 </span><span id="line-85"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;#&quot;</span></span></span><span>
 </span><span id="line-86"></span><span>
 </span><span id="line-87"></span><span id="processTimelines"><span class="annot"><span class="annottext">processTimelines :: Process t (StepInfo v x t) -&gt; ProcessTimelines t
-</span><a href="NITTA.UIBackend.Timeline.html#processTimelines"><span class="hs-identifier hs-var hs-var">processTimelines</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144806"><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
+</span><a href="NITTA.UIBackend.Timeline.html#processTimelines"><span class="hs-identifier hs-var hs-var">processTimelines</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146596"><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
 steps :: forall t i. Process t i -&gt; [Step t i]
 steps :: [Step t (StepInfo v x t)]
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var hs-var">steps</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144804"><span class="annot"><span class="annottext">[Relation]
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var hs-var">steps</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146594"><span class="annot"><span class="annottext">[Relation]
 relations :: forall t i. Process t i -&gt; [Relation]
 relations :: [Relation]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#relations"><span class="hs-identifier hs-var hs-var">relations</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-88"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680144802"><span class="annot"><span class="annottext">views :: Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144802"><span class="hs-identifier hs-var hs-var">views</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Map ViewPointID [[Step t (StepInfo v x t)]]
+</span><span id="line-88"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680146592"><span class="annot"><span class="annottext">views :: Map ViewPointID [[Step t (StepInfo v x t)]]
+</span><a href="#local-6989586621680146592"><span class="hs-identifier hs-var hs-var">views</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Map ViewPointID [[Step t (StepInfo v x t)]]
  -&gt; Step t (StepInfo v x t)
  -&gt; Map ViewPointID [[Step t (StepInfo v x t)]])
 -&gt; Map ViewPointID [[Step t (StepInfo v x t)]]
@@ -306,9 +306,9 @@ Map ViewPointID [[Step t (StepInfo v x t)]]
 </span><a href="NITTA.UIBackend.Timeline.html#appendToViews"><span class="hs-identifier hs-var">appendToViews</span></a></span><span> </span><span class="annot"><span class="annottext">Map ViewPointID [[Step t (StepInfo v x t)]]
 forall k a. Map k a
 </span><span class="hs-identifier hs-var">M.empty</span></span><span> </span><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680144806"><span class="hs-identifier hs-var">steps</span></a></span><span>
-</span><span id="line-89"></span><span>        </span><span id="local-6989586621680144798"><span class="annot"><span class="annottext">a :: t
-</span><a href="#local-6989586621680144798"><span class="hs-identifier hs-var hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[t] -&gt; t
+</span><a href="#local-6989586621680146596"><span class="hs-identifier hs-var">steps</span></a></span><span>
+</span><span id="line-89"></span><span>        </span><span id="local-6989586621680146588"><span class="annot"><span class="annottext">a :: t
+</span><a href="#local-6989586621680146588"><span class="hs-identifier hs-var hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[t] -&gt; t
 forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">minimum</span></span><span> </span><span class="annot"><span class="annottext">([t] -&gt; t) -&gt; [t] -&gt; t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -340,9 +340,9 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; [[[Step t (StepInfo v x t)]]]
 forall k a. Map k a -&gt; [a]
 </span><span class="hs-identifier hs-var">M.elems</span></span><span> </span><span class="annot"><span class="annottext">Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144802"><span class="hs-identifier hs-var">views</span></a></span><span>
-</span><span id="line-90"></span><span>        </span><span id="local-6989586621680144792"><span class="annot"><span class="annottext">b :: t
-</span><a href="#local-6989586621680144792"><span class="hs-identifier hs-var hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[t] -&gt; t
+</span><a href="#local-6989586621680146592"><span class="hs-identifier hs-var">views</span></a></span><span>
+</span><span id="line-90"></span><span>        </span><span id="local-6989586621680146582"><span class="annot"><span class="annottext">b :: t
+</span><a href="#local-6989586621680146582"><span class="hs-identifier hs-var hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[t] -&gt; t
 forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">([t] -&gt; t) -&gt; [t] -&gt; t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -374,7 +374,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; [[[Step t (StepInfo v x t)]]]
 forall k a. Map k a -&gt; [a]
 </span><span class="hs-identifier hs-var">M.elems</span></span><span> </span><span class="annot"><span class="annottext">Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144802"><span class="hs-identifier hs-var">views</span></a></span><span>
+</span><a href="#local-6989586621680146592"><span class="hs-identifier hs-var">views</span></a></span><span>
 </span><span id="line-91"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">ProcessTimelines :: forall t.
 [TimelineWithViewPoint t]
 -&gt; [(ProcessStepID, ProcessStepID)] -&gt; ProcessTimelines t
@@ -387,17 +387,17 @@ forall k a. Map k a -&gt; [a]
 -&gt; [TimelineWithViewPoint t]
 forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span>
-</span><span id="line-94"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680144789"><span class="annot"><span class="annottext">vp :: ViewPointID
-</span><a href="#local-6989586621680144789"><span class="hs-identifier hs-var">vp</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144788"><span class="annot"><span class="annottext">vs :: [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144788"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">([Step t (StepInfo v x t)] -&gt; TimelineWithViewPoint t)
+</span><span id="line-94"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680146579"><span class="annot"><span class="annottext">vp :: ViewPointID
+</span><a href="#local-6989586621680146579"><span class="hs-identifier hs-var">vp</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146578"><span class="annot"><span class="annottext">vs :: [[Step t (StepInfo v x t)]]
+</span><a href="#local-6989586621680146578"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">([Step t (StepInfo v x t)] -&gt; TimelineWithViewPoint t)
 -&gt; [[Step t (StepInfo v x t)]] -&gt; [TimelineWithViewPoint t]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680144787"><span class="annot"><span class="annottext">v :: [Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680144787"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ViewPointID -&gt; [[TimelinePoint t]] -&gt; TimelineWithViewPoint t
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680146577"><span class="annot"><span class="annottext">v :: [Step t (StepInfo v x t)]
+</span><a href="#local-6989586621680146577"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ViewPointID -&gt; [[TimelinePoint t]] -&gt; TimelineWithViewPoint t
 forall t.
 ViewPointID -&gt; [[TimelinePoint t]] -&gt; TimelineWithViewPoint t
 </span><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-var">TimelineWithViewPoint</span></a></span><span> </span><span class="annot"><span class="annottext">ViewPointID
-</span><a href="#local-6989586621680144789"><span class="hs-identifier hs-var">vp</span></a></span><span> </span><span class="annot"><span class="annottext">([[TimelinePoint t]] -&gt; TimelineWithViewPoint t)
+</span><a href="#local-6989586621680146579"><span class="hs-identifier hs-var">vp</span></a></span><span> </span><span class="annot"><span class="annottext">([[TimelinePoint t]] -&gt; TimelineWithViewPoint t)
 -&gt; [[TimelinePoint t]] -&gt; TimelineWithViewPoint t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; [Step t (StepInfo v x t)] -&gt; [[TimelinePoint t]]
@@ -406,10 +406,10 @@ forall v t t x.
  Ord v, Ord t, Enum t) =&gt;
 t -&gt; t -&gt; [Step t (StepInfo v x t)] -&gt; [[TimelinePoint t]]
 </span><a href="NITTA.UIBackend.Timeline.html#timeline"><span class="hs-identifier hs-var">timeline</span></a></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680144798"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680144792"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680144787"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144788"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><a href="#local-6989586621680146588"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621680146582"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
+</span><a href="#local-6989586621680146577"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Step t (StepInfo v x t)]]
+</span><a href="#local-6989586621680146578"><span class="hs-identifier hs-var">vs</span></a></span><span>
 </span><span id="line-95"></span><span>                    </span><span class="hs-special">)</span><span>
 </span><span id="line-96"></span><span>                    </span><span class="annot"><span class="annottext">([(ViewPointID, [[Step t (StepInfo v x t)]])]
  -&gt; [TimelineWithViewPoint t])
@@ -420,14 +420,14 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; [(ViewPointID, [[Step t (StepInfo v x t)]])]
 forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144802"><span class="hs-identifier hs-var">views</span></a></span><span>
+</span><a href="#local-6989586621680146592"><span class="hs-identifier hs-var">views</span></a></span><span>
 </span><span id="line-97"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:verticalRelations:ProcessTimelines :: [(ProcessStepID, ProcessStepID)]
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3AverticalRelations%3AProcessTimelines"><span class="hs-identifier hs-var">verticalRelations</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680144784"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680144783"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Vertical"><span class="hs-identifier hs-type">Vertical</span></a></span><span> </span><span id="local-6989586621680144784"><span class="annot"><span class="annottext">u :: ProcessStepID
-</span><a href="#local-6989586621680144784"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span id="local-6989586621680144783"><span class="annot"><span class="annottext">d :: ProcessStepID
-</span><a href="#local-6989586621680144783"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Relation]
-</span><a href="#local-6989586621680144804"><span class="hs-identifier hs-var">relations</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680146574"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680146573"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Vertical"><span class="hs-identifier hs-type">Vertical</span></a></span><span> </span><span id="local-6989586621680146574"><span class="annot"><span class="annottext">u :: ProcessStepID
+</span><a href="#local-6989586621680146574"><span class="hs-identifier hs-var">u</span></a></span></span><span> </span><span id="local-6989586621680146573"><span class="annot"><span class="annottext">d :: ProcessStepID
+</span><a href="#local-6989586621680146573"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Relation]
+</span><a href="#local-6989586621680146594"><span class="hs-identifier hs-var">relations</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-98"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-99"></span><span>
 </span><span id="line-100"></span><span id="viewpoint"><span class="annot"><span class="annottext">viewpoint :: StepInfo v x t -&gt; ViewPointID
@@ -447,42 +447,42 @@ forall k a. Map k a -&gt; [(k, a)]
 </span><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:level:ViewPointID :: String
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Alevel%3AViewPointID"><span class="hs-identifier hs-var">level</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-string">&quot;INST&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:component:ViewPointID :: [String]
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Acomponent%3AViewPointID"><span class="hs-identifier hs-var">component</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">}</span><span>
-</span><span id="line-104"></span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#viewpoint"><span class="hs-identifier hs-var">viewpoint</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NestedStep"><span class="hs-identifier hs-type">NestedStep</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144774"><span class="annot"><span class="annottext">tag
+</span><span id="line-104"></span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#viewpoint"><span class="hs-identifier hs-var">viewpoint</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NestedStep"><span class="hs-identifier hs-type">NestedStep</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146564"><span class="annot"><span class="annottext">tag
 nTitle :: ()
 nTitle :: tag
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nTitle"><span class="hs-identifier hs-var hs-var">nTitle</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">nStep :: forall v x t. StepInfo v x t -&gt; Step t (StepInfo v x t)
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#nStep"><span class="hs-identifier hs-var">nStep</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144770"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#nStep"><span class="hs-identifier hs-var">nStep</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146560"><span class="annot"><span class="annottext">StepInfo v x t
 pDesc :: forall t i. Step t i -&gt; i
 pDesc :: StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-105"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144768"><span class="annot"><span class="annottext">String
+</span><span id="line-105"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146558"><span class="annot"><span class="annottext">String
 level :: String
 $sel:level:ViewPointID :: ViewPointID -&gt; String
-</span><a href="#local-6989586621680144768"><span class="hs-identifier hs-var hs-var">level</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144767"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621680146558"><span class="hs-identifier hs-var hs-var">level</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146557"><span class="annot"><span class="annottext">[String]
 component :: [String]
 $sel:component:ViewPointID :: ViewPointID -&gt; [String]
-</span><a href="#local-6989586621680144767"><span class="hs-identifier hs-var hs-var">component</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; ViewPointID
+</span><a href="#local-6989586621680146557"><span class="hs-identifier hs-var hs-var">component</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; ViewPointID
 </span><a href="NITTA.UIBackend.Timeline.html#viewpoint"><span class="hs-identifier hs-var">viewpoint</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144770"><span class="hs-identifier hs-var">pDesc</span></a></span><span>
+</span><a href="#local-6989586621680146560"><span class="hs-identifier hs-var">pDesc</span></a></span><span>
 </span><span id="line-106"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">ViewPointID :: String -&gt; [String] -&gt; ViewPointID
 </span><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type hs-type">ViewPointID</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">String
 level :: String
 $sel:level:ViewPointID :: String
-</span><a href="#local-6989586621680144768"><span class="hs-identifier hs-var hs-var">level</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:component:ViewPointID :: [String]
+</span><a href="#local-6989586621680146558"><span class="hs-identifier hs-var hs-var">level</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:component:ViewPointID :: [String]
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3Acomponent%3AViewPointID"><span class="hs-identifier hs-var">component</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">tag -&gt; String
 forall a. ToString a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">toString</span></span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680144774"><span class="hs-identifier hs-var">nTitle</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; [String]
+</span><a href="#local-6989586621680146564"><span class="hs-identifier hs-var">nTitle</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; [String]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680144767"><span class="hs-identifier hs-var">component</span></a></span><span class="hs-special">}</span><span>
+</span><a href="#local-6989586621680146557"><span class="hs-identifier hs-var">component</span></a></span><span class="hs-special">}</span><span>
 </span><span id="line-107"></span><span>
 </span><span id="line-108"></span><span id="appendToViews"><span class="annot"><span class="annottext">appendToViews :: Map ViewPointID [[Step t (StepInfo v x t)]]
 -&gt; Step t (StepInfo v x t)
 -&gt; Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="NITTA.UIBackend.Timeline.html#appendToViews"><span class="hs-identifier hs-var hs-var">appendToViews</span></a></span></span><span> </span><span id="local-6989586621680144765"><span class="annot"><span class="annottext">views :: Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144765"><span class="hs-identifier hs-var">views</span></a></span></span><span> </span><span id="local-6989586621680144764"><span class="annot"><span class="annottext">step :: Step t (StepInfo v x t)
-</span><a href="#local-6989586621680144764"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.UIBackend.Timeline.html#appendToViews"><span class="hs-identifier hs-var hs-var">appendToViews</span></a></span></span><span> </span><span id="local-6989586621680146555"><span class="annot"><span class="annottext">views :: Map ViewPointID [[Step t (StepInfo v x t)]]
+</span><a href="#local-6989586621680146555"><span class="hs-identifier hs-var">views</span></a></span></span><span> </span><span id="local-6989586621680146554"><span class="annot"><span class="annottext">step :: Step t (StepInfo v x t)
+</span><a href="#local-6989586621680146554"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-109"></span><span>    </span><span class="annot"><span class="annottext">(Maybe [[Step t (StepInfo v x t)]]
  -&gt; Maybe [[Step t (StepInfo v x t)]])
 -&gt; ViewPointID
@@ -507,7 +507,7 @@ forall a v x t.
 Step a (StepInfo v x t)
 -&gt; [[Step a (StepInfo v x t)]] -&gt; [[Step a (StepInfo v x t)]]
 </span><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var">appendToView</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680144764"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">([[Step t (StepInfo v x t)]] -&gt; [[Step t (StepInfo v x t)]])
+</span><a href="#local-6989586621680146554"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">([[Step t (StepInfo v x t)]] -&gt; [[Step t (StepInfo v x t)]])
 -&gt; (Maybe [[Step t (StepInfo v x t)]]
     -&gt; [[Step t (StepInfo v x t)]])
 -&gt; Maybe [[Step t (StepInfo v x t)]]
@@ -524,16 +524,16 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t) -&gt; StepInfo v x t
 forall t i. Step t i -&gt; i
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680144764"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680146554"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">Map ViewPointID [[Step t (StepInfo v x t)]]
-</span><a href="#local-6989586621680144765"><span class="hs-identifier hs-var">views</span></a></span><span>
+</span><a href="#local-6989586621680146555"><span class="hs-identifier hs-var">views</span></a></span><span>
 </span><span id="line-113"></span><span>
 </span><span id="line-114"></span><span id="appendToView"><span class="annot"><span class="annottext">appendToView :: Step a (StepInfo v x t)
 -&gt; [[Step a (StepInfo v x t)]] -&gt; [[Step a (StepInfo v x t)]]
-</span><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var hs-var">appendToView</span></a></span></span><span> </span><span id="local-6989586621680144760"><span class="annot"><span class="annottext">step :: Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144760"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680144759"><span class="annot"><span class="annottext">tl :: [Step a (StepInfo v x t)]
-</span><a href="#local-6989586621680144759"><span class="hs-identifier hs-var">tl</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680144758"><span class="annot"><span class="annottext">tls :: [[Step a (StepInfo v x t)]]
-</span><a href="#local-6989586621680144758"><span class="hs-identifier hs-var">tls</span></a></span></span><span class="hs-special">)</span><span>
+</span><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var hs-var">appendToView</span></a></span></span><span> </span><span id="local-6989586621680146550"><span class="annot"><span class="annottext">step :: Step a (StepInfo v x t)
+</span><a href="#local-6989586621680146550"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680146549"><span class="annot"><span class="annottext">tl :: [Step a (StepInfo v x t)]
+</span><a href="#local-6989586621680146549"><span class="hs-identifier hs-var">tl</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680146548"><span class="annot"><span class="annottext">tls :: [[Step a (StepInfo v x t)]]
+</span><a href="#local-6989586621680146548"><span class="hs-identifier hs-var">tls</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-115"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">(Step a (StepInfo v x t) -&gt; Bool)
 -&gt; [Step a (StepInfo v x t)] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
@@ -542,60 +542,60 @@ forall a v x t v x t.
 (Num a, Ord a) =&gt;
 Step a (StepInfo v x t) -&gt; Step a (StepInfo v x t) -&gt; Bool
 </span><a href="NITTA.UIBackend.Timeline.html#isConflicted"><span class="hs-identifier hs-var">isConflicted</span></a></span><span> </span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144760"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
-</span><a href="#local-6989586621680144759"><span class="hs-identifier hs-var">tl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
-</span><a href="#local-6989586621680144759"><span class="hs-identifier hs-var">tl</span></a></span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
+</span><a href="#local-6989586621680146550"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
+</span><a href="#local-6989586621680146549"><span class="hs-identifier hs-var">tl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
+</span><a href="#local-6989586621680146549"><span class="hs-identifier hs-var">tl</span></a></span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
 -&gt; [[Step a (StepInfo v x t)]] -&gt; [[Step a (StepInfo v x t)]]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
 -&gt; [[Step a (StepInfo v x t)]] -&gt; [[Step a (StepInfo v x t)]]
 </span><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var">appendToView</span></a></span><span> </span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144760"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">[[Step a (StepInfo v x t)]]
-</span><a href="#local-6989586621680144758"><span class="hs-identifier hs-var">tls</span></a></span><span>
+</span><a href="#local-6989586621680146550"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">[[Step a (StepInfo v x t)]]
+</span><a href="#local-6989586621680146548"><span class="hs-identifier hs-var">tls</span></a></span><span>
 </span><span id="line-116"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144760"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
+</span><a href="#local-6989586621680146550"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
 -&gt; [Step a (StepInfo v x t)] -&gt; [Step a (StepInfo v x t)]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
-</span><a href="#local-6989586621680144759"><span class="hs-identifier hs-var">tl</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
+</span><a href="#local-6989586621680146549"><span class="hs-identifier hs-var">tl</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a (StepInfo v x t)]
 -&gt; [[Step a (StepInfo v x t)]] -&gt; [[Step a (StepInfo v x t)]]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[[Step a (StepInfo v x t)]]
-</span><a href="#local-6989586621680144758"><span class="hs-identifier hs-var">tls</span></a></span><span>
-</span><span id="line-117"></span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var">appendToView</span></a></span><span> </span><span id="local-6989586621680144755"><span class="annot"><span class="annottext">step :: Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144755"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
-</span><a href="#local-6989586621680144755"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680146548"><span class="hs-identifier hs-var">tls</span></a></span><span>
+</span><span id="line-117"></span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#appendToView"><span class="hs-identifier hs-var">appendToView</span></a></span><span> </span><span id="local-6989586621680146545"><span class="annot"><span class="annottext">step :: Step a (StepInfo v x t)
+</span><a href="#local-6989586621680146545"><span class="hs-identifier hs-var">step</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><span class="annottext">Step a (StepInfo v x t)
+</span><a href="#local-6989586621680146545"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
 </span><span id="line-118"></span><span>
 </span><span id="line-119"></span><span id="isConflicted"><span class="annot"><span class="annottext">isConflicted :: Step a (StepInfo v x t) -&gt; Step a (StepInfo v x t) -&gt; Bool
 </span><a href="NITTA.UIBackend.Timeline.html#isConflicted"><span class="hs-identifier hs-var hs-var">isConflicted</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pInterval :: forall t i. Step t i -&gt; Interval t
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680144754"><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144754"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680144753"><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144753"><span class="hs-identifier hs-var">aD</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pInterval :: forall t i. Step t i -&gt; Interval t
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680144752"><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144752"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680144751"><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144751"><span class="hs-identifier hs-var">bD</span></a></span></span><span class="hs-special">}</span><span>
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680146544"><span class="annot"><span class="annottext">Interval a
+</span><a href="#local-6989586621680146544"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680146543"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680146543"><span class="hs-identifier hs-var">aD</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pInterval :: forall t i. Step t i -&gt; Interval t
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680146542"><span class="annot"><span class="annottext">Interval a
+</span><a href="#local-6989586621680146542"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680146541"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680146541"><span class="hs-identifier hs-var">bD</span></a></span></span><span class="hs-special">}</span><span>
 </span><span id="line-120"></span><span>    </span><span class="hs-comment">-- we can hold a and b in one bucket, if both is a singleton</span><span>
 </span><span id="line-121"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#CADStep"><span class="hs-identifier hs-type">CADStep</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; StepInfo v x t
 forall v x t. StepInfo v x t -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#descent"><span class="hs-identifier hs-var">descent</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144753"><span class="hs-identifier hs-var">aD</span></a></span><span>
+</span><a href="#local-6989586621680146543"><span class="hs-identifier hs-var">aD</span></a></span><span>
 </span><span id="line-122"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#CADStep"><span class="hs-identifier hs-type">CADStep</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; StepInfo v x t
 forall v x t. StepInfo v x t -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#descent"><span class="hs-identifier hs-var">descent</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144751"><span class="hs-identifier hs-var">bD</span></a></span><span>
+</span><a href="#local-6989586621680146541"><span class="hs-identifier hs-var">bD</span></a></span><span>
 </span><span id="line-123"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Interval a -&gt; a
 forall a. Num a =&gt; Interval a -&gt; a
 </span><span class="hs-identifier hs-var">width</span></span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144754"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680146544"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Interval a -&gt; a
 forall a. Num a =&gt; Interval a -&gt; a
 </span><span class="hs-identifier hs-var">width</span></span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144752"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680146542"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-124"></span><span>        </span><span class="annot"><span class="annottext">Bool
@@ -603,25 +603,25 @@ forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span id="line-125"></span><span>    </span><span class="hs-comment">--  | width a == 0 &amp;&amp; width b == 0 = False</span><span>
 </span><span id="line-126"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144754"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Interval a -&gt; Interval a -&gt; Bool
+</span><a href="#local-6989586621680146544"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Interval a -&gt; Interval a -&gt; Bool
 forall a. Ord a =&gt; Interval a -&gt; Interval a -&gt; Bool
 </span><span class="hs-operator hs-var">==?</span></span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680144752"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621680146542"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-127"></span><span>
 </span><span id="line-128"></span><span id="timeline"><span class="annot"><span class="annottext">timeline :: t -&gt; t -&gt; [Step t (StepInfo v x t)] -&gt; [[TimelinePoint t]]
-</span><a href="NITTA.UIBackend.Timeline.html#timeline"><span class="hs-identifier hs-var hs-var">timeline</span></a></span></span><span> </span><span id="local-6989586621680144746"><span class="annot"><span class="annottext">a :: t
-</span><a href="#local-6989586621680144746"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680144745"><span class="annot"><span class="annottext">b :: t
-</span><a href="#local-6989586621680144745"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621680144744"><span class="annot"><span class="annottext">steps :: [Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680144744"><span class="hs-identifier hs-var">steps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(t -&gt; [TimelinePoint t]) -&gt; [t] -&gt; [[TimelinePoint t]]
+</span><a href="NITTA.UIBackend.Timeline.html#timeline"><span class="hs-identifier hs-var hs-var">timeline</span></a></span></span><span> </span><span id="local-6989586621680146536"><span class="annot"><span class="annottext">a :: t
+</span><a href="#local-6989586621680146536"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680146535"><span class="annot"><span class="annottext">b :: t
+</span><a href="#local-6989586621680146535"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621680146534"><span class="annot"><span class="annottext">steps :: [Step t (StepInfo v x t)]
+</span><a href="#local-6989586621680146534"><span class="hs-identifier hs-var">steps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(t -&gt; [TimelinePoint t]) -&gt; [t] -&gt; [[TimelinePoint t]]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; [TimelinePoint t]
-</span><a href="#local-6989586621680144743"><span class="hs-identifier hs-var">findSteps</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680144746"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680144745"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680146533"><span class="hs-identifier hs-var">findSteps</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621680146536"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621680146535"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-129"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-130"></span><span>        </span><span id="local-6989586621680144743"><span class="annot"><span class="annottext">findSteps :: t -&gt; [TimelinePoint t]
-</span><a href="#local-6989586621680144743"><span class="hs-identifier hs-var hs-var">findSteps</span></a></span></span><span> </span><span id="local-6989586621680144742"><span class="annot"><span class="annottext">t :: t
-</span><a href="#local-6989586621680144742"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Step t (StepInfo v x t) -&gt; TimelinePoint t)
+</span><span id="line-130"></span><span>        </span><span id="local-6989586621680146533"><span class="annot"><span class="annottext">findSteps :: t -&gt; [TimelinePoint t]
+</span><a href="#local-6989586621680146533"><span class="hs-identifier hs-var hs-var">findSteps</span></a></span></span><span> </span><span id="local-6989586621680146532"><span class="annot"><span class="annottext">t :: t
+</span><a href="#local-6989586621680146532"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Step t (StepInfo v x t) -&gt; TimelinePoint t)
 -&gt; [Step t (StepInfo v x t)] -&gt; [TimelinePoint t]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t) -&gt; TimelinePoint t
@@ -629,7 +629,7 @@ forall v t t x.
 (Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v,
  Show t) =&gt;
 Step t (StepInfo v x t) -&gt; TimelinePoint t
-</span><a href="#local-6989586621680144741"><span class="hs-identifier hs-var">foo</span></a></span><span> </span><span class="annot"><span class="annottext">([Step t (StepInfo v x t)] -&gt; [TimelinePoint t])
+</span><a href="#local-6989586621680146531"><span class="hs-identifier hs-var">foo</span></a></span><span> </span><span class="annot"><span class="annottext">([Step t (StepInfo v x t)] -&gt; [TimelinePoint t])
 -&gt; [Step t (StepInfo v x t)] -&gt; [TimelinePoint t]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Step t (StepInfo v x t) -&gt; Bool)
@@ -638,7 +638,7 @@ forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t -&gt; Interval t -&gt; Bool
 forall a. Ord a =&gt; a -&gt; Interval a -&gt; Bool
 </span><span class="hs-identifier hs-var">member</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680144742"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">(Interval t -&gt; Bool)
+</span><a href="#local-6989586621680146532"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">(Interval t -&gt; Bool)
 -&gt; (Step t (StepInfo v x t) -&gt; Interval t)
 -&gt; Step t (StepInfo v x t)
 -&gt; Bool
@@ -646,59 +646,59 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t) -&gt; Interval t
 forall t i. Step t i -&gt; Interval t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680144744"><span class="hs-identifier hs-var">steps</span></a></span><span>
-</span><span id="line-131"></span><span>        </span><span id="local-6989586621680144741"><span class="annot"><span class="annottext">foo :: Step t (StepInfo v x t) -&gt; TimelinePoint t
-</span><a href="#local-6989586621680144741"><span class="hs-identifier hs-var hs-var">foo</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144739"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680146534"><span class="hs-identifier hs-var">steps</span></a></span><span>
+</span><span id="line-131"></span><span>        </span><span id="local-6989586621680146531"><span class="annot"><span class="annottext">foo :: Step t (StepInfo v x t) -&gt; TimelinePoint t
+</span><a href="#local-6989586621680146531"><span class="hs-identifier hs-var hs-var">foo</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146529"><span class="annot"><span class="annottext">ProcessStepID
 pID :: forall t i. Step t i -&gt; ProcessStepID
 pID :: ProcessStepID
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pID"><span class="hs-identifier hs-var hs-var">pID</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144737"><span class="annot"><span class="annottext">Interval t
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pID"><span class="hs-identifier hs-var hs-var">pID</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146527"><span class="annot"><span class="annottext">Interval t
 pInterval :: Interval t
 pInterval :: forall t i. Step t i -&gt; Interval t
-</span><a href="#local-6989586621680144737"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680144736"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680146527"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680146526"><span class="annot"><span class="annottext">StepInfo v x t
 pDesc :: StepInfo v x t
 pDesc :: forall t i. Step t i -&gt; i
-</span><a href="#local-6989586621680144736"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680146526"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-132"></span><span>            </span><span class="annot"><span class="annottext">TimelinePoint :: forall t. ProcessStepID -&gt; Interval t -&gt; String -&gt; TimelinePoint t
 </span><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type hs-type">TimelinePoint</span></a></span><span>
 </span><span id="line-133"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:pID:TimelinePoint :: ProcessStepID
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApID%3ATimelinePoint"><span class="hs-identifier hs-var">pID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680144739"><span class="hs-identifier hs-var">pID</span></a></span><span>
+</span><a href="#local-6989586621680146529"><span class="hs-identifier hs-var">pID</span></a></span><span>
 </span><span id="line-134"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:pTime:TimelinePoint :: Interval t
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApTime%3ATimelinePoint"><span class="hs-identifier hs-var">pTime</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680144737"><span class="hs-identifier hs-var">pInterval</span></a></span><span>
+</span><a href="#local-6989586621680146527"><span class="hs-identifier hs-var">pInterval</span></a></span><span>
 </span><span id="line-135"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:pInfo:TimelinePoint :: String
 </span><a href="NITTA.UIBackend.Timeline.html#%24sel%3ApInfo%3ATimelinePoint"><span class="hs-identifier hs-var">pInfo</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144736"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-136"></span><span>                    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NestedStep"><span class="hs-identifier hs-type">NestedStep</span></a></span><span class="hs-special">{</span><span id="local-6989586621680144734"><span class="annot"><span class="annottext">tag
+</span><a href="#local-6989586621680146526"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-136"></span><span>                    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NestedStep"><span class="hs-identifier hs-type">NestedStep</span></a></span><span class="hs-special">{</span><span id="local-6989586621680146524"><span class="annot"><span class="annottext">tag
 nTitle :: tag
 nTitle :: ()
-</span><a href="#local-6989586621680144734"><span class="hs-identifier hs-var hs-var">nTitle</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">nStep :: forall v x t. StepInfo v x t -&gt; Step t (StepInfo v x t)
+</span><a href="#local-6989586621680146524"><span class="hs-identifier hs-var hs-var">nTitle</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">nStep :: forall v x t. StepInfo v x t -&gt; Step t (StepInfo v x t)
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nStep"><span class="hs-identifier hs-var">nStep</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680144733"><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144733"><span class="hs-identifier hs-var">subDesc</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">tag -&gt; String
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680146523"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680146523"><span class="hs-identifier hs-var">subDesc</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">tag -&gt; String
 forall a. ToString a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">toString</span></span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680144734"><span class="hs-identifier hs-var">nTitle</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680146524"><span class="hs-identifier hs-var">nTitle</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="hs-string">&quot; do &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144733"><span class="hs-identifier hs-var">subDesc</span></a></span><span>
+</span><a href="#local-6989586621680146523"><span class="hs-identifier hs-var">subDesc</span></a></span><span>
 </span><span id="line-137"></span><span>                    </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">StepInfo v x t -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680144736"><span class="hs-identifier hs-var">pDesc</span></a></span><span>
+</span><a href="#local-6989586621680146526"><span class="hs-identifier hs-var">pDesc</span></a></span><span>
 </span><span id="line-138"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-139"></span><span>
-</span><span id="line-140"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144725"><span id="local-6989586621680144727"><span id="local-6989586621680144729"><span id="local-6989586621680144731"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span></span></span></span></span><span>
-</span><span id="line-141"></span><span id="local-6989586621680144723"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144715"><span id="local-6989586621680144717"><span id="local-6989586621680144719"><span id="local-6989586621680144721"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144723"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680144723"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144723"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
-</span><span id="line-142"></span><span id="local-6989586621680144714"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144706"><span id="local-6989586621680144708"><span id="local-6989586621680144710"><span id="local-6989586621680144712"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144714"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680144714"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144714"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
-</span><span id="line-143"></span><span id="local-6989586621680144705"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680144697"><span id="local-6989586621680144699"><span id="local-6989586621680144701"><span id="local-6989586621680144703"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144705"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680144705"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680144705"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-140"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146515"><span id="local-6989586621680146517"><span id="local-6989586621680146519"><span id="local-6989586621680146521"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ViewPointID"><span class="hs-identifier hs-type">ViewPointID</span></a></span></span></span></span></span><span>
+</span><span id="line-141"></span><span id="local-6989586621680146513"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146505"><span id="local-6989586621680146507"><span id="local-6989586621680146509"><span id="local-6989586621680146511"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146513"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680146513"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelinePoint"><span class="hs-identifier hs-type">TimelinePoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146513"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-142"></span><span id="local-6989586621680146504"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146496"><span id="local-6989586621680146498"><span id="local-6989586621680146500"><span id="local-6989586621680146502"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146504"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680146504"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#TimelineWithViewPoint"><span class="hs-identifier hs-type">TimelineWithViewPoint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146504"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-143"></span><span id="local-6989586621680146495"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680146487"><span id="local-6989586621680146489"><span id="local-6989586621680146491"><span id="local-6989586621680146493"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146495"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680146495"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680146495"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
 </span><span id="line-144"></span><span>
 </span><span id="line-145"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToSample</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.Timeline.html#ProcessTimelines"><span class="hs-identifier hs-type">ProcessTimelines</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-146"></span><span>    </span><span id="local-6989586621680144694"><span class="annot"><span class="annottext">toSamples :: Proxy (ProcessTimelines ProcessStepID)
+</span><span id="line-146"></span><span>    </span><span id="local-6989586621680146484"><span class="annot"><span class="annottext">toSamples :: Proxy (ProcessTimelines ProcessStepID)
 -&gt; [(Text, ProcessTimelines ProcessStepID)]
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">toSamples</span></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Text, ProcessTimelines ProcessStepID)]
 forall a. [(Text, a)]

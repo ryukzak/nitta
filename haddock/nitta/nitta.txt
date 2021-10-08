@@ -692,13 +692,13 @@ class IOConnected pu where {
 }
 
 -- | External input ports, which go outside of NITTA mUnit.
-inputPorts :: IOConnected pu => IOPorts pu -> [InputPortTag]
+inputPorts :: IOConnected pu => IOPorts pu -> Set InputPortTag
 
 -- | External output ports, which go outside of NITTA mUnit.
-outputPorts :: IOConnected pu => IOPorts pu -> [OutputPortTag]
+outputPorts :: IOConnected pu => IOPorts pu -> Set OutputPortTag
 
 -- | External output ports, which go outside of NITTA mUnit.
-inoutPorts :: IOConnected pu => IOPorts pu -> [InoutPortTag]
+inoutPorts :: IOConnected pu => IOPorts pu -> Set InoutPortTag
 newtype InputPortTag
 InputPortTag :: Text -> InputPortTag
 [inputPortTag] :: InputPortTag -> Text
@@ -867,9 +867,9 @@ UnitEnv :: Text -> Text -> Text -> Text -> Text -> Maybe (Ports m) -> Maybe (IOP
 [ctrlPorts] :: UnitEnv m -> Maybe (Ports m)
 [ioPorts] :: UnitEnv m -> Maybe (IOPorts m)
 [valueIn, valueOut] :: UnitEnv m -> Maybe (Text, Text)
-envInputPorts :: IOConnected pu => UnitEnv pu -> [InputPortTag]
-envOutputPorts :: IOConnected pu => UnitEnv pu -> [OutputPortTag]
-envInOutPorts :: IOConnected pu => UnitEnv pu -> [InoutPortTag]
+envInputPorts :: IOConnected pu => UnitEnv pu -> Set InputPortTag
+envOutputPorts :: IOConnected pu => UnitEnv pu -> Set OutputPortTag
+envInOutPorts :: IOConnected pu => UnitEnv pu -> Set InoutPortTag
 instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Project.Types.Project m v x) x
 instance Data.Default.Class.Default (NITTA.Project.Types.UnitEnv m)
 
@@ -1518,9 +1518,9 @@ ASync :: IOSynchronization
 
 -- | defined by onboard signal (sync - false, async - true)
 OnBoard :: IOSynchronization
-puInputPorts :: PU v x t -> [InputPortTag]
-puOutputPorts :: PU v x t -> [OutputPortTag]
-puInOutPorts :: PU v x t -> [InoutPortTag]
+puInputPorts :: PU v x t -> Set InputPortTag
+puOutputPorts :: PU v x t -> Set OutputPortTag
+puInOutPorts :: PU v x t -> Set InoutPortTag
 instance GHC.Generics.Generic NITTA.Model.Networks.Types.IOSynchronization
 instance GHC.Read.Read NITTA.Model.Networks.Types.IOSynchronization
 instance GHC.Show.Show NITTA.Model.Networks.Types.IOSynchronization
@@ -2089,6 +2089,8 @@ anySPI :: Time t => Int -> Maybe Int -> SPI v x t
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
 data family IOPorts pu :: Type
+spiMasterPorts :: Text -> IOPorts (SPI v x t)
+spiSlavePorts :: Text -> IOPorts (SPI v x t)
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t))
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t)
 instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t)
@@ -2534,6 +2536,7 @@ data family Ports pu :: Type
 data family IOPorts pu :: Type
 bindedFunctions :: Ord k => k -> BusNetwork k v x t -> [F v x]
 controlSignalLiteral :: Interpolatable (IsCustomSink dst) src dst => src -> dst
+busNetwork :: Default t => tag -> IOSynchronization -> BusNetwork tag v x t
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Variable.Variables (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v
@@ -2943,15 +2946,14 @@ instance Servant.Docs.Internal.ToSample (NITTA.Project.TestBench.TestbenchReport
 
 
 module NITTA.Model.Microarchitecture.Builder
-
--- | Define microarchitecture with BusNetwork
-defineNetwork :: (Default t, Ord tag) => tag -> IOSynchronization -> StateT (BuilderSt tag v x t) Identity a -> BusNetwork tag v x t
+defineNetwork :: Default t => k -> IOSynchronization -> StateT (BuilderSt k v x t) Identity a -> BusNetwork k v x t
+modifyNetwork :: BusNetwork k v x t -> StateT (BuilderSt k v x t) Identity a -> BusNetwork k v x t
 
 -- | Add PU with the default initial state. Type specify by IOPorts.
-add :: (MonadState (BuilderSt a v x t) m, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, Controllable pu, ToString a, Typeable pu, Show (Instruction pu), Default pu) => a -> IOPorts pu -> m ()
+add :: (MonadState (BuilderSt a v x t) m, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, Controllable pu, ToString a, Typeable pu, Show (Instruction pu), Default pu, Ord a) => a -> IOPorts pu -> m ()
 
 -- | Add PU with the custom initial state. Type specify by IOPorts.
-addCustom :: forall m a v x t pu. (MonadState (BuilderSt a v x t) m, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, ToString a, Typeable pu, Show (Instruction pu), Controllable pu) => a -> pu -> IOPorts pu -> m ()
+addCustom :: forall m a v x t pu. (MonadState (BuilderSt a v x t) m, Ord a, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, ToString a, Typeable pu, Show (Instruction pu), Controllable pu) => a -> pu -> IOPorts pu -> m ()
 data MicroarchitectureDesc tag
 MicroarchitectureDesc :: [NetworkDesc tag] -> IOSynchronization -> MicroarchitectureDesc tag
 [$sel:networks:MicroarchitectureDesc] :: MicroarchitectureDesc tag -> [NetworkDesc tag]
