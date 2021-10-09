@@ -18,11 +18,10 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
+import qualified Data.Set as S
 import Data.String.Interpolate
-import qualified Data.Text as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
-import NITTA.Synthesis
 import Test.Tasty (testGroup)
 import Test.Tasty.ExpectedFailure
 
@@ -40,7 +39,7 @@ tests =
                 decide $ consume "a"
                 decide $ consume "b"
                 decide $ provide ["c", "d"]
-                assertCoSimulation
+                assertPUCoSimulation
         , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertAllEndpointRoles [consume "a", consume "b"]
@@ -83,7 +82,7 @@ tests =
                 decide $ consume "a"
                 decide $ consume "b"
                 decide $ provide ["c", "d"]
-                assertCoSimulation
+                assertPUCoSimulation
         , expectFail $
             unitTestCase "should not bind, when PU incompatible with F" u $
                 assign $ sub "a" "b" ["c"]
@@ -109,7 +108,7 @@ tests =
         , expectFail $
             unitTestCase "should error: breakLoop is not supportd" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
-                breakLoop 10 "a" ["c"]
+                refactor =<< mkBreakLoop 10 "a" ["c"]
         , expectFail $
             unitTestCase "should error: setValue variable is unavailable" u $ do
                 assign $ multiply "a" "b" ["c", "d"]
@@ -142,7 +141,7 @@ tests =
                 decideAt 0 0 $ consume "a"
                 assertEndpoint 3 maxBound $ provide ["b"]
                 decideAtUnsafe 2 2 $ provide ["b"] -- incorrect decision
-                assertCoSimulation
+                assertPUCoSimulation
             ]
         , testGroup
             "assertLocks"
@@ -158,14 +157,108 @@ tests =
             ]
         , testGroup
             "BusNetwork positive tests"
-            [ unitTestCase "assertLoopBroken ok when break applied" tbr $ do
-                breakLoopTemplate
-                bindInit
-                let loopEC = loop 0 "e#0" ["c#0"]
-                bindVariable loopEC
-                applyBreakLoop loopEC
-                assertLoopBroken [loopEC]
-            , unitTestCase "assertLoopBroken ok when auto synthesis" tbr $ do
+            [ unitTestCase "target system: autosynthesis, assert breakLoop" def $ do
+                setNetwork march
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a)
+                            local d = a + 1
+                            sum(d)
+                        end
+                        sum(0)
+                        |]
+                synthesizeAndCoSim
+                assertRefactor =<< mkBreakLoop 0 "d^0#0" ["a^0#0"]
+            , unitTestCase "target system: autosynthesis, constant folding" def $ do
+                setNetwork march
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a)
+                            local d = a + 1
+                            sum(d)
+                        end
+                        sum(0)
+                        |]
+                synthesizeAndCoSim
+                assertRefactor =<< mkBreakLoop 0 "d^0#0" ["a^0#0"]
+            , unitTestCase "target system: autosynthesis, constant folding 1" def $ do
+                setNetwork march
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a)
+                            local d = 1 + 2 + a
+                            sum(d)
+                        end
+                        sum(0)
+                        |]
+                synthesizeAndCoSim
+                assertRefactor
+                    =<< mkConstantFolding
+                        [ add "!1#0" "!2#0" ["_0#d"]
+                        , constant 2 ["!2#0"]
+                        , constant 1 ["!1#0"]
+                        ]
+                        [ constant 3 ["_0#d"]
+                        , constant 2 ["!2#0"] -- FIXME: Do we actually need this?
+                        , constant 1 ["!1#0"]
+                        ]
+            , unitTestCase "target system: autosynthesis, constant folding 2" def $ do
+                setNetwork march
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a)
+                            local d = a + 1 + 2
+                            sum(d)
+                        end
+                        sum(0)
+                        |]
+                optAccum <-
+                    mkOptimizeAccum
+                        [ add "_0#d" "!2#0" ["d^0#0"]
+                        , add "a^0#0" "!1#0" ["_0#d"]
+                        ]
+                        [ acc
+                            [ Push Plus $ I "a^0#0"
+                            , Push Plus $ I "!1#0"
+                            , Push Plus $ I "!2#0"
+                            , Pull $ O $ S.fromList ["d^0#0"]
+                            ]
+                        ]
+                refactorAvail optAccum
+                refactor optAccum
+                assertRefactor optAccum
+            , -- FIXME: should be presented (with small changes)
+              -- refactorAvail
+              --     =<< mkConstantFolding
+              --         [ acc
+              --             [ Push Plus $ I "a^0#0"
+              --             , Push Plus $ I "!1#0"
+              --             , Push Plus $ I "!2#0"
+              --             , Pull $ O $ S.fromList ["d^0#0"]
+              --             ]
+              --         , constant 1 ["!1#0"]
+              --         , constant 2 ["!2#0"]
+              --         ]
+              --         [ acc
+              --             [ Push Plus $ I "a^0#0"
+              --             , Push Plus $ I "_0#d"
+              --             , Pull $ O $ S.fromList ["d^0#0"]
+              --             ]
+              --         , constant 2 ["_0#d"]
+              --         ]
+              unitTestCase "target system: manual synthesis, assert breakLoop" def $ do
+                setNetwork march
+                setBusType pInt
+                let l = loop 0 "d^0#0" ["a^0#0"]
+                bind2network l
+                doBind "fram1" l
+                refactor =<< mkBreakLoop 0 "d^0#0" ["a^0#0"]
+                assertRefactor =<< mkBreakLoop 0 "d^0#0" ["a^0#0"]
+            , unitTestCase "target system: autosynthesis, buffer & accum refactor" def $ do
                 setNetwork march
                 setBusType pInt
                 assignLua
@@ -178,52 +271,38 @@ tests =
                         end
                         sum(0,0,0)
                     |]
-                loopFs <- getLoopFunctions
-                assertSynthesisRunAuto
-                assertLoopBroken loopFs
+                synthesizeAndCoSim
+                assertRefactor =<< mkBreakLoop 0 "d^0#2" ["a^0#0"]
+                assertRefactor =<< mkBreakLoop 0 "f^0#0" ["b^0#0"]
+                assertRefactor =<< mkBreakLoop 0 "e^0#0" ["c^0#0"]
+                assertRefactor =<< mkResolveDeadlock ["d^0#0", "d^0#1"]
+                assertRefactor
+                    =<< mkOptimizeAccum
+                        [ add "_0#d" "c^0#0" ["d^0#0", "d^0#1", "d^0#2"]
+                        , add "a^0#0" "b^0#0" ["_0#d"]
+                        ]
+                        [ acc
+                            [ Push Plus $ I "a^0#0"
+                            , Push Plus $ I "b^0#0"
+                            , Push Plus $ I "c^0#0"
+                            , Pull $ O $ S.fromList ["d^0#0"]
+                            , Pull $ O $ S.fromList ["d^0#1"]
+                            , Pull $ O $ S.fromList ["d^0#2"]
+                            ]
+                        ]
             ]
         , testGroup
             "BusNetwork negative tests"
             [ expectFail $
-                unitTestCase "assertLoopBroken fail when func not binded" tbr $ do
-                    breakLoopTemplate
-                    bindInit
-                    let loopEC = loop 0 "e#0" ["c#0"]
-                    let loopDA = loop 0 "d#0" ["a#0"]
-                    bindVariables [loopEC, loopDA]
-                    assertLoopBroken [loopEC, loopDA]
-            , expectFail $
-                unitTestCase "assertLoopBroken fail when func binded" tbr $ do
-                    breakLoopTemplate
-                    bindInit
-                    let loopEC = loop 0 "e#0" ["c#0"]
-                    bindVariable loopEC
-                    assertLoopBroken [loopEC]
-            , expectFail $
-                unitTestCase "assertLoopBroken when func binded" tbr $ do
-                    -- TODO fix case: for unknown reason loop e -> c is not present in process:
-                    -- ["bind LoopBegin loop(0, e#0) = c#0 c#0","bind LoopEnd loop(0, e#0) = c#0 e#0"]
-                    breakLoopTemplate
-                    loopFs <- getLoopFunctions
-                    assertSynthesisRunAuto
-                    traceBus
-                    assertLoopBroken loopFs
+                unitTestCase "target system: manual synthesis, refactor loop break not applied" def $ do
+                    setNetwork march
+                    setBusType pInt
+                    let l = loop 0 "d^0#0" ["a^0#0"]
+                    bind2network l
+                    doBind "fram1" l
+                    assertRefactor =<< mkBreakLoop 0 "d^0#0" ["a^0#0"]
             ]
         ]
     where
-        tbr = def :: Val x => TargetSynthesis T.Text T.Text x Int
         u = multiplier True :: Multiplier String Int Int
         broken = def :: Broken String Int Int
-        breakLoopTemplate = do
-            setNetwork march
-            setBusType pInt
-            assignLua
-                [__i|
-                        function sum(a, c)
-                            local d = a + c 
-                            local m = 100
-                            local e = m + 1
-                            sum(d, e)
-                        end
-                        sum(0,0)
-                    |]

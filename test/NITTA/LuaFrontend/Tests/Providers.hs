@@ -36,7 +36,6 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
-import NITTA.Synthesis
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 
@@ -75,11 +74,9 @@ typedIOLuaTestCase ::
     [(T.Text, [x])] ->
     T.Text ->
     TestTree
-typedIOLuaTestCase arch proxy name received src = unitTestCase name ts $ do
+typedIOLuaTestCase arch proxy name received src = unitTestCase name def $ do
     setNetwork arch
     setBusType proxy
-    setRecievedValues received
+    setReceivedValues received
     assignLua src
-    assertSynthesisDoneAuto
-
-ts = def :: Val x => TargetSynthesis T.Text T.Text x Int
+    synthesizeAndCoSim

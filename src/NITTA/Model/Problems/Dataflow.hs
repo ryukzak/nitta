@@ -24,8 +24,10 @@ module NITTA.Model.Problems.Dataflow (
 import Data.Bifunctor
 import Data.String.ToString
 import GHC.Generics
+import NITTA.Intermediate.Variable
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Time
+import NITTA.Utils
 import Numeric.Interval.NonEmpty
 
 {- |Dataflow option (@tp ~ TimeConstraint t@) or decision (@tp Z Interval t@)
@@ -46,6 +48,9 @@ instance (ToString tag, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) wh
         "DataflowSt{ dfSource=" <> show' dfSource <> ", dfTargets=" <> show (map show' dfTargets) <> "}"
         where
             show' (tag, ep) = "(" <> toString tag <> ", " <> show ep <> ")"
+
+instance (Ord v) => Variables (DataflowSt tag v tp) v where
+    variables DataflowSt{dfTargets} = unionsMap (variables . snd) dfTargets
 
 {- |Implemented for any things, which can send data between processor units over
 the network.

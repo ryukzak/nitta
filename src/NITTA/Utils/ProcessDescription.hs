@@ -27,6 +27,7 @@ module NITTA.Utils.ProcessDescription (
     scheduleFunctionBind,
     scheduleFunctionRevoke,
     scheduleFunction,
+    scheduleRefactoring,
     scheduleInstructionUnsafe,
     scheduleInstructionUnsafe_,
     scheduleNestedStep,
@@ -60,8 +61,11 @@ from the PU by the 'process' function.
 -}
 execSchedule pu st = snd $ runSchedule pu st
 
-{- |Execute process builder and return new process description. The initial process state is passed
-explicetly.
+{- |Execute process builder and return new process description. The initial
+process state is passed explicetly.
+
+Why can not we get a process here? In the case of Bus Network, it also fetches
+processes from underlying units.
 -}
 execScheduleWithProcess pu p st = snd $ runScheduleWithProcess pu p st
 
@@ -136,6 +140,8 @@ scheduleFunctionRevoke f = do
 
 -- |Add to the process description information about function evaluation.
 scheduleFunction ti f = scheduleStep ti $ FStep f
+
+scheduleRefactoring ti ref = scheduleStep ti $ RefactorStep ref
 
 {- |Add to the process description information about endpoint behaviour, and it's low-level
 implementation (on instruction level). Vertical relations connect endpoint level and instruction

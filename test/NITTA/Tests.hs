@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -27,6 +28,7 @@ module NITTA.Tests (
 import Data.Default
 import Data.Map.Strict (fromList)
 import qualified Data.Set as S
+import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -35,7 +37,6 @@ import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
-import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
@@ -43,20 +44,20 @@ import Test.Tasty.TH
 -- FIXME: avoid NITTA.Model.Tests.Internals usage
 
 test_fibonacci =
-    [ unitTestCase "simple" ts $ do
+    [ unitTestCase "simple" def $ do
         setNetwork march
-        assignFunction $ F.loop (0 :: Int) "b2" ["a1"]
-        assignFunction $ F.loop (1 :: Int) "c" ["b1", "b2"]
-        assignFunction $ F.add "a1" "b1" ["c"]
-        assertSynthesisDoneAuto
-    , unitTestCase "io_drop_data" ts $ do
+        bind2network $ F.loop (0 :: Int) "b2" ["a1"]
+        bind2network $ F.loop (1 :: Int) "c" ["b1", "b2"]
+        bind2network $ F.add "a1" "b1" ["c"]
+        synthesizeAndCoSim
+    , unitTestCase "io_drop_data" def $ do
         setNetwork $ marchSPIDropData True pInt
-        assignFunctions algWithSend
-        assertSynthesisDoneAuto
-    , unitTestCase "io_no_drop_data" ts $ do
+        mapM_ bind2network algWithSend
+        synthesizeAndCoSim
+    , unitTestCase "io_no_drop_data" def $ do
         setNetwork $ marchSPI True pInt
-        assignFunctions algWithSend
-        assertSynthesisDoneAuto
+        mapM_ bind2network algWithSend
+        synthesizeAndCoSim
     ]
     where
         algWithSend =
@@ -67,9 +68,11 @@ test_fibonacci =
             ]
 
 test_add_and_io =
-    [ unitTestCase "receive 4 variables" ts $ do
-        setNetwork $ marchSPI True pInt
-        assignFunctions
+    [ unitTestCase "receive several values and complex accum" def $ do
+        setNetwork $ microarch Sync SlaveSPI
+        setBusType pIntX32
+        mapM_
+            bind2network
             [ F.receive ["a"]
             , F.receive ["b"]
             , F.receive ["e"]
@@ -80,24 +83,76 @@ test_add_and_io =
             , F.send "g"
             , F.send "h"
             ]
-        setRecievedValues
+        setReceivedValues
             [ ("a", [10 .. 15])
             , ("b", [20 .. 25])
             , ("e", [0 .. 25])
             , ("f", [20 .. 30])
             ]
-        assertSynthesisDoneAuto
+        synthesizeAndCoSim
     ]
 
-ts = def :: TargetSynthesis _ _ _ _
+test_manual =
+    [ unitTestCase "target system: full manual synthesis" def $ do
+        setNetwork $ marchSPI True pAttrIntX32
+        setBusType pAttrIntX32
+        assignLua
+            [__i|
+                function sum(a, b, c)
+                    local d = a + b + c -- should AccumOptimization
+                    local e = d + 1 -- e and d should be buffered
+                    local f = d+ 2
+                    sum(d, f, e)
+                end
+                sum(0,0,0)
+            |]
+        mapM_
+            (uncurry doBind)
+            [ ("fram1", F.loop 0 "d^0#2" ["a^0#0"])
+            , ("fram1", F.loop 0 "f^0#0" ["b^0#0"])
+            , ("fram1", F.loop 0 "e^0#0" ["c^0#0"])
+            , ("fram1", F.constant 1 ["!1#0"])
+            , ("fram1", F.constant 2 ["!2#0"])
+            , ("accum", F.add "a^0#0" "b^0#0" ["_0#d"])
+            , ("accum", F.add "_0#d" "c^0#0" ["d^0#0", "d^0#1", "d^0#2"])
+            , ("accum", F.add "d^0#1" "!2#0" ["f^0#0"])
+            , ("accum", F.add "d^0#0" "!1#0" ["e^0#0"])
+            ]
+        refactor =<< mkBreakLoop 0 "d^0#2" ["a^0#0"]
+        refactor =<< mkBreakLoop 0 "f^0#0" ["b^0#0"]
+        refactor =<< mkBreakLoop 0 "e^0#0" ["c^0#0"]
+        doTransfer ["a^0#0"]
+        doTransfer ["b^0#0"]
+        refactor =<< mkResolveDeadlock ["_0#d"]
+        doBind "fram1" $ F.buffer "_0#d@buf" ["_0#d"]
+        doTransfer ["_0#d@buf"]
+        doTransfer ["_0#d"]
+        doTransfer ["c^0#0"]
+        doTransfer ["d^0#2"]
+        refactor =<< mkResolveDeadlock ["d^0#0", "d^0#1"]
+        doBind "fram1" $ F.buffer "d^0#0@buf" ["d^0#0", "d^0#1"]
+        doTransfer ["d^0#0@buf"]
+        doTransfer ["d^0#1"]
+        doTransfer ["!2#0"]
+        doTransfer ["f^0#0"]
+        doTransfer ["d^0#0"]
+        doTransfer ["!1#0"]
+        doTransfer ["e^0#0"]
+        assertSynthesisComplete
+        assertTargetSystemCoSimulation
+    ]
+
 f1 = F.add "a" "b" ["c", "d"] :: F T.Text Int
 
 patchP :: (Patch a (T.Text, T.Text)) => (T.Text, T.Text) -> a -> a
 patchP = patch
+
 patchI :: (Patch a (I T.Text, I T.Text)) => (I T.Text, I T.Text) -> a -> a
 patchI = patch
+
 patchO :: (Patch a (O T.Text, O T.Text)) => (O T.Text, O T.Text) -> a -> a
 patchO = patch
+
 patchC :: (Patch a (Changeset T.Text)) => Changeset T.Text -> a -> a
 patchC = patch
 

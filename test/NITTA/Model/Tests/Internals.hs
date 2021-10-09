@@ -11,7 +11,6 @@ Stability   : experimental
 module NITTA.Model.Tests.Internals (
     runTargetSynthesisWithUniqName,
     uniqTestPath,
-    synthesizeTargetSystemWithUniqName,
 ) where
 
 import Control.Concurrent.STM.TVar
@@ -38,7 +37,3 @@ uniqTestPath name =
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
     name <- uniqTestPath tName
     runTargetSynthesis t{tName = name}
-
-synthesizeTargetSystemWithUniqName t@TargetSynthesis{tName} = do
-    name <- uniqTestPath tName
-    synthesizeTargetSystem t{tName = name}
