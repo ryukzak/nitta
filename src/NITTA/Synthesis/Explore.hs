@@ -31,7 +31,6 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import NITTA.Intermediate.Types
-import NITTA.Model.IntegrityCheck
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
@@ -119,9 +118,8 @@ isLeaf
                 , sResolveDeadlockOptions = []
                 , sOptimizeAccumOptions = []
                 , sConstantFoldingOptions = []
-                , sTarget
                 }
-        } = checkIntegrity $ mUnit sTarget
+        } = True
 isLeaf _ = False
 
 isComplete = isSynthesisComplete . sTarget . sState

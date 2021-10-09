@@ -43,7 +43,7 @@ instance {-# OVERLAPS #-} (ProcessorUnit (pu v x t) v x2 t2) => ProcessConsisten
                 ]
          in checkResult isConsistent
 
-instance  {-# INCOHERENT #-} (ProcessorUnit (pu v x t) v x2 t2, UnitTag (pu v x t)) => ProcessConsistent (BusNetwork (pu v x t) v x2 t2) where
+instance {-# INCOHERENT #-} (ProcessorUnit (pu v x t) v x2 t2, UnitTag (pu v x t)) => ProcessConsistent (BusNetwork (pu v x t) v x2 t2) where
     checkProcessСonsistent pu =
         let isConsistent =
                 [ checkEndpointToIntermidiateRelation (getEpMap pu) (getInterMap pu) (getTransportMap pu) pu
@@ -51,9 +51,10 @@ instance  {-# INCOHERENT #-} (ProcessorUnit (pu v x t) v x2 t2, UnitTag (pu v x 
                 , checkCadToFunctionRelation (getCadFunctionsMap pu) (getCadStepsMap pu) pu
                 ]
          in checkResult isConsistent
-    checkProcessСonsistent pu =
-        let isConsistent = [Left "Trying to run BusNetwork"]
-         in checkResult isConsistent
+
+-- checkProcessСonsistent _pu =
+--     let isConsistent = [Left "Trying to run BusNetwork"]
+--      in checkResult isConsistent
 
 checkResult res =
     if any isLeft res
@@ -186,11 +187,11 @@ getTransportMap pu =
      in M.fromList $ mapMaybe (uncurry $ filterTransport pu) $ M.toList $ getInstrMap pu
 
 getTransportMapBus pu =
-            let filterTransport pu' (InstructionStep ins)
-                    | Just (Transport v _ _) <- castInstruction pu' ins = Just v
-                    | otherwise = Nothing
-                filterTransport _ _ = Nothing
-             in M.mapMaybe (filterTransport pu) $ getInstrMap pu
+    let filterTransport pu' (InstructionStep ins)
+            | Just (Transport v _ _) <- castInstruction pu' ins = Just v
+            | otherwise = Nothing
+        filterTransport _ _ = Nothing
+     in M.mapMaybe (filterTransport pu) $ getInstrMap pu
 
 getCadFunctionsMap pu =
     let filterCad (_, f)
