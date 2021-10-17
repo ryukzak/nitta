@@ -137,6 +137,7 @@ tests:
       - file-embed
       - genvalidity
       - genvalidity-property
+      - language-lua
       - nitta
       - split
       - stm

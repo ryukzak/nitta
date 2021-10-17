@@ -266,6 +266,7 @@ test-suite nitta-test
     , ginger
     , htoml
     , intervals
+    , language-lua
     , mtl
     , nitta
     , prettyprinter
