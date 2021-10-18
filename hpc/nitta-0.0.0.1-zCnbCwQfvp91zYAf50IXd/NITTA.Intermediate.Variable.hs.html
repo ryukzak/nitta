@@ -79,7 +79,7 @@ span.spaces    { background: white }
 <span class="lineno">   60 </span>    <span class="decl"><span class="istickedoff">bufferSuffix s = s &lt;&gt; &quot;@buf&quot;</span></span>
 <span class="lineno">   61 </span>    <span class="decl"><span class="istickedoff">countSuffix s | s == T.empty = 0</span>
 <span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">countSuffix s</span>
-<span class="lineno">   63 </span><span class="spaces">        </span><span class="istickedoff">| Just s' &lt;- T.stripPrefix &quot;@buf&quot; s = 1 + countSuffix s'</span>
+<span class="lineno">   63 </span><span class="spaces">        </span><span class="istickedoff">| Just s' &lt;- T.stripPrefix &quot;@buf&quot; s = <span class="nottickedoff">1 + countSuffix s'</span></span>
 <span class="lineno">   64 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = countSuffix $ T.drop 1 s</span></span>
 
 </pre>

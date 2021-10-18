@@ -31,9 +31,9 @@ span.spaces    { background: white }
 <span class="lineno">   12 </span>    minimumOn,
 <span class="lineno">   13 </span>    maximumOn,
 <span class="lineno">   14 </span>    toText,
-<span class="lineno">   15 </span>    showText,
-<span class="lineno">   16 </span>    readText,
-<span class="lineno">   17 </span>    fromText,
+<span class="lineno">   15 </span>    fromText,
+<span class="lineno">   16 </span>    showText,
+<span class="lineno">   17 </span>    readText,
 <span class="lineno">   18 </span>    vsToStringList,
 <span class="lineno">   19 </span>) where
 <span class="lineno">   20 </span>
@@ -53,11 +53,11 @@ span.spaces    { background: white }
 <span class="lineno">   34 </span>
 <span class="lineno">   35 </span><span class="decl"><span class="istickedoff">toText v = T.pack $ toString v</span></span>
 <span class="lineno">   36 </span>
-<span class="lineno">   37 </span><span class="decl"><span class="istickedoff">showText v = T.pack $ show v</span></span>
+<span class="lineno">   37 </span><span class="decl"><span class="istickedoff">fromText v = fromString $ T.unpack v</span></span>
 <span class="lineno">   38 </span>
-<span class="lineno">   39 </span><span class="decl"><span class="istickedoff">readText v = read $ T.unpack v</span></span>
+<span class="lineno">   39 </span><span class="decl"><span class="istickedoff">readText t = read $ T.unpack t</span></span>
 <span class="lineno">   40 </span>
-<span class="lineno">   41 </span><span class="decl"><span class="nottickedoff">fromText v = fromString $ T.unpack v</span></span>
+<span class="lineno">   41 </span><span class="decl"><span class="istickedoff">showText v = T.pack $ show v</span></span>
 <span class="lineno">   42 </span>
 <span class="lineno">   43 </span><span class="decl"><span class="istickedoff">vsToStringList vs = map toString $ elems vs</span></span>
 
