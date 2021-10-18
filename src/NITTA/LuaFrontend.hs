@@ -1,12 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
-{-# OPTIONS -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
 {- |
 Module      : NITTA.LuaFrontend
@@ -15,31 +11,69 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+This module analyzes an abstract syntax tree of the Lua language source code, provided by Language.Lua module,
+and stores it into a NITTA's data flow graph.
+
+Supported Lua costructions are:
+
+* Simple math operators (addition, subtraction, multiplication and division);
+
+* Variable assignments;
+
+* Bitwise left and right shifts;
+
+* Recursive calls.
 -}
 module NITTA.LuaFrontend (
     lua2functions,
     FrontendResult (..),
     TraceVar (..),
+
+    -- * Internal
+    LuaAlgBuilder (..),
+    LuaStatement (..),
+    LuaValueInstance (..),
+    findStartupFunction,
+    getLuaBlockFromSources,
+    processStatement,
 ) where
 
-import Control.Monad.Identity
 import Control.Monad.State
-import Data.Bifunctor
 import qualified Data.HashMap.Strict as HM
-import Data.List (find, group, sort)
+import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.String
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import Data.Text (Text, unpack)
 import qualified Data.Text as T
 import Language.Lua
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import NITTA.Utils (modify'_)
 import NITTA.Utils.Base
 import Text.Printf
+
+getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
+getUniqueLuaVariableName LuaValueInstance{lviName, lviAssignCount} luaValueAccessCount
+    | T.head lviName == '_' = lviName
+    | otherwise = lviName <> "^" <> showText lviAssignCount <> "#" <> showText luaValueAccessCount
+
+data LuaStatement x = LuaStatement
+    { fIn :: [T.Text]
+    , fOut :: [LuaValueInstance]
+    , fName :: T.Text
+    , fValues :: [x]
+    , fInt :: [Int]
+    }
+    deriving (Show, Eq)
+
+-- | Stores information about a particular version of a variable. The version of a variable changes after assigning a new value to it.
+data LuaValueInstance = LuaValueInstance
+    { lviName :: T.Text
+    , lviAssignCount :: Int
+    , lviIsConstant :: Bool
+    }
+    deriving (Show, Eq)
 
 data FrontendResult v x = FrontendResult
     { frDataFlow :: DataFlowGraph v x
@@ -47,13 +81,321 @@ data FrontendResult v x = FrontendResult
     , frPrettyLog :: [HM.HashMap v x] -> [HM.HashMap String String]
     }
 
-data TraceVar = TraceVar {tvFmt, tvVar :: Text}
+data TraceVar = TraceVar {tvFmt, tvVar :: T.Text}
+    deriving (Show)
+
+instance Hashable LuaValueInstance where
+    hashWithSalt i LuaValueInstance{lviName, lviAssignCount, lviIsConstant} =
+        ( (hashWithSalt i lviName * 31)
+            + hashWithSalt i lviAssignCount
+        )
+            * 31
+            + hashWithSalt i lviIsConstant
+
+data LuaAlgBuilder x = LuaAlgBuilder
+    { -- | A list containing all expressions to be added to the final graph.
+      algGraph :: [LuaStatement x]
+    , -- | A table that maps a variable name to the most recent corresponding LuaValueInstance.
+      algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
+    , -- | A table needed to generate unique temporary variable names.
+      algVarCounters :: HM.HashMap T.Text Int
+    , -- | A table lists all uses of a particular LuaValueInstance.
+      algVars :: HM.HashMap LuaValueInstance [T.Text]
+    , -- | A table correlating the ordinal number of an argument with a variable storing its value and startup value of this variable.
+      algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
+    , -- | A table correlating constant with LuaValueInstance which store this constant.
+      algConstants :: HM.HashMap T.Text LuaValueInstance
+    , -- | A list that stores debug information about monitored variables and their display formats.
+      algTraceFuncs :: [([T.Text], T.Text)]
+    }
     deriving (Show)
 
 defaultFmt = "%.3f"
 
--- |List contains IO Function names to be printed by default.
-listFuncIO = ["send", "recieve"]
+--left part of lua statement
+parseLeftExp (VarName (Name v)) = v
+parseLeftExp var = error $ "unexpected lua variable declaration format : " <> show var
+
+--right part of lua statement
+parseRightExp [fOut] (Binop ShiftL a (Number IntNum s)) = do
+    varName <- parseExpArg fOut a
+    addVariable [varName] [fOut] [] "shiftL" [readText s]
+parseRightExp [fOut] (Binop ShiftR a (Number IntNum s)) = do
+    varName <- parseExpArg fOut a
+    addVariable [varName] [fOut] [] "shiftR" [readText s]
+parseRightExp [fOut] (Number _ valueString) = do
+    addVariable [] [fOut] [readText valueString] "constant" []
+parseRightExp fOut@(x : _) (Binop op a b) = do
+    varNameA <- parseExpArg x a
+    varNameB <- parseExpArg x b
+    addVariable [varNameA, varNameB] fOut [] (getBinopFuncName op) []
+    where
+        getBinopFuncName Add = "add"
+        getBinopFuncName Sub = "sub"
+        getBinopFuncName Mul = "multiply"
+        getBinopFuncName Div = "divide"
+        getBinopFuncName o = error $ "unknown binop: " <> show o
+parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
+parseRightExp fOut (Unop Neg (Number numType name)) = parseRightExp fOut (Number numType ("-" <> name))
+parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
+    varName <- parseExpArg fOut expr
+    addVariable [varName] [fOut] [] "neg" []
+parseRightExp
+    [fOut]
+    ( PrefixExp
+            ( PEFunCall
+                    ( NormalFunCall
+                            (PEVar (VarName (Name fname)))
+                            (Args args)
+                        )
+                )
+        ) = do
+        fIn <- mapM (parseExpArg fOut) args
+        addFunction fname fIn [fOut]
+parseRightExp [fOut] (PrefixExp (PEVar (VarName (Name name)))) = do
+    addAlias fOut name
+parseRightExp _ expr = error $ "unknown expression : " <> show expr
+
+parseExpArg _ n@(Number _ _) = do
+    addConstant n
+parseExpArg fOut expr@(Unop Neg _) = do
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp [name] expr
+    addVariableAccess name
+parseExpArg _ (PrefixExp (PEVar (VarName (Name name)))) = do
+    addVariableAccess name
+parseExpArg fOut binop@Binop{} = do
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp [name] binop
+    addVariableAccess name
+parseExpArg fOut (PrefixExp (Paren arg)) = parseExpArg fOut arg
+parseExpArg fOut call@(PrefixExp (PEFunCall _)) = do
+    name <- getNextTmpVarName fOut
+    _ <- parseRightExp [name] call
+    addVariableAccess name
+parseExpArg _ _ = undefined
+
+getNextTmpVarName fOut
+    | T.isInfixOf "#" fOut = getNextTmpVarName (T.splitOn "#" fOut !! 1)
+    | otherwise = do
+        luaAlgBuilder@LuaAlgBuilder{algVarCounters} <- get
+        case HM.lookup fOut algVarCounters of
+            Just value -> do
+                put luaAlgBuilder{algVarCounters = HM.insert fOut (value + 1) algVarCounters}
+                return $ "_" <> showText value <> "#" <> fOut
+            Nothing -> do
+                put luaAlgBuilder{algVarCounters = HM.insert fOut 1 algVarCounters}
+                return $ "_0#" <> fOut
+
+addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
+    mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0 ..]
+    return ""
+    where
+        addToBuffer name valueString serialNumber = do
+            luaAlgBuilder@LuaAlgBuilder{algVars, algLatestLuaValueInstance, algStartupArgs} <- get
+            let value = LuaValueInstance{lviName = name, lviAssignCount = 0, lviIsConstant = False}
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name value algLatestLuaValueInstance, algVars = HM.insert value [] algVars, algStartupArgs = HM.insert serialNumber (name, valueString) algStartupArgs}
+            return value
+addStartupFuncArgs _ _ = undefined
+
+--Lua language Stat structure parsing
+--LocalAssign
+processStatement _ (LocalAssign _names Nothing) = do
+    return ()
+processStatement fn (LocalAssign names (Just exps)) =
+    processStatement fn $ Assign (map VarName names) exps
+--Assign
+processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
+    processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
+processStatement _ (Assign lexp [rexp]) = do
+    parseRightExp (map parseLeftExp lexp) rexp
+processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
+    mapM_ (\(VarName (Name name), expr) -> processStatement startupFunctionName (Assign [VarName (Name (getTempAlias name))] [expr])) $ zip vars exps
+    mapM_ (\(VarName (Name name)) -> addAlias name (getTempAlias name)) vars
+    where
+        getTempAlias name = name <> "&"
+--startup function recursive call
+processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
+    | fn == fName = do
+        LuaAlgBuilder{algStartupArgs} <- get
+        let startupVarsNames = map ((\(Just x) -> x) . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
+        let startupVarsVersions = map (\x -> LuaValueInstance{lviName = fst x, lviAssignCount = 0, lviIsConstant = False}) startupVarsNames
+        mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
+    where
+        parseStartupArg (arg, valueVersion, index) = do
+            varName <- parseExpArg "loop" arg
+            luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
+            put luaAlgBuilder{algGraph = LuaStatement{fIn = [varName], fOut = [valueVersion], fValues = [index], fName = "loop", fInt = []} : algGraph}
+processStatement _ (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
+    fIn <- mapM (parseExpArg "tmp") args
+    addFunction (fromText fName) fIn [fromString ""]
+processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
+    let fIn = map parseTraceArg args
+    luaAlgBuilder@LuaAlgBuilder{algTraceFuncs, algLatestLuaValueInstance} <- get
+    case (fName, fIn) of
+        ("trace", tFmt : vs)
+            | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
+                let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
+                put luaAlgBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
+        ("trace", vs) -> do
+            let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
+            put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
+        _ -> error $ "unknown debug method: " <> show fName <> " " <> show args
+    where
+        parseTraceArg (String s) = s
+        parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
+        parseTraceArg _ = undefined
+processStatement _ _stat = error $ "unknown statement: " <> show _stat
+
+addFunction funcName [i] fOut | toString funcName == "buffer" = do
+    addVariable [i] fOut [] "buffer" []
+addFunction funcName [i] fOut | toString funcName == "brokenBuffer" = do
+    addVariable [i] fOut [] "brokenBuffer" []
+addFunction funcName [i] _ | toString funcName == "send" = do
+    luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
+    put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
+addFunction funcName _ fOut | toString funcName == "receive" = do
+    addVariable [] fOut [] "receive" []
+addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
+
+addConstant (Number _valueType valueString) = do
+    luaAlgBuilder@LuaAlgBuilder{algGraph, algVars, algConstants} <- get
+    let lvv = LuaValueInstance{lviName = valueString, lviAssignCount = 0, lviIsConstant = True}
+    case HM.lookup valueString algConstants of
+        Just value -> do
+            let names = fromMaybe (error "lua constants parsing error") $ HM.lookup value algVars
+            let resultName = getUniqueLuaVariableName lvv $ length names
+            put luaAlgBuilder{algVars = HM.insert value (resultName : names) algVars}
+            return resultName
+        Nothing -> do
+            let resultName = getUniqueLuaVariableName lvv 0
+            put
+                luaAlgBuilder
+                    { algGraph = LuaStatement{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = "constant", fInt = []} : algGraph
+                    , algVars = HM.insert lvv [resultName] algVars
+                    , algConstants = HM.insert valueString lvv algConstants
+                    }
+            return resultName
+addConstant _ = undefined
+
+addVariable fIn fOut fValues fName fInt = do
+    LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    let luaValueInstances = map (\x -> nameToLuaValueInstance algLatestLuaValueInstance x) fOut
+    let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueInstances}
+    mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueInstances
+    mapM_ addItemToVars luaValueInstances
+    luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueInstance = algLatestLuaValueInstance'} <- get
+    case fName of
+        "constant" -> do
+            case HM.lookup (showText $ head fValues) algConstants of
+                Just lvv -> do
+                    put luaAlgBuilder{algLatestLuaValueInstance = HM.insert (head fOut) lvv algLatestLuaValueInstance'}
+                Nothing -> do
+                    put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (showText $ head fValues) (head luaValueInstances) algConstants}
+        _ -> do
+            put luaAlgBuilder{algGraph = func : algGraph}
+    where
+        nameToLuaValueInstance algLatestLuaValueInstance name =
+            case getLuaValueByName name algLatestLuaValueInstance of
+                Just lvv@LuaValueInstance{lviAssignCount} -> lvv{lviAssignCount = lviAssignCount + 1}
+                Nothing -> LuaValueInstance{lviName = name, lviAssignCount = 0, lviIsConstant = False}
+        addItemToBuffer name lvv = do
+            luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} <- get
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name lvv algLatestLuaValueInstance}
+        addItemToVars name = do
+            luaAlgBuilder@LuaAlgBuilder{algVars} <- get
+            put luaAlgBuilder{algVars = HM.insert name [] algVars}
+
+addVariableAccess name = do
+    luaAlgBuilder@LuaAlgBuilder{algVars} <- get
+    luaValueInstance <- getLatestLuaValueInstanceByName name
+    case HM.lookup luaValueInstance algVars of
+        Just value -> do
+            let len = length value
+            let resultName = getUniqueLuaVariableName luaValueInstance len
+            put luaAlgBuilder{algVars = HM.insert luaValueInstance (resultName : value) algVars}
+            return resultName
+        Nothing -> error ("variable '" <> show (lviName luaValueInstance) <> " not found. Constants list : " <> show algVars)
+
+getLatestLuaValueInstanceByName name = do
+    LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    case HM.lookup name algLatestLuaValueInstance of
+        Just value -> return value
+        Nothing -> error $ "variable not found : '" <> show name <> "'."
+
+addAlias from to = do
+    luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} <- get
+    case getLuaValueByName to algLatestLuaValueInstance of
+        Just value -> do
+            put luaAlgBuilder{algLatestLuaValueInstance = HM.insert from value algLatestLuaValueInstance}
+        Nothing -> error ("variable '" <> show to <> " not found. Constants list : " <> show algLatestLuaValueInstance)
+
+getLuaValueByName name buffer = HM.lookup name buffer
+
+buildAlg syntaxTree =
+    flip execState emptyLuaAlgBuilder $ do
+        let (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree
+            statements = funAssignStatements startupFunctionDef
+        _ <- addStartupFuncArgs startupFunctionCall startupFunctionDef
+        mapM_ (processStatement startupFunctionName) statements
+    where
+        emptyLuaAlgBuilder =
+            LuaAlgBuilder
+                { algGraph = []
+                , algLatestLuaValueInstance = HM.empty
+                , algVarCounters = HM.empty
+                , algVars = HM.empty
+                , algStartupArgs = HM.empty
+                , algConstants = HM.empty
+                , algTraceFuncs = []
+                }
+        funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements
+        funAssignStatements _ = error "funAssignStatements : not a function assignment"
+
+findStartupFunction (Block statements Nothing)
+    | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
+      , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
+      , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
+      , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
+      , fnCall == fnAssign =
+        (fnCall, call, funAssign)
+findStartupFunction _ = error "can't find startup function in lua source code"
+
+getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " <> show e) id $ parseText chunk src
+
+alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do
+    mapM addToGraph algGraph
+    where
+        addToGraph item = do
+            graph <- get
+            put (addFuncToDataFlowGraph (function2nitta item) graph)
+            return $ fromString ""
+        function2nitta LuaStatement{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer i $ output o
+        function2nitta LuaStatement{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer i $ output o
+        function2nitta LuaStatement{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x $ output o
+        function2nitta LuaStatement{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send i
+        function2nitta LuaStatement{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add a b $ output c
+        function2nitta LuaStatement{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub a b $ output c
+        function2nitta LuaStatement{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply a b $ output c
+        function2nitta LuaStatement{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division d n (output q) (output r)
+        function2nitta LuaStatement{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg i $ output o
+        function2nitta LuaStatement{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o
+        function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s a $ output c
+        function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s a $ output c
+        function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x a $ output c
+        function2nitta f = error $ "function not found: " <> show f
+        output v =
+            case HM.lookup v algVars of
+                Just names -> names
+                _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
+
+lua2functions src =
+    let syntaxTree = getLuaBlockFromSources src
+        luaAlgBuilder = buildAlg syntaxTree
+        frTrace = getFrTrace $ algTraceFuncs luaAlgBuilder
+     in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+
+getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
 
 prettyLog traceVars hms = map prettyHM hms
     where
@@ -62,414 +404,9 @@ prettyLog traceVars hms = map prettyHM hms
             -- variables names end on #0, #1..., so we trim this suffix
             let v = takeWhile (/= '#') $ toString v0
             fmt <- v2fmt M.!? v
-            Just (toString v, printx (T.unpack fmt) x)
+            Just (toString (takeWhile (/= '^') v), printx (T.unpack fmt) x)
         v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
         printx p x
             | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
             | 's' `elem` p = printf p $ show x
             | otherwise = printf p x
-
-lua2functions src =
-    let ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
-        AlgBuilder{algItems} = buildAlg ast
-        fs = filter (\case Function{} -> True; _ -> False) algItems
-        ioVariables = getIOVariables defaultFmt algItems
-        varDict =
-            M.fromList $
-                map varRow $
-                    group $ sort $ concatMap fIn fs
-        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
-        frDataFlow = fsToDataFlowGraph alg
-        traceFunctions = [tf | tf@TraceFunction{} <- algItems]
-
-        frTrace =
-            if not $ null traceFunctions
-                then
-                    [ TraceVar tFmt v
-                    | TraceFunction{tFmt, tVars} <- traceFunctions
-                    , v <- tVars
-                    ]
-                else
-                    ioVariables
-                        <> [ TraceVar defaultFmt iVar
-                           | InputVar{iVar} <- algItems
-                           ]
-     in FrontendResult
-            { frDataFlow
-            , frTrace
-            , frPrettyLog = prettyLog frTrace
-            }
-    where
-        varRow lst@(x : _) =
-            let vs = zipWith f lst [0 :: Int ..]
-             in (x, (vs, vs))
-        varRow _ = undefined
-        f v ix = fromString (toString v <> "#" <> show ix)
-
-getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
-    where
-        convToTraceVar func = map (TraceVar fmt) $ fIn func
-        filterIoFunc = filter (\case item@Function{} -> fName item `elem` listFuncIO; _ -> False) algItems
-
-buildAlg ast = flip execState st0 $ do
-    addMainInputs mainFunDef mainCall
-    mapM_ (processStatement mainName) $ funAssignStatements mainFunDef
-    addConstants
-    where
-        Right (mainName, mainCall, mainFunDef) = findMain ast
-        st0 =
-            AlgBuilder
-                { algItems = []
-                , algBuffer = []
-                , algVarGen = map showText [0 ..]
-                , algVars = []
-                }
-
-data AlgBuilder x = AlgBuilder
-    { algItems :: [AlgBuilderItem x]
-    , algBuffer :: [AlgBuilderItem x]
-    , algVarGen :: [Text]
-    , algVars :: [Text]
-    }
-
-instance (Show x) => Show (AlgBuilder x) where
-    show AlgBuilder{algItems, algBuffer, algVars} =
-        "AlgBuilder\n{ algItems=\n"
-            ++ S.join "\n" (map (("    " <>) . show) $ reverse algItems)
-            ++ "\nalgBuffer: "
-            ++ show algBuffer
-            ++ "\nalgVars: "
-            ++ show algVars
-            ++ "\n}"
-
-data AlgBuilderItem x
-    = InputVar
-        { -- |Index
-          iIx :: Int
-        , -- |Symbol
-          iVar :: Text
-        , -- |Initial value
-          iX :: x
-        }
-    | Constant {cVar :: Text, cX :: x, cTextX :: Text}
-    | Alias {aFrom :: Text, aTo :: Text}
-    | Renamed {rFrom :: Text, rTo :: Text}
-    | Function
-        { fIn :: [Text]
-        , fOut :: [Text]
-        , fName :: String
-        , fValues :: [x]
-        , fInt :: [Int]
-        }
-    | TraceFunction
-        { tVars :: [Text]
-        , tFmt :: Text
-        }
-    -- FIXME: check all local variable declaration
-    deriving (Show)
-
--- *Translate AlgBuiler functions to nitta functions
-function2nitta Function{fName = "loop", fIn = [i], fOut = [o], fValues = [x], fInt = []} = F.loop x <$> input i <*> output o
-function2nitta Function{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer <$> input i <*> output o
-function2nitta Function{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer <$> input i <*> output o
-function2nitta Function{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x <$> output o
-function2nitta Function{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send <$> input i
-function2nitta Function{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add <$> input a <*> input b <*> output c
-function2nitta Function{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub <$> input a <*> input b <*> output c
-function2nitta Function{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply <$> input a <*> input b <*> output c
-function2nitta Function{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division <$> input d <*> input n <*> output q <*> output r
-function2nitta Function{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg <$> input i <*> output o
-function2nitta Function{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive <$> output o
-function2nitta Function{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s <$> input a <*> output c
-function2nitta Function{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s <$> input a <*> output c
-function2nitta f = error $ "frontend don't known function: " ++ show f
-
-input v = do
-    (dict, fs) <- get
-    let (x : xs, lst) = dict M.! v
-    put (M.insert v (xs, lst) dict, fs)
-    return x
-
-output v
-    | T.head v == '_' = return []
-    | otherwise = gets $ \(dict, _fs) ->
-        snd (fromMaybe (error $ "unknown variable: " <> show v <> " defined: " <> show (M.keys dict)) (dict M.!? v))
-
-store f = modify'_ $ second (f :)
--- *AST inspection and algorithm builder
-
-findMain (Block statements Nothing)
-    | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
-      , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
-      , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
-      , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
-      , fnCall == fnAssign =
-        Right (fnCall, call, funAssign)
-findMain _ = error "can't find main function in lua source code"
-
-addMainInputs
-    (FunAssign (FunName (Name _funName) _ _) (FunBody declArgs _ _))
-    (FunCall (NormalFunCall _ (Args callArgs))) = do
-        let vars = map (\case (Name v) -> v) declArgs
-
-        let values = map (\case (Number _ s) -> unpack s; _ -> error "lua: wrong main argument") callArgs
-        let values' = map read values
-        when (length vars /= length values') $
-            error "a different number of arguments in main a function declaration and call"
-
-        forM_ (zip3 [0 ..] vars values') $
-            \(iIx, iVar, iX) -> addItem InputVar{iIx, iVar, iX} [iVar]
-addMainInputs _ _ = error "bad main function description"
-
-addConstants = do
-    AlgBuilder{algItems} <- get
-    let constants = filter (\case Constant{} -> True; _ -> False) algItems
-    forM_ constants $ \Constant{cVar, cX} ->
-        addFunction Function{fName = "constant", fIn = [], fOut = [cVar], fValues = [cX], fInt = []}
-
-parseLeftExp = map $ \case
-    VarName (Name v) -> v
-    e -> error $ "bad left expression: " ++ show e
-
--- define a local variable: @local x@ or @local x = ...@. We ignore it, because
--- don't need to support scopes.
-processStatement _fn (LocalAssign _names Nothing) =
-    return ()
-processStatement fn (LocalAssign names (Just rexp)) =
-    processStatement fn $ Assign (map VarName names) rexp
-processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
-    processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
-processStatement _fn (Assign lexps@[_] [n@(Number _ textX)]) = do
-    let outs@[name] = parseLeftExp lexps
-    diff <- renameVarsIfNeeded outs
-    AlgBuilder{algItems} <- get
-    case findConstant textX algItems of
-        Just Constant{cVar} ->
-            -- TODO: sould work correctly, see test test_lua_two_name_for_same_constant
-            error $
-                concat
-                    [ "using several names for one constant value ("
-                    , show cVar
-                    , " and "
-                    , show name
-                    , "), please, use only one name (temporal restriction)"
-                    ]
-        Nothing -> do
-            -- `expConstant` return a wrong name, the correct name will be established
-            -- after all statement was processed
-            void $ expConstant name n
-            flushBuffer diff []
-        _ -> error "internal error"
-
--- e.g. @n, d = a / b@, or @n, d = f()@
-processStatement _fn (Assign lexps [rexp])
-    | length lexps > 1 = do
-        let outs = parseLeftExp lexps
-        diff <- renameVarsIfNeeded outs
-        rightExp diff outs rexp
-        flushBuffer diff outs
-
--- e.g. @a = 1@ or @a, b = 1, 2@
-processStatement _fn st@(Assign lexps rexps)
-    | length lexps == length rexps = do
-        let outs = parseLeftExp lexps
-        diff <- renameVarsIfNeeded outs
-        zipWithM_ (rightExp diff) (map (: []) outs) rexps
-        flushBuffer diff outs
-    | otherwise = error $ "assignment mismatch: " ++ show st
--- recursive call of main function
-processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
-    | fn == fName =
-        do
-            AlgBuilder{algItems} <- get
-            let algIn = reverse $ filter (\case InputVar{} -> True; _ -> False) algItems
-            mapM_ (uncurry f) $ zip algIn args
-    where
-        f InputVar{iX, iVar} rexp = do
-            i <- expArg [] rexp
-            let loop = Function{fName = "loop", fIn = [i], fOut = [iVar], fValues = [iX], fInt = []}
-            modify'_ $ \alg@AlgBuilder{algItems} -> alg{algItems = loop : algItems}
-        f _ _ = undefined
-processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
-    fIn <- mapM (expArg []) args
-    case (fName, fIn) of
-        ("trace", tFmt : vs)
-            | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt ->
-                addFunction TraceFunction{tVars = vs, tFmt = T.replace "\"" "" tFmt}
-        ("trace", vs) -> addFunction TraceFunction{tVars = vs, tFmt = defaultFmt}
-        _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
-processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
-    fIn <- mapM (expArg []) args
-    addFunction Function{fName = unpack fName, fIn, fOut = [], fValues = [], fInt = []}
-processStatement _fn st = error $ "statement: " ++ show st
-
-rightExp diff fOut (Binop ShiftL a (Number IntNum s)) = do
-    a' <- expArg diff a
-    let f = Function{fName = "shiftL", fIn = [a'], fOut, fValues = [], fInt = [readText s :: Int]}
-    patchAndAddFunction f diff
-rightExp diff fOut (Binop ShiftR a (Number IntNum s)) = do
-    a' <- expArg diff a
-    let f = Function{fName = "shiftR", fIn = [a'], fOut, fValues = [], fInt = [readText s :: Int]}
-    patchAndAddFunction f diff
-rightExp diff fOut (Binop op a b) = do
-    a' <- expArg diff a
-    b' <- expArg diff b
-    let f = Function{fName = binop op, fIn = [a', b'], fOut, fValues = [], fInt = []}
-    patchAndAddFunction f diff
-    where
-        binop Add = "add"
-        binop Sub = "sub"
-        binop Mul = "multiply"
-        binop Div = "divide"
-        binop o = error $ "unknown binop: " ++ show o
-rightExp
-    diff
-    fOut
-    ( PrefixExp
-            ( PEFunCall
-                    ( NormalFunCall
-                            (PEVar (VarName (Name fn)))
-                            (Args args)
-                        )
-                )
-        ) = do
-        fIn <- mapM (expArg diff) args
-        let f = Function{fName = unpack fn, fIn, fOut, fValues = [], fInt = []}
-        patchAndAddFunction f diff
-rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
-    =
-    addItemToBuffer Alias{aFrom = a, aTo = applyPatch diff b}
--- a = (...)
-rightExp diff out (PrefixExp (Paren e)) = rightExp diff out e
-rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [n]))))
-rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
-rightExp diff fOut (Unop Neg expr@(PrefixExp _)) = do
-    expr' <- expArg diff expr
-    let f = Function{fName = "neg", fIn = [expr'], fOut, fValues = [], fInt = []}
-    patchAndAddFunction f diff
-rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
-
-expArg _diff n@(Number _ n') = expConstant (n' <> "@const") n
-expArg _diff (Unop Neg (Number numType n)) =
-    let n' = "-" <> n in expConstant (n' <> "@const") $ Number numType n'
-expArg _diff (String s) = return s
-expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
-expArg diff call@(PrefixExp (PEFunCall _)) = do
-    c <- genVar "tmp"
-    rightExp diff [c] call
-    return c
-expArg diff (PrefixExp (Paren arg)) = expArg diff arg
-expArg diff binop@Binop{} = do
-    c <- genVar "tmp"
-    rightExp diff [c] binop
-    return c
-expArg diff expr@(Unop Neg (PrefixExp _)) = do
-    c <- genVar "tmp"
-    rightExp diff [c] expr
-    return c
-expArg _diff a = error $ "expArg: " ++ show a
--- *Internal
-
-findConstant textX = find (\case Constant{cTextX} | cTextX == textX -> True; _ -> False)
-
-expConstant name (Number _ textX) = do
-    AlgBuilder{algItems} <- get
-    case findConstant textX algItems of
-        Just Constant{cVar} -> return cVar
-        Nothing -> do
-            addItem
-                Constant
-                    { cX = readText textX
-                    , cVar = name
-                    , cTextX = textX
-                    }
-                []
-            return name
-        Just _ -> error "internal error"
-expConstant _ _ = undefined
-
-addFunction f@Function{fOut} = do
-    diff <- renameVarsIfNeeded fOut
-    patchAndAddFunction f diff
-addFunction f@TraceFunction{} =
-    modify'_ $ \alg@AlgBuilder{algItems} ->
-        alg{algItems = f : algItems}
-addFunction _ = error "addFunction error"
-
-patchAndAddFunction f@Function{fIn} diff = do
-    let fIn' = map (applyPatch diff) fIn
-    modify'_ $ \alg@AlgBuilder{algItems} ->
-        alg{algItems = f{fIn = fIn'} : algItems}
-patchAndAddFunction _ _ = undefined
-
-renameVarsIfNeeded fOut = do
-    AlgBuilder{algVars} <- get
-    mapM autoRename $ filter (`elem` algVars) fOut
-
-autoRename var = do
-    var' <- genVar var
-    renameFromTo var var'
-    return (var, var')
-
-renameFromTo rFrom rTo = do
-    alg@AlgBuilder{algItems, algVars} <- get
-    put
-        alg
-            { algItems = Renamed{rFrom, rTo} : patch algItems
-            , algVars = rTo : algVars
-            }
-    where
-        patch [] = []
-        patch (i@InputVar{iVar} : xs) = i{iVar = rn iVar} : patch xs
-        patch (Constant{cX, cVar, cTextX} : xs) = Constant{cX, cVar = rn cVar, cTextX} : patch xs
-        patch (Alias{aFrom, aTo} : xs) = Alias (rn aFrom) (rn aTo) : patch xs
-        patch (f@Function{fIn, fOut} : xs) = f{fIn = map rn fIn, fOut = map rn fOut} : patch xs
-        patch (x : xs) = x : patch xs
-
-        rn v
-            | v == rFrom = rTo
-            | otherwise = v
-
-funAssignStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
-funAssignStatements _ = error "funAssignStatements : not function assignment"
-
-flushBuffer diff outs = modify'_ $
-    \alg@AlgBuilder{algBuffer, algItems, algVars} ->
-        alg
-            { algItems = algBuffer ++ algItems
-            , algBuffer = []
-            , algVars = outs ++ map (applyPatch diff) algVars
-            }
-
-addItemToBuffer item = modify'_ $
-    \alg@AlgBuilder{algBuffer} ->
-        alg
-            { algBuffer = item : algBuffer
-            }
-
-addItem item vars = modify'_ $
-    \alg@AlgBuilder{algItems, algVars} ->
-        alg
-            { algItems = item : algItems
-            , algVars = vars ++ algVars
-            }
-
-genVar prefix = do
-    alg@AlgBuilder{algVarGen} <- get
-    when (null algVarGen) $ error "internal error"
-    put alg{algVarGen = tail algVarGen}
-    return $ T.concat [prefix, "_", head algVarGen]
-
-findAlias var0 = do
-    AlgBuilder{algItems} <- get
-    return $ inner var0 algItems
-    where
-        inner var [] = var
-        inner var (Alias{aFrom, aTo} : xs)
-            | aFrom == var = inner aTo xs
-        inner var (_ : xs) = inner var xs
-
-applyPatch diff v =
-    case find ((== v) . fst) diff of
-        Just (_, v') -> v'
-        _ -> v

@@ -12,9 +12,9 @@ module NITTA.Utils.Base (
     minimumOn,
     maximumOn,
     toText,
+    fromText,
     showText,
     readText,
-    fromText,
     vsToStringList,
 ) where
 
@@ -34,10 +34,10 @@ maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
 toText v = T.pack $ toString v
 
-showText v = T.pack $ show v
-
-readText v = read $ T.unpack v
-
 fromText v = fromString $ T.unpack v
+
+readText t = read $ T.unpack t
+
+showText v = T.pack $ show v
 
 vsToStringList vs = map toString $ elems vs

@@ -18,6 +18,7 @@ Stability   : experimental
 module NITTA.Intermediate.DataFlow (
     DataFlowGraph (..),
     fsToDataFlowGraph,
+    addFuncToDataFlowGraph,
 ) where
 
 import qualified Data.List as L
@@ -80,3 +81,6 @@ instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs
+
+addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)
+addFuncToDataFlowGraph f leaf = DFCluster [DFLeaf f, leaf]

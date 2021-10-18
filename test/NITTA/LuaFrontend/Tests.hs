@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,17 +23,225 @@ module NITTA.LuaFrontend.Tests (
     tests,
 ) where
 
-import Control.Exception (ErrorCall, catch)
+import Control.Monad.State
 import Data.FileEmbed (embedStringFile)
+import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
+import Data.Text as T
+import qualified Language.Lua as Lua
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 import Test.Tasty.TH
+
+case_find_startup_function_several_args =
+    let src =
+            [__i|
+                function sum(a, b)
+                    local t = 2
+                    local r = -1
+                    sum(b + t + r, a)
+                end
+                sum(1, 2)
+            |]
+        (actualName, Lua.FunCall (Lua.NormalFunCall _ (Lua.Args actualArgValue)), Lua.FunAssign _ (Lua.FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
+        expectedValues = ("sum", [Lua.Name "a", Lua.Name "b"], [Lua.Number Lua.IntNum "1", Lua.Number Lua.IntNum "2"])
+     in (actualName, actualArg, actualArgValue) @?= expectedValues
+
+case_find_startup_function_no_args =
+    let src =
+            [__i|
+                function sum()
+                    t = receive()
+                    t = t + 1
+                    send(t)
+                    sum()
+                end
+                sum()
+            |]
+        (actualName, Lua.FunCall (Lua.NormalFunCall _ (Lua.Args actualArgValue)), Lua.FunAssign _ (Lua.FunBody actualArg _ _)) = findStartupFunction (getLuaBlockFromSources src)
+        expectedValues = ("sum", [], [])
+     in (actualName, actualArg, actualArgValue) @?= expectedValues
+
+-- |local a = 2
+case_process_local_assignment_statement =
+    let assignment = Lua.LocalAssign [Lua.Name "a"] (Just [Lua.Number Lua.IntNum "2"])
+        expected = HM.fromList [("a", LuaValueInstance "a" 0 False)]
+        (_, LuaAlgBuilder{algLatestLuaValueInstance}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algLatestLuaValueInstance @?= expected
+
+-- |a = 2
+case_process_assignment_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Number Lua.IntNum "2"]
+        expected = HM.fromList [("a", LuaValueInstance "a" 0 False)]
+        (_, LuaAlgBuilder{algLatestLuaValueInstance}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algLatestLuaValueInstance @?= expected
+
+-- | a = 1 + 2
+case_process_add_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Add (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueInstance "a" 0 False], fValues = [], fName = "add", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a = 1 - 2
+case_process_sub_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Sub (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueInstance "a" 0 False], fValues = [], fName = "sub", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a = 1 / 2
+case_process_divide_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueInstance "a" 0 False], fValues = [], fName = "divide", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a, b = 1 / 2
+case_process_divide_mod_rem_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a"), Lua.VarName (Lua.Name "b")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueInstance "a" 0 False
+                    , LuaValueInstance "b" 0 False
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | _, b = 1 / 2
+case_process_divide_rem_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "_"), Lua.VarName (Lua.Name "b")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueInstance "_" 0 False
+                    , LuaValueInstance "b" 0 False
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a, _ = 1 / 2
+case_process_divide_mod_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a"), Lua.VarName (Lua.Name "_")] [Lua.Binop Lua.Div (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement
+                { fIn = ["!1#0", "!2#0"]
+                , fOut =
+                    [ LuaValueInstance "a" 0 False
+                    , LuaValueInstance "_" 0 False
+                    ]
+                , fValues = []
+                , fName = "divide"
+                , fInt = []
+                }
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a = 1 * 2
+case_process_multiply_statement =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Mul (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")]
+        expected =
+            [ LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueInstance "a" 0 False], fValues = [], fName = "multiply", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+-- | a = 1 + 2 + 3
+case_temporary_variable =
+    let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Binop Lua.Add (Lua.Binop Lua.Add (Lua.Number Lua.IntNum "1") (Lua.Number Lua.IntNum "2")) (Lua.Number Lua.IntNum "3")]
+        expected =
+            [ LuaStatement{fIn = ["_0#a", "!3#0"], fOut = [LuaValueInstance "a" 0 False], fValues = [], fName = "add", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "3" 0 True], fValues = [3], fName = "constant", fInt = []}
+            , LuaStatement{fIn = ["!1#0", "!2#0"], fOut = [LuaValueInstance "_0#a" 0 False], fValues = [], fName = "add", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "2" 0 True], fValues = [2], fName = "constant", fInt = []}
+            , LuaStatement{fIn = [], fOut = [LuaValueInstance "1" 0 True], fValues = [1], fName = "constant", fInt = []}
+            ]
+        (_, LuaAlgBuilder{algGraph}) = runState (processStatement "_" assignment) defaultAlgBuilder
+     in algGraph @?= expected
+
+case_lua_two_name_for_same_constant =
+    let src =
+            [__i|
+                function sum(a)
+                    local t = 1
+                    local r = 1
+                    sum(a + t + r + 1)
+                end
+                sum(0)
+            |]
+        dfg =
+            [ constant 1 ["!1#2", "t^0#0", "t^0#1"] :: F T.Text Int
+            , add "a^0#0" "t^0#0" ["_2#loop"]
+            , add "_2#loop" "t^0#1" ["_1#loop"]
+            , add "_1#loop" "!1#2" ["_0#loop"]
+            , loop 0 "_0#loop" ["a^0#0"]
+            ]
+     in functions (frDataFlow $ lua2functions src) @?= dfg
+
+case_lua_negative_operator =
+    let src =
+            [__i|
+                function sum(a)
+                    b = -a
+                    sum(b)
+                end
+                sum(0)
+            |]
+        dfg =
+            [ neg "a^0#0" ["b^0#0"] :: F T.Text Int
+            , loop 0 "b^0#0" ["a^0#0"]
+            ]
+     in functions (frDataFlow $ lua2functions src) @?= dfg
+
+defaultAlgBuilder =
+    LuaAlgBuilder
+        { algGraph = []
+        , algLatestLuaValueInstance = HM.empty
+        , algVarCounters = HM.empty
+        , algVars = HM.empty
+        , algStartupArgs = HM.empty
+        , algConstants = HM.empty
+        , algTraceFuncs = []
+        } ::
+        LuaAlgBuilder Int
 
 case_lua_constant_declatation =
     let src =
@@ -45,37 +254,32 @@ case_lua_constant_declatation =
                 sum(0)
             |]
         dfg =
-            [ add "a#0" "t#0" ["tmp_1#0"]
-            , add "tmp_1#0" "r#0" ["tmp_0#0"]
-            , loop 0 "tmp_0#0" ["a#0"]
-            , constant (-1) ["r#0"]
-            , constant 2 ["t#0"] :: F String Int
+            [ constant 2 ["t^0#0"] :: F T.Text Int
+            , constant (-1) ["r^0#0"]
+            , add "a^0#0" "t^0#0" ["_1#loop"]
+            , add "_1#loop" "r^0#0" ["_0#loop"]
+            , loop 0 "_0#loop" ["a^0#0"]
             ]
-     in dfg @?= functions (frDataFlow $ lua2functions src)
+     in functions (frDataFlow $ lua2functions src) @?= dfg
 
-test_lua_two_name_for_same_constant =
+case_lua_complex_assignment =
     let src =
             [__i|
-                function sum(a)
-                    local t = 1
-                    local r = 1
-                    sum(a + t + r)
+                function sum(a, b)
+                    a, b = b + 2, a + 1
+                    sum(a, b)
                 end
-                sum(0)
+                sum(0, 0)
             |]
-     in -- TODO: it is a correct code and should be translated to dataflow graph
-        -- correctly, but in the current LuaFrontend stage, it cannot be done
-        -- without a huge redesign of LuaFrontend
-        [ expectFail $
-            testCase "contant with same name in lua source code" $ do
-                catch
-                    ( do
-                        let !_ = functions $ frDataFlow $ lua2functions src :: [F String Int]
-                        return ()
-                    )
-                    (\(_ :: ErrorCall) -> assertFailure "fail")
-                assertBool "check temporal restriction" True
-        ]
+        dfg =
+            [ constant 2 ["!2#0"] :: F T.Text Int
+            , add "b^0#0" "!2#0" ["a&^0#0"]
+            , constant 1 ["!1#0"]
+            , add "a^0#0" "!1#0" ["b&^0#0"]
+            , loop 0 "a&^0#0" ["a^0#0"]
+            , loop 0 "b&^0#0" ["b^0#0"]
+            ]
+     in functions (frDataFlow $ lua2functions src) @?= dfg
 
 test_simple_recursion =
     [ luaTestCase
