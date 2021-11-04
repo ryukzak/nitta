@@ -18,4 +18,4 @@ jobs:
         working-directory: ./web
         run: |
           yarn add -s prettier
-          yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+          yarn exec -s prettier -- --check "src/**/{,!(gen)}/*.{ts,tsx}"
