@@ -6,6 +6,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { api, Node, SID } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
 import { getDefaultAxiosErrorHandler } from "../utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 type Row = { original: Node; index: number };
 
@@ -35,9 +36,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
       })
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [appContext.selectedSID, props.reverse]);
 
   function Table(props: { name: string; columns: Column[]; history: Node[] }) {

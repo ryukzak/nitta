@@ -5,6 +5,7 @@ import { Tree as D3Tree } from "react-d3-tree";
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 type Tree = {
   name: string;
@@ -96,9 +97,7 @@ export const SynthesisGraphRender: FC = () => {
       })
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [appContext.selectedSID, knownSID]);
 
   useEffect(() => {

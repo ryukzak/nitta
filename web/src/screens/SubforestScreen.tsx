@@ -9,6 +9,7 @@ import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { SynthesisHistory } from "components/SynthesisHistory";
 import { SubforestTables } from "components/SubforestTables";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 export const SubforestScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -24,9 +25,7 @@ export const SubforestScreen: FC = () => {
       })
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [appContext.selectedSID]);
 
   if (!subforest) {

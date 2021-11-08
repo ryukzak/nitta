@@ -6,6 +6,7 @@ import { api, TestBenchReportData } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -24,9 +25,7 @@ export const TestBenchScreen: FC = () => {
       })
       .catch(getDefaultAxiosErrorHandler(() => setRequestSuccess(false)));
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [appContext.selectedSID]);
 
   if (requestSuccess === null) {

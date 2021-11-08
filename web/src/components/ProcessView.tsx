@@ -10,6 +10,7 @@ import "components/Graphviz.scss";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 /**
  * Component to display target process by GraphViz.
@@ -30,9 +31,7 @@ export const ProcessView: FC<IProcessViewProps> = (props) => {
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [selectedSID]);
 
   if (!process) {

@@ -9,6 +9,7 @@ import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
 import "screens/ProcessScreen.scss";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 export interface Highlight {
   up: number[];
@@ -52,9 +53,7 @@ export const ProcessScreen: FC = () => {
       })
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [appContext.selectedSID]);
 
   if (!data) return <pre>LOADING</pre>;

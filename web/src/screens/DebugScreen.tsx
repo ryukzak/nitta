@@ -6,6 +6,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import Axios from "axios";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 export interface IDebugScreenProps {}
 
@@ -21,9 +22,7 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
       .then((response: any) => setDebugInfo(response.data))
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [selectedSID]);
 
   const [synthesisNodeData, setSynthesisNodeData] = useState<any | null>(null);
@@ -35,9 +34,7 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch(getDefaultAxiosErrorHandler());
 
-    return () => {
-      source.cancel();
-    };
+    return getCancellingCleanupCallback(source);
   }, [selectedSID]);
 
   return (
