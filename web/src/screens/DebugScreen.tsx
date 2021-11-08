@@ -1,10 +1,10 @@
+import Axios from "axios";
 import React, { FC, useState, useEffect, useContext } from "react";
 import "react-table/react-table.css";
 
 import { api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
-import Axios from "axios";
 import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 

@@ -5,13 +5,13 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { api, MicroarchitectureData, NetworkData, UnitData } from "services/HaskellApiService";
 import { UnitEndpointsData, EndpointOptionData } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
+import { useApiRequest } from "hooks/useApiRequest";
+import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
 
 import "components/Graphviz.scss";
-import { useApiRequest } from "hooks/useApiRequest";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
-import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
 const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 
 /**
