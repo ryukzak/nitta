@@ -1,4 +1,3 @@
-import Axios from "axios";
 import React, { useContext, FC, useCallback } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 
@@ -9,7 +8,7 @@ import { RequestResult } from "components/utils/RequestResult";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { CHART_COLOR_PALLETE } from "utils/color";
-import useRequestCancellation from "hooks/useApiRequestCancellation";
+import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
 
 import "components/Graphviz.scss";
 import "react-table/react-table.css";
@@ -19,15 +18,14 @@ export interface ITreeInfoViewProps {}
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const source = Axios.CancelToken.source();
-  useRequestCancellation(source);
+  const source = useRequestCancellingOnUnmount();
 
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
       return api.getTreeInfo(source.token);
       // getTreeInfo result depends on selectedSID on server side, thus need to re-request the result when it's changed
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSID]),
+    }, [selectedSID, source]),
   });
 
   return (

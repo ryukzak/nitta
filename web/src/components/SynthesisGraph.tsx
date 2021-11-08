@@ -1,4 +1,3 @@
-import Axios from "axios";
 import React, { useContext, useState, FC } from "react";
 import { Popover, OverlayTrigger, Button } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
@@ -7,13 +6,11 @@ import { synthesize, api, reLastSID, sidSeparator } from "services/HaskellApiSer
 
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
-import useRequestCancellation from "hooks/useApiRequestCancellation";
+import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
 
 export const SynthesisGraph: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
-
-  const source = Axios.CancelToken.source();
-  useRequestCancellation(source);
+  const source = useRequestCancellingOnUnmount();
 
   const step = 100;
   const minHeight = 200;

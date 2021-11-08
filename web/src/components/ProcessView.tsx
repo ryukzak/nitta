@@ -5,12 +5,12 @@ import "react-table/react-table.css";
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
 import { getDefaultAxiosErrorHandler } from "../utils/axiosErrorHanders";
+import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 
 import "components/Graphviz.scss";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
-import { getCancellingCleanupCallback } from "utils/axiosRequestCancellation";
 const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 /**
  * Component to display target process by GraphViz.

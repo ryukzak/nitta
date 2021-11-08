@@ -1,5 +1,4 @@
-import Axios from "axios";
-import useRequestCancellation from "hooks/useApiRequestCancellation";
+import { CancelTokenSource } from "axios";
 import React, { useContext, FC, useCallback } from "react";
 import "react-table/react-table.css";
 
@@ -8,10 +7,11 @@ import { GraphNode, GraphEdge } from "services/gen/types";
 import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
-
-import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 import { useApiResponse } from "hooks/useApiResponse";
+import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
+
+import "components/Graphviz.scss";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
@@ -33,16 +33,13 @@ interface Endpoints {
   targets: string[];
 }
 
-const source = Axios.CancelToken.source();
-
 export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  useRequestCancellation(source);
-
-  const algorithmGraph = useAlgorithmGraph(selectedSID);
-  const procState = useProcState(selectedSID);
-  const endpoints = useEndpoints(selectedSID);
+  const source = useRequestCancellingOnUnmount();
+  const algorithmGraph = useAlgorithmGraph(selectedSID, source);
+  const procState = useProcState(selectedSID, source);
+  const endpoints = useEndpoints(selectedSID, source);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
@@ -126,9 +123,9 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   return result;
 }
 
-function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
+function useAlgorithmGraph(selectedSID: string, source: CancelTokenSource): IntermediateGraph | null {
   const response = useApiRequest({
-    requester: useCallback(() => api.getIntermediateView(selectedSID, source.token), [selectedSID]),
+    requester: useCallback(() => api.getIntermediateView(selectedSID, source.token), [selectedSID, source]),
   });
   const result = useApiResponse(response, makeGraphData, null);
   return result;
@@ -154,9 +151,9 @@ function makeGraphData(graphData: IntermediateGraph): IntermediateGraph | null {
   };
 }
 
-function useProcState(selectedSID: string): ProcessState {
+function useProcState(selectedSID: string, source: CancelTokenSource): ProcessState {
   const response = useApiRequest({
-    requester: useCallback(() => api.getRootPath(selectedSID, source.token), [selectedSID]),
+    requester: useCallback(() => api.getRootPath(selectedSID, source.token), [selectedSID, source]),
   });
   const result = useApiResponse(response, makeProcState, defaultProcState);
   return result;
@@ -181,9 +178,9 @@ function makeProcState(nodes: Node[]): ProcessState {
   return procState;
 }
 
-function useEndpoints(selectedSID: string): Endpoints {
+function useEndpoints(selectedSID: string, source: CancelTokenSource): Endpoints {
   const response = useApiRequest({
-    requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID]),
+    requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID, source]),
   });
   const result = useApiResponse(response, collectEndpoints, defaultEndpoints);
   return result;

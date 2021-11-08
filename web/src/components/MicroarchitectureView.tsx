@@ -1,4 +1,3 @@
-import Axios from "axios";
 import React, { useContext, useMemo, FC, useCallback } from "react";
 import "react-table/react-table.css";
 
@@ -9,10 +8,10 @@ import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
-import useRequestCancellation from "hooks/useApiRequestCancellation";
 
 /** https://github.com/DomParfitt/graphviz-react/issues/15 */
 import dynamic from "next/dynamic";
+import { useRequestCancellingOnUnmount } from "hooks/useRequestCancellingOnUnmount";
 const Graphviz = dynamic(() => import("graphviz-react"), { ssr: false });
 
 /**
@@ -24,15 +23,13 @@ export interface IMicroarchitectureViewProps {}
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const source = Axios.CancelToken.source();
-  useRequestCancellation(source);
-
+  const source = useRequestCancellingOnUnmount();
   const maRequest = useApiRequest({
-    requester: useCallback(() => api.getMicroarchitecture(selectedSID, source.token), [selectedSID, source.token]),
+    requester: useCallback(() => api.getMicroarchitecture(selectedSID, source.token), [selectedSID, source]),
   });
 
   const endpointsRequest = useApiRequest({
-    requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID, source.token]),
+    requester: useCallback(() => api.getEndpoints(selectedSID, source.token), [selectedSID, source]),
   });
 
   const dot = useMemo(() => {
@@ -45,7 +42,6 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) =>
     <div className="bg-light border graphvizContainer">
       {dot && (
         <>
-          <h1>Hello I'm microarchitecture view</h1>
           <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
           <DownloadTextFile name="microarchitecture.dot" text={dot} />
         </>
