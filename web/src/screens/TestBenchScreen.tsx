@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext, FC } from "react";
-import Axios, { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse } from "axios";
 
 import { api, TestBenchReportData } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
-import { axiosErrorHandlerWithCallback } from "components/utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 
 export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -22,9 +22,7 @@ export const TestBenchScreen: FC = () => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
       })
-      .catch((err: AxiosError) => {
-        axiosErrorHandlerWithCallback(err, () => setRequestSuccess(false));
-      });
+      .catch(getDefaultAxiosErrorHandler(() => setRequestSuccess(false)));
 
     return () => {
       source.cancel();

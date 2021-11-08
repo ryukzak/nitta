@@ -8,7 +8,7 @@ import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { SynthesisHistory } from "components/SynthesisHistory";
 import { SubforestTables } from "components/SubforestTables";
-import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 
 export const SubforestScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -22,9 +22,7 @@ export const SubforestScreen: FC = () => {
       .then((response: AxiosResponse<Node[]>) => {
         setSubforest(response.data);
       })
-      .catch((err) => {
-        axiosErrorExceptionHandler(err);
-      });
+      .catch(getDefaultAxiosErrorHandler());
 
     return () => {
       source.cancel();

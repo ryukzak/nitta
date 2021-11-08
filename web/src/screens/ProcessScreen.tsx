@@ -1,4 +1,4 @@
-import Axios, { AxiosError } from "axios";
+import Axios from "axios";
 import React, { useEffect, useState, useContext, FC } from "react";
 
 import { api } from "services/HaskellApiService";
@@ -8,7 +8,7 @@ import { AppContext, IAppContext } from "app/AppContext";
 import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
 import "screens/ProcessScreen.scss";
-import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 
 export interface Highlight {
   up: number[];
@@ -50,9 +50,7 @@ export const ProcessScreen: FC = () => {
         setData(resort);
         setPIdIndex(pIdIndex);
       })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
+      .catch(getDefaultAxiosErrorHandler());
 
     return () => {
       source.cancel();

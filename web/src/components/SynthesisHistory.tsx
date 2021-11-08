@@ -1,11 +1,11 @@
-import Axios, { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse } from "axios";
 import React, { useEffect, useState, ReactElement, useContext, FC } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, Node, SID } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
-import { axiosErrorExceptionHandler } from "./utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "../utils/axiosErrorHanders";
 
 type Row = { original: Node; index: number };
 
@@ -33,9 +33,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
         }
         setHistory(result);
       })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
+      .catch(getDefaultAxiosErrorHandler());
 
     return () => {
       source.cancel();

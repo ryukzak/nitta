@@ -1,10 +1,10 @@
-import Axios, { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse } from "axios";
 import React, { useContext, useState, useEffect, FC } from "react";
 import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
-import { axiosErrorExceptionHandler } from "./utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "../utils/axiosErrorHanders";
 
 import "components/Graphviz.scss";
 
@@ -28,9 +28,7 @@ export const ProcessView: FC<IProcessViewProps> = (props) => {
     api
       .getProcess(selectedSID, source.token)
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
+      .catch(getDefaultAxiosErrorHandler());
 
     return () => {
       source.cancel();

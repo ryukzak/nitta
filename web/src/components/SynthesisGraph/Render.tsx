@@ -1,10 +1,10 @@
-import Axios, { AxiosResponse, AxiosError } from "axios";
+import Axios, { AxiosResponse } from "axios";
 import React, { FC, useContext, useState, useEffect } from "react";
 import { Tree as D3Tree } from "react-d3-tree";
 
 import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
-import { axiosErrorExceptionHandler } from "components/utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 
 type Tree = {
   name: string;
@@ -94,9 +94,7 @@ export const SynthesisGraphRender: FC = () => {
         knownSID.add(sidSeparator);
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
-      .catch((err: AxiosError) => {
-        axiosErrorExceptionHandler(err);
-      });
+      .catch(getDefaultAxiosErrorHandler());
 
     return () => {
       source.cancel();

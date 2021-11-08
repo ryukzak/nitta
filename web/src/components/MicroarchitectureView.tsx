@@ -45,6 +45,7 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) =>
     <div className="bg-light border graphvizContainer">
       {dot && (
         <>
+          <h1>Hello I'm microarchitecture view</h1>
           <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
           <DownloadTextFile name="microarchitecture.dot" text={dot} />
         </>

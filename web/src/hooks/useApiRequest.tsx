@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AxiosResponse } from "axios";
-import { axiosErrorHandlerWithCallback } from "components/utils/AxiosErrorHanders";
+import { getDefaultAxiosErrorHandler } from "utils/axiosErrorHanders";
 
 interface UseApiRequestArgs<TResult> {
   requester: () => Promise<AxiosResponse<TResult>>;
@@ -29,9 +29,7 @@ export function useApiRequest<TResult>(args: UseApiRequestArgs<TResult>): UseApi
         // (accept function via args and call it here, beware of deps)
         setResponse(response);
       })
-      .catch((err: Error) => {
-        axiosErrorHandlerWithCallback(err, () => setErrorMessage(`Request failed: ${err.message}`));
-      });
+      .catch(getDefaultAxiosErrorHandler((err) => setErrorMessage(`Request failed: ${err.message}`)));
   }, [args.requester]);
 
   useEffect(() => {
