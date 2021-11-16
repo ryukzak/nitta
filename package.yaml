@@ -86,6 +86,7 @@ library:
     - wai-cors
     - warp
     - hxt
+    - parsec
 
     
 executables:

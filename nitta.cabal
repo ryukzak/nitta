@@ -37,6 +37,8 @@ extra-doc-files:
 
 library
   exposed-modules:
+      NITTA.FrontEnds.LuaFrontend
+      NITTA.FrontEnds.XMILEFrontend
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum
@@ -44,7 +46,6 @@ library
       NITTA.Intermediate.Types
       NITTA.Intermediate.Value
       NITTA.Intermediate.Variable
-      NITTA.LuaFrontend
       NITTA.Model.Microarchitecture.Builder
       NITTA.Model.Microarchitecture.Config
       NITTA.Model.Networks.Bus
@@ -99,7 +100,6 @@ library
       NITTA.Utils
       NITTA.Utils.Base
       NITTA.Utils.ProcessDescription
-      NITTA.XMILEFrontend
   other-modules:
       Paths_nitta
   hs-source-dirs:
@@ -130,6 +130,7 @@ library
     , language-lua
     , mtl
     , network-simple
+    , parsec
     , prettyprinter
     , process
     , process-extras

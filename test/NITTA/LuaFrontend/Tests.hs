@@ -31,7 +31,7 @@ import Data.Text as T
 import qualified Language.Lua as Lua
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
+import NITTA.FrontEnds.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit

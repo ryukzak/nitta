@@ -20,7 +20,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.XMILEFrontend (
+module NITTA.FrontEnds.XMILEFrontend (
     parseXMILE,
 ) where
 
@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
+import NITTA.Intermediate.Variable (Variables(variables))
 
 _xmileSample =
     [__i| 
@@ -93,8 +94,17 @@ parseSimSpec =
 
 parseModel =
     atTag "model"
+        >>> proc x -> do
+            variables <- parseModelVariables -< x
+            returnA -< XMILEModel{xmVariables = variables}
+
+
+parseModelVariables =
+    atTag "variables"
         >>> proc _ -> do
-            returnA -< XMILEModel{xmVariables = []}
+            returnA -< XMILEVariables{xvFlows = [], xvAuxs = [], xvStocks = []}
+
+
 
 atTag tag = deep (isElem >>> hasName tag)
 text = getChildren >>> getText
@@ -107,13 +117,13 @@ data XMILESimSpec = XMILESimSpec
     deriving (Show)
 
 newtype XMILEModel = XMILEModel
-    {xmVariables :: [XMILEVariable]}
+    { xmVariables :: XMILEVariables }
     deriving (Show)
 
-data XMILEVariable = XMILEVariable
-    { xvFlow :: XMILEFlow
-    , xvAux :: XMILEAux
-    , xvStock :: XMILEStock
+data XMILEVariables = XMILEVariables
+    { xvFlows :: [XMILEFlow]
+    , xvAuxs :: [XMILEAux]
+    , xvStocks :: [XMILEStock]
     }
     deriving (Show)
 
