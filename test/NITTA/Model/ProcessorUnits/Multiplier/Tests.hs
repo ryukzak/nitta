@@ -19,7 +19,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 
 import Data.String.Interpolate
 import qualified Data.Text as T
-import NITTA.LuaFrontend.Tests.Providers
+import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.QuickCheck

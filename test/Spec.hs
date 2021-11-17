@@ -20,8 +20,8 @@ import Data.Maybe
 import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
-import qualified NITTA.LuaFrontend.Tests
-import NITTA.LuaFrontend.Tests.Providers
+import qualified NITTA.FrontEnds.LuaFrontend.Tests
+import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
@@ -35,7 +35,7 @@ import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Model.ProcessorUnits.Tests.DSL.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.Tests
-import qualified NITTA.XMILEFrontend.Tests
+import qualified NITTA.FrontEnds.XMILEFrontend.Tests
 import System.Environment (lookupEnv, setEnv)
 import Test.Tasty (testGroup)
 import Test.Tasty.Ingredients.Rerun
@@ -50,8 +50,8 @@ main = do
             $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
               , NITTA.Intermediate.Simulation.Tests.tests
               , NITTA.Intermediate.Value.Tests.tests
-              , NITTA.LuaFrontend.Tests.tests
-              , NITTA.XMILEFrontend.Tests.tests
+              , NITTA.FrontEnds.LuaFrontend.Tests.tests
+              , NITTA.FrontEnds.XMILEFrontend.Tests.tests
               , NITTA.Model.Problems.Refactor.Tests.tests
               , NITTA.Model.Problems.Refactor.Accum.Tests.tests
               , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests

@@ -19,7 +19,7 @@ module NITTA.Model.ProcessorUnits.Divider.Tests (
 
 import Data.Default
 import Data.String.Interpolate
-import NITTA.LuaFrontend.Tests.Providers
+import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.Tasty (testGroup)

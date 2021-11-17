@@ -12,14 +12,14 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests
+Module      : NITTA.FrontEnds.LuaFrontend.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.LuaFrontend.Tests (
+module NITTA.FrontEnds.LuaFrontend.Tests (
     tests,
 ) where
 
@@ -32,7 +32,7 @@ import qualified Language.Lua as Lua
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.FrontEnds.LuaFrontend
-import NITTA.LuaFrontend.Tests.Providers
+import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH

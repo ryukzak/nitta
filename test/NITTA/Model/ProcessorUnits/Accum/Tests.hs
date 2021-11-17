@@ -22,7 +22,7 @@ import qualified Data.Set as S
 import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.Intermediate.Functions as F
-import NITTA.LuaFrontend.Tests.Providers
+import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.QuickCheck

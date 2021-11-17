@@ -2,24 +2,20 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests
+Module      : NITTA.FrontEnds.XMILEFrontend.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.XMILEFrontend.Tests (
+module NITTA.FrontEnds.XMILEFrontend.Tests (
     tests,
 ) where
 
-import qualified Data.Text as T
-import NITTA.XMILEFrontend
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
-import Xeno.DOM
-import Xeno.DOM.Internal
 
 case_XMILE_parse = undefined
 
