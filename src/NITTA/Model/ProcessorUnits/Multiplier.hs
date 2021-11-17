@@ -159,7 +159,7 @@ repl` command from the project directory. After that:
 [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
 [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
 Ok, 30 modules loaded.
-> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set Prettyprinter.Render.Text
+> :module +NITTA.Model.ProcessorUnits.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set Prettyprinter.Render.Text
 > :set prompt "ESC[34mλ> ESC[m"
 @
 
@@ -543,14 +543,12 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
           , ([_], targets') <- partition (== v) targets
-          , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
-            -- requred because of realisation.
-            let sel = if null targets' then B else A
-          , --  Computation process planning is carried out.
+          ,
+           --  Computation process planning is carried out.
             let process_' = execSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
                     -- that takes information about time from Process
-                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
+                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -588,20 +586,6 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     -- If something went wrong.
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
--- TODO: optimize ArgumentSelector
-
-{- |Multiplications argument id
-
-As we said before, because of some hardware organisation features, we need to
-take in mind operators sequence in planned process on instruction level. This
-type os defined to do it. But instide of this we need to notice, that from
-algorhytm and model way of view argument order doesn't mean, that is
-represented in class computation process' planning responding that realised
-above.
--}
-data ArgumentSelector = A | B
-    deriving (Show, Eq)
-
 {- |For each PU, we can specify the instruction set and microcode, which allows
 us to control the PU at the hardware level.
 
@@ -612,15 +596,13 @@ us to control the PU at the hardware level.
 -}
 instance Controllable (Multiplier v x t) where
     data Instruction (Multiplier v x t)
-        = Load ArgumentSelector
+        = Load
         | Out
         deriving (Show)
 
     data Microcode (Multiplier v x t) = Microcode
         { -- | Write to mUnit signal.
           wrSignal :: Bool
-        , -- |Uploading to mUnit argument selector.
-          selSignal :: Bool
         , -- |Downloading from mUnit signal.
           oeSignal :: Bool
         }
@@ -628,13 +610,12 @@ instance Controllable (Multiplier v x t) where
 
     zipSignalTagsAndValues MultiplierPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
-        , (wrSel, Bool selSignal)
         , (oe, Bool oeSignal)
         ]
 
-    usedPortTags MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
+    usedPortTags MultiplierPorts{wr, oe} = [wr, oe]
 
-    takePortTags (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
+    takePortTags (wr : oe : _) _ = MultiplierPorts wr oe
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 {- |Default microcode state should be equal to @nop@ function, which should be a
@@ -644,7 +625,6 @@ instance Default (Microcode (Multiplier v x t)) where
     def =
         Microcode
             { wrSignal = False
-            , selSignal = False
             , oeSignal = False
             }
 
@@ -652,8 +632,7 @@ instance Default (Microcode (Multiplier v x t)) where
 translate PU instructions to microcode value.
 -}
 instance UnambiguouslyDecode (Multiplier v x t) where
-    decodeInstruction (Load A) = def{wrSignal = True, selSignal = False}
-    decodeInstruction (Load B) = def{wrSignal = True, selSignal = True}
+    decodeInstruction Load = def{wrSignal = True}
     decodeInstruction Out = def{oeSignal = True}
 
 {- |Processor unit control signal ports. In
@@ -664,8 +643,6 @@ instance Connected (Multiplier v x t) where
     data Ports (Multiplier v x t) = MultiplierPorts
         { -- |get data from the bus (data_in)
           wr :: SignalTag
-        , -- |determine argument on the bus (A | B)
-          wrSel :: SignalTag
         , -- |send result to the bus
           oe :: SignalTag
         }
@@ -718,7 +695,6 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )
                     , .signal_wr( #{ wr } )
-                    , .signal_sel( #{ wrSel } )
                     , .data_in( #{ dataIn } )
                     , .attr_in( #{ attrIn } )
                     , .signal_oe( #{ oe } )
@@ -750,7 +726,7 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                 SnippetTestBenchConf
                     { -- List of control signals. It is needed to initialize
                       -- registers with the same names.
-                      tbcSignals = ["oe", "wr", "wrSel"]
+                      tbcSignals = ["oe", "wr"]
                     , -- A processor unit connects to the environment by signal
                       -- lines. In 'NITTA.Project.TestBench.tbcPorts'
                       -- describes IDs signal lines of testbench. In
@@ -760,11 +736,15 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                         MultiplierPorts
                             { oe = SignalTag "oe"
                             , wr = SignalTag "wr"
-                            , wrSel = SignalTag "wrSel"
                             }
                     , -- Map microcode to registers in the testbench.
-                      tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} ->
+                      tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
                         [i|oe <= #{bool2verilog oeSignal};|]
                             <> [i| wr <= #{bool2verilog wrSignal};|]
-                            <> [i| wrSel <= #{bool2verilog selSignal};|]
                     }
+
+
+
+
+
+
