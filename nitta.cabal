@@ -38,7 +38,8 @@ extra-doc-files:
 library
   exposed-modules:
       NITTA.FrontEnds.LuaFrontend
-      NITTA.FrontEnds.XMILEFrontend
+      NITTA.FrontEnds.XMILE.MathParser
+      NITTA.FrontEnds.XMILE.XMILEFrontend
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum

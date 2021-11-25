@@ -22,6 +22,7 @@ import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.FrontEnds.LuaFrontend.Tests
 import NITTA.FrontEnds.LuaFrontend.Tests.Providers
+import qualified NITTA.FrontEnds.XMILEFrontend.Tests
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
@@ -35,7 +36,6 @@ import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Model.ProcessorUnits.Tests.DSL.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.Tests
-import qualified NITTA.FrontEnds.XMILEFrontend.Tests
 import System.Environment (lookupEnv, setEnv)
 import Test.Tasty (testGroup)
 import Test.Tasty.Ingredients.Rerun

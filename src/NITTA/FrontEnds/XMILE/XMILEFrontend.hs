@@ -20,7 +20,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILEFrontend (
+module NITTA.FrontEnds.XMILE.XMILEFrontend (
     parseXMILE,
 ) where
 
@@ -29,7 +29,8 @@ import qualified Data.Text as T
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
-import NITTA.Intermediate.Variable (Variables(variables))
+
+
 
 _xmileSample =
     [__i| 
