@@ -52,6 +52,7 @@ import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
 import Text.Printf
+import NITTA.FrontEnds.Common
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
 getUniqueLuaVariableName LuaValueInstance{lviName, lviAssignCount} luaValueAccessCount
@@ -74,15 +75,6 @@ data LuaValueInstance = LuaValueInstance
     , lviIsConstant :: Bool
     }
     deriving (Show, Eq)
-
-data FrontendResult v x = FrontendResult
-    { frDataFlow :: DataFlowGraph v x
-    , frTrace :: [TraceVar]
-    , frPrettyLog :: [HM.HashMap v x] -> [HM.HashMap String String]
-    }
-
-data TraceVar = TraceVar {tvFmt, tvVar :: T.Text}
-    deriving (Show)
 
 instance Hashable LuaValueInstance where
     hashWithSalt i LuaValueInstance{lviName, lviAssignCount, lviIsConstant} =

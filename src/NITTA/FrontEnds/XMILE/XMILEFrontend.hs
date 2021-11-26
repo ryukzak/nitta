@@ -21,7 +21,10 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.FrontEnds.XMILE.XMILEFrontend (
-    parseXMILE,
+    xmile2functions,
+    FrontendResult (..),
+    TraceVar (..),
+
 ) where
 
 import Data.String.Interpolate
@@ -29,6 +32,7 @@ import qualified Data.Text as T
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
+import NITTA.FrontEnds.Common
 
 
 
@@ -72,7 +76,7 @@ _xmileSample =
                 </xmile>
             |]
 
-parseXMILE src = do
+xmile2functions src = do
     runX $
         readString [withValidate no] src
             >>> removeAllWhiteSpace
