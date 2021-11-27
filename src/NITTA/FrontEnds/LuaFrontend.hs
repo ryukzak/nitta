@@ -48,11 +48,11 @@ import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
 import Language.Lua
+import NITTA.FrontEnds.Common
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
 import Text.Printf
-import NITTA.FrontEnds.Common
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
 getUniqueLuaVariableName LuaValueInstance{lviName, lviAssignCount} luaValueAccessCount

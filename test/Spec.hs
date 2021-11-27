@@ -17,12 +17,12 @@ module Spec where
 
 import Data.FileEmbed (embedStringFile)
 import Data.Maybe
-import qualified NITTA.Intermediate.Functions.Accum.Tests
-import qualified NITTA.Intermediate.Simulation.Tests
-import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.FrontEnds.LuaFrontend.Tests
 import NITTA.FrontEnds.LuaFrontend.Tests.Providers
 import qualified NITTA.FrontEnds.XMILEFrontend.Tests
+import qualified NITTA.Intermediate.Functions.Accum.Tests
+import qualified NITTA.Intermediate.Simulation.Tests
+import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests

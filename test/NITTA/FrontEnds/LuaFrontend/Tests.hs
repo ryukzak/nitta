@@ -29,10 +29,10 @@ import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import Data.Text as T
 import qualified Language.Lua as Lua
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Types
 import NITTA.FrontEnds.LuaFrontend
 import NITTA.FrontEnds.LuaFrontend.Tests.Providers
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Types
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH

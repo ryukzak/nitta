@@ -24,17 +24,19 @@ module NITTA.FrontEnds.XMILE.XMILEFrontend (
     xmile2functions,
     FrontendResult (..),
     TraceVar (..),
-
 ) where
 
 import Data.String.Interpolate
 import qualified Data.Text as T
+import NITTA.FrontEnds.Common
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
-import NITTA.FrontEnds.Common
 
-
+data XMILEAlgBuilder x = XMILEAlgBuilder
+    { algSimSpecs :: XMILESimSpec
+    }
+    deriving (Show)
 
 _xmileSample =
     [__i| 
@@ -77,6 +79,10 @@ _xmileSample =
             |]
 
 xmile2functions src = do
+    let alg = parseXMILEDocument src
+    return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
+
+parseXMILEDocument src =
     runX $
         readString [withValidate no] src
             >>> removeAllWhiteSpace
@@ -103,13 +109,10 @@ parseModel =
             variables <- parseModelVariables -< x
             returnA -< XMILEModel{xmVariables = variables}
 
-
 parseModelVariables =
     atTag "variables"
         >>> proc _ -> do
             returnA -< XMILEVariables{xvFlows = [], xvAuxs = [], xvStocks = []}
-
-
 
 atTag tag = deep (isElem >>> hasName tag)
 text = getChildren >>> getText
@@ -122,7 +125,7 @@ data XMILESimSpec = XMILESimSpec
     deriving (Show)
 
 newtype XMILEModel = XMILEModel
-    { xmVariables :: XMILEVariables }
+    {xmVariables :: XMILEVariables}
     deriving (Show)
 
 data XMILEVariables = XMILEVariables

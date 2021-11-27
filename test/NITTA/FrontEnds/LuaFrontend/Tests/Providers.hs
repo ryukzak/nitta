@@ -29,9 +29,9 @@ import Data.CallStack
 import Data.Default
 import Data.Proxy
 import qualified Data.Text as T
+import NITTA.FrontEnds.LuaFrontend
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.FrontEnds.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Tests.Internals

@@ -34,9 +34,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
+import NITTA.FrontEnds.LuaFrontend
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.FrontEnds.LuaFrontend
 import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus

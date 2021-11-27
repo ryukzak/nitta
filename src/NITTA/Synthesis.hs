@@ -93,10 +93,10 @@ import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
+import NITTA.FrontEnds.LuaFrontend
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.FrontEnds.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem

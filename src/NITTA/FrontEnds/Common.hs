@@ -3,9 +3,9 @@ module NITTA.FrontEnds.Common (
     TraceVar (..),
 ) where
 
-import NITTA.Intermediate.DataFlow
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
+import NITTA.Intermediate.DataFlow
 
 data FrontendResult v x = FrontendResult
     { frDataFlow :: DataFlowGraph v x
