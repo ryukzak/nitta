@@ -8,8 +8,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
+
+-- FIXME: should be removed on aeson-typescript update
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
 Module      : APIGen
@@ -139,11 +143,11 @@ main = do
                 foldl1
                     (<>)
                     [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy Interval)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstraint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (Interval T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimelinePoint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimeConstraint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimelineWithViewPoint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (ProcessTimelines T))
                     , -- synthesis tree
                       getTypeScriptDeclarations (Proxy :: Proxy DecisionView)
                     , -- metrics
@@ -154,26 +158,26 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy ResolveDeadlockMetrics)
                     , -- other
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TreeView T))
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeInfo)
                     , getTypeScriptDeclarations (Proxy :: Proxy ShortNodeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (NodeView T1 T2 T3 T))
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
-                    , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
-                    , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpoints)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (GraphStructure T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (EndpointRole T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (EndpointSt T1 T2))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (UnitEndpoints T1 T2 T3))
                     , -- Process
-                      getTypeScriptDeclarations (Proxy :: Proxy Process)
-                    , getTypeScriptDeclarations (Proxy :: Proxy Step)
+                      getTypeScriptDeclarations (Proxy :: Proxy (Process T1 T2))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (Step T1 T2))
                     , getTypeScriptDeclarations (Proxy :: Proxy Relation)
                     , getTypeScriptDeclarations (Proxy :: Proxy StepInfoView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TestbenchReport T1 T2))
                     , -- Microarchitecture
-                      getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
-                    , getTypeScriptDeclarations (Proxy :: Proxy NetworkDesc)
-                    , getTypeScriptDeclarations (Proxy :: Proxy UnitDesc)
+                      getTypeScriptDeclarations (Proxy :: Proxy (MicroarchitectureDesc T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (NetworkDesc T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (UnitDesc T))
                     , getTypeScriptDeclarations (Proxy :: Proxy IOSynchronization)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $

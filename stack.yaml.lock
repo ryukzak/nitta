@@ -19,12 +19,12 @@ packages:
   original:
     hackage: alex-tools-0.5.0.1
 - completed:
-    hackage: aeson-typescript-0.2.0.0@sha256:d4bd016c04612bd6cbc02e3e38315de3bbf4f50c408f720b4472928b6ac4b59f,2642
+    hackage: aeson-typescript-0.3.0.1@sha256:ef93ed6b34432215bc41d8abe7d253bfef67520d8f1192ce688812810e1deb53,3024
     pantry-tree:
-      size: 1719
-      sha256: 92ba5548e53be350edd6f5961a51375d77c0358a738a9a4f6bb496bf85f6935a
+      size: 2500
+      sha256: 74767a8c77aa54fca3e288adee242cf845b9ed06e3a450df48be30657e430450
   original:
-    hackage: aeson-typescript-0.2.0.0
+    hackage: aeson-typescript-0.3.0.1
 - completed:
     hackage: prettyprinter-1.7.1@sha256:9c43c9d8c3cd9f445596e5a2379574bba87f935a4d1fa41b5407ee3cf4edc743,6987
     pantry-tree:
