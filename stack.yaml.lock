@@ -26,12 +26,12 @@ packages:
   original:
     hackage: aeson-typescript-0.2.0.0
 - completed:
-    hackage: prettyprinter-1.7.0@sha256:6a9569e21fa61163a7f066d23d701e23e917893e8f39733d6e617ec72787ae5f,6007
+    hackage: prettyprinter-1.7.1@sha256:9c43c9d8c3cd9f445596e5a2379574bba87f935a4d1fa41b5407ee3cf4edc743,6987
     pantry-tree:
-      size: 3194
-      sha256: d22f820a1f63497f7fd7e1f04b7d356d92de35582258f6ad55428c88b09e63ff
+      size: 3460
+      sha256: cd6f393bf7cba603a1958a139915fc343efd5488e36fd7b3b5c6956c002d04fa
   original:
-    hackage: prettyprinter-1.7.0
+    hackage: prettyprinter-1.7.1
 - completed:
     hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
     pantry-tree:
