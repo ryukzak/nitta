@@ -38,75 +38,75 @@ Stability   : experimental
 </span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.html"><span class="hs-identifier">NITTA.Project</span></a></span><span>
 </span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.Base.html"><span class="hs-identifier">NITTA.Utils.Base</span></a></span><span>
 </span><span id="line-40"></span><span>
-</span><span id="line-41"></span><span class="hs-keyword">data</span><span> </span><span id="BuilderSt"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-var">BuilderSt</span></a></span></span><span> </span><span id="local-6989586621680149861"><span class="annot"><a href="#local-6989586621680149861"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span id="local-6989586621680149860"><span class="annot"><a href="#local-6989586621680149860"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680149859"><span class="annot"><a href="#local-6989586621680149859"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680149858"><span class="annot"><a href="#local-6989586621680149858"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BuilderSt"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-var">BuilderSt</span></a></span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">data</span><span> </span><span id="BuilderSt"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-var">BuilderSt</span></a></span></span><span> </span><span id="local-6989586621680037424"><span class="annot"><a href="#local-6989586621680037424"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span id="local-6989586621680037423"><span class="annot"><a href="#local-6989586621680037423"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680037422"><span class="annot"><a href="#local-6989586621680037422"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680037421"><span class="annot"><a href="#local-6989586621680037421"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BuilderSt"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-var">BuilderSt</span></a></span></span><span>
 </span><span id="line-42"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AsignalBusWidth%3ABuilderSt"><span class="annot"><span class="annottext">BuilderSt tag v x t -&gt; Int
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AsignalBusWidth%3ABuilderSt"><span class="hs-identifier hs-var hs-var">signalBusWidth</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-43"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AavailSignals%3ABuilderSt"><span class="annot"><span class="annottext">BuilderSt tag v x t -&gt; [SignalTag]
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AavailSignals%3ABuilderSt"><span class="hs-identifier hs-var hs-var">availSignals</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#SignalTag"><span class="hs-identifier hs-type">SignalTag</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-44"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Apus%3ABuilderSt"><span class="annot"><span class="annottext">BuilderSt tag v x t -&gt; Map tag (PU v x t)
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Apus%3ABuilderSt"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680149861"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Types.html#PU"><span class="hs-identifier hs-type">PU</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149860"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149859"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149858"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Apus%3ABuilderSt"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680037424"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Types.html#PU"><span class="hs-identifier hs-type">PU</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037423"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037422"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037421"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-45"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-46"></span><span>
 </span><span id="line-47"></span><span id="netIOPorts"><span class="annot"><span class="annottext">netIOPorts :: [PU v x t] -&gt; IOPorts (BusNetwork tag v x t)
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#netIOPorts"><span class="hs-identifier hs-var hs-var">netIOPorts</span></a></span></span><span> </span><span id="local-6989586621680149714"><span class="annot"><span class="annottext">pus :: [PU v x t]
-</span><a href="#local-6989586621680149714"><span class="hs-identifier hs-var">pus</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">$WBusNetworkIO :: forall tag v x t.
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#netIOPorts"><span class="hs-identifier hs-var hs-var">netIOPorts</span></a></span></span><span> </span><span id="local-6989586621680037277"><span class="annot"><span class="annottext">[PU v x t]
+</span><a href="#local-6989586621680037277"><span class="hs-identifier hs-var">pus</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">BusNetworkIO :: forall tag v x t.
 Set InputPortTag
 -&gt; Set OutputPortTag
 -&gt; Set InoutPortTag
 -&gt; IOPorts (BusNetwork tag v x t)
-</span><a href="NITTA.Model.Networks.Bus.html#%24WBusNetworkIO"><span class="hs-identifier hs-type hs-type">BusNetworkIO</span></a></span><span>
+</span><a href="NITTA.Model.Networks.Bus.html#BusNetworkIO"><span class="hs-identifier hs-type">BusNetworkIO</span></a></span><span>
 </span><span id="line-49"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">extInputs :: Set InputPortTag
 </span><a href="NITTA.Model.Networks.Bus.html#extInputs"><span class="hs-identifier hs-var">extInputs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(PU v x t -&gt; Set InputPortTag) -&gt; Set InputPortTag
 forall a1. Ord a1 =&gt; (PU v x t -&gt; Set a1) -&gt; Set a1
-</span><a href="#local-6989586621680149710"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set InputPortTag
+</span><a href="#local-6989586621680037274"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set InputPortTag
 forall v x t. PU v x t -&gt; Set InputPortTag
 </span><a href="NITTA.Model.Networks.Types.html#puInputPorts"><span class="hs-identifier hs-var">puInputPorts</span></a></span><span>
 </span><span id="line-50"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">extOutputs :: Set OutputPortTag
 </span><a href="NITTA.Model.Networks.Bus.html#extOutputs"><span class="hs-identifier hs-var">extOutputs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(PU v x t -&gt; Set OutputPortTag) -&gt; Set OutputPortTag
 forall a1. Ord a1 =&gt; (PU v x t -&gt; Set a1) -&gt; Set a1
-</span><a href="#local-6989586621680149710"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set OutputPortTag
+</span><a href="#local-6989586621680037274"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set OutputPortTag
 forall v x t. PU v x t -&gt; Set OutputPortTag
 </span><a href="NITTA.Model.Networks.Types.html#puOutputPorts"><span class="hs-identifier hs-var">puOutputPorts</span></a></span><span>
 </span><span id="line-51"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">extInOuts :: Set InoutPortTag
 </span><a href="NITTA.Model.Networks.Bus.html#extInOuts"><span class="hs-identifier hs-var">extInOuts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(PU v x t -&gt; Set InoutPortTag) -&gt; Set InoutPortTag
 forall a1. Ord a1 =&gt; (PU v x t -&gt; Set a1) -&gt; Set a1
-</span><a href="#local-6989586621680149710"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set InoutPortTag
+</span><a href="#local-6989586621680037274"><span class="hs-identifier hs-var">setOf</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set InoutPortTag
 forall v x t. PU v x t -&gt; Set InoutPortTag
 </span><a href="NITTA.Model.Networks.Types.html#puInOutPorts"><span class="hs-identifier hs-var">puInOutPorts</span></a></span><span>
 </span><span id="line-52"></span><span>        </span><span class="hs-special">}</span><span>
 </span><span id="line-53"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-54"></span><span>        </span><span id="local-6989586621680149710"><span class="annot"><span class="annottext">setOf :: (PU v x t -&gt; Set a1) -&gt; Set a1
-</span><a href="#local-6989586621680149710"><span class="hs-identifier hs-var hs-var">setOf</span></a></span></span><span> </span><span id="local-6989586621680149704"><span class="annot"><span class="annottext">ioPorts :: PU v x t -&gt; Set a1
-</span><a href="#local-6989586621680149704"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(PU v x t -&gt; Set a1) -&gt; [PU v x t] -&gt; Set a1
+</span><span id="line-54"></span><span>        </span><span id="local-6989586621680037274"><span class="annot"><span class="annottext">setOf :: (PU v x t -&gt; Set a1) -&gt; Set a1
+</span><a href="#local-6989586621680037274"><span class="hs-identifier hs-var hs-var">setOf</span></a></span></span><span> </span><span id="local-6989586621680037268"><span class="annot"><span class="annottext">PU v x t -&gt; Set a1
+</span><a href="#local-6989586621680037268"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(PU v x t -&gt; Set a1) -&gt; [PU v x t] -&gt; Set a1
 forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t -&gt; Set a1
-</span><a href="#local-6989586621680149704"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="annot"><span class="annottext">[PU v x t]
-</span><a href="#local-6989586621680149714"><span class="hs-identifier hs-var">pus</span></a></span><span>
+</span><a href="#local-6989586621680037268"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="annot"><span class="annottext">[PU v x t]
+</span><a href="#local-6989586621680037277"><span class="hs-identifier hs-var">pus</span></a></span><span>
 </span><span id="line-55"></span><span>
 </span><span id="line-56"></span><span id="modifyNetwork"><span class="annot"><span class="annottext">modifyNetwork :: BusNetwork k v x t
 -&gt; StateT (BuilderSt k v x t) Identity a -&gt; BusNetwork k v x t
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#modifyNetwork"><span class="hs-identifier hs-var hs-var">modifyNetwork</span></a></span></span><span> </span><span id="local-6989586621680149702"><span class="annot"><span class="annottext">net :: BusNetwork k v x t
-</span><a href="#local-6989586621680149702"><span class="hs-identifier hs-var">net</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680149700"><span class="annot"><span class="annottext">Map k (PU v x t)
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#modifyNetwork"><span class="hs-identifier hs-var hs-var">modifyNetwork</span></a></span></span><span> </span><span id="local-6989586621680037266"><span class="annot"><span class="annottext">net :: BusNetwork k v x t
+</span><a href="#local-6989586621680037266"><span class="hs-identifier hs-var">net</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680037264"><span class="annot"><span class="annottext">Map k (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 bnPus :: Map k (PU v x t)
-</span><a href="NITTA.Model.Networks.Bus.html#bnPus"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149698"><span class="annot"><span class="annottext">Int
+</span><a href="NITTA.Model.Networks.Bus.html#bnPus"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037262"><span class="annot"><span class="annottext">Int
 bnSignalBusWidth :: forall tag v x t. BusNetwork tag v x t -&gt; Int
 bnSignalBusWidth :: Int
-</span><a href="NITTA.Model.Networks.Bus.html#bnSignalBusWidth"><span class="hs-identifier hs-var hs-var">bnSignalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149696"><span class="annot"><span class="annottext">UnitEnv (BusNetwork k v x t)
+</span><a href="NITTA.Model.Networks.Bus.html#bnSignalBusWidth"><span class="hs-identifier hs-var hs-var">bnSignalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037260"><span class="annot"><span class="annottext">UnitEnv (BusNetwork k v x t)
 bnEnv :: forall tag v x t.
 BusNetwork tag v x t -&gt; UnitEnv (BusNetwork tag v x t)
 bnEnv :: UnitEnv (BusNetwork k v x t)
-</span><a href="NITTA.Model.Networks.Bus.html#bnEnv"><span class="hs-identifier hs-var hs-var">bnEnv</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680149694"><span class="annot"><span class="annottext">builder :: StateT (BuilderSt k v x t) Identity a
-</span><a href="#local-6989586621680149694"><span class="hs-identifier hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-57"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680149693"><span class="annot"><span class="annottext">st0 :: BuilderSt k v x t
-</span><a href="#local-6989586621680149693"><span class="hs-identifier hs-var hs-var">st0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Model.Networks.Bus.html#bnEnv"><span class="hs-identifier hs-var hs-var">bnEnv</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680037258"><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
+</span><a href="#local-6989586621680037258"><span class="hs-identifier hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680037257"><span class="annot"><span class="annottext">st0 :: BuilderSt k v x t
+</span><a href="#local-6989586621680037257"><span class="hs-identifier hs-var hs-var">st0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-58"></span><span>            </span><span class="annot"><span class="annottext">BuilderSt :: forall tag v x t.
 Int -&gt; [SignalTag] -&gt; Map tag (PU v x t) -&gt; BuilderSt tag v x t
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type hs-type">BuilderSt</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type">BuilderSt</span></a></span><span>
 </span><span id="line-59"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:signalBusWidth:BuilderSt :: Int
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AsignalBusWidth%3ABuilderSt"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149698"><span class="hs-identifier hs-var">bnSignalBusWidth</span></a></span><span>
+</span><a href="#local-6989586621680037262"><span class="hs-identifier hs-var">bnSignalBusWidth</span></a></span><span>
 </span><span id="line-60"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:availSignals:BuilderSt :: [SignalTag]
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AavailSignals%3ABuilderSt"><span class="hs-identifier hs-var">availSignals</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; SignalTag) -&gt; [Int] -&gt; [SignalTag]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
@@ -118,34 +118,34 @@ forall dst src.
 Interpolatable (IsCustomSink dst) src dst =&gt;
 src -&gt; dst
 </span><a href="NITTA.Model.Networks.Bus.html#controlSignalLiteral"><span class="hs-identifier hs-var">controlSignalLiteral</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149698"><span class="hs-identifier hs-var">bnSignalBusWidth</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680037262"><span class="hs-identifier hs-var">bnSignalBusWidth</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span>
 </span><span id="line-61"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:pus:BuilderSt :: Map k (PU v x t)
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Apus%3ABuilderSt"><span class="hs-identifier hs-var">pus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map k (PU v x t)
-</span><a href="#local-6989586621680149700"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
+</span><a href="#local-6989586621680037264"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
 </span><span id="line-62"></span><span>                </span><span class="hs-special">}</span><span>
-</span><span id="line-63"></span><span>        </span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type">BuilderSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680149688"><span class="annot"><span class="annottext">Int
+</span><span id="line-63"></span><span>        </span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type">BuilderSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680037253"><span class="annot"><span class="annottext">Int
 signalBusWidth :: Int
 $sel:signalBusWidth:BuilderSt :: forall tag v x t. BuilderSt tag v x t -&gt; Int
-</span><a href="#local-6989586621680149688"><span class="hs-identifier hs-var hs-var">signalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149687"><span class="annot"><span class="annottext">Map k (PU v x t)
+</span><a href="#local-6989586621680037253"><span class="hs-identifier hs-var hs-var">signalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037252"><span class="annot"><span class="annottext">Map k (PU v x t)
 pus :: Map k (PU v x t)
 $sel:pus:BuilderSt :: forall tag v x t. BuilderSt tag v x t -&gt; Map tag (PU v x t)
-</span><a href="#local-6989586621680149687"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
+</span><a href="#local-6989586621680037252"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
 -&gt; BuilderSt k v x t -&gt; BuilderSt k v x t
 forall s a. State s a -&gt; s -&gt; s
 </span><span class="hs-identifier hs-var">execState</span></span><span> </span><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
-</span><a href="#local-6989586621680149694"><span class="hs-identifier hs-var">builder</span></a></span><span> </span><span class="annot"><span class="annottext">BuilderSt k v x t
-</span><a href="#local-6989586621680149693"><span class="hs-identifier hs-var">st0</span></a></span><span>
+</span><a href="#local-6989586621680037258"><span class="hs-identifier hs-var">builder</span></a></span><span> </span><span class="annot"><span class="annottext">BuilderSt k v x t
+</span><a href="#local-6989586621680037257"><span class="hs-identifier hs-var">st0</span></a></span><span>
 </span><span id="line-64"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">BusNetwork k v x t
-</span><a href="#local-6989586621680149702"><span class="hs-identifier hs-var">net</span></a></span><span>
+</span><a href="#local-6989586621680037266"><span class="hs-identifier hs-var">net</span></a></span><span>
 </span><span id="line-65"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">bnPus :: Map k (PU v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnPus"><span class="hs-identifier hs-var">bnPus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map k (PU v x t)
-</span><a href="#local-6989586621680149687"><span class="hs-identifier hs-var">pus</span></a></span><span>
+</span><a href="#local-6989586621680037252"><span class="hs-identifier hs-var">pus</span></a></span><span>
 </span><span id="line-66"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnSignalBusWidth :: Int
 </span><a href="NITTA.Model.Networks.Bus.html#bnSignalBusWidth"><span class="hs-identifier hs-var">bnSignalBusWidth</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149688"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span>
+</span><a href="#local-6989586621680037253"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span>
 </span><span id="line-67"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnEnv :: UnitEnv (BusNetwork k v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnEnv"><span class="hs-identifier hs-var">bnEnv</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UnitEnv (BusNetwork k v x t)
-</span><a href="#local-6989586621680149696"><span class="hs-identifier hs-var">bnEnv</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">ioPorts :: Maybe (IOPorts (BusNetwork k v x t))
+</span><a href="#local-6989586621680037260"><span class="hs-identifier hs-var">bnEnv</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">ioPorts :: Maybe (IOPorts (BusNetwork k v x t))
 </span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOPorts (BusNetwork k v x t)
 -&gt; Maybe (IOPorts (BusNetwork k v x t))
 forall a. a -&gt; Maybe a
@@ -163,17 +163,17 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Map k (PU v x t) -&gt; [PU v x t]
 forall k a. Map k a -&gt; [a]
 </span><span class="hs-identifier hs-var">M.elems</span></span><span> </span><span class="annot"><span class="annottext">Map k (PU v x t)
-</span><a href="#local-6989586621680149687"><span class="hs-identifier hs-var">pus</span></a></span><span class="hs-special">}</span><span>
+</span><a href="#local-6989586621680037252"><span class="hs-identifier hs-var">pus</span></a></span><span class="hs-special">}</span><span>
 </span><span id="line-68"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-69"></span><span>
 </span><span id="line-70"></span><span id="defineNetwork"><span class="annot"><span class="annottext">defineNetwork :: k
 -&gt; IOSynchronization
 -&gt; StateT (BuilderSt k v x t) Identity a
 -&gt; BusNetwork k v x t
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#defineNetwork"><span class="hs-identifier hs-var hs-var">defineNetwork</span></a></span></span><span> </span><span id="local-6989586621680149683"><span class="annot"><span class="annottext">bnName :: k
-</span><a href="#local-6989586621680149683"><span class="hs-identifier hs-var">bnName</span></a></span></span><span> </span><span id="local-6989586621680149682"><span class="annot"><span class="annottext">ioSync :: IOSynchronization
-</span><a href="#local-6989586621680149682"><span class="hs-identifier hs-var">ioSync</span></a></span></span><span> </span><span id="local-6989586621680149681"><span class="annot"><span class="annottext">builder :: StateT (BuilderSt k v x t) Identity a
-</span><a href="#local-6989586621680149681"><span class="hs-identifier hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BusNetwork k v x t
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#defineNetwork"><span class="hs-identifier hs-var hs-var">defineNetwork</span></a></span></span><span> </span><span id="local-6989586621680037248"><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621680037248"><span class="hs-identifier hs-var">bnName</span></a></span></span><span> </span><span id="local-6989586621680037247"><span class="annot"><span class="annottext">IOSynchronization
+</span><a href="#local-6989586621680037247"><span class="hs-identifier hs-var">ioSync</span></a></span></span><span> </span><span id="local-6989586621680037246"><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
+</span><a href="#local-6989586621680037246"><span class="hs-identifier hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BusNetwork k v x t
 -&gt; StateT (BuilderSt k v x t) Identity a -&gt; BusNetwork k v x t
 forall k v x t a.
 BusNetwork k v x t
@@ -183,15 +183,15 @@ forall t tag v x.
 Default t =&gt;
 tag -&gt; IOSynchronization -&gt; BusNetwork tag v x t
 </span><a href="NITTA.Model.Networks.Bus.html#busNetwork"><span class="hs-identifier hs-var">busNetwork</span></a></span><span> </span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680149683"><span class="hs-identifier hs-var">bnName</span></a></span><span> </span><span class="annot"><span class="annottext">IOSynchronization
-</span><a href="#local-6989586621680149682"><span class="hs-identifier hs-var">ioSync</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
-</span><a href="#local-6989586621680149681"><span class="hs-identifier hs-var">builder</span></a></span><span>
+</span><a href="#local-6989586621680037248"><span class="hs-identifier hs-var">bnName</span></a></span><span> </span><span class="annot"><span class="annottext">IOSynchronization
+</span><a href="#local-6989586621680037247"><span class="hs-identifier hs-var">ioSync</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">StateT (BuilderSt k v x t) Identity a
+</span><a href="#local-6989586621680037246"><span class="hs-identifier hs-var">builder</span></a></span><span>
 </span><span id="line-71"></span><span>
 </span><span id="line-72"></span><span id="puEnv"><span class="annot"><span class="annottext">puEnv :: a -&gt; Ports m -&gt; IOPorts m -&gt; UnitEnv m
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#puEnv"><span class="hs-identifier hs-var hs-var">puEnv</span></a></span></span><span> </span><span id="local-6989586621680149678"><span class="annot"><span class="annottext">tag :: a
-</span><a href="#local-6989586621680149678"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680149677"><span class="annot"><span class="annottext">ctrlPorts :: Ports m
-</span><a href="#local-6989586621680149677"><span class="hs-identifier hs-var">ctrlPorts</span></a></span></span><span> </span><span id="local-6989586621680149676"><span class="annot"><span class="annottext">ioPorts :: IOPorts m
-</span><a href="#local-6989586621680149676"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#puEnv"><span class="hs-identifier hs-var hs-var">puEnv</span></a></span></span><span> </span><span id="local-6989586621680037243"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680037243"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680037242"><span class="annot"><span class="annottext">Ports m
+</span><a href="#local-6989586621680037242"><span class="hs-identifier hs-var">ctrlPorts</span></a></span></span><span> </span><span id="local-6989586621680037241"><span class="annot"><span class="annottext">IOPorts m
+</span><a href="#local-6989586621680037241"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-73"></span><span>    </span><span class="annot"><span class="annottext">UnitEnv Any
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
@@ -199,122 +199,127 @@ forall a. Default a =&gt; a
 </span><a href="NITTA.Project.Types.html#ctrlPorts"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Ports m -&gt; Maybe (Ports m)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Ports m
-</span><a href="#local-6989586621680149677"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span>
+</span><a href="#local-6989586621680037242"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span>
 </span><span id="line-75"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioPorts :: Maybe (IOPorts m)
 </span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOPorts m -&gt; Maybe (IOPorts m)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">IOPorts m
-</span><a href="#local-6989586621680149676"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
+</span><a href="#local-6989586621680037241"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
 </span><span id="line-76"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueIn :: Maybe (Text, Text)
 </span><a href="NITTA.Project.Types.html#valueIn"><span class="hs-identifier hs-var">valueIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text, Text) -&gt; Maybe (Text, Text)
 forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-string">&quot;data_bus&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-string">&quot;attr_bus&quot;</span></span><span class="hs-special">)</span><span>
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;data_bus&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;attr_bus&quot;</span></span><span class="hs-special">)</span><span>
 </span><span id="line-77"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueOut :: Maybe (Text, Text)
 </span><a href="NITTA.Project.Types.html#valueOut"><span class="hs-identifier hs-var">valueOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text, Text) -&gt; Maybe (Text, Text)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Text
 forall a. ToString a =&gt; a -&gt; Text
 </span><a href="NITTA.Utils.Base.html#toText"><span class="hs-identifier hs-var">toText</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149678"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+</span><a href="#local-6989586621680037243"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-string">&quot;_data_out&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a -&gt; Text
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_data_out&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a -&gt; Text
 forall a. ToString a =&gt; a -&gt; Text
 </span><a href="NITTA.Utils.Base.html#toText"><span class="hs-identifier hs-var">toText</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149678"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+</span><a href="#local-6989586621680037243"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="hs-string">&quot;_attr_out&quot;</span></span><span class="hs-special">)</span><span>
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_attr_out&quot;</span></span><span class="hs-special">)</span><span>
 </span><span id="line-78"></span><span>        </span><span class="hs-special">}</span><span>
 </span><span id="line-79"></span><span>
 </span><span id="line-80"></span><span class="hs-comment">-- |Add PU with the custom initial state. Type specify by IOPorts.</span><span>
 </span><span id="line-81"></span><span id="addCustom"><span class="annot"><span class="annottext">addCustom :: a -&gt; pu -&gt; IOPorts pu -&gt; m ()
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#addCustom"><span class="hs-identifier hs-var hs-var">addCustom</span></a></span></span><span> </span><span id="local-6989586621680149670"><span class="annot"><span class="annottext">tag :: a
-</span><a href="#local-6989586621680149670"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680149669"><span class="annot"><span class="annottext">pu :: pu
-</span><a href="#local-6989586621680149669"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680149668"><span class="annot"><span class="annottext">ioPorts :: IOPorts pu
-</span><a href="#local-6989586621680149668"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-82"></span><span>    </span><span id="local-6989586621680149667"><span class="annot"><span class="annottext">st :: BuilderSt a v x t
-</span><a href="#local-6989586621680149667"><span class="hs-identifier hs-var">st</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type">BuilderSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680149666"><span class="annot"><span class="annottext">Int
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#addCustom"><span class="hs-identifier hs-var hs-var">addCustom</span></a></span></span><span> </span><span id="local-6989586621680037235"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680037235"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680037234"><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680037234"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680037233"><span class="annot"><span class="annottext">IOPorts pu
+</span><a href="#local-6989586621680037233"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621680037232"><span class="annot"><span class="annottext">st :: BuilderSt a v x t
+</span><a href="#local-6989586621680037232"><span class="hs-identifier hs-var">st</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#BuilderSt"><span class="hs-identifier hs-type">BuilderSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680037231"><span class="annot"><span class="annottext">Int
 signalBusWidth :: Int
 $sel:signalBusWidth:BuilderSt :: forall tag v x t. BuilderSt tag v x t -&gt; Int
-</span><a href="#local-6989586621680149666"><span class="hs-identifier hs-var hs-var">signalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149665"><span class="annot"><span class="annottext">[SignalTag]
+</span><a href="#local-6989586621680037231"><span class="hs-identifier hs-var hs-var">signalBusWidth</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037230"><span class="annot"><span class="annottext">[SignalTag]
 availSignals :: [SignalTag]
 $sel:availSignals:BuilderSt :: forall tag v x t. BuilderSt tag v x t -&gt; [SignalTag]
-</span><a href="#local-6989586621680149665"><span class="hs-identifier hs-var hs-var">availSignals</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149664"><span class="annot"><span class="annottext">Map a (PU v x t)
+</span><a href="#local-6989586621680037230"><span class="hs-identifier hs-var hs-var">availSignals</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037229"><span class="annot"><span class="annottext">Map a (PU v x t)
 pus :: Map a (PU v x t)
 $sel:pus:BuilderSt :: forall tag v x t. BuilderSt tag v x t -&gt; Map tag (PU v x t)
-</span><a href="#local-6989586621680149664"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m (BuilderSt a v x t)
+</span><a href="#local-6989586621680037229"><span class="hs-identifier hs-var hs-var">pus</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m (BuilderSt a v x t)
 forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
-</span><span id="line-83"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680149662"><span class="annot"><span class="annottext">ctrlPorts :: Ports pu
-</span><a href="#local-6989586621680149662"><span class="hs-identifier hs-var hs-var">ctrlPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SignalTag] -&gt; pu -&gt; Ports pu
+</span><span id="line-83"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680037227"><span class="annot"><span class="annottext">ctrlPorts :: Ports pu
+</span><a href="#local-6989586621680037227"><span class="hs-identifier hs-var hs-var">ctrlPorts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SignalTag] -&gt; pu -&gt; Ports pu
 forall pu. Controllable pu =&gt; [SignalTag] -&gt; pu -&gt; Ports pu
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#takePortTags"><span class="hs-identifier hs-var">takePortTags</span></a></span><span> </span><span class="annot"><span class="annottext">[SignalTag]
-</span><a href="#local-6989586621680149665"><span class="hs-identifier hs-var">availSignals</span></a></span><span> </span><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680149669"><span class="hs-identifier hs-var">pu</span></a></span><span>
-</span><span id="line-84"></span><span>        </span><span id="local-6989586621680149660"><span class="annot"><span class="annottext">pu' :: PU v x t
-</span><a href="#local-6989586621680149660"><span class="hs-identifier hs-var hs-var">pu'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">pu -&gt; Changeset v -&gt; UnitEnv pu -&gt; PU v x t
+</span><a href="#local-6989586621680037230"><span class="hs-identifier hs-var">availSignals</span></a></span><span> </span><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680037234"><span class="hs-identifier hs-var">pu</span></a></span><span>
+</span><span id="line-84"></span><span>        </span><span id="local-6989586621680037225"><span class="annot"><span class="annottext">pu' :: PU v x t
+</span><a href="#local-6989586621680037225"><span class="hs-identifier hs-var hs-var">pu'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">pu -&gt; Changeset v -&gt; UnitEnv pu -&gt; PU v x t
 forall pu v x t.
 PUClasses pu v x t =&gt;
 pu -&gt; Changeset v -&gt; UnitEnv pu -&gt; PU v x t
 </span><a href="NITTA.Model.Networks.Types.html#PU"><span class="hs-identifier hs-var">PU</span></a></span><span> </span><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680149669"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Changeset v
+</span><a href="#local-6989586621680037234"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Changeset v
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span> </span><span class="annot"><span class="annottext">(UnitEnv pu -&gt; PU v x t) -&gt; UnitEnv pu -&gt; PU v x t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Ports pu -&gt; IOPorts pu -&gt; UnitEnv pu
 forall a m. ToString a =&gt; a -&gt; Ports m -&gt; IOPorts m -&gt; UnitEnv m
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#puEnv"><span class="hs-identifier hs-var">puEnv</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149670"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Ports pu
-</span><a href="#local-6989586621680149662"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="annot"><span class="annottext">IOPorts pu
-</span><a href="#local-6989586621680149668"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
-</span><span id="line-85"></span><span>        </span><span id="local-6989586621680149658"><span class="annot"><span class="annottext">usedPortsLen :: Int
-</span><a href="#local-6989586621680149658"><span class="hs-identifier hs-var hs-var">usedPortsLen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SignalTag] -&gt; Int
+</span><a href="#local-6989586621680037235"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Ports pu
+</span><a href="#local-6989586621680037227"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="annot"><span class="annottext">IOPorts pu
+</span><a href="#local-6989586621680037233"><span class="hs-identifier hs-var">ioPorts</span></a></span><span>
+</span><span id="line-85"></span><span>        </span><span id="local-6989586621680037223"><span class="annot"><span class="annottext">usedPortsLen :: Int
+</span><a href="#local-6989586621680037223"><span class="hs-identifier hs-var hs-var">usedPortsLen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SignalTag] -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">([SignalTag] -&gt; Int) -&gt; [SignalTag] -&gt; Int
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Ports pu -&gt; [SignalTag]
 forall pu. Controllable pu =&gt; Ports pu -&gt; [SignalTag]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#usedPortTags"><span class="hs-identifier hs-var">usedPortTags</span></a></span><span> </span><span class="annot"><span class="annottext">Ports pu
-</span><a href="#local-6989586621680149662"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span>
+</span><a href="#local-6989586621680037227"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span>
 </span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">BuilderSt a v x t -&gt; m ()
 forall s (m :: * -&gt; *). MonadState s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">put</span></span><span>
 </span><span id="line-87"></span><span>        </span><span class="annot"><span class="annottext">BuilderSt a v x t
-</span><a href="#local-6989586621680149667"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680037232"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-88"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:signalBusWidth:BuilderSt :: Int
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AsignalBusWidth%3ABuilderSt"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149666"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680037231"><span class="hs-identifier hs-var">signalBusWidth</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149658"><span class="hs-identifier hs-var">usedPortsLen</span></a></span><span>
+</span><a href="#local-6989586621680037223"><span class="hs-identifier hs-var">usedPortsLen</span></a></span><span>
 </span><span id="line-89"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:availSignals:BuilderSt :: [SignalTag]
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AavailSignals%3ABuilderSt"><span class="hs-identifier hs-var">availSignals</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; [SignalTag] -&gt; [SignalTag]
 forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680149658"><span class="hs-identifier hs-var">usedPortsLen</span></a></span><span> </span><span class="annot"><span class="annottext">[SignalTag]
-</span><a href="#local-6989586621680149665"><span class="hs-identifier hs-var">availSignals</span></a></span><span>
+</span><a href="#local-6989586621680037223"><span class="hs-identifier hs-var">usedPortsLen</span></a></span><span> </span><span class="annot"><span class="annottext">[SignalTag]
+</span><a href="#local-6989586621680037230"><span class="hs-identifier hs-var">availSignals</span></a></span><span>
 </span><span id="line-90"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:pus:BuilderSt :: Map a (PU v x t)
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Apus%3ABuilderSt"><span class="hs-identifier hs-var">pus</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-91"></span><span>                </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">a -&gt; Map a (PU v x t) -&gt; Bool
 forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Bool
 </span><span class="hs-identifier hs-var">M.member</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149670"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Map a (PU v x t)
-</span><a href="#local-6989586621680149664"><span class="hs-identifier hs-var">pus</span></a></span><span>
+</span><a href="#local-6989586621680037235"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Map a (PU v x t)
+</span><a href="#local-6989586621680037229"><span class="hs-identifier hs-var">pus</span></a></span><span>
 </span><span id="line-92"></span><span>                    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Map a (PU v x t)
 forall a. HasCallStack =&gt; [Char] -&gt; a
-</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="hs-string">&quot;every PU must has uniq tag&quot;</span></span><span>
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;every PU must has uniq tag&quot;</span></span><span>
 </span><span id="line-93"></span><span>                    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">a -&gt; PU v x t -&gt; Map a (PU v x t) -&gt; Map a (PU v x t)
 forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149670"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t
-</span><a href="#local-6989586621680149660"><span class="hs-identifier hs-var">pu'</span></a></span><span> </span><span class="annot"><span class="annottext">Map a (PU v x t)
-</span><a href="#local-6989586621680149664"><span class="hs-identifier hs-var">pus</span></a></span><span>
+</span><a href="#local-6989586621680037235"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t
+</span><a href="#local-6989586621680037225"><span class="hs-identifier hs-var">pu'</span></a></span><span> </span><span class="annot"><span class="annottext">Map a (PU v x t)
+</span><a href="#local-6989586621680037229"><span class="hs-identifier hs-var">pus</span></a></span><span>
 </span><span id="line-94"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-95"></span><span>
 </span><span id="line-96"></span><span class="hs-comment">-- |Add PU with the default initial state. Type specify by IOPorts.</span><span>
 </span><span id="line-97"></span><span id="add"><span class="annot"><span class="annottext">add :: a -&gt; IOPorts pu -&gt; m ()
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#add"><span class="hs-identifier hs-var hs-var">add</span></a></span></span><span> </span><span id="local-6989586621680149649"><span class="annot"><span class="annottext">tag :: a
-</span><a href="#local-6989586621680149649"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680149648"><span class="annot"><span class="annottext">ioport :: IOPorts pu
-</span><a href="#local-6989586621680149648"><span class="hs-identifier hs-var">ioport</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; pu -&gt; IOPorts pu -&gt; m ()
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#add"><span class="hs-identifier hs-var hs-var">add</span></a></span></span><span> </span><span id="local-6989586621680037214"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680037214"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680037213"><span class="annot"><span class="annottext">IOPorts pu
+</span><a href="#local-6989586621680037213"><span class="hs-identifier hs-var">ioport</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; pu -&gt; IOPorts pu -&gt; m ()
 forall (m :: * -&gt; *) a v x t pu.
 (MonadState (BuilderSt a v x t) m, Ord a, ByTime pu t,
  Connected pu, IOConnected pu, EndpointProblem pu v t,
@@ -325,14 +330,14 @@ forall (m :: * -&gt; *) a v x t pu.
  ToString a, Typeable pu, Show (Instruction pu), Controllable pu) =&gt;
 a -&gt; pu -&gt; IOPorts pu -&gt; m ()
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#addCustom"><span class="hs-identifier hs-var">addCustom</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680149649"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680037214"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">pu
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span> </span><span class="annot"><span class="annottext">IOPorts pu
-</span><a href="#local-6989586621680149648"><span class="hs-identifier hs-var">ioport</span></a></span><span>
+</span><a href="#local-6989586621680037213"><span class="hs-identifier hs-var">ioport</span></a></span><span>
 </span><span id="line-98"></span><span>
-</span><span id="line-99"></span><span id="local-6989586621680149646"><span id="local-6989586621680149647"></span></span><span class="hs-keyword">data</span><span> </span><span id="MicroarchitectureDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-var">MicroarchitectureDesc</span></a></span></span><span> </span><span id="local-6989586621680149742"><span class="annot"><a href="#local-6989586621680149742"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="MicroarchitectureDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-var">MicroarchitectureDesc</span></a></span></span><span>
+</span><span id="line-99"></span><span id="local-6989586621680037211"><span id="local-6989586621680037212"></span></span><span class="hs-keyword">data</span><span> </span><span id="MicroarchitectureDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-var">MicroarchitectureDesc</span></a></span></span><span> </span><span id="local-6989586621680037305"><span class="annot"><a href="#local-6989586621680037305"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="MicroarchitectureDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-var">MicroarchitectureDesc</span></a></span></span><span>
 </span><span id="line-100"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Anetworks%3AMicroarchitectureDesc"><span class="annot"><span class="annottext">MicroarchitectureDesc tag -&gt; [NetworkDesc tag]
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Anetworks%3AMicroarchitectureDesc"><span class="hs-identifier hs-var hs-var">networks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type">NetworkDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149742"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Anetworks%3AMicroarchitectureDesc"><span class="hs-identifier hs-var hs-var">networks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type">NetworkDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037305"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-101"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AioSyncMode%3AMicroarchitectureDesc"><span class="annot"><span class="annottext">MicroarchitectureDesc tag -&gt; IOSynchronization
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AioSyncMode%3AMicroarchitectureDesc"><span class="hs-identifier hs-var hs-var">ioSyncMode</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Types.html#IOSynchronization"><span class="hs-identifier hs-type">IOSynchronization</span></a></span><span>
 </span><span id="line-102"></span><span>    </span><span class="hs-special">}</span><span>
@@ -357,15 +362,15 @@ $cfrom :: forall tag x.
 MicroarchitectureDesc tag -&gt; Rep (MicroarchitectureDesc tag) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-104"></span><span>
-</span><span id="line-105"></span><span id="local-6989586621680149639"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680149631"><span id="local-6989586621680149633"><span id="local-6989586621680149635"><span id="local-6989586621680149637"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680149639"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type">MicroarchitectureDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149639"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-105"></span><span id="local-6989586621680037204"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680037196"><span id="local-6989586621680037198"><span id="local-6989586621680037200"><span id="local-6989586621680037202"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680037204"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type">MicroarchitectureDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037204"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
 </span><span id="line-106"></span><span>
-</span><span id="line-107"></span><span id="local-6989586621680149628"><span id="local-6989586621680149629"></span></span><span class="hs-keyword">data</span><span> </span><span id="NetworkDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-var">NetworkDesc</span></a></span></span><span> </span><span id="local-6989586621680149741"><span class="annot"><a href="#local-6989586621680149741"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="NetworkDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-var">NetworkDesc</span></a></span></span><span>
+</span><span id="line-107"></span><span id="local-6989586621680037193"><span id="local-6989586621680037194"></span></span><span class="hs-keyword">data</span><span> </span><span id="NetworkDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-var">NetworkDesc</span></a></span></span><span> </span><span id="local-6989586621680037304"><span class="annot"><a href="#local-6989586621680037304"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="NetworkDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-var">NetworkDesc</span></a></span></span><span>
 </span><span id="line-108"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AnetworkTag%3ANetworkDesc"><span class="annot"><span class="annottext">NetworkDesc tag -&gt; tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AnetworkTag%3ANetworkDesc"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680149741"><span class="hs-identifier hs-type">tag</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AnetworkTag%3ANetworkDesc"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680037304"><span class="hs-identifier hs-type">tag</span></a></span><span>
 </span><span id="line-109"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AvalueType%3ANetworkDesc"><span class="annot"><span class="annottext">NetworkDesc tag -&gt; Text
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AvalueType%3ANetworkDesc"><span class="hs-identifier hs-var hs-var">valueType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
 </span><span id="line-110"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Aunits%3ANetworkDesc"><span class="annot"><span class="annottext">NetworkDesc tag -&gt; [UnitDesc tag]
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Aunits%3ANetworkDesc"><span class="hs-identifier hs-var hs-var">units</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type">UnitDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149741"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Aunits%3ANetworkDesc"><span class="hs-identifier hs-var hs-var">units</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type">UnitDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037304"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-111"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-112"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. NetworkDesc tag -&gt; Rep (NetworkDesc tag) x)
 -&gt; (forall x. Rep (NetworkDesc tag) x -&gt; NetworkDesc tag)
@@ -380,11 +385,11 @@ $cto :: forall tag x. Rep (NetworkDesc tag) x -&gt; NetworkDesc tag
 $cfrom :: forall tag x. NetworkDesc tag -&gt; Rep (NetworkDesc tag) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-113"></span><span>
-</span><span id="line-114"></span><span id="local-6989586621680149621"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680149613"><span id="local-6989586621680149615"><span id="local-6989586621680149617"><span id="local-6989586621680149619"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680149621"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type">NetworkDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149621"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-114"></span><span id="local-6989586621680037186"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680037178"><span id="local-6989586621680037180"><span id="local-6989586621680037182"><span id="local-6989586621680037184"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680037186"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type">NetworkDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037186"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
 </span><span id="line-115"></span><span>
-</span><span id="line-116"></span><span id="local-6989586621680149611"><span id="local-6989586621680149612"></span></span><span class="hs-keyword">data</span><span> </span><span id="UnitDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-var">UnitDesc</span></a></span></span><span> </span><span id="local-6989586621680149731"><span class="annot"><a href="#local-6989586621680149731"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnitDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-var">UnitDesc</span></a></span></span><span>
+</span><span id="line-116"></span><span id="local-6989586621680037176"><span id="local-6989586621680037177"></span></span><span class="hs-keyword">data</span><span> </span><span id="UnitDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-var">UnitDesc</span></a></span></span><span> </span><span id="local-6989586621680037294"><span class="annot"><a href="#local-6989586621680037294"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="UnitDesc"><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-var">UnitDesc</span></a></span></span><span>
 </span><span id="line-117"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AunitTag%3AUnitDesc"><span class="annot"><span class="annottext">UnitDesc tag -&gt; tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AunitTag%3AUnitDesc"><span class="hs-identifier hs-var hs-var">unitTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680149731"><span class="hs-identifier hs-type">tag</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AunitTag%3AUnitDesc"><span class="hs-identifier hs-var hs-var">unitTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680037294"><span class="hs-identifier hs-type">tag</span></a></span><span>
 </span><span id="line-118"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AunitType%3AUnitDesc"><span class="annot"><span class="annottext">UnitDesc tag -&gt; Text
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AunitType%3AUnitDesc"><span class="hs-identifier hs-var hs-var">unitType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
 </span><span id="line-119"></span><span>    </span><span class="hs-special">}</span><span>
@@ -401,30 +406,30 @@ $cto :: forall tag x. Rep (UnitDesc tag) x -&gt; UnitDesc tag
 $cfrom :: forall tag x. UnitDesc tag -&gt; Rep (UnitDesc tag) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-121"></span><span>
-</span><span id="line-122"></span><span id="local-6989586621680149605"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680149597"><span id="local-6989586621680149599"><span id="local-6989586621680149601"><span id="local-6989586621680149603"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680149605"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type">UnitDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149605"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-122"></span><span id="local-6989586621680037170"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680037162"><span id="local-6989586621680037164"><span id="local-6989586621680037166"><span id="local-6989586621680037168"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680037170"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type">UnitDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037170"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
 </span><span id="line-123"></span><span>
-</span><span id="line-124"></span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#microarchitectureDesc"><span class="hs-identifier hs-type">microarchitectureDesc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621680149596"><span class="annot"><a href="#local-6989586621680149596"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span id="local-6989586621680149595"><span class="annot"><a href="#local-6989586621680149595"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680149594"><span class="annot"><a href="#local-6989586621680149594"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680149593"><span class="annot"><a href="#local-6989586621680149593"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680149594"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149596"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149595"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149594"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149593"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type">MicroarchitectureDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680149596"><span class="hs-identifier hs-type">tag</span></a></span><span>
+</span><span id="line-124"></span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#microarchitectureDesc"><span class="hs-identifier hs-type">microarchitectureDesc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621680037161"><span class="annot"><a href="#local-6989586621680037161"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span id="local-6989586621680037160"><span class="annot"><a href="#local-6989586621680037160"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680037159"><span class="annot"><a href="#local-6989586621680037159"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680037158"><span class="annot"><a href="#local-6989586621680037158"><span class="hs-identifier hs-type">t</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680037159"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037161"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037160"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037159"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037158"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type">MicroarchitectureDesc</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680037161"><span class="hs-identifier hs-type">tag</span></a></span><span>
 </span><span id="line-125"></span><span id="microarchitectureDesc"><span class="annot"><span class="annottext">microarchitectureDesc :: BusNetwork tag v x t -&gt; MicroarchitectureDesc tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#microarchitectureDesc"><span class="hs-identifier hs-var hs-var">microarchitectureDesc</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680149592"><span class="annot"><span class="annottext">tag
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#microarchitectureDesc"><span class="hs-identifier hs-var hs-var">microarchitectureDesc</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680037157"><span class="annot"><span class="annottext">tag
 bnName :: forall tag v x t. BusNetwork tag v x t -&gt; tag
 bnName :: tag
-</span><a href="NITTA.Model.Networks.Bus.html#bnName"><span class="hs-identifier hs-var hs-var">bnName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149590"><span class="annot"><span class="annottext">Map tag (PU v x t)
+</span><a href="NITTA.Model.Networks.Bus.html#bnName"><span class="hs-identifier hs-var hs-var">bnName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037155"><span class="annot"><span class="annottext">Map tag (PU v x t)
 bnPus :: Map tag (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
-</span><a href="#local-6989586621680149590"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680149589"><span class="annot"><span class="annottext">IOSynchronization
+</span><a href="#local-6989586621680037155"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680037154"><span class="annot"><span class="annottext">IOSynchronization
 ioSync :: forall tag v x t. BusNetwork tag v x t -&gt; IOSynchronization
 ioSync :: IOSynchronization
 </span><a href="NITTA.Model.Networks.Bus.html#ioSync"><span class="hs-identifier hs-var hs-var">ioSync</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-126"></span><span>    </span><span class="annot"><span class="annottext">MicroarchitectureDesc :: forall tag.
 [NetworkDesc tag] -&gt; IOSynchronization -&gt; MicroarchitectureDesc tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type hs-type">MicroarchitectureDesc</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#MicroarchitectureDesc"><span class="hs-identifier hs-type">MicroarchitectureDesc</span></a></span><span>
 </span><span id="line-127"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:networks:MicroarchitectureDesc :: [NetworkDesc tag]
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Anetworks%3AMicroarchitectureDesc"><span class="hs-identifier hs-var">networks</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-128"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">NetworkDesc :: forall tag. tag -&gt; Text -&gt; [UnitDesc tag] -&gt; NetworkDesc tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type hs-type">NetworkDesc</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#NetworkDesc"><span class="hs-identifier hs-type">NetworkDesc</span></a></span><span>
 </span><span id="line-129"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:networkTag:NetworkDesc :: tag
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AnetworkTag%3ANetworkDesc"><span class="hs-identifier hs-var">networkTag</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680149592"><span class="hs-identifier hs-var">bnName</span></a></span><span>
+</span><a href="#local-6989586621680037157"><span class="hs-identifier hs-var">bnName</span></a></span><span>
 </span><span id="line-130"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:valueType:NetworkDesc :: Text
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AvalueType%3ANetworkDesc"><span class="hs-identifier hs-var">valueType</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TypeRep -&gt; Text
 forall a. Show a =&gt; a -&gt; Text
@@ -436,30 +441,31 @@ Typeable a =&gt;
 proxy a -&gt; TypeRep
 </span><span class="hs-identifier hs-var">typeRep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Proxy x
 forall k (t :: k). Proxy t
-</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="annot"><a href="#local-6989586621680149594"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
+</span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="annot"><a href="#local-6989586621680037159"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-131"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:units:NetworkDesc :: [UnitDesc tag]
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3Aunits%3ANetworkDesc"><span class="hs-identifier hs-var">units</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-132"></span><span>                    </span><span class="annot"><span class="annottext">((tag, PU v x t) -&gt; UnitDesc tag)
 -&gt; [(tag, PU v x t)] -&gt; [UnitDesc tag]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span>
-</span><span id="line-133"></span><span>                        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680149582"><span class="annot"><span class="annottext">tag :: tag
-</span><a href="#local-6989586621680149582"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Types.html#PU"><span class="hs-identifier hs-type">PU</span></a></span><span class="hs-special">{</span><span id="local-6989586621680149581"><span class="annot"><span class="annottext">pu
+</span><span id="line-133"></span><span>                        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680037149"><span class="annot"><span class="annottext">tag
+</span><a href="#local-6989586621680037149"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Types.html#PU"><span class="hs-identifier hs-type">PU</span></a></span><span class="hs-special">{</span><span id="local-6989586621680037148"><span class="annot"><span class="annottext">pu
 unit :: ()
 unit :: pu
 </span><a href="NITTA.Model.Networks.Types.html#unit"><span class="hs-keyword hs-var hs-var">unit</span></a></span></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-134"></span><span>                            </span><span class="annot"><span class="annottext">UnitDesc :: forall tag. tag -&gt; Text -&gt; UnitDesc tag
-</span><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type hs-type">UnitDesc</span></a></span><span>
+</span><a href="NITTA.Model.Microarchitecture.Builder.html#UnitDesc"><span class="hs-identifier hs-type">UnitDesc</span></a></span><span>
 </span><span id="line-135"></span><span>                                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">$sel:unitTag:UnitDesc :: tag
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AunitTag%3AUnitDesc"><span class="hs-identifier hs-var">unitTag</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680149582"><span class="hs-identifier hs-var">tag</span></a></span><span>
+</span><a href="#local-6989586621680037149"><span class="hs-identifier hs-var">tag</span></a></span><span>
 </span><span id="line-136"></span><span>                                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:unitType:UnitDesc :: Text
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AunitType%3AUnitDesc"><span class="hs-identifier hs-var">unitType</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Text
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; Text) -&gt; [Char] -&gt; Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; [Char] -&gt; [Char]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">takeWhile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-char">' '</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+</span><span class="hs-identifier hs-var">takeWhile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">' '</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; [Char]) -&gt; [Char] -&gt; [Char]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -470,7 +476,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">pu -&gt; TypeRep
 forall a. Typeable a =&gt; a -&gt; TypeRep
 </span><span class="hs-identifier hs-var">typeOf</span></span><span> </span><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680149581"><span class="hs-keyword hs-var">unit</span></a></span><span>
+</span><a href="#local-6989586621680037148"><span class="hs-keyword hs-var">unit</span></a></span><span>
 </span><span id="line-137"></span><span>                                </span><span class="hs-special">}</span><span>
 </span><span id="line-138"></span><span>                        </span><span class="hs-special">)</span><span>
 </span><span id="line-139"></span><span>                        </span><span class="annot"><span class="annottext">([(tag, PU v x t)] -&gt; [UnitDesc tag])
@@ -479,11 +485,11 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Map tag (PU v x t) -&gt; [(tag, PU v x t)]
 forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map tag (PU v x t)
-</span><a href="#local-6989586621680149590"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
+</span><a href="#local-6989586621680037155"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
 </span><span id="line-140"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-141"></span><span>            </span><span class="hs-special">]</span><span>
 </span><span id="line-142"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:ioSyncMode:MicroarchitectureDesc :: IOSynchronization
 </span><a href="NITTA.Model.Microarchitecture.Builder.html#%24sel%3AioSyncMode%3AMicroarchitectureDesc"><span class="hs-identifier hs-var">ioSyncMode</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOSynchronization
-</span><a href="#local-6989586621680149589"><span class="hs-identifier hs-var">ioSync</span></a></span><span>
+</span><a href="#local-6989586621680037154"><span class="hs-identifier hs-var">ioSync</span></a></span><span>
 </span><span id="line-143"></span><span>        </span><span class="hs-special">}</span><span>
 </span><span id="line-144"></span></pre></body></html>
