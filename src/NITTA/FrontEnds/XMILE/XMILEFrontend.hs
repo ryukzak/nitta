@@ -32,9 +32,12 @@ import NITTA.FrontEnds.Common
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
+import NITTA.FrontEnds.XMILE.MathParser
+import Data.Either
 
 data XMILEAlgBuilder x = XMILEAlgBuilder
     { algSimSpecs :: XMILESimSpec
+    , algFlows :: [XMILEFlow]
     }
     deriving (Show)
 
@@ -79,21 +82,18 @@ _xmileSample =
             |]
 
 xmile2functions src = do
-    let alg = parseXMILEDocument src
+    [_] <- parseXMILEDocument src
     return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
 
 parseXMILEDocument src =
+
     runX $
         readString [withValidate no] src
             >>> removeAllWhiteSpace
-            >>> getXMILEState
-
-getXMILEState =
-    atTag "xmile"
-        >>> proc x -> do
-            simSpec <- parseSimSpec -< x
-            model <- parseModel -< x
-            returnA -< XMILEAlgState{xasSimSpec = simSpec, xasModel = model}
+            >>> proc state -> do
+                simSpec <- parseSimSpec -< state
+                flows <- parseFlows -< state
+                returnA -< XMILEAlgBuilder { algSimSpecs = simSpec, algFlows = [flows] }
 
 parseSimSpec =
     atTag "sim_specs"
@@ -103,18 +103,16 @@ parseSimSpec =
             dt <- text <<< atTag "dt" -< x
             returnA -< XMILESimSpec{xssStart = T.pack start, xssStop = T.pack stop, xssDt = T.pack dt}
 
-parseModel =
-    atTag "model"
-        >>> proc x -> do
-            variables <- parseModelVariables -< x
-            returnA -< XMILEModel{xmVariables = variables}
-
-parseModelVariables =
+parseFlows =
     atTag "variables"
-        >>> proc _ -> do
-            returnA -< XMILEVariables{xvFlows = [], xvAuxs = [], xvStocks = []}
+        >>> atTag "flow"
+        >>> proc flow -> do
+            eqn <- text <<< atTag "eqn" -< flow
+            name <- atAttr "name" -< flow
+            returnA -< XMILEFlow{xfEquation = fromRight undefined $ parseXmileEquation eqn, xfName = T.pack name}
 
 atTag tag = deep (isElem >>> hasName tag)
+atAttr attrName = deep (isElem >>> getAttrValue attrName)
 text = getChildren >>> getText
 
 data XMILESimSpec = XMILESimSpec
@@ -137,7 +135,7 @@ data XMILEVariables = XMILEVariables
 
 data XMILEFlow = XMILEFlow
     { xfName :: T.Text
-    , xfEquation :: T.Text
+    , xfEquation :: XMExpr
     }
     deriving (Show)
 

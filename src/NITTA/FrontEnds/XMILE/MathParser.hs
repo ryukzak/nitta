@@ -1,4 +1,8 @@
-module MathParser (exprparser) where
+module NITTA.FrontEnds.XMILE.MathParser (
+    parseXmileEquation,
+    XMExpr(..),
+    XMDuop(..)
+) where
 
 import Text.Parsec
 import Text.Parsec.Expr
@@ -6,15 +10,15 @@ import Text.Parsec.Language
 import Text.Parsec.String
 import Text.Parsec.Token
 
-data Expr = Var String | Val Double | Duo Duop Expr Expr
+data XMExpr = Var String | Val Double | Duo XMDuop XMExpr XMExpr
     deriving (Show)
 
-data Duop = Mul | Div | Add | Sub deriving (Show)
+data XMDuop = Mul | Div | Add | Sub deriving (Show)
 
 def =
     emptyDef
-        { identStart = char '\"'
-        , identLetter = letter <|> space <|> char '\"'
+        { identStart = letter <|> space
+        , identLetter = letter <|> space
         , opStart = oneOf "+-/*"
         , opLetter = oneOf "+-/*"
         , reservedOpNames = ["+", "-", "/", "*"]
@@ -27,7 +31,10 @@ TokenParser
     , reservedOp = m_reservedOp
     } = makeTokenParser def
 
-exprparser :: Parser Expr
+
+parseXmileEquation eqn = parse exprparser "" eqn 
+
+exprparser :: Parser XMExpr
 exprparser = buildExpressionParser table term <?> "expression"
 table =
     [ [Infix (m_reservedOp "*" >> return (Duo Mul)) AssocLeft]
@@ -36,5 +43,4 @@ table =
     , [Infix (m_reservedOp "-" >> return (Duo Sub)) AssocLeft]
     ]
 term =
-    m_parens exprparser
-        <|> fmap Var m_identifier
+    m_parens exprparser <|> fmap Var (between (char '\"') (char '\"') m_identifier)
