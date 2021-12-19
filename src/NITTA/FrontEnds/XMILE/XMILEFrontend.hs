@@ -29,15 +29,16 @@ module NITTA.FrontEnds.XMILE.XMILEFrontend (
 import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.FrontEnds.Common
+import NITTA.FrontEnds.XMILE.MathParser
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlState
 import Text.XML.HXT.Core
-import NITTA.FrontEnds.XMILE.MathParser
-import Data.Either
 
 data XMILEAlgBuilder x = XMILEAlgBuilder
     { algSimSpecs :: XMILESimSpec
     , algFlows :: [XMILEFlow]
+    , algAuxs :: [XMILEAux]
+    , algStocks :: [XMILEStock]
     }
     deriving (Show)
 
@@ -86,14 +87,15 @@ xmile2functions src = do
     return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
 
 parseXMILEDocument src =
-
     runX $
         readString [withValidate no] src
             >>> removeAllWhiteSpace
             >>> proc state -> do
                 simSpec <- parseSimSpec -< state
                 flows <- parseFlows -< state
-                returnA -< XMILEAlgBuilder { algSimSpecs = simSpec, algFlows = [flows] }
+                auxs <- parseAuxs -< state
+                stocks <- parseStocks -< state
+                returnA -< XMILEAlgBuilder{algSimSpecs = simSpec, algFlows = [flows], algAuxs = [auxs], algStocks = [stocks]}
 
 parseSimSpec =
     atTag "sim_specs"
@@ -101,7 +103,7 @@ parseSimSpec =
             stop <- text <<< atTag "stop" -< x
             start <- text <<< atTag "start" -< x
             dt <- text <<< atTag "dt" -< x
-            returnA -< XMILESimSpec{xssStart = T.pack start, xssStop = T.pack stop, xssDt = T.pack dt}
+            returnA -< XMILESimSpec{xssStart = read start, xssStop = read stop, xssDt = read dt}
 
 parseFlows =
     atTag "variables"
@@ -109,16 +111,45 @@ parseFlows =
         >>> proc flow -> do
             eqn <- text <<< atTag "eqn" -< flow
             name <- atAttr "name" -< flow
-            returnA -< XMILEFlow{xfEquation = fromRight undefined $ parseXmileEquation eqn, xfName = T.pack name}
+            returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = T.pack name}
+
+parseAuxs =
+    atTag "variables"
+        >>> atTag "aux"
+        >>> proc aux -> do
+            eqn <- text <<< atTag "eqn" -< aux
+            name <- atAttr "name" -< aux
+            returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = T.pack name}
+
+parseStocks =
+    atTag "variables"
+        >>> atTag "stock"
+        >>> proc stock -> do
+            eqn <- text <<< atTag "eqn" -< stock
+            outflow <- getTagOrNothing "outflow" -< stock
+            inflow <- getTagOrNothing "inflow" -< stock
+            name <- atAttr "name" -< stock
+            returnA
+                -<
+                    XMILEStock
+                        { xsEquation = parseXmileEquation eqn
+                        , xsName = T.pack name
+                        , xsOutflow = if outflow == "" then Nothing else Just $ T.pack outflow
+                        , xsInflow = if inflow == "" then Nothing else Just $ T.pack inflow
+                        }
+    where
+        getTagOrNothing name =
+            (atTag name >>> text)
+                `orElse` arr (const "")
 
 atTag tag = deep (isElem >>> hasName tag)
 atAttr attrName = deep (isElem >>> getAttrValue attrName)
 text = getChildren >>> getText
 
 data XMILESimSpec = XMILESimSpec
-    { xssStart :: T.Text
-    , xssStop :: T.Text
-    , xssDt :: T.Text
+    { xssStart :: Double
+    , xssStop :: Double
+    , xssDt :: Double
     }
     deriving (Show)
 
@@ -141,13 +172,15 @@ data XMILEFlow = XMILEFlow
 
 data XMILEAux = XMILEAux
     { xaName :: T.Text
-    , xaEquation :: T.Text
+    , xaEquation :: XMExpr
     }
     deriving (Show)
 
 data XMILEStock = XMILEStock
     { xsName :: T.Text
-    , xsEquation :: T.Text
+    , xsEquation :: XMExpr
+    , xsInflow :: Maybe T.Text
+    , xsOutflow :: Maybe T.Text
     }
     deriving (Show)
 
