@@ -111,7 +111,7 @@ parseFlows =
         >>> proc flow -> do
             eqn <- text <<< atTag "eqn" -< flow
             name <- atAttr "name" -< flow
-            returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = T.pack name}
+            returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = replaceSpaces $ T.pack name}
 
 parseAuxs =
     atTag "variables"
@@ -119,7 +119,7 @@ parseAuxs =
         >>> proc aux -> do
             eqn <- text <<< atTag "eqn" -< aux
             name <- atAttr "name" -< aux
-            returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = T.pack name}
+            returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = replaceSpaces $ T.pack name}
 
 parseStocks =
     atTag "variables"
@@ -133,14 +133,20 @@ parseStocks =
                 -<
                     XMILEStock
                         { xsEquation = parseXmileEquation eqn
-                        , xsName = T.pack name
-                        , xsOutflow = if outflow == "" then Nothing else Just $ T.pack outflow
-                        , xsInflow = if inflow == "" then Nothing else Just $ T.pack inflow
+                        , xsName =replaceSpaces $ T.pack name
+                        , xsOutflow = if outflow == "" then Nothing else Just $ replaceSpaces $ T.pack outflow
+                        , xsInflow = if inflow == "" then Nothing else Just $ replaceSpaces $ T.pack inflow
                         }
     where
         getTagOrNothing name =
             (atTag name >>> text)
                 `orElse` arr (const "")
+
+replaceSpaces str = T.map repl str
+    where
+        repl ' ' = '_'
+        repl c   = c
+
 
 atTag tag = deep (isElem >>> hasName tag)
 atAttr attrName = deep (isElem >>> getAttrValue attrName)
