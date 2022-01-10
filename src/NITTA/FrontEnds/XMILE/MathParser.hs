@@ -49,9 +49,9 @@ term =
     m_parens exprparser <|> fmap Var (between (skipMany (char '\"')) (skipMany (char '\"' <|> space)) m_identifier)
 
 trimString str = T.unpack $ T.map repl $ T.strip $ T.pack str
-    where 
+    where
         repl ' ' = '_'
-        repl c   = c
+        repl c = c
 
 prepareTree (Var str) = case (readMaybe str :: Maybe Double) of
     (Just val) -> Val val

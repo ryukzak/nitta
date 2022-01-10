@@ -26,6 +26,7 @@ module NITTA.FrontEnds.XMILE.XMILEFrontend (
     TraceVar (..),
 ) where
 
+import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.FrontEnds.Common
@@ -42,6 +43,7 @@ data XMILEAlgBuilder x = XMILEAlgBuilder
     }
     deriving (Show)
 
+_xmileSample :: String
 _xmileSample =
     [__i| 
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -83,8 +85,27 @@ _xmileSample =
             |]
 
 xmile2functions src = do
-    [_] <- parseXMILEDocument src
-    return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
+    [algBuilder] <- parseXMILEDocument src
+    let hm = getDefaultValues algBuilder
+
+    return hm
+
+--return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
+
+getDefaultValues algBuilder =
+    let hm = foldl addConstantAuxEquation HM.empty $ algAuxs algBuilder
+     in foldl addConstantStockEquation hm $ algStocks algBuilder
+    where
+        addConstantAuxEquation hm aux
+            | isConstantEquation $ xaEquation aux = HM.insert (xaName aux) (getValue $ xaEquation aux) hm
+            | otherwise = hm
+        addConstantStockEquation hm stock
+            | isConstantEquation $ xsEquation stock = HM.insert (xsName stock) (getValue $ xsEquation stock) hm
+            | otherwise = hm
+        isConstantEquation (Val _) = True
+        isConstantEquation _ = False
+        getValue (Val value) = value
+        getValue _ = undefined
 
 parseXMILEDocument src =
     runX $
@@ -95,7 +116,7 @@ parseXMILEDocument src =
                 flows <- parseFlows -< state
                 auxs <- parseAuxs -< state
                 stocks <- parseStocks -< state
-                returnA -< XMILEAlgBuilder{algSimSpecs = simSpec, algFlows = [flows], algAuxs = [auxs], algStocks = [stocks]}
+                returnA -< XMILEAlgBuilder{algSimSpecs = simSpec, algFlows = flows, algAuxs = auxs, algStocks = stocks}
 
 parseSimSpec =
     atTag "sim_specs"
@@ -107,36 +128,42 @@ parseSimSpec =
 
 parseFlows =
     atTag "variables"
-        >>> atTag "flow"
-        >>> proc flow -> do
-            eqn <- text <<< atTag "eqn" -< flow
-            name <- atAttr "name" -< flow
-            returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = replaceSpaces $ T.pack name}
+        >>> listA
+            ( atTag "flow"
+                >>> proc flow -> do
+                    eqn <- text <<< atTag "eqn" -< flow
+                    name <- atAttr "name" -< flow
+                    returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = replaceSpaces $ T.pack name}
+            )
 
 parseAuxs =
     atTag "variables"
-        >>> atTag "aux"
-        >>> proc aux -> do
-            eqn <- text <<< atTag "eqn" -< aux
-            name <- atAttr "name" -< aux
-            returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = replaceSpaces $ T.pack name}
+        >>> listA
+            ( atTag "aux"
+                >>> proc aux -> do
+                    eqn <- text <<< atTag "eqn" -< aux
+                    name <- atAttr "name" -< aux
+                    returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = replaceSpaces $ T.pack name}
+            )
 
 parseStocks =
     atTag "variables"
-        >>> atTag "stock"
-        >>> proc stock -> do
-            eqn <- text <<< atTag "eqn" -< stock
-            outflow <- getTagOrNothing "outflow" -< stock
-            inflow <- getTagOrNothing "inflow" -< stock
-            name <- atAttr "name" -< stock
-            returnA
-                -<
-                    XMILEStock
-                        { xsEquation = parseXmileEquation eqn
-                        , xsName =replaceSpaces $ T.pack name
-                        , xsOutflow = if outflow == "" then Nothing else Just $ replaceSpaces $ T.pack outflow
-                        , xsInflow = if inflow == "" then Nothing else Just $ replaceSpaces $ T.pack inflow
-                        }
+        >>> listA
+            ( atTag "stock"
+                >>> proc stock -> do
+                    eqn <- text <<< atTag "eqn" -< stock
+                    outflow <- getTagOrNothing "outflow" -< stock
+                    inflow <- getTagOrNothing "inflow" -< stock
+                    name <- atAttr "name" -< stock
+                    returnA
+                        -<
+                            XMILEStock
+                                { xsEquation = parseXmileEquation eqn
+                                , xsName = replaceSpaces $ T.pack name
+                                , xsOutflow = if outflow == "" then Nothing else Just $ replaceSpaces $ T.pack outflow
+                                , xsInflow = if inflow == "" then Nothing else Just $ replaceSpaces $ T.pack inflow
+                                }
+            )
     where
         getTagOrNothing name =
             (atTag name >>> text)
@@ -145,8 +172,7 @@ parseStocks =
 replaceSpaces str = T.map repl str
     where
         repl ' ' = '_'
-        repl c   = c
-
+        repl c = c
 
 atTag tag = deep (isElem >>> hasName tag)
 atAttr attrName = deep (isElem >>> getAttrValue attrName)
