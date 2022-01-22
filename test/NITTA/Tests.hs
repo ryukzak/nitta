@@ -41,8 +41,6 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
--- FIXME: avoid NITTA.Model.Tests.Internals usage
-
 test_fibonacci =
     [ unitTestCase "simple" def $ do
         setNetwork march
