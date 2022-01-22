@@ -21,6 +21,7 @@ module NITTA.Intermediate.DataFlow (
     addFuncToDataFlowGraph,
 ) where
 
+import Data.Default
 import qualified Data.List as L
 import qualified Data.Set as S
 import GHC.Generics
@@ -36,6 +37,9 @@ data DataFlowGraph v x
     = DFLeaf (F v x)
     | DFCluster [DataFlowGraph v x]
     deriving (Show, Generic)
+
+instance Default (DataFlowGraph v x) where
+    def = DFCluster []
 
 instance Eq (DataFlowGraph v x) where
     -- `show` used for avoid `Ord (DataFlowGraph v x)`

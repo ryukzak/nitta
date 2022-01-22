@@ -51,9 +51,9 @@ data EndpointSt v tp = EndpointSt
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{epRole} = variables epRole
 
-instance (Var v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
+instance (ToString v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
     show EndpointSt{epRole, epAt} = "?" <> show epRole <> "@(" <> show epAt <> ")"
-instance (Var v, Time t) => Show (EndpointSt v (Interval t)) where
+instance (ToString v, Time t) => Show (EndpointSt v (Interval t)) where
     show EndpointSt{epRole, epAt} = "!" <> show epRole <> "@(" <> show epAt <> ")"
 
 instance (Ord v) => Patch (EndpointSt v tp) (Changeset v) where
@@ -81,7 +81,7 @@ data EndpointRole v
       Target v
     deriving (Eq, Ord, Generic)
 
-instance (Var v) => Show (EndpointRole v) where
+instance (ToString v) => Show (EndpointRole v) where
     show (Source vs) = "Source " <> S.join "," (vsToStringList vs)
     show (Target v) = "Target " <> toString v
 

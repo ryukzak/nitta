@@ -24,6 +24,7 @@ import Data.Aeson (ToJSON)
 import GHC.Generics
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Refactor
+import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Synthesis.Types
@@ -34,7 +35,7 @@ data OptimizeAccumMetrics = OptimizeAccumMetrics
 instance ToJSON OptimizeAccumMetrics
 
 instance
-    (VarValTime v x t) =>
+    (UnitTag tag, VarValTime v x t) =>
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
         (TargetSystem (BusNetwork tag v x t) tag v x t)

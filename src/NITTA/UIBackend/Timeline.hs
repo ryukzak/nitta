@@ -98,6 +98,7 @@ processTimelines Process{steps, relations} =
             }
 
 viewpoint FStep{} = ViewPointID{level = "Fun", component = []}
+viewpoint RefactorStep{} = ViewPointID{level = "Ref", component = []}
 viewpoint CADStep{} = ViewPointID{level = "CAD", component = []}
 viewpoint EndpointRoleStep{} = ViewPointID{level = "EndPoint", component = []}
 viewpoint InstructionStep{} = ViewPointID{level = "INST", component = []}

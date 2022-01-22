@@ -21,6 +21,7 @@ module NITTA.Model.TargetSystem (
 ) where
 
 import Control.Exception (assert)
+import Data.Default
 import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.DataFlow
@@ -40,6 +41,9 @@ data TargetSystem u tag v x t = TargetSystem
     }
     deriving (Generic)
 
+instance (Default u) => Default (TargetSystem u tag v x t) where
+    def = TargetSystem def def
+
 instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (F v x) where
     functions TargetSystem{mUnit, mDataFlowGraph} =
         assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) $ -- inconsistent TargetSystem
@@ -50,6 +54,15 @@ processDuration TargetSystem{mUnit} = nextTick mUnit - 1
 isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
+
+instance
+    ( VarValTime v x t
+    , ProcessorUnit u v x t
+    ) =>
+    ProcessorUnit (TargetSystem u tag v x t) v x t
+    where
+    tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
+    process TargetSystem{mUnit} = process mUnit
 
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit

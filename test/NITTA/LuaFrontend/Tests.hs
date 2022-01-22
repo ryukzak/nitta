@@ -24,15 +24,17 @@ module NITTA.LuaFrontend.Tests (
 ) where
 
 import Control.Monad.State
+import Data.Default
 import Data.FileEmbed (embedStringFile)
 import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
-import Data.Text as T
+import qualified Data.Text as T
 import qualified Language.Lua as Lua
-import NITTA.Intermediate.Functions
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
@@ -226,7 +228,7 @@ case_lua_negative_operator =
                 sum(0)
             |]
         dfg =
-            [ neg "a^0#0" ["b^0#0"] :: F T.Text Int
+            [ F.neg "a^0#0" ["b^0#0"] :: F T.Text Int
             , loop 0 "b^0#0" ["a^0#0"]
             ]
      in functions (frDataFlow $ lua2functions src) @?= dfg
@@ -572,11 +574,11 @@ test_trace_features =
     ]
 
 test_examples =
-    [ typedLuaTestCase
-        (microarch Sync SlaveSPI)
-        pFX22_32
-        "teacup io wait"
-        $(embedStringFile "examples/teacup.lua")
+    [ unitTestCase "teacup io wait" def $ do
+        setNetwork $ microarch Sync SlaveSPI
+        setBusType pFX22_32
+        assignLua $(embedStringFile "examples/teacup.lua")
+        synthesizeAndCoSim
     , typedLuaTestCase
         (microarch ASync SlaveSPI)
         pFX22_32

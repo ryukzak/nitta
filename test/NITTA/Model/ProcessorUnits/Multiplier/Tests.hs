@@ -98,7 +98,7 @@ tests =
             decideAt 4 4 $ provide ["c"]
 
             assertLocks []
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "multiplier coSim smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             setValue "a" 2
@@ -106,7 +106,7 @@ tests =
             decide $ consume "a"
             decide $ consume "b"
             decide $ provide ["c", "d"]
-            assertCoSimulation
+            assertPUCoSimulation
         ]
     where
         u = multiplier True :: Multiplier T.Text Int Int

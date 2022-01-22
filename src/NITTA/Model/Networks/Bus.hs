@@ -39,6 +39,7 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
 import qualified Data.Text as T
@@ -85,6 +86,9 @@ busNetwork name iosync =
         , ioSync = iosync
         , bnEnv = def
         }
+
+instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
+    def = busNetwork "defaultBus" ASync
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where
     variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded
@@ -305,17 +309,25 @@ instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x
                 , bnBinded = M.insert puTag bindedToPU' bnBinded
                 }
 
-instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
+instance (UnitTag tag, VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
     optimizeAccumOptions BusNetwork{bnRemains} = optimizeAccumOptions bnRemains
 
-    optimizeAccumDecision bn@BusNetwork{bnRemains} oa@OptimizeAccum{} =
-        bn{bnRemains = optimizeAccumDecision bnRemains oa}
+    optimizeAccumDecision bn@BusNetwork{bnRemains, bnProcess} oa@OptimizeAccum{} =
+        bn
+            { bnRemains = optimizeAccumDecision bnRemains oa
+            , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                scheduleRefactoring (I.singleton $ nextTick bn) oa
+            }
 
-instance (VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
+instance (UnitTag tag, VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
     constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 
-    constantFoldingDecision bn@BusNetwork{bnRemains} cf@ConstantFolding{} =
-        bn{bnRemains = constantFoldingDecision bnRemains cf}
+    constantFoldingDecision bn@BusNetwork{bnRemains, bnProcess} cf@ConstantFolding{} =
+        bn
+            { bnRemains = constantFoldingDecision bnRemains cf
+            , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                scheduleRefactoring (I.singleton $ nextTick bn) cf
+            }
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
@@ -371,16 +383,20 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{newBuffer, changeset} =
-        let Just (tag, _) =
-                L.find
-                    (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
-                    $ M.assocs bnBinded
-         in bn
-                { bnRemains = newBuffer : patch changeset bnRemains
-                , bnPus = M.adjust (patch changeset) tag bnPus
-                , bnBinded = M.map (patch changeset) bnBinded
-                }
+    resolveDeadlockDecision
+        bn@BusNetwork{bnRemains, bnBinded, bnPus, bnProcess}
+        ref@ResolveDeadlock{newBuffer, changeset} =
+            let Just (tag, _) =
+                    L.find
+                        (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
+                        $ M.assocs bnBinded
+             in bn
+                    { bnRemains = newBuffer : patch changeset bnRemains
+                    , bnPus = M.adjust (patch changeset) tag bnPus
+                    , bnBinded = M.map (patch changeset) bnBinded
+                    , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                        scheduleRefactoring (I.singleton $ nextTick bn) ref
+                    }
 
 --------------------------------------------------------------------------
 
