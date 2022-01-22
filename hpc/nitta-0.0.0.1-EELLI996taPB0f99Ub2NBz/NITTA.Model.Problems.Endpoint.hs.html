@@ -70,9 +70,9 @@ span.spaces    { background: white }
 <span class="lineno">   51 </span>instance Variables (EndpointSt v t) v where
 <span class="lineno">   52 </span>    <span class="decl"><span class="istickedoff">variables EndpointSt{epRole} = variables epRole</span></span>
 <span class="lineno">   53 </span>
-<span class="lineno">   54 </span>instance (Var v, Time t) =&gt; Show (EndpointSt v (TimeConstraint t)) where
+<span class="lineno">   54 </span>instance (ToString v, Time t) =&gt; Show (EndpointSt v (TimeConstraint t)) where
 <span class="lineno">   55 </span>    <span class="decl"><span class="istickedoff">show EndpointSt{epRole, epAt} = &quot;?&quot; &lt;&gt; show epRole &lt;&gt; &quot;@(&quot; &lt;&gt; show epAt &lt;&gt; &quot;)&quot;</span></span>
-<span class="lineno">   56 </span>instance (Var v, Time t) =&gt; Show (EndpointSt v (Interval t)) where
+<span class="lineno">   56 </span>instance (ToString v, Time t) =&gt; Show (EndpointSt v (Interval t)) where
 <span class="lineno">   57 </span>    <span class="decl"><span class="istickedoff">show EndpointSt{epRole, epAt} = &quot;!&quot; &lt;&gt; show epRole &lt;&gt; &quot;@(&quot; &lt;&gt; show epAt &lt;&gt; &quot;)&quot;</span></span>
 <span class="lineno">   58 </span>
 <span class="lineno">   59 </span>instance (Ord v) =&gt; Patch (EndpointSt v tp) (Changeset v) where
@@ -100,7 +100,7 @@ span.spaces    { background: white }
 <span class="lineno">   81 </span>      Target v
 <span class="lineno">   82 </span>    deriving (<span class="decl"><span class="istickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff">Ord</span></span></span></span></span></span></span></span></span></span>, Generic)
 <span class="lineno">   83 </span>
-<span class="lineno">   84 </span>instance (Var v) =&gt; Show (EndpointRole v) where
+<span class="lineno">   84 </span>instance (ToString v) =&gt; Show (EndpointRole v) where
 <span class="lineno">   85 </span>    <span class="decl"><span class="istickedoff">show (Source vs) = &quot;Source &quot; &lt;&gt; S.join &quot;,&quot; (vsToStringList vs)</span>
 <span class="lineno">   86 </span><span class="spaces">    </span><span class="istickedoff">show (Target v) = &quot;Target &quot; &lt;&gt; toString v</span></span>
 <span class="lineno">   87 </span>

@@ -43,7 +43,7 @@ span.spaces    { background: white }
 <span class="lineno">   24 </span>
 <span class="lineno">   25 </span>data Bind tag v x
 <span class="lineno">   26 </span>    = Bind (F v x) tag
-<span class="lineno">   27 </span>    deriving (Generic)
+<span class="lineno">   27 </span>    deriving (Generic, <span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">   28 </span>
 <span class="lineno">   29 </span>instance (ToString tag) =&gt; Show (Bind tag v x) where
 <span class="lineno">   30 </span>    <span class="decl"><span class="istickedoff">show (Bind f tag) = &quot;Bind &quot; &lt;&gt; <span class="nottickedoff">show f &lt;&gt; &quot; &quot; &lt;&gt; toString tag</span></span></span>

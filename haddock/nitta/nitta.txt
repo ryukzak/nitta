@@ -523,11 +523,11 @@ instance GHC.Classes.Ord v => GHC.Classes.Ord (NITTA.Model.Problems.Endpoint.End
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Model.Problems.Endpoint.EndpointRole v)
 instance GHC.Generics.Generic (NITTA.Model.Problems.Endpoint.EndpointSt v tp)
 instance NITTA.Intermediate.Variable.Variables (NITTA.Model.Problems.Endpoint.EndpointSt v t) v
-instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointSt v (NITTA.Model.Time.TimeConstraint t))
-instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointSt v (Numeric.Interval.NonEmpty.Internal.Interval t))
+instance (Data.String.ToString.ToString v, NITTA.Model.Time.Time t) => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointSt v (NITTA.Model.Time.TimeConstraint t))
+instance (Data.String.ToString.ToString v, NITTA.Model.Time.Time t) => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointSt v (Numeric.Interval.NonEmpty.Internal.Interval t))
 instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Problems.Endpoint.EndpointSt v tp) (NITTA.Intermediate.Types.Changeset v)
 instance (Data.Aeson.Types.ToJSON.ToJSON v, Data.Aeson.Types.ToJSON.ToJSON tp) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Problems.Endpoint.EndpointSt v tp)
-instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointRole v)
+instance Data.String.ToString.ToString v => GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointRole v)
 instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Problems.Endpoint.EndpointRole v) (NITTA.Intermediate.Types.Changeset v)
 instance NITTA.Intermediate.Variable.Variables (NITTA.Model.Problems.Endpoint.EndpointRole v) v
 instance Data.Aeson.Types.ToJSON.ToJSON v => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Problems.Endpoint.EndpointRole v)
@@ -594,7 +594,10 @@ data StepInfo v x t
 -- | CAD level step
 [CADStep] :: String -> StepInfo v x t
 
--- | intermidiate level step (funcution execution)
+-- | Apply refactoring
+[RefactorStep] :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
+
+-- | intermidiate level step (function execution)
 [FStep] :: F v x -> StepInfo v x t
 
 -- | endpoint level step (source or target)
@@ -632,6 +635,7 @@ extractInstructionAt :: (ProcessorUnit u v x t, Typeable u) => u -> t -> [Instru
 --   ["b"] | | &lt;- nextTick 10 | Target "c" | WR | </pre></li>
 --   </ol>
 withShift :: (Eq p, Num p) => p -> p -> p
+isRefactorStep :: StepInfo v x t -> Bool
 
 -- | Type class for controllable units. Defines two level of a unit
 --   behaviour representation (see ahead).
@@ -753,7 +757,7 @@ bool2verilog :: Bool -> Text
 values2dump :: (Foldable t, Show a) => t a -> [Char]
 hdlValDump :: Val x => x -> Text
 toModuleName :: [Char] -> [Char]
-endpointAt :: (Show a, Typeable v, Ord a, Ord v, IsString v, ToString v, Suffix v, Hashable v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
+endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
 getEndpoints :: Ord t1 => Process t1 (StepInfo v x t2) -> [EndpointRole v]
 transferred :: ProcessorUnit u a1 x t => u -> Set a1
 inputsPushedAt :: (Ord a1, Ord a2, Function f a2) => Process a1 (StepInfo a2 x t) -> f -> a1
@@ -900,6 +904,7 @@ dataflowDecision :: DataflowProblem u tag v t => u -> DataflowSt tag v (Interval
 dataflowOption2decision :: Time t => DataflowSt tag v (TimeConstraint t) -> DataflowSt tag v (Interval t)
 instance GHC.Generics.Generic (NITTA.Model.Problems.Dataflow.DataflowSt tag v tp)
 instance (Data.String.ToString.ToString tag, GHC.Show.Show (NITTA.Model.Problems.Endpoint.EndpointSt v tp)) => GHC.Show.Show (NITTA.Model.Problems.Dataflow.DataflowSt tag v tp)
+instance GHC.Classes.Ord v => NITTA.Intermediate.Variable.Variables (NITTA.Model.Problems.Dataflow.DataflowSt tag v tp) v
 
 
 module NITTA.Model.Problems.Bind
@@ -908,6 +913,7 @@ Bind :: F v x -> tag -> Bind tag v x
 class BindProblem u tag v x | u -> tag v x
 bindOptions :: BindProblem u tag v x => u -> [Bind tag v x]
 bindDecision :: BindProblem u tag v x => u -> Bind tag v x -> u
+instance GHC.Classes.Eq tag => GHC.Classes.Eq (NITTA.Model.Problems.Bind.Bind tag v x)
 instance GHC.Generics.Generic (NITTA.Model.Problems.Bind.Bind tag v x)
 instance Data.String.ToString.ToString tag => GHC.Show.Show (NITTA.Model.Problems.Bind.Bind tag v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Variable.Variables (NITTA.Model.Problems.Bind.Bind tab v x) v
@@ -1561,6 +1567,7 @@ fsToDataFlowGraph :: [F v x] -> DataFlowGraph v x
 addFuncToDataFlowGraph :: F v x -> DataFlowGraph v x -> DataFlowGraph v x
 instance GHC.Generics.Generic (NITTA.Intermediate.DataFlow.DataFlowGraph v x)
 instance GHC.Show.Show (NITTA.Intermediate.DataFlow.DataFlowGraph v x)
+instance Data.Default.Class.Default (NITTA.Intermediate.DataFlow.DataFlowGraph v x)
 instance GHC.Classes.Eq (NITTA.Intermediate.DataFlow.DataFlowGraph v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Variable.Variables (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v
 instance NITTA.Intermediate.Types.WithFunctions (NITTA.Intermediate.DataFlow.DataFlowGraph v x) (NITTA.Intermediate.Types.F v x)
@@ -1668,6 +1675,9 @@ execSchedule :: ProcessorUnit u v x t => u -> StateT (Schedule u v x t) Identity
 
 -- | Execute process builder and return new process description. The
 --   initial process state is passed explicetly.
+--   
+--   Why can not we get a process here? In the case of Bus Network, it also
+--   fetches processes from underlying units.
 execScheduleWithProcess :: pu -> Process t (StepInfo v x t) -> StateT (Schedule pu v x t) Identity a -> Process t (StepInfo v x t)
 
 -- | Add to the process description information about endpoint behaviour,
@@ -1680,6 +1690,7 @@ scheduleFunctionRevoke :: (MonadState (Schedule pu v x t) m, Show a) => a -> m [
 
 -- | Add to the process description information about function evaluation.
 scheduleFunction :: MonadState (Schedule pu v x t) m => Interval t -> F v x -> m [ProcessStepID]
+scheduleRefactoring :: (MonadState (Schedule pu v x t) m, Typeable ref, Show ref, Eq ref) => Interval t -> ref -> m [ProcessStepID]
 
 -- | Add to the process description information about instruction
 --   evaluation. Unsafe means: without instruction collision check and
@@ -2525,7 +2536,9 @@ TargetSystem :: u -> DataFlowGraph v x -> TargetSystem u tag v x t
 processDuration :: (Num a, NextTick u a) => TargetSystem u tag v x t -> a
 isSynthesisComplete :: ProcessorUnit u v x t => TargetSystem u tag v x t -> Bool
 instance GHC.Generics.Generic (NITTA.Model.TargetSystem.TargetSystem u tag v x t)
+instance Data.Default.Class.Default u => Data.Default.Class.Default (NITTA.Model.TargetSystem.TargetSystem u tag v x t)
 instance NITTA.Intermediate.Types.WithFunctions u (NITTA.Intermediate.Types.F v x) => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.TargetSystem.TargetSystem u tag v x t) (NITTA.Intermediate.Types.F v x)
+instance (NITTA.Model.Time.VarValTime v x t, NITTA.Model.ProcessorUnits.Types.ProcessorUnit u v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x t
 instance NITTA.Model.Problems.Bind.BindProblem u tag v x => NITTA.Model.Problems.Bind.BindProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag v x
 instance NITTA.Model.Problems.Dataflow.DataflowProblem u tag v t => NITTA.Model.Problems.Dataflow.DataflowProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag v t
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem u v x) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
@@ -2602,6 +2615,7 @@ controlSignalLiteral :: Interpolatable (IsCustomSink dst) src dst => src -> dst
 busNetwork :: Default t => tag -> IOSynchronization -> BusNetwork tag v x t
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
+instance (Data.Default.Class.Default t, Data.String.IsString tag) => Data.Default.Class.Default (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Variable.Variables (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v
 instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.Networks.Bus.BusNetwork tag v x t) x
 instance NITTA.Intermediate.Types.WithFunctions (NITTA.Model.Networks.Bus.BusNetwork tag v x t) (NITTA.Intermediate.Types.F v x)
@@ -2612,8 +2626,8 @@ instance (Data.String.ToString.ToString tag, NITTA.Intermediate.Variable.Var v) 
 instance NITTA.Model.ProcessorUnits.Types.ByTime (NITTA.Model.Networks.Bus.BusNetwork tag v x t) t
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Bind.BindProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
 instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
@@ -2724,7 +2738,7 @@ data OptimizeAccumMetrics
 OptimizeAccumMetrics :: OptimizeAccumMetrics
 instance GHC.Generics.Generic NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
 
 
 module NITTA.Synthesis.Dataflow
@@ -2745,7 +2759,7 @@ data ConstantFoldingMetrics
 ConstantFoldingMetrics :: ConstantFoldingMetrics
 instance GHC.Generics.Generic NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
 
 
 module NITTA.Synthesis.BreakLoop
@@ -2960,6 +2974,7 @@ TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph
 runTargetSynthesis :: (Bounded t, IsString v1, IsString tag2, ToString v1, ToString tag2, Suffix v1, Hashable v1, Val x2, Default t, Typeable t, Typeable v1, Typeable tag2, Show t, Integral t, Ord v1, Ord tag2) => TargetSynthesis tag2 v1 x2 t -> IO (Either [Char] (TestbenchReport v1 x2))
 synthesizeTargetSystem :: (IsString tag2, IsString v2, ToString tag2, ToString v2, Suffix v2, Hashable v2, Val x2, Bounded t, Typeable tag2, Typeable v2, Typeable t, Show t, Default t, Integral t, Ord tag2, Ord v2) => TargetSynthesis tag2 v2 x2 t -> IO (Either [Char] (Project (BusNetwork tag2 v2 x2 t) v2 x2))
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Synthesis.TargetSynthesis tag v x t) v x t
 
 
 -- | We can not autogenerate ToJSON implementation for some types, so we

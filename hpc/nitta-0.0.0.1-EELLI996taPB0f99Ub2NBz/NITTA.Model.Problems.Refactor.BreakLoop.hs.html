@@ -71,10 +71,10 @@ span.spaces    { background: white }
 <span class="lineno">   52 </span>    , -- |input variable
 <span class="lineno">   53 </span>      <span class="nottickedoff"><span class="decl"><span class="nottickedoff">loopI</span></span></span> :: v
 <span class="lineno">   54 </span>    }
-<span class="lineno">   55 </span>    deriving (Generic, <span class="decl"><span class="nottickedoff">Eq</span></span>)
+<span class="lineno">   55 </span>    deriving (Generic, <span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">   56 </span>
 <span class="lineno">   57 </span>instance (Var v, Val x) =&gt; Show (BreakLoop v x) where
-<span class="lineno">   58 </span>    <span class="decl"><span class="istickedoff">show = (&quot;BreakLoop: &quot; &lt;&gt;) . <span class="nottickedoff">show . recLoop</span></span></span>
+<span class="lineno">   58 </span>    <span class="decl"><span class="istickedoff">show = (&quot;BreakLoop: &quot; &lt;&gt;) . show . recLoop</span></span>
 <span class="lineno">   59 </span>
 <span class="lineno">   60 </span>class BreakLoopProblem u v x | u -&gt; v x where
 <span class="lineno">   61 </span>    breakLoopOptions :: u -&gt; [BreakLoop v x]
