@@ -37,8 +37,15 @@ import Servant
 import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
+import WaiAppStatic.Storage.Filesystem
+import Network.Wai.Application.Static
+import WaiAppStatic.Types (toPieces, LookupResult (LRNotFound))
+import Data.Maybe (fromJust)
 
 apiPath = joinPath [".", "web", "src", "services", "gen"]
+frontendPath = joinPath ["web", "build"]
+frontendAppSettings = defaultWebAppSettings frontendPath
+
 
 restDocs port =
     markdown $
@@ -70,6 +77,14 @@ prepareJSAPI port path = do
                     }
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI _ String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
 
+fileOrIndex pieces = do
+  res <- ssLookupFile frontendAppSettings pieces
+  case res of
+    LRNotFound ->
+         ssLookupFile frontendAppSettings $ fromJust $ toPieces ["index.html"]
+    _ -> return res
+
+
 application receivedValues model outputPath = do
     root <- synthesisTreeRootIO model
     return $
@@ -83,7 +98,7 @@ application receivedValues model outputPath = do
             )
             ( synthesisServer BackendCtx{root, receivedValues, outputPath}
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
-                :<|> serveDirectoryWebApp (joinPath ["web", "build"])
+                :<|> serveDirectoryWith frontendAppSettings {ssLookupFile = fileOrIndex}
             )
 
 isLocalPortFree port =
