@@ -146,6 +146,7 @@ library
     , unordered-containers
     , utility-ht
     , validity
+    , wai-app-static
     , wai-cors
     , warp
   default-language: Haskell2010
@@ -179,6 +180,7 @@ executable nitta
     , text
     , tostring
     , unordered-containers
+    , wai-app-static
   default-language: Haskell2010
 
 executable nitta-api-gen
@@ -213,6 +215,7 @@ executable nitta-api-gen
     , text
     , tostring
     , unordered-containers
+    , wai-app-static
   default-language: Haskell2010
 
 test-suite nitta-test
@@ -284,4 +287,5 @@ test-suite nitta-test
     , text
     , tostring
     , unordered-containers
+    , wai-app-static
   default-language: Haskell2010
