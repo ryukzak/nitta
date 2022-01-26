@@ -39,7 +39,6 @@ import Servant
 import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
-import WaiAppStatic.Storage.Filesystem
 import WaiAppStatic.Types (LookupResult (LRNotFound), toPieces)
 
 apiPath = joinPath [".", "web", "src", "services", "gen"]
