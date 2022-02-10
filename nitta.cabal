@@ -40,6 +40,7 @@ library
       NITTA.FrontEnds.Common
       NITTA.FrontEnds.LuaFrontend
       NITTA.FrontEnds.XMILE.MathParser
+      NITTA.FrontEnds.XMILE.XMILEDocumentParser
       NITTA.FrontEnds.XMILE.XMILEFrontend
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
