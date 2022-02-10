@@ -36,10 +36,9 @@ import NITTA.FrontEnds.Common
 import NITTA.FrontEnds.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import Text.XML.HXT.Arrow.ReadDocument
-import Text.XML.HXT.Arrow.XmlState
-import Text.XML.HXT.Core
 import NITTA.Utils (showText)
+import Text.XML.HXT.Arrow.ReadDocument
+import Text.XML.HXT.Core
 
 data XMILEContent = XMILEContent
     { xcSimSpecs :: XMILESimSpec
@@ -100,25 +99,27 @@ _xmileSample =
             |]
 
 xmile2functions src = do
-    [xmContent] <- parseXMILEDocument src
-    return $ processXMILEGraph xmContent
+    xmContent <- parseXMILEDocument src
+    let graph = algDataFlowGraph $ processXMILEGraph xmContent
+    return graph
     where
+        --return FrontendResult{frDataFlow = graph, frTrace = [], frPrettyLog = const [HM.empty]}
+
         processXMILEGraph xmContent = flip execState emptyBuilder $ do
             getDefaultValuesAndUsages xmContent
             createDataFlowGraph xmContent
             where
-                emptyBuilder = XMILEAlgBuilder{algDataFlowGraph = DFCluster []
-                                             , algNextFreeNameIndex = HM.empty
-                                             , algDefaultValues = HM.empty
-                                             , algUsagesCount = HM.empty
-                                             , algNextArgIndex = 0
-                                             }
-
-
---return FrontendResult{frDataFlow = undefined, frTrace = undefined, frPrettyLog = undefined frTrace}
+                emptyBuilder =
+                    XMILEAlgBuilder
+                        { algDataFlowGraph = DFCluster []
+                        , algNextFreeNameIndex = HM.empty
+                        , algDefaultValues = HM.empty
+                        , algUsagesCount = HM.empty
+                        , algNextArgIndex = 0
+                        }
 
 createDataFlowGraph xmContent = do
-    x@XMILEAlgBuilder{algUsagesCount} <- get 
+    x@XMILEAlgBuilder{algUsagesCount} <- get
     put x{algNextFreeNameIndex = foldl (\hm key -> HM.insert key 0 hm) HM.empty $ HM.keys algUsagesCount}
     mapM_ processStock $ xcStocks xmContent
     mapM_ processAux $ xcAuxs xmContent
@@ -132,9 +133,9 @@ createDataFlowGraph xmContent = do
                     input <- getUniqueName xsName
                     argIndex <- getNextArgIndex
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex input outputs) algDataFlowGraph}
-                    return()
+                    return ()
                 (Nothing, Just _) ->
-                    return()
+                    return ()
                 (Just outflow, Nothing) -> do
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     stockUniqueName <- getUniqueName xsName
@@ -143,9 +144,9 @@ createDataFlowGraph xmContent = do
                     let tmpName = xsName <> "_tmp"
                     let algDataFlowGraph' = addFuncToDataFlowGraph (F.sub stockUniqueName flowUniqueName [tmpName]) algDataFlowGraph
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex tmpName outputs) algDataFlowGraph'}
-                    return()
+                    return ()
                 (Just _, Just _) ->
-                    return()
+                    return ()
 
             return ()
 
@@ -156,11 +157,11 @@ createDataFlowGraph xmContent = do
                     outputs <- getAllOutGraphNodes xaName
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (F.constant (round value) outputs) algDataFlowGraph}
                     return ()
-                _ -> return () 
+                _ -> return ()
 
         processFlow XMILEFlow{xfName, xfEquation} = do
             x@XMILEAlgBuilder{algDataFlowGraph} <- get
-            (flowName,_) <- processFlowEquation xfEquation (1::Int)
+            (flowName, _) <- processFlowEquation xfEquation (1 :: Int)
             outputs <- getAllOutGraphNodes xfName
             argIndex <- getNextArgIndex
             put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex flowName outputs) algDataFlowGraph}
@@ -186,8 +187,7 @@ createDataFlowGraph xmContent = do
                             let divName = tmpName <> "div"
                             put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] [divName]) algDataFlowGraph}
                     return (tmpName, tempNameIndex'' + 1)
-                processFlowEquation _ _ = undefined 
-
+                processFlowEquation _ _ = undefined
 
         getUniqueName name = do
             x@XMILEAlgBuilder{algNextFreeNameIndex} <- get
@@ -198,16 +198,14 @@ createDataFlowGraph xmContent = do
         getAllOutGraphNodes name = do
             XMILEAlgBuilder{algUsagesCount} <- get
             let usages = fromMaybe (error $ "name not found : " <> T.unpack name) $ HM.lookup name algUsagesCount
-            return $ map (\num -> getGraphName name num) [0..usages]
-            
+            return $ map (\num -> getGraphName name num) [0 .. usages]
+
         getNextArgIndex = do
             x@XMILEAlgBuilder{algNextArgIndex} <- get
             put x{algNextArgIndex = algNextArgIndex + 1}
             return algNextArgIndex
 
-
         getGraphName name index = name <> T.pack "#" <> showText index
-
 
 getDefaultValuesAndUsages algBuilder = do
     mapM_ processStock $ xcStocks algBuilder
@@ -270,10 +268,9 @@ getDefaultValuesAndUsages algBuilder = do
                             put x{algUsagesCount = HM.insert name 1 algUsagesCount}
                     return ()
 
-
 parseXMILEDocument src =
-    runX $
-        readString [withValidate no] src
+    runLA
+        ( xreadDoc
             >>> removeAllWhiteSpace
             >>> proc st -> do
                 simSpec <- parseSimSpec -< st
@@ -281,6 +278,8 @@ parseXMILEDocument src =
                 auxs <- parseAuxs -< st
                 stocks <- parseStocks -< st
                 returnA -< XMILEContent{xcSimSpecs = simSpec, xcFlows = flows, xcAuxs = auxs, xcStocks = stocks}
+        )
+        src
 
 parseSimSpec =
     atTag "sim_specs"
@@ -333,7 +332,7 @@ parseStocks =
             (atTag name >>> text)
                 `orElse` arr (const "")
 
-replaceSpaces str = T.filter (/='"') $ T.map repl str
+replaceSpaces str = T.filter (/= '"') $ T.map repl str
     where
         repl ' ' = '_'
         repl c = c
