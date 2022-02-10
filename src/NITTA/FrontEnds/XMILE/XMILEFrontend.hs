@@ -122,8 +122,8 @@ createDataFlowGraph xmContent = do
                 (Nothing, Nothing) -> do
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     input <- getUniqueName xsName
-                    argIndex <- getNextArgIndex
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex input outputs) algDataFlowGraph}
+                    defaultValue <- getDefaultValue xsName
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) input outputs) algDataFlowGraph}
                     return ()
                 (Nothing, Just _) ->
                     return ()
@@ -131,10 +131,10 @@ createDataFlowGraph xmContent = do
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     stockUniqueName <- getUniqueName xsName
                     flowUniqueName <- getUniqueName outflow
-                    argIndex <- getNextArgIndex
+                    defaultValue <- getDefaultValue xsName
                     let tmpName = xsName <> "_tmp"
                     let algDataFlowGraph' = addFuncToDataFlowGraph (F.sub stockUniqueName flowUniqueName [tmpName]) algDataFlowGraph
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex tmpName outputs) algDataFlowGraph'}
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) tmpName outputs) algDataFlowGraph'}
                     return ()
                 (Just _, Just _) ->
                     return ()
@@ -154,8 +154,7 @@ createDataFlowGraph xmContent = do
             x@XMILEAlgBuilder{algDataFlowGraph} <- get
             (flowName, _) <- processFlowEquation xfEquation (1 :: Int)
             outputs <- getAllOutGraphNodes xfName
-            argIndex <- getNextArgIndex
-            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop argIndex flowName outputs) algDataFlowGraph}
+            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop 0 flowName outputs) algDataFlowGraph}
 
             return ()
             where
@@ -191,10 +190,9 @@ createDataFlowGraph xmContent = do
             let usages = fromMaybe (error $ "name not found : " <> T.unpack name) $ HM.lookup name algUsagesCount
             return $ map (\num -> getGraphName name num) [0 .. usages]
 
-        getNextArgIndex = do
-            x@XMILEAlgBuilder{algNextArgIndex} <- get
-            put x{algNextArgIndex = algNextArgIndex + 1}
-            return algNextArgIndex
+        getDefaultValue name = do
+            XMILEAlgBuilder{algDefaultValues} <- get
+            return $ fromMaybe (error $ "name not found :" <> T.unpack name) $ HM.lookup name algDefaultValues
 
         getGraphName name index = name <> T.pack "#" <> showText index
 
