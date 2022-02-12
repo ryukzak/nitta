@@ -18,11 +18,11 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
-    # tName                                                                              NITTA.FrontEnds.LuaFrontend
+    # tName                                                                              NITTA.FrontEnds
     # tMicroArch --------------------------\
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
-                      *<--lua2functions    |     |  |
+                      *<-getFrontendResult |     |  |
                       |                    |     |  v         NITTA.Model:TargetSystem----------\
     # tDFG <----------+                    +--------*--------> # mUnit            |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
@@ -93,7 +93,8 @@ import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
-import NITTA.FrontEnds.LuaFrontend
+import NITTA.FrontEnds.Common
+import NITTA.FrontEnds.FrontendIdentifier
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -136,6 +137,8 @@ data TargetSynthesis tag v x t = TargetSynthesis
     , tTemplates :: [FilePath]
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
+    , -- |source code format type
+      tSourceCodeFormat :: FrontendType
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
@@ -151,6 +154,7 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
+            , tSourceCodeFormat = Lua
             }
 
 runTargetSynthesis leaf = do
@@ -169,6 +173,7 @@ synthesizeTargetSystem
         , tPath
         , tTemplates
         , tSimulationCycleN
+        , tSourceCodeFormat
         } = do
         -- TODO: check that tName is a valid verilog module name
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
@@ -181,7 +186,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ lua2functions src
+                let tmp = frDataFlow $ getFrontendResult src tSourceCodeFormat
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 

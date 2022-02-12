@@ -13,7 +13,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
-Module      : NITTA.XMILEFrontend
+Module      : NITTA.FrontEnds.XMILE.XMILEFrontend
 Description : XMILE frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3

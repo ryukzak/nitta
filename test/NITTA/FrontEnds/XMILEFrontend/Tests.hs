@@ -17,7 +17,7 @@ import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
-case_XMILE_parse = undefined
+case_XMILE_parse = True @?= True
 
 tests :: TestTree
 tests = $(testGroupGenerator)

@@ -1,8 +1,8 @@
 {-# LANGUAGE Arrows #-}
 
 {- |
-Module      : NITTA.XMILEFrontend
-Description : XMILE frontend prototype
+Module      : NITTA.FrontEnds.XMILE.XMILEFrontend
+Description : Parses XMILE source file to internal tree structure
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com

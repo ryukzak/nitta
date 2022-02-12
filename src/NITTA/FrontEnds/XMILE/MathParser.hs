@@ -1,3 +1,11 @@
+{- |
+Module      : NITTA.FrontEnds.XMILE.MathParser
+Description : Parses XMILE math equations
+Copyright   : (c) Aleksandr Penskoi, 2021
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.FrontEnds.XMILE.MathParser (
     parseXmileEquation,
     XMExpr (..),
