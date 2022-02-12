@@ -89,25 +89,23 @@ _xmileSample =
                 </xmile>
             |]
 
-xmile2functions src = do
-    xmContent <- parseXMILEDocument src
-    let graph = algDataFlowGraph $ processXMILEGraph xmContent
-    return graph
-    where
-        --return FrontendResult{frDataFlow = graph, frTrace = [], frPrettyLog = const [HM.empty]}
+xmile2functions src =
+    let xmContent = parseXMILEDocument $ T.unpack src
+        graph = algDataFlowGraph $ processXMILEGraph xmContent
+     in FrontendResult{frDataFlow = graph, frTrace = [], frPrettyLog = const [HM.empty]}
 
-        processXMILEGraph xmContent = flip execState emptyBuilder $ do
-            getDefaultValuesAndUsages xmContent
-            createDataFlowGraph xmContent
-            where
-                emptyBuilder =
-                    XMILEAlgBuilder
-                        { algDataFlowGraph = DFCluster []
-                        , algNextFreeNameIndex = HM.empty
-                        , algDefaultValues = HM.empty
-                        , algUsagesCount = HM.empty
-                        , algNextArgIndex = 0
-                        }
+processXMILEGraph xmContent = flip execState emptyBuilder $ do
+    getDefaultValuesAndUsages xmContent
+    createDataFlowGraph xmContent
+    where
+        emptyBuilder =
+            XMILEAlgBuilder
+                { algDataFlowGraph = DFCluster []
+                , algNextFreeNameIndex = HM.empty
+                , algDefaultValues = HM.empty
+                , algUsagesCount = HM.empty
+                , algNextArgIndex = 0
+                }
 
 createDataFlowGraph xmContent = do
     x@XMILEAlgBuilder{algUsagesCount} <- get
@@ -120,19 +118,19 @@ createDataFlowGraph xmContent = do
             outputs <- getAllOutGraphNodes xsName
             case (xsOutflow, xsInflow) of
                 (Nothing, Nothing) -> do
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     input <- getUniqueName xsName
                     defaultValue <- getDefaultValue xsName
+                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) input outputs) algDataFlowGraph}
                     return ()
                 (Nothing, Just _) ->
                     return ()
                 (Just outflow, Nothing) -> do
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     stockUniqueName <- getUniqueName xsName
                     flowUniqueName <- getUniqueName outflow
                     defaultValue <- getDefaultValue xsName
                     let tmpName = xsName <> "_tmp"
+                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     let algDataFlowGraph' = addFuncToDataFlowGraph (F.sub stockUniqueName flowUniqueName [tmpName]) algDataFlowGraph
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) tmpName outputs) algDataFlowGraph'}
                     return ()
@@ -151,9 +149,9 @@ createDataFlowGraph xmContent = do
                 _ -> return ()
 
         processFlow XMILEFlow{xfName, xfEquation} = do
-            x@XMILEAlgBuilder{algDataFlowGraph} <- get
-            (flowName, _) <- processFlowEquation xfEquation (1 :: Int)
+            (flowName, _) <- processFlowEquation xfEquation (0 :: Int)
             outputs <- getAllOutGraphNodes xfName
+            x@XMILEAlgBuilder{algDataFlowGraph} <- get
             put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop 0 flowName outputs) algDataFlowGraph}
 
             return ()
@@ -164,19 +162,22 @@ createDataFlowGraph xmContent = do
                 processFlowEquation (Duo op leftExpr rightExpr) tempNameIndex = do
                     (leftName, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex
                     (rightName, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex'
-                    let tmpName = xfName <> T.pack "_tmp" <> showText tempNameIndex''
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
+                    let tmpName = T.pack "_" <> showText tempNameIndex'' <> T.pack "#" <> xfName <> showText tempNameIndex''
+                    x@XMILEAlgBuilder{algDataFlowGraph = a} <- get
                     case op of
                         Add -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName [tmpName]) algDataFlowGraph}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName [tmpName]) a}
+                            return (tmpName, tempNameIndex'' + 1)
                         Sub -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName [tmpName]) algDataFlowGraph}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName [tmpName]) a}
+                            return (tmpName, tempNameIndex'' + 1)
                         Mul -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName [tmpName]) algDataFlowGraph}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName [tmpName]) a}
+                            return (tmpName, tempNameIndex'' + 1)
                         Div -> do
                             let divName = tmpName <> "div"
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] [divName]) algDataFlowGraph}
-                    return (tmpName, tempNameIndex'' + 1)
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] [divName]) a}
+                            return (tmpName, tempNameIndex'' + 1)
                 processFlowEquation _ _ = undefined
 
         getUniqueName name = do
@@ -222,6 +223,7 @@ getDefaultValuesAndUsages algBuilder = do
                 processFlow Nothing = do return ()
                 processFlow (Just name) = do
                     addUsages name
+                    addUsages xsName
                     processEquation $ xfEquation $ findFlow name
 
                 findFlow name =

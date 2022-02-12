@@ -74,17 +74,18 @@ data XMILEAlgState v x = XMILEAlgState
     deriving (Show)
 
 parseXMILEDocument src =
-    runLA
-        ( xreadDoc
-            >>> removeAllWhiteSpace
-            >>> proc st -> do
-                simSpec <- parseSimSpec -< st
-                flows <- parseFlows -< st
-                auxs <- parseAuxs -< st
-                stocks <- parseStocks -< st
-                returnA -< XMILEContent{xcSimSpecs = simSpec, xcFlows = flows, xcAuxs = auxs, xcStocks = stocks}
-        )
-        src
+    head $
+        runLA
+            ( xreadDoc
+                >>> removeAllWhiteSpace
+                >>> proc st -> do
+                    simSpec <- parseSimSpec -< st
+                    flows <- parseFlows -< st
+                    auxs <- parseAuxs -< st
+                    stocks <- parseStocks -< st
+                    returnA -< XMILEContent{xcSimSpecs = simSpec, xcFlows = flows, xcAuxs = auxs, xcStocks = stocks}
+            )
+            src
 
 parseSimSpec =
     atTag "sim_specs"
