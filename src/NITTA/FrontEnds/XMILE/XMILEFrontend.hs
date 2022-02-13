@@ -48,7 +48,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
     }
     deriving (Show)
 
-_xmileSample :: String
+_xmileSample :: T.Text
 _xmileSample =
     [__i| 
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -119,25 +119,33 @@ createDataFlowGraph xmContent = do
             case (xsOutflow, xsInflow) of
                 (Nothing, Nothing) -> do
                     input <- getUniqueName xsName
-                    defaultValue <- getDefaultValue xsName
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) input outputs) algDataFlowGraph}
-                    return ()
-                (Nothing, Just _) ->
-                    return ()
+                    addStockLoop input outputs
+                (Nothing, Just inflow) -> do
+                    stockUniqueName <- getUniqueName xsName
+                    tmpName <- processStockFlow inflow F.add "In" stockUniqueName
+                    addStockLoop tmpName outputs
                 (Just outflow, Nothing) -> do
                     stockUniqueName <- getUniqueName xsName
-                    flowUniqueName <- getUniqueName outflow
-                    defaultValue <- getDefaultValue xsName
-                    let tmpName = xsName <> "_tmp"
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
-                    let algDataFlowGraph' = addFuncToDataFlowGraph (F.sub stockUniqueName flowUniqueName [tmpName]) algDataFlowGraph
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) tmpName outputs) algDataFlowGraph'}
-                    return ()
-                (Just _, Just _) ->
-                    return ()
-
+                    tmpName <- processStockFlow outflow F.sub "Out" stockUniqueName
+                    addStockLoop tmpName outputs
+                (Just outflow, Just inflow) -> do
+                    stockUniqueName <- getUniqueName xsName
+                    tmpNameOut <- processStockFlow outflow F.sub "Out" stockUniqueName
+                    tmpNameIn <- processStockFlow inflow F.add "In" tmpNameOut
+                    addStockLoop tmpNameIn outputs
             return ()
+            where
+                processStockFlow flowName func ending stockName = do
+                    flowUniqueName <- getUniqueName flowName
+                    let tmpName = xsName <> "_" <> ending
+                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (func stockName flowUniqueName [tmpName]) algDataFlowGraph}
+                    return tmpName
+                addStockLoop stockName outputs = do
+                    defaultValue <- getDefaultValue xsName
+                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) stockName outputs) algDataFlowGraph}
+                    return ()
 
         processAux XMILEAux{xaName, xaEquation} = do
             case xaEquation of
