@@ -17,14 +17,15 @@ import NITTA.FrontEnds.XMILE.XMILEFrontend
 import System.FilePath
 
 data FrontendType = Lua | XMILE
+    deriving (Show)
 
 identifyFrontendType _ "lua" = Lua
 identifyFrontendType _ "xmile" = XMILE
 identifyFrontendType fileName "dynamic" =
-    case snd $ splitExtension $ show fileName of
+    case snd $ splitExtension fileName of
         ".lua" -> Lua
         ".xmile" -> XMILE
-        _ -> error $ "can't parse extension for file " <> fileName
+        ext -> error $ "can't parse extension for file " <> fileName <> "|" <> ext
 identifyFrontendType fileName format =
     error $
         "unable to select proper source file parser for file extension '"
