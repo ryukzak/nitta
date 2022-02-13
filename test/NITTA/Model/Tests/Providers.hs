@@ -20,12 +20,10 @@ Stability   : experimental
 -}
 module NITTA.Model.Tests.Providers (
     nittaCoSimTestCase,
-    algTestCase,
     module NITTA.Intermediate.Functions,
     module NITTA.Model.Tests.Microarchitecture,
 ) where
 
-import Control.Monad (void)
 import Data.CallStack
 import Data.Default
 import qualified Data.String.Utils as S
@@ -64,13 +62,3 @@ nittaCoSimTestCase n tMicroArch alg =
             Right report@TestbenchReport{tbStatus} ->
                 assertBool ("report with bad status:\n" <> show report) tbStatus
             Left err -> assertFailure $ "can't get report: " <> err
-
-algTestCase n tMicroArch alg =
-    testCase n $
-        void $
-            runTargetSynthesisWithUniqName
-                (def :: TargetSynthesis _ _ _ Int)
-                    { tName = n
-                    , tMicroArch
-                    , tDFG = fsToDataFlowGraph alg
-                    }

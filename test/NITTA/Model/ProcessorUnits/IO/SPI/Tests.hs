@@ -31,7 +31,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
--- FIXME: avoid NITTA.Model.Tests.Internals usage
+-- TODO:  https://github.com/ryukzak/nitta/issues/122
 
 test_multiple_receives =
     [ testCase "receive two variables" $
@@ -39,7 +39,7 @@ test_multiple_receives =
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
                     { tName = "receive_two_variables"
-                    , tMicroArch = marchSPI "spi" True pInt
+                    , tMicroArch = marchSPI True pInt
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph
@@ -54,7 +54,7 @@ test_multiple_receives =
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
                     { tName = "receive_variable_two_times"
-                    , tMicroArch = marchSPI "spi" True pInt
+                    , tMicroArch = marchSPI True pInt
                     , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25])]
                     , tDFG =
                         fsToDataFlowGraph

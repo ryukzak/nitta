@@ -34,11 +34,8 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
-import NITTA.Model.Tests.Internals
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
-import NITTA.Project
-import NITTA.Synthesis
-import NITTA.Utils
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 
@@ -77,38 +74,9 @@ typedIOLuaTestCase ::
     [(T.Text, [x])] ->
     T.Text ->
     TestTree
-typedIOLuaTestCase arch proxy name received src = testCase name $ do
-    let wd = "lua_" <> toModuleName name
-    status <- runLua arch proxy wd received src
-    case status of
-        Left err -> assertFailure err
-        Right _ -> return ()
-
--- Internals
-
-runLua ::
-    forall x.
-    (Val x, Integral x) =>
-    BusNetwork T.Text T.Text x Int ->
-    Proxy x ->
-    String ->
-    [(T.Text, [x])] ->
-    T.Text ->
-    IO (Either String ())
-runLua arch _proxy wd received src = do
-    reportE <-
-        runTargetSynthesisWithUniqName
-            (def :: TargetSynthesis T.Text T.Text x Int)
-                { tName = wd
-                , tMicroArch = arch
-                , tSourceCode = Just src
-                , tReceivedValues = received
-                }
-    return $ case reportE of
-        Left err -> Left $ "synthesis process fail: " <> err
-        Right TestbenchReport{tbStatus = True} -> Right ()
-        Right report@TestbenchReport{tbCompilerDump}
-            | T.length tbCompilerDump > 2 ->
-                Left $ "icarus synthesis error:\n" <> show report
-        Right report@TestbenchReport{} ->
-            Left $ "icarus simulation error:\n" <> show report
+typedIOLuaTestCase arch proxy name received src = unitTestCase name def $ do
+    setNetwork arch
+    setBusType proxy
+    setReceivedValues received
+    assignLua src
+    synthesizeAndCoSim

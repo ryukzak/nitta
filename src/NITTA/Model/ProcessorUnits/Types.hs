@@ -38,6 +38,7 @@ module NITTA.Model.ProcessorUnits.Types (
     whatsHappen,
     extractInstructionAt,
     withShift,
+    isRefactorStep,
 
     -- *Control
     Controllable (..),
@@ -185,7 +186,9 @@ instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
 data StepInfo v x t where
     -- |CAD level step
     CADStep :: String -> StepInfo v x t
-    -- |intermidiate level step (funcution execution)
+    -- |Apply refactoring
+    RefactorStep :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
+    -- |intermidiate level step (function execution)
     FStep :: F v x -> StepInfo v x t
     -- |endpoint level step (source or target)
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
@@ -200,8 +203,12 @@ data StepInfo v x t where
 descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
 
+isRefactorStep RefactorStep{} = True
+isRefactorStep _ = False
+
 instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
+    show (RefactorStep ref) = "Refactor: " <> show ref
     show (FStep F{fun}) = "Intermediate: " <> show fun
     show (EndpointRoleStep eff) = "Endpoint: " <> show eff
     show (InstructionStep instr) = "Instruction: " <> show instr

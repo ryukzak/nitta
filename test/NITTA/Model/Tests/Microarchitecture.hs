@@ -93,10 +93,10 @@ withSlaveSPI tag net = modifyNetwork net $ do
 withMasterSPI tag net = modifyNetwork net $ do
     add tag $ spiMasterPorts tag
 
-marchSPI tag True proxy = withSlaveSPI tag $ basic proxy
-marchSPI tag False proxy = withMasterSPI tag $ basic proxy
+marchSPI True proxy = withSlaveSPI "spi" $ basic proxy
+marchSPI False proxy = withMasterSPI "spi" $ basic proxy
 
-marchSPIDropData tag isSlave proxy = (marchSPI tag isSlave proxy){ioSync = ASync}
+marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ioSync = ASync}
 
 -----------------------------------------------------------
 

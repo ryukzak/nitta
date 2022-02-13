@@ -26,19 +26,24 @@ module NITTA.UIBackend (
 import Control.Exception (SomeException, try)
 import Control.Monad (unless)
 import Data.Either
+import Data.Maybe (fromJust)
 import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.Synthesis
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
+import Network.Wai.Application.Static
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Cors (simpleCors)
 import Servant
 import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
+import WaiAppStatic.Types (LookupResult (LRNotFound), toPieces)
 
 apiPath = joinPath [".", "web", "src", "services", "gen"]
+frontendPath = joinPath ["web", "build"]
+frontendAppSettings = defaultWebAppSettings frontendPath
 
 restDocs port =
     markdown $
@@ -70,6 +75,13 @@ prepareJSAPI port path = do
                     }
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI _ String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
 
+fileOrIndex pieces = do
+    res <- ssLookupFile frontendAppSettings pieces
+    case res of
+        LRNotFound ->
+            ssLookupFile frontendAppSettings $ fromJust $ toPieces ["index.html"]
+        _ -> return res
+
 application receivedValues model outputPath = do
     root <- synthesisTreeRootIO model
     return $
@@ -83,7 +95,7 @@ application receivedValues model outputPath = do
             )
             ( synthesisServer BackendCtx{root, receivedValues, outputPath}
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
-                :<|> serveDirectoryWebApp (joinPath ["web", "build"])
+                :<|> serveDirectoryWith frontendAppSettings{ssLookupFile = fileOrIndex}
             )
 
 isLocalPortFree port =

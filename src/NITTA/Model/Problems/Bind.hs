@@ -24,7 +24,7 @@ import NITTA.Intermediate.Types
 
 data Bind tag v x
     = Bind (F v x) tag
-    deriving (Generic)
+    deriving (Generic, Eq)
 
 instance (ToString tag) => Show (Bind tag v x) where
     show (Bind f tag) = "Bind " <> show f <> " " <> toString tag

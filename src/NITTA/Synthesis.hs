@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {- |
@@ -156,6 +157,10 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tSimulationCycleN = 5
             , tSourceCodeFormat = Lua
             }
+
+instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v x t) v x t where
+    tryBind _ _ = error "Not Implemented"
+    process TargetSynthesis{tMicroArch} = process tMicroArch
 
 runTargetSynthesis leaf = do
     prj <- synthesizeTargetSystem leaf

@@ -46,7 +46,7 @@ tests =
                 decideAt 3 3 $ provide ["b"]
                 assertEndpoint 4 maxBound $ provide ["c"]
                 decideAt 4 4 $ provide ["c"]
-                assertCoSimulation
+                assertPUCoSimulation
             , unitTestCase "two job unit test" u $ do
                 assign $ brokenBuffer "a" ["b"]
                 setValue "a" 64
@@ -60,7 +60,7 @@ tests =
                 decideAt 4 4 $ consume "d"
                 assertEndpoint 7 maxBound $ provide ["e"]
                 decideAt 7 7 $ provide ["e"]
-                assertCoSimulation
+                assertPUCoSimulation
             , puCoSimTestCase "broken buffer" u [("a", 42)] [brokenBuffer "a" ["b"]]
             , puCoSimProp "puCoSimProp" u fsGen
             , nittaCoSimTestCase "nittaCoSimTestCase" (maBroken u) alg

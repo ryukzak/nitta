@@ -72,9 +72,9 @@ puCoSimTestCase ::
     TestTree
 puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
-        assignsNaive alg cntxCycle
+        mapM_ (assignNaive cntxCycle) alg
         decideNaiveSynthesis
-        assertCoSimulation
+        assertPUCoSimulation
 
 -- *Properties
 

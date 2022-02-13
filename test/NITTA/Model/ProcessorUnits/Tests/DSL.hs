@@ -1,33 +1,30 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Tests.DSL
-Description : Provides functions to test PU, by making syntesis decisions
-Copyright   : (c) Artyom Kostyuchik, 2021
+Description : Provides functions to test PU, by making synthesis decisions
+Copyright   : (c) Artyom Kostyuchik, 2022
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
 = Module description
 
-DSL (domain-specific language) is a module for testing Processor Units (PU).
+DSL (domain-specific language) is a module for testing Processor Units (PU) and
+target systems.
 
-= Algorithm
-
-1. Choose PU and provide it into unitTestCase.
-2. Assign function to this PU.
-3. Schedule computational process for every variable in function.
-4. Assert (check) the resulting PU.
-
-= Example
-
-Test case (numbers to the right correspond to the algorithm steps):
+= Examples
 
 @
 unitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for provided PU
@@ -51,160 +48,173 @@ unitTestCase "multiplier smoke test" pu $ do     -- 1. Created test case for pro
 pu = multiplier True :: Multiplier String Int Int  -- 1. Chose PU: Multiplier
 @
 
-= Algorithm steps description
-
-* You can use any PU which instantiated with 'NITTA.Model.ProcessorUnits.Types.ProcessorUnit' and 'NITTA.Model.Problems.Endpoint.EndpointProblem' type class
-
-* There are 4 functions for assign:
-
-    * assign - binds function to PU right at the moment.
-
-    * assigns - binds like 'assign', but uses a list of functions as an input.
-
-    * assignNaive - store function in Test State and binds it only at naive synthesis.
-                    Don't forget to call 'decideNaive' function.
-
-    * assignsNaive - works like 'assignNaive', but uses a list of functions as an input.
-
-* You can bind variables from the function to PU:
-
-    * for first you need to wrap variables:
-
-        * consume - for input variable.
-
-        * provide - for output variables.
-
-    * For second, you can pass wrapped variables to 'decide' function and
-      schedule (make synthesis decisions) them. There 3 types of 'decide':
-
-        * decide               - bind variable at the next tick of PU (nearest).
-
-        * decideAt             - bind variable at provided moment.
-
-        * decideNaiveSynthesis - runs naive synthesis (makes all available decisions).
-                                 Requires using 'assignNaive' function.
-
-* Assert function could be at any place in the test case.
-   For a positive test case it usually at the end.
-
-= CoSimulation:
-
-To run simulation use 'assertCoSimulation' function.
-Don't forget to set initial input values with 'setValue' function.
-
-= Debug:
-
-For debugging use functions starting with trace*, e.g. 'tracePU'.
+- 'NITTA.Tests.test_manual' -- Target system manual test.
+- 'NITTA.Model.ProcessorUnits.Tests.DSL.Tests' -- many examples.
 -}
 module NITTA.Model.ProcessorUnits.Tests.DSL (
     unitTestCase,
+
+    -- * Process Unit Prepare
     assign,
-    assigns,
     assignNaive,
-    assignsNaive,
     setValue,
     setValues,
 
-    -- *Process Unit Control
+    -- * Process Unit Synthesis
     decide,
     decideAt,
     decideAtUnsafe,
     consume,
     provide,
-    breakLoop,
     decideNaiveSynthesis,
 
-    -- *Asserts
-    assertBindFullness,
-    assertCoSimulation,
-    assertSynthesisDone,
-    assertEndpoint,
-    assertAllEndpointRoles,
-    assertLocks,
+    -- * Prepare target system
+    setBusType,
+    bind2network,
+    setReceivedValues,
+    setNetwork,
+    assignLua,
 
-    -- *Trace
-    tracePU,
-    traceFunctions,
+    -- * Synthesize target system
+    doBind,
+    doTransfer,
+    synthesis,
+
+    -- * Refactors for PU and target system
+    assertRefactor,
+    refactorAvail,
+    refactor,
+    mkBreakLoop,
+    mkConstantFolding,
+    mkOptimizeAccum,
+    mkResolveDeadlock,
+
+    -- * Asserts for PU and target system
+    assertAllEndpointRoles,
+    assertBindFullness,
+    assertPUCoSimulation,
+    assertTargetSystemCoSimulation,
+    assertEndpoint,
+    assertLocks,
+    assertSynthesisDone,
+    synthesizeAndCoSim,
+    assertSynthesisComplete,
+
+    -- * Trace (inspection for debug)
+    traceBind,
+    traceDataflow,
     traceEndpoints,
+    traceFunctions,
+    tracePU,
     traceProcess,
+    traceRefactor,
 ) where
 
 import Control.Monad.Identity
 import Control.Monad.State.Lazy
 import Data.CallStack
+import Data.Default
 import Data.List (find)
+import qualified Data.List as L
+import Data.Proxy
 import qualified Data.Set as S
 import Data.String.ToString
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
+import Data.Typeable
+import NITTA.FrontEnds.LuaFrontend
+import NITTA.Intermediate.DataFlow
+import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
+import NITTA.Model.TargetSystem
+import NITTA.Model.Tests.Internals
 import NITTA.Project
+import NITTA.Synthesis
 import NITTA.Utils
 import Numeric.Interval.NonEmpty hiding (elem)
 import Prettyprinter (pretty)
+import System.Directory
+import System.FilePath
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
+{- |Unit test state. Be aware internal implementation is not fully consistent
+ and can be replaced by a type family with PU and target system instances.
+-}
+data UnitTestState u v x = UnitTestState
+    { testName :: String
+    , -- |Unit model, should be a process unit or target system.
+      unit :: u
+    , -- |Contains functions assigned to PU.
+      functs :: [F v x]
+    , -- |Initial values for coSimulation
+      cntxCycle :: [(v, x)]
+    , -- |Values for IO immitation
+      receivedValues :: [(v, [x])]
+    , busType :: Maybe (Proxy x)
+    , -- |Report on process unit test bench.
+      report :: Either String (TestbenchReport v x)
+    }
+    deriving (Show)
+
+type Statement u v x r = HasCallStack => StateT (UnitTestState u v x) IO r
+
+type PUStatement pu v x t r =
+    (ProcessorUnit pu v x t, EndpointProblem pu v t) =>
+    StateT (UnitTestState pu v x) IO r
+
+type TSStatement x r =
+    forall tag v t.
+    (tag ~ T.Text, v ~ T.Text, t ~ Int, Val x) =>
+    Statement (TargetSystem (BusNetwork tag v x t) tag v x t) v x r
+
 unitTestCase ::
-    (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) =>
+    HasCallStack =>
     String ->
-    pu ->
-    DSLStatement pu v x t () ->
+    u ->
+    StateT (UnitTestState u v x) IO () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
     void $ evalUnitTestState name pu alg
 
--- | State of the processor unit used in test
-data UnitTestState pu v x = UnitTestState
-    { testName :: String
-    , -- | Processor unit model.
-      unit :: pu
-    , -- | Contains functions assigned to PU.
-      -- There two types of assign function:
-      -- 1. assign - binds to PU.
-      -- 2. assignNaive - will be binded during naive synthesis.
-      functs :: [F v x]
-    , -- | Initial values for coSimulation
-      cntxCycle :: [(v, x)]
-    }
-    deriving (Show)
-
-type DSLStatement pu v x t r = (HasCallStack, ProcessorUnit pu v x t, EndpointProblem pu v t) => StateT (UnitTestState pu v x) IO r
-
-evalUnitTestState name st alg = evalStateT alg (UnitTestState name st [] [])
-
--- | Binds several provided functions to PU
-assigns alg = mapM_ assign alg
+evalUnitTestState name st alg =
+    evalStateT
+        alg
+        UnitTestState
+            { testName = name
+            , unit = st
+            , functs = []
+            , cntxCycle = []
+            , receivedValues = []
+            , busType = Nothing
+            , report = Left "Report not ready!"
+            }
 
 -- | Binds provided function to PU
-assign :: F v x -> DSLStatement pu v x t ()
+assign :: F v x -> PUStatement pu v x t ()
 assign f = do
     st@UnitTestState{unit, functs} <- get
     case tryBind f unit of
         Right unit_ -> put st{unit = unit_, functs = f : functs}
         Left err -> lift $ assertFailure $ "assign: " <> err
 
-{- | Store several provided functions and its initial values
-for naive coSimulation
--}
-assignsNaive alg cntxs = mapM_ (`assignNaive` cntxs) alg
-
-{- | Store provided function and its initial values
-for naive coSimulation
--}
-assignNaive f cntxs = do
+-- | Store provided function and its initial values for naive coSimulation
+assignNaive :: [(v, x)] -> F v x -> PUStatement pu v x t ()
+assignNaive cntxs f = do
     st@UnitTestState{functs, cntxCycle} <- get
     put st{functs = f : functs, cntxCycle = cntxs <> cntxCycle}
 
 -- | set initital values for coSimulation input variables
-setValues :: (Function f v, WithFunctions pu f) => [(v, x)] -> DSLStatement pu v x t ()
-setValues = mapM_ (uncurry setValue)
+setValues :: (Function f v, WithFunctions pu f) => [(v, x)] -> PUStatement pu v x t ()
+setValues = mapM_ $ uncurry setValue
 
 -- | set initital value for coSimulation input variables
-setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> DSLStatement pu v x t ()
+setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> PUStatement pu v x t ()
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when (var `elem` map fst cntxCycle) $
@@ -213,22 +223,22 @@ setValue var val = do
         lift $ assertFailure $ "It's not possible to set the variable '" <> toString var <> "'! It's not present in process"
     put pu{cntxCycle = (var, val) : cntxCycle}
     where
-        isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ inpVars $ functions pu
+        isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ unionsMap inputs $ functions pu
 
 -- | Make synthesis decision with provided Endpoint Role and automatically assigned time
-decide :: EndpointRole v -> DSLStatement pu v x t ()
+decide :: EndpointRole v -> PUStatement pu v x t ()
 decide role = do
     des <- epAt <$> getDecisionSpecific role
     doDecision False $ EndpointSt role des
 
 -- | Make synthesis decision with provided Endpoint Role and manually selected interval
-decideAt :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+decideAt :: t -> t -> EndpointRole v -> PUStatement pu v x t ()
 decideAt from to role = doDecision False $ EndpointSt role (from ... to)
 
-decideAtUnsafe :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+decideAtUnsafe :: t -> t -> EndpointRole v -> PUStatement pu v x t ()
 decideAtUnsafe from to role = doDecision True $ EndpointSt role (from ... to)
 
-doDecision :: Bool -> EndpointSt v (Interval t) -> DSLStatement pu v x t ()
+doDecision :: Bool -> EndpointSt v (Interval t) -> PUStatement pu v x t ()
 doDecision unsafe endpSt = do
     st@UnitTestState{unit} <- get
     let isAvailable = isEpOptionAvailable endpSt unit
@@ -236,15 +246,8 @@ doDecision unsafe endpSt = do
         then put st{unit = endpointDecision unit endpSt}
         else lift $ assertFailure $ "doDecision: such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
-isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
-    case find (isSubroleOf role . epRole) $ endpointOptions pu of
-        Nothing -> False
-        Just EndpointSt{epAt = atB} ->
-            atA `isSubsetOf` tcAvailable atB
-                && member (width atA + 1) (tcDuration atB)
-
 -- |Bind all functions to processor unit and decide till decisions left.
-decideNaiveSynthesis :: DSLStatement pu v x t ()
+decideNaiveSynthesis :: PUStatement pu v x t ()
 decideNaiveSynthesis = do
     st@UnitTestState{unit, functs} <- get
     when (null functs) $
@@ -257,7 +260,6 @@ consume = Target
 -- | Transforms provided variables to Source
 provide = Source . S.fromList
 
-getDecisionSpecific :: EndpointRole v -> DSLStatement pu v x t (EndpointSt v (Interval t))
 getDecisionSpecific role = do
     let s = variables role
     des <- getDecisionsFromEp
@@ -265,35 +267,45 @@ getDecisionSpecific role = do
         Just v -> return $ endpointOptionToDecision v
         Nothing -> lift $ assertFailure $ "Can't provide decision with variable: " <> show (vsToStringList s)
 
-getDecisionsFromEp :: DSLStatement pu v x t [EndpointSt v (TimeConstraint t)]
 getDecisionsFromEp = do
     UnitTestState{unit} <- get
     case endpointOptions unit of
         [] -> lift $ assertFailure "Failed during decision making: there is no decisions left!"
         opts -> return opts
 
--- | Breaks loop on PU by using breakLoopDecision function
-breakLoop :: BreakLoopProblem pu v x => x -> v -> [v] -> DSLStatement pu v x t ()
-breakLoop x i o = do
-    st@UnitTestState{unit} <- get
-    case breakLoopOptions unit of
-        [] -> lift $ assertFailure "Break loop function is not supported for such type of PU"
-        _ -> put st{unit = breakLoopDecision unit BreakLoop{loopX = x, loopO = S.fromList o, loopI = i}}
+isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
+    case find (isSubroleOf role . epRole) $ endpointOptions pu of
+        Nothing -> False
+        Just EndpointSt{epAt = atB} ->
+            atA `isSubsetOf` tcAvailable atB
+                && member (width atA + 1) (tcDuration atB)
 
-assertBindFullness :: (Function f v, WithFunctions pu f, Show f) => DSLStatement pu v x t ()
+assertBindFullness :: (Function f v, WithFunctions pu f, Show f) => PUStatement pu v x t ()
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
     isOk <- lift $ isFullyBinded unit functs
     unless isOk $
         lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
+    where
+        isFullyBinded pu fs = do
+            assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
+            assertBool ("Inputs not equal, expected: " <> show' fInps <> "; actual: " <> show' inps) $ inps == fInps
+            return $ not $ null fu
+            where
+                fu = functions pu
+                outs = unionsMap outputs fu
+                inps = unionsMap inputs fu
+                fOuts = unionsMap outputs fs
+                fInps = unionsMap inputs fs
+                show' = show . S.map toString
 
-assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> DSLStatement pu v x t ()
+assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> PUStatement pu v x t ()
 assertAllEndpointRoles roles = do
     UnitTestState{unit} <- get
     let opts = S.fromList $ map epRole $ endpointOptions unit
     lift $ assertBool ("Actual endpoint roles: " <> show opts) $ opts == S.fromList roles
 
-assertEndpoint :: t -> t -> EndpointRole v -> DSLStatement pu v x t ()
+assertEndpoint :: t -> t -> EndpointRole v -> PUStatement pu v x t ()
 assertEndpoint a b role = do
     UnitTestState{unit} <- get
     let opts = endpointOptions unit
@@ -302,25 +314,7 @@ assertEndpoint a b role = do
         Nothing -> lift $ assertFailure $ "assertEndpoint: '" <> show ep <> "' not defined in: " <> show opts
         Just _ -> return ()
 
-isFullyBinded pu fs = do
-    assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
-    assertBool ("Inputs not equal, expected: " <> show' fInps <> "; actual: " <> show' inps) $ inps == fInps
-    return $ not $ null fu
-    where
-        fu = functions pu
-        outs = unionsMap outputs fu
-        inps = unionsMap inputs fu
-        fOuts = unionsMap outputs fs
-        fInps = unionsMap inputs fs
-        show' = show . S.map toString
-
-assertSynthesisDone :: DSLStatement pu v x t ()
-assertSynthesisDone = do
-    UnitTestState{unit, functs, testName} <- get
-    unless (isProcessComplete unit functs && null (endpointOptions unit)) $
-        lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
-
-assertLocks :: (Locks pu v) => [Lock v] -> DSLStatement pu v x t ()
+assertLocks :: (Locks pu v) => [Lock v] -> PUStatement pu v x t ()
 assertLocks expectLocks = do
     UnitTestState{unit} <- get
     let actualLocks0 = locks unit
@@ -330,16 +324,26 @@ assertLocks expectLocks = do
     where
         show' ls = S.join "\n" $ map (("    " <>) . show) ls
 
-assertCoSimulation ::
+assertSynthesisDone :: PUStatement pu v x t ()
+assertSynthesisDone = do
+    UnitTestState{unit, functs, testName} <- get
+    unless (isProcessComplete unit functs && null (endpointOptions unit)) $
+        lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+
+assertPUCoSimulation ::
     ( PUClasses pu v x Int
     , WithFunctions pu (F v x)
     , Testable pu v x
     , DefaultX pu x
     , Var v
     ) =>
-    DSLStatement pu v x Int ()
-assertCoSimulation =
-    let checkInputVars pu fs cntx = S.union (inpVars $ functions pu) (inpVars fs) == S.fromList (map fst cntx)
+    PUStatement pu v x Int ()
+assertPUCoSimulation =
+    let checkInputVars pu fs cntx =
+            S.union
+                (unionsMap inputs $ functions pu)
+                (unionsMap inputs fs)
+                == S.fromList (map fst cntx)
      in do
             UnitTestState{unit, functs, testName, cntxCycle} <- get
             unless (checkInputVars unit functs cntxCycle) $
@@ -351,26 +355,209 @@ assertCoSimulation =
             unless tbStatus $
                 lift $ assertFailure $ "coSimulation failed: \n" <> show report
 
-inpVars fs = unionsMap inputs fs
+assignLua :: T.Text -> TSStatement x ()
+assignLua src = do
+    assertEmptyDataFlow
+    st@UnitTestState{unit = TargetSystem{mUnit}} <- get
+    let dfg = frDataFlow $ lua2functions src
+    put
+        st
+            { unit = mkModelWithOneNetwork mUnit dfg
+            , functs = functions dfg
+            }
 
+-- | Bind function to network (except 'doBind' after that)
+bind2network :: F T.Text x -> TSStatement x ()
+bind2network f = do
+    st@UnitTestState{functs, unit = ts@TargetSystem{mUnit, mDataFlowGraph}} <- get
+    put
+        st
+            { unit =
+                ts
+                    { mDataFlowGraph = addFuncToDataFlowGraph f mDataFlowGraph
+                    , mUnit = bind f mUnit
+                    }
+            , functs = f : functs
+            }
+
+setNetwork :: BusNetwork T.Text T.Text x Int -> TSStatement x ()
+setNetwork network = do
+    st@UnitTestState{unit} <- get
+    assertEmptyDataFlow
+    put st{unit = unit{mUnit = network}}
+
+setBusType :: Proxy x -> TSStatement x ()
+setBusType busType = modify' $ \st -> st{busType = Just busType}
+
+-- | Set data for IO
+setReceivedValues :: [(T.Text, [x])] -> TSStatement x ()
+setReceivedValues values = do
+    st@UnitTestState{receivedValues} <- get
+    unless (null receivedValues) $
+        lift $ assertFailure "setReceivedValues: already setted"
+    put st{receivedValues = values}
+
+synthesis :: SynthesisMethod T.Text T.Text x Int -> TSStatement x ()
+synthesis method = do
+    st@UnitTestState{unit} <- get
+    leaf <- lift $ do
+        root <- synthesisTreeRootIO unit
+        method root
+    put st{unit = sTarget $ sState leaf}
+
+doBind :: T.Text -> F T.Text x -> TSStatement x ()
+doBind tag f = do
+    st@UnitTestState{unit = ts} <- get
+    let d = Bind f tag
+        opts = bindOptions ts
+    unless (d `L.elem` opts) $
+        lift $ assertFailure $ "bind not available: " <> show d <> " in: " <> show opts
+    put st{unit = bindDecision ts d}
+
+doTransfer :: [T.Text] -> TSStatement x ()
+doTransfer vs = do
+    st@UnitTestState{unit = ts} <- get
+    let opts = dataflowOptions ts
+    case L.find (\o -> S.fromList vs == variables o) opts of
+        Just o -> put st{unit = dataflowDecision ts $ dataflowOption2decision o}
+        Nothing -> lift $ assertFailure $ "can't find transfer for: " <> show vs <> " in: " <> show opts
+
+class Refactor u ref where
+    refactorAvail :: ref -> Statement u v x ()
+    refactor :: ref -> Statement u v x ()
+
+refactorAvail' ref options = do
+    UnitTestState{unit} <- get
+    unless (ref `L.elem` options unit) $
+        lift $ assertFailure "refactorAvail: required refactor not present in option"
+
+refactor' ref options decision = do
+    st@UnitTestState{unit} <- get
+    unless (ref `L.elem` options unit) $
+        lift $ assertFailure $ "refactor: required refactor not present in option: " <> show ref
+    put st{unit = decision unit ref}
+
+instance (Var v, Val x, BreakLoopProblem u v x) => Refactor u (BreakLoop v x) where
+    refactorAvail ref = refactorAvail' ref breakLoopOptions
+    refactor ref = refactor' ref breakLoopOptions breakLoopDecision
+
+mkBreakLoop :: (Var v, Val x) => x -> v -> [v] -> Statement u v x (BreakLoop v x)
+mkBreakLoop x i o = return $ BreakLoop x (S.fromList o) i
+
+instance (Var v, Val x, OptimizeAccumProblem u v x) => Refactor u (OptimizeAccum v x) where
+    refactorAvail ref = refactorAvail' ref optimizeAccumOptions
+    refactor ref = refactor' ref optimizeAccumOptions optimizeAccumDecision
+
+mkOptimizeAccum :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (OptimizeAccum v x)
+mkOptimizeAccum old new = return $ OptimizeAccum old new
+
+instance (Var v, Val x, ResolveDeadlockProblem u v x) => Refactor u (ResolveDeadlock v x) where
+    refactorAvail ref = refactorAvail' ref resolveDeadlockOptions
+    refactor ref = refactor' ref resolveDeadlockOptions resolveDeadlockDecision
+
+mkResolveDeadlock :: (Var v, Val x) => [v] -> Statement u v x (ResolveDeadlock v x)
+mkResolveDeadlock vs = return $ resolveDeadlock (S.fromList vs)
+
+instance (Var v, Val x, ConstantFoldingProblem u v x) => Refactor u (ConstantFolding v x) where
+    refactorAvail ref = refactorAvail' ref constantFoldingOptions
+    refactor ref = refactor' ref constantFoldingOptions constantFoldingDecision
+
+mkConstantFolding :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (ConstantFolding v x)
+mkConstantFolding old new = return $ ConstantFolding old new
+
+assertRefactor :: (Typeable ref, Eq ref, Show ref) => ref -> TSStatement x ()
+assertRefactor ref = do
+    refactors <- filter isRefactorStep . map (descent . pDesc) . steps . process . unit <$> get
+    case L.find (\(RefactorStep r) -> Just ref == cast r) refactors of
+        Nothing -> lift $ assertFailure $ "Refactor not present: " <> show ref <> " in " <> show refactors
+        Just _ -> return ()
+
+assertEmptyDataFlow :: TSStatement x ()
+assertEmptyDataFlow = do
+    UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
+    unless (null $ functions mDataFlowGraph) $
+        error "assertEmptyDataFlow: dataflow should be empty"
+
+assertSynthesisComplete :: TSStatement x ()
+assertSynthesisComplete = do
+    UnitTestState{unit = unit@TargetSystem{mUnit, mDataFlowGraph}} <- get
+    unless (isSynthesisComplete unit) $
+        lift $ assertFailure $ "synthesis is not complete: " <> show (transferred mUnit `S.difference` variables mDataFlowGraph)
+
+assertTargetSystemCoSimulation :: TSStatement x ()
+assertTargetSystemCoSimulation = do
+    UnitTestState{unit = TargetSystem{mUnit, mDataFlowGraph}, testName, receivedValues} <- get
+    report <- lift $ do
+        pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath defProjectTemplates
+        pwd <- getCurrentDirectory
+        pName <- uniqTestPath testName
+        let outputPath = "gen"
+            loopsNumber = 5
+            prj =
+                Project
+                    { pName = T.pack pName
+                    , pLibPath = "hdl"
+                    , pTargetProjectPath = outputPath </> pName
+                    , pAbsTargetProjectPath = pwd </> outputPath </> pName
+                    , pInProjectNittaPath
+                    , pAbsNittaPath = pwd </> outputPath </> pInProjectNittaPath
+                    , pUnit = mUnit
+                    , pUnitEnv = bnEnv mUnit
+                    , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues mDataFlowGraph
+                    , pTemplates = defProjectTemplates
+                    }
+        writeProject prj
+        runTestbench prj
+    assertSuccessReport report
+
+assertSuccessReport :: TestbenchReport T.Text x -> TSStatement x ()
+assertSuccessReport report@TestbenchReport{tbStatus} =
+    lift $ assertBool ("report with bad status:\n" <> show report) tbStatus
+
+synthesizeAndCoSim :: TSStatement x ()
+synthesizeAndCoSim = do
+    synthesis stateOfTheArtSynthesisIO
+    assertSynthesisComplete
+    assertTargetSystemCoSimulation
+
+tracePU :: Show pu => PUStatement pu v x t ()
 tracePU = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "PU: " <> show unit
-    return ()
 
+traceFunctions :: Statement u v x ()
 traceFunctions = do
     UnitTestState{functs} <- get
-    lift $ putStrLn $ "Functions: " <> show functs
-    return ()
+    lift $ putListLn "Functions: " functs
 
+traceEndpoints :: PUStatement pu v x t ()
 traceEndpoints = do
     UnitTestState{unit} <- get
-    lift $ do
-        putStrLn "Endpoints:"
-        mapM_ (\ep -> putStrLn $ "- " <> show ep) $ endpointOptions unit
-    return ()
+    lift $ putListLn "Endpoints:" $ endpointOptions unit
 
+traceProcess :: (ProcessorUnit u v x Int) => Statement u v x ()
 traceProcess = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
-    return ()
+
+traceDataflow :: TSStatement x ()
+traceDataflow = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Dataflow:" $ dataflowOptions mUnit
+
+traceBind :: TSStatement x ()
+traceBind = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Bind:" $ bindOptions mUnit
+
+traceRefactor :: TSStatement x ()
+traceRefactor = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "breakLoopOptions:" $ breakLoopOptions mUnit
+    lift $ putListLn "constantFoldingOptions:" $ constantFoldingOptions mUnit
+    lift $ putListLn "optimizeAccumOptions:" $ optimizeAccumOptions mUnit
+    lift $ putListLn "resolveDeadlockOptions:" $ resolveDeadlockOptions mUnit
+
+putListLn name opts = do
+    putStrLn name
+    mapM_ (\b -> putStrLn $ "- " <> show b) opts
