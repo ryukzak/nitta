@@ -1076,9 +1076,7 @@ data BrokenBuffer v x
 BrokenBuffer :: I v -> O v -> BrokenBuffer v x
 brokenBuffer :: (Var v, Val x) => v -> [v] -> F v x
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.Loop v x)
-instance (Data.Typeable.Internal.Typeable v, GHC.Classes.Ord v, Data.String.IsString v, Data.String.ToString.ToString v, NITTA.Intermediate.Variable.Suffix v, Data.Hashable.Class.Hashable v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Intermediate.Functions.LoopBegin v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopBegin v x)
-instance (Data.Typeable.Internal.Typeable v, GHC.Classes.Ord v, Data.String.IsString v, Data.String.ToString.ToString v, NITTA.Intermediate.Variable.Suffix v, Data.Hashable.Class.Hashable v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Intermediate.Functions.LoopEnd v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopEnd v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Buffer v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Add v x)
@@ -1157,11 +1155,13 @@ instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function 
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Buffer v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Buffer v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Buffer v x) v x
+instance (NITTA.Intermediate.Variable.Var v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Intermediate.Functions.LoopEnd v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.LoopEnd v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.LoopEnd v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.LoopEnd v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.LoopEnd v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.LoopEnd v x) v x
+instance (NITTA.Intermediate.Variable.Var v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Intermediate.Functions.LoopBegin v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.LoopBegin v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.LoopBegin v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.LoopBegin v x) (v, v)
