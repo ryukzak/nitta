@@ -34,19 +34,19 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
             <Col md={4}>
               <JsonView src={result.data} />
             </Col>
-            <Col md={6} lg={4}>
+            <Col md={4} lg={3}>
               <MapHistogram
                 data={result.data.durationSuccess}
                 color={CHART_COLOR_PALLETE.blue}
                 name="success nodes with duration"
               />
-              <div className="mt-3">
-                <MapHistogram
-                  data={result.data.stepsSuccess}
-                  color={CHART_COLOR_PALLETE.orange}
-                  name="success nodes with steps"
-                />
-              </div>
+            </Col>
+            <Col md={4} lg={3}>
+              <MapHistogram
+                data={result.data.stepsSuccess}
+                color={CHART_COLOR_PALLETE.orange}
+                name="success nodes with steps"
+              />
             </Col>
           </Row>
         </Container>
