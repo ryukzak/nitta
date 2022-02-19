@@ -41,6 +41,7 @@ import NITTA.Utils (showText)
 
 data XMILEAlgBuilder v x = XMILEAlgBuilder
     { algDataFlowGraph :: DataFlowGraph v x
+    , algTraceVars :: [TraceVar]
     , algUsagesCount :: HM.HashMap T.Text Int
     , algDefaultValues :: HM.HashMap T.Text Double
     , algNextFreeNameIndex :: HM.HashMap T.Text Int
@@ -91,8 +92,12 @@ _xmileSample =
 
 xmile2functions src =
     let xmContent = parseXMILEDocument $ T.unpack src
-        graph = algDataFlowGraph $ processXMILEGraph xmContent
-     in FrontendResult{frDataFlow = graph, frTrace = [], frPrettyLog = const [HM.empty]}
+        builder = processXMILEGraph xmContent
+        frTrace = algTraceVars' builder
+     in FrontendResult{frDataFlow = algDataFlowGraph builder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+    where
+        algTraceVars' :: XMILEAlgBuilder T.Text Int -> [TraceVar]
+        algTraceVars' = algTraceVars
 
 processXMILEGraph xmContent = flip execState emptyBuilder $ do
     getDefaultValuesAndUsages xmContent
@@ -101,6 +106,7 @@ processXMILEGraph xmContent = flip execState emptyBuilder $ do
         emptyBuilder =
             XMILEAlgBuilder
                 { algDataFlowGraph = DFCluster []
+                , algTraceVars = []
                 , algNextFreeNameIndex = HM.empty
                 , algDefaultValues = HM.empty
                 , algUsagesCount = HM.empty
@@ -142,9 +148,14 @@ createDataFlowGraph xmContent = do
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (func stockName flowUniqueName [tmpName]) algDataFlowGraph}
                     return tmpName
                 addStockLoop stockName outputs = do
+                    let traceVarName = TraceVar{tvFmt = defaultFmt, tvVar = T.takeWhile (/= '#') $ head outputs}
                     defaultValue <- getDefaultValue xsName
-                    x@XMILEAlgBuilder{algDataFlowGraph} <- get
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) stockName outputs) algDataFlowGraph}
+                    x@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
+                    put
+                        x
+                            { algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) stockName outputs) algDataFlowGraph
+                            , algTraceVars = traceVarName : algTraceVars
+                            }
                     return ()
 
         processAux XMILEAux{xaName, xaEquation} = do

@@ -42,7 +42,6 @@ module NITTA.FrontEnds.LuaFrontend (
 import Control.Monad.State
 import qualified Data.HashMap.Strict as HM
 import Data.Hashable
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.String
 import Data.String.ToString
@@ -52,7 +51,6 @@ import NITTA.FrontEnds.Common
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
-import Text.Printf
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
 getUniqueLuaVariableName LuaValueInstance{lviName, lviAssignCount} luaValueAccessCount
@@ -101,8 +99,6 @@ data LuaAlgBuilder x = LuaAlgBuilder
       algTraceFuncs :: [([T.Text], T.Text)]
     }
     deriving (Show)
-
-defaultFmt = "%.3f"
 
 --left part of lua statement
 parseLeftExp (VarName (Name v)) = v
@@ -386,24 +382,10 @@ lua2functions src =
         luaAlgBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder
      in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
-     where
-         getAllTraceFuncs algBuilder =
-             let traceFuncs = algTraceFuncs algBuilder
-                 startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
-             in traceFuncs <> map (\name ->  ([defaultFmt], name <> "^0")) startupArgNames
+    where
+        getAllTraceFuncs algBuilder =
+            let traceFuncs = algTraceFuncs algBuilder
+                startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
+             in traceFuncs <> map (\name -> ([defaultFmt], name <> "^0")) startupArgNames
 
 getFrTrace traceFuncs = [TraceVar{tvFmt = fmt, tvVar = var} | (fmts, var) <- traceFuncs, fmt <- fmts]
-
-prettyLog traceVars hms = map prettyHM hms
-    where
-        prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
-        prettyX (v0, x) = do
-            -- variables names end on #0, #1..., so we trim this suffix
-            let v = takeWhile (/= '#') $ toString v0
-            fmt <- v2fmt M.!? v
-            Just (toString (takeWhile (/= '^') v), printx (T.unpack fmt) x)
-        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
-        printx p x
-            | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
-            | 's' `elem` p = printf p $ show x
-            | otherwise = printf p x

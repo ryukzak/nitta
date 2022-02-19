@@ -237,9 +237,9 @@ functionalSimulation n received src format frontendFormat = do
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
-logicalSimulation format prettyLog prj = do
+logicalSimulation format prettyLog' prj = do
     TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
-    putLog format $ prettyLog tbLogicalSimulationLog
+    putLog format $ prettyLog' tbLogicalSimulationLog
 
 putLog "md" records = putStr $ log2md records
 putLog "json" records = BS.putStrLn $ log2json records
