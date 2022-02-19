@@ -384,10 +384,15 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
 lua2functions src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
-        frTrace = getFrTrace $ algTraceFuncs luaAlgBuilder
+        frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder
      in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+     where
+         getAllTraceFuncs algBuilder =
+             let traceFuncs = algTraceFuncs algBuilder
+                 startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
+             in traceFuncs <> map (\name ->  ([defaultFmt], name <> "^0")) startupArgNames
 
-getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
+getFrTrace traceFuncs = [TraceVar{tvFmt = fmt, tvVar = var} | (fmts, var) <- traceFuncs, fmt <- fmts]
 
 prettyLog traceVars hms = map prettyHM hms
     where
