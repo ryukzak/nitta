@@ -32,7 +32,7 @@ module NITTA.Utils (
     getEndpoint,
     getFunction,
     getInstruction,
-    getCAD,
+    getCad,
     getEndpoints,
     transferred,
     inputsPushedAt,
@@ -119,6 +119,9 @@ endpointAt t p =
         [] -> Nothing
         eps -> error $ "endpoints collision at: " ++ show t ++ " " ++ show eps
 
+getCad Step{pDesc} | CADStep cad <- descent pDesc = Just cad
+getCad _ = Nothing
+
 isFB s = isJust $ getFB s
 
 getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
@@ -126,21 +129,18 @@ getFB _ = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
+getFunction Step{pDesc} | FStep role <- descent pDesc = Just role
+getFunction _ = Nothing
+
 isEndpoint ep = isJust $ getEndpoint ep
 
 getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
 
-getFunction Step{pDesc} | FStep role <- descent pDesc = Just role
-getFunction _ = Nothing
-
 isInstruction instr = isJust $ getInstruction instr
 
-getInstruction Step{pDesc} | role@(InstructionStep _) <- descent pDesc = Just role
+getInstruction Step{pDesc} | instr@(InstructionStep _) <- descent pDesc = Just instr
 getInstruction _ = Nothing
-
-getCAD Step{pDesc} | CADStep role <- descent pDesc = Just role
-getCAD _ = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
