@@ -14,6 +14,7 @@ module NITTA.FrontEnds.XMILE.XMILEDocumentParser (
     XMILEStock (..),
     XMILEAux (..),
     XMILEFlow (..),
+    XMILESimSpec (..),
 ) where
 
 import qualified Data.Text as T

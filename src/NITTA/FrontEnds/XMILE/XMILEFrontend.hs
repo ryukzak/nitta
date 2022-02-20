@@ -119,7 +119,18 @@ createDataFlowGraph xmContent = do
     mapM_ processStock $ xcStocks xmContent
     mapM_ processAux $ xcAuxs xmContent
     mapM_ processFlow $ xcFlows xmContent
+    addTimeIncrement
     where
+        addTimeIncrement = do
+            x@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
+            let dt = xssDt $ xcSimSpecs xmContent
+            let startTime = xssStart $ xcSimSpecs xmContent
+            let graph = addFuncToDataFlowGraph (F.constant (read $ show dt) [T.pack "time_delta"]) algDataFlowGraph
+            let graph' = addFuncToDataFlowGraph (F.add "time" "time_delta" [T.pack "time_inc"]) graph
+            let graph'' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph'
+            put x{algDataFlowGraph = graph'', algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
+            return ()
+
         processStock XMILEStock{xsName, xsOutflow, xsInflow} = do
             outputs <- getAllOutGraphNodes xsName
             case (xsOutflow, xsInflow) of
@@ -163,15 +174,16 @@ createDataFlowGraph xmContent = do
                 (Val value) -> do
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     outputs <- getAllOutGraphNodes xaName
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.constant (round value) outputs) algDataFlowGraph}
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.constant (read $ show value) outputs) algDataFlowGraph}
                     return ()
                 _ -> return ()
 
         processFlow XMILEFlow{xfName, xfEquation} = do
             (flowName, _) <- processFlowEquation xfEquation (0 :: Int)
             outputs <- getAllOutGraphNodes xfName
-            x@XMILEAlgBuilder{algDataFlowGraph} <- get
-            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop 0 flowName outputs) algDataFlowGraph}
+            x@XMILEAlgBuilder{algDataFlowGraph, algDefaultValues} <- get
+            let defaultValue = calculateDefaultValue algDefaultValues xfEquation
+            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) flowName outputs) algDataFlowGraph}
 
             return ()
             where
@@ -194,8 +206,7 @@ createDataFlowGraph xmContent = do
                             put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName [tmpName]) a}
                             return (tmpName, tempNameIndex'' + 1)
                         Div -> do
-                            let divName = tmpName <> "div"
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] [divName]) a}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] ["_"]) a}
                             return (tmpName, tempNameIndex'' + 1)
                 processFlowEquation _ _ = undefined
 
@@ -228,17 +239,14 @@ getDefaultValuesAndUsages algBuilder = do
                     hm <- get
                     put $ HM.insert name eqn hm
         processStock XMILEStock{xsEquation, xsName, xsInflow, xsOutflow} = do
-            let val = computeDefaultValue xsEquation
             alg@XMILEAlgBuilder{algDefaultValues} <- get
+            let val = calculateDefaultValue algDefaultValues xsEquation
             put alg{algDefaultValues = HM.insert xsName val algDefaultValues}
             processFlow xsInflow
             processFlow xsOutflow
 
             return ()
             where
-                computeDefaultValue (Val v) = v
-                computeDefaultValue _ = undefined
-
                 processFlow Nothing = do return ()
                 processFlow (Just name) = do
                     addUsages name
@@ -265,7 +273,7 @@ getDefaultValuesAndUsages algBuilder = do
                                 Nothing -> do
                                     case HM.lookup (T.pack name) nameToEquationMap of
                                         Just val -> do
-                                            put x{algDefaultValues = HM.insert (T.pack name) (computeDefaultValue val) algDefaultValues}
+                                            put x{algDefaultValues = HM.insert (T.pack name) (calculateDefaultValue algDefaultValues val) algDefaultValues}
                                         Nothing -> error $ "equation for name " <> name <> " not found."
                             return ()
 

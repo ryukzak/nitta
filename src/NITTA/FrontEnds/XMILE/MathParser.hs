@@ -8,10 +8,13 @@ Stability   : experimental
 -}
 module NITTA.FrontEnds.XMILE.MathParser (
     parseXmileEquation,
+    calculateDefaultValue,
     XMExpr (..),
     XMDuop (..),
 ) where
 
+import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
 import Data.Text as T
 import Text.Parsec
 import Text.Parsec.Expr
@@ -66,3 +69,14 @@ prepareTree (Var str) = case (readMaybe str :: Maybe Double) of
     _ -> Var (trimString str)
 prepareTree v@(Val _) = v
 prepareTree (Duo op a b) = Duo op (prepareTree a) (prepareTree b)
+
+calculateDefaultValue _ (Val value) = value
+calculateDefaultValue defaultValues (Var name) = fromMaybe 0 $ HM.lookup (T.pack name) defaultValues
+calculateDefaultValue defaultValues (Duo op expl expr) =
+    let leftValue = calculateDefaultValue defaultValues expl
+        rightValue = calculateDefaultValue defaultValues expr
+     in case op of
+            Mul -> leftValue * rightValue
+            Div -> leftValue / rightValue
+            Add -> leftValue + rightValue
+            Sub -> leftValue - rightValue
