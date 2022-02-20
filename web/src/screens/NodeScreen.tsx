@@ -15,7 +15,6 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
 
   return (
     <div className="m-3">
-      <h3>sid:</h3>
       <pre>{selectedSID}</pre>
 
       <h3>Tree info:</h3>
@@ -24,6 +23,7 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
       <h3 className="mt-3">Dataflow graph:</h3>
       <IntermediateView />
 
+      <h3 className="mt-3">Microarchitecture and transfers:</h3>
       <MicroarchitectureView />
     </div>
   );

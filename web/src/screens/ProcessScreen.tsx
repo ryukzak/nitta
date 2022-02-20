@@ -56,48 +56,44 @@ export const ProcessScreen: FC = () => {
 
   return (
     <div className="row m-3">
-      <div className="col-lg-6">
-        <h3>Process Graph</h3>
-        <ProcessView />
-      </div>
-      <div className="col-lg-6">
-        <h3>Process Timeline (deprecated)</h3>
-        <div className="p-3 d-flex flex-nowrap">
-          <TimelineView
-            timelines={data.timelines}
-            highlight={highlight}
-            data={data}
-            onHighlightChange={(h) => setHighlight(h)}
-            onDetailChange={(d) => setDetail(d)}
-          />
-          <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
-            <hr />
-            <div className="squeeze upRelation">upper related:</div>
-            <div className="x-scrollable">
-              {highlight.up.map((e, i) =>
-                pIdIndex !== null && pIdIndex[e] !== undefined ? (
-                  <div key={i} className="squeeze">
-                    - {pIdIndex[e].pInfo}
-                  </div>
-                ) : (
-                  ""
-                )
-              )}
-            </div>
-            <hr />
-            <div className="squeeze current">current:</div>
-            <div className="x-scrollable">
-              {detail.map((e) => (
-                <div className="squeeze">- {e.pInfo}</div>
-              ))}
-            </div>
-            <hr />
-            <div className="squeeze downRelation">bottom related:</div>
-            <div className="x-scrollable">
-              {highlight.down.map((e) =>
-                pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
-              )}
-            </div>
+      <h3>Process Graph</h3>
+      <ProcessView />
+      <h3>Process Timeline (deprecated)</h3>
+      <div className="p-3 d-flex flex-nowrap">
+        <TimelineView
+          timelines={data.timelines}
+          highlight={highlight}
+          data={data}
+          onHighlightChange={(h) => setHighlight(h)}
+          onDetailChange={(d) => setDetail(d)}
+        />
+        <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
+          <hr />
+          <div className="squeeze upRelation">upper related:</div>
+          <div className="x-scrollable">
+            {highlight.up.map((e, i) =>
+              pIdIndex !== null && pIdIndex[e] !== undefined ? (
+                <div key={i} className="squeeze">
+                  - {pIdIndex[e].pInfo}
+                </div>
+              ) : (
+                ""
+              )
+            )}
+          </div>
+          <hr />
+          <div className="squeeze current">current:</div>
+          <div className="x-scrollable">
+            {detail.map((e) => (
+              <div className="squeeze">- {e.pInfo}</div>
+            ))}
+          </div>
+          <hr />
+          <div className="squeeze downRelation">bottom related:</div>
+          <div className="x-scrollable">
+            {highlight.down.map((e) =>
+              pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
+            )}
           </div>
         </div>
       </div>
