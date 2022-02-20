@@ -1,5 +1,3 @@
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,9 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
@@ -30,7 +26,6 @@ import Control.Monad.State
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe)
-import Data.String.Interpolate
 import qualified Data.Text as T
 import NITTA.FrontEnds.Common
 import NITTA.FrontEnds.XMILE.MathParser
@@ -49,46 +44,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
     }
     deriving (Show)
 
-_xmileSample :: T.Text
-_xmileSample =
-    [__i| 
-                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-                <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0">
-                    <header>
-                        <vendor>James Houghton</vendor>
-                        <name>Teacup</name>
-                        <options>
-                            <uses_outputs/>
-                        </options>
-                        <product version="1.0">Hand Coded XMILE</product>
-                    </header>
-                    <sim_specs>
-                        <stop>30.0</stop>
-                        <start>0.0</start>
-                        <dt>0.125</dt>
-                    </sim_specs>
-                    <model>
-                        <variables>
-                            <flow name="Heat Loss to Room">
-                                <doc>Heat Loss to Room</doc>
-                                <eqn>("Teacup Temperature"-"Room Temperature")/"Characteristic Time"</eqn>
-                            </flow>
-                            <aux name="Room Temperature">
-                                <doc>Ambient Room Temperature</doc>
-                                <eqn>70</eqn>
-                            </aux>
-                            <stock name="Teacup Temperature">
-                                <doc>The average temperature of the tea and the cup</doc>
-                                <outflow>"Heat Loss to Room"</outflow>
-                                <eqn>180</eqn>
-                            </stock>
-                            <aux name="Characteristic Time">
-                                <eqn>10</eqn>
-                            </aux>
-                        </variables>
-                    </model>
-                </xmile>
-            |]
+deltaTimeVarName = T.pack "time_delta"
 
 xmile2functions src =
     let xmContent = parseXMILEDocument $ T.unpack src
@@ -122,13 +78,17 @@ createDataFlowGraph xmContent = do
     addTimeIncrement
     where
         addTimeIncrement = do
-            x@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
+            x@XMILEAlgBuilder{algUsagesCount} <- get
+            put x{algUsagesCount = HM.insert deltaTimeVarName ((algUsagesCount HM.! deltaTimeVarName) + 1) algUsagesCount}
+            dtUniqueName <- getUniqueName deltaTimeVarName
+            dtAllGraphNodes <- getAllOutGraphNodes deltaTimeVarName
+            x'@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
             let dt = xssDt $ xcSimSpecs xmContent
             let startTime = xssStart $ xcSimSpecs xmContent
-            let graph = addFuncToDataFlowGraph (F.constant (read $ show dt) [T.pack "time_delta"]) algDataFlowGraph
-            let graph' = addFuncToDataFlowGraph (F.add "time" "time_delta" [T.pack "time_inc"]) graph
-            let graph'' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph'
-            put x{algDataFlowGraph = graph'', algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
+            let graph = addFuncToDataFlowGraph (F.add "time" dtUniqueName [T.pack "time_inc"]) algDataFlowGraph
+            let graph' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph
+            let graph'' = addFuncToDataFlowGraph (F.constant (read $ show dt) dtAllGraphNodes) graph'
+            put x'{algDataFlowGraph = graph'', algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
             return ()
 
         processStock XMILEStock{xsName, xsOutflow, xsInflow} = do
@@ -153,11 +113,22 @@ createDataFlowGraph xmContent = do
             return ()
             where
                 processStockFlow flowName func ending stockName = do
-                    flowUniqueName <- getUniqueName flowName
                     let tmpName = xsName <> "_" <> ending
+                    let dt = xssDt $ xcSimSpecs xmContent
+                    flowUniqueName <- skaleToDeltaTime dt
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     put x{algDataFlowGraph = addFuncToDataFlowGraph (func stockName flowUniqueName [tmpName]) algDataFlowGraph}
                     return tmpName
+                    where
+                        skaleToDeltaTime 1 = do getUniqueName flowName
+                        skaleToDeltaTime _ = do
+                            flowUniqueName <- getUniqueName flowName
+                            dtUniqueNmae <- getUniqueName deltaTimeVarName
+                            x@XMILEAlgBuilder{algDataFlowGraph} <- get
+                            let skaledFlowName = stockName <> "_" <> flowName <> "_" <> ending
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply dtUniqueNmae flowUniqueName [skaledFlowName]) algDataFlowGraph}
+                            return skaledFlowName
+
                 addStockLoop stockName outputs = do
                     let traceVarName = TraceVar{tvFmt = defaultFmt, tvVar = T.takeWhile (/= '#') $ head outputs}
                     defaultValue <- getDefaultValue xsName
@@ -179,36 +150,34 @@ createDataFlowGraph xmContent = do
                 _ -> return ()
 
         processFlow XMILEFlow{xfName, xfEquation} = do
-            (flowName, _) <- processFlowEquation xfEquation (0 :: Int)
-            outputs <- getAllOutGraphNodes xfName
-            x@XMILEAlgBuilder{algDataFlowGraph, algDefaultValues} <- get
-            let defaultValue = calculateDefaultValue algDefaultValues xfEquation
-            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) flowName outputs) algDataFlowGraph}
-
+            _ <- processFlowEquation xfEquation (0 :: Int) True
             return ()
             where
-                processFlowEquation (Var name) index = do
+                processFlowEquation (Var name) index _ = do
                     n <- getUniqueName $ T.pack name
                     return (n, index)
-                processFlowEquation (Duo op leftExpr rightExpr) tempNameIndex = do
-                    (leftName, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex
-                    (rightName, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex'
-                    let tmpName = T.pack "_" <> showText tempNameIndex'' <> T.pack "#" <> xfName <> showText tempNameIndex''
+                processFlowEquation (Duo op leftExpr rightExpr) tempNameIndex isTopLevel = do
+                    (leftName, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex False
+                    (rightName, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex' False
+                    tmpName <- getTempName tempNameIndex'' xfName isTopLevel
                     x@XMILEAlgBuilder{algDataFlowGraph = a} <- get
                     case op of
                         Add -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName [tmpName]) a}
-                            return (tmpName, tempNameIndex'' + 1)
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName tmpName) a}
+                            return (head tmpName, tempNameIndex'' + 1)
                         Sub -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName [tmpName]) a}
-                            return (tmpName, tempNameIndex'' + 1)
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName tmpName) a}
+                            return (head tmpName, tempNameIndex'' + 1)
                         Mul -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName [tmpName]) a}
-                            return (tmpName, tempNameIndex'' + 1)
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName tmpName) a}
+                            return (head tmpName, tempNameIndex'' + 1)
                         Div -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName [tmpName] ["_"]) a}
-                            return (tmpName, tempNameIndex'' + 1)
-                processFlowEquation _ _ = undefined
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName ["_"]) a}
+                            return (head tmpName, tempNameIndex'' + 1)
+                    where
+                        getTempName _ name True = do getAllOutGraphNodes name
+                        getTempName index name _ = do return [T.pack "_" <> showText index <> T.pack "#" <> name]
+                processFlowEquation _ _ _ = undefined
 
         getUniqueName name = do
             x@XMILEAlgBuilder{algNextFreeNameIndex} <- get
@@ -251,7 +220,12 @@ getDefaultValuesAndUsages algBuilder = do
                 processFlow (Just name) = do
                     addUsages name
                     addUsages xsName
+                    addDtUsagesIfNeeded $ xssDt $ xcSimSpecs algBuilder
                     processEquation $ xfEquation $ findFlow name
+                    where
+                        addDtUsagesIfNeeded 1 = do return ()
+                        addDtUsagesIfNeeded _ = do
+                            addUsages deltaTimeVarName
 
                 findFlow name =
                     fromMaybe
