@@ -38,9 +38,9 @@ import qualified Data.Text as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
-import NITTA.Model.IntegrityCheck
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
+import NITTA.Model.ProcessIntegrity
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
@@ -75,6 +75,7 @@ puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
         mapM_ (assignNaive cntxCycle) alg
         decideNaiveSynthesis
+        -- FIXME: assertSynthesisDone
         assertPUCoSimulation
 
 -- *Properties
@@ -83,7 +84,7 @@ puCoSimTestCase name u cntxCycle alg =
 finitePUSynthesisProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        case checkProcessСonsistent pu of
+        case checkProcessIntegrity pu of
             Left msg -> error msg
             Right _ ->
                 return $

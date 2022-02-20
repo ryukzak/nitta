@@ -191,6 +191,7 @@ data StepInfo v x t where
     -- |Apply refactoring
     RefactorStep :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
     -- |intermidiate level step (function execution)
+    -- FIXME: rename to IntermediateStep
     FStep :: F v x -> StepInfo v x t
     -- |endpoint level step (source or target)
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
