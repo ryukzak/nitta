@@ -166,12 +166,12 @@ data UnitTestState u v x = UnitTestState
 type Statement u v x r = HasCallStack => StateT (UnitTestState u v x) IO r
 
 type PUStatement pu v x t r =
-    (ProcessorUnit pu v x t, EndpointProblem pu v t) =>
+    (HasCallStack, ProcessorUnit pu v x t, ProcessIntegrity pu, BreakLoopProblem pu v x, EndpointProblem pu v t) =>
     StateT (UnitTestState pu v x) IO r
 
 type TSStatement x r =
     forall tag v t.
-    (tag ~ T.Text, v ~ T.Text, t ~ Int, Val x) =>
+    (HasCallStack, tag ~ T.Text, v ~ T.Text, t ~ Int, Val x) =>
     Statement (TargetSystem (BusNetwork tag v x t) tag v x t) v x r
 
 unitTestCase ::
