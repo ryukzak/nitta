@@ -95,8 +95,10 @@ decisions.
 naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
     where
         naiveSynthesis' u
-            | opt : _ <- endpointOptions u =
-                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
+            | ref : _ <- breakLoopOptions u =
+                naiveSynthesis' $ breakLoopDecision u ref
+            | ep : _ <- endpointOptions u =
+                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision ep
             | otherwise = u
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
