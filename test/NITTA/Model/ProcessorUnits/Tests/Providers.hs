@@ -121,5 +121,5 @@ puCoSimProp name pu0 fsGen =
                                 , pTemplates = ["templates/Icarus"]
                                 }
                     writeProject prj
-                    res <- runTestbench prj
-                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pTargetProjectPath
+                    report <- runTestbench prj
+                    unless (tbStatus report) $ error $ "Fail CoSim in: " <> pTargetProjectPath

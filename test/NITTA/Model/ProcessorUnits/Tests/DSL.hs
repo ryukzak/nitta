@@ -325,11 +325,13 @@ assertLocks expectLocks = do
     where
         show' ls = S.join "\n" $ map (("    " <>) . show) ls
 
--- assertSynthesisDone :: PUStatement pu v x t ()
+assertSynthesisDone :: PUStatement pu v x t ()
 assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
-    unless (isProcessComplete unit functs && null (endpointOptions unit)) $
-        lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+    unless (null $ endpointOptions unit) $
+        lift $ assertFailure $ "In ''" <> testName <> "'' process still has endpoint options:\n" <> show (pretty $ process unit)
+    unless (isProcessComplete unit functs) $
+        lift $ assertFailure $ "In ''" <> testName <> "'' process is incomplete.\nAlgorithm: " <> show functs <> "\nProcess:\n" <> show (pretty $ process unit)
 
     case checkProcessIntegrity unit of
         Left err -> lift $ assertFailure $ testName <> " broken process: " <> err

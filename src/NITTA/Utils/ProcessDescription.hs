@@ -30,6 +30,7 @@ module NITTA.Utils.ProcessDescription (
     scheduleFunctionRevoke,
     scheduleFunction,
     scheduleFunctionFinish,
+    scheduleFunctionFinish_,
     scheduleRefactoring,
     scheduleInstructionUnsafe,
     scheduleInstructionUnsafe_,
@@ -160,6 +161,9 @@ scheduleFunctionFinish bPID function at = do
     process_ <- getProcessSlice
     let low = map pID $ relatedEndpoints process_ $ variables function
     establishVerticalRelations fPID low
+    return fPID
+
+scheduleFunctionFinish_ bPID function at = void $ scheduleFunctionFinish bPID function at
 
 {- |Add to the process description information about endpoint behaviour, and it's low-level
 implementation (on instruction level). Vertical relations connect endpoint level and instruction

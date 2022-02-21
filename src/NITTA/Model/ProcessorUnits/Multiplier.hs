@@ -570,7 +570,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
 
                         -- FIXME: here ([]) you can see the source of error.
                         -- Function don't connected to bind step. It should be fixed.
-                        scheduleFunctionFinish [] f $ a ... sup epAt
+                        scheduleFunctionFinish_ [] f $ a ... sup epAt
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
                     return endpoints =

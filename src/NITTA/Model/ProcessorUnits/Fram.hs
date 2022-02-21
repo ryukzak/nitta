@@ -333,7 +333,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_' = execSchedule fram $ do
                     void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish binds function $ 0 ... sup epAt
+                        scheduleFunctionFinish_ binds function $ 0 ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -361,7 +361,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_ = execSchedule fram $ do
                     eps <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish binds function $ 0 ... sup epAt
+                        scheduleFunctionFinish_ binds function $ 0 ... sup epAt
                     return eps
                 cell' =
                     if not $ null vsRemain
@@ -421,7 +421,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_ = execSchedule fram $ do
                     void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish binds function $ fBegin ... sup epAt
+                        scheduleFunctionFinish_ binds function $ fBegin ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
