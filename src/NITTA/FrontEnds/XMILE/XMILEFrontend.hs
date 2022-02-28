@@ -172,7 +172,7 @@ createDataFlowGraph xmContent = do
                             put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName tmpName) a}
                             return (head tmpName, tempNameIndex'' + 1)
                         Div -> do
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName ["_"]) a}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName []) a}
                             return (head tmpName, tempNameIndex'' + 1)
                     where
                         getTempName _ name True = do getAllOutGraphNodes name
