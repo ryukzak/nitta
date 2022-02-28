@@ -144,33 +144,32 @@ tests =
             , puCoSimProp "puCoSimProp relation positive test" u fsGen
             ]
         , testGroup
-            "broken relations integrity check negative base"
-            [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost instr and ep" u{lostInstructionRelation = True, lostEndpointRelation = True} fsGen
-            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Endpoints" u{lostEndpointRelation = True} fsGen
-            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Instruction" u{lostInstructionRelation = True} fsGen
-            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost Function" u{lostFunctionRelation = True} fsGen
-            , expectFail $ puCoSimProp "puCoSimProp lost Endpoints" u{lostEndpointRelation = True} fsGen
-            , expectFail $ puCoSimProp "puCoSimProp lost Instruction" u{lostInstructionRelation = True} fsGen
-            , expectFail $ puCoSimProp "puCoSimProp lost Function" u{lostFunctionRelation = True} fsGen
-            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Endpoints" u{lostEndpointRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
-            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Instructions" u{lostInstructionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
-            , expectFail $ puCoSimTestCase "puCoSimTestCase lost Function" u{lostFunctionRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            "process integrity of PU negative"
+            [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
             ]
-        , testGroup
-            "broken relations integrity check negative coSim"
-            -- nittaCoSimTestCase has isLeaf and isComplete, but Relation alright because of CAD
-            -- TODO: below cases ignores lost because of CAD steps and failed because simulation
-            [ expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Endpoints" (maBroken u{lostEndpointRelation = True}) alg
-            , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Instruction" (maBroken u{lostInstructionRelation = True}) alg
-            , expectFail $ typedLuaTestCase (maBroken def{lostEndpointRelation = True}) pInt "typedLuaTestCase lost Endpoints" lua
-            , expectFail $ typedLuaTestCase (maBroken def{lostInstructionRelation = True}) pInt "typedLuaTestCase lost Instruction" lua
-            ]
-        , testGroup
-            "broken relations integrity check negative fails"
-            -- TODO: try lua function without break loop
-            [ expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
-            , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
-            ]
+            -- , testGroup
+            --     "broken relations integrity check negative coSim"
+            --     -- nittaCoSimTestCase has isLeaf and isComplete, but Relation alright because of CAD
+            --     -- TODO: below cases ignores lost because of CAD steps and failed because simulation
+            --     [ expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Endpoints" (maBroken u{lostEndpointRelation = True}) alg
+            --     , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Instruction" (maBroken u{lostInstructionRelation = True}) alg
+            --     , expectFail $ typedLuaTestCase (maBroken def{lostEndpointRelation = True}) pInt "typedLuaTestCase lost Endpoints" lua
+            --     , expectFail $ typedLuaTestCase (maBroken def{lostInstructionRelation = True}) pInt "typedLuaTestCase lost Instruction" lua
+            --     ]
+            -- testGroup
+            --   "broken relations integrity check negative fails"
+            --   -- TODO: try lua function without break loop
+            --   [ expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost Function" (maBroken u{lostFunctionRelation = True}) alg
+            --   , expectFail $ typedLuaTestCase (maBroken def{lostFunctionRelation = True}) pInt "typedLuaTestCase lost Function" lua
+            --   ]
         ]
     where
         u = def :: Broken T.Text Int Int

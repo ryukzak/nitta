@@ -66,9 +66,9 @@ data Broken v x t = Broken
     , -- |lost source endpoint due synthesis
       lostEndpointSource :: Bool
     , wrongAttr :: Bool
-    , lostFunctionRelation :: Bool
-    , lostEndpointRelation :: Bool
-    , lostInstructionRelation :: Bool
+    , lostFunctionInVerticalRelation :: Bool
+    , lostEndpointInVerticalRelation :: Bool
+    , lostInstructionInVerticalRelation :: Bool
     , unknownDataOut :: Bool
     }
 
@@ -152,16 +152,25 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                     , doneAt = Just $ sup epAt + 3
                     }
     endpointDecision
-        pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush, lostInstructionRelation, lostEndpointRelation}
+        pu@Broken
+            { targets = [v]
+            , currentWorkEndpoints
+            , wrongControlOnPush
+            , lostEndpointInVerticalRelation
+            , lostInstructionInVerticalRelation
+            }
         d@EndpointSt{epRole = Target v', epAt}
             | v == v'
               , let (newEndpoints, process_') = runSchedule pu $ do
-                        -- updateTick (sup epAt)
                         let ins =
-                                if lostInstructionRelation
+                                if lostInstructionInVerticalRelation
                                     then return []
                                     else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
-                        if lostEndpointRelation then return [] else scheduleEndpoint d ins =
+                        eps <-
+                            if lostEndpointInVerticalRelation
+                                then return []
+                                else scheduleEndpoint d ins
+                        return eps =
                 pu
                     { process_ = process_'
                     , targets = []
@@ -169,7 +178,17 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                     , doneAt = Just $ sup epAt + 3
                     }
     endpointDecision
-        pu@Broken{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints, wrongControlOnPull, lostInstructionRelation, lostEndpointRelation, lostFunctionRelation}
+        pu@Broken
+            { targets = []
+            , sources
+            , doneAt
+            , currentWork = Just (a, f)
+            , currentWorkEndpoints
+            , wrongControlOnPull
+            , lostFunctionInVerticalRelation
+            , lostEndpointInVerticalRelation
+            , lostInstructionInVerticalRelation
+            }
         EndpointSt{epRole = epRole@(Source v), epAt}
             | not $ null sources
               , let sources' = sources \\ elems v
@@ -181,15 +200,15 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                             high <- scheduleStep epAt $ EndpointRoleStep epRole
                             low <- scheduleInstructionUnsafe doAt Out
                             establishVerticalRelations
-                                (if lostEndpointRelation then [] else high)
-                                (if lostInstructionRelation then [] else low)
+                                (if lostEndpointInVerticalRelation then [] else high)
+                                (if lostInstructionInVerticalRelation then [] else low)
                             return high
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
                             let low = endpoints ++ currentWorkEndpoints
                             establishVerticalRelations
-                                (if lostFunctionRelation then [] else high)
-                                (if lostEndpointRelation then [] else low)
+                                (if lostFunctionInVerticalRelation then [] else high)
+                                (if lostEndpointInVerticalRelation then [] else low)
                         return endpoints =
                 pu
                     { process_ = process_'
@@ -250,9 +269,9 @@ instance (Time t) => Default (Broken v x t) where
             , lostEndpointTarget = False
             , lostEndpointSource = False
             , wrongAttr = False
-            , lostFunctionRelation = False
-            , lostEndpointRelation = False
-            , lostInstructionRelation = False
+            , lostFunctionInVerticalRelation = False
+            , lostEndpointInVerticalRelation = False
+            , lostInstructionInVerticalRelation = False
             , unknownDataOut = False
             }
 

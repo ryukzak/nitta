@@ -75,7 +75,7 @@ puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
         mapM_ (assignNaive cntxCycle) alg
         decideNaiveSynthesis
-        -- FIXME: assertSynthesisDone
+        assertSynthesisDone
         assertPUCoSimulation
 
 -- *Properties
@@ -104,6 +104,9 @@ puCoSimProp name pu0 fsGen =
                     uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
+                    case checkProcessIntegrity pu of
+                        Left e -> error e
+                        Right _ -> return ()
                     pwd <- getCurrentDirectory
                     let pTargetProjectPath = "gen" </> toModuleName uniqueName
                         pInProjectNittaPath = "."

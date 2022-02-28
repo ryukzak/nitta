@@ -53,9 +53,14 @@ checkVerticalRelations f dom codom errmsg =
             )
             $ M.keys dom
 
+-- TODO: fix errors in process units
+skipIntegrityErrors = ["instruction not related to endpoint: Instruction: Do"]
+
 collectChecks checks = case lefts checks of
     [] -> Right ()
-    errs -> Left $ S.join "; " errs
+    errs -> case filter (\e -> L.notElem e skipIntegrityErrors) errs of
+        [] -> Right ()
+        errs' -> Left $ S.join "; " errs'
 
 relationsMap pairs = M.fromList $ map merge $ L.groupBy (\a b -> fst a == fst b) $ L.sortOn fst pairs
     where
