@@ -230,7 +230,7 @@ Multiplier:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
             1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
         relations:
-            0) Vertical 0 1
+            0) Vertical {vUp = 0, vDown = 1}
         nextTick: 3
         nextUid: 2
 >>> mapM_ print $ endpointOptions st2
@@ -250,8 +250,8 @@ Multiplier:
             2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
             3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
         relations:
-            0) Vertical 2 3
-            1) Vertical 0 1
+            0) Vertical {vUp = 2, vDown = 3}
+            1) Vertical {vUp = 0, vDown = 1}
         nextTick: 4
         nextUid: 4
 >>> mapM_ print $ endpointOptions st3
@@ -279,9 +279,9 @@ Multiplier:
             4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
             5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
         relations:
-            0) Vertical 4 5
-            1) Vertical 2 3
-            2) Vertical 0 1
+            0) Vertical {vUp = 4, vDown = 5}
+            1) Vertical {vUp = 2, vDown = 3}
+            2) Vertical {vUp = 0, vDown = 1}
         nextTick: 7
         nextUid: 6
 >>> mapM_ print $ endpointOptions st4
@@ -306,14 +306,14 @@ Multiplier:
             7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
             8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
         relations:
-            0) Vertical 8 6
-            1) Vertical 8 4
-            2) Vertical 8 2
-            3) Vertical 8 0
-            4) Vertical 6 7
-            5) Vertical 4 5
-            6) Vertical 2 3
-            7) Vertical 0 1
+            0) Vertical {vUp = 8, vDown = 6}
+            1) Vertical {vUp = 8, vDown = 4}
+            2) Vertical {vUp = 8, vDown = 2}
+            3) Vertical {vUp = 8, vDown = 0}
+            4) Vertical {vUp = 6, vDown = 7}
+            5) Vertical {vUp = 4, vDown = 5}
+            6) Vertical {vUp = 2, vDown = 3}
+            7) Vertical {vUp = 0, vDown = 1}
         nextTick: 8
         nextUid: 9
 >>> endpointOptions st5
