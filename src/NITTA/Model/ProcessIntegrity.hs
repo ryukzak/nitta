@@ -47,9 +47,9 @@ checkVerticalRelations f dom codom errmsg =
         map
             ( \x ->
                 let ys = M.findWithDefault S.empty x f
-                 in case any (\y -> y `M.member` codom) $ S.elems ys of
-                        True -> Right ()
-                        False -> Left $ errmsg <> ": " <> show (dom M.! x)
+                 in if any (`M.member` codom) $ S.elems ys
+                        then Right ()
+                        else Left $ errmsg <> ": " <> show (dom M.! x)
             )
             $ M.keys dom
 
@@ -58,7 +58,7 @@ skipIntegrityErrors = ["instruction not related to endpoint: Instruction: Do"]
 
 collectChecks checks = case lefts checks of
     [] -> Right ()
-    errs -> case filter (\e -> L.notElem e skipIntegrityErrors) errs of
+    errs -> case filter (`L.notElem` skipIntegrityErrors) errs of
         [] -> Right ()
         errs' -> Left $ S.join "; " errs'
 

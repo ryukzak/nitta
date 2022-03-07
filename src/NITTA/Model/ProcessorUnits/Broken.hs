@@ -166,11 +166,10 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                                 if lostInstructionInVerticalRelation
                                     then return []
                                     else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
-                        eps <-
-                            if lostEndpointInVerticalRelation
-                                then return []
-                                else scheduleEndpoint d ins
-                        return eps =
+
+                        if lostEndpointInVerticalRelation
+                            then return []
+                            else scheduleEndpoint d ins =
                 pu
                     { process_ = process_'
                     , targets = []
