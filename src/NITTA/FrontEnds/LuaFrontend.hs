@@ -386,6 +386,6 @@ lua2functions src =
         getAllTraceFuncs algBuilder =
             let traceFuncs = algTraceFuncs algBuilder
                 startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
-             in traceFuncs <> map (\name -> ([defaultFmt], name <> "^0")) startupArgNames
+             in map (\name -> ([name <> "^0"], defaultFmt)) startupArgNames <> traceFuncs
 
-getFrTrace traceFuncs = [TraceVar{tvFmt = fmt, tvVar = var} | (fmts, var) <- traceFuncs, fmt <- fmts]
+getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]

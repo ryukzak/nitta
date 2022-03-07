@@ -172,7 +172,8 @@ instance (Var v) => FunctionSimulation (Loop v x) v x where
             -- if output variables are not defined - set initial value
             Nothing -> [(v, x) | v <- elems vs]
 
-data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq, Show)
+data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq)
+instance (Var v, Show x) => Show (LoopBegin v x) where show = label
 instance (Var v) => Label (LoopBegin v x) where
     label (LoopBegin _ os) = "LoopBegin() = " <> show os
 instance (Var v) => Function (LoopBegin v x) v where
@@ -185,7 +186,8 @@ instance (Var v) => Locks (LoopBegin v x) v where
 instance (Var v) => FunctionSimulation (LoopBegin v x) v x where
     simulate cntx (LoopBegin l _) = simulate cntx l
 
-data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq, Show)
+data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq)
+instance (Var v, Show x) => Show (LoopEnd v x) where show = label
 instance (Var v) => Label (LoopEnd v x) where
     label (LoopEnd (Loop _ os _) i) = "LoopEnd(" <> show i <> ") pair out: " <> show os
 instance (Var v) => Function (LoopEnd v x) v where
