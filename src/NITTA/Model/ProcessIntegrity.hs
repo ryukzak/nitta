@@ -53,7 +53,7 @@ checkVerticalRelations f dom codom errmsg =
             )
             $ M.keys dom
 
--- TODO: fix errors in process units
+-- TODO: #205 Divider: missing vertical relation between Do instruction and Endpoint
 skipIntegrityErrors = ["instruction not related to endpoint: Instruction: Do"]
 
 collectChecks checks = case lefts checks of
@@ -76,12 +76,6 @@ down2up pu = relationsMap $ mapMaybe get $ relations $ process pu
     where
         get Vertical{vUp, vDown} = Just (vDown, vUp)
         get _ = Nothing
-
-pid2cad pu = M.fromList $ mapMaybe get $ steps $ process pu
-    where
-        get s@Step{pID}
-            | Just cad <- getCad s = Just (pID, cad)
-            | otherwise = Nothing
 
 pid2intermediate pu = M.fromList $ mapMaybe get $ steps $ process pu
     where
