@@ -24,9 +24,9 @@ import Text.Parsec.Token
 import Text.Read hiding (parens)
 
 data XMExpr = Var String | Val Double | Duo XMDuop XMExpr XMExpr
-    deriving (Show)
+    deriving (Show, Eq)
 
-data XMDuop = Mul | Div | Add | Sub deriving (Show)
+data XMDuop = Mul | Div | Add | Sub deriving (Show, Eq)
 
 def =
     emptyDef

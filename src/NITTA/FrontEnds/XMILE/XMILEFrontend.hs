@@ -50,7 +50,7 @@ xmile2functions src =
     let xmContent = parseXMILEDocument $ T.unpack src
         builder = processXMILEGraph xmContent
         frTrace = algTraceVars' builder
-     in FrontendResult{frDataFlow = algDataFlowGraph builder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+     in FrontendResult{frDataFlow = algDataFlowGraph builder, frTrace, frPrettyLog = prettyLog frTrace}
     where
         algTraceVars' :: XMILEAlgBuilder T.Text Int -> [TraceVar]
         algTraceVars' = algTraceVars
