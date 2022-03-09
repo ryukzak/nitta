@@ -393,11 +393,11 @@ lua2functions src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder
-     in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, frTrace = frTrace, frPrettyLog = prettyLog frTrace}
+     in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, frTrace, frPrettyLog = prettyLog frTrace}
     where
         getAllTraceFuncs algBuilder =
             let traceFuncs = algTraceFuncs algBuilder
-                startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
+                startupArgNames = map (\(_, (x, _)) -> x) $ HM.toList $ algStartupArgs algBuilder
              in map (\name -> ([name <> "^0"], defaultFmt)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
