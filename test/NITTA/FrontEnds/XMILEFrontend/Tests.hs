@@ -13,6 +13,7 @@ module NITTA.FrontEnds.XMILEFrontend.Tests (
     tests,
 ) where
 
+import qualified Data.HashMap.Strict as HM
 import NITTA.FrontEnds.XMILE.MathParser
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
@@ -45,6 +46,22 @@ case_xmileMathParserDivisionPriorityTest =
 case_xmileMathParserBracketsTest =
     let expr = parseXmileEquation "(A + B) / C"
      in expr @?= Duo Div (Duo Add (Var "A") (Var "B")) (Var "C")
+
+case_xmileMathParserCalculateAddition =
+    let val = calculateDefaultValue HM.empty (Duo Add (Val 5) (Val 6))
+     in val @?= 11
+
+case_xmileMathParserCalculateSubtraction =
+    let val = calculateDefaultValue HM.empty (Duo Sub (Val 5) (Val 6))
+     in val @?= -1
+
+case_xmileMathParserCalculateMultiplication =
+    let val = calculateDefaultValue HM.empty (Duo Mul (Val 5) (Val 6))
+     in val @?= 30
+
+case_xmileMathParserCalculateDivision =
+    let val = calculateDefaultValue HM.empty (Duo Div (Val 6) (Val 2))
+     in val @?= 3
 
 tests :: TestTree
 tests = $(testGroupGenerator)
