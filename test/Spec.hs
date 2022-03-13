@@ -19,7 +19,8 @@ import Data.FileEmbed (embedStringFile)
 import Data.Maybe
 import qualified NITTA.FrontEnds.LuaFrontend.Tests
 import NITTA.FrontEnds.LuaFrontend.Tests.Providers
-import qualified NITTA.FrontEnds.XMILEFrontend.Tests
+import qualified NITTA.FrontEnds.XMILEFrontend.MathParserTests
+import qualified NITTA.FrontEnds.XMILEFrontend.XMILEDocumentParserTests
 import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
@@ -51,7 +52,8 @@ main = do
               , NITTA.Intermediate.Simulation.Tests.tests
               , NITTA.Intermediate.Value.Tests.tests
               , NITTA.FrontEnds.LuaFrontend.Tests.tests
-              , NITTA.FrontEnds.XMILEFrontend.Tests.tests
+              , NITTA.FrontEnds.XMILEFrontend.MathParserTests.tests
+              , NITTA.FrontEnds.XMILEFrontend.XMILEDocumentParserTests.tests
               , NITTA.Model.Problems.Refactor.Tests.tests
               , NITTA.Model.Problems.Refactor.Accum.Tests.tests
               , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests

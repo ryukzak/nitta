@@ -2,14 +2,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-Module      : NITTA.FrontEnds.XMILEFrontend.Tests
+Module      : NITTA.FrontEnds.XMILEFrontend.MathParserTests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILEFrontend.Tests (
+module NITTA.FrontEnds.XMILEFrontend.MathParserTests (
     tests,
 ) where
 

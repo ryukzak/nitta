@@ -28,37 +28,37 @@ data XMILEContent = XMILEContent
     , xcAuxs :: [XMILEAux]
     , xcStocks :: [XMILEStock]
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILESimSpec = XMILESimSpec
     { xssStart :: Double
     , xssStop :: Double
     , xssDt :: Double
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 newtype XMILEModel = XMILEModel
     {xmVariables :: XMILEVariables}
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILEVariables = XMILEVariables
     { xvFlows :: [XMILEFlow]
     , xvAuxs :: [XMILEAux]
     , xvStocks :: [XMILEStock]
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILEFlow = XMILEFlow
     { xfName :: T.Text
     , xfEquation :: XMExpr
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILEAux = XMILEAux
     { xaName :: T.Text
     , xaEquation :: XMExpr
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILEStock = XMILEStock
     { xsName :: T.Text
@@ -66,13 +66,13 @@ data XMILEStock = XMILEStock
     , xsInflow :: Maybe T.Text
     , xsOutflow :: Maybe T.Text
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 data XMILEAlgState v x = XMILEAlgState
     { xasSimSpec :: XMILESimSpec
     , xasModel :: XMILEModel
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 parseXMILEDocument src =
     head $
