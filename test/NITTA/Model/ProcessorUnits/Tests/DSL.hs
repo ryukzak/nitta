@@ -122,7 +122,7 @@ import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
-import NITTA.FrontEnds.LuaFrontend
+import NITTA.Frontends.Lua
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types

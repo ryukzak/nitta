@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
 {- |
-Module      : NITTA.FrontEnds.LuaFrontend
+Module      : NITTA.Frontends.Lua
 Description : Lua frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -25,7 +25,7 @@ Supported Lua costructions are:
 
 * Recursive calls.
 -}
-module NITTA.FrontEnds.LuaFrontend (
+module NITTA.Frontends.Lua (
     lua2functions,
     FrontendResult (..),
     TraceVar (..),
@@ -47,7 +47,7 @@ import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
 import Language.Lua
-import NITTA.FrontEnds.Common
+import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base

@@ -1,14 +1,14 @@
 {-# LANGUAGE Arrows #-}
 
 {- |
-Module      : NITTA.FrontEnds.XMILE.XMILEFrontend
+Module      : NITTA.Frontends.XMILE.DocumentParser
 Description : Parses XMILE source file to internal tree structure
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILE.XMILEDocumentParser (
+module NITTA.Frontends.XMILE.DocumentParser (
     parseXMILEDocument,
     XMILEContent (..),
     XMILEStock (..),
@@ -18,7 +18,7 @@ module NITTA.FrontEnds.XMILE.XMILEDocumentParser (
 ) where
 
 import qualified Data.Text as T
-import NITTA.FrontEnds.XMILE.MathParser
+import NITTA.Frontends.XMILE.MathParser
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Core
 

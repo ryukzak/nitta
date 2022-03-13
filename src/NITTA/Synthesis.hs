@@ -19,13 +19,13 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
-    # tName                                                                              NITTA.FrontEnds
-    # tMicroArch --------------------------\
-    # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
-                      |                    |     |  |
-                      *<-getFrontendResult |     |  |
-                      |                    |     |  v         NITTA.Model:TargetSystem----------\
-    # tDFG <----------+                    +--------*--------> # mUnit            |             |    NITTA.Model...
+    # tName                                                                              NITTA.Frontends
+    # tMicroArch -----------------------------\
+    # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
+                   |                          |     |  |
+                   *<-translateFrontendResult |     |  |
+                   |                          |     |  v      NITTA.Model:TargetSystem----------\
+    # tDFG <-------+                          +--------*--------> # mUnit         |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
         +----------------------------------------*-----------> # mDataFlowGraph   |             \-----+  System   |
@@ -94,8 +94,8 @@ import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
-import NITTA.FrontEnds.Common
-import NITTA.FrontEnds.FrontendIdentifier
+import NITTA.Frontends.Common
+import NITTA.Frontends.FrontendIdentifier
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -191,7 +191,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ getFrontendResult src tSourceCodeFormat
+                let tmp = frDataFlow $ translateFrontendResult tSourceCodeFormat src
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 

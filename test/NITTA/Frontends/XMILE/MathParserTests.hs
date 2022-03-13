@@ -2,19 +2,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-Module      : NITTA.FrontEnds.XMILEFrontend.MathParserTests
+Module      : NITTA.Frontends.XMILE.MathParserTests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILEFrontend.MathParserTests (
+module NITTA.Frontends.XMILE.MathParserTests (
     tests,
 ) where
 
 import qualified Data.HashMap.Strict as HM
-import NITTA.FrontEnds.XMILE.MathParser
+import NITTA.Frontends.XMILE.MathParser
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH

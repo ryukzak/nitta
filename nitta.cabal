@@ -37,12 +37,12 @@ extra-doc-files:
 
 library
   exposed-modules:
-      NITTA.FrontEnds.Common
-      NITTA.FrontEnds.FrontendIdentifier
-      NITTA.FrontEnds.LuaFrontend
-      NITTA.FrontEnds.XMILE.MathParser
-      NITTA.FrontEnds.XMILE.XMILEDocumentParser
-      NITTA.FrontEnds.XMILE.XMILEFrontend
+      NITTA.Frontends.Common
+      NITTA.Frontends.FrontendIdentifier
+      NITTA.Frontends.Lua
+      NITTA.Frontends.XMILE.DocumentParser
+      NITTA.Frontends.XMILE.Frontend
+      NITTA.Frontends.XMILE.MathParser
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum
@@ -229,10 +229,10 @@ test-suite nitta-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      NITTA.FrontEnds.LuaFrontend.Tests
-      NITTA.FrontEnds.LuaFrontend.Tests.Providers
-      NITTA.FrontEnds.XMILEFrontend.MathParserTests
-      NITTA.FrontEnds.XMILEFrontend.XMILEDocumentParserTests
+      NITTA.Frontends.Lua.Tests
+      NITTA.Frontends.Lua.Tests.Providers
+      NITTA.Frontends.XMILE.DocumentParserTests
+      NITTA.Frontends.XMILE.MathParserTests
       NITTA.Intermediate.Functions.Accum.Tests
       NITTA.Intermediate.Simulation.Tests
       NITTA.Intermediate.Tests.Functions

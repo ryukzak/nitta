@@ -12,14 +12,14 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
-Module      : NITTA.FrontEnds.LuaFrontend.Tests
+Module      : NITTA.Frontends.Lua.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.LuaFrontend.Tests (
+module NITTA.Frontends.Lua.Tests (
     tests,
 ) where
 
@@ -30,8 +30,8 @@ import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Language.Lua as Lua
-import NITTA.FrontEnds.LuaFrontend
-import NITTA.FrontEnds.LuaFrontend.Tests.Providers
+import NITTA.Frontends.Lua
+import NITTA.Frontends.Lua.Tests.Providers
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Tests.Providers

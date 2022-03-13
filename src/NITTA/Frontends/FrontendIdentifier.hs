@@ -1,19 +1,19 @@
 {- |
-Module      : NITTA.FrontEnds.FrontendIdentifier
+Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.FrontendIdentifier (
+module NITTA.Frontends.FrontendIdentifier (
     FrontendType (..),
     identifyFrontendType,
-    getFrontendResult,
+    translateFrontendResult,
 ) where
 
-import NITTA.FrontEnds.LuaFrontend
-import NITTA.FrontEnds.XMILE.XMILEFrontend
+import NITTA.Frontends.Lua
+import NITTA.Frontends.XMILE.Frontend
 import System.FilePath
 
 data FrontendType = Lua | XMILE
@@ -34,5 +34,5 @@ identifyFrontendType fileName format =
             <> format
             <> "'."
 
-getFrontendResult src Lua = lua2functions src
-getFrontendResult src XMILE = xmile2functions src
+translateFrontendResult Lua = lua2functions
+translateFrontendResult XMILE = xmile2functions

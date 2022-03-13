@@ -3,20 +3,20 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-Module      : NITTA.FrontEnds.XMILEFrontend.XMILEDocumentParserTests
+Module      : NITTA.Frontends.XMILE.DocumentParserTests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILEFrontend.XMILEDocumentParserTests (
+module NITTA.Frontends.XMILE.DocumentParserTests (
     tests,
 ) where
 
 import Data.String.Interpolate
-import NITTA.FrontEnds.XMILE.MathParser
-import NITTA.FrontEnds.XMILE.XMILEDocumentParser
+import NITTA.Frontends.XMILE.DocumentParser
+import NITTA.Frontends.XMILE.MathParser
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH

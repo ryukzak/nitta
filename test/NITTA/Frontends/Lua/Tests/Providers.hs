@@ -10,14 +10,14 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
-Module      : NITTA.FrontEnds.LuaFrontend.Tests.Providers
+Module      : NITTA.Frontends.Lua.Tests.Providers
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.LuaFrontend.Tests.Providers (
+module NITTA.Frontends.Lua.Tests.Providers (
     luaTestCase,
     typedLuaTestCase,
     typedIOLuaTestCase,
@@ -29,7 +29,7 @@ import Data.CallStack
 import Data.Default
 import Data.Proxy
 import qualified Data.Text as T
-import NITTA.FrontEnds.LuaFrontend
+import NITTA.Frontends.Lua
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus

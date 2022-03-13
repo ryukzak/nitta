@@ -9,14 +9,14 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
-Module      : NITTA.FrontEnds.XMILE.XMILEFrontend
+Module      : NITTA.Frontends.XMILE.Frontend
 Description : XMILE frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.XMILE.XMILEFrontend (
+module NITTA.Frontends.XMILE.Frontend (
     xmile2functions,
     FrontendResult (..),
     TraceVar (..),
@@ -27,9 +27,9 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import NITTA.FrontEnds.Common
-import NITTA.FrontEnds.XMILE.MathParser
-import NITTA.FrontEnds.XMILE.XMILEDocumentParser
+import NITTA.Frontends.Common
+import NITTA.Frontends.XMILE.DocumentParser
+import NITTA.Frontends.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils (showText)

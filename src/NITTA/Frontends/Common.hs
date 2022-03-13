@@ -1,12 +1,12 @@
 {- |
-Module      : NITTA.FrontEnds.Common
+Module      : NITTA.Frontends.Common
 Description : Common types and functions for all frontend implementations
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.FrontEnds.Common (
+module NITTA.Frontends.Common (
     FrontendResult (..),
     TraceVar (..),
     defaultFmt,
