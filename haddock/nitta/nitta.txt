@@ -2722,26 +2722,26 @@ instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Types.SID
 instance Web.Internal.HttpApiData.FromHttpApiData NITTA.Synthesis.Types.SID
 
 
-module NITTA.Synthesis.ResolveDeadlock
+module NITTA.Synthesis.Steps.ResolveDeadlock
 data ResolveDeadlockMetrics
 ResolveDeadlockMetrics :: Float -> Float -> Float -> ResolveDeadlockMetrics
 [pNumberOfLockedVariables] :: ResolveDeadlockMetrics -> Float
 [pBufferCount] :: ResolveDeadlockMetrics -> Float
 [pNumberOfTransferableVariables] :: ResolveDeadlockMetrics -> Float
-instance GHC.Generics.Generic NITTA.Synthesis.ResolveDeadlock.ResolveDeadlockMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.ResolveDeadlock.ResolveDeadlockMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) NITTA.Synthesis.ResolveDeadlock.ResolveDeadlockMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
 
 
-module NITTA.Synthesis.OptimizeAccum
+module NITTA.Synthesis.Steps.OptimizeAccum
 data OptimizeAccumMetrics
 OptimizeAccumMetrics :: OptimizeAccumMetrics
-instance GHC.Generics.Generic NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) NITTA.Synthesis.OptimizeAccum.OptimizeAccumMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.OptimizeAccum.OptimizeAccumMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.OptimizeAccum.OptimizeAccumMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) NITTA.Synthesis.Steps.OptimizeAccum.OptimizeAccumMetrics
 
 
-module NITTA.Synthesis.Dataflow
+module NITTA.Synthesis.Steps.Dataflow
 data DataflowMetrics
 DataflowMetrics :: Float -> Bool -> [Float] -> DataflowMetrics
 [pWaitTime] :: DataflowMetrics -> Float
@@ -2749,32 +2749,32 @@ DataflowMetrics :: Float -> Bool -> [Float] -> DataflowMetrics
 
 -- | number of variables, which is not transferable for affected functions.
 [pNotTransferableInputs] :: DataflowMetrics -> [Float]
-instance GHC.Generics.Generic NITTA.Synthesis.Dataflow.DataflowMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Dataflow.DataflowMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (NITTA.Model.Time.TimeConstraint t)) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (Numeric.Interval.NonEmpty.Internal.Interval t)) NITTA.Synthesis.Dataflow.DataflowMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (NITTA.Model.Time.TimeConstraint t)) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (Numeric.Interval.NonEmpty.Internal.Interval t)) NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
 
 
-module NITTA.Synthesis.ConstantFolding
+module NITTA.Synthesis.Steps.ConstantFolding
 data ConstantFoldingMetrics
 ConstantFoldingMetrics :: ConstantFoldingMetrics
-instance GHC.Generics.Generic NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Synthesis.ConstantFolding.ConstantFoldingMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.ConstantFolding.ConstantFoldingMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.ConstantFolding.ConstantFoldingMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Synthesis.Steps.ConstantFolding.ConstantFoldingMetrics
 
 
-module NITTA.Synthesis.BreakLoop
+module NITTA.Synthesis.Steps.BreakLoop
 data BreakLoopMetrics
 BreakLoopMetrics :: BreakLoopMetrics
-instance GHC.Generics.Generic NITTA.Synthesis.BreakLoop.BreakLoopMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.BreakLoop.BreakLoopMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) NITTA.Synthesis.BreakLoop.BreakLoopMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
 
 
-module NITTA.Synthesis.Refactor
+module NITTA.Synthesis.Steps.Refactor
 isRefactor :: SynthesisDecision ctx m -> Bool
 
 
-module NITTA.Synthesis.Bind
+module NITTA.Synthesis.Steps.Bind
 data BindMetrics
 BindMetrics :: Bool -> Float -> Float -> Float -> Float -> Bool -> Float -> Float -> Maybe Float -> BindMetrics
 
@@ -2800,9 +2800,12 @@ BindMetrics :: Bool -> Float -> Float -> Float -> Float -> Bool -> Float -> Floa
 [pPercentOfBindedInputs] :: BindMetrics -> Float
 [pWave] :: BindMetrics -> Maybe Float
 isBind :: SynthesisDecision ctx m -> Bool
-instance GHC.Generics.Generic NITTA.Synthesis.Bind.BindMetrics
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Bind.BindMetrics
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Bind.Bind tag v x) (NITTA.Model.Problems.Bind.Bind tag v x) NITTA.Synthesis.Bind.BindMetrics
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.Bind.BindMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Bind.BindMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Bind.Bind tag v x) (NITTA.Model.Problems.Bind.Bind tag v x) NITTA.Synthesis.Steps.Bind.BindMetrics
+
+
+module NITTA.Synthesis.Steps
 
 
 module NITTA.Synthesis.Explore
