@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 {- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
@@ -12,27 +14,22 @@ module NITTA.Frontends.FrontendIdentifier (
     translateFrontendResult,
 ) where
 
+import Data.Data
+import Data.Maybe
 import NITTA.Frontends.Lua
 import NITTA.Frontends.XMILE.Frontend
 import System.FilePath
 
 data FrontendType = Lua | XMILE
-    deriving (Show)
+    deriving (Show, Data)
 
-identifyFrontendType _ "lua" = Lua
-identifyFrontendType _ "xmile" = XMILE
-identifyFrontendType fileName "dynamic" =
-    case snd $ splitExtension fileName of
-        ".lua" -> Lua
-        ".xmile" -> XMILE
-        ext -> error $ "can't parse extension for file " <> fileName <> "|" <> ext
-identifyFrontendType fileName format =
-    error $
-        "unable to select proper source file parser for file extension '"
-            <> fileName
-            <> "' and format type '"
-            <> format
-            <> "'."
+identifyFrontendType fileName frontendType = fromMaybe identifyByExtension frontendType
+    where
+        identifyByExtension =
+            case snd $ splitExtension fileName of
+                ".lua" -> Lua
+                ".xmile" -> XMILE
+                ext -> error $ "can't parse extension for file " <> fileName <> "|" <> ext
 
 translateFrontendResult Lua = lua2functions
 translateFrontendResult XMILE = xmile2functions

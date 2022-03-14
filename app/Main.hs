@@ -75,7 +75,7 @@ data Nitta = Nitta
     , extra_verbose :: Bool
     , output_path :: FilePath
     , format :: String
-    , sourceAlgorithmFormat :: String
+    , frontend_format :: Maybe FrontendType
     }
     deriving (Show, Data, Typeable)
 
@@ -126,9 +126,9 @@ nittaArgs =
         , extra_verbose =
             False &= help "Extra verbose"
                 &= groupname "Other"
-        , sourceAlgorithmFormat =
-            "dynamic" &= help "Format used to source algorithm description. (default: 'dynamic')"
-                &= typ "dynamic|lua|xmile"
+        , frontend_format =
+            Nothing &= help "Format used to source algorithm description. (default: decision by file extension)"
+                &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
@@ -146,7 +146,22 @@ getNittaArgs = do
     catch (cmdArgs nittaArgs) handleError
 
 main = do
-    Nitta{port, filename, uarch, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format, sourceAlgorithmFormat} <-
+    Nitta
+        { port
+        , filename
+        , uarch
+        , type_
+        , io_sync
+        , fsim
+        , lsim
+        , n
+        , verbose
+        , extra_verbose
+        , output_path
+        , templates
+        , format
+        , frontend_format
+        } <-
         getNittaArgs
     setupLogger verbose extra_verbose
 
@@ -155,11 +170,11 @@ main = do
         Just path -> T.readFile path <&> (Just . getToml)
 
     let fromConf s = getFromTomlSection s =<< toml
-    let frontendFormat = identifyFrontendType filename sourceAlgorithmFormat
+    let exactFrontendFormat = identifyFrontendType filename frontend_format
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = translateFrontendResult frontendFormat src
+            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = translateFrontendResult exactFrontendFormat src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
@@ -180,7 +195,7 @@ main = do
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation n received src format frontendFormat
+            when fsim $ functionalSimulation n received src format exactFrontendFormat
 
             prj <-
                 synthesizeTargetSystem
@@ -192,7 +207,7 @@ main = do
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
                         , tSimulationCycleN = n
-                        , tSourceCodeFormat = frontendFormat
+                        , tSourceCodeFormat = exactFrontendFormat
                         }
                     >>= \case
                         Left msg -> error msg
