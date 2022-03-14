@@ -9,42 +9,41 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.OptimizeAccum
+Module      : NITTA.Synthesis.BreakLoop
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.OptimizeAccum (
-    OptimizeAccumMetrics (..),
+module NITTA.Synthesis.Steps.BreakLoop (
+    BreakLoopMetrics (..),
 ) where
 
 import Data.Aeson (ToJSON)
 import GHC.Generics
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Refactor
-import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Model.Time
 import NITTA.Synthesis.Types
 
-data OptimizeAccumMetrics = OptimizeAccumMetrics
+data BreakLoopMetrics = BreakLoopMetrics
     deriving (Generic)
 
-instance ToJSON OptimizeAccumMetrics
+instance ToJSON BreakLoopMetrics
 
 instance
     (UnitTag tag, VarValTime v x t) =>
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
         (TargetSystem (BusNetwork tag v x t) tag v x t)
-        (OptimizeAccum v x)
-        (OptimizeAccum v x)
-        OptimizeAccumMetrics
+        (BreakLoop v x)
+        (BreakLoop v x)
+        BreakLoopMetrics
     where
-    decisions SynthesisState{sTarget} o = [(o, optimizeAccumDecision sTarget o)]
+    decisions SynthesisState{sTarget} o = [(o, breakLoopDecision sTarget o)]
 
-    parameters SynthesisState{} OptimizeAccum{} _ = OptimizeAccumMetrics
+    parameters SynthesisState{} BreakLoop{} _ = BreakLoopMetrics
 
-    estimate _ctx _o _d OptimizeAccumMetrics = 5000
+    estimate _ctx _o _d BreakLoopMetrics = 5000

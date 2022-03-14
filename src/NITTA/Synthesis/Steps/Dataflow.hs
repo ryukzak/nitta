@@ -16,7 +16,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.Dataflow (
+module NITTA.Synthesis.Steps.Dataflow (
     DataflowMetrics (..),
 ) where
 

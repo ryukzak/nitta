@@ -80,15 +80,16 @@ library
       NITTA.Project.VerilogSnippets
       NITTA.Synthesis
       NITTA.Synthesis.Analysis
-      NITTA.Synthesis.Bind
-      NITTA.Synthesis.BreakLoop
-      NITTA.Synthesis.ConstantFolding
-      NITTA.Synthesis.Dataflow
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
-      NITTA.Synthesis.OptimizeAccum
-      NITTA.Synthesis.Refactor
-      NITTA.Synthesis.ResolveDeadlock
+      NITTA.Synthesis.Steps
+      NITTA.Synthesis.Steps.Bind
+      NITTA.Synthesis.Steps.BreakLoop
+      NITTA.Synthesis.Steps.ConstantFolding
+      NITTA.Synthesis.Steps.Dataflow
+      NITTA.Synthesis.Steps.OptimizeAccum
+      NITTA.Synthesis.Steps.Refactor
+      NITTA.Synthesis.Steps.ResolveDeadlock
       NITTA.Synthesis.Types
       NITTA.UIBackend
       NITTA.UIBackend.REST
