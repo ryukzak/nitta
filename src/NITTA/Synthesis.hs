@@ -94,8 +94,8 @@ import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
+import NITTA.Frontends
 import NITTA.Frontends.Common
-import NITTA.Frontends.FrontendIdentifier
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types

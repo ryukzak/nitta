@@ -8,7 +8,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Frontends.FrontendIdentifier (
+module NITTA.Frontends (
     FrontendType (..),
     identifyFrontendType,
     translateFrontendResult,

@@ -37,8 +37,8 @@ extra-doc-files:
 
 library
   exposed-modules:
+      NITTA.Frontends
       NITTA.Frontends.Common
-      NITTA.Frontends.FrontendIdentifier
       NITTA.Frontends.Lua
       NITTA.Frontends.XMILE.DocumentParser
       NITTA.Frontends.XMILE.Frontend

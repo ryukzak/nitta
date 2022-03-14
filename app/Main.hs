@@ -34,8 +34,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
+import NITTA.Frontends
 import NITTA.Frontends.Common
-import NITTA.Frontends.FrontendIdentifier
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Builder
@@ -174,7 +174,7 @@ main = do
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = translateFrontendResult exactFrontendFormat src
+            let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} = translateFrontendResult exactFrontendFormat src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
@@ -195,7 +195,7 @@ main = do
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation n received src format exactFrontendFormat
+            when fsim $ functionalSimulation n received format frontendResult
 
             prj <-
                 synthesizeTargetSystem
@@ -244,17 +244,16 @@ readSourceCode filename = do
     return src
 
 -- |Simulation on intermediate level (data-flow graph)
-functionalSimulation n received src format frontendFormat = do
-    let FrontendResult{frDataFlow, frPrettyLog} = translateFrontendResult frontendFormat src
-        cntx = simulateDataFlowGraph n def received frDataFlow
+functionalSimulation n received format FrontendResult{frDataFlow, frPrettyLog} = do
+    let cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
     putLog format $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
-logicalSimulation format prettyLog' prj = do
+logicalSimulation format prettyLog_ prj = do
     TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
-    putLog format $ prettyLog' tbLogicalSimulationLog
+    putLog format $ prettyLog_ tbLogicalSimulationLog
 
 putLog "md" records = putStr $ log2md records
 putLog "json" records = BS.putStrLn $ log2json records
