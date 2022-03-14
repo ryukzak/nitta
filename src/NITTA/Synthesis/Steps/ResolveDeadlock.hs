@@ -17,7 +17,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.ResolveDeadlock (
+module NITTA.Synthesis.Steps.ResolveDeadlock (
     ResolveDeadlockMetrics (..),
 ) where
 

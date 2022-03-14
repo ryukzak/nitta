@@ -16,7 +16,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.Bind (
+module NITTA.Synthesis.Steps.Bind (
     BindMetrics (..),
     isBind,
 ) where
