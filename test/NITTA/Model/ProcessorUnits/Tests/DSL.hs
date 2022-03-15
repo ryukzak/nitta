@@ -359,7 +359,7 @@ assignLua :: T.Text -> TSStatement x ()
 assignLua src = do
     assertEmptyDataFlow
     st@UnitTestState{unit = TargetSystem{mUnit}} <- get
-    let dfg = frDataFlow $ lua2functions src
+    let dfg = frDataFlow $ translateLua src
     put
         st
             { unit = mkModelWithOneNetwork mUnit dfg

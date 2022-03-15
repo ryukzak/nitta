@@ -17,7 +17,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends.XMILE.Frontend (
-    xmile2functions,
+    translateXMILE,
     FrontendResult (..),
     TraceVar (..),
 ) where
@@ -46,7 +46,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
 
 deltaTimeVarName = T.pack "time_delta"
 
-xmile2functions src =
+translateXMILE src =
     let xmContent = parseXMILEDocument $ T.unpack src
         builder = processXMILEGraph xmContent
         frTrace = algTraceVars' builder
@@ -84,10 +84,10 @@ createDataFlowGraph xmContent = do
             dtAllGraphNodes <- getAllOutGraphNodes deltaTimeVarName
             x'@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
             let dt = xssDt $ xcSimSpecs xmContent
-            let startTime = xssStart $ xcSimSpecs xmContent
-            let graph = addFuncToDataFlowGraph (F.add "time" dtUniqueName [T.pack "time_inc"]) algDataFlowGraph
-            let graph' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph
-            let graph'' = addFuncToDataFlowGraph (F.constant (read $ show dt) dtAllGraphNodes) graph'
+                startTime = xssStart $ xcSimSpecs xmContent
+                graph = addFuncToDataFlowGraph (F.add "time" dtUniqueName [T.pack "time_inc"]) algDataFlowGraph
+                graph' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph
+                graph'' = addFuncToDataFlowGraph (F.constant (read $ show dt) dtAllGraphNodes) graph'
             put x'{algDataFlowGraph = graph'', algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
             return ()
 

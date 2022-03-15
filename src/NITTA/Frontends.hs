@@ -31,5 +31,5 @@ identifyFrontendType fileName frontendType = fromMaybe identifyByExtension front
                 ".xmile" -> XMILE
                 ext -> error $ "can't parse extension for file " <> fileName <> "|" <> ext
 
-translateFrontendResult Lua = lua2functions
-translateFrontendResult XMILE = xmile2functions
+translateFrontendResult Lua = translateLua
+translateFrontendResult XMILE = translateXMILE

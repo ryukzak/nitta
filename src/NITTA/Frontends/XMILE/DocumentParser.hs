@@ -1,4 +1,6 @@
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : NITTA.Frontends.XMILE.DocumentParser
@@ -80,11 +82,11 @@ parseXMILEDocument src =
             ( xreadDoc
                 >>> removeAllWhiteSpace
                 >>> proc st -> do
-                    simSpec <- parseSimSpec -< st
-                    flows <- parseFlows -< st
-                    auxs <- parseAuxs -< st
-                    stocks <- parseStocks -< st
-                    returnA -< XMILEContent{xcSimSpecs = simSpec, xcFlows = flows, xcAuxs = auxs, xcStocks = stocks}
+                    xcSimSpecs <- parseSimSpec -< st
+                    xcFlows <- parseFlows -< st
+                    xcAuxs <- parseAuxs -< st
+                    xcStocks <- parseStocks -< st
+                    returnA -< XMILEContent{xcSimSpecs, xcFlows, xcAuxs, xcStocks}
             )
             src
 
@@ -130,19 +132,16 @@ parseStocks =
                             XMILEStock
                                 { xsEquation = parseXmileEquation eqn
                                 , xsName = replaceSpaces $ T.pack name
-                                , xsOutflow = if outflow == "" then Nothing else Just $ replaceSpaces $ T.pack outflow
-                                , xsInflow = if inflow == "" then Nothing else Just $ replaceSpaces $ T.pack inflow
+                                , xsOutflow = replaceSpaces <$> outflow
+                                , xsInflow = replaceSpaces <$> inflow
                                 }
             )
     where
         getTagOrNothing name =
-            (atTag name >>> text)
-                `orElse` arr (const "")
+            (atTag name >>> text >>> arr (\x -> Just (T.pack x)))
+                `orElse` arr (const Nothing)
 
-replaceSpaces str = T.filter (/= '"') $ T.map repl str
-    where
-        repl ' ' = '_'
-        repl c = c
+replaceSpaces str = T.filter (/= '"') $ T.replace " " "_" str
 
 atTag tag = deep (isElem >>> hasName tag)
 atAttr attrName = deep (isElem >>> getAttrValue attrName)

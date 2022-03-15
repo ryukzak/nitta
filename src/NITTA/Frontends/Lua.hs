@@ -26,7 +26,7 @@ Supported Lua costructions are:
 * Recursive calls.
 -}
 module NITTA.Frontends.Lua (
-    lua2functions,
+    translateLua,
     FrontendResult (..),
     TraceVar (..),
 
@@ -377,7 +377,7 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
                 Just names -> map fromText names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
 
-lua2functions src =
+translateLua src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder
