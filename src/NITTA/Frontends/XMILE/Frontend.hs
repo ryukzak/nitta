@@ -26,13 +26,14 @@ import Control.Monad.State
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe)
+import Data.String
 import qualified Data.Text as T
 import NITTA.Frontends.Common
 import NITTA.Frontends.XMILE.DocumentParser
 import NITTA.Frontends.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import NITTA.Utils (showText)
+import NITTA.Utils.Base
 
 data XMILEAlgBuilder v x = XMILEAlgBuilder
     { algDataFlowGraph :: DataFlowGraph v x
@@ -85,11 +86,15 @@ createDataFlowGraph xmContent = do
             x'@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
             let dt = xssDt $ xcSimSpecs xmContent
                 startTime = xssStart $ xcSimSpecs xmContent
-                graph = addFuncToDataFlowGraph (F.add "time" dtUniqueName [T.pack "time_inc"]) algDataFlowGraph
-                graph' = addFuncToDataFlowGraph (F.loop (read $ show startTime) "time_inc" [T.pack "time"]) graph
-                graph'' = addFuncToDataFlowGraph (F.constant (read $ show dt) dtAllGraphNodes) graph'
-            put x'{algDataFlowGraph = graph'', algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
-            return ()
+                graph =
+                    L.foldl'
+                        (flip addFuncToDataFlowGraph)
+                        algDataFlowGraph
+                        [ F.constant (read $ show dt) (map fromText dtAllGraphNodes)
+                        , F.loop (read $ show startTime) (fromString "time_inc") [fromString "time"]
+                        , F.add (fromString "time") (fromText dtUniqueName) [fromString "time_inc"]
+                        ]
+            put x'{algDataFlowGraph = graph, algTraceVars = TraceVar{tvFmt = defaultFmt, tvVar = "time"} : algTraceVars}
 
         processStock XMILEStock{xsName, xsOutflow, xsInflow} = do
             outputs <- getAllOutGraphNodes xsName
@@ -99,34 +104,33 @@ createDataFlowGraph xmContent = do
                     addStockLoop input outputs
                 (Nothing, Just inflow) -> do
                     stockUniqueName <- getUniqueName xsName
-                    tmpName <- processStockFlow inflow F.add "In" stockUniqueName
+                    tmpName <- processStockFlow inflow F.add (fromString "In") stockUniqueName
                     addStockLoop tmpName outputs
                 (Just outflow, Nothing) -> do
                     stockUniqueName <- getUniqueName xsName
-                    tmpName <- processStockFlow outflow F.sub "Out" stockUniqueName
+                    tmpName <- processStockFlow outflow F.sub (fromString "Out") stockUniqueName
                     addStockLoop tmpName outputs
                 (Just outflow, Just inflow) -> do
                     stockUniqueName <- getUniqueName xsName
-                    tmpNameOut <- processStockFlow outflow F.sub "Out" stockUniqueName
-                    tmpNameIn <- processStockFlow inflow F.add "In" tmpNameOut
+                    tmpNameOut <- processStockFlow outflow F.sub (fromString "Out") stockUniqueName
+                    tmpNameIn <- processStockFlow inflow F.add (fromString "In") tmpNameOut
                     addStockLoop tmpNameIn outputs
-            return ()
             where
                 processStockFlow flowName func ending stockName = do
                     let tmpName = xsName <> "_" <> ending
                     let dt = xssDt $ xcSimSpecs xmContent
                     flowUniqueName <- skaleToDeltaTime dt
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (func stockName flowUniqueName [tmpName]) algDataFlowGraph}
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (func (fromText stockName) (fromText flowUniqueName) [fromText tmpName]) algDataFlowGraph}
                     return tmpName
                     where
                         skaleToDeltaTime 1 = do getUniqueName flowName
                         skaleToDeltaTime _ = do
                             flowUniqueName <- getUniqueName flowName
-                            dtUniqueNmae <- getUniqueName deltaTimeVarName
+                            dtUniqueName <- getUniqueName deltaTimeVarName
                             x@XMILEAlgBuilder{algDataFlowGraph} <- get
                             let skaledFlowName = stockName <> "_" <> flowName <> "_" <> ending
-                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply dtUniqueNmae flowUniqueName [skaledFlowName]) algDataFlowGraph}
+                            put x{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply (fromText dtUniqueName) (fromText flowUniqueName) [fromText skaledFlowName]) algDataFlowGraph}
                             return skaledFlowName
 
                 addStockLoop stockName outputs = do
@@ -135,31 +139,32 @@ createDataFlowGraph xmContent = do
                     x@XMILEAlgBuilder{algDataFlowGraph, algTraceVars} <- get
                     put
                         x
-                            { algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) stockName outputs) algDataFlowGraph
+                            { algDataFlowGraph = addFuncToDataFlowGraph (F.loop (read $ show defaultValue) (fromText stockName) (map fromText outputs)) algDataFlowGraph
                             , algTraceVars = traceVarName : algTraceVars
                             }
-                    return ()
 
         processAux XMILEAux{xaName, xaEquation} = do
             case xaEquation of
                 (Val value) -> do
                     x@XMILEAlgBuilder{algDataFlowGraph} <- get
                     outputs <- getAllOutGraphNodes xaName
-                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.constant (read $ show value) outputs) algDataFlowGraph}
-                    return ()
-                _ -> return ()
+                    put x{algDataFlowGraph = addFuncToDataFlowGraph (F.constant (read $ show value) (map fromText outputs)) algDataFlowGraph}
+                expr -> error $ "non supported equation part: " <> show expr
 
         processFlow XMILEFlow{xfName, xfEquation} = do
-            _ <- processFlowEquation xfEquation (0 :: Int) True
-            return ()
+            processFlowEquation xfEquation (0 :: Int) True
             where
                 processFlowEquation (Var name) index _ = do
                     n <- getUniqueName $ T.pack name
                     return (n, index)
                 processFlowEquation (Duo op leftExpr rightExpr) tempNameIndex isTopLevel = do
-                    (leftName, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex False
-                    (rightName, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex' False
-                    tmpName <- getTempName tempNameIndex'' xfName isTopLevel
+                    (leftNameText, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex False
+                    (rightNameText, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex' False
+                    tmpNameText <- getTempName tempNameIndex'' xfName isTopLevel
+                    let leftName = fromText leftNameText
+                        rightName = fromText rightNameText
+                        tmpName = map fromText tmpNameText
+
                     x@XMILEAlgBuilder{algDataFlowGraph = a} <- get
                     case op of
                         Add -> do
@@ -194,7 +199,7 @@ createDataFlowGraph xmContent = do
             XMILEAlgBuilder{algDefaultValues} <- get
             return $ fromMaybe (error $ "name not found :" <> T.unpack name) $ HM.lookup name algDefaultValues
 
-        getGraphName name index = name <> T.pack "#" <> showText index
+        getGraphName name index = name <> fromString ("#" <> show index)
 
 getDefaultValuesAndUsages algBuilder = do
     mapM_ processStock $ xcStocks algBuilder
@@ -213,8 +218,6 @@ getDefaultValuesAndUsages algBuilder = do
             put alg{algDefaultValues = HM.insert xsName val algDefaultValues}
             processFlow xsInflow
             processFlow xsOutflow
-
-            return ()
             where
                 processFlow Nothing = do return ()
                 processFlow (Just name) = do
@@ -249,7 +252,6 @@ getDefaultValuesAndUsages algBuilder = do
                                         Just val -> do
                                             put x{algDefaultValues = HM.insert (T.pack name) (calculateDefaultValue algDefaultValues val) algDefaultValues}
                                         Nothing -> error $ "equation for name " <> name <> " not found."
-                            return ()
 
                 addUsages name = do
                     x@XMILEAlgBuilder{algUsagesCount} <- get
@@ -258,4 +260,3 @@ getDefaultValuesAndUsages algBuilder = do
                             put x{algUsagesCount = HM.insert name (val + 1) algUsagesCount}
                         Nothing -> do
                             put x{algUsagesCount = HM.insert name 0 algUsagesCount}
-                    return ()

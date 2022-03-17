@@ -63,17 +63,17 @@ case_teacupExampleParsingTest =
                 , xcAuxs =
                     [ XMILEAux
                         { xaName = "Room_Temperature"
-                        , xaEquation = (Val 70)
+                        , xaEquation = Val 70
                         }
                     , XMILEAux
                         { xaName = "Characteristic_Time"
-                        , xaEquation = (Val 10)
+                        , xaEquation = Val 10
                         }
                     ]
                 , xcStocks =
                     [ XMILEStock
                         { xsName = "Teacup_Temperature"
-                        , xsEquation = (Val 180)
+                        , xsEquation = Val 180
                         , xsInflow = Nothing
                         , xsOutflow = Just "Heat_Loss_to_Room"
                         }
