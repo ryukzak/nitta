@@ -32,7 +32,6 @@ import GHC.TypeLits
 import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types

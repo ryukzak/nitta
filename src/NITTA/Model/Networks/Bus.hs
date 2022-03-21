@@ -1,4 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -20,9 +25,18 @@ module NITTA.Model.Networks.Bus (
     Instruction (..),
     Ports (..),
     IOPorts (..),
+    PUPrototype (..),
     bindedFunctions,
     controlSignalLiteral,
     busNetwork,
+
+    -- * Builder
+    modifyNetwork,
+    defineNetwork,
+    addCustom,
+    add,
+    addPrototype,
+    addCustomPrototype,
 ) where
 
 import Control.Monad.State
@@ -40,6 +54,7 @@ import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits.IO.SPI (SPI)
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
@@ -66,7 +81,23 @@ data BusNetwork tag v x t = BusNetwork
     -- ^Controll bus width.
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
+    , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
+    -- ^Set of the PUs that could be added to the network during synthesis process
     }
+
+data PUPrototype tag v x t where
+    PUPrototype ::
+        (UnitTag tag, PUClasses pu v x t) =>
+        { pTag :: tag
+        -- ^Prototype tag. You can specify tag as a template by adding {x}.
+        --This will allow to allocate PU more than once by replacing {x} with index.
+        --When PU is allocated puTag will look like bnName_pTag.
+        , pProto :: pu
+        -- ^PU prototype
+        , pIOPorts :: IOPorts pu
+        -- ^IO ports that will be used by PU
+        } ->
+        PUPrototype tag v x t
 
 busNetwork name iosync =
     BusNetwork
@@ -74,10 +105,11 @@ busNetwork name iosync =
         , bnRemains = []
         , bnBinded = M.empty
         , bnProcess = def
-        , bnPus = M.empty
+        , bnPus = def
         , bnSignalBusWidth = 0
         , ioSync = iosync
         , bnEnv = def
+        , bnPUPrototypes = def
         }
 
 instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
@@ -174,9 +206,9 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
             applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus
 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
-    tryBind f net@BusNetwork{bnRemains, bnPus}
-        | any (allowToProcess f) $ M.elems bnPus =
-            Right net{bnRemains = f : bnRemains}
+    tryBind f net@BusNetwork{bnRemains, bnPus, bnPUPrototypes}
+        | any (allowToProcess f) (M.elems bnPus) = Right net{bnRemains = f : bnRemains}
+        | any (\PUPrototype{pProto} -> allowToProcess f pProto) (M.elems bnPUPrototypes) = Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
         Left [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
         where
@@ -244,6 +276,8 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                         (Horizontal h l) -> establishHorizontalRelations [pu2netKey M.! h] [pu2netKey M.! l]
                     )
                     relations
+
+    parallelismType _ = error " not support parallelismType for BusNetwork"
 
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
@@ -399,6 +433,32 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                     , bnProcess = execScheduleWithProcess bn bnProcess $ do
                         scheduleRefactoring (I.singleton $ nextTick bn) ref
                     }
+
+instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
+    allocationOptions BusNetwork{bnName, bnRemains, bnPUPrototypes} =
+        map toOptions $ M.keys $ M.filter (\PUPrototype{pProto} -> any (`allowToProcess` pProto) bnRemains) bnPUPrototypes
+        where
+            toOptions puTag =
+                Allocation
+                    { bnTag = bnName
+                    , puTag
+                    }
+
+    allocationDecision bn@BusNetwork{bnPUPrototypes, bnPus, bnProcess} alloc@Allocation{bnTag, puTag} =
+        let tag = bnTag <> "_" <> fromTemplate puTag (show (length bnPus))
+            prototype =
+                if M.member puTag bnPUPrototypes
+                    then bnPUPrototypes M.! puTag
+                    else error $ "No suitable prototype for the tag (" <> toString puTag <> ")"
+            addPU t PUPrototype{pProto, pIOPorts} = modifyNetwork bn $ do addCustom t pProto pIOPorts
+            nBn = addPU tag prototype
+         in nBn
+                { bnProcess = execScheduleWithProcess bn bnProcess $ scheduleAllocation alloc
+                , bnPUPrototypes =
+                    if isTemplate puTag
+                        then bnPUPrototypes
+                        else M.delete puTag bnPUPrototypes
+                }
 
 --------------------------------------------------------------------------
 
@@ -752,3 +812,76 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
 isDrowAllowSignal Sync = bool2verilog False
 isDrowAllowSignal ASync = bool2verilog True
 isDrowAllowSignal OnBoard = "is_drop_allow"
+-- * Builder
+
+data BuilderSt tag v x t = BuilderSt
+    { signalBusWidth :: Int
+    , availSignals :: [SignalTag]
+    , pus :: M.Map tag (PU v x t)
+    , prototypes :: M.Map tag (PUPrototype tag v x t)
+    }
+
+modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} builder =
+    let st0 =
+            BuilderSt
+                { signalBusWidth = bnSignalBusWidth
+                , availSignals = map (SignalTag . controlSignalLiteral) [bnSignalBusWidth :: Int ..]
+                , pus = bnPus
+                , prototypes = bnPUPrototypes
+                }
+        BuilderSt{signalBusWidth, pus, prototypes} = execState builder st0
+        netIOPorts ps =
+            BusNetworkIO
+                { extInputs = unionsMap puInputPorts ps
+                , extOutputs = unionsMap puOutputPorts ps
+                , extInOuts = unionsMap puInOutPorts ps
+                }
+     in net
+            { bnPus = pus
+            , bnSignalBusWidth = signalBusWidth
+            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ M.elems pus}
+            , bnPUPrototypes = prototypes
+            }
+
+defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
+
+addCustom tag pu ioPorts = do
+    st@BuilderSt{signalBusWidth, availSignals, pus} <- get
+    let ctrlPorts = takePortTags availSignals pu
+        puEnv =
+            def
+                { ctrlPorts = Just ctrlPorts
+                , ioPorts = Just ioPorts
+                , valueIn = Just ("data_bus", "attr_bus")
+                , valueOut = Just (toText tag <> "_data_out", toText tag <> "_attr_out")
+                }
+        pu' = PU pu def puEnv
+        usedPortsLen = length $ usedPortTags ctrlPorts
+    put
+        st
+            { signalBusWidth = signalBusWidth + usedPortsLen
+            , availSignals = drop usedPortsLen availSignals
+            , pus =
+                if M.member tag pus
+                    then error "every PU must has uniq tag"
+                    else M.insert tag pu' pus
+            }
+
+-- |Add PU with the default initial state. Type specify by IOPorts.
+add tag ioport = addCustom tag def ioport
+
+addCustomPrototype :: forall tag v x t m pu. (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) => tag -> pu -> IOPorts pu -> m ()
+addCustomPrototype tag pu ioports
+    | typeOf pu == typeRep (Proxy :: Proxy (SPI v x t)) = error "Adding SPI prototype are not supported due to https://github.com/ryukzak/nitta/issues/194"
+    | otherwise = do
+        st@BuilderSt{prototypes} <- get
+        put
+            st
+                { prototypes =
+                    if M.member tag prototypes
+                        then error "every prototype must has uniq tag"
+                        else M.insert tag (PUPrototype tag pu ioports) prototypes
+                }
+
+-- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
+addPrototype tag ioports = addCustomPrototype tag def ioports

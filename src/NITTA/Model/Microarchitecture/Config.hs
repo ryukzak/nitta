@@ -10,7 +10,7 @@ import Data.Aeson
 import Data.Default
 import Data.Text qualified as T
 import GHC.Generics
-import NITTA.Model.Microarchitecture.Builder hiding (networks)
+import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits qualified as PU
 import NITTA.Utils
 

@@ -56,6 +56,7 @@ library
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
       NITTA.Model.Problems
+      NITTA.Model.Problems.Allocation
       NITTA.Model.Problems.Bind
       NITTA.Model.Problems.Dataflow
       NITTA.Model.Problems.Endpoint
@@ -90,6 +91,7 @@ library
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
       NITTA.Synthesis.Steps
+      NITTA.Synthesis.Steps.Allocation
       NITTA.Synthesis.Steps.Bind
       NITTA.Synthesis.Steps.BreakLoop
       NITTA.Synthesis.Steps.ConstantFolding

@@ -82,6 +82,7 @@ $(deriveTypeScript defaultOptions ''ShortNodeView)
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
+$(deriveTypeScript defaultOptions ''AllocationMetrics)
 $(deriveTypeScript defaultOptions ''DataflowMetrics)
 $(deriveTypeScript defaultOptions ''BreakLoopMetrics)
 $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
@@ -107,6 +108,7 @@ $(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
 $(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''UnitDesc)
 $(deriveTypeScript defaultOptions ''IOSynchronization)
+$(deriveTypeScript defaultOptions ''ParallelismType)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
@@ -145,6 +147,7 @@ main = do
                       getTypeScriptDeclarations (Proxy :: Proxy DecisionView)
                     , -- metrics
                       getTypeScriptDeclarations (Proxy :: Proxy BindMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy AllocationMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy BreakLoopMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy OptimizeAccumMetrics)
@@ -172,6 +175,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy (NetworkDesc T))
                     , getTypeScriptDeclarations (Proxy :: Proxy (UnitDesc T))
                     , getTypeScriptDeclarations (Proxy :: Proxy IOSynchronization)
+                    , getTypeScriptDeclarations (Proxy :: Proxy ParallelismType)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl

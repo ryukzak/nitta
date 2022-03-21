@@ -244,6 +244,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
         | otherwise = Left $ "unsupport or cells over: " ++ show f
 
     process Fram{process_} = process_
+    parallelismType _ = Full
 
 instance (Var v) => Locks (Fram v x t) v where
     -- FIXME:

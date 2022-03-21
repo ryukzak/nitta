@@ -34,6 +34,7 @@ module NITTA.Utils.ProcessDescription (
     getProcessSlice,
     relatedEndpoints,
     castInstruction,
+    scheduleAllocation,
 ) where
 
 import Control.Monad.State
@@ -141,6 +142,10 @@ scheduleFunctionRevoke f = do
     schedule <- get
     scheduleStep (singleton $ nextTick schedule) $ CADStep $ "revoke " <> show f
 
+scheduleAllocation alloc = do
+    schedule <- get
+    scheduleStep (singleton $ nextTick schedule) $ AllocationStep alloc
+
 -- |Add to the process description information about function evaluation.
 scheduleFunction ti f = scheduleStep ti $ IntermediateStep f
 
@@ -214,4 +219,4 @@ relatedEndpoints process_ vs =
 
 -- |Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)
-castInstruction _pu i = cast i
+castInstruction _pu inst = cast inst

@@ -57,6 +57,7 @@ instance
     where
     tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
     process TargetSystem{mUnit} = process mUnit
+    parallelismType TargetSystem{mUnit} = parallelismType mUnit
 
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
@@ -109,3 +110,8 @@ instance (Var v, ResolveDeadlockProblem u v x) => ResolveDeadlockProblem (Target
             { mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d
             , mUnit = resolveDeadlockDecision mUnit d
             }
+
+instance (AllocationProblem u tag) => AllocationProblem (TargetSystem u tag v x t) tag where
+    allocationOptions TargetSystem{mUnit} = allocationOptions mUnit
+
+    allocationDecision f@TargetSystem{mUnit} d = f{mUnit = allocationDecision mUnit d}

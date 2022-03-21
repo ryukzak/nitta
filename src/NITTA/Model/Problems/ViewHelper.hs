@@ -35,6 +35,10 @@ data DecisionView
         { function :: FView
         , pu :: T.Text
         }
+    | AllocationView
+        { bnTag :: T.Text
+        , puTag :: T.Text
+        }
     | DataflowDecisionView
         { source :: (T.Text, EndpointSt T.Text (Interval Int))
         , targets :: [(T.Text, EndpointSt T.Text (Interval Int))]
@@ -63,6 +67,13 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
         BindDecisionView
             { function = view f
             , pu = toText pu
+            }
+
+instance (UnitTag tag) => Viewable (Allocation tag) DecisionView where
+    view Allocation{bnTag, puTag} =
+        AllocationView
+            { bnTag = toText bnTag
+            , puTag = toText puTag
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where

@@ -18,8 +18,11 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
+import Data.Proxy
 import Data.Set qualified as S
 import Data.String.Interpolate
+import Data.Text qualified as T
+import NITTA.Model.Networks.Bus qualified as Bus
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.Tasty (testGroup)
@@ -291,6 +294,28 @@ tests =
                             , Pull $ O $ S.fromList ["d^0#2"]
                             ]
                         ]
+            , unitTestCase "target system: manual synthesis, allocation works correctly" def $ do
+                setNetwork $
+                    Bus.defineNetwork "net1" ASync $ do
+                        Bus.addPrototype "fram{x}" FramIO
+                        Bus.addPrototype "accum" AccumIO
+                setBusType pInt
+                assignLua
+                    [__i|
+                        function sum(a)
+                            local d = a + 1
+                            sum(d)
+                        end
+                        sum(0)
+                        |]
+                doAllocation "net1" "accum"
+                doAllocation "net1" "fram{x}"
+                assertAllocation 1 =<< mkAllocation "net1" "fram{x}"
+                assertAllocation 1 =<< mkAllocation "net1" "accum"
+                assertAllocationOptions =<< mkAllocationOptions "net1" ["fram{x}"]
+                assertPU "net1_accum" (Proxy :: Proxy (Accum T.Text Int Int))
+                assertPU "net1_fram1" (Proxy :: Proxy (Fram T.Text Int Int))
+                synthesizeAndCoSim
             ]
         , testGroup
             "BusNetwork negative tests"

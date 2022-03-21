@@ -37,7 +37,6 @@ module NITTA.Model.Tests.Microarchitecture (
 import Data.Proxy
 import Data.Text qualified as T
 import NITTA.Intermediate.Types
-import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
