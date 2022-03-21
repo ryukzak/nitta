@@ -108,6 +108,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     tracePU,
     traceProcess,
     traceRefactor,
+    traceProcessWaves,
 ) where
 
 import Control.Monad.Identity
@@ -122,6 +123,7 @@ import Data.String.ToString
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import Data.Typeable
+import NITTA.Intermediate.Analysis (buildProcessWaves)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -554,6 +556,11 @@ traceDataflow = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
     lift $ putListLn "Dataflow:" $ dataflowOptions mUnit
 
+traceProcessWaves :: TSStatement x ()
+traceProcessWaves = do
+    UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
+    lift $ putStrLn $ showArray $ buildProcessWaves [] $ functions mDataFlowGraph
+
 traceBind :: TSStatement x ()
 traceBind = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
@@ -570,3 +577,5 @@ traceRefactor = do
 putListLn name opts = do
     putStrLn name
     mapM_ (\b -> putStrLn $ "- " <> show b) opts
+
+showArray l = S.join "\n\t" (map show l)

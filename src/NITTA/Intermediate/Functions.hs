@@ -42,6 +42,7 @@ module NITTA.Intermediate.Functions (
     -- *Memory
     Constant (..),
     constant,
+    isConst,
     Loop (..),
     loop,
     isLoop,
@@ -349,6 +350,9 @@ instance (Var v, Show x) => Show (Constant v x) where
     show (Constant (X x) os) = "const(" <> show x <> ") = " <> show os
 constant :: (Var v, Val x) => x -> [v] -> F v x
 constant x vs = packF $ Constant (X x) $ O $ fromList vs
+isConst f
+    | Just Constant{} <- castF f = True
+    | otherwise = False
 
 instance (Show x, Eq x, Typeable x) => Function (Constant v x) v where
     outputs (Constant _ o) = variables o
