@@ -72,11 +72,11 @@ prepareTree (Duo op a b) = Duo op (prepareTree a) (prepareTree b)
 
 calculateDefaultValue _ (Val value) = value
 calculateDefaultValue defaultValues (Var name) = fromMaybe 0 $ HM.lookup (T.pack name) defaultValues
-calculateDefaultValue defaultValues (Duo op expl expr) =
+calculateDefaultValue defaultValues e@(Duo op expl expr) =
     let leftValue = calculateDefaultValue defaultValues expl
         rightValue = calculateDefaultValue defaultValues expr
      in case op of
             Mul -> leftValue * rightValue
-            Div -> leftValue / rightValue
+            Div -> if rightValue == 0 then error ("division to zero in expression '" <> show e <> "'") else leftValue / rightValue
             Add -> leftValue + rightValue
             Sub -> leftValue - rightValue

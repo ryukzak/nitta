@@ -209,9 +209,7 @@ getDefaultValuesAndUsages algBuilder = do
             mapM_ (addToMap . (\a -> (xfName a, xfEquation a))) (xcFlows algBuilder)
             mapM_ (addToMap . (\a -> (xsName a, xsEquation a))) (xcStocks algBuilder)
             where
-                addToMap (name, eqn) = do
-                    hm <- get
-                    put $ HM.insert name eqn hm
+                addToMap (name, eqn) = modify (\st -> HM.insert name eqn st)
         processStock XMILEStock{xsEquation, xsName, xsInflow, xsOutflow} = do
             alg@XMILEAlgBuilder{algDefaultValues} <- get
             let val = calculateDefaultValue algDefaultValues xsEquation
