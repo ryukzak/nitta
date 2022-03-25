@@ -135,6 +135,26 @@ tests =
             , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost source endpoint" (maBroken u{lostEndpointSource = True}) alg
             , expectFail $ typedLuaTestCase (maBroken def{lostEndpointSource = True}) pInt "typedLuaTestCase lost source endpoint" lua
             ]
+        , testGroup
+            "broken relations integrity check positive"
+            [ nittaCoSimTestCase "nittaCoSimTestCase positive test" (maBroken u) alg
+            , typedLuaTestCase (maBroken def) pInt "typedLuaTestCase positive test" lua
+            , puCoSimTestCase "puCoSimTestCase positive test" u [("a", 42)] [brokenBuffer "a" ["b"]]
+            , finitePUSynthesisProp "finitePUSynthesisProp relation positive test" u fsGen
+            , puCoSimProp "puCoSimProp relation positive test" u fsGen
+            ]
+        , testGroup
+            "process integrity of PU negative"
+            [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} fsGen
+            , expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimProp "puCoSimProp lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} fsGen
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostFunctionInVerticalRelation" u{lostFunctionInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostEndpointInVerticalRelation" u{lostEndpointInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            , expectFail $ puCoSimTestCase "puCoSimTestCase lostInstructionInVerticalRelation" u{lostInstructionInVerticalRelation = True} [("a", 42)] [brokenBuffer "a" ["b"]]
+            ]
         ]
     where
         u = def :: Broken T.Text Int Int

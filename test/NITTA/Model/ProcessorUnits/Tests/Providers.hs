@@ -40,6 +40,7 @@ import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
+import NITTA.Model.ProcessIntegrity
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
@@ -74,6 +75,7 @@ puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
         mapM_ (assignNaive cntxCycle) alg
         decideNaiveSynthesis
+        assertSynthesisDone
         assertPUCoSimulation
 
 -- *Properties
@@ -82,9 +84,12 @@ puCoSimTestCase name u cntxCycle alg =
 finitePUSynthesisProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        return $
-            isProcessComplete pu fs
-                && null (endpointOptions pu)
+        case checkProcessIntegrity pu of
+            Left msg -> error msg
+            Right _ ->
+                return $
+                    isProcessComplete pu fs
+                        && null (endpointOptions pu)
 
 {- |A computational process of functional (Haskell) and logical (Verilog)
 simulation should be identical for any correct algorithm.
@@ -99,6 +104,9 @@ puCoSimProp name pu0 fsGen =
                     uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
                         error $ "process is not complete: " <> incompleteProcessMsg pu fs
+                    case checkProcessIntegrity pu of
+                        Left e -> error e
+                        Right _ -> return ()
                     pwd <- getCurrentDirectory
                     let pTargetProjectPath = "gen" </> toModuleName uniqueName
                         pInProjectNittaPath = "."
@@ -116,5 +124,5 @@ puCoSimProp name pu0 fsGen =
                                 , pTemplates = ["templates/Icarus"]
                                 }
                     writeProject prj
-                    res <- runTestbench prj
-                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pTargetProjectPath
+                    report <- runTestbench prj
+                    unless (tbStatus report) $ error $ "Fail CoSim in: " <> pTargetProjectPath

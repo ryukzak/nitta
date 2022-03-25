@@ -50,14 +50,12 @@ function renderProcessViewDot(process: ProcessData): string {
   });
 
   process.relations.forEach((relation: RelationData) => {
-    // FIXME: replace by commented code after source code update
-    lines.push(`  ${relation[0]} -> ${relation[1]};`);
-    /* if (relation.tag === "Vertical") {
-     *   lines.push(`  ${relation.vUp} -> ${relation.vDown};`);
-     * }
-     * if (relation.tag === "Horizontal") {
-     *   lines.push(`  ${relation.hPrev} -> ${relation.hNext}[style=dashed];`);
-     * } */
+    if (relation.tag === "Vertical") {
+      lines.push(`  ${relation.vUp} -> ${relation.vDown};`);
+    }
+    if (relation.tag === "Horizontal") {
+      lines.push(`  ${relation.hPrev} -> ${relation.hNext}[style=dashed];`);
+    }
   });
   lines.push("}");
   return lines.join("\n");

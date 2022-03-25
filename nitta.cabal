@@ -59,6 +59,7 @@ library
       NITTA.Model.Problems.Refactor.OptimizeAccum
       NITTA.Model.Problems.Refactor.ResolveDeadlock
       NITTA.Model.Problems.ViewHelper
+      NITTA.Model.ProcessIntegrity
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
