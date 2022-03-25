@@ -208,118 +208,119 @@ span.spaces    { background: white }
 <span class="lineno">  189 </span><span class="spaces">                </span><span class="istickedoff">let process_' = execSchedule pu $ do</span>
 <span class="lineno">  190 </span><span class="spaces">                        </span><span class="istickedoff">endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out</span>
 <span class="lineno">  191 </span><span class="spaces">                        </span><span class="istickedoff">when (null sources') $ do</span>
-<span class="lineno">  192 </span><span class="spaces">                            </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) f</span>
-<span class="lineno">  193 </span><span class="spaces">                            </span><span class="istickedoff">let low = endpoints ++ map <span class="nottickedoff">pID</span> (relatedEndpoints process_ $ variables f)</span>
-<span class="lineno">  194 </span><span class="spaces">                            </span><span class="istickedoff">establishVerticalRelations high low</span>
-<span class="lineno">  195 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>
-<span class="lineno">  196 </span><span class="spaces">                        </span><span class="istickedoff">{ process_ = process_'</span>
-<span class="lineno">  197 </span><span class="spaces">                        </span><span class="istickedoff">, sources = sources'</span>
-<span class="lineno">  198 </span><span class="spaces">                        </span><span class="istickedoff">, currentWork = if <span class="tickonlytrue">null sources'</span> then Nothing else <span class="nottickedoff">Just f</span></span>
-<span class="lineno">  199 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
-<span class="lineno">  200 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Shift{target = Nothing, sources = [], remain} d</span>
-<span class="lineno">  201 </span><span class="spaces">        </span><span class="istickedoff">| let v = oneOf $ variables d</span>
-<span class="lineno">  202 </span><span class="spaces">          </span><span class="istickedoff">, Just f &lt;- find (\f -&gt; v `member` variables f) remain =</span>
-<span class="lineno">  203 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision (execution pu f) d</span>
-<span class="lineno">  204 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision _pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for Shift|]</span></span></span>
-<span class="lineno">  205 </span>
-<span class="lineno">  206 </span>data Mode = Logic | Arithmetic deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  207 </span>
-<span class="lineno">  208 </span>instance Controllable (Shift v x t) where
-<span class="lineno">  209 </span>    data Instruction (Shift v x t)
-<span class="lineno">  210 </span>        = Init
-<span class="lineno">  211 </span>        | Work
-<span class="lineno">  212 </span>            { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">shiftRight</span></span></span> :: Bool
-<span class="lineno">  213 </span>            , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">stepByte</span></span></span> :: Bool
-<span class="lineno">  214 </span>            , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">shiftType</span></span></span> :: Mode
-<span class="lineno">  215 </span>            }
-<span class="lineno">  216 </span>        | Out
-<span class="lineno">  217 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
-<span class="lineno">  218 </span>
-<span class="lineno">  219 </span>    data Microcode (Shift v x t) = Microcode
-<span class="lineno">  220 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">workSignal</span></span></span> :: Bool
-<span class="lineno">  221 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">directionSignal</span></span></span> :: Bool
-<span class="lineno">  222 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">modeSignal</span></span></span> :: Bool
-<span class="lineno">  223 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">stepSignal</span></span></span> :: Bool
-<span class="lineno">  224 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">initSignal</span></span></span> :: Bool
-<span class="lineno">  225 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
-<span class="lineno">  226 </span>        }
-<span class="lineno">  227 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  228 </span>
-<span class="lineno">  229 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues ShiftPorts{..} Microcode{..} =</span>
-<span class="lineno">  230 </span><span class="spaces">        </span><span class="istickedoff">[ (work, Bool workSignal)</span>
-<span class="lineno">  231 </span><span class="spaces">        </span><span class="istickedoff">, (direction, Bool directionSignal)</span>
-<span class="lineno">  232 </span><span class="spaces">        </span><span class="istickedoff">, (mode, Bool modeSignal)</span>
-<span class="lineno">  233 </span><span class="spaces">        </span><span class="istickedoff">, (step, Bool stepSignal)</span>
-<span class="lineno">  234 </span><span class="spaces">        </span><span class="istickedoff">, (init, Bool initSignal)</span>
-<span class="lineno">  235 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
-<span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
-<span class="lineno">  237 </span>
-<span class="lineno">  238 </span>    <span class="decl"><span class="istickedoff">usedPortTags ShiftPorts{work, direction, mode, step, init, oe} =</span>
-<span class="lineno">  239 </span><span class="spaces">        </span><span class="istickedoff">[<span class="nottickedoff">work</span>, <span class="nottickedoff">direction</span>, <span class="nottickedoff">mode</span>, <span class="nottickedoff">step</span>, <span class="nottickedoff">init</span>, <span class="nottickedoff">oe</span>]</span></span>
-<span class="lineno">  240 </span>
-<span class="lineno">  241 </span>    <span class="decl"><span class="istickedoff">takePortTags (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe</span>
-<span class="lineno">  242 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
-<span class="lineno">  243 </span>
-<span class="lineno">  244 </span>instance Default (Microcode (Shift v x t)) where
-<span class="lineno">  245 </span>    <span class="decl"><span class="istickedoff">def =</span>
-<span class="lineno">  246 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
-<span class="lineno">  247 </span><span class="spaces">            </span><span class="istickedoff">{ workSignal = False</span>
-<span class="lineno">  248 </span><span class="spaces">            </span><span class="istickedoff">, directionSignal = False</span>
-<span class="lineno">  249 </span><span class="spaces">            </span><span class="istickedoff">, modeSignal = False</span>
-<span class="lineno">  250 </span><span class="spaces">            </span><span class="istickedoff">, stepSignal = True</span>
-<span class="lineno">  251 </span><span class="spaces">            </span><span class="istickedoff">, initSignal = False</span>
-<span class="lineno">  252 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
-<span class="lineno">  253 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  254 </span>
-<span class="lineno">  255 </span>instance UnambiguouslyDecode (Shift v x t) where
-<span class="lineno">  256 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Init = def{initSignal = True}</span>
-<span class="lineno">  257 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span>
-<span class="lineno">  258 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Work toRight step mode) =</span>
-<span class="lineno">  259 </span><span class="spaces">        </span><span class="istickedoff">def</span>
-<span class="lineno">  260 </span><span class="spaces">            </span><span class="istickedoff">{ workSignal = True</span>
-<span class="lineno">  261 </span><span class="spaces">            </span><span class="istickedoff">, directionSignal = not toRight</span>
-<span class="lineno">  262 </span><span class="spaces">            </span><span class="istickedoff">, modeSignal = mode == Arithmetic</span>
-<span class="lineno">  263 </span><span class="spaces">            </span><span class="istickedoff">, stepSignal = step</span>
-<span class="lineno">  264 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  265 </span>
-<span class="lineno">  266 </span>instance Connected (Shift v x t) where
-<span class="lineno">  267 </span>    data Ports (Shift v x t) = ShiftPorts {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">work</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">direction</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">mode</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">step</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">init</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag}
-<span class="lineno">  268 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  269 </span>
-<span class="lineno">  270 </span>instance IOConnected (Shift v x t) where
-<span class="lineno">  271 </span>    data IOPorts (Shift v x t) = ShiftIO
-<span class="lineno">  272 </span>
-<span class="lineno">  273 </span>instance (Val x) =&gt; TargetSystemComponent (Shift v x t) where
-<span class="lineno">  274 </span>    <span class="decl"><span class="nottickedoff">moduleName _ _ = &quot;pu_shift&quot;</span></span>
-<span class="lineno">  275 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_shift.v&quot;</span></span>
-<span class="lineno">  276 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
-<span class="lineno">  277 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
-<span class="lineno">  278 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
-<span class="lineno">  279 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
-<span class="lineno">  280 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
-<span class="lineno">  281 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
-<span class="lineno">  282 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just ShiftPorts{..}</span>
-<span class="lineno">  283 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
-<span class="lineno">  284 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
-<span class="lineno">  285 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
-<span class="lineno">  286 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
-<span class="lineno">  287 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_shift \#</span></span></span>
-<span class="lineno">  288 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
-<span class="lineno">  289 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
-<span class="lineno">  290 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
-<span class="lineno">  291 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
-<span class="lineno">  292 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_work( #{ work } ), .signal_direction( #{ direction } )</span></span></span>
-<span class="lineno">  293 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_mode( #{ mode } ), .signal_step( #{ step } )</span></span></span>
-<span class="lineno">  294 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_init( #{ init } ), .signal_oe( #{ oe } )</span></span></span>
-<span class="lineno">  295 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
-<span class="lineno">  296 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
-<span class="lineno">  297 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
-<span class="lineno">  298 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
-<span class="lineno">  299 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
-<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
-<span class="lineno">  301 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  302 </span>
-<span class="lineno">  303 </span>instance IOTestBench (Shift v x t) v x
+<span class="lineno">  192 </span><span class="spaces">                            </span><span class="istickedoff">-- FIXME: here ([]) you can see the source of error.</span>
+<span class="lineno">  193 </span><span class="spaces">                            </span><span class="istickedoff">-- Function don't connected to bind step. It should be fixed.</span>
+<span class="lineno">  194 </span><span class="spaces">                            </span><span class="istickedoff">scheduleFunctionFinish_ [] f $ a ... sup epAt</span>
+<span class="lineno">  195 </span><span class="spaces">                        </span><span class="istickedoff">return <span class="nottickedoff">endpoints</span></span>
+<span class="lineno">  196 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>
+<span class="lineno">  197 </span><span class="spaces">                        </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  198 </span><span class="spaces">                        </span><span class="istickedoff">, sources = sources'</span>
+<span class="lineno">  199 </span><span class="spaces">                        </span><span class="istickedoff">, currentWork = if <span class="tickonlytrue">null sources'</span> then Nothing else <span class="nottickedoff">Just f</span></span>
+<span class="lineno">  200 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  201 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Shift{target = Nothing, sources = [], remain} d</span>
+<span class="lineno">  202 </span><span class="spaces">        </span><span class="istickedoff">| let v = oneOf $ variables d</span>
+<span class="lineno">  203 </span><span class="spaces">          </span><span class="istickedoff">, Just f &lt;- find (\f -&gt; v `member` variables f) remain =</span>
+<span class="lineno">  204 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision (execution pu f) d</span>
+<span class="lineno">  205 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision _pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for Shift|]</span></span></span>
+<span class="lineno">  206 </span>
+<span class="lineno">  207 </span>data Mode = Logic | Arithmetic deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  208 </span>
+<span class="lineno">  209 </span>instance Controllable (Shift v x t) where
+<span class="lineno">  210 </span>    data Instruction (Shift v x t)
+<span class="lineno">  211 </span>        = Init
+<span class="lineno">  212 </span>        | Work
+<span class="lineno">  213 </span>            { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">shiftRight</span></span></span> :: Bool
+<span class="lineno">  214 </span>            , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">stepByte</span></span></span> :: Bool
+<span class="lineno">  215 </span>            , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">shiftType</span></span></span> :: Mode
+<span class="lineno">  216 </span>            }
+<span class="lineno">  217 </span>        | Out
+<span class="lineno">  218 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  219 </span>
+<span class="lineno">  220 </span>    data Microcode (Shift v x t) = Microcode
+<span class="lineno">  221 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">workSignal</span></span></span> :: Bool
+<span class="lineno">  222 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">directionSignal</span></span></span> :: Bool
+<span class="lineno">  223 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">modeSignal</span></span></span> :: Bool
+<span class="lineno">  224 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">stepSignal</span></span></span> :: Bool
+<span class="lineno">  225 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">initSignal</span></span></span> :: Bool
+<span class="lineno">  226 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  227 </span>        }
+<span class="lineno">  228 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  229 </span>
+<span class="lineno">  230 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues ShiftPorts{..} Microcode{..} =</span>
+<span class="lineno">  231 </span><span class="spaces">        </span><span class="istickedoff">[ (work, Bool workSignal)</span>
+<span class="lineno">  232 </span><span class="spaces">        </span><span class="istickedoff">, (direction, Bool directionSignal)</span>
+<span class="lineno">  233 </span><span class="spaces">        </span><span class="istickedoff">, (mode, Bool modeSignal)</span>
+<span class="lineno">  234 </span><span class="spaces">        </span><span class="istickedoff">, (step, Bool stepSignal)</span>
+<span class="lineno">  235 </span><span class="spaces">        </span><span class="istickedoff">, (init, Bool initSignal)</span>
+<span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  237 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  238 </span>
+<span class="lineno">  239 </span>    <span class="decl"><span class="istickedoff">usedPortTags ShiftPorts{work, direction, mode, step, init, oe} =</span>
+<span class="lineno">  240 </span><span class="spaces">        </span><span class="istickedoff">[<span class="nottickedoff">work</span>, <span class="nottickedoff">direction</span>, <span class="nottickedoff">mode</span>, <span class="nottickedoff">step</span>, <span class="nottickedoff">init</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  241 </span>
+<span class="lineno">  242 </span>    <span class="decl"><span class="istickedoff">takePortTags (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe</span>
+<span class="lineno">  243 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  244 </span>
+<span class="lineno">  245 </span>instance Default (Microcode (Shift v x t)) where
+<span class="lineno">  246 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  247 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  248 </span><span class="spaces">            </span><span class="istickedoff">{ workSignal = False</span>
+<span class="lineno">  249 </span><span class="spaces">            </span><span class="istickedoff">, directionSignal = False</span>
+<span class="lineno">  250 </span><span class="spaces">            </span><span class="istickedoff">, modeSignal = False</span>
+<span class="lineno">  251 </span><span class="spaces">            </span><span class="istickedoff">, stepSignal = True</span>
+<span class="lineno">  252 </span><span class="spaces">            </span><span class="istickedoff">, initSignal = False</span>
+<span class="lineno">  253 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
+<span class="lineno">  254 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  255 </span>
+<span class="lineno">  256 </span>instance UnambiguouslyDecode (Shift v x t) where
+<span class="lineno">  257 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Init = def{initSignal = True}</span>
+<span class="lineno">  258 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span>
+<span class="lineno">  259 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Work toRight step mode) =</span>
+<span class="lineno">  260 </span><span class="spaces">        </span><span class="istickedoff">def</span>
+<span class="lineno">  261 </span><span class="spaces">            </span><span class="istickedoff">{ workSignal = True</span>
+<span class="lineno">  262 </span><span class="spaces">            </span><span class="istickedoff">, directionSignal = not toRight</span>
+<span class="lineno">  263 </span><span class="spaces">            </span><span class="istickedoff">, modeSignal = mode == Arithmetic</span>
+<span class="lineno">  264 </span><span class="spaces">            </span><span class="istickedoff">, stepSignal = step</span>
+<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  266 </span>
+<span class="lineno">  267 </span>instance Connected (Shift v x t) where
+<span class="lineno">  268 </span>    data Ports (Shift v x t) = ShiftPorts {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">work</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">direction</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">mode</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">step</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">init</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag}
+<span class="lineno">  269 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  270 </span>
+<span class="lineno">  271 </span>instance IOConnected (Shift v x t) where
+<span class="lineno">  272 </span>    data IOPorts (Shift v x t) = ShiftIO
+<span class="lineno">  273 </span>
+<span class="lineno">  274 </span>instance (Val x) =&gt; TargetSystemComponent (Shift v x t) where
+<span class="lineno">  275 </span>    <span class="decl"><span class="nottickedoff">moduleName _ _ = &quot;pu_shift&quot;</span></span>
+<span class="lineno">  276 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_shift.v&quot;</span></span>
+<span class="lineno">  277 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  278 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  279 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  280 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
+<span class="lineno">  281 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  282 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  283 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just ShiftPorts{..}</span>
+<span class="lineno">  284 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  285 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  286 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  287 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  288 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_shift \#</span></span></span>
+<span class="lineno">  289 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  290 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  291 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
+<span class="lineno">  292 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
+<span class="lineno">  293 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_work( #{ work } ), .signal_direction( #{ direction } )</span></span></span>
+<span class="lineno">  294 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_mode( #{ mode } ), .signal_step( #{ step } )</span></span></span>
+<span class="lineno">  295 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_init( #{ init } ), .signal_oe( #{ oe } )</span></span></span>
+<span class="lineno">  296 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
+<span class="lineno">  297 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  298 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
+<span class="lineno">  299 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  300 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  301 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  302 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  303 </span>
+<span class="lineno">  304 </span>instance IOTestBench (Shift v x t) v x
 
 </pre>
 </body>

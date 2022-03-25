@@ -249,7 +249,7 @@ span.spaces    { background: white }
 <span class="lineno">  230 </span>            0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
 <span class="lineno">  231 </span>            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
 <span class="lineno">  232 </span>        relations:
-<span class="lineno">  233 </span>            0) Vertical 0 1
+<span class="lineno">  233 </span>            0) Vertical {vUp = 0, vDown = 1}
 <span class="lineno">  234 </span>        nextTick: 3
 <span class="lineno">  235 </span>        nextUid: 2
 <span class="lineno">  236 </span>&gt;&gt;&gt; mapM_ print $ endpointOptions st2
@@ -269,8 +269,8 @@ span.spaces    { background: white }
 <span class="lineno">  250 </span>            2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
 <span class="lineno">  251 </span>            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
 <span class="lineno">  252 </span>        relations:
-<span class="lineno">  253 </span>            0) Vertical 2 3
-<span class="lineno">  254 </span>            1) Vertical 0 1
+<span class="lineno">  253 </span>            0) Vertical {vUp = 2, vDown = 3}
+<span class="lineno">  254 </span>            1) Vertical {vUp = 0, vDown = 1}
 <span class="lineno">  255 </span>        nextTick: 4
 <span class="lineno">  256 </span>        nextUid: 4
 <span class="lineno">  257 </span>&gt;&gt;&gt; mapM_ print $ endpointOptions st3
@@ -298,9 +298,9 @@ span.spaces    { background: white }
 <span class="lineno">  279 </span>            4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
 <span class="lineno">  280 </span>            5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
 <span class="lineno">  281 </span>        relations:
-<span class="lineno">  282 </span>            0) Vertical 4 5
-<span class="lineno">  283 </span>            1) Vertical 2 3
-<span class="lineno">  284 </span>            2) Vertical 0 1
+<span class="lineno">  282 </span>            0) Vertical {vUp = 4, vDown = 5}
+<span class="lineno">  283 </span>            1) Vertical {vUp = 2, vDown = 3}
+<span class="lineno">  284 </span>            2) Vertical {vUp = 0, vDown = 1}
 <span class="lineno">  285 </span>        nextTick: 7
 <span class="lineno">  286 </span>        nextUid: 6
 <span class="lineno">  287 </span>&gt;&gt;&gt; mapM_ print $ endpointOptions st4
@@ -325,14 +325,14 @@ span.spaces    { background: white }
 <span class="lineno">  306 </span>            7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
 <span class="lineno">  307 </span>            8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
 <span class="lineno">  308 </span>        relations:
-<span class="lineno">  309 </span>            0) Vertical 8 6
-<span class="lineno">  310 </span>            1) Vertical 8 4
-<span class="lineno">  311 </span>            2) Vertical 8 2
-<span class="lineno">  312 </span>            3) Vertical 8 0
-<span class="lineno">  313 </span>            4) Vertical 6 7
-<span class="lineno">  314 </span>            5) Vertical 4 5
-<span class="lineno">  315 </span>            6) Vertical 2 3
-<span class="lineno">  316 </span>            7) Vertical 0 1
+<span class="lineno">  309 </span>            0) Vertical {vUp = 8, vDown = 6}
+<span class="lineno">  310 </span>            1) Vertical {vUp = 8, vDown = 4}
+<span class="lineno">  311 </span>            2) Vertical {vUp = 8, vDown = 2}
+<span class="lineno">  312 </span>            3) Vertical {vUp = 8, vDown = 0}
+<span class="lineno">  313 </span>            4) Vertical {vUp = 6, vDown = 7}
+<span class="lineno">  314 </span>            5) Vertical {vUp = 4, vDown = 5}
+<span class="lineno">  315 </span>            6) Vertical {vUp = 2, vDown = 3}
+<span class="lineno">  316 </span>            7) Vertical {vUp = 0, vDown = 1}
 <span class="lineno">  317 </span>        nextTick: 8
 <span class="lineno">  318 </span>        nextUid: 9
 <span class="lineno">  319 </span>&gt;&gt;&gt; endpointOptions st5
@@ -584,209 +584,210 @@ span.spaces    { background: white }
 <span class="lineno">  565 </span><span class="spaces">            </span><span class="istickedoff">let process_' = execSchedule pu $ do</span>
 <span class="lineno">  566 </span><span class="spaces">                    </span><span class="istickedoff">endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out</span>
 <span class="lineno">  567 </span><span class="spaces">                    </span><span class="istickedoff">when (null sources') $ do</span>
-<span class="lineno">  568 </span><span class="spaces">                        </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) f</span>
-<span class="lineno">  569 </span><span class="spaces">                        </span><span class="istickedoff">let low = endpoints ++ map <span class="nottickedoff">pID</span> (relatedEndpoints process_ $ variables f)</span>
-<span class="lineno">  570 </span><span class="spaces">                        </span><span class="istickedoff">-- Set up the vertical relantions between functional unit</span>
-<span class="lineno">  571 </span><span class="spaces">                        </span><span class="istickedoff">-- and related to that data sending.</span>
-<span class="lineno">  572 </span><span class="spaces">                        </span><span class="istickedoff">establishVerticalRelations high low</span>
-<span class="lineno">  573 </span><span class="spaces">                    </span><span class="istickedoff">-- this is needed to correct work of automatically generated tests</span>
-<span class="lineno">  574 </span><span class="spaces">                    </span><span class="istickedoff">-- that takes time about time from Process</span>
-<span class="lineno">  575 </span><span class="spaces">                    </span><span class="istickedoff">return <span class="nottickedoff">endpoints</span> =</span>
-<span class="lineno">  576 </span><span class="spaces">            </span><span class="istickedoff">pu</span>
-<span class="lineno">  577 </span><span class="spaces">                </span><span class="istickedoff">{ process_ = process_'</span>
-<span class="lineno">  578 </span><span class="spaces">                </span><span class="istickedoff">, -- In case if not all variables what asked - remaining are saved.</span>
-<span class="lineno">  579 </span><span class="spaces">                  </span><span class="istickedoff">sources = sources'</span>
-<span class="lineno">  580 </span><span class="spaces">                </span><span class="istickedoff">, -- if all of works is done, then time when result is ready,</span>
-<span class="lineno">  581 </span><span class="spaces">                  </span><span class="istickedoff">-- current work and data transfering, what is done is the current function is reset.</span>
-<span class="lineno">  582 </span><span class="spaces">                  </span><span class="istickedoff">currentWork = if null sources' then Nothing else Just f</span>
-<span class="lineno">  583 </span><span class="spaces">                </span><span class="istickedoff">}</span>
-<span class="lineno">  584 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Multiplier{targets = [], sources = [], remain} d</span>
-<span class="lineno">  585 </span><span class="spaces">        </span><span class="istickedoff">| let v = oneOf $ variables d</span>
-<span class="lineno">  586 </span><span class="spaces">          </span><span class="istickedoff">, Just f &lt;- find (\f -&gt; v `S.member` variables f) remain =</span>
-<span class="lineno">  587 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision (execution pu f) d</span>
-<span class="lineno">  588 </span><span class="spaces">    </span><span class="istickedoff">-- If something went wrong.</span>
-<span class="lineno">  589 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
-<span class="lineno">  590 </span>
-<span class="lineno">  591 </span>-- TODO: optimize ArgumentSelector
-<span class="lineno">  592 </span>
-<span class="lineno">  593 </span>{- |Multiplications argument id
-<span class="lineno">  594 </span>
-<span class="lineno">  595 </span>As we said before, because of some hardware organisation features, we need to
-<span class="lineno">  596 </span>take in mind operators sequence in planned process on instruction level. This
-<span class="lineno">  597 </span>type os defined to do it. But instide of this we need to notice, that from
-<span class="lineno">  598 </span>algorhytm and model way of view argument order doesn't mean, that is
-<span class="lineno">  599 </span>represented in class computation process' planning responding that realised
-<span class="lineno">  600 </span>above.
-<span class="lineno">  601 </span>-}
-<span class="lineno">  602 </span>data ArgumentSelector = A | B
-<span class="lineno">  603 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>)
-<span class="lineno">  604 </span>
-<span class="lineno">  605 </span>{- |For each PU, we can specify the instruction set and microcode, which allows
-<span class="lineno">  606 </span>us to control the PU at the hardware level.
-<span class="lineno">  607 </span>
-<span class="lineno">  608 </span>- instructions set describes a computation process from a programmer point of
-<span class="lineno">  609 </span>  view;
-<span class="lineno">  610 </span>
-<span class="lineno">  611 </span>- microcode describes the structure of processors that controls signals.
-<span class="lineno">  612 </span>-}
-<span class="lineno">  613 </span>instance Controllable (Multiplier v x t) where
-<span class="lineno">  614 </span>    data Instruction (Multiplier v x t)
-<span class="lineno">  615 </span>        = Load ArgumentSelector
-<span class="lineno">  616 </span>        | Out
-<span class="lineno">  617 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
-<span class="lineno">  618 </span>
-<span class="lineno">  619 </span>    data Microcode (Multiplier v x t) = Microcode
-<span class="lineno">  620 </span>        { -- | Write to mUnit signal.
-<span class="lineno">  621 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
-<span class="lineno">  622 </span>        , -- |Uploading to mUnit argument selector.
-<span class="lineno">  623 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">selSignal</span></span></span> :: Bool
-<span class="lineno">  624 </span>        , -- |Downloading from mUnit signal.
-<span class="lineno">  625 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
-<span class="lineno">  626 </span>        }
-<span class="lineno">  627 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  628 </span>
-<span class="lineno">  629 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues MultiplierPorts{..} Microcode{..} =</span>
-<span class="lineno">  630 </span><span class="spaces">        </span><span class="istickedoff">[ (wr, Bool wrSignal)</span>
-<span class="lineno">  631 </span><span class="spaces">        </span><span class="istickedoff">, (wrSel, Bool selSignal)</span>
-<span class="lineno">  632 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
-<span class="lineno">  633 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
-<span class="lineno">  634 </span>
-<span class="lineno">  635 </span>    <span class="decl"><span class="istickedoff">usedPortTags MultiplierPorts{wr, wrSel, oe} = [<span class="nottickedoff">wr</span>, <span class="nottickedoff">wrSel</span>, <span class="nottickedoff">oe</span>]</span></span>
-<span class="lineno">  636 </span>
-<span class="lineno">  637 </span>    <span class="decl"><span class="istickedoff">takePortTags (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe</span>
-<span class="lineno">  638 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
-<span class="lineno">  639 </span>
-<span class="lineno">  640 </span>{- |Default microcode state should be equal to @nop@ function, which should be a
-<span class="lineno">  641 </span>safe way to do nothing (not take a bus, not change internal PU state, etc.).
-<span class="lineno">  642 </span>-}
-<span class="lineno">  643 </span>instance Default (Microcode (Multiplier v x t)) where
-<span class="lineno">  644 </span>    <span class="decl"><span class="istickedoff">def =</span>
-<span class="lineno">  645 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
-<span class="lineno">  646 </span><span class="spaces">            </span><span class="istickedoff">{ wrSignal = False</span>
-<span class="lineno">  647 </span><span class="spaces">            </span><span class="istickedoff">, selSignal = False</span>
-<span class="lineno">  648 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
-<span class="lineno">  649 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  650 </span>
-<span class="lineno">  651 </span>{- |Instruction and microcode should have exact matching, which allows us to
-<span class="lineno">  652 </span>translate PU instructions to microcode value.
-<span class="lineno">  653 </span>-}
-<span class="lineno">  654 </span>instance UnambiguouslyDecode (Multiplier v x t) where
-<span class="lineno">  655 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (Load A) = def{wrSignal = True, selSignal = False}</span>
-<span class="lineno">  656 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Load B) = def{wrSignal = True, selSignal = True}</span>
-<span class="lineno">  657 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span></span>
-<span class="lineno">  658 </span>
-<span class="lineno">  659 </span>{- |Processor unit control signal ports. In
-<span class="lineno">  660 </span>'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
-<span class="lineno">  661 </span>@ControlUnit@.
-<span class="lineno">  662 </span>-}
-<span class="lineno">  663 </span>instance Connected (Multiplier v x t) where
-<span class="lineno">  664 </span>    data Ports (Multiplier v x t) = MultiplierPorts
-<span class="lineno">  665 </span>        { -- |get data from the bus (data_in)
-<span class="lineno">  666 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span> :: SignalTag
-<span class="lineno">  667 </span>        , -- |determine argument on the bus (A | B)
-<span class="lineno">  668 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSel</span></span></span> :: SignalTag
-<span class="lineno">  669 </span>        , -- |send result to the bus
-<span class="lineno">  670 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag
-<span class="lineno">  671 </span>        }
-<span class="lineno">  672 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  673 </span>
-<span class="lineno">  674 </span>instance IOConnected (Multiplier v x t) where
-<span class="lineno">  675 </span>    data IOPorts (Multiplier v x t) = MultiplierIO
-<span class="lineno">  676 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  677 </span>
-<span class="lineno">  678 </span>{- |Usage of PU requires some artifacts of a synthesis process:
-<span class="lineno">  679 </span>
-<span class="lineno">  680 </span>- Hardware implementation, which depends from 'isMocked' value:
-<span class="lineno">  681 </span>
-<span class="lineno">  682 </span>- Software (not needed for the multiplier because it does not have any
-<span class="lineno">  683 </span>  configuration and is controlled from the network level).
-<span class="lineno">  684 </span>
-<span class="lineno">  685 </span>- Hardware instance in the upper structure element.
-<span class="lineno">  686 </span>-}
-<span class="lineno">  687 </span>instance (VarValTime v x t) =&gt; TargetSystemComponent (Multiplier v x t) where
-<span class="lineno">  688 </span>    <span class="decl"><span class="istickedoff">moduleName _title _pu = &quot;pu_multiplier&quot;</span></span>
-<span class="lineno">  689 </span>
-<span class="lineno">  690 </span>    <span class="decl"><span class="istickedoff">hardware _tag Multiplier{isMocked} =</span>
-<span class="lineno">  691 </span><span class="spaces">        </span><span class="istickedoff">Aggregate</span>
-<span class="lineno">  692 </span><span class="spaces">            </span><span class="istickedoff">Nothing</span>
-<span class="lineno">  693 </span><span class="spaces">            </span><span class="istickedoff">[ if <span class="tickonlytrue">isMocked</span></span>
-<span class="lineno">  694 </span><span class="spaces">                </span><span class="istickedoff">then FromLibrary &quot;multiplier/mult_mock.v&quot;</span>
-<span class="lineno">  695 </span><span class="spaces">                </span><span class="istickedoff">else <span class="nottickedoff">FromLibrary &quot;multiplier/mult_inner.v&quot;</span></span>
-<span class="lineno">  696 </span><span class="spaces">            </span><span class="istickedoff">, FromLibrary &quot;multiplier/pu_multiplier.v&quot;</span>
-<span class="lineno">  697 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
-<span class="lineno">  698 </span>
-<span class="lineno">  699 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
-<span class="lineno">  700 </span>
-<span class="lineno">  701 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
-<span class="lineno">  702 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
-<span class="lineno">  703 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
-<span class="lineno">  704 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
-<span class="lineno">  705 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
-<span class="lineno">  706 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
-<span class="lineno">  707 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just MultiplierPorts{..}</span>
-<span class="lineno">  708 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
-<span class="lineno">  709 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
-<span class="lineno">  710 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
-<span class="lineno">  711 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
-<span class="lineno">  712 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_multiplier \#</span></span></span>
-<span class="lineno">  713 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
-<span class="lineno">  714 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
-<span class="lineno">  715 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )</span></span></span>
-<span class="lineno">  716 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .INVALID( 0 )</span></span></span>
-<span class="lineno">  717 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
-<span class="lineno">  718 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
-<span class="lineno">  719 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .rst( #{ sigRst } )</span></span></span>
-<span class="lineno">  720 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span>
-<span class="lineno">  721 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_sel( #{ wrSel } )</span></span></span>
-<span class="lineno">  722 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
-<span class="lineno">  723 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
-<span class="lineno">  724 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
-<span class="lineno">  725 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
-<span class="lineno">  726 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
-<span class="lineno">  727 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
-<span class="lineno">  728 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
-<span class="lineno">  729 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  730 </span>
-<span class="lineno">  731 </span>{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
-<span class="lineno">  732 </span>means that multiplier, as expected, doesn't have any IO.
-<span class="lineno">  733 </span>-}
-<span class="lineno">  734 </span>instance IOTestBench (Multiplier v x t) v x
-<span class="lineno">  735 </span>
-<span class="lineno">  736 </span>{- |The main purpose of this class is to generate autotests for PU. It allows to
-<span class="lineno">  737 </span>generate testbench for the PU according to its model and scheduled computational
-<span class="lineno">  738 </span>process. You can see tests in @test/Spec.hs@. Testbench contains:
-<span class="lineno">  739 </span>
-<span class="lineno">  740 </span>- The sequence of control signals that implement the already scheduled process.
-<span class="lineno">  741 </span>
-<span class="lineno">  742 </span>- The sequence of bus state checks in which we compare actual values with the
-<span class="lineno">  743 </span>  results of the functional simulation.
-<span class="lineno">  744 </span>-}
-<span class="lineno">  745 </span>instance (VarValTime v x t) =&gt; Testable (Multiplier v x t) v x where
-<span class="lineno">  746 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
-<span class="lineno">  747 </span><span class="spaces">        </span><span class="istickedoff">Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
-<span class="lineno">  748 </span><span class="spaces">            </span><span class="istickedoff">snippetTestBench</span>
-<span class="lineno">  749 </span><span class="spaces">                </span><span class="istickedoff">prj</span>
-<span class="lineno">  750 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
-<span class="lineno">  751 </span><span class="spaces">                    </span><span class="istickedoff">{ -- List of control signals. It is needed to initialize</span>
-<span class="lineno">  752 </span><span class="spaces">                      </span><span class="istickedoff">-- registers with the same names.</span>
-<span class="lineno">  753 </span><span class="spaces">                      </span><span class="istickedoff">tbcSignals = [&quot;oe&quot;, &quot;wr&quot;, &quot;wrSel&quot;]</span>
-<span class="lineno">  754 </span><span class="spaces">                    </span><span class="istickedoff">, -- A processor unit connects to the environment by signal</span>
-<span class="lineno">  755 </span><span class="spaces">                      </span><span class="istickedoff">-- lines. In 'NITTA.Project.TestBench.tbcPorts'</span>
-<span class="lineno">  756 </span><span class="spaces">                      </span><span class="istickedoff">-- describes IDs signal lines of testbench. In</span>
-<span class="lineno">  757 </span><span class="spaces">                      </span><span class="istickedoff">-- 'NITTA.Project.TestBench.tbcSignalConnect' how</span>
-<span class="lineno">  758 </span><span class="spaces">                      </span><span class="istickedoff">-- abstract numbers are translate to source code.</span>
-<span class="lineno">  759 </span><span class="spaces">                      </span><span class="istickedoff">tbcPorts =</span>
-<span class="lineno">  760 </span><span class="spaces">                        </span><span class="istickedoff">MultiplierPorts</span>
-<span class="lineno">  761 </span><span class="spaces">                            </span><span class="istickedoff">{ oe = SignalTag &quot;oe&quot;</span>
-<span class="lineno">  762 </span><span class="spaces">                            </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
-<span class="lineno">  763 </span><span class="spaces">                            </span><span class="istickedoff">, wrSel = SignalTag &quot;wrSel&quot;</span>
-<span class="lineno">  764 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  765 </span><span class="spaces">                    </span><span class="istickedoff">, -- Map microcode to registers in the testbench.</span>
-<span class="lineno">  766 </span><span class="spaces">                      </span><span class="istickedoff">tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} -&gt;</span>
-<span class="lineno">  767 </span><span class="spaces">                        </span><span class="istickedoff">[i|oe &lt;= #{bool2verilog oeSignal};|]</span>
-<span class="lineno">  768 </span><span class="spaces">                            </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{bool2verilog wrSignal};|]</span>
-<span class="lineno">  769 </span><span class="spaces">                            </span><span class="istickedoff">&lt;&gt; [i| wrSel &lt;= #{bool2verilog selSignal};|]</span>
-<span class="lineno">  770 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
+<span class="lineno">  568 </span><span class="spaces">                        </span><span class="istickedoff">-- Set up the vertical relantions between functional unit</span>
+<span class="lineno">  569 </span><span class="spaces">                        </span><span class="istickedoff">-- and related to that data sending.</span>
+<span class="lineno">  570 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  571 </span><span class="spaces">                        </span><span class="istickedoff">-- FIXME: here ([]) you can see the source of error.</span>
+<span class="lineno">  572 </span><span class="spaces">                        </span><span class="istickedoff">-- Function don't connected to bind step. It should be fixed.</span>
+<span class="lineno">  573 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ [] f $ a ... sup epAt</span>
+<span class="lineno">  574 </span><span class="spaces">                    </span><span class="istickedoff">-- this is needed to correct work of automatically generated tests</span>
+<span class="lineno">  575 </span><span class="spaces">                    </span><span class="istickedoff">-- that takes time about time from Process</span>
+<span class="lineno">  576 </span><span class="spaces">                    </span><span class="istickedoff">return <span class="nottickedoff">endpoints</span> =</span>
+<span class="lineno">  577 </span><span class="spaces">            </span><span class="istickedoff">pu</span>
+<span class="lineno">  578 </span><span class="spaces">                </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  579 </span><span class="spaces">                </span><span class="istickedoff">, -- In case if not all variables what asked - remaining are saved.</span>
+<span class="lineno">  580 </span><span class="spaces">                  </span><span class="istickedoff">sources = sources'</span>
+<span class="lineno">  581 </span><span class="spaces">                </span><span class="istickedoff">, -- if all of works is done, then time when result is ready,</span>
+<span class="lineno">  582 </span><span class="spaces">                  </span><span class="istickedoff">-- current work and data transfering, what is done is the current function is reset.</span>
+<span class="lineno">  583 </span><span class="spaces">                  </span><span class="istickedoff">currentWork = if null sources' then Nothing else Just f</span>
+<span class="lineno">  584 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">  585 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Multiplier{targets = [], sources = [], remain} d</span>
+<span class="lineno">  586 </span><span class="spaces">        </span><span class="istickedoff">| let v = oneOf $ variables d</span>
+<span class="lineno">  587 </span><span class="spaces">          </span><span class="istickedoff">, Just f &lt;- find (\f -&gt; v `S.member` variables f) remain =</span>
+<span class="lineno">  588 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision (execution pu f) d</span>
+<span class="lineno">  589 </span><span class="spaces">    </span><span class="istickedoff">-- If something went wrong.</span>
+<span class="lineno">  590 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
+<span class="lineno">  591 </span>
+<span class="lineno">  592 </span>-- TODO: optimize ArgumentSelector
+<span class="lineno">  593 </span>
+<span class="lineno">  594 </span>{- |Multiplications argument id
+<span class="lineno">  595 </span>
+<span class="lineno">  596 </span>As we said before, because of some hardware organisation features, we need to
+<span class="lineno">  597 </span>take in mind operators sequence in planned process on instruction level. This
+<span class="lineno">  598 </span>type os defined to do it. But instide of this we need to notice, that from
+<span class="lineno">  599 </span>algorhytm and model way of view argument order doesn't mean, that is
+<span class="lineno">  600 </span>represented in class computation process' planning responding that realised
+<span class="lineno">  601 </span>above.
+<span class="lineno">  602 </span>-}
+<span class="lineno">  603 </span>data ArgumentSelector = A | B
+<span class="lineno">  604 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>)
+<span class="lineno">  605 </span>
+<span class="lineno">  606 </span>{- |For each PU, we can specify the instruction set and microcode, which allows
+<span class="lineno">  607 </span>us to control the PU at the hardware level.
+<span class="lineno">  608 </span>
+<span class="lineno">  609 </span>- instructions set describes a computation process from a programmer point of
+<span class="lineno">  610 </span>  view;
+<span class="lineno">  611 </span>
+<span class="lineno">  612 </span>- microcode describes the structure of processors that controls signals.
+<span class="lineno">  613 </span>-}
+<span class="lineno">  614 </span>instance Controllable (Multiplier v x t) where
+<span class="lineno">  615 </span>    data Instruction (Multiplier v x t)
+<span class="lineno">  616 </span>        = Load ArgumentSelector
+<span class="lineno">  617 </span>        | Out
+<span class="lineno">  618 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  619 </span>
+<span class="lineno">  620 </span>    data Microcode (Multiplier v x t) = Microcode
+<span class="lineno">  621 </span>        { -- | Write to mUnit signal.
+<span class="lineno">  622 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
+<span class="lineno">  623 </span>        , -- |Uploading to mUnit argument selector.
+<span class="lineno">  624 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">selSignal</span></span></span> :: Bool
+<span class="lineno">  625 </span>        , -- |Downloading from mUnit signal.
+<span class="lineno">  626 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  627 </span>        }
+<span class="lineno">  628 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  629 </span>
+<span class="lineno">  630 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues MultiplierPorts{..} Microcode{..} =</span>
+<span class="lineno">  631 </span><span class="spaces">        </span><span class="istickedoff">[ (wr, Bool wrSignal)</span>
+<span class="lineno">  632 </span><span class="spaces">        </span><span class="istickedoff">, (wrSel, Bool selSignal)</span>
+<span class="lineno">  633 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  634 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  635 </span>
+<span class="lineno">  636 </span>    <span class="decl"><span class="istickedoff">usedPortTags MultiplierPorts{wr, wrSel, oe} = [<span class="nottickedoff">wr</span>, <span class="nottickedoff">wrSel</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  637 </span>
+<span class="lineno">  638 </span>    <span class="decl"><span class="istickedoff">takePortTags (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe</span>
+<span class="lineno">  639 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  640 </span>
+<span class="lineno">  641 </span>{- |Default microcode state should be equal to @nop@ function, which should be a
+<span class="lineno">  642 </span>safe way to do nothing (not take a bus, not change internal PU state, etc.).
+<span class="lineno">  643 </span>-}
+<span class="lineno">  644 </span>instance Default (Microcode (Multiplier v x t)) where
+<span class="lineno">  645 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  646 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  647 </span><span class="spaces">            </span><span class="istickedoff">{ wrSignal = False</span>
+<span class="lineno">  648 </span><span class="spaces">            </span><span class="istickedoff">, selSignal = False</span>
+<span class="lineno">  649 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
+<span class="lineno">  650 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  651 </span>
+<span class="lineno">  652 </span>{- |Instruction and microcode should have exact matching, which allows us to
+<span class="lineno">  653 </span>translate PU instructions to microcode value.
+<span class="lineno">  654 </span>-}
+<span class="lineno">  655 </span>instance UnambiguouslyDecode (Multiplier v x t) where
+<span class="lineno">  656 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (Load A) = def{wrSignal = True, selSignal = False}</span>
+<span class="lineno">  657 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Load B) = def{wrSignal = True, selSignal = True}</span>
+<span class="lineno">  658 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span></span>
+<span class="lineno">  659 </span>
+<span class="lineno">  660 </span>{- |Processor unit control signal ports. In
+<span class="lineno">  661 </span>'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
+<span class="lineno">  662 </span>@ControlUnit@.
+<span class="lineno">  663 </span>-}
+<span class="lineno">  664 </span>instance Connected (Multiplier v x t) where
+<span class="lineno">  665 </span>    data Ports (Multiplier v x t) = MultiplierPorts
+<span class="lineno">  666 </span>        { -- |get data from the bus (data_in)
+<span class="lineno">  667 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span> :: SignalTag
+<span class="lineno">  668 </span>        , -- |determine argument on the bus (A | B)
+<span class="lineno">  669 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSel</span></span></span> :: SignalTag
+<span class="lineno">  670 </span>        , -- |send result to the bus
+<span class="lineno">  671 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag
+<span class="lineno">  672 </span>        }
+<span class="lineno">  673 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  674 </span>
+<span class="lineno">  675 </span>instance IOConnected (Multiplier v x t) where
+<span class="lineno">  676 </span>    data IOPorts (Multiplier v x t) = MultiplierIO
+<span class="lineno">  677 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  678 </span>
+<span class="lineno">  679 </span>{- |Usage of PU requires some artifacts of a synthesis process:
+<span class="lineno">  680 </span>
+<span class="lineno">  681 </span>- Hardware implementation, which depends from 'isMocked' value:
+<span class="lineno">  682 </span>
+<span class="lineno">  683 </span>- Software (not needed for the multiplier because it does not have any
+<span class="lineno">  684 </span>  configuration and is controlled from the network level).
+<span class="lineno">  685 </span>
+<span class="lineno">  686 </span>- Hardware instance in the upper structure element.
+<span class="lineno">  687 </span>-}
+<span class="lineno">  688 </span>instance (VarValTime v x t) =&gt; TargetSystemComponent (Multiplier v x t) where
+<span class="lineno">  689 </span>    <span class="decl"><span class="istickedoff">moduleName _title _pu = &quot;pu_multiplier&quot;</span></span>
+<span class="lineno">  690 </span>
+<span class="lineno">  691 </span>    <span class="decl"><span class="istickedoff">hardware _tag Multiplier{isMocked} =</span>
+<span class="lineno">  692 </span><span class="spaces">        </span><span class="istickedoff">Aggregate</span>
+<span class="lineno">  693 </span><span class="spaces">            </span><span class="istickedoff">Nothing</span>
+<span class="lineno">  694 </span><span class="spaces">            </span><span class="istickedoff">[ if <span class="tickonlytrue">isMocked</span></span>
+<span class="lineno">  695 </span><span class="spaces">                </span><span class="istickedoff">then FromLibrary &quot;multiplier/mult_mock.v&quot;</span>
+<span class="lineno">  696 </span><span class="spaces">                </span><span class="istickedoff">else <span class="nottickedoff">FromLibrary &quot;multiplier/mult_inner.v&quot;</span></span>
+<span class="lineno">  697 </span><span class="spaces">            </span><span class="istickedoff">, FromLibrary &quot;multiplier/pu_multiplier.v&quot;</span>
+<span class="lineno">  698 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
+<span class="lineno">  699 </span>
+<span class="lineno">  700 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  701 </span>
+<span class="lineno">  702 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  703 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  704 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
+<span class="lineno">  705 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  706 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  707 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
+<span class="lineno">  708 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just MultiplierPorts{..}</span>
+<span class="lineno">  709 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  710 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  711 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  712 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  713 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_multiplier \#</span></span></span>
+<span class="lineno">  714 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  715 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  716 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )</span></span></span>
+<span class="lineno">  717 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .INVALID( 0 )</span></span></span>
+<span class="lineno">  718 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
+<span class="lineno">  719 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
+<span class="lineno">  720 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .rst( #{ sigRst } )</span></span></span>
+<span class="lineno">  721 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span>
+<span class="lineno">  722 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_sel( #{ wrSel } )</span></span></span>
+<span class="lineno">  723 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
+<span class="lineno">  724 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  725 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
+<span class="lineno">  726 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
+<span class="lineno">  727 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  728 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  729 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  730 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  731 </span>
+<span class="lineno">  732 </span>{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
+<span class="lineno">  733 </span>means that multiplier, as expected, doesn't have any IO.
+<span class="lineno">  734 </span>-}
+<span class="lineno">  735 </span>instance IOTestBench (Multiplier v x t) v x
+<span class="lineno">  736 </span>
+<span class="lineno">  737 </span>{- |The main purpose of this class is to generate autotests for PU. It allows to
+<span class="lineno">  738 </span>generate testbench for the PU according to its model and scheduled computational
+<span class="lineno">  739 </span>process. You can see tests in @test/Spec.hs@. Testbench contains:
+<span class="lineno">  740 </span>
+<span class="lineno">  741 </span>- The sequence of control signals that implement the already scheduled process.
+<span class="lineno">  742 </span>
+<span class="lineno">  743 </span>- The sequence of bus state checks in which we compare actual values with the
+<span class="lineno">  744 </span>  results of the functional simulation.
+<span class="lineno">  745 </span>-}
+<span class="lineno">  746 </span>instance (VarValTime v x t) =&gt; Testable (Multiplier v x t) v x where
+<span class="lineno">  747 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  748 </span><span class="spaces">        </span><span class="istickedoff">Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
+<span class="lineno">  749 </span><span class="spaces">            </span><span class="istickedoff">snippetTestBench</span>
+<span class="lineno">  750 </span><span class="spaces">                </span><span class="istickedoff">prj</span>
+<span class="lineno">  751 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  752 </span><span class="spaces">                    </span><span class="istickedoff">{ -- List of control signals. It is needed to initialize</span>
+<span class="lineno">  753 </span><span class="spaces">                      </span><span class="istickedoff">-- registers with the same names.</span>
+<span class="lineno">  754 </span><span class="spaces">                      </span><span class="istickedoff">tbcSignals = [&quot;oe&quot;, &quot;wr&quot;, &quot;wrSel&quot;]</span>
+<span class="lineno">  755 </span><span class="spaces">                    </span><span class="istickedoff">, -- A processor unit connects to the environment by signal</span>
+<span class="lineno">  756 </span><span class="spaces">                      </span><span class="istickedoff">-- lines. In 'NITTA.Project.TestBench.tbcPorts'</span>
+<span class="lineno">  757 </span><span class="spaces">                      </span><span class="istickedoff">-- describes IDs signal lines of testbench. In</span>
+<span class="lineno">  758 </span><span class="spaces">                      </span><span class="istickedoff">-- 'NITTA.Project.TestBench.tbcSignalConnect' how</span>
+<span class="lineno">  759 </span><span class="spaces">                      </span><span class="istickedoff">-- abstract numbers are translate to source code.</span>
+<span class="lineno">  760 </span><span class="spaces">                      </span><span class="istickedoff">tbcPorts =</span>
+<span class="lineno">  761 </span><span class="spaces">                        </span><span class="istickedoff">MultiplierPorts</span>
+<span class="lineno">  762 </span><span class="spaces">                            </span><span class="istickedoff">{ oe = SignalTag &quot;oe&quot;</span>
+<span class="lineno">  763 </span><span class="spaces">                            </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
+<span class="lineno">  764 </span><span class="spaces">                            </span><span class="istickedoff">, wrSel = SignalTag &quot;wrSel&quot;</span>
+<span class="lineno">  765 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  766 </span><span class="spaces">                    </span><span class="istickedoff">, -- Map microcode to registers in the testbench.</span>
+<span class="lineno">  767 </span><span class="spaces">                      </span><span class="istickedoff">tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} -&gt;</span>
+<span class="lineno">  768 </span><span class="spaces">                        </span><span class="istickedoff">[i|oe &lt;= #{bool2verilog oeSignal};|]</span>
+<span class="lineno">  769 </span><span class="spaces">                            </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{bool2verilog wrSignal};|]</span>
+<span class="lineno">  770 </span><span class="spaces">                            </span><span class="istickedoff">&lt;&gt; [i| wrSel &lt;= #{bool2verilog selSignal};|]</span>
+<span class="lineno">  771 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
 
 </pre>
 </body>

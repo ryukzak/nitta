@@ -1199,30 +1199,36 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 {
     "relations": [
-        [
-            6,
-            4
-        ],
-        [
-            6,
-            2
-        ],
-        [
-            6,
-            0
-        ],
-        [
-            4,
-            5
-        ],
-        [
-            2,
-            3
-        ],
-        [
-            0,
-            1
-        ]
+        {
+            "vDown": 4,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 2,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 0,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 5,
+            "tag": "Vertical",
+            "vUp": 4
+        },
+        {
+            "vDown": 3,
+            "tag": "Vertical",
+            "vUp": 2
+        },
+        {
+            "vDown": 1,
+            "tag": "Vertical",
+            "vUp": 0
+        }
     ],
     "steps": [
         {
@@ -1506,30 +1512,36 @@ null
 ```javascript
 {
     "relations": [
-        [
-            6,
-            4
-        ],
-        [
-            6,
-            2
-        ],
-        [
-            6,
-            0
-        ],
-        [
-            4,
-            5
-        ],
-        [
-            2,
-            3
-        ],
-        [
-            0,
-            1
-        ]
+        {
+            "vDown": 4,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 2,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 0,
+            "tag": "Vertical",
+            "vUp": 6
+        },
+        {
+            "vDown": 5,
+            "tag": "Vertical",
+            "vUp": 4
+        },
+        {
+            "vDown": 3,
+            "tag": "Vertical",
+            "vUp": 2
+        },
+        {
+            "vDown": 1,
+            "tag": "Vertical",
+            "vUp": 0
+        }
     ],
     "steps": [
         {

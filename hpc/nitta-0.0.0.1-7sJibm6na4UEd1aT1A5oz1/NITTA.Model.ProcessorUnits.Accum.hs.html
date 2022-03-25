@@ -225,7 +225,7 @@ span.spaces    { background: white }
 <span class="lineno">  206 </span><span class="spaces">                        </span><span class="istickedoff">when (null task' &amp;&amp; length tasks == 1) $ do</span>
 <span class="lineno">  207 </span><span class="spaces">                            </span><span class="istickedoff">let endpoints' = relatedEndpoints process_ $ variables func</span>
 <span class="lineno">  208 </span><span class="spaces">                                </span><span class="istickedoff">a = inf $ stepsInterval endpoints'</span>
-<span class="lineno">  209 </span><span class="spaces">                                </span><span class="istickedoff">low = endpoints ++ map <span class="nottickedoff">pID</span> endpoints'</span>
+<span class="lineno">  209 </span><span class="spaces">                                </span><span class="istickedoff">low = endpoints ++ map pID endpoints'</span>
 <span class="lineno">  210 </span><span class="spaces">                            </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) func</span>
 <span class="lineno">  211 </span><span class="spaces">                            </span><span class="istickedoff">establishVerticalRelations high low</span>
 <span class="lineno">  212 </span><span class="spaces">                 </span><span class="istickedoff">in pu</span>

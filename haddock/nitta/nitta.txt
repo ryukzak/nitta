@@ -597,7 +597,8 @@ data StepInfo v x t
 -- | Apply refactoring
 [RefactorStep] :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
 
--- | intermidiate level step (function execution)
+-- | intermidiate level step (function execution) FIXME: rename to
+--   IntermediateStep
 [FStep] :: F v x -> StepInfo v x t
 
 -- | endpoint level step (source or target)
@@ -615,7 +616,16 @@ data Relation
 -- | Vertical relationships (up and down). For example, the intermediate
 --   step (function execution) can be translated to a sequence of endpoint
 --   steps (receiving and sending variable), and process unit instructions.
-Vertical :: ProcessStepID -> ProcessStepID -> Relation
+Vertical :: ProcessStepID -> Relation
+[vUp, vDown] :: Relation -> ProcessStepID
+
+-- | Horizontal relationships (on one level). For example, we bind the
+--   function and apply the refactoring. The binding step should be
+--   connected to refactoring steps, including new binding steps.
+Horizontal :: ProcessStepID -> Relation
+[hPrev, hNext] :: Relation -> ProcessStepID
+isVertical :: Relation -> Bool
+isHorizontal :: Relation -> Bool
 descent :: StepInfo v x t -> StepInfo v x t
 whatsHappen :: Ord a => a -> Process a i -> [Step a i]
 extractInstructionAt :: (ProcessorUnit u v x t, Typeable u) => u -> t -> [Instruction u]
@@ -714,8 +724,9 @@ InoutPortTag :: Text -> InoutPortTag
 [inoutPortTag] :: InoutPortTag -> Text
 instance GHC.Generics.Generic (NITTA.Model.ProcessorUnits.Types.Step t i)
 instance (GHC.Show.Show t, GHC.Show.Show i) => GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Step t i)
-instance GHC.Generics.Generic NITTA.Model.ProcessorUnits.Types.Relation
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Types.Relation
+instance GHC.Classes.Ord NITTA.Model.ProcessorUnits.Types.Relation
+instance GHC.Generics.Generic NITTA.Model.ProcessorUnits.Types.Relation
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Types.Relation
 instance GHC.Generics.Generic (NITTA.Model.ProcessorUnits.Types.Process t i)
 instance GHC.Classes.Ord NITTA.Model.ProcessorUnits.Types.SignalTag
@@ -745,137 +756,6 @@ instance Data.Default.Class.Default t => Data.Default.Class.Default (NITTA.Model
 instance NITTA.Model.ProcessorUnits.Types.NextTick (NITTA.Model.ProcessorUnits.Types.Process t si) t
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.ProcessorUnits.Types.Relation
 instance (Data.Aeson.Types.ToJSON.ToJSON t, Data.Aeson.Types.ToJSON.ToJSON i) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.ProcessorUnits.Types.Step t i)
-
-
-module NITTA.Utils
-doc2text :: Verilog -> Text
-type Verilog = Doc ()
-comment :: String -> String
-shiftI :: (Num a, Ord a) => a -> Interval a -> Interval a
-modify'_ :: (s -> s) -> State s ()
-bool2verilog :: Bool -> Text
-values2dump :: (Foldable t, Show a) => t a -> [Char]
-hdlValDump :: Val x => x -> Text
-toModuleName :: [Char] -> [Char]
-endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
-getEndpoints :: Ord t1 => Process t1 (StepInfo v x t2) -> [EndpointRole v]
-transferred :: ProcessorUnit u a1 x t => u -> Set a1
-inputsPushedAt :: (Ord a1, Ord a2, Function f a2) => Process a1 (StepInfo a2 x t) -> f -> a1
-stepsInterval :: Ord a => [Step a i] -> Interval a
-relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
-isFB :: Step t1 (StepInfo v x t2) -> Bool
-getFBs :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
-isInstruction :: StepInfo v x t -> Bool
-getToml :: Text -> Table
-getFromToml :: (FromJSON p, ToJSON a) => HashMap Text a -> p
-getFromTomlSection :: (FromJSON p, ToJSON a) => Text -> HashMap Text a -> p
-
-
-module NITTA.Project.Types
-
--- | Target project for different purpose (testing, target system, etc).
---   Should be writable to disk.
-data Project m v x
-Project :: Text -> FilePath -> FilePath -> FilePath -> FilePath -> FilePath -> m -> UnitEnv m -> Cntx v x -> [FilePath] -> Project m v x
-
--- | target project name
-[pName] :: Project m v x -> Text
-
--- | IP-core library path
-[pLibPath] :: Project m v x -> FilePath
-
--- | output path for target project
-[pTargetProjectPath] :: Project m v x -> FilePath
-
--- | absolute output path for target project
-[pAbsTargetProjectPath] :: Project m v x -> FilePath
-
--- | relative to the project path output path for NITTA processor inside
---   target project
-[pInProjectNittaPath] :: Project m v x -> FilePath
-
--- | absolute output path for NITTA processor inside target project
-[pAbsNittaPath] :: Project m v x -> FilePath
-
--- | <tt>mUnit</tt> model (a mUnit unit for testbench or network for
---   complete NITTA mUnit)
-[pUnit] :: Project m v x -> m
-[pUnitEnv] :: Project m v x -> UnitEnv m
-
--- | testbench context with input values
-[pTestCntx] :: Project m v x -> Cntx v x
-
--- | Target platform templates
-[pTemplates] :: Project m v x -> [FilePath]
-defProjectTemplates :: [FilePath]
-
--- | Type class for target components. Target -- a target system project or
---   a testbench.
-class TargetSystemComponent pu
-
--- | Name of the structural hardware module or Verilog module name (network
---   or process unit)
-moduleName :: TargetSystemComponent pu => Text -> pu -> Text
-
--- | Software and other specification which depends on application
---   algorithm
-software :: TargetSystemComponent pu => Text -> pu -> Implementation
-
--- | Hardware which depends on microarchitecture description and requires
---   synthesis.
-hardware :: TargetSystemComponent pu => Text -> pu -> Implementation
-
--- | Generate code for making an instance of the hardware module
-hardwareInstance :: TargetSystemComponent pu => Text -> pu -> UnitEnv pu -> Verilog
-
--- | Element of target system implementation
-data Implementation
-
--- | Immediate implementation in the from of Ginger template
---   (<tt>nitta.paths.nest</tt> + <tt>projectContext</tt>)
-Immediate :: FilePath -> Text -> Implementation
-[impFileName] :: Implementation -> FilePath
-[impText] :: Implementation -> Text
-
--- | Fetch implementation from library
-FromLibrary :: FilePath -> Implementation
-[impFileName] :: Implementation -> FilePath
-
--- | Aggregation of many implementation parts in separate paths
-Aggregate :: Maybe FilePath -> [Implementation] -> Implementation
-[impPath] :: Implementation -> Maybe FilePath
-[subComponents] :: Implementation -> [Implementation]
-
--- | Nothing
-Empty :: Implementation
-
--- | Resolve uEnv element to verilog source code. E.g. <tt>dataIn</tt> into
---   <tt>data_bus</tt>, <tt>dataOut</tt> into <tt>accum_data_out</tt>.
-data UnitEnv m
-UnitEnv :: Text -> Text -> Text -> Text -> Text -> Maybe (Ports m) -> Maybe (IOPorts m) -> Maybe (Text, Text) -> UnitEnv m
-
--- | clock signal
-[sigClk] :: UnitEnv m -> Text
-
--- | reset signal
-[sigRst] :: UnitEnv m -> Text
-
--- | posedge on computation cycle begin
-[sigCycleBegin] :: UnitEnv m -> Text
-
--- | positive on computation cycle
-[sigInCycle] :: UnitEnv m -> Text
-
--- | posedge on computation cycle end
-[sigCycleEnd] :: UnitEnv m -> Text
-[ctrlPorts] :: UnitEnv m -> Maybe (Ports m)
-[ioPorts] :: UnitEnv m -> Maybe (IOPorts m)
-[valueIn, valueOut] :: UnitEnv m -> Maybe (Text, Text)
-envInputPorts :: IOConnected pu => UnitEnv pu -> Set InputPortTag
-envOutputPorts :: IOConnected pu => UnitEnv pu -> Set OutputPortTag
-envInOutPorts :: IOConnected pu => UnitEnv pu -> Set InoutPortTag
-instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Project.Types.Project m v x) x
-instance Data.Default.Class.Default (NITTA.Project.Types.UnitEnv m)
 
 
 module NITTA.Model.Problems.Dataflow
@@ -1422,137 +1302,6 @@ module NITTA.Model.Problems.Refactor
 module NITTA.Model.Problems
 
 
-module NITTA.Project.TestBench
-
--- | Type class for all testable parts of a target system.
-class Testable m v x | m -> v x
-testBenchImplementation :: Testable m v x => Project m v x -> Implementation
-
--- | Processor units with input/output ports should be tested by generation
---   external input ports signals and checking output port signals.
-class IOTestBench pu v x | pu -> v x
-testEnvironmentInitFlag :: IOTestBench pu v x => Text -> pu -> Maybe Text
-testEnvironment :: IOTestBench pu v x => Text -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
-
--- | Information required for testbench generation.
-data TestEnvironment v x
-TestEnvironment :: Cntx v x -> Int -> TestEnvironment v x
-
--- | expected data
-[teCntx] :: TestEnvironment v x -> Cntx v x
-
--- | duration of computational process
-[teComputationDuration] :: TestEnvironment v x -> Int
-data TestbenchReport v x
-TestbenchReport :: Bool -> FilePath -> [FilePath] -> [Text] -> [Text] -> Text -> Text -> [HashMap v x] -> [HashMap v x] -> TestbenchReport v x
-[tbStatus] :: TestbenchReport v x -> Bool
-[tbPath] :: TestbenchReport v x -> FilePath
-[tbFiles] :: TestbenchReport v x -> [FilePath]
-[tbFunctions] :: TestbenchReport v x -> [Text]
-[tbSynthesisSteps] :: TestbenchReport v x -> [Text]
-[tbCompilerDump] :: TestbenchReport v x -> Text
-[tbSimulationDump] :: TestbenchReport v x -> Text
-[tbFunctionalSimulationLog] :: TestbenchReport v x -> [HashMap v x]
-[tbLogicalSimulationLog] :: TestbenchReport v x -> [HashMap v x]
-
--- | Get name of testbench top module.
-testBenchTopModuleName :: (TargetSystemComponent m, Testable m v x) => Project m v x -> FilePath
-
--- | Generate list of project verilog files (including testbench).
-verilogProjectFiles :: (TargetSystemComponent m, Testable m v x) => Project m v x -> [FilePath]
-
--- | Data Type for SnippetTestBench function
-data SnippetTestBenchConf m
-SnippetTestBenchConf :: [Text] -> Ports m -> (Microcode m -> Text) -> SnippetTestBenchConf m
-[tbcSignals] :: SnippetTestBenchConf m -> [Text]
-[tbcPorts] :: SnippetTestBenchConf m -> Ports m
-[tbcMC2verilogLiteral] :: SnippetTestBenchConf m -> Microcode m -> Text
-
--- | Function for testBench PU test
-snippetTestBench :: forall m v x t. (VarValTime v x t, WithFunctions m (F v x), ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m)) => Project m v x -> SnippetTestBenchConf m -> Text
-instance GHC.Generics.Generic (NITTA.Project.TestBench.TestbenchReport v x)
-instance (Data.String.ToString.ToString v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Project.TestBench.TestbenchReport v x)
-
-
-module NITTA.Project.Context
-
--- | projectContext - used for template generation
-projectContext :: (TargetSystemComponent m, Testable m v x) => Project m v x -> GingerContext p (Writer Text) Text
-
--- | projectContext - used for Implementation generation
-implementationContext :: (TargetSystemComponent m, Testable m v x, ToGVal (Run p (Writer Text) Text) a) => Project m v x -> a -> GingerContext p (Writer Text) Text
-
-
-module NITTA.Project.Template
-writeRenderedTemplates :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
-
--- | collectNittaPath - read nittaPath from all provided target templates
---   and return it if all of them are the same.
-collectNittaPath :: [FilePath] -> IO (Either Text FilePath)
-
--- | projectContext - used for template generation
-projectContext :: (TargetSystemComponent m, Testable m v x) => Project m v x -> GingerContext p (Writer Text) Text
-instance GHC.Show.Show NITTA.Project.Template.TemplateConf
-instance GHC.Generics.Generic NITTA.Project.Template.TemplateConf
-instance GHC.Show.Show NITTA.Project.Template.Conf
-instance Data.Default.Class.Default NITTA.Project.Template.TemplateConf
-instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Project.Template.TemplateConf
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Project.Template.TemplateConf
-instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Data.Default.Class.Default (Data.HashMap.Internal.HashMap k v)
-
-
-module NITTA.Project
-
--- | Write project with all available parts.
-writeProject :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
-runTestbench :: (WithFunctions u a, ProcessorUnit u v1 x1 t, Hashable v2, IsString v2, DefaultX u x2, Val x2, Show a, Read x3, Eq v2, TargetSystemComponent u, Testable u v2 x3) => Project u v2 x3 -> IO (TestbenchReport v2 x3)
-
-
-module NITTA.Model.Networks.Types
-
--- | Existential container for a processor unit .
-data PU v x t
-[PU] :: PUClasses pu v x t => {unit :: pu, diff :: Changeset v, uEnv :: UnitEnv pu} -> PU v x t
-type PUClasses pu v x t = (ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, Show (Instruction pu), Typeable pu, UnambiguouslyDecode pu, TargetSystemComponent pu, Controllable pu, IOTestBench pu v x, Locks pu v)
-data IOSynchronization
-
--- | IO cycle synchronously to process cycle
-Sync :: IOSynchronization
-
--- | if IO cycle lag behiend - ignore them
-ASync :: IOSynchronization
-
--- | defined by onboard signal (sync - false, async - true)
-OnBoard :: IOSynchronization
-puInputPorts :: PU v x t -> Set InputPortTag
-puOutputPorts :: PU v x t -> Set OutputPortTag
-puInOutPorts :: PU v x t -> Set InoutPortTag
-instance GHC.Generics.Generic NITTA.Model.Networks.Types.IOSynchronization
-instance GHC.Read.Read NITTA.Model.Networks.Types.IOSynchronization
-instance GHC.Show.Show NITTA.Model.Networks.Types.IOSynchronization
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Networks.Types.IOSynchronization
-instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Networks.Types.IOSynchronization
-instance GHC.Classes.Ord v => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.Networks.Types.PU v x t) v t
-instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Types.PU v x t) v x
-instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Types.PU v x t) v x
-instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Types.PU v x t) v x
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.Networks.Types.PU v x t) v x t
-instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.Changeset v)
-instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.I v, NITTA.Intermediate.Types.I v)
-instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.O v, NITTA.Intermediate.Types.O v)
-instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Model.Networks.Types.PU v x t) v
-instance NITTA.Project.Types.TargetSystemComponent (NITTA.Model.Networks.Types.PU v x t)
-instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.Networks.Types.PU v x t) v x
-
-
-module NITTA.Intermediate.Simulation
-
--- | Functional algorithm simulation
-simulateDataFlowGraph :: (Var v, Val x, WithFunctions g (F v x)) => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
-simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -> Cntx v x
-reorderAlgorithm :: (Ord a, Typeable x, Typeable a, IsString a, ToString a, Suffix a, Hashable a) => [F a x] -> [F a x]
-
-
 module NITTA.Intermediate.DataFlow
 
 -- | Data flow graph - intermediate representation of application
@@ -1680,6 +1429,9 @@ execSchedule :: ProcessorUnit u v x t => u -> StateT (Schedule u v x t) Identity
 --   fetches processes from underlying units.
 execScheduleWithProcess :: pu -> Process t (StepInfo v x t) -> StateT (Schedule pu v x t) Identity a -> Process t (StepInfo v x t)
 
+-- | Add process step with passed the time and info.
+scheduleStep :: MonadState (Schedule pu v x t) m => Interval t -> StepInfo v x t -> m [ProcessStepID]
+
 -- | Add to the process description information about endpoint behaviour,
 --   and it's low-level implementation (on instruction level). Vertical
 --   relations connect endpoint level and instruction level steps.
@@ -1690,6 +1442,11 @@ scheduleFunctionRevoke :: (MonadState (Schedule pu v x t) m, Show a) => a -> m [
 
 -- | Add to the process description information about function evaluation.
 scheduleFunction :: MonadState (Schedule pu v x t) m => Interval t -> F v x -> m [ProcessStepID]
+
+-- | Schedule function and establish vertical relations between bind step,
+--   function step, and all related endpoints.
+scheduleFunctionFinish :: (Ord v, Typeable v, IsString v, ToString v, Suffix v, Hashable v) => [ProcessStepID] -> F v x -> Interval t -> StateT (Schedule pu v x t) Identity [ProcessStepID]
+scheduleFunctionFinish_ :: (Ord v, Typeable v, IsString v, ToString v, Suffix v, Hashable v) => [ProcessStepID] -> F v x -> Interval t -> StateT (Schedule pu v x t) Identity ()
 scheduleRefactoring :: (MonadState (Schedule pu v x t) m, Typeable ref, Show ref, Eq ref) => Interval t -> ref -> m [ProcessStepID]
 
 -- | Add to the process description information about instruction
@@ -1705,15 +1462,285 @@ scheduleNestedStep :: forall m pu v x t tag. (MonadState (Schedule pu v x t) m, 
 --   which are defined by the Cartesian product of high and low lists.
 establishVerticalRelations :: forall m pu v x t. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
 
--- | Add to the process description information about vertical relation.
-establishVerticalRelation :: forall m pu v x t. MonadState (Schedule pu v x t) m => ProcessStepID -> ProcessStepID -> m ()
+-- | Add to the process description information about horizontal relations
+--   (inside level), which are defined by the Cartesian product of high and
+--   low lists.
+establishHorizontalRelations :: forall m pu v x t. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
 
 -- | Get a current slice of the computational process.
 getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
+relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
 
 -- | Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)
 instance NITTA.Model.ProcessorUnits.Types.NextTick (NITTA.Utils.ProcessDescription.Schedule pu v x t) t
+
+
+module NITTA.Utils
+doc2text :: Verilog -> Text
+type Verilog = Doc ()
+comment :: String -> String
+shiftI :: (Num a, Ord a) => a -> Interval a -> Interval a
+modify'_ :: (s -> s) -> State s ()
+bool2verilog :: Bool -> Text
+values2dump :: (Foldable t, Show a) => t a -> [Char]
+hdlValDump :: Val x => x -> Text
+toModuleName :: [Char] -> [Char]
+endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
+getEndpoint :: Step t1 (StepInfo v x t2) -> Maybe (EndpointRole v)
+getFunction :: Step t1 (StepInfo v x t2) -> Maybe (F v x)
+getInstruction :: Step t1 (StepInfo v x t2) -> Maybe (StepInfo v x t2)
+getCad :: Step t1 (StepInfo v x t2) -> Maybe String
+getEndpoints :: Ord t1 => Process t1 (StepInfo v x t2) -> [EndpointRole v]
+transferred :: ProcessorUnit u a1 x t => u -> Set a1
+inputsPushedAt :: (Ord a1, Ord a2, Function f a2) => Process a1 (StepInfo a2 x t2) -> f -> a1
+stepsInterval :: Ord a => [Step a i] -> Interval a
+relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
+isFB :: Step t1 (StepInfo v x t2) -> Bool
+getFBs :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
+isEndpoint :: Step t1 (StepInfo v x t2) -> Bool
+isInstruction :: Step t1 (StepInfo v x t2) -> Bool
+getToml :: Text -> Table
+getFromToml :: (FromJSON p, ToJSON a) => HashMap Text a -> p
+getFromTomlSection :: (FromJSON p, ToJSON a) => Text -> HashMap Text a -> p
+
+
+module NITTA.Project.Types
+
+-- | Target project for different purpose (testing, target system, etc).
+--   Should be writable to disk.
+data Project m v x
+Project :: Text -> FilePath -> FilePath -> FilePath -> FilePath -> FilePath -> m -> UnitEnv m -> Cntx v x -> [FilePath] -> Project m v x
+
+-- | target project name
+[pName] :: Project m v x -> Text
+
+-- | IP-core library path
+[pLibPath] :: Project m v x -> FilePath
+
+-- | output path for target project
+[pTargetProjectPath] :: Project m v x -> FilePath
+
+-- | absolute output path for target project
+[pAbsTargetProjectPath] :: Project m v x -> FilePath
+
+-- | relative to the project path output path for NITTA processor inside
+--   target project
+[pInProjectNittaPath] :: Project m v x -> FilePath
+
+-- | absolute output path for NITTA processor inside target project
+[pAbsNittaPath] :: Project m v x -> FilePath
+
+-- | <tt>mUnit</tt> model (a mUnit unit for testbench or network for
+--   complete NITTA mUnit)
+[pUnit] :: Project m v x -> m
+[pUnitEnv] :: Project m v x -> UnitEnv m
+
+-- | testbench context with input values
+[pTestCntx] :: Project m v x -> Cntx v x
+
+-- | Target platform templates
+[pTemplates] :: Project m v x -> [FilePath]
+defProjectTemplates :: [FilePath]
+
+-- | Type class for target components. Target -- a target system project or
+--   a testbench.
+class TargetSystemComponent pu
+
+-- | Name of the structural hardware module or Verilog module name (network
+--   or process unit)
+moduleName :: TargetSystemComponent pu => Text -> pu -> Text
+
+-- | Software and other specification which depends on application
+--   algorithm
+software :: TargetSystemComponent pu => Text -> pu -> Implementation
+
+-- | Hardware which depends on microarchitecture description and requires
+--   synthesis.
+hardware :: TargetSystemComponent pu => Text -> pu -> Implementation
+
+-- | Generate code for making an instance of the hardware module
+hardwareInstance :: TargetSystemComponent pu => Text -> pu -> UnitEnv pu -> Verilog
+
+-- | Element of target system implementation
+data Implementation
+
+-- | Immediate implementation in the from of Ginger template
+--   (<tt>nitta.paths.nest</tt> + <tt>projectContext</tt>)
+Immediate :: FilePath -> Text -> Implementation
+[impFileName] :: Implementation -> FilePath
+[impText] :: Implementation -> Text
+
+-- | Fetch implementation from library
+FromLibrary :: FilePath -> Implementation
+[impFileName] :: Implementation -> FilePath
+
+-- | Aggregation of many implementation parts in separate paths
+Aggregate :: Maybe FilePath -> [Implementation] -> Implementation
+[impPath] :: Implementation -> Maybe FilePath
+[subComponents] :: Implementation -> [Implementation]
+
+-- | Nothing
+Empty :: Implementation
+
+-- | Resolve uEnv element to verilog source code. E.g. <tt>dataIn</tt> into
+--   <tt>data_bus</tt>, <tt>dataOut</tt> into <tt>accum_data_out</tt>.
+data UnitEnv m
+UnitEnv :: Text -> Text -> Text -> Text -> Text -> Maybe (Ports m) -> Maybe (IOPorts m) -> Maybe (Text, Text) -> UnitEnv m
+
+-- | clock signal
+[sigClk] :: UnitEnv m -> Text
+
+-- | reset signal
+[sigRst] :: UnitEnv m -> Text
+
+-- | posedge on computation cycle begin
+[sigCycleBegin] :: UnitEnv m -> Text
+
+-- | positive on computation cycle
+[sigInCycle] :: UnitEnv m -> Text
+
+-- | posedge on computation cycle end
+[sigCycleEnd] :: UnitEnv m -> Text
+[ctrlPorts] :: UnitEnv m -> Maybe (Ports m)
+[ioPorts] :: UnitEnv m -> Maybe (IOPorts m)
+[valueIn, valueOut] :: UnitEnv m -> Maybe (Text, Text)
+envInputPorts :: IOConnected pu => UnitEnv pu -> Set InputPortTag
+envOutputPorts :: IOConnected pu => UnitEnv pu -> Set OutputPortTag
+envInOutPorts :: IOConnected pu => UnitEnv pu -> Set InoutPortTag
+instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Project.Types.Project m v x) x
+instance Data.Default.Class.Default (NITTA.Project.Types.UnitEnv m)
+
+
+module NITTA.Project.TestBench
+
+-- | Type class for all testable parts of a target system.
+class Testable m v x | m -> v x
+testBenchImplementation :: Testable m v x => Project m v x -> Implementation
+
+-- | Processor units with input/output ports should be tested by generation
+--   external input ports signals and checking output port signals.
+class IOTestBench pu v x | pu -> v x
+testEnvironmentInitFlag :: IOTestBench pu v x => Text -> pu -> Maybe Text
+testEnvironment :: IOTestBench pu v x => Text -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
+
+-- | Information required for testbench generation.
+data TestEnvironment v x
+TestEnvironment :: Cntx v x -> Int -> TestEnvironment v x
+
+-- | expected data
+[teCntx] :: TestEnvironment v x -> Cntx v x
+
+-- | duration of computational process
+[teComputationDuration] :: TestEnvironment v x -> Int
+data TestbenchReport v x
+TestbenchReport :: Bool -> FilePath -> [FilePath] -> [Text] -> [Text] -> Text -> Text -> [HashMap v x] -> [HashMap v x] -> TestbenchReport v x
+[tbStatus] :: TestbenchReport v x -> Bool
+[tbPath] :: TestbenchReport v x -> FilePath
+[tbFiles] :: TestbenchReport v x -> [FilePath]
+[tbFunctions] :: TestbenchReport v x -> [Text]
+[tbSynthesisSteps] :: TestbenchReport v x -> [Text]
+[tbCompilerDump] :: TestbenchReport v x -> Text
+[tbSimulationDump] :: TestbenchReport v x -> Text
+[tbFunctionalSimulationLog] :: TestbenchReport v x -> [HashMap v x]
+[tbLogicalSimulationLog] :: TestbenchReport v x -> [HashMap v x]
+
+-- | Get name of testbench top module.
+testBenchTopModuleName :: (TargetSystemComponent m, Testable m v x) => Project m v x -> FilePath
+
+-- | Generate list of project verilog files (including testbench).
+verilogProjectFiles :: (TargetSystemComponent m, Testable m v x) => Project m v x -> [FilePath]
+
+-- | Data Type for SnippetTestBench function
+data SnippetTestBenchConf m
+SnippetTestBenchConf :: [Text] -> Ports m -> (Microcode m -> Text) -> SnippetTestBenchConf m
+[tbcSignals] :: SnippetTestBenchConf m -> [Text]
+[tbcPorts] :: SnippetTestBenchConf m -> Ports m
+[tbcMC2verilogLiteral] :: SnippetTestBenchConf m -> Microcode m -> Text
+
+-- | Function for testBench PU test
+snippetTestBench :: forall m v x t. (VarValTime v x t, WithFunctions m (F v x), ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m)) => Project m v x -> SnippetTestBenchConf m -> Text
+instance GHC.Generics.Generic (NITTA.Project.TestBench.TestbenchReport v x)
+instance (Data.String.ToString.ToString v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Project.TestBench.TestbenchReport v x)
+
+
+module NITTA.Model.Networks.Types
+
+-- | Existential container for a processor unit .
+data PU v x t
+[PU] :: PUClasses pu v x t => {unit :: pu, diff :: Changeset v, uEnv :: UnitEnv pu} -> PU v x t
+type PUClasses pu v x t = (ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, Show (Instruction pu), Typeable pu, UnambiguouslyDecode pu, TargetSystemComponent pu, Controllable pu, IOTestBench pu v x, Locks pu v)
+data IOSynchronization
+
+-- | IO cycle synchronously to process cycle
+Sync :: IOSynchronization
+
+-- | if IO cycle lag behiend - ignore them
+ASync :: IOSynchronization
+
+-- | defined by onboard signal (sync - false, async - true)
+OnBoard :: IOSynchronization
+puInputPorts :: PU v x t -> Set InputPortTag
+puOutputPorts :: PU v x t -> Set OutputPortTag
+puInOutPorts :: PU v x t -> Set InoutPortTag
+instance GHC.Generics.Generic NITTA.Model.Networks.Types.IOSynchronization
+instance GHC.Read.Read NITTA.Model.Networks.Types.IOSynchronization
+instance GHC.Show.Show NITTA.Model.Networks.Types.IOSynchronization
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Networks.Types.IOSynchronization
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Networks.Types.IOSynchronization
+instance GHC.Classes.Ord v => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.Networks.Types.PU v x t) v t
+instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Types.PU v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Types.PU v x t) v x
+instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Types.PU v x t) v x
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.Networks.Types.PU v x t) v x t
+instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.Changeset v)
+instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.I v, NITTA.Intermediate.Types.I v)
+instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.O v, NITTA.Intermediate.Types.O v)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Model.Networks.Types.PU v x t) v
+instance NITTA.Project.Types.TargetSystemComponent (NITTA.Model.Networks.Types.PU v x t)
+instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.Networks.Types.PU v x t) v x
+
+
+module NITTA.Project.Context
+
+-- | projectContext - used for template generation
+projectContext :: (TargetSystemComponent m, Testable m v x) => Project m v x -> GingerContext p (Writer Text) Text
+
+-- | projectContext - used for Implementation generation
+implementationContext :: (TargetSystemComponent m, Testable m v x, ToGVal (Run p (Writer Text) Text) a) => Project m v x -> a -> GingerContext p (Writer Text) Text
+
+
+module NITTA.Project.Template
+writeRenderedTemplates :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
+
+-- | collectNittaPath - read nittaPath from all provided target templates
+--   and return it if all of them are the same.
+collectNittaPath :: [FilePath] -> IO (Either Text FilePath)
+
+-- | projectContext - used for template generation
+projectContext :: (TargetSystemComponent m, Testable m v x) => Project m v x -> GingerContext p (Writer Text) Text
+instance GHC.Show.Show NITTA.Project.Template.TemplateConf
+instance GHC.Generics.Generic NITTA.Project.Template.TemplateConf
+instance GHC.Show.Show NITTA.Project.Template.Conf
+instance Data.Default.Class.Default NITTA.Project.Template.TemplateConf
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Project.Template.TemplateConf
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Project.Template.TemplateConf
+instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Data.Default.Class.Default (Data.HashMap.Internal.HashMap k v)
+
+
+module NITTA.Project
+
+-- | Write project with all available parts.
+writeProject :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
+runTestbench :: (WithFunctions u a, ProcessorUnit u v1 x1 t, Hashable v2, IsString v2, DefaultX u x2, Val x2, Show a, Read x3, Eq v2, TargetSystemComponent u, Testable u v2 x3) => Project u v2 x3 -> IO (TestbenchReport v2 x3)
+
+
+module NITTA.Intermediate.Simulation
+
+-- | Functional algorithm simulation
+simulateDataFlowGraph :: (Var v, Val x, WithFunctions g (F v x)) => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
+simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -> Cntx v x
+reorderAlgorithm :: (Ord a, Typeable x, Typeable a, IsString a, ToString a, Suffix a, Hashable a) => [F a x] -> [F a x]
 
 
 module NITTA.Model.ProcessorUnits.Shift
@@ -1966,7 +1993,7 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --               0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
 --               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
 --           relations:
---               0) Vertical 0 1
+--               0) Vertical {vUp = 0, vDown = 1}
 --           nextTick: 3
 --           nextUid: 2
 --   
@@ -1989,8 +2016,8 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --               2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
 --               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
 --           relations:
---               0) Vertical 2 3
---               1) Vertical 0 1
+--               0) Vertical {vUp = 2, vDown = 3}
+--               1) Vertical {vUp = 0, vDown = 1}
 --           nextTick: 4
 --           nextUid: 4
 --   
@@ -2022,9 +2049,9 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --               4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
 --               5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
 --           relations:
---               0) Vertical 4 5
---               1) Vertical 2 3
---               2) Vertical 0 1
+--               0) Vertical {vUp = 4, vDown = 5}
+--               1) Vertical {vUp = 2, vDown = 3}
+--               2) Vertical {vUp = 0, vDown = 1}
 --           nextTick: 7
 --           nextUid: 6
 --   
@@ -2052,14 +2079,14 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --               7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
 --               8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
 --           relations:
---               0) Vertical 8 6
---               1) Vertical 8 4
---               2) Vertical 8 2
---               3) Vertical 8 0
---               4) Vertical 6 7
---               5) Vertical 4 5
---               6) Vertical 2 3
---               7) Vertical 0 1
+--               0) Vertical {vUp = 8, vDown = 6}
+--               1) Vertical {vUp = 8, vDown = 4}
+--               2) Vertical {vUp = 8, vDown = 2}
+--               3) Vertical {vUp = 8, vDown = 0}
+--               4) Vertical {vUp = 6, vDown = 7}
+--               5) Vertical {vUp = 4, vDown = 5}
+--               6) Vertical {vUp = 2, vDown = 3}
+--               7) Vertical {vUp = 0, vDown = 1}
 --           nextTick: 8
 --           nextUid: 9
 --   
@@ -2284,7 +2311,7 @@ instance GHC.Classes.Ord v => NITTA.Intermediate.Variable.Variables (NITTA.Model
 
 module NITTA.Model.ProcessorUnits.Broken
 data Broken v x t
-Broken :: [F v x] -> [v] -> [v] -> Maybe t -> Maybe (t, F v x) -> [ProcessStepID] -> Process t (StepInfo v x t) -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Broken v x t
+Broken :: [F v x] -> [v] -> [v] -> Maybe t -> Maybe (t, F v x) -> [ProcessStepID] -> Process t (StepInfo v x t) -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Broken v x t
 [$sel:remain:Broken] :: Broken v x t -> [F v x]
 [$sel:targets:Broken] :: Broken v x t -> [v]
 [$sel:sources:Broken] :: Broken v x t -> [v]
@@ -2311,6 +2338,9 @@ Broken :: [F v x] -> [v] -> [v] -> Maybe t -> Maybe (t, F v x) -> [ProcessStepID
 -- | lost source endpoint due synthesis
 [$sel:lostEndpointSource:Broken] :: Broken v x t -> Bool
 [$sel:wrongAttr:Broken] :: Broken v x t -> Bool
+[$sel:lostFunctionInVerticalRelation:Broken] :: Broken v x t -> Bool
+[$sel:lostEndpointInVerticalRelation:Broken] :: Broken v x t -> Bool
+[$sel:lostInstructionInVerticalRelation:Broken] :: Broken v x t -> Bool
 [$sel:unknownDataOut:Broken] :: Broken v x t -> Bool
 
 -- | A processor unit control ports (signals, flags).
@@ -2546,6 +2576,13 @@ instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NIT
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem u v x) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem u v x) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 
+
+module NITTA.Model.ProcessIntegrity
+class ProcessIntegrity u
+checkProcessIntegrity :: ProcessIntegrity u => u -> Either String ()
+isProcessIntegrity :: ProcessIntegrity u => u -> Bool
+instance NITTA.Model.ProcessorUnits.Types.ProcessorUnit (pu v x t) v x t => NITTA.Model.ProcessIntegrity.ProcessIntegrity (pu v x t)
+
 module NITTA.Model.Problems.ViewHelper
 data DecisionView
 RootView :: DecisionView
@@ -2606,6 +2643,7 @@ BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) ->
 [bnSignalBusWidth] :: BusNetwork tag v x t -> Int
 [ioSync] :: BusNetwork tag v x t -> IOSynchronization
 [bnEnv] :: BusNetwork tag v x t -> UnitEnv (BusNetwork tag v x t)
+data family Instruction pu :: Type
 
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
