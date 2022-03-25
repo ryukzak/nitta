@@ -80,7 +80,7 @@ down2up pu = relationsMap $ mapMaybe get $ relations $ process pu
 pid2intermediate pu = M.fromList $ mapMaybe get $ steps $ process pu
     where
         get s@Step{pID}
-            | Just f <- getFunction s = Just (pID, f)
+            | Just f <- getIntermediate s = Just (pID, f)
             | otherwise = Nothing
 
 pid2endpoint pu = M.fromList $ mapMaybe get $ steps $ process pu

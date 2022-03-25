@@ -162,7 +162,7 @@ instance {-# OVERLAPS #-} NextTick (Process t si) t where
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
         where
-            get Step{pDesc} | FStep f <- descent pDesc = Just f
+            get Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
             get _ = Nothing
 
 -- |Unique ID of a process step. Uniquity presented only inside PU.
@@ -191,8 +191,7 @@ data StepInfo v x t where
     -- |Apply refactoring
     RefactorStep :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
     -- |intermidiate level step (function execution)
-    -- FIXME: rename to IntermediateStep
-    FStep :: F v x -> StepInfo v x t
+    IntermediateStep :: F v x -> StepInfo v x t
     -- |endpoint level step (source or target)
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |process unit instruction (depends on process unit type)
@@ -212,13 +211,13 @@ isRefactorStep _ = False
 instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
     show (RefactorStep ref) = "Refactor: " <> show ref
-    show (FStep F{fun}) = "Intermediate: " <> show fun
+    show (IntermediateStep F{fun}) = "Intermediate: " <> show fun
     show (EndpointRoleStep eff) = "Endpoint: " <> show eff
     show (InstructionStep instr) = "Instruction: " <> show instr
     show NestedStep{nTitle, nStep = Step{pDesc}} = "@" <> toString nTitle <> " " <> show pDesc
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
-    patch diff (FStep f) = FStep $ patch diff f
+    patch diff (IntermediateStep f) = IntermediateStep $ patch diff f
     patch diff (EndpointRoleStep ep) = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _ instr = instr

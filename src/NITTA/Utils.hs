@@ -30,7 +30,6 @@ module NITTA.Utils (
     -- *Process inspection
     endpointAt,
     getEndpoint,
-    getFunction,
     getInstruction,
     getCad,
     getEndpoints,
@@ -38,8 +37,9 @@ module NITTA.Utils (
     inputsPushedAt,
     stepsInterval,
     relatedEndpoints,
-    isFB,
-    getFBs,
+    isIntermediate,
+    getIntermediate,
+    getIntermediates,
     isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
@@ -122,15 +122,12 @@ endpointAt t p =
 getCad Step{pDesc} | CADStep cad <- descent pDesc = Just cad
 getCad _ = Nothing
 
-isFB s = isJust $ getFB s
+isIntermediate s = isJust $ getIntermediate s
 
-getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
-getFB _ = Nothing
+getIntermediate Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
+getIntermediate _ = Nothing
 
-getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
-
-getFunction Step{pDesc} | FStep role <- descent pDesc = Just role
-getFunction _ = Nothing
+getIntermediates p = mapMaybe getIntermediate $ sortOn stepStart $ steps p
 
 isEndpoint ep = isJust $ getEndpoint ep
 

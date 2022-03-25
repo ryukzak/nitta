@@ -148,7 +148,7 @@ scheduleFunctionRevoke f = do
     scheduleStep (singleton $ nextTick schedule) $ CADStep $ "revoke " <> show f
 
 -- |Add to the process description information about function evaluation.
-scheduleFunction ti f = scheduleStep ti $ FStep f
+scheduleFunction ti f = scheduleStep ti $ IntermediateStep f
 
 scheduleRefactoring ti ref = scheduleStep ti $ RefactorStep ref
 

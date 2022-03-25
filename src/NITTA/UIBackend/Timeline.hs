@@ -97,7 +97,7 @@ processTimelines Process{steps, relations} =
             , verticalRelations = [(u, d) | (Vertical u d) <- relations]
             }
 
-viewpoint FStep{} = ViewPointID{level = "Fun", component = []}
+viewpoint IntermediateStep{} = ViewPointID{level = "Fun", component = []}
 viewpoint RefactorStep{} = ViewPointID{level = "Ref", component = []}
 viewpoint CADStep{} = ViewPointID{level = "CAD", component = []}
 viewpoint EndpointRoleStep{} = ViewPointID{level = "EndPoint", component = []}
