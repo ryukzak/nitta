@@ -32,9 +32,8 @@ import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Explore
-import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe

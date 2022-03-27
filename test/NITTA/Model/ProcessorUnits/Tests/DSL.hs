@@ -129,6 +129,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types (PUClasses)
 import NITTA.Model.Problems
+import NITTA.Model.ProcessIntegrity
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.TargetSystem
@@ -165,12 +166,12 @@ data UnitTestState u v x = UnitTestState
 type Statement u v x r = HasCallStack => StateT (UnitTestState u v x) IO r
 
 type PUStatement pu v x t r =
-    (ProcessorUnit pu v x t, EndpointProblem pu v t) =>
+    (HasCallStack, ProcessorUnit pu v x t, ProcessIntegrity pu, BreakLoopProblem pu v x, EndpointProblem pu v t) =>
     StateT (UnitTestState pu v x) IO r
 
 type TSStatement x r =
     forall tag v t.
-    (tag ~ T.Text, v ~ T.Text, t ~ Int, Val x) =>
+    (HasCallStack, tag ~ T.Text, v ~ T.Text, t ~ Int, Val x) =>
     Statement (TargetSystem (BusNetwork tag v x t) tag v x t) v x r
 
 unitTestCase ::
@@ -327,8 +328,14 @@ assertLocks expectLocks = do
 assertSynthesisDone :: PUStatement pu v x t ()
 assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
-    unless (isProcessComplete unit functs && null (endpointOptions unit)) $
-        lift $ assertFailure $ testName <> " Process is not done: " <> incompleteProcessMsg unit functs
+    unless (null $ endpointOptions unit) $
+        lift $ assertFailure $ "In ''" <> testName <> "'' process still has endpoint options:\n" <> show (pretty $ process unit)
+    unless (isProcessComplete unit functs) $
+        lift $ assertFailure $ "In ''" <> testName <> "'' process is incomplete.\nAlgorithm: " <> show functs <> "\nProcess:\n" <> show (pretty $ process unit)
+
+    case checkProcessIntegrity unit of
+        Left err -> lift $ assertFailure $ testName <> " broken process: " <> err
+        Right () -> return ()
 
 assertPUCoSimulation ::
     ( PUClasses pu v x Int
@@ -338,22 +345,24 @@ assertPUCoSimulation ::
     , Var v
     ) =>
     PUStatement pu v x Int ()
-assertPUCoSimulation =
-    let checkInputVars pu fs cntx =
-            S.union
-                (unionsMap inputs $ functions pu)
-                (unionsMap inputs fs)
-                == S.fromList (map fst cntx)
-     in do
-            UnitTestState{unit, functs, testName, cntxCycle} <- get
-            unless (checkInputVars unit functs cntxCycle) $
-                lift $ assertFailure "you forgot to set initial values before coSimulation."
+assertPUCoSimulation = do
+    UnitTestState{unit, functs, testName, cntxCycle} <- get
+    unless (checkInputVars unit functs cntxCycle) $
+        lift $ assertFailure "you forgot to set initial values before coSimulation."
 
-            report@TestbenchReport{tbStatus} <-
-                lift $ puCoSim testName unit cntxCycle functs False
+    report@TestbenchReport{tbStatus} <-
+        lift $ puCoSim testName unit cntxCycle functs False
 
-            unless tbStatus $
-                lift $ assertFailure $ "coSimulation failed: \n" <> show report
+    unless tbStatus $
+        lift $ assertFailure $ "coSimulation failed: \n" <> show report
+    where
+        checkInputVars pu fs cntx =
+            let requiredVars =
+                    S.union
+                        (unionsMap inputs $ functions pu)
+                        (unionsMap inputs fs)
+                initialCntx = S.fromList (map fst cntx)
+             in requiredVars == initialCntx
 
 assignLua :: T.Text -> TSStatement x ()
 assignLua src = do

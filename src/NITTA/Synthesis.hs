@@ -78,11 +78,9 @@ NITTA.Project.Types:Project            |        |                               
 @
 -}
 module NITTA.Synthesis (
-    module NITTA.Synthesis.Bind,
-    module NITTA.Synthesis.Dataflow,
     module NITTA.Synthesis.Explore,
     module NITTA.Synthesis.Method,
-    module NITTA.Synthesis.Refactor,
+    module NITTA.Synthesis.Steps,
     module NITTA.Synthesis.Types,
     mkModelWithOneNetwork,
     TargetSynthesis (..),
@@ -104,11 +102,9 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
-import NITTA.Synthesis.Bind
-import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
-import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
 import System.Directory
 import System.FilePath

@@ -27,7 +27,7 @@ import GHC.Generics
 import NITTA.Intermediate.Variable
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Time
-import NITTA.Utils
+import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
 {- |Dataflow option (@tp ~ TimeConstraint t@) or decision (@tp Z Interval t@)

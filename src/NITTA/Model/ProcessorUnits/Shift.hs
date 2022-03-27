@@ -189,9 +189,10 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
                 let process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out
                         when (null sources') $ do
-                            high <- scheduleFunction (a ... sup epAt) f
-                            let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
-                            establishVerticalRelations high low
+                            -- FIXME: here ([]) you can see the source of error.
+                            -- Function don't connected to bind step. It should be fixed.
+                            scheduleFunctionFinish_ [] f $ a ... sup epAt
+                        return endpoints
                  in pu
                         { process_ = process_'
                         , sources = sources'

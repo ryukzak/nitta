@@ -9,15 +9,15 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.ConstantFolding
+Module      : NITTA.Synthesis.OptimizeAccum
 Description :
-Copyright   : (c) Daniil Prohorov, 2021
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.ConstantFolding (
-    ConstantFoldingMetrics (..),
+module NITTA.Synthesis.Steps.OptimizeAccum (
+    OptimizeAccumMetrics (..),
 ) where
 
 import Data.Aeson (ToJSON)
@@ -29,22 +29,22 @@ import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Synthesis.Types
 
-data ConstantFoldingMetrics = ConstantFoldingMetrics
+data OptimizeAccumMetrics = OptimizeAccumMetrics
     deriving (Generic)
 
-instance ToJSON ConstantFoldingMetrics
+instance ToJSON OptimizeAccumMetrics
 
 instance
     (UnitTag tag, VarValTime v x t) =>
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
         (TargetSystem (BusNetwork tag v x t) tag v x t)
-        (ConstantFolding v x)
-        (ConstantFolding v x)
-        ConstantFoldingMetrics
+        (OptimizeAccum v x)
+        (OptimizeAccum v x)
+        OptimizeAccumMetrics
     where
-    decisions SynthesisState{sTarget} o = [(o, constantFoldingDecision sTarget o)]
+    decisions SynthesisState{sTarget} o = [(o, optimizeAccumDecision sTarget o)]
 
-    parameters SynthesisState{} ConstantFolding{} _ = ConstantFoldingMetrics
+    parameters SynthesisState{} OptimizeAccum{} _ = OptimizeAccumMetrics
 
-    estimate _ctx _o _d ConstantFoldingMetrics = 5050
+    estimate _ctx _o _d OptimizeAccumMetrics = 5000

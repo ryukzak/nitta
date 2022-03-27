@@ -36,9 +36,7 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Bind ()
-import NITTA.Synthesis.Dataflow ()
-import NITTA.Synthesis.Refactor ()
+import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
 import NITTA.Utils
 import System.Log.Logger

@@ -455,6 +455,24 @@ test_complex_examples =
 test_trace_features =
     [ traceLuaSimulationTestCase
         pInt
+        "loop argument tracing"
+        [__i|
+            function counter(i)
+                counter(i + 1)
+            end
+            counter(0)
+        |]
+        [__i|
+            | Cycle  | i      |
+            |:-------|:-------|
+            | 1      | 0.000  |
+            | 2      | 1.000  |
+            | 3      | 2.000  |
+            | 4      | 3.000  |
+            | 5      | 4.000  |\n
+            |]
+    , traceLuaSimulationTestCase
+        pInt
         "simple trace"
         [__i|
             function counter(i)

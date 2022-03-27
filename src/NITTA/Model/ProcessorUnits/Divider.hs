@@ -25,6 +25,7 @@ module NITTA.Model.ProcessorUnits.Divider (
     IOPorts (..),
 ) where
 
+import Control.Monad
 import Data.Default
 import Data.List (partition)
 import qualified Data.List as L
@@ -217,7 +218,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                                 scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
                             }
     endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
-        | ([job@WaitResults{results}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
+        | ([job@WaitResults{results, function}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
             let ([(tag, allVs)], results') = partition ((vs `S.isSubsetOf`) . snd) results
                 allVs' = allVs S.\\ vs
                 results'' = filterEmptyResults $ (tag, allVs') : results'
@@ -229,6 +230,8 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                     { jobs = jobs''
                     , process_ = execSchedule pu $ do
                         scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag
+                        when (null jobs') $ do
+                            scheduleFunctionFinish_ [] function $ 0 ... sup epAt
                     }
     endpointDecision _pu d = error [i|incorrect decision #{ d } for Divider|]
 
