@@ -33,7 +33,7 @@ Stability   : experimental
 </span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
 </span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Interval.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Interval</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">inf</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">sup</span></span><span class="hs-special">)</span><span>
 </span><span id="line-35"></span><span>
-</span><span id="line-36"></span><span id="local-6989586621680054902"><span id="local-6989586621680054903"></span></span><span class="hs-keyword">data</span><span> </span><span id="DataflowMetrics"><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-var">DataflowMetrics</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DataflowMetrics"><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-var">DataflowMetrics</span></a></span></span><span>
+</span><span id="line-36"></span><span id="local-6989586621680055372"><span id="local-6989586621680055373"></span></span><span class="hs-keyword">data</span><span> </span><span id="DataflowMetrics"><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-var">DataflowMetrics</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DataflowMetrics"><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-var">DataflowMetrics</span></a></span></span><span>
 </span><span id="line-37"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="pWaitTime"><span class="annot"><span class="annottext">DataflowMetrics -&gt; Float
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pWaitTime"><span class="hs-identifier hs-var hs-var">pWaitTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
 </span><span id="line-38"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="pRestrictedTime"><span class="annot"><span class="annottext">DataflowMetrics -&gt; Bool
@@ -54,68 +54,68 @@ $cto :: forall x. Rep DataflowMetrics x -&gt; DataflowMetrics
 $cfrom :: forall x. DataflowMetrics -&gt; Rep DataflowMetrics x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-44"></span><span>
-</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680054887"><span id="local-6989586621680054889"><span id="local-6989586621680054891"><span id="local-6989586621680054893"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span></span></span></span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680055357"><span id="local-6989586621680055359"><span id="local-6989586621680055361"><span id="local-6989586621680055363"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span></span></span></span></span><span>
 </span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span id="local-6989586621680054882"><span id="local-6989586621680054883"><span id="local-6989586621680054884"><span id="local-6989586621680054885"><span class="hs-keyword">instance</span><span>
-</span><span id="line-48"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-47"></span><span id="local-6989586621680055352"><span id="local-6989586621680055353"><span id="local-6989586621680055354"><span id="local-6989586621680055355"><span class="hs-keyword">instance</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
 </span><span id="line-49"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecisionCls"><span class="hs-identifier hs-type">SynthesisDecisionCls</span></a></span><span>
-</span><span id="line-50"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.TargetSystem.html#TargetSystem"><span class="hs-identifier hs-type">TargetSystem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-51"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.TargetSystem.html#TargetSystem"><span class="hs-identifier hs-type">TargetSystem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054883"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-52"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#TimeConstraint"><span class="hs-identifier hs-type">TimeConstraint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-53"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054885"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680054884"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Interval</span></span><span> </span><span class="annot"><a href="#local-6989586621680054882"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.TargetSystem.html#TargetSystem"><span class="hs-identifier hs-type">TargetSystem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.TargetSystem.html#TargetSystem"><span class="hs-identifier hs-type">TargetSystem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#TimeConstraint"><span class="hs-identifier hs-type">TimeConstraint</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680055354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Interval</span></span><span> </span><span class="annot"><a href="#local-6989586621680055352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-54"></span><span>        </span><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span><span>
 </span><span id="line-55"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-56"></span><span>    </span><span id="local-6989586621680054877"><span class="annot"><span class="annottext">decisions :: SynthesisState
+</span><span id="line-56"></span><span>    </span><span id="local-6989586621680055347"><span class="annot"><span class="annottext">decisions :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; DataflowSt tag v (TimeConstraint t)
 -&gt; [(DataflowSt tag v (Interval t),
      TargetSystem (BusNetwork tag v x t) tag v x t)]
-</span><a href="NITTA.Synthesis.Types.html#decisions"><span class="hs-identifier hs-var hs-var hs-var hs-var">decisions</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054874"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Types.html#decisions"><span class="hs-identifier hs-var hs-var hs-var hs-var">decisions</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055344"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
 sTarget :: forall m tag v x t. SynthesisState m tag v x t -&gt; m
 sTarget :: TargetSystem (BusNetwork tag v x t) tag v x t
-</span><a href="NITTA.Synthesis.Types.html#sTarget"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680054872"><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
-</span><a href="#local-6989586621680054872"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680054871"><span class="annot"><span class="annottext">d :: DataflowSt tag v (Interval t)
-</span><a href="#local-6989586621680054871"><span class="hs-identifier hs-var hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
+</span><a href="NITTA.Synthesis.Types.html#sTarget"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680055342"><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
+</span><a href="#local-6989586621680055342"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680055341"><span class="annot"><span class="annottext">d :: DataflowSt tag v (Interval t)
+</span><a href="#local-6989586621680055341"><span class="hs-identifier hs-var hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
 -&gt; DataflowSt tag v (Interval t)
 forall t tag v.
 Time t =&gt;
 DataflowSt tag v (TimeConstraint t)
 -&gt; DataflowSt tag v (Interval t)
 </span><a href="NITTA.Model.Problems.Dataflow.html#dataflowOption2decision"><span class="hs-identifier hs-var">dataflowOption2decision</span></a></span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
-</span><a href="#local-6989586621680054872"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
-</span><a href="#local-6989586621680054871"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="#local-6989586621680055342"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
+</span><a href="#local-6989586621680055341"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; DataflowSt tag v (Interval t)
 -&gt; TargetSystem (BusNetwork tag v x t) tag v x t
 forall u tag v t.
 DataflowProblem u tag v t =&gt;
 u -&gt; DataflowSt tag v (Interval t) -&gt; u
 </span><a href="NITTA.Model.Problems.Dataflow.html#dataflowDecision"><span class="hs-identifier hs-var">dataflowDecision</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
-</span><a href="#local-6989586621680054874"><span class="hs-identifier hs-var">sTarget</span></a></span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
-</span><a href="#local-6989586621680054871"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680055344"><span class="hs-identifier hs-var">sTarget</span></a></span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
+</span><a href="#local-6989586621680055341"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span>    </span><span id="local-6989586621680054868"><span class="annot"><span class="annottext">parameters :: SynthesisState
+</span><span id="line-58"></span><span>    </span><span id="local-6989586621680055338"><span class="annot"><span class="annottext">parameters :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; DataflowSt tag v (TimeConstraint t)
 -&gt; DataflowSt tag v (Interval t)
 -&gt; DataflowMetrics
-</span><a href="NITTA.Synthesis.Types.html#parameters"><span class="hs-identifier hs-var hs-var hs-var hs-var">parameters</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054866"><span class="annot"><span class="annottext">Set v
+</span><a href="NITTA.Synthesis.Types.html#parameters"><span class="hs-identifier hs-var hs-var hs-var hs-var">parameters</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055336"><span class="annot"><span class="annottext">Set v
 transferableVars :: forall m tag v x t. SynthesisState m tag v x t -&gt; Set v
 transferableVars :: Set v
-</span><a href="NITTA.Synthesis.Types.html#transferableVars"><span class="hs-identifier hs-var hs-var">transferableVars</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680054864"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Types.html#transferableVars"><span class="hs-identifier hs-var hs-var">transferableVars</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680055334"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
 sTarget :: TargetSystem (BusNetwork tag v x t) tag v x t
 sTarget :: forall m tag v x t. SynthesisState m tag v x t -&gt; m
-</span><a href="#local-6989586621680054864"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054862"><span class="annot"><span class="annottext">(tag, EndpointSt v (TimeConstraint t))
+</span><a href="#local-6989586621680055334"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055332"><span class="annot"><span class="annottext">(tag, EndpointSt v (TimeConstraint t))
 dfSource :: forall tag v tp. DataflowSt tag v tp -&gt; (tag, EndpointSt v tp)
 dfSource :: (tag, EndpointSt v (TimeConstraint t))
-</span><a href="NITTA.Model.Problems.Dataflow.html#dfSource"><span class="hs-identifier hs-var hs-var">dfSource</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680054860"><span class="annot"><span class="annottext">[(tag, EndpointSt v (TimeConstraint t))]
+</span><a href="NITTA.Model.Problems.Dataflow.html#dfSource"><span class="hs-identifier hs-var hs-var">dfSource</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680055330"><span class="annot"><span class="annottext">[(tag, EndpointSt v (TimeConstraint t))]
 dfTargets :: forall tag v tp. DataflowSt tag v tp -&gt; [(tag, EndpointSt v tp)]
 dfTargets :: [(tag, EndpointSt v (TimeConstraint t))]
 </span><a href="NITTA.Model.Problems.Dataflow.html#dfTargets"><span class="hs-identifier hs-var hs-var">dfTargets</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-59"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#TimeConstraint"><span class="hs-identifier hs-type">TimeConstraint</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054857"><span class="annot"><span class="annottext">Interval t
+</span><span id="line-59"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#TimeConstraint"><span class="hs-identifier hs-type">TimeConstraint</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055327"><span class="annot"><span class="annottext">Interval t
 tcAvailable :: forall t. TimeConstraint t -&gt; Interval t
 tcAvailable :: Interval t
-</span><a href="NITTA.Model.Time.html#tcAvailable"><span class="hs-identifier hs-var hs-var">tcAvailable</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680054855"><span class="annot"><span class="annottext">Interval t
+</span><a href="NITTA.Model.Time.html#tcAvailable"><span class="hs-identifier hs-var hs-var">tcAvailable</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680055325"><span class="annot"><span class="annottext">Interval t
 tcDuration :: forall t. TimeConstraint t -&gt; Interval t
 tcDuration :: Interval t
 </span><a href="NITTA.Model.Time.html#tcDuration"><span class="hs-identifier hs-var hs-var">tcDuration</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">EndpointSt v (TimeConstraint t) -&gt; TimeConstraint t
@@ -127,7 +127,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; EndpointSt v (TimeConstraint t)
 forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">(tag, EndpointSt v (TimeConstraint t))
-</span><a href="#local-6989586621680054862"><span class="hs-identifier hs-var">dfSource</span></a></span><span>
+</span><a href="#local-6989586621680055332"><span class="hs-identifier hs-var">dfSource</span></a></span><span>
 </span><span id="line-60"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">DataflowMetrics :: Float -&gt; Bool -&gt; [Float] -&gt; DataflowMetrics
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span><span>
 </span><span id="line-61"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pWaitTime :: Float
@@ -136,22 +136,22 @@ forall a b. (Integral a, Num b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Interval t -&gt; t
 forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">inf</span></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680054857"><span class="hs-identifier hs-var">tcAvailable</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680055327"><span class="hs-identifier hs-var">tcAvailable</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-62"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pRestrictedTime :: Bool
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pRestrictedTime"><span class="hs-identifier hs-var">pRestrictedTime</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t -&gt; Int
 forall a. Enum a =&gt; a -&gt; Int
 </span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Interval t -&gt; t
 forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">sup</span></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680054855"><span class="hs-identifier hs-var">tcDuration</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621680055325"><span class="hs-identifier hs-var">tcDuration</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Int
 forall a. Bounded a =&gt; a
 </span><span class="hs-identifier hs-var">maxBound</span></span><span>
 </span><span id="line-63"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pNotTransferableInputs :: [Float]
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pNotTransferableInputs"><span class="hs-identifier hs-var">pNotTransferableInputs</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-64"></span><span>                    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680054849"><span class="annot"><span class="annottext">fs :: [F v x]
-</span><a href="#local-6989586621680054849"><span class="hs-identifier hs-var hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BusNetwork tag v x t -&gt; [F v x]
+</span><span id="line-64"></span><span>                    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680055319"><span class="annot"><span class="annottext">fs :: [F v x]
+</span><a href="#local-6989586621680055319"><span class="hs-identifier hs-var hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BusNetwork tag v x t -&gt; [F v x]
 forall a f. WithFunctions a f =&gt; a -&gt; [f]
 </span><a href="NITTA.Intermediate.Types.html#functions"><span class="hs-identifier hs-var">functions</span></a></span><span> </span><span class="annot"><span class="annottext">(BusNetwork tag v x t -&gt; [F v x])
 -&gt; BusNetwork tag v x t -&gt; [F v x]
@@ -160,9 +160,9 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 -&gt; BusNetwork tag v x t
 forall u tag v x t. TargetSystem u tag v x t -&gt; u
 </span><a href="NITTA.Model.TargetSystem.html#mUnit"><span class="hs-identifier hs-var hs-var">mUnit</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
-</span><a href="#local-6989586621680054864"><span class="hs-identifier hs-var">sTarget</span></a></span><span>
-</span><span id="line-65"></span><span>                        </span><span id="local-6989586621680054846"><span class="annot"><span class="annottext">vs :: Set v
-</span><a href="#local-6989586621680054846"><span class="hs-identifier hs-var hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((tag, EndpointSt v (TimeConstraint t)) -&gt; Set v)
+</span><a href="#local-6989586621680055334"><span class="hs-identifier hs-var">sTarget</span></a></span><span>
+</span><span id="line-65"></span><span>                        </span><span id="local-6989586621680055316"><span class="annot"><span class="annottext">vs :: Set v
+</span><a href="#local-6989586621680055316"><span class="hs-identifier hs-var hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((tag, EndpointSt v (TimeConstraint t)) -&gt; Set v)
 -&gt; [(tag, EndpointSt v (TimeConstraint t))] -&gt; Set v
 forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">EndpointSt v (TimeConstraint t) -&gt; Set v
@@ -177,12 +177,12 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 -&gt; EndpointSt v (TimeConstraint t)
 forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(tag, EndpointSt v (TimeConstraint t))]
-</span><a href="#local-6989586621680054860"><span class="hs-identifier hs-var">dfTargets</span></a></span><span>
-</span><span id="line-66"></span><span>                        </span><span id="local-6989586621680054842"><span class="annot"><span class="annottext">affectedFunctions :: [F v x]
-</span><a href="#local-6989586621680054842"><span class="hs-identifier hs-var hs-var">affectedFunctions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
+</span><a href="#local-6989586621680055330"><span class="hs-identifier hs-var">dfTargets</span></a></span><span>
+</span><span id="line-66"></span><span>                        </span><span id="local-6989586621680055312"><span class="annot"><span class="annottext">affectedFunctions :: [F v x]
+</span><a href="#local-6989586621680055312"><span class="hs-identifier hs-var hs-var">affectedFunctions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; [F v x]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680054841"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680054841"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680055311"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680055311"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
@@ -190,23 +190,23 @@ forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">F v x -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680054841"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+</span><a href="#local-6989586621680055311"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">`S.intersection`</span></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680054846"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680054849"><span class="hs-identifier hs-var">fs</span></a></span><span>
-</span><span id="line-67"></span><span>                        </span><span id="local-6989586621680054836"><span class="annot"><span class="annottext">notTransferableVars :: [Set v]
-</span><a href="#local-6989586621680054836"><span class="hs-identifier hs-var hs-var">notTransferableVars</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Set v) -&gt; [F v x] -&gt; [Set v]
+</span><a href="#local-6989586621680055316"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680055319"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-67"></span><span>                        </span><span id="local-6989586621680055306"><span class="annot"><span class="annottext">notTransferableVars :: [Set v]
+</span><a href="#local-6989586621680055306"><span class="hs-identifier hs-var hs-var">notTransferableVars</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Set v) -&gt; [F v x] -&gt; [Set v]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680054835"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680054835"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680055305"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680055305"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680054835"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+</span><a href="#local-6989586621680055305"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">S.\\</span></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680054866"><span class="hs-identifier hs-var">transferableVars</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680054842"><span class="hs-identifier hs-var">affectedFunctions</span></a></span><span>
+</span><a href="#local-6989586621680055336"><span class="hs-identifier hs-var">transferableVars</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680055312"><span class="hs-identifier hs-var">affectedFunctions</span></a></span><span>
 </span><span id="line-68"></span><span>                     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">(Set v -&gt; Float) -&gt; [Set v] -&gt; [Float]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Float
@@ -216,36 +216,36 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Set v]
-</span><a href="#local-6989586621680054836"><span class="hs-identifier hs-var">notTransferableVars</span></a></span><span>
+</span><a href="#local-6989586621680055306"><span class="hs-identifier hs-var">notTransferableVars</span></a></span><span>
 </span><span id="line-69"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-70"></span><span>
-</span><span id="line-71"></span><span>    </span><span id="local-6989586621680054832"><span class="annot"><span class="annottext">estimate :: SynthesisState
+</span><span id="line-71"></span><span>    </span><span id="local-6989586621680055302"><span class="annot"><span class="annottext">estimate :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; DataflowSt tag v (TimeConstraint t)
 -&gt; DataflowSt tag v (Interval t)
 -&gt; DataflowMetrics
 -&gt; Float
-</span><a href="NITTA.Synthesis.Types.html#estimate"><span class="hs-identifier hs-var hs-var hs-var hs-var">estimate</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054830"><span class="annot"><span class="annottext">Int
+</span><a href="NITTA.Synthesis.Types.html#estimate"><span class="hs-identifier hs-var hs-var hs-var hs-var">estimate</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055300"><span class="annot"><span class="annottext">Int
 numberOfDataflowOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; Int
 numberOfDataflowOptions :: Int
-</span><a href="NITTA.Synthesis.Types.html#numberOfDataflowOptions"><span class="hs-identifier hs-var hs-var">numberOfDataflowOptions</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680054828"><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
-</span><a href="#local-6989586621680054828"><span class="hs-identifier hs-var">_o</span></a></span></span><span> </span><span id="local-6989586621680054827"><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
-</span><a href="#local-6989586621680054827"><span class="hs-identifier hs-var">_d</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span><span class="hs-special">{</span><span id="local-6989586621680054826"><span class="annot"><span class="annottext">Float
+</span><a href="NITTA.Synthesis.Types.html#numberOfDataflowOptions"><span class="hs-identifier hs-var hs-var">numberOfDataflowOptions</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680055298"><span class="annot"><span class="annottext">DataflowSt tag v (TimeConstraint t)
+</span><a href="#local-6989586621680055298"><span class="hs-identifier hs-var">_o</span></a></span></span><span> </span><span id="local-6989586621680055297"><span class="annot"><span class="annottext">DataflowSt tag v (Interval t)
+</span><a href="#local-6989586621680055297"><span class="hs-identifier hs-var">_d</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Dataflow.html#DataflowMetrics"><span class="hs-identifier hs-type">DataflowMetrics</span></a></span><span class="hs-special">{</span><span id="local-6989586621680055296"><span class="annot"><span class="annottext">Float
 pWaitTime :: Float
 pWaitTime :: DataflowMetrics -&gt; Float
-</span><a href="#local-6989586621680054826"><span class="hs-identifier hs-var hs-var">pWaitTime</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680054825"><span class="annot"><span class="annottext">[Float]
+</span><a href="#local-6989586621680055296"><span class="hs-identifier hs-var hs-var">pWaitTime</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680055295"><span class="annot"><span class="annottext">[Float]
 pNotTransferableInputs :: [Float]
 pNotTransferableInputs :: DataflowMetrics -&gt; [Float]
-</span><a href="#local-6989586621680054825"><span class="hs-identifier hs-var hs-var">pNotTransferableInputs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680054824"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680055295"><span class="hs-identifier hs-var hs-var">pNotTransferableInputs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680055294"><span class="annot"><span class="annottext">Bool
 pRestrictedTime :: Bool
 pRestrictedTime :: DataflowMetrics -&gt; Bool
-</span><a href="#local-6989586621680054824"><span class="hs-identifier hs-var hs-var">pRestrictedTime</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680055294"><span class="hs-identifier hs-var hs-var">pRestrictedTime</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-72"></span><span>        </span><span class="annot"><span class="annottext">Float
 </span><span class="hs-number">2000</span></span><span>
 </span><span id="line-73"></span><span>            </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680054830"><span class="hs-identifier hs-var">numberOfDataflowOptions</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621680055300"><span class="hs-identifier hs-var">numberOfDataflowOptions</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
 forall p. Num p =&gt; p
@@ -256,7 +256,7 @@ forall p. Num p =&gt; Bool -&gt; p -&gt; p
 </span><span id="line-74"></span><span>            </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680054824"><span class="hs-identifier hs-var">pRestrictedTime</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Float -&gt; Float
+</span><a href="#local-6989586621680055294"><span class="hs-identifier hs-var">pRestrictedTime</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Float -&gt; Float
 forall p. Num p =&gt; Bool -&gt; p -&gt; p
 </span><a href="NITTA.Synthesis.Types.html#%3C%3F%3E"><span class="hs-operator hs-var">&lt;?&gt;</span></a></span><span> </span><span class="annot"><span class="annottext">Float
 </span><span class="hs-number">200</span></span><span>
@@ -265,14 +265,14 @@ forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">[Float] -&gt; Float
 forall (t :: * -&gt; *) a. (Foldable t, Num a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">sum</span></span><span> </span><span class="annot"><span class="annottext">[Float]
-</span><a href="#local-6989586621680054825"><span class="hs-identifier hs-var">pNotTransferableInputs</span></a></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+</span><a href="#local-6989586621680055295"><span class="hs-identifier hs-var">pNotTransferableInputs</span></a></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Float
 </span><span class="hs-number">5</span></span><span>
 </span><span id="line-76"></span><span>            </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Float
-</span><a href="#local-6989586621680054826"><span class="hs-identifier hs-var">pWaitTime</span></a></span></span></span></span></span><span>
+</span><a href="#local-6989586621680055296"><span class="hs-identifier hs-var">pWaitTime</span></a></span></span></span></span></span><span>
 </span><span id="line-77"></span><span>
 </span><span id="line-78"></span><span id="threshold"><span class="annot"><span class="annottext">threshold :: p
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#threshold"><span class="hs-identifier hs-var hs-var">threshold</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p

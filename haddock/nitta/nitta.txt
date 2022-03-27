@@ -1365,8 +1365,7 @@ LuaAlgBuilder :: [LuaStatement x] -> HashMap Text LuaValueInstance -> HashMap Te
 -- | A table lists all uses of a particular LuaValueInstance.
 [algVars] :: LuaAlgBuilder x -> HashMap LuaValueInstance [Text]
 
--- | A table correlating the ordinal number of an argument with a variable
---   storing its value and startup value of this variable.
+-- | Map argument index to the variable name and initial value (in text).
 [algStartupArgs] :: LuaAlgBuilder x -> HashMap Int (Text, Text)
 
 -- | A table correlating constant with LuaValueInstance which store this
