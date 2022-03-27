@@ -3,9 +3,9 @@
 {- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
-Copyright   : (c) Aleksandr Penskoi, 2021
+Copyright   : (c) Artur Gogiyan, 2022
 License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
+Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends (
@@ -29,7 +29,7 @@ identifyFrontendType fileName frontendType = fromMaybe identifyByExtension front
             case snd $ splitExtension fileName of
                 ".lua" -> Lua
                 ".xmile" -> XMILE
-                ext -> error $ "can't parse extension for file " <> fileName <> "|" <> ext
+                ext -> error $ "unknown file extensions: " <> ext <> " for " <> fileName
 
 translateFrontendResult Lua = translateLua
 translateFrontendResult XMILE = translateXMILE

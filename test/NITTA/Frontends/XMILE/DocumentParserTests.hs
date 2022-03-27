@@ -5,9 +5,9 @@
 {- |
 Module      : NITTA.Frontends.XMILE.DocumentParserTests
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2021
+Copyright   : (c) Artur Gogiyan, 2022
 License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
+Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends.XMILE.DocumentParserTests (
@@ -21,7 +21,7 @@ import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
-_xmileSample =
+xmileSample =
     [__i| 
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0">
@@ -51,7 +51,7 @@ _xmileSample =
             |]
 
 case_teacupExampleParsingTest =
-    let parsedContent = parseXMILEDocument _xmileSample
+    let parsedContent = parseXMILEDocument xmileSample
         expectedContent =
             XMILEContent
                 { xcSimSpecs =

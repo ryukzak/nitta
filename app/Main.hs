@@ -75,7 +75,7 @@ data Nitta = Nitta
     , extra_verbose :: Bool
     , output_path :: FilePath
     , format :: String
-    , frontend_format :: Maybe FrontendType
+    , frontend_language :: Maybe FrontendType
     }
     deriving (Show, Data, Typeable)
 
@@ -126,8 +126,8 @@ nittaArgs =
         , extra_verbose =
             False &= help "Extra verbose"
                 &= groupname "Other"
-        , frontend_format =
-            Nothing &= help "Format used to source algorithm description. (default: decision by file extension)"
+        , frontend_language =
+            Nothing &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
         }
@@ -160,7 +160,7 @@ main = do
         , output_path
         , templates
         , format
-        , frontend_format
+        , frontend_language
         } <-
         getNittaArgs
     setupLogger verbose extra_verbose
@@ -170,11 +170,12 @@ main = do
         Just path -> T.readFile path <&> (Just . getToml)
 
     let fromConf s = getFromTomlSection s =<< toml
-    let exactFrontendFormat = identifyFrontendType filename frontend_format
+    let exactFrontendFormat = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} = translateFrontendResult exactFrontendFormat src
+            let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
+                    translateFrontendResult exactFrontendFormat src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]

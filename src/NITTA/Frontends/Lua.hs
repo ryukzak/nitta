@@ -96,7 +96,7 @@ data LuaAlgBuilder x = LuaAlgBuilder
     , -- | A table correlating constant with LuaValueInstance which store this constant.
       algConstants :: HM.HashMap T.Text LuaValueInstance
     , -- | A list that stores debug information about monitored variables and their display formats.
-      algTraceFuncs :: [([T.Text], T.Text)]
+      algTraceFuncs :: [([T.Text], Maybe T.Text)]
     }
     deriving (Show)
 
@@ -224,10 +224,10 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
         ("trace", tFmt : vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
                 let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
-                put luaAlgBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
+                put luaAlgBuilder{algTraceFuncs = (vars, Just $ T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
             let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
-            put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
+            put luaAlgBuilder{algTraceFuncs = (vars, Nothing) : algTraceFuncs}
         _ -> error $ "unknown debug method: " <> show fName <> " " <> show args
     where
         parseTraceArg (String s) = s
@@ -386,6 +386,6 @@ translateLua src =
         getAllTraceFuncs algBuilder =
             let traceFuncs = algTraceFuncs algBuilder
                 startupArgNames = map (fst . snd) $ HM.toList $ algStartupArgs algBuilder
-             in map (\name -> ([name <> "^0"], defaultFmt)) startupArgNames <> traceFuncs
+             in map (\name -> ([name <> "^0"], Nothing)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]

@@ -5,9 +5,9 @@
 {- |
 Module      : NITTA.Frontends.XMILE.DocumentParser
 Description : Parses XMILE source file to internal tree structure
-Copyright   : (c) Aleksandr Penskoi, 2021
+Copyright   : (c) Artur Gogiyan, 2022
 License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
+Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends.XMILE.DocumentParser (

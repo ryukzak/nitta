@@ -1,9 +1,9 @@
 {- |
 Module      : NITTA.Frontends.XMILE.MathParser
 Description : Parses XMILE math equations
-Copyright   : (c) Aleksandr Penskoi, 2021
+Copyright   : (c) Artur Gogiyan, 2022
 License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
+Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends.XMILE.MathParser (
@@ -28,7 +28,7 @@ data XMExpr = Var String | Val Double | Duo XMDuop XMExpr XMExpr
 
 data XMDuop = Mul | Div | Add | Sub deriving (Show, Eq)
 
-def =
+languageDef =
     emptyDef
         { identStart = letter <|> space <|> digit <|> char '\"'
         , identLetter = letter <|> space <|> digit <|> char '.'
@@ -42,7 +42,7 @@ TokenParser
     { parens = m_parens
     , identifier = m_identifier
     , reservedOp = m_reservedOp
-    } = makeTokenParser def
+    } = makeTokenParser languageDef
 
 parseXmileEquation eqn = case parse exprparser "" eqn of
     Right e -> prepareTree e
@@ -77,6 +77,8 @@ calculateDefaultValue defaultValues e@(Duo op expl expr) =
         rightValue = calculateDefaultValue defaultValues expr
      in case op of
             Mul -> leftValue * rightValue
-            Div -> if rightValue == 0 then error ("division to zero in expression '" <> show e <> "'") else leftValue / rightValue
+            Div
+                | rightValue == 0 -> error ("division to zero in expression '" <> show e <> "'")
+                | otherwise -> leftValue / rightValue
             Add -> leftValue + rightValue
             Sub -> leftValue - rightValue
