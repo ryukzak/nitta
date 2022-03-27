@@ -147,7 +147,7 @@ createDataFlowGraph xmContent = do
                         )
                     return tmpName
                     where
-                        skaleToDeltaTime 1 = do getUniqueName flowName
+                        skaleToDeltaTime 1 = getUniqueName flowName
                         skaleToDeltaTime _ = do
                             flowUniqueName <- getUniqueName flowName
                             dtUniqueName <- getUniqueName deltaTimeVarName
@@ -177,7 +177,7 @@ createDataFlowGraph xmContent = do
                                 }
                         )
 
-        processAux XMILEAux{xaName, xaEquation} = do
+        processAux XMILEAux{xaName, xaEquation} =
             case xaEquation of
                 (Val value) -> do
                     outputs <- getAllOutGraphNodes xaName
@@ -192,7 +192,7 @@ createDataFlowGraph xmContent = do
                         )
                 expr -> error $ "non supported equation part: " <> show expr
 
-        processFlow XMILEFlow{xfName, xfEquation} = do
+        processFlow XMILEFlow{xfName, xfEquation} =
             void (processFlowEquation xfEquation (0 :: Int) True)
             where
                 processFlowEquation (Var name) index _ = do
@@ -214,8 +214,8 @@ createDataFlowGraph xmContent = do
                         Div -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName []) graph}
                     return (head tmpName, tempNameIndex'' + 1)
                     where
-                        getTempName _ name True = do getAllOutGraphNodes name
-                        getTempName index name _ = do return [T.pack "_" <> showText index <> T.pack "#" <> name]
+                        getTempName _ name True = getAllOutGraphNodes name
+                        getTempName index name _ = return [T.pack "_" <> showText index <> T.pack "#" <> name]
                 processFlowEquation _ _ _ = undefined
 
         getUniqueName name = do
@@ -235,7 +235,7 @@ createDataFlowGraph xmContent = do
 
         getGraphName name index = name <> fromString ("#" <> show index)
 
-getDefaultValuesAndUsages algBuilder = do
+getDefaultValuesAndUsages algBuilder =
     mapM_ processStock $ xcStocks algBuilder
     where
         nameToEquationMap = flip execState HM.empty $ do
@@ -251,14 +251,14 @@ getDefaultValuesAndUsages algBuilder = do
             processFlow xsInflow
             processFlow xsOutflow
             where
-                processFlow Nothing = do return ()
+                processFlow Nothing = return ()
                 processFlow (Just name) = do
                     addUsages name
                     addUsages xsName
                     addDtUsagesIfNeeded $ xssDt $ xcSimSpecs algBuilder
                     processEquation $ xfEquation $ findFlow name
                     where
-                        addDtUsagesIfNeeded 1 = do return ()
+                        addDtUsagesIfNeeded 1 = return ()
                         addDtUsagesIfNeeded _ = addUsages deltaTimeVarName
 
                 findFlow name =
@@ -266,7 +266,7 @@ getDefaultValuesAndUsages algBuilder = do
                         (error $ "cannot find expected flow flow with name " <> T.unpack name <> show (xcFlows algBuilder))
                         (L.find (\XMILEFlow{xfName} -> xfName == name) $ xcFlows algBuilder)
 
-                processEquation (Val _) = do return ()
+                processEquation (Val _) = return ()
                 processEquation (Duo _ expr expl) = do
                     processEquation expr
                     processEquation expl
@@ -277,8 +277,8 @@ getDefaultValuesAndUsages algBuilder = do
                         addDefaultValueIfNeeded = do
                             st@XMILEAlgBuilder{algDefaultValues} <- get
                             case HM.lookup (T.pack name) algDefaultValues of
-                                Just _ -> do return ()
-                                Nothing -> do
+                                Just _ -> return ()
+                                Nothing ->
                                     case HM.lookup (T.pack name) nameToEquationMap of
                                         Just val -> do
                                             put
