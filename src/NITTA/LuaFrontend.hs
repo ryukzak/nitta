@@ -101,7 +101,7 @@ data LuaAlgBuilder x = LuaAlgBuilder
       algVarCounters :: HM.HashMap T.Text Int
     , -- | A table lists all uses of a particular LuaValueInstance.
       algVars :: HM.HashMap LuaValueInstance [T.Text]
-    , -- | A table correlating the ordinal number of an argument with a variable storing its value and startup value of this variable.
+    , -- | Map argument index to the variable name and initial value (in text).
       algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
     , -- | A table correlating constant with LuaValueInstance which store this constant.
       algConstants :: HM.HashMap T.Text LuaValueInstance
@@ -397,7 +397,10 @@ lua2functions src =
     where
         getAllTraceFuncs algBuilder =
             let traceFuncs = algTraceFuncs algBuilder
-                startupArgNames = map (\(_, (x, _)) -> x) $ HM.toList $ algStartupArgs algBuilder
+                startupArgNames =
+                    map
+                        (\(_idx, (varName, _initValue)) -> varName)
+                        $ HM.toList $ algStartupArgs algBuilder
              in map (\name -> ([name <> "^0"], defaultFmt)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
