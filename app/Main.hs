@@ -175,7 +175,7 @@ main = do
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
-                    translateFrontendResult exactFrontendFormat src
+                    translate exactFrontendFormat src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]

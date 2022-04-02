@@ -272,26 +272,28 @@ getDefaultValuesAndUsages algBuilder =
                     processEquation expl
                 processEquation (Var name) = do
                     addUsages $ T.pack name
-                    addDefaultValueIfNeeded
-                    where
-                        addDefaultValueIfNeeded = do
-                            st@XMILEAlgBuilder{algDefaultValues} <- get
-                            case HM.lookup (T.pack name) algDefaultValues of
-                                Just _ -> return ()
-                                Nothing ->
-                                    case HM.lookup (T.pack name) nameToEquationMap of
-                                        Just val -> do
-                                            put
-                                                st
-                                                    { algDefaultValues =
-                                                        HM.insert
-                                                            (T.pack name)
-                                                            (calculateDefaultValue algDefaultValues val)
-                                                            algDefaultValues
-                                                    }
-                                        Nothing -> error $ "equation for name " <> name <> " not found."
+                    addDefaultValueIfNeeded name nameToEquationMap
 
                 addUsages name = do
                     XMILEAlgBuilder{algUsagesCount} <- get
                     let val = maybe 0 (+ 1) $ HM.lookup name algUsagesCount
                     modify (\st -> st{algUsagesCount = HM.insert name val algUsagesCount})
+
+addDefaultValueIfNeeded name nameToEquationMap = do
+    XMILEAlgBuilder{algDefaultValues} <- get
+    case HM.lookup (T.pack name) algDefaultValues of
+        Just _ -> return ()
+        Nothing ->
+            case HM.lookup (T.pack name) nameToEquationMap of
+                Just val ->
+                    modify
+                        ( \st ->
+                            st
+                                { algDefaultValues =
+                                    HM.insert
+                                        (T.pack name)
+                                        (calculateDefaultValue algDefaultValues val)
+                                        algDefaultValues
+                                }
+                        )
+                Nothing -> error $ "equation for name " <> name <> " not found."

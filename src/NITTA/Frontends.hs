@@ -11,7 +11,7 @@ Stability   : experimental
 module NITTA.Frontends (
     FrontendType (..),
     identifyFrontendType,
-    translateFrontendResult,
+    translate,
 ) where
 
 import Data.Data
@@ -31,5 +31,5 @@ identifyFrontendType fileName frontendType = fromMaybe identifyByExtension front
                 ".xmile" -> XMILE
                 ext -> error $ "unknown file extensions: " <> ext <> " for " <> fileName
 
-translateFrontendResult Lua = translateLua
-translateFrontendResult XMILE = translateXMILE
+translate Lua = translateLua
+translate XMILE = translateXMILE

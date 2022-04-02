@@ -23,7 +23,7 @@ NITTA.Synthesis:TargetSynthesis                                                 
     # tMicroArch -----------------------------\
     # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
                    |                          |     |  |
-                   *<-translateFrontendResult |     |  |
+                   *<-translate               |     |  |
                    |                          |     |  v      NITTA.Model:TargetSystem----------\
     # tDFG <-------+                          +--------*--------> # mUnit         |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
@@ -187,7 +187,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ translateFrontendResult tSourceCodeFormat src
+                let tmp = frDataFlow $ translate tSourceCodeFormat src
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 
