@@ -167,7 +167,7 @@ span.spaces    { background: white }
 <span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep (singleton $ nextTick schedule) $ CADStep $ &quot;revoke &quot; &lt;&gt; show f</span></span>
 <span class="lineno">  149 </span>
 <span class="lineno">  150 </span>-- |Add to the process description information about function evaluation.
-<span class="lineno">  151 </span><span class="decl"><span class="istickedoff">scheduleFunction ti f = scheduleStep ti $ FStep f</span></span>
+<span class="lineno">  151 </span><span class="decl"><span class="istickedoff">scheduleFunction ti f = scheduleStep ti $ IntermediateStep f</span></span>
 <span class="lineno">  152 </span>
 <span class="lineno">  153 </span><span class="decl"><span class="istickedoff">scheduleRefactoring ti ref = scheduleStep ti $ RefactorStep ref</span></span>
 <span class="lineno">  154 </span>

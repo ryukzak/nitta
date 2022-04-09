@@ -99,7 +99,7 @@ span.spaces    { background: white }
 <span class="lineno">   80 </span><span class="decl"><span class="istickedoff">pid2intermediate pu = M.fromList $ mapMaybe get $ steps $ process pu</span>
 <span class="lineno">   81 </span><span class="spaces">    </span><span class="istickedoff">where</span>
 <span class="lineno">   82 </span><span class="spaces">        </span><span class="istickedoff">get s@Step{pID}</span>
-<span class="lineno">   83 </span><span class="spaces">            </span><span class="istickedoff">| Just f &lt;- getFunction s = Just (pID, f)</span>
+<span class="lineno">   83 </span><span class="spaces">            </span><span class="istickedoff">| Just f &lt;- getIntermediate s = Just (pID, f)</span>
 <span class="lineno">   84 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Nothing</span></span>
 <span class="lineno">   85 </span>
 <span class="lineno">   86 </span><span class="decl"><span class="istickedoff">pid2endpoint pu = M.fromList $ mapMaybe get $ steps $ process pu</span>

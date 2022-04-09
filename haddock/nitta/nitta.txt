@@ -597,9 +597,8 @@ data StepInfo v x t
 -- | Apply refactoring
 [RefactorStep] :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
 
--- | intermidiate level step (function execution) FIXME: rename to
---   IntermediateStep
-[FStep] :: F v x -> StepInfo v x t
+-- | intermidiate level step (function execution)
+[IntermediateStep] :: F v x -> StepInfo v x t
 
 -- | endpoint level step (source or target)
 [EndpointRoleStep] :: EndpointRole v -> StepInfo v x t
@@ -1487,7 +1486,6 @@ hdlValDump :: Val x => x -> Text
 toModuleName :: [Char] -> [Char]
 endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
 getEndpoint :: Step t1 (StepInfo v x t2) -> Maybe (EndpointRole v)
-getFunction :: Step t1 (StepInfo v x t2) -> Maybe (F v x)
 getInstruction :: Step t1 (StepInfo v x t2) -> Maybe (StepInfo v x t2)
 getCad :: Step t1 (StepInfo v x t2) -> Maybe String
 getEndpoints :: Ord t1 => Process t1 (StepInfo v x t2) -> [EndpointRole v]
@@ -1495,8 +1493,9 @@ transferred :: ProcessorUnit u a1 x t => u -> Set a1
 inputsPushedAt :: (Ord a1, Ord a2, Function f a2) => Process a1 (StepInfo a2 x t2) -> f -> a1
 stepsInterval :: Ord a => [Step a i] -> Interval a
 relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
-isFB :: Step t1 (StepInfo v x t2) -> Bool
-getFBs :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
+isIntermediate :: Step t1 (StepInfo v x t2) -> Bool
+getIntermediate :: Step t1 (StepInfo v x t2) -> Maybe (F v x)
+getIntermediates :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
 isEndpoint :: Step t1 (StepInfo v x t2) -> Bool
 isInstruction :: Step t1 (StepInfo v x t2) -> Bool
 getToml :: Text -> Table

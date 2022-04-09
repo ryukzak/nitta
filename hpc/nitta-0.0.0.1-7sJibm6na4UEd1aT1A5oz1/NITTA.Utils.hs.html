@@ -49,16 +49,16 @@ span.spaces    { background: white }
 <span class="lineno">   30 </span>    -- *Process inspection
 <span class="lineno">   31 </span>    endpointAt,
 <span class="lineno">   32 </span>    getEndpoint,
-<span class="lineno">   33 </span>    getFunction,
-<span class="lineno">   34 </span>    getInstruction,
-<span class="lineno">   35 </span>    getCad,
-<span class="lineno">   36 </span>    getEndpoints,
-<span class="lineno">   37 </span>    transferred,
-<span class="lineno">   38 </span>    inputsPushedAt,
-<span class="lineno">   39 </span>    stepsInterval,
-<span class="lineno">   40 </span>    relatedEndpoints,
-<span class="lineno">   41 </span>    isFB,
-<span class="lineno">   42 </span>    getFBs,
+<span class="lineno">   33 </span>    getInstruction,
+<span class="lineno">   34 </span>    getCad,
+<span class="lineno">   35 </span>    getEndpoints,
+<span class="lineno">   36 </span>    transferred,
+<span class="lineno">   37 </span>    inputsPushedAt,
+<span class="lineno">   38 </span>    stepsInterval,
+<span class="lineno">   39 </span>    relatedEndpoints,
+<span class="lineno">   40 </span>    isIntermediate,
+<span class="lineno">   41 </span>    getIntermediate,
+<span class="lineno">   42 </span>    getIntermediates,
 <span class="lineno">   43 </span>    isEndpoint,
 <span class="lineno">   44 </span>    isInstruction,
 <span class="lineno">   45 </span>    module NITTA.Utils.Base,
@@ -141,50 +141,47 @@ span.spaces    { background: white }
 <span class="lineno">  122 </span><span class="decl"><span class="nottickedoff">getCad Step{pDesc} | CADStep cad &lt;- descent pDesc = Just cad</span>
 <span class="lineno">  123 </span><span class="spaces"></span><span class="nottickedoff">getCad _ = Nothing</span></span>
 <span class="lineno">  124 </span>
-<span class="lineno">  125 </span><span class="decl"><span class="istickedoff">isFB s = isJust $ getFB s</span></span>
+<span class="lineno">  125 </span><span class="decl"><span class="istickedoff">isIntermediate s = isJust $ getIntermediate s</span></span>
 <span class="lineno">  126 </span>
-<span class="lineno">  127 </span><span class="decl"><span class="istickedoff">getFB Step{pDesc} | FStep fb &lt;- descent pDesc = Just fb</span>
-<span class="lineno">  128 </span><span class="spaces"></span><span class="istickedoff">getFB _ = Nothing</span></span>
+<span class="lineno">  127 </span><span class="decl"><span class="istickedoff">getIntermediate Step{pDesc} | IntermediateStep f &lt;- descent pDesc = Just f</span>
+<span class="lineno">  128 </span><span class="spaces"></span><span class="istickedoff">getIntermediate _ = Nothing</span></span>
 <span class="lineno">  129 </span>
-<span class="lineno">  130 </span><span class="decl"><span class="istickedoff">getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p</span></span>
+<span class="lineno">  130 </span><span class="decl"><span class="istickedoff">getIntermediates p = mapMaybe getIntermediate $ sortOn stepStart $ steps p</span></span>
 <span class="lineno">  131 </span>
-<span class="lineno">  132 </span><span class="decl"><span class="istickedoff">getFunction Step{pDesc} | FStep role &lt;- descent pDesc = Just role</span>
-<span class="lineno">  133 </span><span class="spaces"></span><span class="istickedoff">getFunction _ = Nothing</span></span>
-<span class="lineno">  134 </span>
-<span class="lineno">  135 </span><span class="decl"><span class="nottickedoff">isEndpoint ep = isJust $ getEndpoint ep</span></span>
+<span class="lineno">  132 </span><span class="decl"><span class="nottickedoff">isEndpoint ep = isJust $ getEndpoint ep</span></span>
+<span class="lineno">  133 </span>
+<span class="lineno">  134 </span><span class="decl"><span class="istickedoff">getEndpoint Step{pDesc} | EndpointRoleStep role &lt;- descent pDesc = Just role</span>
+<span class="lineno">  135 </span><span class="spaces"></span><span class="istickedoff">getEndpoint _ = Nothing</span></span>
 <span class="lineno">  136 </span>
-<span class="lineno">  137 </span><span class="decl"><span class="istickedoff">getEndpoint Step{pDesc} | EndpointRoleStep role &lt;- descent pDesc = Just role</span>
-<span class="lineno">  138 </span><span class="spaces"></span><span class="istickedoff">getEndpoint _ = Nothing</span></span>
-<span class="lineno">  139 </span>
-<span class="lineno">  140 </span><span class="decl"><span class="istickedoff">isInstruction instr = isJust $ getInstruction instr</span></span>
+<span class="lineno">  137 </span><span class="decl"><span class="istickedoff">isInstruction instr = isJust $ getInstruction instr</span></span>
+<span class="lineno">  138 </span>
+<span class="lineno">  139 </span><span class="decl"><span class="istickedoff">getInstruction Step{pDesc} | instr@(InstructionStep _) &lt;- descent pDesc = Just instr</span>
+<span class="lineno">  140 </span><span class="spaces"></span><span class="istickedoff">getInstruction _ = Nothing</span></span>
 <span class="lineno">  141 </span>
-<span class="lineno">  142 </span><span class="decl"><span class="istickedoff">getInstruction Step{pDesc} | instr@(InstructionStep _) &lt;- descent pDesc = Just instr</span>
-<span class="lineno">  143 </span><span class="spaces"></span><span class="istickedoff">getInstruction _ = Nothing</span></span>
+<span class="lineno">  142 </span><span class="decl"><span class="istickedoff">getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p</span></span>
+<span class="lineno">  143 </span><span class="decl"><span class="istickedoff">transferred pu = unionsMap variables $ getEndpoints $ process pu</span></span>
 <span class="lineno">  144 </span>
-<span class="lineno">  145 </span><span class="decl"><span class="istickedoff">getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p</span></span>
-<span class="lineno">  146 </span><span class="decl"><span class="istickedoff">transferred pu = unionsMap variables $ getEndpoints $ process pu</span></span>
-<span class="lineno">  147 </span>
-<span class="lineno">  148 </span><span class="decl"><span class="istickedoff">inputsPushedAt process_ f = sup $ stepsInterval $ relatedEndpoints process_ $ inputs f</span></span>
-<span class="lineno">  149 </span>
-<span class="lineno">  150 </span><span class="decl"><span class="istickedoff">stepsInterval ss =</span>
-<span class="lineno">  151 </span><span class="spaces">    </span><span class="istickedoff">let a = minimum $ map (inf . pInterval) ss</span>
-<span class="lineno">  152 </span><span class="spaces">        </span><span class="istickedoff">b = maximum $ map (sup . pInterval) ss</span>
-<span class="lineno">  153 </span><span class="spaces">     </span><span class="istickedoff">in a ... b</span></span>
-<span class="lineno">  154 </span>
-<span class="lineno">  155 </span><span class="decl"><span class="istickedoff">stepStart Step{pInterval} = I.inf pInterval</span></span>
-<span class="lineno">  156 </span>
-<span class="lineno">  157 </span><span class="decl"><span class="nottickedoff">getToml text = either (error . show) id $ parseTomlDoc &quot;parse error: &quot; text</span></span>
-<span class="lineno">  158 </span>
-<span class="lineno">  159 </span><span class="decl"><span class="nottickedoff">getFromToml toml = getFromTomlSection T.empty toml</span></span>
-<span class="lineno">  160 </span>
-<span class="lineno">  161 </span><span class="decl"><span class="nottickedoff">getFromTomlSection section toml</span>
-<span class="lineno">  162 </span><span class="spaces">    </span><span class="nottickedoff">| section == T.empty = unwrap $ fromJSON $ toJSON toml</span>
-<span class="lineno">  163 </span><span class="spaces">    </span><span class="nottickedoff">| otherwise = case HM.lookup section toml of</span>
-<span class="lineno">  164 </span><span class="spaces">        </span><span class="nottickedoff">Just s -&gt; unwrap $ fromJSON $ toJSON s</span>
-<span class="lineno">  165 </span><span class="spaces">        </span><span class="nottickedoff">Nothing -&gt; error $ &quot;section not found - &quot; &lt;&gt; T.unpack section</span>
-<span class="lineno">  166 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
-<span class="lineno">  167 </span><span class="spaces">        </span><span class="nottickedoff">unwrap (Success conf) = conf</span>
-<span class="lineno">  168 </span><span class="spaces">        </span><span class="nottickedoff">unwrap (Error msg) = error msg</span></span>
+<span class="lineno">  145 </span><span class="decl"><span class="istickedoff">inputsPushedAt process_ f = sup $ stepsInterval $ relatedEndpoints process_ $ inputs f</span></span>
+<span class="lineno">  146 </span>
+<span class="lineno">  147 </span><span class="decl"><span class="istickedoff">stepsInterval ss =</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">let a = minimum $ map (inf . pInterval) ss</span>
+<span class="lineno">  149 </span><span class="spaces">        </span><span class="istickedoff">b = maximum $ map (sup . pInterval) ss</span>
+<span class="lineno">  150 </span><span class="spaces">     </span><span class="istickedoff">in a ... b</span></span>
+<span class="lineno">  151 </span>
+<span class="lineno">  152 </span><span class="decl"><span class="istickedoff">stepStart Step{pInterval} = I.inf pInterval</span></span>
+<span class="lineno">  153 </span>
+<span class="lineno">  154 </span><span class="decl"><span class="nottickedoff">getToml text = either (error . show) id $ parseTomlDoc &quot;parse error: &quot; text</span></span>
+<span class="lineno">  155 </span>
+<span class="lineno">  156 </span><span class="decl"><span class="nottickedoff">getFromToml toml = getFromTomlSection T.empty toml</span></span>
+<span class="lineno">  157 </span>
+<span class="lineno">  158 </span><span class="decl"><span class="nottickedoff">getFromTomlSection section toml</span>
+<span class="lineno">  159 </span><span class="spaces">    </span><span class="nottickedoff">| section == T.empty = unwrap $ fromJSON $ toJSON toml</span>
+<span class="lineno">  160 </span><span class="spaces">    </span><span class="nottickedoff">| otherwise = case HM.lookup section toml of</span>
+<span class="lineno">  161 </span><span class="spaces">        </span><span class="nottickedoff">Just s -&gt; unwrap $ fromJSON $ toJSON s</span>
+<span class="lineno">  162 </span><span class="spaces">        </span><span class="nottickedoff">Nothing -&gt; error $ &quot;section not found - &quot; &lt;&gt; T.unpack section</span>
+<span class="lineno">  163 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
+<span class="lineno">  164 </span><span class="spaces">        </span><span class="nottickedoff">unwrap (Success conf) = conf</span>
+<span class="lineno">  165 </span><span class="spaces">        </span><span class="nottickedoff">unwrap (Error msg) = error msg</span></span>
 
 </pre>
 </body>

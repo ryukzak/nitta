@@ -242,7 +242,7 @@ span.spaces    { background: white }
 <span class="lineno">  223 </span><span class="spaces"></span><span class="istickedoff"></span>
 <span class="lineno">  224 </span><span class="spaces">                </span><span class="istickedoff">-- Vertical relations between FB and Transport</span>
 <span class="lineno">  225 </span><span class="spaces">                </span><span class="istickedoff">mapM_</span>
-<span class="lineno">  226 </span><span class="spaces">                    </span><span class="istickedoff">( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = FStep f}}} -&gt;</span>
+<span class="lineno">  226 </span><span class="spaces">                    </span><span class="istickedoff">( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = IntermediateStep f}}} -&gt;</span>
 <span class="lineno">  227 </span><span class="spaces">                        </span><span class="istickedoff">mapM_</span>
 <span class="lineno">  228 </span><span class="spaces">                            </span><span class="istickedoff">( \v -&gt;</span>
 <span class="lineno">  229 </span><span class="spaces">                                </span><span class="istickedoff">when (v `M.member` v2transportStepKey) $</span>
@@ -250,7 +250,7 @@ span.spaces    { background: white }
 <span class="lineno">  231 </span><span class="spaces">                            </span><span class="istickedoff">)</span>
 <span class="lineno">  232 </span><span class="spaces">                            </span><span class="istickedoff">$ variables f</span>
 <span class="lineno">  233 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
-<span class="lineno">  234 </span><span class="spaces">                    </span><span class="istickedoff">$ filter isFB steps</span>
+<span class="lineno">  234 </span><span class="spaces">                    </span><span class="istickedoff">$ filter isIntermediate steps</span>
 <span class="lineno">  235 </span><span class="spaces">         </span><span class="istickedoff">in wholeProcess</span>
 <span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">where</span>
 <span class="lineno">  237 </span><span class="spaces">            </span><span class="istickedoff">includeNestedProcess tag pu = do</span>
