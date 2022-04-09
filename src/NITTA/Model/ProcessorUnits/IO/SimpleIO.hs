@@ -256,7 +256,7 @@ protocolDescription tag io d
     | not $ null $ endpointOptions io = error "EndpointProblem is not completed"
     | otherwise =
         let impFile = toString $ tag <> ".json"
-            fbs = getFBs $ process_ io
+            fbs = getIntermediates $ process_ io
          in Immediate impFile $
                 toStrict $
                     toLazyText $
