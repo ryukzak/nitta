@@ -93,7 +93,6 @@ import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
 import NITTA.Frontends
-import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -135,7 +134,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
     , -- |source code format type
-      tSourceCodeFormat :: FrontendType
+      tSourceCodeType :: FrontendType
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
@@ -151,7 +150,7 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
-            , tSourceCodeFormat = Lua
+            , tSourceCodeType = Lua
             }
 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v x t) v x t where
@@ -174,7 +173,7 @@ synthesizeTargetSystem
         , tPath
         , tTemplates
         , tSimulationCycleN
-        , tSourceCodeFormat
+        , tSourceCodeType
         } = do
         -- TODO: check that tName is a valid verilog module name
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
@@ -187,7 +186,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ translate tSourceCodeFormat src
+                let tmp = frDataFlow $ translate tSourceCodeType src
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 

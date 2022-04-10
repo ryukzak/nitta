@@ -64,9 +64,7 @@ trimString str = T.unpack $ T.map repl $ T.strip $ T.pack str
         repl ' ' = '_'
         repl c = c
 
-prepareTree (Var str) = case (readMaybe str :: Maybe Double) of
-    (Just val) -> Val val
-    _ -> Var (trimString str)
+prepareTree (Var str) = maybe (Var $ trimString str) Val $ readMaybe str
 prepareTree v@(Val _) = v
 prepareTree (Duo op a b) = Duo op (prepareTree a) (prepareTree b)
 

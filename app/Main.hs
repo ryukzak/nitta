@@ -35,7 +35,6 @@ import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
 import NITTA.Frontends
-import NITTA.Frontends.Common
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Builder
@@ -146,22 +145,22 @@ getNittaArgs = do
     catch (cmdArgs nittaArgs) handleError
 
 main = do
-    Nitta
-        { port
-        , filename
-        , uarch
-        , type_
-        , io_sync
-        , fsim
-        , lsim
-        , n
-        , verbose
-        , extra_verbose
-        , output_path
-        , templates
-        , format
-        , frontend_language
-        } <-
+    ( Nitta
+            filename
+            uarch
+            type_
+            io_sync
+            port
+            templates
+            n
+            fsim
+            lsim
+            verbose
+            extra_verbose
+            output_path
+            format
+            frontend_language
+        ) <-
         getNittaArgs
     setupLogger verbose extra_verbose
 
@@ -170,12 +169,12 @@ main = do
         Just path -> T.readFile path <&> (Just . getToml)
 
     let fromConf s = getFromTomlSection s =<< toml
-    let exactFrontendFormat = identifyFrontendType filename frontend_language
+    let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
-                    translate exactFrontendFormat src
+                    translate exactFrontendType src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
@@ -208,7 +207,7 @@ main = do
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
                         , tSimulationCycleN = n
-                        , tSourceCodeFormat = exactFrontendFormat
+                        , tSourceCodeType = exactFrontendType
                         }
                     >>= \case
                         Left msg -> error msg

@@ -10,12 +10,17 @@ Stability   : experimental
 -}
 module NITTA.Frontends (
     FrontendType (..),
+    FrontendResult (..),
+    TraceVar (..),
+    prettyLog,
+    getTraceVarFormat,
     identifyFrontendType,
     translate,
 ) where
 
 import Data.Data
 import Data.Maybe
+import NITTA.Frontends.Common
 import NITTA.Frontends.Lua
 import NITTA.Frontends.XMILE.Frontend
 import System.FilePath
