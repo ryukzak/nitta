@@ -94,10 +94,6 @@ instance (Var v, Val x) => ConstantFoldingProblem [F v x] v x where
         | cRefOld == cRefNew = cRefNew
         | otherwise = deleteExtraF $ (fs L.\\ cRefOld) <> cRefNew
 
-isConst f
-    | Just Constant{} <- castF f = True
-    | otherwise = False
-
 selectClusters fs =
     let consts = filter isConst fs
         isIntersection a b = not . S.null $ S.intersection a b

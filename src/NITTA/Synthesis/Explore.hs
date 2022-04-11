@@ -27,9 +27,9 @@ module NITTA.Synthesis.Explore (
 import Control.Concurrent.STM
 import Control.Monad (forM, unless, when)
 import Data.Default
-import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import NITTA.Intermediate.Analysis (estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Bind
@@ -175,9 +175,9 @@ nodeCtx parent nModel =
                     , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
                     ]
             , bindWaves =
-                estimateWaves
-                    (functions $ mDataFlowGraph nModel)
+                estimateVarWaves
                     (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions))
+                    (functions $ mDataFlowGraph nModel)
             , numberOfDataflowOptions = length sDataflowOptions
             , transferableVars =
                 S.unions
@@ -186,23 +186,3 @@ nodeCtx parent nModel =
                     , (_, ep) <- targets
                     ]
             }
-
--- |see usage for 'bindWaves' above
-estimateWaves fs alreadyVars =
-    let io =
-            [ (is, os)
-            | f <- fs
-            , let is = S.elems (inputs f) L.\\ alreadyVars
-                  os = S.elems $ outputs f
-            ]
-     in inner io 0 def
-    where
-        inner [] _n acc = acc
-        inner io n acc =
-            let (first, another) = L.partition (null . fst) io
-                firstVs = concatMap snd first
-                io' = map (\(is, os) -> (is L.\\ firstVs, os)) another
-                acc' = M.union acc $ M.fromList $ map (\v -> (v, n)) firstVs
-             in if null first
-                    then acc -- in case of cycle (maybe some loops are not broken)
-                    else inner io' (n + 1) acc'
