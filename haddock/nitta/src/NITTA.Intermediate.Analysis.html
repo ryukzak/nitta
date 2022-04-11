@@ -1,0 +1,488 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-comment">{- |
+Module      : NITTA.Intermediate.Analysis
+Description : Analysis of the process execution flow
+Copyright   : (c) Aleksandr Penskoi, 2022
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+Much of the work in this module focuses on building waves of process execution.
+In this case, we call a wave a set of functions that are ready for execution (all input vars are ready to use)
+and that can be performed independently of each other.
+Example:
+
+Lua code:
+
+@
+function sum(a)
+    local d = a + 1
+    sum(d)
+end
+sum(0)
+@
+
+After building DataFlowGraph, we get the following set of functions:
+
+@
+- const(1) = !1#0
+- loop(0, d^0#0) = a^0#0
+- a^0#0 + !1#0 = d^0#0
+@
+
+Const and Loop function can be executed at the first wave because all input variables are ready to use.
+After executing first wave a^0#0 and !1#0 will be ready, so we will be able to execute add function.
+So the resulting process waves are the following:
+
+@
+[
+    ProcessWave {
+        pwFs = [const(1) = !1#0,loop(0, d^0#0) = a^0#0],
+        pwOut = fromList [&quot;!1#0&quot;,&quot;a^0#0&quot;]
+    },
+    ProcessWave {
+        pwFs = [a^0#0 + !1#0 = d^0#0],
+        pwOut = fromList [&quot;d^0#0&quot;]
+    }
+]
+@
+-}</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Intermediate.Analysis</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier">ProcessWave</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier">buildProcessWaves</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#reorderAlgorithm"><span class="hs-identifier">reorderAlgorithm</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier">estimateVarWaves</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">L</span></span><span>
+</span><span id="line-66"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-67"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html"><span class="hs-identifier">NITTA.Intermediate.Functions</span></a></span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
+</span><span id="line-71"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.Base.html"><span class="hs-identifier">NITTA.Utils.Base</span></a></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span id="local-6989586621680046593"><span id="local-6989586621680046594"></span></span><span class="hs-keyword">data</span><span> </span><span id="ProcessWave"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-var">ProcessWave</span></a></span></span><span> </span><span id="local-6989586621680046656"><span class="annot"><a href="#local-6989586621680046656"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680046655"><span class="annot"><a href="#local-6989586621680046655"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ProcessWave"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-var">ProcessWave</span></a></span></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="hs-comment">-- |Functions that can be executed at this wave</span><span>
+</span><span id="line-75"></span><span>      </span><span id="pwFs"><span class="annot"><span class="annottext">ProcessWave v x -&gt; [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwFs"><span class="hs-identifier hs-var hs-var">pwFs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046656"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046655"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |Set of output variables related to the functions from this step</span><span>
+</span><span id="line-77"></span><span>      </span><span id="pwOut"><span class="annot"><span class="annottext">ProcessWave v x -&gt; Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwOut"><span class="hs-identifier hs-var hs-var">pwOut</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680046656"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680046584"><span id="local-6989586621680046586"><span id="local-6989586621680046588"><span class="annot"><span class="annottext">Int -&gt; ProcessWave v x -&gt; ShowS
+[ProcessWave v x] -&gt; ShowS
+ProcessWave v x -&gt; String
+(Int -&gt; ProcessWave v x -&gt; ShowS)
+-&gt; (ProcessWave v x -&gt; String)
+-&gt; ([ProcessWave v x] -&gt; ShowS)
+-&gt; Show (ProcessWave v x)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall v x. Show v =&gt; Int -&gt; ProcessWave v x -&gt; ShowS
+forall v x. Show v =&gt; [ProcessWave v x] -&gt; ShowS
+forall v x. Show v =&gt; ProcessWave v x -&gt; String
+showList :: [ProcessWave v x] -&gt; ShowS
+$cshowList :: forall v x. Show v =&gt; [ProcessWave v x] -&gt; ShowS
+show :: ProcessWave v x -&gt; String
+$cshow :: forall v x. Show v =&gt; ProcessWave v x -&gt; String
+showsPrec :: Int -&gt; ProcessWave v x -&gt; ShowS
+$cshowsPrec :: forall v x. Show v =&gt; Int -&gt; ProcessWave v x -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(forall x. ProcessWave v x -&gt; Rep (ProcessWave v x) x)
+-&gt; (forall x. Rep (ProcessWave v x) x -&gt; ProcessWave v x)
+-&gt; Generic (ProcessWave v x)
+forall x. Rep (ProcessWave v x) x -&gt; ProcessWave v x
+forall x. ProcessWave v x -&gt; Rep (ProcessWave v x) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall v x x. Rep (ProcessWave v x) x -&gt; ProcessWave v x
+forall v x x. ProcessWave v x -&gt; Rep (ProcessWave v x) x
+$cto :: forall v x x. Rep (ProcessWave v x) x -&gt; ProcessWave v x
+$cfrom :: forall v x x. ProcessWave v x -&gt; Rep (ProcessWave v x) x
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span id="local-6989586621680046578"><span id="local-6989586621680046579"></span></span><span class="hs-keyword">data</span><span> </span><span id="Builder"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-var">Builder</span></a></span></span><span> </span><span id="local-6989586621680046621"><span class="annot"><a href="#local-6989586621680046621"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680046620"><span class="annot"><a href="#local-6989586621680046620"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Builder"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-var">Builder</span></a></span></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="hs-comment">-- |Functions that can be calculated due to lack of ready input values</span><span>
+</span><span id="line-83"></span><span>      </span><span id="pwRemains"><span class="annot"><span class="annottext">Builder v x -&gt; Set (F v x)
+</span><a href="NITTA.Intermediate.Analysis.html#pwRemains"><span class="hs-identifier hs-var hs-var">pwRemains</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046621"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046620"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |Variables that defined at the beginning of the process</span><span>
+</span><span id="line-85"></span><span>      </span><span id="pwIn"><span class="annot"><span class="annottext">Builder v x -&gt; Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwIn"><span class="hs-identifier hs-var hs-var">pwIn</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680046621"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |Variables that is ready to be used us inputs</span><span>
+</span><span id="line-87"></span><span>      </span><span id="pwReadyIn"><span class="annot"><span class="annottext">Builder v x -&gt; Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwReadyIn"><span class="hs-identifier hs-var hs-var">pwReadyIn</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680046621"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-comment">-- |Resulting process flow</span><span>
+</span><span id="line-89"></span><span>      </span><span id="pwGraph"><span class="annot"><span class="annottext">Builder v x -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwGraph"><span class="hs-identifier hs-var hs-var">pwGraph</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046621"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046620"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680046567"><span id="local-6989586621680046569"><span id="local-6989586621680046571"><span class="annot"><span class="annottext">Int -&gt; Builder v x -&gt; ShowS
+[Builder v x] -&gt; ShowS
+Builder v x -&gt; String
+(Int -&gt; Builder v x -&gt; ShowS)
+-&gt; (Builder v x -&gt; String)
+-&gt; ([Builder v x] -&gt; ShowS)
+-&gt; Show (Builder v x)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall v x. Show v =&gt; Int -&gt; Builder v x -&gt; ShowS
+forall v x. Show v =&gt; [Builder v x] -&gt; ShowS
+forall v x. Show v =&gt; Builder v x -&gt; String
+showList :: [Builder v x] -&gt; ShowS
+$cshowList :: forall v x. Show v =&gt; [Builder v x] -&gt; ShowS
+show :: Builder v x -&gt; String
+$cshow :: forall v x. Show v =&gt; Builder v x -&gt; String
+showsPrec :: Int -&gt; Builder v x -&gt; ShowS
+$cshowsPrec :: forall v x. Show v =&gt; Int -&gt; Builder v x -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(forall x. Builder v x -&gt; Rep (Builder v x) x)
+-&gt; (forall x. Rep (Builder v x) x -&gt; Builder v x)
+-&gt; Generic (Builder v x)
+forall x. Rep (Builder v x) x -&gt; Builder v x
+forall x. Builder v x -&gt; Rep (Builder v x) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall v x x. Rep (Builder v x) x -&gt; Builder v x
+forall v x x. Builder v x -&gt; Rep (Builder v x) x
+$cto :: forall v x x. Rep (Builder v x) x -&gt; Builder v x
+$cfrom :: forall v x x. Builder v x -&gt; Rep (Builder v x) x
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">{- |
+Sort functions in order of execution.
+Note that some function could be executed in parallel, in this case we save order from the source list.
+-}</span><span>
+</span><span id="line-97"></span><span id="local-6989586621680046563"><span id="local-6989586621680046564"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#reorderAlgorithm"><span class="hs-identifier hs-type">reorderAlgorithm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046564"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046563"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046564"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046563"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046564"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046563"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-98"></span><span id="reorderAlgorithm"><span class="annot"><span class="annottext">reorderAlgorithm :: [F v x] -&gt; [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#reorderAlgorithm"><span class="hs-identifier hs-var hs-var">reorderAlgorithm</span></a></span></span><span> </span><span id="local-6989586621680046562"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046562"><span class="hs-identifier hs-var">alg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ProcessWave v x -&gt; [F v x]) -&gt; [ProcessWave v x] -&gt; [F v x]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">ProcessWave v x -&gt; [F v x]
+forall v x. ProcessWave v x -&gt; [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwFs"><span class="hs-identifier hs-var hs-var">pwFs</span></a></span><span> </span><span class="annot"><span class="annottext">([ProcessWave v x] -&gt; [F v x]) -&gt; [ProcessWave v x] -&gt; [F v x]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; [F v x] -&gt; [ProcessWave v x]
+forall v x. (Var v, Val x) =&gt; [v] -&gt; [F v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier hs-var">buildProcessWaves</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046562"><span class="hs-identifier hs-var">alg</span></a></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="hs-comment">{- |
+Functions can be divided into waves of execution.
+For each output variable, we define the wave number on which the variable will be defined.
+-}</span><span>
+</span><span id="line-104"></span><span id="local-6989586621680046558"><span id="local-6989586621680046559"><span id="local-6989586621680046560"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier hs-type">estimateVarWaves</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046560"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046559"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621680046558"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680046560"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046560"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046559"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680046560"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046558"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-105"></span><span id="estimateVarWaves"><span class="annot"><span class="annottext">estimateVarWaves :: [v] -&gt; [F v x] -&gt; Map v a
+</span><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier hs-var hs-var">estimateVarWaves</span></a></span></span><span> </span><span id="local-6989586621680046557"><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680046557"><span class="hs-identifier hs-var">alreadyVars</span></a></span></span><span> </span><span id="local-6989586621680046556"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046556"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(v, a)] -&gt; Map v a
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="annot"><span class="annottext">([(v, a)] -&gt; Map v a) -&gt; [(v, a)] -&gt; Map v a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; [ProcessWave v x] -&gt; [(v, a)]
+forall a b x. (Ord a, Num b) =&gt; b -&gt; [ProcessWave a x] -&gt; [(a, b)]
+</span><a href="#local-6989586621680046554"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">([ProcessWave v x] -&gt; [(v, a)]) -&gt; [ProcessWave v x] -&gt; [(v, a)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; [F v x] -&gt; [ProcessWave v x]
+forall v x. (Var v, Val x) =&gt; [v] -&gt; [F v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier hs-var">buildProcessWaves</span></a></span><span> </span><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680046557"><span class="hs-identifier hs-var">alreadyVars</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046556"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-107"></span><span>        </span><span id="local-6989586621680046554"><span class="annot"><span class="annottext">go :: b -&gt; [ProcessWave a x] -&gt; [(a, b)]
+</span><a href="#local-6989586621680046554"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621680046553"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680046553"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680046552"><span class="annot"><span class="annottext">[F a x]
+pwFs :: [F a x]
+pwFs :: forall v x. ProcessWave v x -&gt; [F v x]
+</span><a href="#local-6989586621680046552"><span class="hs-identifier hs-var hs-var">pwFs</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680046551"><span class="annot"><span class="annottext">[ProcessWave a x]
+</span><a href="#local-6989586621680046551"><span class="hs-identifier hs-var">pss</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b -&gt; [ProcessWave a x] -&gt; [(a, b)]
+</span><a href="#local-6989586621680046554"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680046553"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; b -&gt; b
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">b
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ProcessWave a x]
+</span><a href="#local-6989586621680046551"><span class="hs-identifier hs-var">pss</span></a></span><span> </span><span class="annot"><span class="annottext">[(a, b)] -&gt; [(a, b)] -&gt; [(a, b)]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680046549"><span class="hs-identifier hs-var">out</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680046553"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680046549"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680046549"><span class="hs-identifier hs-var">out</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
+forall a. Set a -&gt; [a]
+</span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="annot"><span class="annottext">(Set a -&gt; [a]) -&gt; Set a -&gt; [a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(F a x -&gt; Set a) -&gt; [F a x] -&gt; Set a
+forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+</span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Set a
+forall f v. Function f v =&gt; f -&gt; Set v
+</span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680046552"><span class="hs-identifier hs-var">pwFs</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-108"></span><span>        </span><span class="annot"><a href="#local-6989586621680046554"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- |Divide function into execution waves.</span><span>
+</span><span id="line-111"></span><span id="local-6989586621680046649"><span id="local-6989586621680046651"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier hs-type">buildProcessWaves</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046651"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046649"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680046651"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046651"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046649"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046651"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046649"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-112"></span><span id="buildProcessWaves"><span class="annot"><span class="annottext">buildProcessWaves :: [v] -&gt; [F v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier hs-var hs-var">buildProcessWaves</span></a></span></span><span> </span><span id="local-6989586621680046545"><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680046545"><span class="hs-identifier hs-var">vars</span></a></span></span><span> </span><span id="local-6989586621680046544"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046544"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680046543"><span class="annot"><span class="annottext">pwIn :: Set v
+</span><a href="#local-6989586621680046543"><span class="hs-identifier hs-var hs-var">pwIn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[v] -&gt; Set v
+forall a. Ord a =&gt; [a] -&gt; Set a
+</span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680046545"><span class="hs-identifier hs-var">vars</span></a></span><span>
+</span><span id="line-114"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680046541"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046541"><span class="hs-identifier hs-var">loops</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680046540"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046540"><span class="hs-identifier hs-var">other</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Bool) -&gt; [F v x] -&gt; ([F v x], [F v x])
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">L.partition</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Bool
+forall v x. (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
+</span><a href="NITTA.Intermediate.Functions.html#isLoop"><span class="hs-identifier hs-var">isLoop</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046544"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-115"></span><span>        </span><span id="local-6989586621680046537"><span class="annot"><span class="annottext">beginning :: [ProcessWave v x]
+</span><a href="#local-6989586621680046537"><span class="hs-identifier hs-var hs-var">beginning</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-116"></span><span>            </span><span class="hs-comment">-- Place all loops at the beginning of the algorithm to avoid circular dependencies in functions.</span><span>
+</span><span id="line-117"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">ProcessWave :: forall v x. [F v x] -&gt; Set v -&gt; ProcessWave v x
+</span><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span>
+</span><span id="line-118"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pwFs :: [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwFs"><span class="hs-identifier hs-var">pwFs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046541"><span class="hs-identifier hs-var">loops</span></a></span><span>
+</span><span id="line-119"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwOut :: Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwOut"><span class="hs-identifier hs-var">pwOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; Set v) -&gt; [F v x] -&gt; Set v
+forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+</span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
+forall f v. Function f v =&gt; f -&gt; Set v
+</span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046541"><span class="hs-identifier hs-var">loops</span></a></span><span>
+</span><span id="line-120"></span><span>                </span><span class="hs-special">}</span><span>
+</span><span id="line-121"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[F v x] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046541"><span class="hs-identifier hs-var">loops</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-122"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-123"></span><span>        </span><span id="local-6989586621680046534"><span class="annot"><span class="annottext">builder :: Builder v x
+</span><a href="#local-6989586621680046534"><span class="hs-identifier hs-var hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-124"></span><span>            </span><span class="annot"><span class="annottext">Builder :: forall v x.
+Set (F v x) -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span>
+</span><span id="line-125"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pwRemains :: Set (F v x)
+</span><a href="NITTA.Intermediate.Analysis.html#pwRemains"><span class="hs-identifier hs-var">pwRemains</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; Set (F v x)
+forall a. Ord a =&gt; [a] -&gt; Set a
+</span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046540"><span class="hs-identifier hs-var">other</span></a></span><span>
+</span><span id="line-126"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwGraph :: [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwGraph"><span class="hs-identifier hs-var">pwGraph</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046537"><span class="hs-identifier hs-var">beginning</span></a></span><span>
+</span><span id="line-127"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set v
+pwIn :: Set v
+pwIn :: Set v
+</span><a href="#local-6989586621680046543"><span class="hs-identifier hs-var hs-var">pwIn</span></a></span><span>
+</span><span id="line-128"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwReadyIn :: Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwReadyIn"><span class="hs-identifier hs-var">pwReadyIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046543"><span class="hs-identifier hs-var">pwIn</span></a></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-operator hs-var">`S.union`</span></span><span> </span><span class="annot"><span class="annottext">(ProcessWave v x -&gt; Set v) -&gt; [ProcessWave v x] -&gt; Set v
+forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+</span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessWave v x -&gt; Set v
+forall v x. ProcessWave v x -&gt; Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwOut"><span class="hs-identifier hs-var hs-var">pwOut</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046537"><span class="hs-identifier hs-var">beginning</span></a></span><span>
+</span><span id="line-129"></span><span>                </span><span class="hs-special">}</span><span>
+</span><span id="line-130"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Builder v x -&gt; [ProcessWave v x]
+forall v x. Builder v x -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwGraph"><span class="hs-identifier hs-var hs-var">pwGraph</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder v x -&gt; [ProcessWave v x])
+-&gt; Builder v x -&gt; [ProcessWave v x]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Builder v x -&gt; Int -&gt; Builder v x
+forall v x. Ord v =&gt; Builder v x -&gt; Int -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#execBuilder"><span class="hs-identifier hs-var">execBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">Builder v x
+</span><a href="#local-6989586621680046534"><span class="hs-identifier hs-var">builder</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span id="local-6989586621680046617"><span id="local-6989586621680046618"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#execBuilder"><span class="hs-identifier hs-type">execBuilder</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621680046618"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046618"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046617"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046618"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046617"><span class="hs-identifier hs-type">x</span></a></span></span></span><span>
+</span><span id="line-133"></span><span id="execBuilder"><span class="annot"><span class="annottext">execBuilder :: Builder v x -&gt; Int -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#execBuilder"><span class="hs-identifier hs-var hs-var">execBuilder</span></a></span></span><span> </span><span id="local-6989586621680046531"><span class="annot"><span class="annottext">builder :: Builder v x
+</span><a href="#local-6989586621680046531"><span class="hs-identifier hs-var">builder</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span class="hs-special">{</span><span id="local-6989586621680046530"><span class="annot"><span class="annottext">Set (F v x)
+pwRemains :: Set (F v x)
+pwRemains :: forall v x. Builder v x -&gt; Set (F v x)
+</span><a href="#local-6989586621680046530"><span class="hs-identifier hs-var hs-var">pwRemains</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680046529"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680046529"><span class="hs-identifier hs-var">prev</span></a></span></span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set (F v x) -&gt; Bool
+forall a. Set a -&gt; Bool
+</span><span class="hs-identifier hs-var">S.null</span></span><span> </span><span class="annot"><span class="annottext">Set (F v x)
+</span><a href="#local-6989586621680046530"><span class="hs-identifier hs-var">pwRemains</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder v x
+</span><a href="#local-6989586621680046531"><span class="hs-identifier hs-var">builder</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set (F v x) -&gt; Int
+forall a. Set a -&gt; Int
+</span><span class="hs-identifier hs-var">S.size</span></span><span> </span><span class="annot"><span class="annottext">Set (F v x)
+</span><a href="#local-6989586621680046530"><span class="hs-identifier hs-var">pwRemains</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680046529"><span class="hs-identifier hs-var">prev</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Builder v x
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Process waves construction stuck in a loop&quot;</span></span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder v x -&gt; Int -&gt; Builder v x
+forall v x. Ord v =&gt; Builder v x -&gt; Int -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#execBuilder"><span class="hs-identifier hs-var">execBuilder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Builder v x -&gt; F v x -&gt; Builder v x)
+-&gt; Builder v x -&gt; Set (F v x) -&gt; Builder v x
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="annot"><span class="annottext">Builder v x -&gt; F v x -&gt; Builder v x
+forall v x. Ord v =&gt; Builder v x -&gt; F v x -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#applyRemaining"><span class="hs-identifier hs-var">applyRemaining</span></a></span><span> </span><span class="annot"><span class="annottext">Builder v x
+</span><a href="#local-6989586621680046531"><span class="hs-identifier hs-var">builder</span></a></span><span> </span><span class="annot"><span class="annottext">Set (F v x)
+</span><a href="#local-6989586621680046530"><span class="hs-identifier hs-var">pwRemains</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Builder v x) -&gt; Int -&gt; Builder v x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set (F v x) -&gt; Int
+forall a. Set a -&gt; Int
+</span><span class="hs-identifier hs-var">S.size</span></span><span> </span><span class="annot"><span class="annottext">Set (F v x)
+</span><a href="#local-6989586621680046530"><span class="hs-identifier hs-var">pwRemains</span></a></span><span>
+</span><span id="line-137"></span><span>
+</span><span id="line-138"></span><span id="local-6989586621680046605"><span id="local-6989586621680046606"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#applyRemaining"><span class="hs-identifier hs-type">applyRemaining</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621680046606"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046606"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046605"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046606"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046605"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046606"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046605"><span class="hs-identifier hs-type">x</span></a></span></span></span><span>
+</span><span id="line-139"></span><span id="applyRemaining"><span class="annot"><span class="annottext">applyRemaining :: Builder v x -&gt; F v x -&gt; Builder v x
+</span><a href="NITTA.Intermediate.Analysis.html#applyRemaining"><span class="hs-identifier hs-var hs-var">applyRemaining</span></a></span></span><span> </span><span id="local-6989586621680046523"><span class="annot"><span class="annottext">builder :: Builder v x
+</span><a href="#local-6989586621680046523"><span class="hs-identifier hs-var">builder</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#Builder"><span class="hs-identifier hs-type">Builder</span></a></span><span class="hs-special">{</span><span id="local-6989586621680046522"><span class="annot"><span class="annottext">Set (F v x)
+pwRemains :: Set (F v x)
+pwRemains :: forall v x. Builder v x -&gt; Set (F v x)
+</span><a href="#local-6989586621680046522"><span class="hs-identifier hs-var hs-var">pwRemains</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680046521"><span class="annot"><span class="annottext">[ProcessWave v x]
+pwGraph :: [ProcessWave v x]
+pwGraph :: forall v x. Builder v x -&gt; [ProcessWave v x]
+</span><a href="#local-6989586621680046521"><span class="hs-identifier hs-var hs-var">pwGraph</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680046520"><span class="annot"><span class="annottext">Set v
+pwIn :: Set v
+pwIn :: forall v x. Builder v x -&gt; Set v
+</span><a href="#local-6989586621680046520"><span class="hs-identifier hs-var hs-var">pwIn</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680046519"><span class="annot"><span class="annottext">Set v
+pwReadyIn :: Set v
+pwReadyIn :: forall v x. Builder v x -&gt; Set v
+</span><a href="#local-6989586621680046519"><span class="hs-identifier hs-var hs-var">pwReadyIn</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680046518"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046518"><span class="hs-identifier hs-var">func</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-140"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680046517"><span class="annot"><span class="annottext">fIn :: Set v
+</span><a href="#local-6989586621680046517"><span class="hs-identifier hs-var hs-var">fIn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
+forall f v. Function f v =&gt; f -&gt; Set v
+</span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046518"><span class="hs-identifier hs-var">func</span></a></span><span>
+</span><span id="line-141"></span><span>        </span><span id="local-6989586621680046515"><span class="annot"><span class="annottext">fOut :: Set v
+</span><a href="#local-6989586621680046515"><span class="hs-identifier hs-var hs-var">fOut</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v
+forall f v. Function f v =&gt; f -&gt; Set v
+</span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">outputs</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046518"><span class="hs-identifier hs-var">func</span></a></span><span>
+</span><span id="line-142"></span><span>        </span><span id="local-6989586621680046514"><span class="annot"><span class="annottext">pendingIn :: Set v
+</span><a href="#local-6989586621680046514"><span class="hs-identifier hs-var hs-var">pendingIn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.difference</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046517"><span class="hs-identifier hs-var">fIn</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046519"><span class="hs-identifier hs-var">pwReadyIn</span></a></span><span>
+</span><span id="line-143"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046514"><span class="hs-identifier hs-var">pendingIn</span></a></span><span>
+</span><span id="line-144"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Builder v x
+</span><a href="#local-6989586621680046523"><span class="hs-identifier hs-var">builder</span></a></span><span>
+</span><span id="line-145"></span><span>            </span><span class="hs-keyword">else</span><span>
+</span><span id="line-146"></span><span>                </span><span class="annot"><span class="annottext">Builder v x
+</span><a href="#local-6989586621680046523"><span class="hs-identifier hs-var">builder</span></a></span><span>
+</span><span id="line-147"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pwReadyIn :: Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwReadyIn"><span class="hs-identifier hs-var">pwReadyIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.union</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046515"><span class="hs-identifier hs-var">fOut</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046519"><span class="hs-identifier hs-var">pwReadyIn</span></a></span><span>
+</span><span id="line-148"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwGraph :: [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwGraph"><span class="hs-identifier hs-var">pwGraph</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+forall v x.
+Ord v =&gt;
+F v x -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#insertF"><span class="hs-identifier hs-var">insertF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046518"><span class="hs-identifier hs-var">func</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.difference</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046517"><span class="hs-identifier hs-var">fIn</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046520"><span class="hs-identifier hs-var">pwIn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046515"><span class="hs-identifier hs-var">fOut</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046521"><span class="hs-identifier hs-var">pwGraph</span></a></span><span>
+</span><span id="line-149"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwRemains :: Set (F v x)
+</span><a href="NITTA.Intermediate.Analysis.html#pwRemains"><span class="hs-identifier hs-var">pwRemains</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set (F v x) -&gt; Set (F v x)
+forall a. Ord a =&gt; a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.delete</span></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046518"><span class="hs-identifier hs-var">func</span></a></span><span> </span><span class="annot"><span class="annottext">Set (F v x)
+</span><a href="#local-6989586621680046522"><span class="hs-identifier hs-var">pwRemains</span></a></span><span>
+</span><span id="line-150"></span><span>                    </span><span class="hs-special">}</span><span>
+</span><span id="line-151"></span><span>
+</span><span id="line-152"></span><span id="local-6989586621680046601"><span id="local-6989586621680046602"><span class="annot"><a href="NITTA.Intermediate.Analysis.html#insertF"><span class="hs-identifier hs-type">insertF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046601"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046601"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046602"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680046601"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-153"></span><span id="insertF"><span class="annot"><span class="annottext">insertF :: F v x -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#insertF"><span class="hs-identifier hs-var hs-var">insertF</span></a></span></span><span> </span><span id="local-6989586621680046510"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046510"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680046509"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046509"><span class="hs-identifier hs-var">fIn</span></a></span></span><span> </span><span id="local-6989586621680046508"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046508"><span class="hs-identifier hs-var">fOut</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046509"><span class="hs-identifier hs-var">fIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ProcessWave :: forall v x. [F v x] -&gt; Set v -&gt; ProcessWave v x
+</span><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pwFs :: [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwFs"><span class="hs-identifier hs-var">pwFs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046510"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwOut :: Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwOut"><span class="hs-identifier hs-var">pwOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046508"><span class="hs-identifier hs-var">fOut</span></a></span><span class="hs-special">}</span><span class="hs-special">]</span><span>
+</span><span id="line-155"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; [ProcessWave v x]
+forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Cannot calculate process wave for the function&quot;</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#insertF"><span class="hs-identifier hs-var">insertF</span></a></span><span> </span><span id="local-6989586621680046507"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046507"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680046506"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046506"><span class="hs-identifier hs-var">fIn</span></a></span></span><span> </span><span id="local-6989586621680046505"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046505"><span class="hs-identifier hs-var">fOut</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680046504"><span class="annot"><span class="annottext">ps :: ProcessWave v x
+</span><a href="#local-6989586621680046504"><span class="hs-identifier hs-var">ps</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#ProcessWave"><span class="hs-identifier hs-type">ProcessWave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680046503"><span class="annot"><span class="annottext">[F v x]
+pwFs :: [F v x]
+pwFs :: forall v x. ProcessWave v x -&gt; [F v x]
+</span><a href="#local-6989586621680046503"><span class="hs-identifier hs-var hs-var">pwFs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680046502"><span class="annot"><span class="annottext">Set v
+pwOut :: Set v
+pwOut :: forall v x. ProcessWave v x -&gt; Set v
+</span><a href="#local-6989586621680046502"><span class="hs-identifier hs-var hs-var">pwOut</span></a></span></span><span class="hs-special">}</span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680046501"><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046501"><span class="hs-identifier hs-var">pss</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046506"><span class="hs-identifier hs-var">fIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ProcessWave v x
+</span><a href="#local-6989586621680046504"><span class="hs-identifier hs-var">ps</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pwFs :: [F v x]
+</span><a href="NITTA.Intermediate.Analysis.html#pwFs"><span class="hs-identifier hs-var">pwFs</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046507"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; [F v x] -&gt; [F v x]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680046503"><span class="hs-identifier hs-var">pwFs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pwOut :: Set v
+</span><a href="NITTA.Intermediate.Analysis.html#pwOut"><span class="hs-identifier hs-var">pwOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.union</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046505"><span class="hs-identifier hs-var">fOut</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046502"><span class="hs-identifier hs-var">pwOut</span></a></span><span class="hs-special">}</span><span> </span><span class="annot"><span class="annottext">ProcessWave v x -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046501"><span class="hs-identifier hs-var">pss</span></a></span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ProcessWave v x
+</span><a href="#local-6989586621680046504"><span class="hs-identifier hs-var">ps</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessWave v x -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+forall v x.
+Ord v =&gt;
+F v x -&gt; Set v -&gt; Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#insertF"><span class="hs-identifier hs-var">insertF</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680046507"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; Set v -&gt; Set v
+forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">S.difference</span></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046506"><span class="hs-identifier hs-var">fIn</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046502"><span class="hs-identifier hs-var">pwOut</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680046505"><span class="hs-identifier hs-var">fOut</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessWave v x]
+</span><a href="#local-6989586621680046501"><span class="hs-identifier hs-var">pss</span></a></span><span>
+</span><span id="line-159"></span></pre></body></html>

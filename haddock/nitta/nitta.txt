@@ -868,6 +868,7 @@ neg :: (Var v, Val x) => v -> [v] -> F v x
 data Constant v x
 Constant :: X x -> O v -> Constant v x
 constant :: (Var v, Val x) => x -> [v] -> F v x
+isConst :: (Typeable v, Typeable x) => F v x -> Bool
 
 -- | Loop -- function for transfer data between computational cycles. Let
 --   see the simple example with the following implementation of the
@@ -1401,6 +1402,80 @@ instance GHC.Show.Show x => GHC.Show.Show (NITTA.LuaFrontend.LuaAlgBuilder x)
 instance Data.Hashable.Class.Hashable NITTA.LuaFrontend.LuaValueInstance
 
 
+-- | Much of the work in this module focuses on building waves of process
+--   execution. In this case, we call a wave a set of functions that are
+--   ready for execution (all input vars are ready to use) and that can be
+--   performed independently of each other. Example:
+--   
+--   Lua code:
+--   
+--   <pre>
+--   function sum(a)
+--       local d = a + 1
+--       sum(d)
+--   end
+--   sum(0)
+--   </pre>
+--   
+--   After building DataFlowGraph, we get the following set of functions:
+--   
+--   <pre>
+--   - const(1) = !1#0
+--   - loop(0, d^0#0) = a^0#0
+--   - a^0#0 + !1#0 = d^0#0
+--   </pre>
+--   
+--   Const and Loop function can be executed at the first wave because all
+--   input variables are ready to use. After executing first wave a^0#0 and
+--   !1#0 will be ready, so we will be able to execute add function. So the
+--   resulting process waves are the following:
+--   
+--   <pre>
+--   [
+--       ProcessWave {
+--           pwFs = [const(1) = !1#0,loop(0, d^0#0) = a^0#0],
+--           pwOut = fromList ["!10"]
+--       },
+--       ProcessWave {
+--           pwFs = [a^0#0 + !1#0 = d^0#0],
+--           pwOut = fromList ["d^0#0"]
+--       }
+--   ]
+--   </pre>
+module NITTA.Intermediate.Analysis
+data ProcessWave v x
+ProcessWave :: [F v x] -> Set v -> ProcessWave v x
+
+-- | Functions that can be executed at this wave
+[pwFs] :: ProcessWave v x -> [F v x]
+
+-- | Set of output variables related to the functions from this step
+[pwOut] :: ProcessWave v x -> Set v
+
+-- | Divide function into execution waves.
+buildProcessWaves :: (Var v, Val x) => [v] -> [F v x] -> [ProcessWave v x]
+
+-- | Sort functions in order of execution. Note that some function could be
+--   executed in parallel, in this case we save order from the source list.
+reorderAlgorithm :: (Var v, Val x) => [F v x] -> [F v x]
+
+-- | Functions can be divided into waves of execution. For each output
+--   variable, we define the wave number on which the variable will be
+--   defined.
+estimateVarWaves :: (Var v, Val x, Num a) => [v] -> [F v x] -> Map v a
+instance GHC.Generics.Generic (NITTA.Intermediate.Analysis.ProcessWave v x)
+instance GHC.Show.Show v => GHC.Show.Show (NITTA.Intermediate.Analysis.ProcessWave v x)
+instance GHC.Generics.Generic (NITTA.Intermediate.Analysis.Builder v x)
+instance GHC.Show.Show v => GHC.Show.Show (NITTA.Intermediate.Analysis.Builder v x)
+
+
+module NITTA.Intermediate.Simulation
+
+-- | Functional algorithm simulation
+simulateDataFlowGraph :: (Var v, Val x, WithFunctions g (F v x)) => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
+simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -> Cntx v x
+
+
 -- | A multilevel process is an object with a complex internal structure.
 --   Process description should contain every step (including start and
 --   finish time), and relations between them (Vertical or sequence). It is
@@ -1731,14 +1806,6 @@ module NITTA.Project
 -- | Write project with all available parts.
 writeProject :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
 runTestbench :: (WithFunctions u a, ProcessorUnit u v1 x1 t, Hashable v2, IsString v2, DefaultX u x2, Val x2, Show a, Read x3, Eq v2, TargetSystemComponent u, Testable u v2 x3) => Project u v2 x3 -> IO (TestbenchReport v2 x3)
-
-
-module NITTA.Intermediate.Simulation
-
--- | Functional algorithm simulation
-simulateDataFlowGraph :: (Var v, Val x, WithFunctions g (F v x)) => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
-simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -> Cntx v x
-reorderAlgorithm :: (Ord a, Typeable x, Typeable a, IsString a, ToString a, Suffix a, Hashable a) => [F a x] -> [F a x]
 
 
 module NITTA.Model.ProcessorUnits.Shift
@@ -2847,7 +2914,7 @@ module NITTA.Synthesis.Steps
 module NITTA.Synthesis.Explore
 
 -- | Make synthesis tree
-synthesisTreeRootIO :: (Hashable v, Suffix v, ToString v, ToString tag, IsString v, IsString tag, Bounded t, Val x, Typeable v, Typeable tag, Typeable t, Show t, Default t, Integral t, Ord v, Ord tag) => TargetSystem (BusNetwork tag v x t) tag v x t -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+synthesisTreeRootIO :: (Val x, Hashable v, Suffix v, ToString v, ToString tag, IsString v, IsString tag, Bounded t, Typeable v, Typeable tag, Typeable t, Show t, Default t, Integral t, Ord v, Ord tag) => TargetSystem (BusNetwork tag v x t) tag v x t -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 
 -- | Get specific by <tt>nId</tt> node from a synthesis tree.
 getTreeIO :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t, Show t, Default t, Integral t, Ord tag, Ord v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> SID -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -3132,7 +3199,7 @@ instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.T
 module NITTA.UIBackend
 
 -- | Run backend server.
-backendServer :: (Hashable _1, Suffix _1, ToString _1, ToString _2, IsString _1, IsString _2, Bounded _3, Val _4, ToJSONKey _1, ToJSON _1, ToJSON _4, ToJSON _3, ToJSON _2, FromHttpApiData _2, Label _1, Typeable _1, Typeable _2, Typeable _3, Show _3, Default _3, Integral _3, Ord _1, Ord _2) => Int -> [(_1, [_4])] -> String -> TargetSystem (BusNetwork _2 _1 _4 _3) _2 _1 _4 _3 -> IO ()
+backendServer :: (Val _1, Hashable _2, Suffix _2, ToString _2, ToString _3, IsString _2, IsString _3, Bounded _4, ToJSONKey _2, ToJSON _2, ToJSON _1, ToJSON _4, ToJSON _3, FromHttpApiData _3, Label _2, Typeable _2, Typeable _3, Typeable _4, Show _4, Default _4, Integral _4, Ord _2, Ord _3) => Int -> [(_2, [_1])] -> String -> TargetSystem (BusNetwork _3 _2 _1 _4) _3 _2 _1 _4 -> IO ()
 prepareJSAPI :: Interpolatable 'True src Text => src -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath

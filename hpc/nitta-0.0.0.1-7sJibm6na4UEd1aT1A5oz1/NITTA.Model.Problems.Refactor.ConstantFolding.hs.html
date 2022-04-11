@@ -113,37 +113,33 @@ span.spaces    { background: white }
 <span class="lineno">   94 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlyfalse">cRefOld == cRefNew</span> = <span class="nottickedoff">cRefNew</span></span>
 <span class="lineno">   95 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = deleteExtraF $ (fs L.\\ cRefOld) &lt;&gt; cRefNew</span></span>
 <span class="lineno">   96 </span>
-<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">isConst f</span>
-<span class="lineno">   98 </span><span class="spaces">    </span><span class="istickedoff">| Just Constant{} &lt;- castF f = True</span>
-<span class="lineno">   99 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
-<span class="lineno">  100 </span>
-<span class="lineno">  101 </span><span class="decl"><span class="istickedoff">selectClusters fs =</span>
-<span class="lineno">  102 </span><span class="spaces">    </span><span class="istickedoff">let consts = filter isConst fs</span>
-<span class="lineno">  103 </span><span class="spaces">        </span><span class="istickedoff">isIntersection a b = not . S.null $ S.intersection a b</span>
-<span class="lineno">  104 </span><span class="spaces">        </span><span class="istickedoff">inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)</span>
-<span class="lineno">  105 </span><span class="spaces">        </span><span class="istickedoff">getInputConsts f = filter (\c -&gt; outputs c `isIntersection` inputs f) consts</span>
-<span class="lineno">  106 </span><span class="spaces">        </span><span class="istickedoff">createCluster f</span>
-<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">| inputsAreConst f = f : getInputConsts f</span>
-<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = [<span class="nottickedoff">f</span>]</span>
-<span class="lineno">  109 </span><span class="spaces">     </span><span class="istickedoff">in map createCluster fs</span></span>
-<span class="lineno">  110 </span>
-<span class="lineno">  111 </span><span class="decl"><span class="istickedoff">evalCluster [f] = <span class="nottickedoff">[f]</span></span>
-<span class="lineno">  112 </span><span class="spaces"></span><span class="istickedoff">evalCluster fs = outputResult</span>
-<span class="lineno">  113 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  114 </span><span class="spaces">        </span><span class="istickedoff">(consts, [f]) = L.partition isConst fs</span>
-<span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">cntx = CycleCntx $ HM.fromList $ concatMap (simulate <span class="nottickedoff">def</span>) consts</span>
-<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">outputResult</span>
-<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">| null $ outputs f = fs</span>
-<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = map (\(v, x) -&gt; constant x [v]) (simulate cntx f) &lt;&gt; consts</span></span>
-<span class="lineno">  119 </span>
-<span class="lineno">  120 </span><span class="decl"><span class="istickedoff">deleteExtraF fs =</span>
-<span class="lineno">  121 </span><span class="spaces">    </span><span class="istickedoff">L.nub</span>
-<span class="lineno">  122 </span><span class="spaces">        </span><span class="istickedoff">[ f1</span>
-<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">| f1 &lt;- fs</span>
-<span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">, f2 &lt;- fs</span>
-<span class="lineno">  125 </span><span class="spaces">        </span><span class="istickedoff">, f1 /= f2</span>
-<span class="lineno">  126 </span><span class="spaces">        </span><span class="istickedoff">, not $ null (variables f1 `S.intersection` variables f2)</span>
-<span class="lineno">  127 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">selectClusters fs =</span>
+<span class="lineno">   98 </span><span class="spaces">    </span><span class="istickedoff">let consts = filter isConst fs</span>
+<span class="lineno">   99 </span><span class="spaces">        </span><span class="istickedoff">isIntersection a b = not . S.null $ S.intersection a b</span>
+<span class="lineno">  100 </span><span class="spaces">        </span><span class="istickedoff">inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">getInputConsts f = filter (\c -&gt; outputs c `isIntersection` inputs f) consts</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">createCluster f</span>
+<span class="lineno">  103 </span><span class="spaces">            </span><span class="istickedoff">| inputsAreConst f = f : getInputConsts f</span>
+<span class="lineno">  104 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = [<span class="nottickedoff">f</span>]</span>
+<span class="lineno">  105 </span><span class="spaces">     </span><span class="istickedoff">in map createCluster fs</span></span>
+<span class="lineno">  106 </span>
+<span class="lineno">  107 </span><span class="decl"><span class="istickedoff">evalCluster [f] = <span class="nottickedoff">[f]</span></span>
+<span class="lineno">  108 </span><span class="spaces"></span><span class="istickedoff">evalCluster fs = outputResult</span>
+<span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  110 </span><span class="spaces">        </span><span class="istickedoff">(consts, [f]) = L.partition isConst fs</span>
+<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">cntx = CycleCntx $ HM.fromList $ concatMap (simulate <span class="nottickedoff">def</span>) consts</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">outputResult</span>
+<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">| null $ outputs f = fs</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = map (\(v, x) -&gt; constant x [v]) (simulate cntx f) &lt;&gt; consts</span></span>
+<span class="lineno">  115 </span>
+<span class="lineno">  116 </span><span class="decl"><span class="istickedoff">deleteExtraF fs =</span>
+<span class="lineno">  117 </span><span class="spaces">    </span><span class="istickedoff">L.nub</span>
+<span class="lineno">  118 </span><span class="spaces">        </span><span class="istickedoff">[ f1</span>
+<span class="lineno">  119 </span><span class="spaces">        </span><span class="istickedoff">| f1 &lt;- fs</span>
+<span class="lineno">  120 </span><span class="spaces">        </span><span class="istickedoff">, f2 &lt;- fs</span>
+<span class="lineno">  121 </span><span class="spaces">        </span><span class="istickedoff">, f1 /= f2</span>
+<span class="lineno">  122 </span><span class="spaces">        </span><span class="istickedoff">, not $ null (variables f1 `S.intersection` variables f2)</span>
+<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
 
 </pre>
 </body>

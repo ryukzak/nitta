@@ -36,7 +36,7 @@ Stability   : experimental
 </span><span id="line-36"></span><span>
 </span><span id="line-37"></span><span class="hs-keyword">type</span><span> </span><span id="VisJS"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#VisJS"><span class="hs-identifier hs-var">VisJS</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-type">GraphEdge</span></a></span><span>
 </span><span id="line-38"></span><span>
-</span><span id="line-39"></span><span id="local-6989586621680038424"><span id="local-6989586621680038425"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphEdge"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-var">GraphEdge</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphEdge"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-var">GraphEdge</span></a></span></span><span>
+</span><span id="line-39"></span><span id="local-6989586621680041962"><span id="local-6989586621680041963"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphEdge"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-var">GraphEdge</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphEdge"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-var">GraphEdge</span></a></span></span><span>
 </span><span id="line-40"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Ato%3AGraphEdge"><span class="annot"><span class="annottext">GraphEdge -&gt; Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Ato%3AGraphEdge"><span class="hs-identifier hs-var hs-var">to</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-41"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Afrom%3AGraphEdge"><span class="annot"><span class="annottext">GraphEdge -&gt; Int
@@ -59,7 +59,7 @@ $cfrom :: forall x. GraphEdge -&gt; Rep GraphEdge x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-47"></span><span>
 </span><span id="line-48"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-type">GraphEdge</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-49"></span><span>    </span><span id="local-6989586621680038412"><span class="annot"><span class="annottext">def :: GraphEdge
+</span><span id="line-49"></span><span>    </span><span id="local-6989586621680041950"><span class="annot"><span class="annottext">def :: GraphEdge
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-50"></span><span>        </span><span class="annot"><span class="annottext">GraphEdge :: Int -&gt; Int -&gt; String -&gt; String -&gt; String -&gt; GraphEdge
 </span><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-type">GraphEdge</span></a></span><span>
@@ -80,11 +80,11 @@ $cfrom :: forall x. GraphEdge -&gt; Rep GraphEdge x
 </span><span class="hs-string">&quot;bottom&quot;</span></span><span>
 </span><span id="line-56"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span id="local-6989586621680038409"><span id="local-6989586621680038410"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphStructure"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span></span><span> </span><span id="local-6989586621680038464"><span class="annot"><a href="#local-6989586621680038464"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphStructure"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span></span><span>
+</span><span id="line-58"></span><span id="local-6989586621680041947"><span id="local-6989586621680041948"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphStructure"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span></span><span> </span><span id="local-6989586621680042002"><span class="annot"><a href="#local-6989586621680042002"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphStructure"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span></span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Anodes%3AGraphStructure"><span class="annot"><span class="annottext">GraphStructure v -&gt; [GraphNode]
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Anodes%3AGraphStructure"><span class="hs-identifier hs-var hs-var">nodes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-type">GraphNode</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-60"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Aedges%3AGraphStructure"><span class="annot"><span class="annottext">GraphStructure v -&gt; [v]
-</span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aedges%3AGraphStructure"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680038464"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span>
+</span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aedges%3AGraphStructure"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680042002"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-61"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-62"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. GraphStructure v -&gt; Rep (GraphStructure v) x)
 -&gt; (forall x. Rep (GraphStructure v) x -&gt; GraphStructure v)
@@ -99,7 +99,7 @@ $cto :: forall v x. Rep (GraphStructure v) x -&gt; GraphStructure v
 $cfrom :: forall v x. GraphStructure v -&gt; Rep (GraphStructure v) x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span id="local-6989586621680038402"><span id="local-6989586621680038403"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphNode"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-var">GraphNode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphNode"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-var">GraphNode</span></a></span></span><span>
+</span><span id="line-64"></span><span id="local-6989586621680041940"><span id="local-6989586621680041941"></span></span><span class="hs-keyword">data</span><span> </span><span id="GraphNode"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-var">GraphNode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GraphNode"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-var">GraphNode</span></a></span></span><span>
 </span><span id="line-65"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Aid%3AGraphNode"><span class="annot"><span class="annottext">GraphNode -&gt; Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aid%3AGraphNode"><span class="hs-identifier hs-var hs-var">id</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-66"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Alabel%3AGraphNode"><span class="annot"><span class="annottext">GraphNode -&gt; String
@@ -128,8 +128,8 @@ $cfrom :: forall x. GraphNode -&gt; Rep GraphNode x
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-75"></span><span>
 </span><span id="line-76"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-type">GraphNode</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-77"></span><span>    </span><span id="local-6989586621680038389"><span class="annot"><span class="annottext">def :: GraphNode
-</span><a href="#local-6989586621680038389"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>    </span><span id="local-6989586621680041927"><span class="annot"><span class="annottext">def :: GraphNode
+</span><a href="#local-6989586621680041927"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-78"></span><span>        </span><span class="annot"><span class="annottext">GraphNode :: Int
 -&gt; String
 -&gt; String
@@ -168,7 +168,7 @@ $cfrom :: forall x. GraphNode -&gt; Rep GraphNode x
 </span><span id="line-89"></span><span class="hs-keyword">data</span><span> </span><span id="VertexType"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#VertexType"><span class="hs-identifier hs-var">VertexType</span></a></span></span><span>
 </span><span id="line-90"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="InVertex"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#InVertex"><span class="hs-identifier hs-var">InVertex</span></a></span></span><span>
 </span><span id="line-91"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="OutVertex"><span class="annot"><a href="NITTA.UIBackend.VisJS.html#OutVertex"><span class="hs-identifier hs-var">OutVertex</span></a></span></span><span>
-</span><span id="line-92"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680038383"><span id="local-6989586621680038385"><span class="annot"><span class="annottext">VertexType -&gt; VertexType -&gt; Bool
+</span><span id="line-92"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680041921"><span id="local-6989586621680041923"><span class="annot"><span class="annottext">VertexType -&gt; VertexType -&gt; Bool
 (VertexType -&gt; VertexType -&gt; Bool)
 -&gt; (VertexType -&gt; VertexType -&gt; Bool) -&gt; Eq VertexType
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -188,119 +188,119 @@ $c== :: VertexType -&gt; VertexType -&gt; Bool
 </span><span id="line-98"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-99"></span><span>
 </span><span id="line-100"></span><span id="algToVizJS"><span class="annot"><span class="annottext">algToVizJS :: [F v x] -&gt; GraphStructure GraphEdge
-</span><a href="NITTA.UIBackend.VisJS.html#algToVizJS"><span class="hs-identifier hs-var hs-var">algToVizJS</span></a></span></span><span> </span><span id="local-6989586621680038377"><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680038377"><span class="hs-identifier hs-var">fbs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-101"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680038376"><span class="annot"><span class="annottext">graphs :: [GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038376"><span class="hs-identifier hs-var hs-var">graphs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; GraphStructure GraphVertex)
+</span><a href="NITTA.UIBackend.VisJS.html#algToVizJS"><span class="hs-identifier hs-var hs-var">algToVizJS</span></a></span></span><span> </span><span id="local-6989586621680041915"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680041915"><span class="hs-identifier hs-var">fbs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680041914"><span class="annot"><span class="annottext">graphs :: [GraphStructure GraphVertex]
+</span><a href="#local-6989586621680041914"><span class="hs-identifier hs-var hs-var">graphs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; GraphStructure GraphVertex)
 -&gt; [F v x] -&gt; [GraphStructure GraphVertex]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; GraphStructure GraphVertex
 forall v x. Label v =&gt; F v x -&gt; GraphStructure GraphVertex
 </span><a href="NITTA.UIBackend.VisJS.html#toVizJS"><span class="hs-identifier hs-var">toVizJS</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680038377"><span class="hs-identifier hs-var">fbs</span></a></span><span>
-</span><span id="line-102"></span><span>        </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680038374"><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038374"><span class="hs-identifier hs-var">nodes</span></a></span></span><span> </span><span id="local-6989586621680038373"><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038373"><span class="hs-identifier hs-var">vertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex] -&gt; GraphStructure GraphVertex
+</span><a href="#local-6989586621680041915"><span class="hs-identifier hs-var">fbs</span></a></span><span>
+</span><span id="line-102"></span><span>        </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680041912"><span class="annot"><span class="annottext">[GraphNode]
+</span><a href="#local-6989586621680041912"><span class="hs-identifier hs-var">nodes</span></a></span></span><span> </span><span id="local-6989586621680041911"><span class="annot"><span class="annottext">[GraphVertex]
+</span><a href="#local-6989586621680041911"><span class="hs-identifier hs-var">vertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex] -&gt; GraphStructure GraphVertex
 forall v. [GraphStructure v] -&gt; GraphStructure v
-</span><a href="#local-6989586621680038372"><span class="hs-identifier hs-var">connectGraph</span></a></span><span> </span><span class="annot"><span class="annottext">([GraphStructure GraphVertex] -&gt; GraphStructure GraphVertex)
+</span><a href="#local-6989586621680041910"><span class="hs-identifier hs-var">connectGraph</span></a></span><span> </span><span class="annot"><span class="annottext">([GraphStructure GraphVertex] -&gt; GraphStructure GraphVertex)
 -&gt; [GraphStructure GraphVertex] -&gt; GraphStructure GraphVertex
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex] -&gt; Int -&gt; [GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038371"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038376"><span class="hs-identifier hs-var">graphs</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041909"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
+</span><a href="#local-6989586621680041914"><span class="hs-identifier hs-var">graphs</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
-</span><span id="line-103"></span><span>        </span><span id="local-6989586621680038370"><span class="annot"><span class="annottext">edges :: [GraphEdge]
-</span><a href="#local-6989586621680038370"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[GraphVertex] -&gt; [GraphEdge]
-</span><a href="#local-6989586621680038369"><span class="hs-identifier hs-var">bindVertexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038373"><span class="hs-identifier hs-var">vertexes</span></a></span><span>
+</span><span id="line-103"></span><span>        </span><span id="local-6989586621680041908"><span class="annot"><span class="annottext">edges :: [GraphEdge]
+</span><a href="#local-6989586621680041908"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[GraphVertex] -&gt; [GraphEdge]
+</span><a href="#local-6989586621680041907"><span class="hs-identifier hs-var">bindVertexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
+</span><a href="#local-6989586621680041911"><span class="hs-identifier hs-var">vertexes</span></a></span><span>
 </span><span id="line-104"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[GraphNode] -&gt; [GraphEdge] -&gt; GraphStructure GraphEdge
 forall v. [GraphNode] -&gt; [v] -&gt; GraphStructure v
 </span><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038374"><span class="hs-identifier hs-var">nodes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphEdge]
-</span><a href="#local-6989586621680038370"><span class="hs-identifier hs-var">edges</span></a></span><span>
+</span><a href="#local-6989586621680041912"><span class="hs-identifier hs-var">nodes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphEdge]
+</span><a href="#local-6989586621680041908"><span class="hs-identifier hs-var">edges</span></a></span><span>
 </span><span id="line-105"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-106"></span><span>        </span><span id="local-6989586621680038371"><span class="annot"><span class="annottext">calculateIndexes :: [GraphStructure GraphVertex] -&gt; Int -&gt; [GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038371"><span class="hs-identifier hs-var hs-var">calculateIndexes</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span id="line-106"></span><span>        </span><span id="local-6989586621680041909"><span class="annot"><span class="annottext">calculateIndexes :: [GraphStructure GraphVertex] -&gt; Int -&gt; [GraphStructure GraphVertex]
+</span><a href="#local-6989586621680041909"><span class="hs-identifier hs-var hs-var">calculateIndexes</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-107"></span><span>        </span><span class="annot"><a href="#local-6989586621680038371"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680038368"><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038368"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span id="local-6989586621680038367"><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038367"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680038366"><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038366"><span class="hs-identifier hs-var">gss</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680038365"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038365"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-107"></span><span>        </span><span class="annot"><a href="#local-6989586621680041909"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680041906"><span class="annot"><span class="annottext">[GraphNode]
+</span><a href="#local-6989586621680041906"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span id="local-6989586621680041905"><span class="annot"><span class="annottext">[GraphVertex]
+</span><a href="#local-6989586621680041905"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680041904"><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
+</span><a href="#local-6989586621680041904"><span class="hs-identifier hs-var">gss</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680041903"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041903"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-108"></span><span>            </span><span class="annot"><span class="annottext">[GraphNode] -&gt; [GraphVertex] -&gt; GraphStructure GraphVertex
 forall v. [GraphNode] -&gt; [v] -&gt; GraphStructure v
 </span><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span><span>
 </span><span id="line-109"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(GraphNode -&gt; GraphNode) -&gt; [GraphNode] -&gt; [GraphNode]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680038364"><span class="annot"><span class="annottext">GraphNode
-</span><a href="#local-6989586621680038364"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphNode
-</span><a href="#local-6989586621680038364"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:id:GraphNode :: Int
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680041902"><span class="annot"><span class="annottext">GraphNode
+</span><a href="#local-6989586621680041902"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphNode
+</span><a href="#local-6989586621680041902"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:id:GraphNode :: Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aid%3AGraphNode"><span class="hs-identifier hs-var">id</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038365"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680041903"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">GraphNode -&gt; Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aid%3AGraphNode"><span class="hs-identifier hs-var hs-var">id</span></a></span><span> </span><span class="annot"><span class="annottext">GraphNode
-</span><a href="#local-6989586621680038364"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038368"><span class="hs-identifier hs-var">ns</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680041902"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphNode]
+</span><a href="#local-6989586621680041906"><span class="hs-identifier hs-var">ns</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-110"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(GraphVertex -&gt; GraphVertex) -&gt; [GraphVertex] -&gt; [GraphVertex]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680038362"><span class="annot"><span class="annottext">GraphVertex
-</span><a href="#local-6989586621680038362"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphVertex
-</span><a href="#local-6989586621680038362"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:vertexNodeId:GraphVertex :: Int
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680041900"><span class="annot"><span class="annottext">GraphVertex
+</span><a href="#local-6989586621680041900"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphVertex
+</span><a href="#local-6989586621680041900"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:vertexNodeId:GraphVertex :: Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3AvertexNodeId%3AGraphVertex"><span class="hs-identifier hs-var">vertexNodeId</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038365"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680041903"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">GraphVertex -&gt; Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3AvertexNodeId%3AGraphVertex"><span class="hs-identifier hs-var hs-var">vertexNodeId</span></a></span><span> </span><span class="annot"><span class="annottext">GraphVertex
-</span><a href="#local-6989586621680038362"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038367"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">GraphStructure GraphVertex
+</span><a href="#local-6989586621680041900"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
+</span><a href="#local-6989586621680041905"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">GraphStructure GraphVertex
 -&gt; [GraphStructure GraphVertex] -&gt; [GraphStructure GraphVertex]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span>
 </span><span id="line-111"></span><span>            </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex] -&gt; Int -&gt; [GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038371"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
-</span><a href="#local-6989586621680038366"><span class="hs-identifier hs-var">gss</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038365"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680041909"><span class="hs-identifier hs-var">calculateIndexes</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphStructure GraphVertex]
+</span><a href="#local-6989586621680041904"><span class="hs-identifier hs-var">gss</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041903"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">[GraphNode] -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038368"><span class="hs-identifier hs-var">ns</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680041906"><span class="hs-identifier hs-var">ns</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-112"></span><span>
-</span><span id="line-113"></span><span>        </span><span id="local-6989586621680038372"><span class="annot"><span class="annottext">connectGraph :: [GraphStructure v] -&gt; GraphStructure v
-</span><a href="#local-6989586621680038372"><span class="hs-identifier hs-var hs-var">connectGraph</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>        </span><span id="local-6989586621680041910"><span class="annot"><span class="annottext">connectGraph :: [GraphStructure v] -&gt; GraphStructure v
+</span><a href="#local-6989586621680041910"><span class="hs-identifier hs-var hs-var">connectGraph</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-114"></span><span>            </span><span class="annot"><span class="annottext">(GraphStructure v -&gt; GraphStructure v -&gt; GraphStructure v)
 -&gt; GraphStructure v -&gt; [GraphStructure v] -&gt; GraphStructure v
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-115"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680038359"><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038359"><span class="hs-identifier hs-var">n1</span></a></span></span><span> </span><span id="local-6989586621680038358"><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680038358"><span class="hs-identifier hs-var">v1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680038357"><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038357"><span class="hs-identifier hs-var">n2</span></a></span></span><span> </span><span id="local-6989586621680038356"><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680038356"><span class="hs-identifier hs-var">v2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-115"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680041897"><span class="annot"><span class="annottext">[GraphNode]
+</span><a href="#local-6989586621680041897"><span class="hs-identifier hs-var">n1</span></a></span></span><span> </span><span id="local-6989586621680041896"><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680041896"><span class="hs-identifier hs-var">v1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-type">GraphStructure</span></a></span><span> </span><span id="local-6989586621680041895"><span class="annot"><span class="annottext">[GraphNode]
+</span><a href="#local-6989586621680041895"><span class="hs-identifier hs-var">n2</span></a></span></span><span> </span><span id="local-6989586621680041894"><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680041894"><span class="hs-identifier hs-var">v2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-116"></span><span>                    </span><span class="annot"><span class="annottext">[GraphNode] -&gt; [v] -&gt; GraphStructure v
 forall v. [GraphNode] -&gt; [v] -&gt; GraphStructure v
 </span><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038359"><span class="hs-identifier hs-var">n1</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphNode] -&gt; [GraphNode] -&gt; [GraphNode]
+</span><a href="#local-6989586621680041897"><span class="hs-identifier hs-var">n1</span></a></span><span> </span><span class="annot"><span class="annottext">[GraphNode] -&gt; [GraphNode] -&gt; [GraphNode]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[GraphNode]
-</span><a href="#local-6989586621680038357"><span class="hs-identifier hs-var">n2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680038358"><span class="hs-identifier hs-var">v1</span></a></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; [v] -&gt; [v]
+</span><a href="#local-6989586621680041895"><span class="hs-identifier hs-var">n2</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680041896"><span class="hs-identifier hs-var">v1</span></a></span><span> </span><span class="annot"><span class="annottext">[v] -&gt; [v] -&gt; [v]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680038356"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680041894"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-117"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-118"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[GraphNode] -&gt; [v] -&gt; GraphStructure v
 forall v. [GraphNode] -&gt; [v] -&gt; GraphStructure v
 </span><a href="NITTA.UIBackend.VisJS.html#GraphStructure"><span class="hs-identifier hs-var">GraphStructure</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span>
 </span><span id="line-119"></span><span>
-</span><span id="line-120"></span><span>        </span><span id="local-6989586621680038369"><span class="annot"><span class="annottext">bindVertexes :: [GraphVertex] -&gt; [GraphEdge]
-</span><a href="#local-6989586621680038369"><span class="hs-identifier hs-var hs-var">bindVertexes</span></a></span></span><span> </span><span id="local-6989586621680038355"><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038355"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-121"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680038354"><span class="annot"><span class="annottext">inVertexes :: [GraphVertex]
-</span><a href="#local-6989586621680038354"><span class="hs-identifier hs-var hs-var">inVertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; Bool) -&gt; [GraphVertex] -&gt; [GraphVertex]
+</span><span id="line-120"></span><span>        </span><span id="local-6989586621680041907"><span class="annot"><span class="annottext">bindVertexes :: [GraphVertex] -&gt; [GraphEdge]
+</span><a href="#local-6989586621680041907"><span class="hs-identifier hs-var hs-var">bindVertexes</span></a></span></span><span> </span><span id="local-6989586621680041893"><span class="annot"><span class="annottext">[GraphVertex]
+</span><a href="#local-6989586621680041893"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680041892"><span class="annot"><span class="annottext">inVertexes :: [GraphVertex]
+</span><a href="#local-6989586621680041892"><span class="hs-identifier hs-var hs-var">inVertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; Bool) -&gt; [GraphVertex] -&gt; [GraphVertex]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#InVertex"><span class="hs-identifier hs-var">InVertex</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; VertexType -&gt; Bool
@@ -310,9 +310,9 @@ forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">GraphVertex -&gt; VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3AvertexType%3AGraphVertex"><span class="hs-identifier hs-var hs-var">vertexType</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038355"><span class="hs-identifier hs-var">vs</span></a></span><span>
-</span><span id="line-122"></span><span>                </span><span id="local-6989586621680038352"><span class="annot"><span class="annottext">outVertexes :: [GraphVertex]
-</span><a href="#local-6989586621680038352"><span class="hs-identifier hs-var hs-var">outVertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; Bool) -&gt; [GraphVertex] -&gt; [GraphVertex]
+</span><a href="#local-6989586621680041893"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><span id="line-122"></span><span>                </span><span id="local-6989586621680041890"><span class="annot"><span class="annottext">outVertexes :: [GraphVertex]
+</span><a href="#local-6989586621680041890"><span class="hs-identifier hs-var hs-var">outVertexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; Bool) -&gt; [GraphVertex] -&gt; [GraphVertex]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#OutVertex"><span class="hs-identifier hs-var">OutVertex</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; VertexType -&gt; Bool
@@ -322,50 +322,50 @@ forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">GraphVertex -&gt; VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3AvertexType%3AGraphVertex"><span class="hs-identifier hs-var hs-var">vertexType</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038355"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><a href="#local-6989586621680041893"><span class="hs-identifier hs-var">vs</span></a></span><span>
 </span><span id="line-123"></span><span>             </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; [GraphEdge]) -&gt; [GraphVertex] -&gt; [GraphEdge]
 forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span>
 </span><span id="line-124"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphVertex"><span class="hs-identifier hs-type">GraphVertex</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680038350"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680038350"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621680038349"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038349"><span class="hs-identifier hs-var">inId</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680041888"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680041888"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621680041887"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041887"><span class="hs-identifier hs-var">inId</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-125"></span><span>                        </span><span class="annot"><span class="annottext">(GraphVertex -&gt; GraphEdge) -&gt; [GraphVertex] -&gt; [GraphEdge]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span>
 </span><span id="line-126"></span><span>                            </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphVertex"><span class="hs-identifier hs-type">GraphVertex</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680038348"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038348"><span class="hs-identifier hs-var">outId</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphEdge
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680041886"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041886"><span class="hs-identifier hs-var">outId</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GraphEdge
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span class="hs-special">{</span><span class="annot"><span class="annottext">$sel:to:GraphEdge :: Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Ato%3AGraphEdge"><span class="hs-identifier hs-var">to</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038349"><span class="hs-identifier hs-var">inId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:from:GraphEdge :: Int
+</span><a href="#local-6989586621680041887"><span class="hs-identifier hs-var">inId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:from:GraphEdge :: Int
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Afrom%3AGraphEdge"><span class="hs-identifier hs-var">from</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680038348"><span class="hs-identifier hs-var">outId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:label:GraphEdge :: String
+</span><a href="#local-6989586621680041886"><span class="hs-identifier hs-var">outId</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:label:GraphEdge :: String
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Alabel%3AGraphEdge"><span class="hs-keyword hs-var">label</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680038350"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680041888"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span>
 </span><span id="line-127"></span><span>                            </span><span class="annot"><span class="annottext">([GraphVertex] -&gt; [GraphEdge]) -&gt; [GraphVertex] -&gt; [GraphEdge]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(GraphVertex -&gt; Bool) -&gt; [GraphVertex] -&gt; [GraphVertex]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680038350"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+</span><a href="#local-6989586621680041888"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; Bool) -&gt; (GraphVertex -&gt; String) -&gt; GraphVertex -&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">GraphVertex -&gt; String
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3AvertexName%3AGraphVertex"><span class="hs-identifier hs-var hs-var">vertexName</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038352"><span class="hs-identifier hs-var">outVertexes</span></a></span><span>
+</span><a href="#local-6989586621680041890"><span class="hs-identifier hs-var">outVertexes</span></a></span><span>
 </span><span id="line-128"></span><span>                    </span><span class="hs-special">)</span><span>
 </span><span id="line-129"></span><span>                    </span><span class="annot"><span class="annottext">[GraphVertex]
-</span><a href="#local-6989586621680038354"><span class="hs-identifier hs-var">inVertexes</span></a></span><span>
+</span><a href="#local-6989586621680041892"><span class="hs-identifier hs-var">inVertexes</span></a></span><span>
 </span><span id="line-130"></span><span>
 </span><span id="line-131"></span><span id="toVizJS"><span class="annot"><span class="annottext">toVizJS :: F v x -&gt; GraphStructure GraphVertex
-</span><a href="NITTA.UIBackend.VisJS.html#toVizJS"><span class="hs-identifier hs-var hs-var">toVizJS</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F.F</span></a></span><span class="hs-special">{</span><span id="local-6989586621680038346"><span class="annot"><span class="annottext">f
+</span><a href="NITTA.UIBackend.VisJS.html#toVizJS"><span class="hs-identifier hs-var hs-var">toVizJS</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F.F</span></a></span><span class="hs-special">{</span><span id="local-6989586621680041884"><span class="annot"><span class="annottext">f
 fun :: ()
 fun :: f
-</span><a href="NITTA.Intermediate.Types.html#fun"><span class="hs-identifier hs-var hs-var">fun</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680038344"><span class="annot"><span class="annottext">[F v x]
+</span><a href="NITTA.Intermediate.Types.html#fun"><span class="hs-identifier hs-var hs-var">fun</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680041882"><span class="annot"><span class="annottext">[F v x]
 funHistory :: forall v x. F v x -&gt; [F v x]
 funHistory :: [F v x]
 </span><a href="NITTA.Intermediate.Types.html#funHistory"><span class="hs-identifier hs-var hs-var">funHistory</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
@@ -380,62 +380,62 @@ forall a. Default a =&gt; a
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Alabel%3AGraphNode"><span class="hs-keyword hs-var">label</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f -&gt; String
 forall a. Label a =&gt; a -&gt; String
 </span><a href="NITTA.Intermediate.Types.html#label"><span class="hs-identifier hs-var">F.label</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680038346"><span class="hs-identifier hs-var">fun</span></a></span><span>
+</span><a href="#local-6989586621680041884"><span class="hs-identifier hs-var">fun</span></a></span><span>
 </span><span id="line-136"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:function:GraphNode :: String
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Afunction%3AGraphNode"><span class="hs-identifier hs-var">function</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680038346"><span class="hs-identifier hs-var">fun</span></a></span><span>
+</span><a href="#local-6989586621680041884"><span class="hs-identifier hs-var">fun</span></a></span><span>
 </span><span id="line-137"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:history:GraphNode :: [String]
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Ahistory%3AGraphNode"><span class="hs-identifier hs-var">history</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; String) -&gt; [F v x] -&gt; [String]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680038344"><span class="hs-identifier hs-var">funHistory</span></a></span><span>
+</span><a href="#local-6989586621680041882"><span class="hs-identifier hs-var">funHistory</span></a></span><span>
 </span><span id="line-138"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-139"></span><span>            </span><span class="hs-special">]</span><span>
 </span><span id="line-140"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:edges:GraphStructure :: [GraphVertex]
 </span><a href="NITTA.UIBackend.VisJS.html#%24sel%3Aedges%3AGraphStructure"><span class="hs-identifier hs-var">edges</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; Set v -&gt; [GraphVertex]
 forall a. Label a =&gt; VertexType -&gt; Set a -&gt; [GraphVertex]
-</span><a href="#local-6989586621680038340"><span class="hs-identifier hs-var">mkEdges</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
+</span><a href="#local-6989586621680041878"><span class="hs-identifier hs-var">mkEdges</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#InVertex"><span class="hs-identifier hs-var">InVertex</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">F.inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680038346"><span class="hs-identifier hs-var">fun</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex] -&gt; [GraphVertex] -&gt; [GraphVertex]
+</span><a href="#local-6989586621680041884"><span class="hs-identifier hs-var">fun</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[GraphVertex] -&gt; [GraphVertex] -&gt; [GraphVertex]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; Set v -&gt; [GraphVertex]
 forall a. Label a =&gt; VertexType -&gt; Set a -&gt; [GraphVertex]
-</span><a href="#local-6989586621680038340"><span class="hs-identifier hs-var">mkEdges</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
+</span><a href="#local-6989586621680041878"><span class="hs-identifier hs-var">mkEdges</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
 </span><a href="NITTA.UIBackend.VisJS.html#OutVertex"><span class="hs-identifier hs-var">OutVertex</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f -&gt; Set v
 forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#outputs"><span class="hs-identifier hs-var">F.outputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680038346"><span class="hs-identifier hs-var">fun</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680041884"><span class="hs-identifier hs-var">fun</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-141"></span><span>        </span><span class="hs-special">}</span><span>
 </span><span id="line-142"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-143"></span><span>        </span><span id="local-6989586621680038340"><span class="annot"><span class="annottext">mkEdges :: VertexType -&gt; Set a -&gt; [GraphVertex]
-</span><a href="#local-6989586621680038340"><span class="hs-identifier hs-var hs-var">mkEdges</span></a></span></span><span> </span><span id="local-6989586621680038337"><span class="annot"><span class="annottext">VertexType
-</span><a href="#local-6989586621680038337"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; GraphVertex) -&gt; [a] -&gt; [GraphVertex]
+</span><span id="line-143"></span><span>        </span><span id="local-6989586621680041878"><span class="annot"><span class="annottext">mkEdges :: VertexType -&gt; Set a -&gt; [GraphVertex]
+</span><a href="#local-6989586621680041878"><span class="hs-identifier hs-var hs-var">mkEdges</span></a></span></span><span> </span><span id="local-6989586621680041875"><span class="annot"><span class="annottext">VertexType
+</span><a href="#local-6989586621680041875"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; GraphVertex) -&gt; [a] -&gt; [GraphVertex]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680038336"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680038336"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; String -&gt; Int -&gt; GraphVertex
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680041874"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680041874"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">VertexType -&gt; String -&gt; Int -&gt; GraphVertex
 </span><a href="NITTA.UIBackend.VisJS.html#GraphVertex"><span class="hs-identifier hs-var">GraphVertex</span></a></span><span> </span><span class="annot"><span class="annottext">VertexType
-</span><a href="#local-6989586621680038337"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; String
+</span><a href="#local-6989586621680041875"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; String
 forall a. Label a =&gt; a -&gt; String
 </span><a href="NITTA.Intermediate.Types.html#label"><span class="hs-identifier hs-var">F.label</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680038336"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680041874"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([a] -&gt; [GraphVertex]) -&gt; (Set a -&gt; [a]) -&gt; Set a -&gt; [GraphVertex]
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.elems</span></span><span>
 </span><span id="line-144"></span><span>
-</span><span id="line-145"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680038327"><span id="local-6989586621680038329"><span id="local-6989586621680038331"><span id="local-6989586621680038333"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#VisJS"><span class="hs-identifier hs-type">VisJS</span></a></span></span></span></span></span><span>
-</span><span id="line-146"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680038318"><span id="local-6989586621680038320"><span id="local-6989586621680038322"><span id="local-6989586621680038324"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-type">GraphNode</span></a></span></span></span></span></span><span>
-</span><span id="line-147"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680038310"><span id="local-6989586621680038312"><span id="local-6989586621680038314"><span id="local-6989586621680038316"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-type">GraphEdge</span></a></span></span></span></span></span><span>
+</span><span id="line-145"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680041865"><span id="local-6989586621680041867"><span id="local-6989586621680041869"><span id="local-6989586621680041871"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#VisJS"><span class="hs-identifier hs-type">VisJS</span></a></span></span></span></span></span><span>
+</span><span id="line-146"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680041856"><span id="local-6989586621680041858"><span id="local-6989586621680041860"><span id="local-6989586621680041862"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphNode"><span class="hs-identifier hs-type">GraphNode</span></a></span></span></span></span></span><span>
+</span><span id="line-147"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680041848"><span id="local-6989586621680041850"><span id="local-6989586621680041852"><span id="local-6989586621680041854"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#GraphEdge"><span class="hs-identifier hs-type">GraphEdge</span></a></span></span></span></span></span><span>
 </span><span id="line-148"></span><span>
 </span><span id="line-149"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ToSample</span></span><span> </span><span class="annot"><a href="NITTA.UIBackend.VisJS.html#VisJS"><span class="hs-identifier hs-type">VisJS</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-150"></span><span>    </span><span id="local-6989586621680038307"><span class="annot"><span class="annottext">toSamples :: Proxy (GraphStructure GraphEdge)
+</span><span id="line-150"></span><span>    </span><span id="local-6989586621680041845"><span class="annot"><span class="annottext">toSamples :: Proxy (GraphStructure GraphEdge)
 -&gt; [(Text, GraphStructure GraphEdge)]
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">toSamples</span></span></span><span> </span><span class="annot"><span class="annottext">Proxy (GraphStructure GraphEdge)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span>

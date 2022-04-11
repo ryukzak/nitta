@@ -117,8 +117,8 @@ span.spaces    { background: white }
 <span class="lineno">   98 </span><span class="spaces">                     </span><span class="istickedoff">in if nAll == 0 then 1 else n / nAll</span>
 <span class="lineno">   99 </span><span class="spaces">                </span><span class="istickedoff">, pWave = fmap fromIntegral $ case map (bindWaves M.!?) $ S.elems $ inputs f of</span>
 <span class="lineno">  100 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt; Just 0</span>
-<span class="lineno">  101 </span><span class="spaces">                    </span><span class="istickedoff">waves | all isJust waves -&gt; Just $ maximum $ catMaybes waves</span>
-<span class="lineno">  102 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; Nothing</span>
+<span class="lineno">  101 </span><span class="spaces">                    </span><span class="istickedoff">waves | <span class="tickonlytrue">all isJust waves</span> -&gt; Just $ maximum $ catMaybes waves</span>
+<span class="lineno">  102 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">Nothing</span></span>
 <span class="lineno">  103 </span><span class="spaces">                </span><span class="istickedoff">}</span></span>
 <span class="lineno">  104 </span>
 <span class="lineno">  105 </span>    <span class="decl"><span class="istickedoff">estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500</span>
@@ -128,7 +128,7 @@ span.spaces    { background: white }
 <span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">+ (pAlternative == 1) &lt;?&gt; 500</span>
 <span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">+ pAllowDataFlow * 10</span>
 <span class="lineno">  111 </span><span class="spaces">            </span><span class="istickedoff">+ pPercentOfBindedInputs * 50</span>
-<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">- fromMaybe (-1) pWave * 50</span>
+<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">- fromMaybe <span class="nottickedoff">(-1)</span> pWave * 50</span>
 <span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">- pNumberOfBindedFunctions * 10</span>
 <span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">- pRestless * 4</span>
 <span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">+ pOutputNumber * 2</span></span>

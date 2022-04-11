@@ -36,108 +36,91 @@ span.spaces    { background: white }
 <span class="lineno">   17 </span>module NITTA.Intermediate.Simulation (
 <span class="lineno">   18 </span>    simulateDataFlowGraph,
 <span class="lineno">   19 </span>    simulateAlg,
-<span class="lineno">   20 </span>    reorderAlgorithm,
-<span class="lineno">   21 </span>) where
-<span class="lineno">   22 </span>
-<span class="lineno">   23 </span>import qualified Data.HashMap.Strict as HM
-<span class="lineno">   24 </span>import Data.List (intersect, (\\))
-<span class="lineno">   25 </span>import qualified Data.Map.Strict as M
-<span class="lineno">   26 </span>import Data.Set (elems)
-<span class="lineno">   27 </span>import Data.String.Interpolate
-<span class="lineno">   28 </span>import NITTA.Intermediate.Functions
-<span class="lineno">   29 </span>import NITTA.Intermediate.Types
-<span class="lineno">   30 </span>import NITTA.Utils
-<span class="lineno">   31 </span>
-<span class="lineno">   32 </span>-- |Functional algorithm simulation
-<span class="lineno">   33 </span>simulateDataFlowGraph ::
-<span class="lineno">   34 </span>    (Var v, Val x, WithFunctions g (F v x)) =&gt;
-<span class="lineno">   35 </span>    Int -&gt;
-<span class="lineno">   36 </span>    CycleCntx v x -&gt;
-<span class="lineno">   37 </span>    [(v, [x])] -&gt;
-<span class="lineno">   38 </span>    g -&gt;
-<span class="lineno">   39 </span>    Cntx v x
-<span class="lineno">   40 </span><span class="decl"><span class="istickedoff">simulateDataFlowGraph cycleN cycle0 transmission dfg =</span>
-<span class="lineno">   41 </span><span class="spaces">    </span><span class="istickedoff">simulateAlg cycleN cycle0 transmission $ reorderAlgorithm $ functions dfg</span></span>
-<span class="lineno">   42 </span>
-<span class="lineno">   43 </span>simulateAlg ::
-<span class="lineno">   44 </span>    (Var v, Val x) =&gt;
-<span class="lineno">   45 </span>    Int -&gt;
-<span class="lineno">   46 </span>    CycleCntx v x -&gt;
-<span class="lineno">   47 </span>    [(v, [x])] -&gt;
-<span class="lineno">   48 </span>    [F v x] -&gt;
-<span class="lineno">   49 </span>    Cntx v x
-<span class="lineno">   50 </span><span class="decl"><span class="istickedoff">simulateAlg cycleN cycle0 transmission alg</span>
-<span class="lineno">   51 </span><span class="spaces">    </span><span class="istickedoff">| let cycleConnections [] = []</span>
-<span class="lineno">   52 </span><span class="spaces">          </span><span class="istickedoff">cycleConnections (f : fs)</span>
-<span class="lineno">   53 </span><span class="spaces">            </span><span class="istickedoff">-- without refactoring</span>
-<span class="lineno">   54 </span><span class="spaces">            </span><span class="istickedoff">| Just (Loop _ (O ov) (I iv)) &lt;- castF f = (iv, elems ov) : cycleConnections fs</span>
-<span class="lineno">   55 </span><span class="spaces">            </span><span class="istickedoff">-- after refactoring (BreakLoopD)</span>
-<span class="lineno">   56 </span><span class="spaces">            </span><span class="istickedoff">| Just (LoopBegin (Loop _ (O ov) (I iv)) _) &lt;- castF f = (iv, elems ov) : cycleConnections fs</span>
-<span class="lineno">   57 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = cycleConnections fs</span>
-<span class="lineno">   58 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">   59 </span><span class="spaces">          </span><span class="istickedoff">fromPrevCycle = cycleConnections alg =</span>
-<span class="lineno">   60 </span><span class="spaces">        </span><span class="istickedoff">Cntx</span>
-<span class="lineno">   61 </span><span class="spaces">            </span><span class="istickedoff">{ cntxReceived = M.fromList transmission</span>
-<span class="lineno">   62 </span><span class="spaces">            </span><span class="istickedoff">, cntxProcess = take cycleN $ simulateAlg' fromPrevCycle cycle0 transmission alg</span>
-<span class="lineno">   63 </span><span class="spaces">            </span><span class="istickedoff">, cntxCycleNumber = cycleN</span>
-<span class="lineno">   64 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">   65 </span>
-<span class="lineno">   66 </span><span class="decl"><span class="istickedoff">simulateAlg' fromPrevCycle cycleCntx0 transmission alg =</span>
-<span class="lineno">   67 </span><span class="spaces">    </span><span class="istickedoff">let (cycleCntx0', transmission') = receive' cycleCntx0 transmission</span>
-<span class="lineno">   68 </span><span class="spaces">        </span><span class="istickedoff">cycleCntx = simulateCycle cycleCntx0' alg</span>
-<span class="lineno">   69 </span><span class="spaces">     </span><span class="istickedoff">in cycleCntx : simulateAlg' fromPrevCycle (throwLoop cycleCntx) transmission' alg</span>
-<span class="lineno">   70 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">   71 </span><span class="spaces">        </span><span class="istickedoff">-- TODO: receive data for several IO processor unit.</span>
-<span class="lineno">   72 </span><span class="spaces">        </span><span class="istickedoff">receive' CycleCntx{cycleCntx} trans =</span>
-<span class="lineno">   73 </span><span class="spaces">            </span><span class="istickedoff">( CycleCntx $</span>
-<span class="lineno">   74 </span><span class="spaces">                </span><span class="istickedoff">foldl</span>
-<span class="lineno">   75 </span><span class="spaces">                    </span><span class="istickedoff">( \c (v, xs) -&gt;</span>
-<span class="lineno">   76 </span><span class="spaces">                        </span><span class="istickedoff">case xs of</span>
-<span class="lineno">   77 </span><span class="spaces">                            </span><span class="istickedoff">x : _ -&gt; HM.insert v x c</span>
-<span class="lineno">   78 </span><span class="spaces">                            </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">c</span></span>
-<span class="lineno">   79 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
-<span class="lineno">   80 </span><span class="spaces">                    </span><span class="istickedoff">cycleCntx</span>
-<span class="lineno">   81 </span><span class="spaces">                    </span><span class="istickedoff">trans</span>
-<span class="lineno">   82 </span><span class="spaces">            </span><span class="istickedoff">, map</span>
-<span class="lineno">   83 </span><span class="spaces">                </span><span class="istickedoff">( \(v, xs) -&gt;</span>
-<span class="lineno">   84 </span><span class="spaces">                    </span><span class="istickedoff">case xs of</span>
-<span class="lineno">   85 </span><span class="spaces">                        </span><span class="istickedoff">(_ : _) -&gt; (v, tail xs)</span>
-<span class="lineno">   86 </span><span class="spaces">                        </span><span class="istickedoff">[] -&gt; <span class="nottickedoff">(v, xs)</span></span>
-<span class="lineno">   87 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">   88 </span><span class="spaces">                </span><span class="istickedoff">trans</span>
-<span class="lineno">   89 </span><span class="spaces">            </span><span class="istickedoff">)</span>
-<span class="lineno">   90 </span><span class="spaces">        </span><span class="istickedoff">throwLoop (CycleCntx cntx) =</span>
-<span class="lineno">   91 </span><span class="spaces">            </span><span class="istickedoff">CycleCntx $</span>
-<span class="lineno">   92 </span><span class="spaces">                </span><span class="istickedoff">HM.fromList $</span>
-<span class="lineno">   93 </span><span class="spaces">                    </span><span class="istickedoff">foldl</span>
-<span class="lineno">   94 </span><span class="spaces">                        </span><span class="istickedoff">( \st (thrown, vs) -&gt; map (\v -&gt; (v, cntx HM.! thrown)) vs ++ st</span>
-<span class="lineno">   95 </span><span class="spaces">                        </span><span class="istickedoff">)</span>
-<span class="lineno">   96 </span><span class="spaces">                        </span><span class="istickedoff">[]</span>
-<span class="lineno">   97 </span><span class="spaces">                        </span><span class="istickedoff">fromPrevCycle</span>
-<span class="lineno">   98 </span><span class="spaces">        </span><span class="istickedoff">simulateCycle cntx00 fs =</span>
-<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">foldl</span>
-<span class="lineno">  100 </span><span class="spaces">                </span><span class="istickedoff">( \cntx f -&gt;</span>
-<span class="lineno">  101 </span><span class="spaces">                    </span><span class="istickedoff">case updateCntx cntx $ simulate cntx f of</span>
-<span class="lineno">  102 </span><span class="spaces">                        </span><span class="istickedoff">Right cntx' -&gt; cntx'</span>
-<span class="lineno">  103 </span><span class="spaces">                        </span><span class="istickedoff">Left e -&gt; <span class="nottickedoff">error [i|can't simulate #{f} in context #{cntx}: #{e}|]</span></span>
-<span class="lineno">  104 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">  105 </span><span class="spaces">                </span><span class="istickedoff">cntx00</span>
-<span class="lineno">  106 </span><span class="spaces">                </span><span class="istickedoff">fs</span></span>
-<span class="lineno">  107 </span>
-<span class="lineno">  108 </span><span class="decl"><span class="istickedoff">reorderAlgorithm alg = orderAlgorithm' [] alg</span>
-<span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  110 </span><span class="spaces">        </span><span class="istickedoff">orderAlgorithm' _ [] = []</span>
-<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">orderAlgorithm' vs fs</span>
-<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">| loops@(_ : _) &lt;- filter isLoop fs</span>
-<span class="lineno">  113 </span><span class="spaces">              </span><span class="istickedoff">, let loopOutputs = elems $ unionsMap outputs loops =</span>
-<span class="lineno">  114 </span><span class="spaces">                </span><span class="istickedoff">case filter (not . null . intersect loopOutputs . elems . inputs) loops of</span>
-<span class="lineno">  115 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt; loops ++ orderAlgorithm' (elems (unionsMap variables loops) ++ vs) (fs \\ loops)</span>
-<span class="lineno">  116 </span><span class="spaces">                    </span><span class="istickedoff">ready -&gt; ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)</span>
-<span class="lineno">  117 </span><span class="spaces">        </span><span class="istickedoff">orderAlgorithm' vs fs</span>
-<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">| let ready = filter (null . (\\ vs) . elems . inputs) fs</span>
-<span class="lineno">  119 </span><span class="spaces">              </span><span class="istickedoff">, <span class="tickonlytrue">not $ null ready</span> =</span>
-<span class="lineno">  120 </span><span class="spaces">                </span><span class="istickedoff">ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)</span>
-<span class="lineno">  121 </span><span class="spaces">        </span><span class="istickedoff">orderAlgorithm' _ remain = <span class="nottickedoff">error $ &quot;Can't sort algorithm: &quot; ++ show remain</span></span></span>
+<span class="lineno">   20 </span>) where
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>import qualified Data.HashMap.Strict as HM
+<span class="lineno">   23 </span>import qualified Data.Map.Strict as M
+<span class="lineno">   24 </span>import Data.Set (elems)
+<span class="lineno">   25 </span>import Data.String.Interpolate
+<span class="lineno">   26 </span>import NITTA.Intermediate.Analysis (reorderAlgorithm)
+<span class="lineno">   27 </span>import NITTA.Intermediate.Functions
+<span class="lineno">   28 </span>import NITTA.Intermediate.Types
+<span class="lineno">   29 </span>
+<span class="lineno">   30 </span>-- |Functional algorithm simulation
+<span class="lineno">   31 </span>simulateDataFlowGraph ::
+<span class="lineno">   32 </span>    (Var v, Val x, WithFunctions g (F v x)) =&gt;
+<span class="lineno">   33 </span>    Int -&gt;
+<span class="lineno">   34 </span>    CycleCntx v x -&gt;
+<span class="lineno">   35 </span>    [(v, [x])] -&gt;
+<span class="lineno">   36 </span>    g -&gt;
+<span class="lineno">   37 </span>    Cntx v x
+<span class="lineno">   38 </span><span class="decl"><span class="istickedoff">simulateDataFlowGraph cycleN cycle0 transmission dfg =</span>
+<span class="lineno">   39 </span><span class="spaces">    </span><span class="istickedoff">simulateAlg cycleN cycle0 transmission $ reorderAlgorithm $ functions dfg</span></span>
+<span class="lineno">   40 </span>
+<span class="lineno">   41 </span>simulateAlg ::
+<span class="lineno">   42 </span>    (Var v, Val x) =&gt;
+<span class="lineno">   43 </span>    Int -&gt;
+<span class="lineno">   44 </span>    CycleCntx v x -&gt;
+<span class="lineno">   45 </span>    [(v, [x])] -&gt;
+<span class="lineno">   46 </span>    [F v x] -&gt;
+<span class="lineno">   47 </span>    Cntx v x
+<span class="lineno">   48 </span><span class="decl"><span class="istickedoff">simulateAlg cycleN cycle0 transmission alg</span>
+<span class="lineno">   49 </span><span class="spaces">    </span><span class="istickedoff">| let cycleConnections [] = []</span>
+<span class="lineno">   50 </span><span class="spaces">          </span><span class="istickedoff">cycleConnections (f : fs)</span>
+<span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">-- without refactoring</span>
+<span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">| Just (Loop _ (O ov) (I iv)) &lt;- castF f = (iv, elems ov) : cycleConnections fs</span>
+<span class="lineno">   53 </span><span class="spaces">            </span><span class="istickedoff">-- after refactoring (BreakLoopD)</span>
+<span class="lineno">   54 </span><span class="spaces">            </span><span class="istickedoff">| Just (LoopBegin (Loop _ (O ov) (I iv)) _) &lt;- castF f = (iv, elems ov) : cycleConnections fs</span>
+<span class="lineno">   55 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = cycleConnections fs</span>
+<span class="lineno">   56 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   57 </span><span class="spaces">          </span><span class="istickedoff">fromPrevCycle = cycleConnections alg =</span>
+<span class="lineno">   58 </span><span class="spaces">        </span><span class="istickedoff">Cntx</span>
+<span class="lineno">   59 </span><span class="spaces">            </span><span class="istickedoff">{ cntxReceived = M.fromList transmission</span>
+<span class="lineno">   60 </span><span class="spaces">            </span><span class="istickedoff">, cntxProcess = take cycleN $ simulateAlg' fromPrevCycle cycle0 transmission alg</span>
+<span class="lineno">   61 </span><span class="spaces">            </span><span class="istickedoff">, cntxCycleNumber = cycleN</span>
+<span class="lineno">   62 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   63 </span>
+<span class="lineno">   64 </span><span class="decl"><span class="istickedoff">simulateAlg' fromPrevCycle cycleCntx0 transmission alg =</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">let (cycleCntx0', transmission') = receive' cycleCntx0 transmission</span>
+<span class="lineno">   66 </span><span class="spaces">        </span><span class="istickedoff">cycleCntx = simulateCycle cycleCntx0' alg</span>
+<span class="lineno">   67 </span><span class="spaces">     </span><span class="istickedoff">in cycleCntx : simulateAlg' fromPrevCycle (throwLoop cycleCntx) transmission' alg</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">   69 </span><span class="spaces">        </span><span class="istickedoff">-- TODO: receive data for several IO processor unit.</span>
+<span class="lineno">   70 </span><span class="spaces">        </span><span class="istickedoff">receive' CycleCntx{cycleCntx} trans =</span>
+<span class="lineno">   71 </span><span class="spaces">            </span><span class="istickedoff">( CycleCntx $</span>
+<span class="lineno">   72 </span><span class="spaces">                </span><span class="istickedoff">foldl</span>
+<span class="lineno">   73 </span><span class="spaces">                    </span><span class="istickedoff">( \c (v, xs) -&gt;</span>
+<span class="lineno">   74 </span><span class="spaces">                        </span><span class="istickedoff">case xs of</span>
+<span class="lineno">   75 </span><span class="spaces">                            </span><span class="istickedoff">x : _ -&gt; HM.insert v x c</span>
+<span class="lineno">   76 </span><span class="spaces">                            </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">c</span></span>
+<span class="lineno">   77 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
+<span class="lineno">   78 </span><span class="spaces">                    </span><span class="istickedoff">cycleCntx</span>
+<span class="lineno">   79 </span><span class="spaces">                    </span><span class="istickedoff">trans</span>
+<span class="lineno">   80 </span><span class="spaces">            </span><span class="istickedoff">, map</span>
+<span class="lineno">   81 </span><span class="spaces">                </span><span class="istickedoff">( \(v, xs) -&gt;</span>
+<span class="lineno">   82 </span><span class="spaces">                    </span><span class="istickedoff">case xs of</span>
+<span class="lineno">   83 </span><span class="spaces">                        </span><span class="istickedoff">(_ : _) -&gt; (v, tail xs)</span>
+<span class="lineno">   84 </span><span class="spaces">                        </span><span class="istickedoff">[] -&gt; <span class="nottickedoff">(v, xs)</span></span>
+<span class="lineno">   85 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">   86 </span><span class="spaces">                </span><span class="istickedoff">trans</span>
+<span class="lineno">   87 </span><span class="spaces">            </span><span class="istickedoff">)</span>
+<span class="lineno">   88 </span><span class="spaces">        </span><span class="istickedoff">throwLoop (CycleCntx cntx) =</span>
+<span class="lineno">   89 </span><span class="spaces">            </span><span class="istickedoff">CycleCntx $</span>
+<span class="lineno">   90 </span><span class="spaces">                </span><span class="istickedoff">HM.fromList $</span>
+<span class="lineno">   91 </span><span class="spaces">                    </span><span class="istickedoff">foldl</span>
+<span class="lineno">   92 </span><span class="spaces">                        </span><span class="istickedoff">( \st (thrown, vs) -&gt; map (\v -&gt; (v, cntx HM.! thrown)) vs ++ st</span>
+<span class="lineno">   93 </span><span class="spaces">                        </span><span class="istickedoff">)</span>
+<span class="lineno">   94 </span><span class="spaces">                        </span><span class="istickedoff">[]</span>
+<span class="lineno">   95 </span><span class="spaces">                        </span><span class="istickedoff">fromPrevCycle</span>
+<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">simulateCycle cntx00 fs =</span>
+<span class="lineno">   97 </span><span class="spaces">            </span><span class="istickedoff">foldl</span>
+<span class="lineno">   98 </span><span class="spaces">                </span><span class="istickedoff">( \cntx f -&gt;</span>
+<span class="lineno">   99 </span><span class="spaces">                    </span><span class="istickedoff">case updateCntx cntx $ simulate cntx f of</span>
+<span class="lineno">  100 </span><span class="spaces">                        </span><span class="istickedoff">Right cntx' -&gt; cntx'</span>
+<span class="lineno">  101 </span><span class="spaces">                        </span><span class="istickedoff">Left e -&gt; <span class="nottickedoff">error [i|can't simulate #{f} in context #{cntx}: #{e}|]</span></span>
+<span class="lineno">  102 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">  103 </span><span class="spaces">                </span><span class="istickedoff">cntx00</span>
+<span class="lineno">  104 </span><span class="spaces">                </span><span class="istickedoff">fs</span></span>
 
 </pre>
 </body>
