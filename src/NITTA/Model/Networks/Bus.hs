@@ -223,7 +223,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
 
                 -- Vertical relations between FB and Transport
                 mapM_
-                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = FStep f}}} ->
+                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = IntermediateStep f}}} ->
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
@@ -231,7 +231,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                             )
                             $ variables f
                     )
-                    $ filter isFB steps
+                    $ filter isIntermediate steps
          in wholeProcess
         where
             includeNestedProcess tag pu = do

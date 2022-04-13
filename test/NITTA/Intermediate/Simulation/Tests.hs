@@ -19,7 +19,9 @@ import Data.CallStack
 import Data.Default
 import qualified Data.HashMap.Strict as HM
 import Data.List (permutations)
+import qualified Data.Map as M
 import Data.Maybe
+import NITTA.Intermediate.Analysis (estimateVarWaves, reorderAlgorithm)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Simulation
@@ -32,11 +34,26 @@ simulationTests =
     testGroup
         "functional simulation"
         [ testCase "reorder algorithm" $ do
-            let f = reorderAlgorithm :: [F String Int] -> [F String Int]
+            let action = reorderAlgorithm :: [F String Int] -> [F String Int]
                 l1 = loop 0 "b2" ["a1"]
                 l2 = loop 1 "c" ["b1", "b2"]
                 a = add "a1" "b1" ["c"]
-            mapM_ (([l1, l2, a] @=?) . f) $ permutations [l1, l2, a]
+            mapM_ ([l1, l2, a] @=?) $ map action [[l1, l2, a], [l1, a, l2], [a, l1, l2]]
+        , testGroup
+            "estimate waves"
+            [ testCase "function sequence" $ do
+                let action = estimateVarWaves ["a", "b"] :: [F String Int] -> M.Map String Int
+                    a1 = add "a" "b" ["c"]
+                    a2 = add "c" "b" ["d"]
+                    a3 = add "d" "a" ["e"]
+                mapM_ (M.fromList [("c", 0), ("d", 1), ("e", 2)] @=?) $ map action $ permutations [a1, a2, a3]
+            , testCase "loop output vars have zero wave" $ do
+                let action = estimateVarWaves [] :: [F String Int] -> M.Map String Int
+                    l1 = loop 1 "b2" ["a1"]
+                    l2 = loop 1 "c" ["b1", "b2"]
+                    a = add "a1" "b1" ["c"]
+                M.fromList [("a1", 0), ("b1", 0), ("b2", 0), ("c", 1)] @=? action [l1, l2, a]
+            ]
         , simulationTestCase
             "fibonacci sequence"
             7

@@ -43,6 +43,7 @@ library
       NITTA.Frontends.XMILE.DocumentParser
       NITTA.Frontends.XMILE.Frontend
       NITTA.Frontends.XMILE.MathParser
+      NITTA.Intermediate.Analysis
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum

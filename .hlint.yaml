@@ -31,6 +31,7 @@
 - ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.Tests.Microarchitecture"}
 - ignore: {name: "Use list comprehension", within: "Spec"}
+- ignore: {name: "Fuse mapM_/map", within: "NITTA.Intermediate.Simulation.Tests"}
 
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Multiplier.Tests"}
 - ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Divider.Tests"}
