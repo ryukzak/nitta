@@ -1,0 +1,713 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Arrows #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-comment">{- |
+Module      : NITTA.Frontends.XMILE.DocumentParser
+Description : Parses XMILE source file to internal tree structure
+Copyright   : (c) Artur Gogiyan, 2022
+License     : BSD3
+Maintainer  : artur.gogiyan@gmail.com
+Stability   : experimental
+-}</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Frontends.XMILE.DocumentParser</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseDocument"><span class="hs-identifier">parseDocument</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Content"><span class="hs-identifier">Content</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier">Stock</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier">Aux</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier">Flow</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier">SimSpec</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.MathParser.html"><span class="hs-identifier">NITTA.Frontends.XMILE.MathParser</span></a></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.XML.HXT.Arrow.ReadDocument</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.XML.HXT.Core</span></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">data</span><span> </span><span id="Content"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Content"><span class="hs-identifier hs-var">Content</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Content"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Content"><span class="hs-identifier hs-var">Content</span></a></span></span><span>
+</span><span id="line-28"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xcSimSpecs"><span class="annot"><span class="annottext">Content -&gt; SimSpec
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xcSimSpecs"><span class="hs-identifier hs-var hs-var">xcSimSpecs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier hs-type">SimSpec</span></a></span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xcFlows"><span class="annot"><span class="annottext">Content -&gt; [Flow]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xcFlows"><span class="hs-identifier hs-var hs-var">xcFlows</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier hs-type">Flow</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xcAuxs"><span class="annot"><span class="annottext">Content -&gt; [Aux]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xcAuxs"><span class="hs-identifier hs-var hs-var">xcAuxs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier hs-type">Aux</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xcStocks"><span class="annot"><span class="annottext">Content -&gt; [Stock]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xcStocks"><span class="hs-identifier hs-var hs-var">xcStocks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier hs-type">Stock</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-33"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680101044"><span id="local-6989586621680101046"><span id="local-6989586621680101048"><span class="annot"><span class="annottext">Int -&gt; Content -&gt; ShowS
+[Content] -&gt; ShowS
+Content -&gt; String
+(Int -&gt; Content -&gt; ShowS)
+-&gt; (Content -&gt; String) -&gt; ([Content] -&gt; ShowS) -&gt; Show Content
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Content] -&gt; ShowS
+$cshowList :: [Content] -&gt; ShowS
+show :: Content -&gt; String
+$cshow :: Content -&gt; String
+showsPrec :: Int -&gt; Content -&gt; ShowS
+$cshowsPrec :: Int -&gt; Content -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680101039"><span id="local-6989586621680101041"><span class="annot"><span class="annottext">Content -&gt; Content -&gt; Bool
+(Content -&gt; Content -&gt; Bool)
+-&gt; (Content -&gt; Content -&gt; Bool) -&gt; Eq Content
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Content -&gt; Content -&gt; Bool
+$c/= :: Content -&gt; Content -&gt; Bool
+== :: Content -&gt; Content -&gt; Bool
+$c== :: Content -&gt; Content -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">data</span><span> </span><span id="SimSpec"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier hs-var">SimSpec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SimSpec"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier hs-var">SimSpec</span></a></span></span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xssStart"><span class="annot"><span class="annottext">SimSpec -&gt; Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssStart"><span class="hs-identifier hs-var hs-var">xssStart</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xssStop"><span class="annot"><span class="annottext">SimSpec -&gt; Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssStop"><span class="hs-identifier hs-var hs-var">xssStop</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xssDt"><span class="annot"><span class="annottext">SimSpec -&gt; Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssDt"><span class="hs-identifier hs-var hs-var">xssDt</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680101028"><span id="local-6989586621680101030"><span id="local-6989586621680101032"><span class="annot"><span class="annottext">Int -&gt; SimSpec -&gt; ShowS
+[SimSpec] -&gt; ShowS
+SimSpec -&gt; String
+(Int -&gt; SimSpec -&gt; ShowS)
+-&gt; (SimSpec -&gt; String) -&gt; ([SimSpec] -&gt; ShowS) -&gt; Show SimSpec
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [SimSpec] -&gt; ShowS
+$cshowList :: [SimSpec] -&gt; ShowS
+show :: SimSpec -&gt; String
+$cshow :: SimSpec -&gt; String
+showsPrec :: Int -&gt; SimSpec -&gt; ShowS
+$cshowsPrec :: Int -&gt; SimSpec -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680101024"><span id="local-6989586621680101026"><span class="annot"><span class="annottext">SimSpec -&gt; SimSpec -&gt; Bool
+(SimSpec -&gt; SimSpec -&gt; Bool)
+-&gt; (SimSpec -&gt; SimSpec -&gt; Bool) -&gt; Eq SimSpec
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: SimSpec -&gt; SimSpec -&gt; Bool
+$c/= :: SimSpec -&gt; SimSpec -&gt; Bool
+== :: SimSpec -&gt; SimSpec -&gt; Bool
+$c== :: SimSpec -&gt; SimSpec -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">newtype</span><span> </span><span id="Model"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Model"><span class="hs-identifier hs-var">Model</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Model"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Model"><span class="hs-identifier hs-var">Model</span></a></span></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-special">{</span><span id="xmVariables"><span class="annot"><span class="annottext">Model -&gt; Variables
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xmVariables"><span class="hs-identifier hs-var hs-var">xmVariables</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Variables"><span class="hs-identifier hs-type">Variables</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680101016"><span id="local-6989586621680101018"><span id="local-6989586621680101020"><span class="annot"><span class="annottext">Int -&gt; Model -&gt; ShowS
+[Model] -&gt; ShowS
+Model -&gt; String
+(Int -&gt; Model -&gt; ShowS)
+-&gt; (Model -&gt; String) -&gt; ([Model] -&gt; ShowS) -&gt; Show Model
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Model] -&gt; ShowS
+$cshowList :: [Model] -&gt; ShowS
+show :: Model -&gt; String
+$cshow :: Model -&gt; String
+showsPrec :: Int -&gt; Model -&gt; ShowS
+$cshowsPrec :: Int -&gt; Model -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680101012"><span id="local-6989586621680101014"><span class="annot"><span class="annottext">Model -&gt; Model -&gt; Bool
+(Model -&gt; Model -&gt; Bool) -&gt; (Model -&gt; Model -&gt; Bool) -&gt; Eq Model
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Model -&gt; Model -&gt; Bool
+$c/= :: Model -&gt; Model -&gt; Bool
+== :: Model -&gt; Model -&gt; Bool
+$c== :: Model -&gt; Model -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">data</span><span> </span><span id="Variables"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Variables"><span class="hs-identifier hs-var">Variables</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Variables"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Variables"><span class="hs-identifier hs-var">Variables</span></a></span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xvFlows"><span class="annot"><span class="annottext">Variables -&gt; [Flow]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xvFlows"><span class="hs-identifier hs-var hs-var">xvFlows</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier hs-type">Flow</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xvAuxs"><span class="annot"><span class="annottext">Variables -&gt; [Aux]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xvAuxs"><span class="hs-identifier hs-var hs-var">xvAuxs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier hs-type">Aux</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xvStocks"><span class="annot"><span class="annottext">Variables -&gt; [Stock]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xvStocks"><span class="hs-identifier hs-var hs-var">xvStocks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier hs-type">Stock</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680101002"><span id="local-6989586621680101004"><span id="local-6989586621680101006"><span class="annot"><span class="annottext">Int -&gt; Variables -&gt; ShowS
+[Variables] -&gt; ShowS
+Variables -&gt; String
+(Int -&gt; Variables -&gt; ShowS)
+-&gt; (Variables -&gt; String)
+-&gt; ([Variables] -&gt; ShowS)
+-&gt; Show Variables
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Variables] -&gt; ShowS
+$cshowList :: [Variables] -&gt; ShowS
+show :: Variables -&gt; String
+$cshow :: Variables -&gt; String
+showsPrec :: Int -&gt; Variables -&gt; ShowS
+$cshowsPrec :: Int -&gt; Variables -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680100998"><span id="local-6989586621680101000"><span class="annot"><span class="annottext">Variables -&gt; Variables -&gt; Bool
+(Variables -&gt; Variables -&gt; Bool)
+-&gt; (Variables -&gt; Variables -&gt; Bool) -&gt; Eq Variables
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Variables -&gt; Variables -&gt; Bool
+$c/= :: Variables -&gt; Variables -&gt; Bool
+== :: Variables -&gt; Variables -&gt; Bool
+$c== :: Variables -&gt; Variables -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">data</span><span> </span><span id="Flow"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier hs-var">Flow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Flow"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier hs-var">Flow</span></a></span></span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xfName"><span class="annot"><span class="annottext">Flow -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xfName"><span class="hs-identifier hs-var hs-var">xfName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xfEquation"><span class="annot"><span class="annottext">Flow -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xfEquation"><span class="hs-identifier hs-var hs-var">xfEquation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.MathParser.html#XMExpr"><span class="hs-identifier hs-type">XMExpr</span></a></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680100989"><span id="local-6989586621680100991"><span id="local-6989586621680100993"><span class="annot"><span class="annottext">Int -&gt; Flow -&gt; ShowS
+[Flow] -&gt; ShowS
+Flow -&gt; String
+(Int -&gt; Flow -&gt; ShowS)
+-&gt; (Flow -&gt; String) -&gt; ([Flow] -&gt; ShowS) -&gt; Show Flow
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Flow] -&gt; ShowS
+$cshowList :: [Flow] -&gt; ShowS
+show :: Flow -&gt; String
+$cshow :: Flow -&gt; String
+showsPrec :: Int -&gt; Flow -&gt; ShowS
+$cshowsPrec :: Int -&gt; Flow -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680100985"><span id="local-6989586621680100987"><span class="annot"><span class="annottext">Flow -&gt; Flow -&gt; Bool
+(Flow -&gt; Flow -&gt; Bool) -&gt; (Flow -&gt; Flow -&gt; Bool) -&gt; Eq Flow
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Flow -&gt; Flow -&gt; Bool
+$c/= :: Flow -&gt; Flow -&gt; Bool
+== :: Flow -&gt; Flow -&gt; Bool
+$c== :: Flow -&gt; Flow -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">data</span><span> </span><span id="Aux"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier hs-var">Aux</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Aux"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier hs-var">Aux</span></a></span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xaName"><span class="annot"><span class="annottext">Aux -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xaName"><span class="hs-identifier hs-var hs-var">xaName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xaEquation"><span class="annot"><span class="annottext">Aux -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xaEquation"><span class="hs-identifier hs-var hs-var">xaEquation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.MathParser.html#XMExpr"><span class="hs-identifier hs-type">XMExpr</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680100976"><span id="local-6989586621680100978"><span id="local-6989586621680100980"><span class="annot"><span class="annottext">Int -&gt; Aux -&gt; ShowS
+[Aux] -&gt; ShowS
+Aux -&gt; String
+(Int -&gt; Aux -&gt; ShowS)
+-&gt; (Aux -&gt; String) -&gt; ([Aux] -&gt; ShowS) -&gt; Show Aux
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Aux] -&gt; ShowS
+$cshowList :: [Aux] -&gt; ShowS
+show :: Aux -&gt; String
+$cshow :: Aux -&gt; String
+showsPrec :: Int -&gt; Aux -&gt; ShowS
+$cshowsPrec :: Int -&gt; Aux -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680100972"><span id="local-6989586621680100974"><span class="annot"><span class="annottext">Aux -&gt; Aux -&gt; Bool
+(Aux -&gt; Aux -&gt; Bool) -&gt; (Aux -&gt; Aux -&gt; Bool) -&gt; Eq Aux
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Aux -&gt; Aux -&gt; Bool
+$c/= :: Aux -&gt; Aux -&gt; Bool
+== :: Aux -&gt; Aux -&gt; Bool
+$c== :: Aux -&gt; Aux -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">data</span><span> </span><span id="Stock"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier hs-var">Stock</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Stock"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier hs-var">Stock</span></a></span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xsName"><span class="annot"><span class="annottext">Stock -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsName"><span class="hs-identifier hs-var hs-var">xsName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xsEquation"><span class="annot"><span class="annottext">Stock -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsEquation"><span class="hs-identifier hs-var hs-var">xsEquation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.MathParser.html#XMExpr"><span class="hs-identifier hs-type">XMExpr</span></a></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xsInflow"><span class="annot"><span class="annottext">Stock -&gt; Maybe Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsInflow"><span class="hs-identifier hs-var hs-var">xsInflow</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xsOutflow"><span class="annot"><span class="annottext">Stock -&gt; Maybe Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsOutflow"><span class="hs-identifier hs-var hs-var">xsOutflow</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680100961"><span id="local-6989586621680100963"><span id="local-6989586621680100965"><span class="annot"><span class="annottext">Int -&gt; Stock -&gt; ShowS
+[Stock] -&gt; ShowS
+Stock -&gt; String
+(Int -&gt; Stock -&gt; ShowS)
+-&gt; (Stock -&gt; String) -&gt; ([Stock] -&gt; ShowS) -&gt; Show Stock
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Stock] -&gt; ShowS
+$cshowList :: [Stock] -&gt; ShowS
+show :: Stock -&gt; String
+$cshow :: Stock -&gt; String
+showsPrec :: Int -&gt; Stock -&gt; ShowS
+$cshowsPrec :: Int -&gt; Stock -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680100957"><span id="local-6989586621680100959"><span class="annot"><span class="annottext">Stock -&gt; Stock -&gt; Bool
+(Stock -&gt; Stock -&gt; Bool) -&gt; (Stock -&gt; Stock -&gt; Bool) -&gt; Eq Stock
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Stock -&gt; Stock -&gt; Bool
+$c/= :: Stock -&gt; Stock -&gt; Bool
+== :: Stock -&gt; Stock -&gt; Bool
+$c== :: Stock -&gt; Stock -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">data</span><span> </span><span id="AlgState"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#AlgState"><span class="hs-identifier hs-var">AlgState</span></a></span></span><span> </span><span id="local-6989586621680100956"><span class="annot"><a href="#local-6989586621680100956"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680100955"><span class="annot"><a href="#local-6989586621680100955"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AlgState"><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#AlgState"><span class="hs-identifier hs-var">AlgState</span></a></span></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="xasSimSpec"><span class="annot"><span class="annottext">AlgState v x -&gt; SimSpec
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xasSimSpec"><span class="hs-identifier hs-var hs-var">xasSimSpec</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier hs-type">SimSpec</span></a></span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="xasModel"><span class="annot"><span class="annottext">AlgState v x -&gt; Model
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xasModel"><span class="hs-identifier hs-var hs-var">xasModel</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.DocumentParser.html#Model"><span class="hs-identifier hs-type">Model</span></a></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680100946"><span id="local-6989586621680100948"><span id="local-6989586621680100950"><span class="annot"><span class="annottext">Int -&gt; AlgState v x -&gt; ShowS
+[AlgState v x] -&gt; ShowS
+AlgState v x -&gt; String
+(Int -&gt; AlgState v x -&gt; ShowS)
+-&gt; (AlgState v x -&gt; String)
+-&gt; ([AlgState v x] -&gt; ShowS)
+-&gt; Show (AlgState v x)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall v x. Int -&gt; AlgState v x -&gt; ShowS
+forall v x. [AlgState v x] -&gt; ShowS
+forall v x. AlgState v x -&gt; String
+showList :: [AlgState v x] -&gt; ShowS
+$cshowList :: forall v x. [AlgState v x] -&gt; ShowS
+show :: AlgState v x -&gt; String
+$cshow :: forall v x. AlgState v x -&gt; String
+showsPrec :: Int -&gt; AlgState v x -&gt; ShowS
+$cshowsPrec :: forall v x. Int -&gt; AlgState v x -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680100942"><span id="local-6989586621680100944"><span class="annot"><span class="annottext">AlgState v x -&gt; AlgState v x -&gt; Bool
+(AlgState v x -&gt; AlgState v x -&gt; Bool)
+-&gt; (AlgState v x -&gt; AlgState v x -&gt; Bool) -&gt; Eq (AlgState v x)
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+forall v x. AlgState v x -&gt; AlgState v x -&gt; Bool
+/= :: AlgState v x -&gt; AlgState v x -&gt; Bool
+$c/= :: forall v x. AlgState v x -&gt; AlgState v x -&gt; Bool
+== :: AlgState v x -&gt; AlgState v x -&gt; Bool
+$c== :: forall v x. AlgState v x -&gt; AlgState v x -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span id="parseDocument"><span class="annot"><span class="annottext">parseDocument :: String -&gt; Content
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseDocument"><span class="hs-identifier hs-var hs-var">parseDocument</span></a></span></span><span> </span><span id="local-6989586621680100941"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100941"><span class="hs-identifier hs-var">src</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">[Content] -&gt; Content
+forall a. [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">([Content] -&gt; Content) -&gt; [Content] -&gt; Content
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-81"></span><span>        </span><span class="annot"><span class="annottext">LA String Content -&gt; String -&gt; [Content]
+forall a b. LA a b -&gt; a -&gt; [b]
+</span><span class="hs-identifier hs-var hs-var">runLA</span></span><span>
+</span><span id="line-82"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">LA String XmlTree
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; a String XmlTree
+</span><span class="hs-identifier hs-var">xreadDoc</span></span><span>
+</span><span id="line-83"></span><span>                </span><span class="annot"><span class="annottext">LA String XmlTree -&gt; LA XmlTree Content -&gt; LA String Content
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; a XmlTree XmlTree
+</span><span class="hs-identifier hs-var">removeAllWhiteSpace</span></span><span>
+</span><span id="line-84"></span><span>                </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree Content -&gt; LA XmlTree Content
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="hs-keyword">proc</span><span> </span><span id="local-6989586621680100935"><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100935"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-85"></span><span>                    </span><span id="local-6989586621680100934"><span class="annot"><span class="annottext">SimSpec
+</span><a href="#local-6989586621680100934"><span class="hs-identifier hs-var">xcSimSpecs</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree SimSpec
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseSimSpec"><span class="hs-identifier hs-var">parseSimSpec</span></a></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100935"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><span id="line-86"></span><span>                    </span><span id="local-6989586621680100932"><span class="annot"><span class="annottext">[Flow]
+</span><a href="#local-6989586621680100932"><span class="hs-identifier hs-var">xcFlows</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree [Flow]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseFlows"><span class="hs-identifier hs-var">parseFlows</span></a></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100935"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><span id="line-87"></span><span>                    </span><span id="local-6989586621680100930"><span class="annot"><span class="annottext">[Aux]
+</span><a href="#local-6989586621680100930"><span class="hs-identifier hs-var">xcAuxs</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree [Aux]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseAuxs"><span class="hs-identifier hs-var">parseAuxs</span></a></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100935"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><span id="line-88"></span><span>                    </span><span id="local-6989586621680100928"><span class="annot"><span class="annottext">[Stock]
+</span><a href="#local-6989586621680100928"><span class="hs-identifier hs-var">xcStocks</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree [Stock]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseStocks"><span class="hs-identifier hs-var">parseStocks</span></a></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100935"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><span id="line-89"></span><span>                    </span><span class="annot"><span class="annottext">LA Content Content
+forall (a :: * -&gt; * -&gt; *) b. Arrow a =&gt; a b b
+</span><span class="hs-identifier hs-var">returnA</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">Content :: SimSpec -&gt; [Flow] -&gt; [Aux] -&gt; [Stock] -&gt; Content
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#Content"><span class="hs-identifier hs-type">Content</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">SimSpec
+xcSimSpecs :: SimSpec
+xcSimSpecs :: SimSpec
+</span><a href="#local-6989586621680100934"><span class="hs-identifier hs-var hs-var">xcSimSpecs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Flow]
+xcFlows :: [Flow]
+xcFlows :: [Flow]
+</span><a href="#local-6989586621680100932"><span class="hs-identifier hs-var hs-var">xcFlows</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Aux]
+xcAuxs :: [Aux]
+xcAuxs :: [Aux]
+</span><a href="#local-6989586621680100930"><span class="hs-identifier hs-var hs-var">xcAuxs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Stock]
+xcStocks :: [Stock]
+xcStocks :: [Stock]
+</span><a href="#local-6989586621680100928"><span class="hs-identifier hs-var hs-var">xcStocks</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-90"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>            </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100941"><span class="hs-identifier hs-var">src</span></a></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span id="parseSimSpec"><span class="annot"><span class="annottext">parseSimSpec :: LA XmlTree SimSpec
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseSimSpec"><span class="hs-identifier hs-var hs-var">parseSimSpec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;sim_specs&quot;</span></span><span>
+</span><span id="line-95"></span><span>        </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree SimSpec -&gt; LA XmlTree SimSpec
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="hs-keyword">proc</span><span> </span><span id="local-6989586621680100924"><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100924"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-96"></span><span>            </span><span id="local-6989586621680100923"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100923"><span class="hs-identifier hs-var">stop</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;stop&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100924"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-97"></span><span>            </span><span id="local-6989586621680100920"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100920"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;start&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100924"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-98"></span><span>            </span><span id="local-6989586621680100919"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100919"><span class="hs-identifier hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;dt&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100924"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-99"></span><span>            </span><span class="annot"><span class="annottext">LA SimSpec SimSpec
+forall (a :: * -&gt; * -&gt; *) b. Arrow a =&gt; a b b
+</span><span class="hs-identifier hs-var">returnA</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">SimSpec :: Double -&gt; Double -&gt; Double -&gt; SimSpec
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#SimSpec"><span class="hs-identifier hs-type">SimSpec</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">xssStart :: Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssStart"><span class="hs-identifier hs-var">xssStart</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Double
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100920"><span class="hs-identifier hs-var">start</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xssStop :: Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssStop"><span class="hs-identifier hs-var">xssStop</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Double
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100923"><span class="hs-identifier hs-var">stop</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xssDt :: Double
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xssDt"><span class="hs-identifier hs-var">xssDt</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Double
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100919"><span class="hs-identifier hs-var">dt</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span id="parseFlows"><span class="annot"><span class="annottext">parseFlows :: LA XmlTree [Flow]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseFlows"><span class="hs-identifier hs-var hs-var">parseFlows</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;variables&quot;</span></span><span>
+</span><span id="line-103"></span><span>        </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree [Flow] -&gt; LA XmlTree [Flow]
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree Flow -&gt; LA XmlTree [Flow]
+forall (a :: * -&gt; * -&gt; *) b c. ArrowList a =&gt; a b c -&gt; a b [c]
+</span><span class="hs-identifier hs-var">listA</span></span><span>
+</span><span id="line-104"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;flow&quot;</span></span><span>
+</span><span id="line-105"></span><span>                </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree Flow -&gt; LA XmlTree Flow
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="hs-keyword">proc</span><span> </span><span id="local-6989586621680100916"><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100916"><span class="hs-identifier hs-var">flow</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-106"></span><span>                    </span><span id="local-6989586621680100915"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100915"><span class="hs-identifier hs-var">eqn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;eqn&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100916"><span class="hs-identifier hs-var">flow</span></a></span><span>
+</span><span id="line-107"></span><span>                    </span><span id="local-6989586621680100914"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100914"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree String
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; String -&gt; a XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atAttr"><span class="hs-identifier hs-var">atAttr</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;name&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100916"><span class="hs-identifier hs-var">flow</span></a></span><span>
+</span><span id="line-108"></span><span>                    </span><span class="annot"><span class="annottext">LA Flow Flow
+forall (a :: * -&gt; * -&gt; *) b. Arrow a =&gt; a b b
+</span><span class="hs-identifier hs-var">returnA</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">Flow :: Text -&gt; XMExpr -&gt; Flow
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#Flow"><span class="hs-identifier hs-type">Flow</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">xfEquation :: XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xfEquation"><span class="hs-identifier hs-var">xfEquation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.MathParser.html#parseXmileEquation"><span class="hs-identifier hs-var">parseXmileEquation</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100915"><span class="hs-identifier hs-var">eqn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xfName :: Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xfName"><span class="hs-identifier hs-var">xfName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var">replaceSpaces</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100914"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-109"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span id="parseAuxs"><span class="annot"><span class="annottext">parseAuxs :: LA XmlTree [Aux]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseAuxs"><span class="hs-identifier hs-var hs-var">parseAuxs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;variables&quot;</span></span><span>
+</span><span id="line-113"></span><span>        </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree [Aux] -&gt; LA XmlTree [Aux]
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree Aux -&gt; LA XmlTree [Aux]
+forall (a :: * -&gt; * -&gt; *) b c. ArrowList a =&gt; a b c -&gt; a b [c]
+</span><span class="hs-identifier hs-var">listA</span></span><span>
+</span><span id="line-114"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;aux&quot;</span></span><span>
+</span><span id="line-115"></span><span>                </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree Aux -&gt; LA XmlTree Aux
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="hs-keyword">proc</span><span> </span><span id="local-6989586621680100909"><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100909"><span class="hs-identifier hs-var">aux</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-116"></span><span>                    </span><span id="local-6989586621680100908"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100908"><span class="hs-identifier hs-var">eqn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;eqn&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100909"><span class="hs-identifier hs-var">aux</span></a></span><span>
+</span><span id="line-117"></span><span>                    </span><span id="local-6989586621680100907"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100907"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree String
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; String -&gt; a XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atAttr"><span class="hs-identifier hs-var">atAttr</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;name&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100909"><span class="hs-identifier hs-var">aux</span></a></span><span>
+</span><span id="line-118"></span><span>                    </span><span class="annot"><span class="annottext">LA Aux Aux
+forall (a :: * -&gt; * -&gt; *) b. Arrow a =&gt; a b b
+</span><span class="hs-identifier hs-var">returnA</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">Aux :: Text -&gt; XMExpr -&gt; Aux
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#Aux"><span class="hs-identifier hs-type">Aux</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">xaEquation :: XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xaEquation"><span class="hs-identifier hs-var">xaEquation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.MathParser.html#parseXmileEquation"><span class="hs-identifier hs-var">parseXmileEquation</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100908"><span class="hs-identifier hs-var">eqn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xaName :: Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xaName"><span class="hs-identifier hs-var">xaName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var">replaceSpaces</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100907"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-119"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span id="parseStocks"><span class="annot"><span class="annottext">parseStocks :: LA XmlTree [Stock]
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#parseStocks"><span class="hs-identifier hs-var hs-var">parseStocks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-122"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;variables&quot;</span></span><span>
+</span><span id="line-123"></span><span>        </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree [Stock] -&gt; LA XmlTree [Stock]
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree Stock -&gt; LA XmlTree [Stock]
+forall (a :: * -&gt; * -&gt; *) b c. ArrowList a =&gt; a b c -&gt; a b [c]
+</span><span class="hs-identifier hs-var">listA</span></span><span>
+</span><span id="line-124"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;stock&quot;</span></span><span>
+</span><span id="line-125"></span><span>                </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree Stock -&gt; LA XmlTree Stock
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="hs-keyword">proc</span><span> </span><span id="local-6989586621680100906"><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100906"><span class="hs-keyword hs-var">stock</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-126"></span><span>                    </span><span id="local-6989586621680100905"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100905"><span class="hs-identifier hs-var">eqn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String -&gt; LA XmlTree XmlTree -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (b :: k) (c :: k) (a :: k).
+Category cat =&gt;
+cat b c -&gt; cat a b -&gt; cat a c
+</span><span class="hs-operator hs-var">&lt;&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;eqn&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100906"><span class="hs-keyword hs-var">stock</span></a></span><span>
+</span><span id="line-127"></span><span>                    </span><span id="local-6989586621680100904"><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621680100904"><span class="hs-identifier hs-var">outflow</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree (Maybe Text)
+</span><a href="#local-6989586621680100903"><span class="hs-identifier hs-var">getTagOrNothing</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;outflow&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100906"><span class="hs-keyword hs-var">stock</span></a></span><span>
+</span><span id="line-128"></span><span>                    </span><span id="local-6989586621680100902"><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621680100902"><span class="hs-identifier hs-var">inflow</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree (Maybe Text)
+</span><a href="#local-6989586621680100903"><span class="hs-identifier hs-var">getTagOrNothing</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;inflow&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100906"><span class="hs-keyword hs-var">stock</span></a></span><span>
+</span><span id="line-129"></span><span>                    </span><span id="local-6989586621680100901"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100901"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; LA XmlTree String
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; String -&gt; a XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atAttr"><span class="hs-identifier hs-var">atAttr</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;name&quot;</span></span><span> </span><span class="hs-glyph">-&lt;</span><span> </span><span class="annot"><span class="annottext">XmlTree
+</span><a href="#local-6989586621680100906"><span class="hs-keyword hs-var">stock</span></a></span><span>
+</span><span id="line-130"></span><span>                    </span><span class="annot"><span class="annottext">LA Stock Stock
+forall (a :: * -&gt; * -&gt; *) b. Arrow a =&gt; a b b
+</span><span class="hs-identifier hs-var">returnA</span></span><span>
+</span><span id="line-131"></span><span>                        </span><span class="hs-glyph">-&lt;</span><span>
+</span><span id="line-132"></span><span>                            </span><span class="annot"><span class="annottext">Stock :: Text -&gt; XMExpr -&gt; Maybe Text -&gt; Maybe Text -&gt; Stock
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#Stock"><span class="hs-identifier hs-type">Stock</span></a></span><span>
+</span><span id="line-133"></span><span>                                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">xsEquation :: XMExpr
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsEquation"><span class="hs-identifier hs-var">xsEquation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; XMExpr
+</span><a href="NITTA.Frontends.XMILE.MathParser.html#parseXmileEquation"><span class="hs-identifier hs-var">parseXmileEquation</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100905"><span class="hs-identifier hs-var">eqn</span></a></span><span>
+</span><span id="line-134"></span><span>                                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xsName :: Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsName"><span class="hs-identifier hs-var">xsName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var">replaceSpaces</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100901"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-135"></span><span>                                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xsOutflow :: Maybe Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsOutflow"><span class="hs-identifier hs-var">xsOutflow</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var">replaceSpaces</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Maybe Text -&gt; Maybe Text
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621680100904"><span class="hs-identifier hs-var">outflow</span></a></span><span>
+</span><span id="line-136"></span><span>                                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">xsInflow :: Maybe Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#xsInflow"><span class="hs-identifier hs-var">xsInflow</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var">replaceSpaces</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Maybe Text -&gt; Maybe Text
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621680100902"><span class="hs-identifier hs-var">inflow</span></a></span><span>
+</span><span id="line-137"></span><span>                                </span><span class="hs-special">}</span><span>
+</span><span id="line-138"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-140"></span><span>        </span><span id="local-6989586621680100903"><span class="annot"><span class="annottext">getTagOrNothing :: String -&gt; LA XmlTree (Maybe Text)
+</span><a href="#local-6989586621680100903"><span class="hs-identifier hs-var hs-var">getTagOrNothing</span></a></span></span><span> </span><span id="local-6989586621680100899"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100899"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-141"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var">atTag</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100899"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree XmlTree
+-&gt; LA XmlTree (Maybe Text) -&gt; LA XmlTree (Maybe Text)
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+-&gt; LA String (Maybe Text) -&gt; LA XmlTree (Maybe Text)
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Maybe Text) -&gt; LA String (Maybe Text)
+forall (a :: * -&gt; * -&gt; *) b c. Arrow a =&gt; (b -&gt; c) -&gt; a b c
+</span><span class="hs-identifier hs-var">arr</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680100898"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100898"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100898"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span>                </span><span class="annot"><span class="annottext">LA XmlTree (Maybe Text)
+-&gt; LA XmlTree (Maybe Text) -&gt; LA XmlTree (Maybe Text)
+forall (a :: * -&gt; * -&gt; *) b c. ArrowIf a =&gt; a b c -&gt; a b c -&gt; a b c
+</span><span class="hs-operator hs-var">`orElse`</span></span><span> </span><span class="annot"><span class="annottext">(XmlTree -&gt; Maybe Text) -&gt; LA XmlTree (Maybe Text)
+forall (a :: * -&gt; * -&gt; *) b c. Arrow a =&gt; (b -&gt; c) -&gt; a b c
+</span><span class="hs-identifier hs-var">arr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe Text -&gt; XmlTree -&gt; Maybe Text
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span>
+</span><span id="line-143"></span><span>
+</span><span id="line-144"></span><span id="replaceSpaces"><span class="annot"><span class="annottext">replaceSpaces :: Text -&gt; Text
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#replaceSpaces"><span class="hs-identifier hs-var hs-var">replaceSpaces</span></a></span></span><span> </span><span id="local-6989586621680100895"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680100895"><span class="hs-identifier hs-var">str</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'&quot;'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680100895"><span class="hs-identifier hs-var">str</span></a></span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span id="atTag"><span class="annot"><span class="annottext">atTag :: String -&gt; a XmlTree XmlTree
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atTag"><span class="hs-identifier hs-var hs-var">atTag</span></a></span></span><span> </span><span id="local-6989586621680100891"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100891"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a XmlTree XmlTree -&gt; a XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *) (t :: * -&gt; *) b c.
+(ArrowTree a, Tree t) =&gt;
+a (t b) c -&gt; a (t b) c
+</span><span class="hs-identifier hs-var">deep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; a XmlTree XmlTree
+</span><span class="hs-identifier hs-var">isElem</span></span><span> </span><span class="annot"><span class="annottext">a XmlTree XmlTree -&gt; a XmlTree XmlTree -&gt; a XmlTree XmlTree
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; a XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *).
+ArrowXml a =&gt;
+String -&gt; a XmlTree XmlTree
+</span><span class="hs-identifier hs-var">hasName</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100891"><span class="hs-identifier hs-var">tag</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-147"></span><span id="atAttr"><span class="annot"><span class="annottext">atAttr :: String -&gt; a XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#atAttr"><span class="hs-identifier hs-var hs-var">atAttr</span></a></span></span><span> </span><span id="local-6989586621680100887"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100887"><span class="hs-identifier hs-var">attrName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a XmlTree String -&gt; a XmlTree String
+forall (a :: * -&gt; * -&gt; *) (t :: * -&gt; *) b c.
+(ArrowTree a, Tree t) =&gt;
+a (t b) c -&gt; a (t b) c
+</span><span class="hs-identifier hs-var">deep</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; a XmlTree XmlTree
+</span><span class="hs-identifier hs-var">isElem</span></span><span> </span><span class="annot"><span class="annottext">a XmlTree XmlTree -&gt; a XmlTree String -&gt; a XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; a XmlTree String
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; String -&gt; a XmlTree String
+</span><span class="hs-identifier hs-var">getAttrValue</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680100887"><span class="hs-identifier hs-var">attrName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-148"></span><span id="text"><span class="annot"><span class="annottext">text :: LA XmlTree String
+</span><a href="NITTA.Frontends.XMILE.DocumentParser.html#text"><span class="hs-identifier hs-var hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">LA XmlTree XmlTree
+forall (a :: * -&gt; * -&gt; *) (t :: * -&gt; *) b.
+(ArrowTree a, Tree t) =&gt;
+a (t b) (t b)
+</span><span class="hs-identifier hs-var">getChildren</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree XmlTree -&gt; LA XmlTree String -&gt; LA XmlTree String
+forall k (cat :: k -&gt; k -&gt; *) (a :: k) (b :: k) (c :: k).
+Category cat =&gt;
+cat a b -&gt; cat b c -&gt; cat a c
+</span><span class="hs-operator hs-var">&gt;&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">LA XmlTree String
+forall (a :: * -&gt; * -&gt; *). ArrowXml a =&gt; a XmlTree String
+</span><span class="hs-identifier hs-var">getText</span></span><span>
+</span><span id="line-149"></span></pre></body></html>

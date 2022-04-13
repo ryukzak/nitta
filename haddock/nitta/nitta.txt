@@ -37,6 +37,71 @@
 @version 0.0.0.1
 
 
+module NITTA.Frontends.XMILE.MathParser
+parseXmileEquation :: String -> XMExpr
+calculateDefaultValue :: HashMap Text Double -> XMExpr -> Double
+data XMExpr
+Var :: String -> XMExpr
+Val :: Double -> XMExpr
+Duo :: XMDuop -> XMExpr -> XMExpr
+[xmeOp] :: XMExpr -> XMDuop
+[xmeLexpr, xmeRexpr] :: XMExpr -> XMExpr
+data XMDuop
+Mul :: XMDuop
+Div :: XMDuop
+Add :: XMDuop
+Sub :: XMDuop
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.MathParser.XMDuop
+instance GHC.Show.Show NITTA.Frontends.XMILE.MathParser.XMDuop
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.MathParser.XMExpr
+instance GHC.Show.Show NITTA.Frontends.XMILE.MathParser.XMExpr
+
+
+module NITTA.Frontends.XMILE.DocumentParser
+parseDocument :: String -> Content
+data Content
+Content :: SimSpec -> [Flow] -> [Aux] -> [Stock] -> Content
+[xcSimSpecs] :: Content -> SimSpec
+[xcFlows] :: Content -> [Flow]
+[xcAuxs] :: Content -> [Aux]
+[xcStocks] :: Content -> [Stock]
+data Stock
+Stock :: Text -> XMExpr -> Maybe Text -> Maybe Text -> Stock
+[xsName] :: Stock -> Text
+[xsEquation] :: Stock -> XMExpr
+[xsInflow] :: Stock -> Maybe Text
+[xsOutflow] :: Stock -> Maybe Text
+data Aux
+Aux :: Text -> XMExpr -> Aux
+[xaName] :: Aux -> Text
+[xaEquation] :: Aux -> XMExpr
+data Flow
+Flow :: Text -> XMExpr -> Flow
+[xfName] :: Flow -> Text
+[xfEquation] :: Flow -> XMExpr
+data SimSpec
+SimSpec :: Double -> Double -> Double -> SimSpec
+[xssStart] :: SimSpec -> Double
+[xssStop] :: SimSpec -> Double
+[xssDt] :: SimSpec -> Double
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.SimSpec
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.SimSpec
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Flow
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Flow
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Aux
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Aux
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Stock
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Stock
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Variables
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Variables
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Model
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Model
+instance GHC.Classes.Eq NITTA.Frontends.XMILE.DocumentParser.Content
+instance GHC.Show.Show NITTA.Frontends.XMILE.DocumentParser.Content
+instance GHC.Classes.Eq (NITTA.Frontends.XMILE.DocumentParser.AlgState v x)
+instance GHC.Show.Show (NITTA.Frontends.XMILE.DocumentParser.AlgState v x)
+
+
 module NITTA.Intermediate.Variable
 
 -- | Variable identifier. Used for simplify type description.
@@ -1326,80 +1391,19 @@ instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => 
 instance NITTA.Intermediate.Variable.Var v => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
 
 
--- | This module analyzes an abstract syntax tree of the Lua language
---   source code, provided by Language.Lua module, and stores it into a
---   NITTA's data flow graph.
---   
---   Supported Lua costructions are:
---   
---   <ul>
---   <li>Simple math operators (addition, subtraction, multiplication and
---   division);</li>
---   <li>Variable assignments;</li>
---   <li>Bitwise left and right shifts;</li>
---   <li>Recursive calls.</li>
---   </ul>
-module NITTA.LuaFrontend
-lua2functions :: (ToString a, Suffix a, Hashable a, Val t, IsString a, Ord a, Typeable a) => Text -> FrontendResult a t
+module NITTA.Frontends.Common
 data FrontendResult v x
 FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
 [frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
 [frTrace] :: FrontendResult v x -> [TraceVar]
 [frPrettyLog] :: FrontendResult v x -> [HashMap v x] -> [HashMap String String]
 data TraceVar
-TraceVar :: Text -> TraceVar
-[tvFmt, tvVar] :: TraceVar -> Text
-data LuaAlgBuilder x
-LuaAlgBuilder :: [LuaStatement x] -> HashMap Text LuaValueInstance -> HashMap Text Int -> HashMap LuaValueInstance [Text] -> HashMap Int (Text, Text) -> HashMap Text LuaValueInstance -> [([Text], Text)] -> LuaAlgBuilder x
-
--- | A list containing all expressions to be added to the final graph.
-[algGraph] :: LuaAlgBuilder x -> [LuaStatement x]
-
--- | A table that maps a variable name to the most recent corresponding
---   LuaValueInstance.
-[algLatestLuaValueInstance] :: LuaAlgBuilder x -> HashMap Text LuaValueInstance
-
--- | A table needed to generate unique temporary variable names.
-[algVarCounters] :: LuaAlgBuilder x -> HashMap Text Int
-
--- | A table lists all uses of a particular LuaValueInstance.
-[algVars] :: LuaAlgBuilder x -> HashMap LuaValueInstance [Text]
-
--- | Map argument index to the variable name and initial value (in text).
-[algStartupArgs] :: LuaAlgBuilder x -> HashMap Int (Text, Text)
-
--- | A table correlating constant with LuaValueInstance which store this
---   constant.
-[algConstants] :: LuaAlgBuilder x -> HashMap Text LuaValueInstance
-
--- | A list that stores debug information about monitored variables and
---   their display formats.
-[algTraceFuncs] :: LuaAlgBuilder x -> [([Text], Text)]
-data LuaStatement x
-LuaStatement :: [Text] -> [LuaValueInstance] -> Text -> [x] -> [Int] -> LuaStatement x
-[fIn] :: LuaStatement x -> [Text]
-[fOut] :: LuaStatement x -> [LuaValueInstance]
-[fName] :: LuaStatement x -> Text
-[fValues] :: LuaStatement x -> [x]
-[fInt] :: LuaStatement x -> [Int]
-
--- | Stores information about a particular version of a variable. The
---   version of a variable changes after assigning a new value to it.
-data LuaValueInstance
-LuaValueInstance :: Text -> Int -> Bool -> LuaValueInstance
-[lviName] :: LuaValueInstance -> Text
-[lviAssignCount] :: LuaValueInstance -> Int
-[lviIsConstant] :: LuaValueInstance -> Bool
-findStartupFunction :: Block -> (Text, Stat, Stat)
-getLuaBlockFromSources :: Text -> Block
-processStatement :: (MonadState (LuaAlgBuilder x) m, Read x, Show x) => Text -> Stat -> m ()
-instance GHC.Classes.Eq NITTA.LuaFrontend.LuaValueInstance
-instance GHC.Show.Show NITTA.LuaFrontend.LuaValueInstance
-instance GHC.Classes.Eq x => GHC.Classes.Eq (NITTA.LuaFrontend.LuaStatement x)
-instance GHC.Show.Show x => GHC.Show.Show (NITTA.LuaFrontend.LuaStatement x)
-instance GHC.Show.Show NITTA.LuaFrontend.TraceVar
-instance GHC.Show.Show x => GHC.Show.Show (NITTA.LuaFrontend.LuaAlgBuilder x)
-instance Data.Hashable.Class.Hashable NITTA.LuaFrontend.LuaValueInstance
+TraceVar :: Maybe Text -> Text -> TraceVar
+[tvFmt] :: TraceVar -> Maybe Text
+[tvVar] :: TraceVar -> Text
+prettyLog :: (Real t, Show t, PrintfArg t, PrintfType v, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
+getTraceVarFormat :: Maybe Text -> Text
+instance GHC.Show.Show NITTA.Frontends.Common.TraceVar
 
 
 -- | Much of the work in this module focuses on building waves of process
@@ -1474,6 +1478,117 @@ module NITTA.Intermediate.Simulation
 -- | Functional algorithm simulation
 simulateDataFlowGraph :: (Var v, Val x, WithFunctions g (F v x)) => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
 simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -> Cntx v x
+
+
+module NITTA.Frontends.XMILE.Frontend
+translateXMILE :: (Hashable a, Suffix a, ToString a, IsString a, Val t, Ord a, Typeable a) => Text -> FrontendResult a t
+data FrontendResult v x
+FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
+[frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
+[frTrace] :: FrontendResult v x -> [TraceVar]
+[frPrettyLog] :: FrontendResult v x -> [HashMap v x] -> [HashMap String String]
+data TraceVar
+TraceVar :: Maybe Text -> Text -> TraceVar
+[tvFmt] :: TraceVar -> Maybe Text
+[tvVar] :: TraceVar -> Text
+instance GHC.Show.Show (NITTA.Frontends.XMILE.Frontend.XMILEAlgBuilder v x)
+
+
+-- | This module analyzes an abstract syntax tree of the Lua language
+--   source code, provided by Language.Lua module, and stores it into a
+--   NITTA's data flow graph.
+--   
+--   Supported Lua costructions are:
+--   
+--   <ul>
+--   <li>Simple math operators (addition, subtraction, multiplication and
+--   division);</li>
+--   <li>Variable assignments;</li>
+--   <li>Bitwise left and right shifts;</li>
+--   <li>Recursive calls.</li>
+--   </ul>
+module NITTA.Frontends.Lua
+translateLua :: (ToString a, Suffix a, Hashable a, Val t, IsString a, Ord a, Typeable a) => Text -> FrontendResult a t
+data FrontendResult v x
+FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
+[frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
+[frTrace] :: FrontendResult v x -> [TraceVar]
+[frPrettyLog] :: FrontendResult v x -> [HashMap v x] -> [HashMap String String]
+data TraceVar
+TraceVar :: Maybe Text -> Text -> TraceVar
+[tvFmt] :: TraceVar -> Maybe Text
+[tvVar] :: TraceVar -> Text
+data LuaAlgBuilder x
+LuaAlgBuilder :: [LuaStatement x] -> HashMap Text LuaValueInstance -> HashMap Text Int -> HashMap LuaValueInstance [Text] -> HashMap Int (Text, Text) -> HashMap Text LuaValueInstance -> [([Text], Maybe Text)] -> LuaAlgBuilder x
+
+-- | A list containing all expressions to be added to the final graph.
+[algGraph] :: LuaAlgBuilder x -> [LuaStatement x]
+
+-- | A table that maps a variable name to the most recent corresponding
+--   LuaValueInstance.
+[algLatestLuaValueInstance] :: LuaAlgBuilder x -> HashMap Text LuaValueInstance
+
+-- | A table needed to generate unique temporary variable names.
+[algVarCounters] :: LuaAlgBuilder x -> HashMap Text Int
+
+-- | A table lists all uses of a particular LuaValueInstance.
+[algVars] :: LuaAlgBuilder x -> HashMap LuaValueInstance [Text]
+
+-- | Map argument index to the variable name and initial value (in text).
+[algStartupArgs] :: LuaAlgBuilder x -> HashMap Int (Text, Text)
+
+-- | A table correlating constant with LuaValueInstance which store this
+--   constant.
+[algConstants] :: LuaAlgBuilder x -> HashMap Text LuaValueInstance
+
+-- | A list that stores debug information about monitored variables and
+--   their display formats.
+[algTraceFuncs] :: LuaAlgBuilder x -> [([Text], Maybe Text)]
+data LuaStatement x
+LuaStatement :: [Text] -> [LuaValueInstance] -> Text -> [x] -> [Int] -> LuaStatement x
+[fIn] :: LuaStatement x -> [Text]
+[fOut] :: LuaStatement x -> [LuaValueInstance]
+[fName] :: LuaStatement x -> Text
+[fValues] :: LuaStatement x -> [x]
+[fInt] :: LuaStatement x -> [Int]
+
+-- | Stores information about a particular version of a variable. The
+--   version of a variable changes after assigning a new value to it.
+data LuaValueInstance
+LuaValueInstance :: Text -> Int -> Bool -> LuaValueInstance
+[lviName] :: LuaValueInstance -> Text
+[lviAssignCount] :: LuaValueInstance -> Int
+[lviIsConstant] :: LuaValueInstance -> Bool
+findStartupFunction :: Block -> (Text, Stat, Stat)
+getLuaBlockFromSources :: Text -> Block
+processStatement :: (MonadState (LuaAlgBuilder x) m, Read x, Show x) => Text -> Stat -> m ()
+instance GHC.Classes.Eq NITTA.Frontends.Lua.LuaValueInstance
+instance GHC.Show.Show NITTA.Frontends.Lua.LuaValueInstance
+instance GHC.Classes.Eq x => GHC.Classes.Eq (NITTA.Frontends.Lua.LuaStatement x)
+instance GHC.Show.Show x => GHC.Show.Show (NITTA.Frontends.Lua.LuaStatement x)
+instance GHC.Show.Show x => GHC.Show.Show (NITTA.Frontends.Lua.LuaAlgBuilder x)
+instance Data.Hashable.Class.Hashable NITTA.Frontends.Lua.LuaValueInstance
+
+
+module NITTA.Frontends
+data FrontendType
+Lua :: FrontendType
+XMILE :: FrontendType
+data FrontendResult v x
+FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
+[frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
+[frTrace] :: FrontendResult v x -> [TraceVar]
+[frPrettyLog] :: FrontendResult v x -> [HashMap v x] -> [HashMap String String]
+data TraceVar
+TraceVar :: Maybe Text -> Text -> TraceVar
+[tvFmt] :: TraceVar -> Maybe Text
+[tvVar] :: TraceVar -> Text
+prettyLog :: (Real t, Show t, PrintfArg t, PrintfType v, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
+getTraceVarFormat :: Maybe Text -> Text
+identifyFrontendType :: [Char] -> Maybe FrontendType -> FrontendType
+translate :: (ToString a, Suffix a, Hashable a, Val t, IsString a, Typeable a, Ord a) => FrontendType -> Text -> FrontendResult a t
+instance Data.Data.Data NITTA.Frontends.FrontendType
+instance GHC.Show.Show NITTA.Frontends.FrontendType
 
 
 -- | A multilevel process is an object with a complex internal structure.
@@ -2980,13 +3095,13 @@ instance GHC.Base.Monoid NITTA.Synthesis.Analysis.TreeInfo
 --   ====================================================================================================================
 --                                                                                                                Prepare
 --   NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
---       # tName                                                                                        NITTA.LuaFrontend
---       # tMicroArch --------------------------
---       # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
---                         |                    |     |  |
---                         *&lt;--lua2functions    |     |  |
---                         |                    |     |  v         NITTA.Model:TargetSystem----------
---       # tDFG <a>+--------*--------</a> # mUnit            |             |    NITTA.Model...
+--       # tName                                                                              NITTA.Frontends
+--       # tMicroArch -----------------------------
+--       # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
+--                      |                          |     |  |
+--                      *&lt;-translate               |     |  |
+--                      |                          |     |  v      NITTA.Model:TargetSystem----------
+--       # tDFG <a>+--------*--------</a> # mUnit         |             |    NITTA.Model...
 --           |                                        |                                |             |     /-----------
 --           |                                        v                                |             |     |  Target   |
 --           +----------------------------------------*-----------&gt; # mDataFlowGraph   |             -----+  System   |
@@ -3046,7 +3161,7 @@ mkModelWithOneNetwork :: ProcessorUnit u v x t1 => u -> DataFlowGraph v x -> Tar
 -- | Description of synthesis task. Applicable for target system synthesis
 --   and testing purpose.
 data TargetSynthesis tag v x t
-TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph v x -> [(v, [x])] -> SynthesisMethod tag v x t -> String -> String -> [FilePath] -> Int -> TargetSynthesis tag v x t
+TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph v x -> [(v, [x])] -> SynthesisMethod tag v x t -> String -> String -> [FilePath] -> Int -> FrontendType -> TargetSynthesis tag v x t
 
 -- | target name, used for top level module name and project path
 [tName] :: TargetSynthesis tag v x t -> String
@@ -3077,6 +3192,9 @@ TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph
 
 -- | number of simulation and testbench cycles
 [tSimulationCycleN] :: TargetSynthesis tag v x t -> Int
+
+-- | source code format type
+[tSourceCodeType] :: TargetSynthesis tag v x t -> FrontendType
 runTargetSynthesis :: (Bounded t, IsString v1, IsString tag2, ToString v1, ToString tag2, Suffix v1, Hashable v1, Val x2, Default t, Typeable t, Typeable v1, Typeable tag2, Show t, Integral t, Ord v1, Ord tag2) => TargetSynthesis tag2 v1 x2 t -> IO (Either [Char] (TestbenchReport v1 x2))
 synthesizeTargetSystem :: (IsString tag2, IsString v2, ToString tag2, ToString v2, Suffix v2, Hashable v2, Val x2, Bounded t, Typeable tag2, Typeable v2, Typeable t, Show t, Default t, Integral t, Ord tag2, Ord v2) => TargetSynthesis tag2 v2 x2 t -> IO (Either [Char] (Project (BusNetwork tag2 v2 x2 t) v2 x2))
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
