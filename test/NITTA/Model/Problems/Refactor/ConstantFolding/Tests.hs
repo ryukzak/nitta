@@ -21,9 +21,9 @@ module NITTA.Model.Problems.Refactor.ConstantFolding.Tests (
 
 import qualified Data.Set as S
 import Data.String.Interpolate
+import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit

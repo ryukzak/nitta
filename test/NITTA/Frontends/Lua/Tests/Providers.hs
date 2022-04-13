@@ -10,14 +10,14 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests.Providers
+Module      : NITTA.Frontends.Lua.Tests.Providers
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.LuaFrontend.Tests.Providers (
+module NITTA.Frontends.Lua.Tests.Providers (
     luaTestCase,
     typedLuaTestCase,
     typedIOLuaTestCase,
@@ -29,9 +29,9 @@ import Data.CallStack
 import Data.Default
 import Data.Proxy
 import qualified Data.Text as T
+import NITTA.Frontends.Lua
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits.Tests.Providers
@@ -49,7 +49,7 @@ traceLuaSimulationTestCase ::
     TestTree
 traceLuaSimulationTestCase _ name src expect =
     testCase name $
-        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult T.Text x = lua2functions src
+        let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult T.Text x = translateLua src
             cntx = simulateDataFlowGraph 5 def def frDataFlow
             actual = log2md $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
          in expect @=? actual

@@ -37,6 +37,12 @@ extra-doc-files:
 
 library
   exposed-modules:
+      NITTA.Frontends
+      NITTA.Frontends.Common
+      NITTA.Frontends.Lua
+      NITTA.Frontends.XMILE.DocumentParser
+      NITTA.Frontends.XMILE.Frontend
+      NITTA.Frontends.XMILE.MathParser
       NITTA.Intermediate.Analysis
       NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
@@ -45,7 +51,6 @@ library
       NITTA.Intermediate.Types
       NITTA.Intermediate.Value
       NITTA.Intermediate.Variable
-      NITTA.LuaFrontend
       NITTA.Model.Microarchitecture.Builder
       NITTA.Model.Microarchitecture.Config
       NITTA.Model.Networks.Bus
@@ -127,10 +132,12 @@ library
     , hslogger
     , htoml
     , http-api-data
+    , hxt
     , intervals
     , language-lua
     , mtl
     , network-simple
+    , parsec
     , prettyprinter
     , process
     , process-extras
@@ -225,12 +232,14 @@ test-suite nitta-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      NITTA.Frontends.Lua.Tests
+      NITTA.Frontends.Lua.Tests.Providers
+      NITTA.Frontends.XMILE.DocumentParserTests
+      NITTA.Frontends.XMILE.MathParserTests
       NITTA.Intermediate.Functions.Accum.Tests
       NITTA.Intermediate.Simulation.Tests
       NITTA.Intermediate.Tests.Functions
       NITTA.Intermediate.Value.Tests
-      NITTA.LuaFrontend.Tests
-      NITTA.LuaFrontend.Tests.Providers
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
@@ -271,6 +280,7 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , htoml
+    , hxt
     , intervals
     , language-lua
     , mtl

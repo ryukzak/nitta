@@ -34,9 +34,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
+import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
 import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
@@ -74,6 +74,7 @@ data Nitta = Nitta
     , extra_verbose :: Bool
     , output_path :: FilePath
     , format :: String
+    , frontend_language :: Maybe FrontendType
     }
     deriving (Show, Data, Typeable)
 
@@ -124,6 +125,10 @@ nittaArgs =
         , extra_verbose =
             False &= help "Extra verbose"
                 &= groupname "Other"
+        , frontend_language =
+            Nothing &= help "Language used to source algorithm description. (default: decision by file extension)"
+                &= typ "Lua|XMILE"
+                &= groupname "Target system configuration"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -140,7 +145,22 @@ getNittaArgs = do
     catch (cmdArgs nittaArgs) handleError
 
 main = do
-    Nitta{port, filename, uarch, type_, io_sync, fsim, lsim, n, verbose, extra_verbose, output_path, templates, format} <-
+    ( Nitta
+            filename
+            uarch
+            type_
+            io_sync
+            port
+            templates
+            n
+            fsim
+            lsim
+            verbose
+            extra_verbose
+            output_path
+            format
+            frontend_language
+        ) <-
         getNittaArgs
     setupLogger verbose extra_verbose
 
@@ -149,10 +169,12 @@ main = do
         Just path -> T.readFile path <&> (Just . getToml)
 
     let fromConf s = getFromTomlSection s =<< toml
+    let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
-            let FrontendResult{frDataFlow, frTrace, frPrettyLog} = lua2functions src
+            let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
+                    translate exactFrontendType src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
@@ -173,7 +195,7 @@ main = do
                 backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation n received src format
+            when fsim $ functionalSimulation n received format frontendResult
 
             prj <-
                 synthesizeTargetSystem
@@ -185,6 +207,7 @@ main = do
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
                         , tSimulationCycleN = n
+                        , tSourceCodeType = exactFrontendType
                         }
                     >>= \case
                         Left msg -> error msg
@@ -221,17 +244,16 @@ readSourceCode filename = do
     return src
 
 -- |Simulation on intermediate level (data-flow graph)
-functionalSimulation n received src format = do
-    let FrontendResult{frDataFlow, frPrettyLog} = lua2functions src
-        cntx = simulateDataFlowGraph n def received frDataFlow
+functionalSimulation n received format FrontendResult{frDataFlow, frPrettyLog} = do
+    let cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
     putLog format $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
     infoM "NITTA" "run functional simulation...ok"
 
 -- |Simulation on RTL level by a Verilog simulator.
-logicalSimulation format prettyLog prj = do
+logicalSimulation format prettyLog_ prj = do
     TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
-    putLog format $ prettyLog tbLogicalSimulationLog
+    putLog format $ prettyLog_ tbLogicalSimulationLog
 
 putLog "md" records = putStr $ log2md records
 putLog "json" records = BS.putStrLn $ log2json records

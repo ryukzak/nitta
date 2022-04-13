@@ -17,11 +17,13 @@ module Spec where
 
 import Data.FileEmbed (embedStringFile)
 import Data.Maybe
+import qualified NITTA.Frontends.Lua.Tests
+import NITTA.Frontends.Lua.Tests.Providers
+import qualified NITTA.Frontends.XMILE.DocumentParserTests
+import qualified NITTA.Frontends.XMILE.MathParserTests
 import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
-import qualified NITTA.LuaFrontend.Tests
-import NITTA.LuaFrontend.Tests.Providers
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
@@ -49,7 +51,9 @@ main = do
             $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
               , NITTA.Intermediate.Simulation.Tests.tests
               , NITTA.Intermediate.Value.Tests.tests
-              , NITTA.LuaFrontend.Tests.tests
+              , NITTA.Frontends.Lua.Tests.tests
+              , NITTA.Frontends.XMILE.MathParserTests.tests
+              , NITTA.Frontends.XMILE.DocumentParserTests.tests
               , NITTA.Model.Problems.Refactor.Tests.tests
               , NITTA.Model.Problems.Refactor.Accum.Tests.tests
               , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests

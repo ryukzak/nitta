@@ -22,8 +22,8 @@ import Control.Monad (void)
 import Data.Default
 import Data.String.Interpolate
 import qualified Data.Text as T
+import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.DataFlow
-import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Providers
 import NITTA.Synthesis

@@ -12,14 +12,14 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
-Module      : NITTA.LuaFrontend.Tests
+Module      : NITTA.Frontends.Lua.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.LuaFrontend.Tests (
+module NITTA.Frontends.Lua.Tests (
     tests,
 ) where
 
@@ -30,10 +30,10 @@ import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Language.Lua as Lua
+import NITTA.Frontends.Lua
+import NITTA.Frontends.Lua.Tests.Providers
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
-import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
@@ -216,7 +216,7 @@ case_lua_two_name_for_same_constant =
             , add "_1#loop" "!1#2" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functions src) @?= dfg
+     in functions (frDataFlow $ translateLua src) @?= dfg
 
 case_lua_negative_operator =
     let src =
@@ -231,7 +231,7 @@ case_lua_negative_operator =
             [ F.neg "a^0#0" ["b^0#0"] :: F T.Text Int
             , loop 0 "b^0#0" ["a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functions src) @?= dfg
+     in functions (frDataFlow $ translateLua src) @?= dfg
 
 defaultAlgBuilder =
     LuaAlgBuilder
@@ -262,7 +262,7 @@ case_lua_constant_declatation =
             , add "_1#loop" "r^0#0" ["_0#loop"]
             , loop 0 "_0#loop" ["a^0#0"]
             ]
-     in functions (frDataFlow $ lua2functions src) @?= dfg
+     in functions (frDataFlow $ translateLua src) @?= dfg
 
 case_lua_complex_assignment =
     let src =
@@ -281,7 +281,7 @@ case_lua_complex_assignment =
             , loop 0 "a&^0#0" ["a^0#0"]
             , loop 0 "b&^0#0" ["b^0#0"]
             ]
-     in functions (frDataFlow $ lua2functions src) @?= dfg
+     in functions (frDataFlow $ translateLua src) @?= dfg
 
 test_simple_recursion =
     [ luaTestCase

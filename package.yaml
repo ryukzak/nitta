@@ -86,6 +86,8 @@ library:
     - validity
     - wai-cors
     - warp
+    - hxt
+    - parsec
 
     
 executables:
@@ -148,3 +150,4 @@ tests:
       - tasty-quickcheck
       - tasty-rerun
       - tasty-th
+      - hxt

@@ -19,13 +19,13 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
-    # tName                                                                                        NITTA.LuaFrontend
-    # tMicroArch --------------------------\
-    # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
-                      |                    |     |  |
-                      *<--lua2functions    |     |  |
-                      |                    |     |  v         NITTA.Model:TargetSystem----------\
-    # tDFG <----------+                    +--------*--------> # mUnit            |             |    NITTA.Model...
+    # tName                                                                              NITTA.Frontends
+    # tMicroArch -----------------------------\
+    # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
+                   |                          |     |  |
+                   *<-translate               |     |  |
+                   |                          |     |  v      NITTA.Model:TargetSystem----------\
+    # tDFG <-------+                          +--------*--------> # mUnit         |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
         +----------------------------------------*-----------> # mDataFlowGraph   |             \-----+  System   |
@@ -92,10 +92,10 @@ import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
 import qualified Data.Text as T
+import NITTA.Frontends
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
@@ -133,6 +133,8 @@ data TargetSynthesis tag v x t = TargetSynthesis
     , tTemplates :: [FilePath]
     , -- |number of simulation and testbench cycles
       tSimulationCycleN :: Int
+    , -- |source code format type
+      tSourceCodeType :: FrontendType
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
@@ -148,6 +150,7 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
+            , tSourceCodeType = Lua
             }
 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v x t) v x t where
@@ -170,6 +173,7 @@ synthesizeTargetSystem
         , tPath
         , tTemplates
         , tSimulationCycleN
+        , tSourceCodeType
         } = do
         -- TODO: check that tName is a valid verilog module name
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
@@ -182,7 +186,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ lua2functions src
+                let tmp = frDataFlow $ translate tSourceCodeType src
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 

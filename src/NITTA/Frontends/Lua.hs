@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
 {- |
-Module      : NITTA.LuaFrontend
+Module      : NITTA.Frontends.Lua
 Description : Lua frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -25,8 +25,8 @@ Supported Lua costructions are:
 
 * Recursive calls.
 -}
-module NITTA.LuaFrontend (
-    lua2functions,
+module NITTA.Frontends.Lua (
+    translateLua,
     FrontendResult (..),
     TraceVar (..),
 
@@ -42,16 +42,15 @@ module NITTA.LuaFrontend (
 import Control.Monad.State
 import qualified Data.HashMap.Strict as HM
 import Data.Hashable
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.String
 import Data.String.ToString
 import qualified Data.Text as T
 import Language.Lua
+import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Utils.Base
-import Text.Printf
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
 getUniqueLuaVariableName LuaValueInstance{lviName, lviAssignCount} luaValueAccessCount
@@ -75,15 +74,6 @@ data LuaValueInstance = LuaValueInstance
     }
     deriving (Show, Eq)
 
-data FrontendResult v x = FrontendResult
-    { frDataFlow :: DataFlowGraph v x
-    , frTrace :: [TraceVar]
-    , frPrettyLog :: [HM.HashMap v x] -> [HM.HashMap String String]
-    }
-
-data TraceVar = TraceVar {tvFmt, tvVar :: T.Text}
-    deriving (Show)
-
 instance Hashable LuaValueInstance where
     hashWithSalt i LuaValueInstance{lviName, lviAssignCount, lviIsConstant} =
         ( (hashWithSalt i lviName * 31)
@@ -106,11 +96,9 @@ data LuaAlgBuilder x = LuaAlgBuilder
     , -- | A table correlating constant with LuaValueInstance which store this constant.
       algConstants :: HM.HashMap T.Text LuaValueInstance
     , -- | A list that stores debug information about monitored variables and their display formats.
-      algTraceFuncs :: [([T.Text], T.Text)]
+      algTraceFuncs :: [([T.Text], Maybe T.Text)]
     }
     deriving (Show)
-
-defaultFmt = "%.3f"
 
 --left part of lua statement
 parseLeftExp (VarName (Name v)) = v
@@ -236,10 +224,10 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
         ("trace", tFmt : vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt -> do
                 let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
-                put luaAlgBuilder{algTraceFuncs = (vars, T.replace "\"" "" tFmt) : algTraceFuncs}
+                put luaAlgBuilder{algTraceFuncs = (vars, Just $ T.replace "\"" "" tFmt) : algTraceFuncs}
         ("trace", vs) -> do
             let vars = map (\x -> T.pack $ takeWhile (/= '#') $ T.unpack $ getUniqueLuaVariableName (fromMaybe undefined $ HM.lookup x algLatestLuaValueInstance) 0) vs
-            put luaAlgBuilder{algTraceFuncs = (vars, defaultFmt) : algTraceFuncs}
+            put luaAlgBuilder{algTraceFuncs = (vars, Nothing) : algTraceFuncs}
         _ -> error $ "unknown debug method: " <> show fName <> " " <> show args
     where
         parseTraceArg (String s) = s
@@ -389,7 +377,7 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
                 Just names -> map fromText names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
 
-lua2functions src =
+translateLua src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
         frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder
@@ -401,20 +389,6 @@ lua2functions src =
                     map
                         (\(_idx, (varName, _initValue)) -> varName)
                         $ HM.toList $ algStartupArgs algBuilder
-             in map (\name -> ([name <> "^0"], defaultFmt)) startupArgNames <> traceFuncs
+             in map (\name -> ([name <> "^0"], Nothing)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
-
-prettyLog traceVars hms = map prettyHM hms
-    where
-        prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
-        prettyX (v0, x) = do
-            -- variables names end on #0, #1..., so we trim this suffix
-            let v = takeWhile (/= '#') $ toString v0
-            fmt <- v2fmt M.!? v
-            Just (toString (takeWhile (/= '^') v), printx (T.unpack fmt) x)
-        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (toString v, fmt)) traceVars
-        printx p x
-            | 'f' `elem` p = printf p (fromRational (toRational x) :: Double)
-            | 's' `elem` p = printf p $ show x
-            | otherwise = printf p x
