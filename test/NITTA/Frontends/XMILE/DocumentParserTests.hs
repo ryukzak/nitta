@@ -15,7 +15,7 @@ module NITTA.Frontends.XMILE.DocumentParserTests (
 ) where
 
 import Data.String.Interpolate
-import NITTA.Frontends.XMILE.DocumentParser
+import NITTA.Frontends.XMILE.DocumentParser as XMILE
 import NITTA.Frontends.XMILE.MathParser
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
@@ -51,27 +51,27 @@ xmileSample =
             |]
 
 case_teacupExampleParsingTest =
-    let parsedContent = parseXMILEDocument xmileSample
+    let parsedContent = XMILE.parseDocument xmileSample
         expectedContent =
-            XMILEContent
+            XMILE.Content
                 { xcSimSpecs =
-                    XMILESimSpec
+                    XMILE.SimSpec
                         { xssDt = 0.125
                         , xssStart = 0
                         , xssStop = 30
                         }
                 , xcAuxs =
-                    [ XMILEAux
+                    [ XMILE.Aux
                         { xaName = "Room_Temperature"
                         , xaEquation = Val 70
                         }
-                    , XMILEAux
+                    , XMILE.Aux
                         { xaName = "Characteristic_Time"
                         , xaEquation = Val 10
                         }
                     ]
                 , xcStocks =
-                    [ XMILEStock
+                    [ XMILE.Stock
                         { xsName = "Teacup_Temperature"
                         , xsEquation = Val 180
                         , xsInflow = Nothing
@@ -79,7 +79,7 @@ case_teacupExampleParsingTest =
                         }
                     ]
                 , xcFlows =
-                    [ XMILEFlow
+                    [ XMILE.Flow
                         { xfName = "Heat_Loss_to_Room"
                         , xfEquation = Duo Div (Duo Sub (Var "Teacup_Temperature") (Var "Room_Temperature")) (Var "Characteristic_Time")
                         }

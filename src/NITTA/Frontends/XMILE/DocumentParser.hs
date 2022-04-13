@@ -11,12 +11,12 @@ Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}
 module NITTA.Frontends.XMILE.DocumentParser (
-    parseXMILEDocument,
-    XMILEContent (..),
-    XMILEStock (..),
-    XMILEAux (..),
-    XMILEFlow (..),
-    XMILESimSpec (..),
+    parseDocument,
+    Content (..),
+    Stock (..),
+    Aux (..),
+    Flow (..),
+    SimSpec (..),
 ) where
 
 import qualified Data.Text as T
@@ -24,45 +24,45 @@ import NITTA.Frontends.XMILE.MathParser
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Core
 
-data XMILEContent = XMILEContent
-    { xcSimSpecs :: XMILESimSpec
-    , xcFlows :: [XMILEFlow]
-    , xcAuxs :: [XMILEAux]
-    , xcStocks :: [XMILEStock]
+data Content = Content
+    { xcSimSpecs :: SimSpec
+    , xcFlows :: [Flow]
+    , xcAuxs :: [Aux]
+    , xcStocks :: [Stock]
     }
     deriving (Show, Eq)
 
-data XMILESimSpec = XMILESimSpec
+data SimSpec = SimSpec
     { xssStart :: Double
     , xssStop :: Double
     , xssDt :: Double
     }
     deriving (Show, Eq)
 
-newtype XMILEModel = XMILEModel
-    {xmVariables :: XMILEVariables}
+newtype Model = Model
+    {xmVariables :: Variables}
     deriving (Show, Eq)
 
-data XMILEVariables = XMILEVariables
-    { xvFlows :: [XMILEFlow]
-    , xvAuxs :: [XMILEAux]
-    , xvStocks :: [XMILEStock]
+data Variables = Variables
+    { xvFlows :: [Flow]
+    , xvAuxs :: [Aux]
+    , xvStocks :: [Stock]
     }
     deriving (Show, Eq)
 
-data XMILEFlow = XMILEFlow
+data Flow = Flow
     { xfName :: T.Text
     , xfEquation :: XMExpr
     }
     deriving (Show, Eq)
 
-data XMILEAux = XMILEAux
+data Aux = Aux
     { xaName :: T.Text
     , xaEquation :: XMExpr
     }
     deriving (Show, Eq)
 
-data XMILEStock = XMILEStock
+data Stock = Stock
     { xsName :: T.Text
     , xsEquation :: XMExpr
     , xsInflow :: Maybe T.Text
@@ -70,13 +70,13 @@ data XMILEStock = XMILEStock
     }
     deriving (Show, Eq)
 
-data XMILEAlgState v x = XMILEAlgState
-    { xasSimSpec :: XMILESimSpec
-    , xasModel :: XMILEModel
+data AlgState v x = AlgState
+    { xasSimSpec :: SimSpec
+    , xasModel :: Model
     }
     deriving (Show, Eq)
 
-parseXMILEDocument src =
+parseDocument src =
     head $
         runLA
             ( xreadDoc
@@ -86,7 +86,7 @@ parseXMILEDocument src =
                     xcFlows <- parseFlows -< st
                     xcAuxs <- parseAuxs -< st
                     xcStocks <- parseStocks -< st
-                    returnA -< XMILEContent{xcSimSpecs, xcFlows, xcAuxs, xcStocks}
+                    returnA -< Content{xcSimSpecs, xcFlows, xcAuxs, xcStocks}
             )
             src
 
@@ -96,7 +96,7 @@ parseSimSpec =
             stop <- text <<< atTag "stop" -< x
             start <- text <<< atTag "start" -< x
             dt <- text <<< atTag "dt" -< x
-            returnA -< XMILESimSpec{xssStart = read start, xssStop = read stop, xssDt = read dt}
+            returnA -< SimSpec{xssStart = read start, xssStop = read stop, xssDt = read dt}
 
 parseFlows =
     atTag "variables"
@@ -105,7 +105,7 @@ parseFlows =
                 >>> proc flow -> do
                     eqn <- text <<< atTag "eqn" -< flow
                     name <- atAttr "name" -< flow
-                    returnA -< XMILEFlow{xfEquation = parseXmileEquation eqn, xfName = replaceSpaces $ T.pack name}
+                    returnA -< Flow{xfEquation = parseXmileEquation eqn, xfName = replaceSpaces $ T.pack name}
             )
 
 parseAuxs =
@@ -115,7 +115,7 @@ parseAuxs =
                 >>> proc aux -> do
                     eqn <- text <<< atTag "eqn" -< aux
                     name <- atAttr "name" -< aux
-                    returnA -< XMILEAux{xaEquation = parseXmileEquation eqn, xaName = replaceSpaces $ T.pack name}
+                    returnA -< Aux{xaEquation = parseXmileEquation eqn, xaName = replaceSpaces $ T.pack name}
             )
 
 parseStocks =
@@ -129,7 +129,7 @@ parseStocks =
                     name <- atAttr "name" -< stock
                     returnA
                         -<
-                            XMILEStock
+                            Stock
                                 { xsEquation = parseXmileEquation eqn
                                 , xsName = replaceSpaces $ T.pack name
                                 , xsOutflow = replaceSpaces <$> outflow

@@ -29,7 +29,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import NITTA.Frontends.Common
-import NITTA.Frontends.XMILE.DocumentParser
+import NITTA.Frontends.XMILE.DocumentParser as XMILE
 import NITTA.Frontends.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
@@ -48,7 +48,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
 deltaTimeVarName = T.pack "time_delta"
 
 translateXMILE src =
-    let xmContent = parseXMILEDocument $ T.unpack src
+    let xmContent = XMILE.parseDocument $ T.unpack src
         builder = processXMILEGraph xmContent
         frTrace = algTraceVars' builder
      in FrontendResult{frDataFlow = algDataFlowGraph builder, frTrace, frPrettyLog = prettyLog frTrace}
@@ -112,7 +112,7 @@ createDataFlowGraph xmContent = do
                         }
                 )
 
-        processStock XMILEStock{xsName, xsOutflow, xsInflow} = do
+        processStock XMILE.Stock{xsName, xsOutflow, xsInflow} = do
             outputs <- getAllOutGraphNodes xsName
             case (xsOutflow, xsInflow) of
                 (Nothing, Nothing) -> do
@@ -177,7 +177,7 @@ createDataFlowGraph xmContent = do
                                 }
                         )
 
-        processAux XMILEAux{xaName, xaEquation} =
+        processAux XMILE.Aux{xaName, xaEquation} =
             case xaEquation of
                 (Val value) -> do
                     outputs <- getAllOutGraphNodes xaName
@@ -192,7 +192,7 @@ createDataFlowGraph xmContent = do
                         )
                 expr -> error $ "non supported equation part: " <> show expr
 
-        processFlow XMILEFlow{xfName, xfEquation} =
+        processFlow XMILE.Flow{xfName, xfEquation} =
             void (processFlowEquation xfEquation (0 :: Int) True)
             where
                 processFlowEquation (Var name) index _ = do
@@ -244,7 +244,7 @@ getDefaultValuesAndUsages algBuilder =
             mapM_ (addToMap . (\a -> (xsName a, xsEquation a))) (xcStocks algBuilder)
             where
                 addToMap (name, eqn) = modify (\st -> HM.insert name eqn st)
-        processStock XMILEStock{xsEquation, xsName, xsInflow, xsOutflow} = do
+        processStock XMILE.Stock{xsEquation, xsName, xsInflow, xsOutflow} = do
             XMILEAlgBuilder{algDefaultValues} <- get
             let val = calculateDefaultValue algDefaultValues xsEquation
             modify (\st -> st{algDefaultValues = HM.insert xsName val algDefaultValues})
@@ -264,7 +264,7 @@ getDefaultValuesAndUsages algBuilder =
                 findFlow name =
                     fromMaybe
                         (error $ "cannot find expected flow flow with name " <> T.unpack name <> show (xcFlows algBuilder))
-                        (L.find (\XMILEFlow{xfName} -> xfName == name) $ xcFlows algBuilder)
+                        (L.find (\XMILE.Flow{xfName} -> xfName == name) $ xcFlows algBuilder)
 
                 processEquation (Val _) = return ()
                 processEquation (Duo _ expr expl) = do
