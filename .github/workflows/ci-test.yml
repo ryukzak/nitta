@@ -1,7 +1,6 @@
 name: NITTA Build and Test
 
 on:
-  push:
   pull_request:
 
 env:

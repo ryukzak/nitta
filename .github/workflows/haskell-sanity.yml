@@ -1,13 +1,6 @@
 name: Haskell Sanity
 
 on:
-  push:
-    paths:
-      - "app/**"
-      - "src/**"
-      - "test/**"
-      - ".hlint.yaml"
-      - "fourmolu.yaml"
   pull_request:
     paths:
       - "app/**"

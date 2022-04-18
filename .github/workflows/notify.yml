@@ -1,6 +1,5 @@
 name: Telegram Notify
 on:
-  push:
   pull_request:
 
 jobs:
