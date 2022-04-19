@@ -1,9 +1,6 @@
 name: User Interface Sanity
 
 on:
-  push:
-    paths:
-      - "web/**"
   pull_request:
     paths:
       - "web/**"
