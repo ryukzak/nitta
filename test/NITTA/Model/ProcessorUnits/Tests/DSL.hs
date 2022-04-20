@@ -636,7 +636,7 @@ traceFunctions = do
 traceEndpoints :: PUStatement pu v x t ()
 traceEndpoints = do
     UnitTestState{unit} <- get
-    lift $ putListLn "Endpoints:" $ endpointOptions unit
+    lift $ putListLn "Endpoints: " $ endpointOptions unit
 
 traceProcess :: (ProcessorUnit u v x Int) => Statement u v x ()
 traceProcess = do
@@ -648,13 +648,13 @@ traceDataflowState = do
     UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
     lift $
         do
-            putStrLn "DataFlowGraph:"
+            putStrLn "DataFlowGraph: "
             print mDataFlowGraph
 
 traceDataflow :: TSStatement x ()
 traceDataflow = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "Dataflow:" $ dataflowOptions mUnit
+    lift $ putListLn "Dataflow: " $ dataflowOptions mUnit
 
 traceProcessWaves :: TSStatement x ()
 traceProcessWaves = do
@@ -664,20 +664,20 @@ traceProcessWaves = do
 traceBind :: TSStatement x ()
 traceBind = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "Bind:" $ bindOptions mUnit
+    lift $ putListLn "Bind: " $ bindOptions mUnit
 
 traceAllocation :: TSStatement x ()
 traceAllocation = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "Allocation:" $ allocationOptions mUnit
+    lift $ putListLn "Allocation: " $ allocationOptions mUnit
 
 traceRefactor :: TSStatement x ()
 traceRefactor = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "breakLoopOptions:" $ breakLoopOptions mUnit
-    lift $ putListLn "constantFoldingOptions:" $ constantFoldingOptions mUnit
-    lift $ putListLn "optimizeAccumOptions:" $ optimizeAccumOptions mUnit
-    lift $ putListLn "resolveDeadlockOptions:" $ resolveDeadlockOptions mUnit
+    lift $ putListLn "breakLoopOptions: " $ breakLoopOptions mUnit
+    lift $ putListLn "constantFoldingOptions: " $ constantFoldingOptions mUnit
+    lift $ putListLn "optimizeAccumOptions: " $ optimizeAccumOptions mUnit
+    lift $ putListLn "resolveDeadlockOptions: " $ resolveDeadlockOptions mUnit
 
 putListLn name opts = do
     putStrLn name
