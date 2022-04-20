@@ -97,7 +97,6 @@ library
       NITTA.Synthesis.Steps.ConstantFolding
       NITTA.Synthesis.Steps.Dataflow
       NITTA.Synthesis.Steps.OptimizeAccum
-      NITTA.Synthesis.Steps.Refactor
       NITTA.Synthesis.Steps.ResolveDeadlock
       NITTA.Synthesis.Types
       NITTA.UIBackend

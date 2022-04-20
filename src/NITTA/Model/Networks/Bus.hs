@@ -1,9 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -208,6 +204,10 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
     tryBind f net@BusNetwork{bnRemains, bnPus, bnPUPrototypes}
         | any (allowToProcess f) (M.elems bnPus) = Right net{bnRemains = f : bnRemains}
+        -- TODO
+        -- There are several issues that need to be addressed: see https://github.com/ryukzak/nitta/pull/195#discussion_r853486450
+        -- 1) Now the binding of functions to the network is hardcoded, that prevents use of an empty uarch at the start
+        -- 2) If Allocation options are independent of the bnRemains, then they are present in all synthesis states, which means no leaves in the synthesis tree
         | any (\PUPrototype{pProto} -> allowToProcess f pProto) (M.elems bnPUPrototypes) = Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
         Left [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
@@ -861,10 +861,7 @@ addCustom tag pu ioPorts = do
         st
             { signalBusWidth = signalBusWidth + usedPortsLen
             , availSignals = drop usedPortsLen availSignals
-            , pus =
-                if M.member tag pus
-                    then error "every PU must has uniq tag"
-                    else M.insert tag pu' pus
+            , pus = M.insertWith (\_ _ -> error "every PU must has uniq tag") tag pu' pus
             }
 
 -- |Add PU with the default initial state. Type specify by IOPorts.
@@ -877,10 +874,7 @@ addCustomPrototype tag pu ioports
         st@BuilderSt{prototypes} <- get
         put
             st
-                { prototypes =
-                    if M.member tag prototypes
-                        then error "every prototype must has uniq tag"
-                        else M.insert tag (PUPrototype tag pu ioports) prototypes
+                { prototypes = M.insertWith (\_ _ -> error "every prototype must has uniq tag") tag (PUPrototype tag pu ioports) prototypes
                 }
 
 -- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
