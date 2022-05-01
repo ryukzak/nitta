@@ -21,7 +21,10 @@ import Test.Tasty.HUnit
 tests =
     testGroup
         "NITTA.Frontends.XMILE.MathParserTests"
-        [ testCase "xmileMathParserAdditionTest" $
+        [ testCase "xmileMathParserDigitParsingTest" $
+            parseXmileEquation "2E5"
+                @?= Val 200000
+        , testCase "xmileMathParserAdditionTest" $
             parseXmileEquation "A + B"
                 @?= Duo Add (Var "A") (Var "B")
         , testCase "xmileMathParserSubtractionTest" $

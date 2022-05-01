@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0">
+    <sim_specs>
+        <stop>30.0</stop>
+        <start>0.0</start>
+        <dt>0.125</dt>
+    </sim_specs>
+    <model name="Hares">
+        <variables>
+            <stock name="Hares">
+                <eqn>5E4</eqn>
+                <inflow>hare_births</inflow>
+                <outflow>hare_deaths</outflow>
+            </stock>
+            <flow name="hare_births">
+                <eqn>Hares*hare_birth_fraction</eqn>
+            </flow>
+            <flow name="hare_deaths">
+                <eqn>Lynx*hares_killed_per_lynx</eqn>
+            </flow>
+            <stock name="Lynx">
+                <eqn>1250</eqn>
+            </stock>
+            <aux name="hare_birth_fraction">
+                <eqn>1.25</eqn>
+            </aux>
+            <aux name="hare_density">
+                <eqn>Hares/area</eqn>
+            </aux>
+            <aux name="area">
+                <eqn>1E3</eqn>
+            </aux>
+            <aux name="hares_killed_per_lynx">
+                <eqn>hare_density</eqn>
+            </aux>
+        </variables>
+    </model>
+</xmile>

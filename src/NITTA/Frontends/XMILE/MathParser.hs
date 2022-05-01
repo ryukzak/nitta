@@ -31,7 +31,7 @@ data XMDuop = Mul | Div | Add | Sub deriving (Show, Eq)
 languageDef =
     emptyDef
         { identStart = letter <|> space <|> digit <|> char '\"'
-        , identLetter = letter <|> space <|> digit <|> char '.'
+        , identLetter = letter <|> space <|> digit <|> char '.' <|> char 'E' <|> char 'e' <|> char '_'
         , opStart = oneOf "+-/*"
         , opLetter = oneOf "+-/*"
         , reservedOpNames = ["+", "-", "/", "*"]

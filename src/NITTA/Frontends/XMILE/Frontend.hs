@@ -42,6 +42,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
     , algDefaultValues :: HM.HashMap T.Text Double
     , algNextFreeNameIndex :: HM.HashMap T.Text Int
     , algNextArgIndex :: Int
+    , algAliases :: HM.HashMap T.Text T.Text
     }
     deriving (Show)
 
@@ -68,6 +69,7 @@ processXMILEGraph xmContent = flip execState emptyBuilder $ do
                 , algDefaultValues = HM.empty
                 , algUsagesCount = HM.empty
                 , algNextArgIndex = 0
+                , algAliases = HM.empty
                 }
 
 createDataFlowGraph xmContent = do
@@ -76,8 +78,8 @@ createDataFlowGraph xmContent = do
             st{algNextFreeNameIndex = foldl (\hm key -> HM.insert key 0 hm) HM.empty $ HM.keys algUsagesCount}
         )
     mapM_ processStock $ xcStocks xmContent
-    mapM_ processAux $ xcAuxs xmContent
-    mapM_ processFlow $ xcFlows xmContent
+    mapM_ (\XMILE.Aux{xaName, xaEquation} -> processFlow xaName xaEquation) $ xcAuxs xmContent
+    mapM_ (\XMILE.Flow{xfName, xfEquation} -> processFlow xfName xfEquation) $ xcFlows xmContent
     addTimeIncrement
     where
         addTimeIncrement = do
@@ -116,8 +118,16 @@ createDataFlowGraph xmContent = do
             outputs <- getAllOutGraphNodes xsName
             case (xsOutflow, xsInflow) of
                 (Nothing, Nothing) -> do
-                    input <- getUniqueName xsName
-                    addStockLoop input outputs
+                    value <- getDefaultValue xsName
+                    modify
+                        ( \st@XMILEAlgBuilder{algDataFlowGraph} ->
+                            st
+                                { algDataFlowGraph =
+                                    addFuncToDataFlowGraph
+                                        (F.constant (read $ show value) (map fromText outputs))
+                                        algDataFlowGraph
+                                }
+                        )
                 (Nothing, Just inflow) -> do
                     stockUniqueName <- getUniqueName xsName
                     tmpName <- processStockFlow inflow F.add (fromString "In") stockUniqueName
@@ -177,10 +187,16 @@ createDataFlowGraph xmContent = do
                                 }
                         )
 
-        processAux XMILE.Aux{xaName, xaEquation} =
-            case xaEquation of
-                (Val value) -> do
-                    outputs <- getAllOutGraphNodes xaName
+        getRealName name = do
+            XMILEAlgBuilder{algAliases} <- get
+            return $ fromMaybe name $ HM.lookup name algAliases
+
+        processFlow _ (Var _) = return ()
+        processFlow name equation = do
+            void (processFlowEquation equation (0 :: Int) True)
+            where
+                processFlowEquation (Val value) index _ = do
+                    outputs <- getAllOutGraphNodes name
                     modify
                         ( \st@XMILEAlgBuilder{algDataFlowGraph} ->
                             st
@@ -190,18 +206,15 @@ createDataFlowGraph xmContent = do
                                         algDataFlowGraph
                                 }
                         )
-                expr -> error $ "non supported equation part: " <> show expr
-
-        processFlow XMILE.Flow{xfName, xfEquation} =
-            void (processFlowEquation xfEquation (0 :: Int) True)
-            where
-                processFlowEquation (Var name) index _ = do
-                    n <- getUniqueName $ T.pack name
+                    return (T.pack "", index)
+                processFlowEquation (Var varName) index _ = do
+                    realName <- getRealName $ T.pack varName
+                    n <- getUniqueName realName
                     return (n, index)
                 processFlowEquation (Duo op leftExpr rightExpr) tempNameIndex isTopLevel = do
                     (leftNameText, tempNameIndex') <- processFlowEquation leftExpr tempNameIndex False
                     (rightNameText, tempNameIndex'') <- processFlowEquation rightExpr tempNameIndex' False
-                    tmpNameText <- getTempName tempNameIndex'' xfName isTopLevel
+                    tmpNameText <- getTempName tempNameIndex'' name isTopLevel
                     let leftName = fromText leftNameText
                         rightName = fromText rightNameText
                         tmpName = map fromText tmpNameText
@@ -214,9 +227,8 @@ createDataFlowGraph xmContent = do
                         Div -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName []) graph}
                     return (head tmpName, tempNameIndex'' + 1)
                     where
-                        getTempName _ name True = getAllOutGraphNodes name
-                        getTempName index name _ = return [T.pack "_" <> showText index <> T.pack "#" <> name]
-                processFlowEquation _ _ _ = undefined
+                        getTempName _ _name True = getAllOutGraphNodes _name
+                        getTempName index _name _ = return [T.pack "_" <> showText index <> T.pack "#" <> _name]
 
         getUniqueName name = do
             XMILEAlgBuilder{algNextFreeNameIndex} <- get
@@ -235,8 +247,10 @@ createDataFlowGraph xmContent = do
 
         getGraphName name index = name <> fromString ("#" <> show index)
 
-getDefaultValuesAndUsages algBuilder =
+getDefaultValuesAndUsages algBuilder = do
     mapM_ processStock $ xcStocks algBuilder
+    mapM_ (\XMILE.Flow{xfName, xfEquation} -> processFlow xfName xfEquation) $ xcFlows algBuilder
+    mapM_ (\XMILE.Aux{xaName, xaEquation} -> processFlow xaName xaEquation) $ xcAuxs algBuilder
     where
         nameToEquationMap = flip execState HM.empty $ do
             mapM_ (addToMap . (\a -> (xaName a, xaEquation a))) (xcAuxs algBuilder)
@@ -245,39 +259,44 @@ getDefaultValuesAndUsages algBuilder =
             where
                 addToMap (name, eqn) = modify (\st -> HM.insert name eqn st)
         processStock XMILE.Stock{xsEquation, xsName, xsInflow, xsOutflow} = do
+            addUsagesIfNeeded xsInflow xsOutflow
             XMILEAlgBuilder{algDefaultValues} <- get
             let val = calculateDefaultValue algDefaultValues xsEquation
             modify (\st -> st{algDefaultValues = HM.insert xsName val algDefaultValues})
-            processFlow xsInflow
-            processFlow xsOutflow
+
+            processStockFlow xsInflow
+            processStockFlow xsOutflow
             where
-                processFlow Nothing = return ()
-                processFlow (Just name) = do
+                addUsagesIfNeeded Nothing Nothing = return ()
+                addUsagesIfNeeded _ _ = addUsages xsName
+                processStockFlow Nothing = return ()
+                processStockFlow (Just name) = do
                     addUsages name
-                    addUsages xsName
                     addDtUsagesIfNeeded $ xssDt $ xcSimSpecs algBuilder
-                    processEquation $ xfEquation $ findFlow name
                     where
                         addDtUsagesIfNeeded 1 = return ()
                         addDtUsagesIfNeeded _ = addUsages deltaTimeVarName
-
-                findFlow name =
-                    fromMaybe
-                        (error $ "cannot find expected flow flow with name " <> T.unpack name <> show (xcFlows algBuilder))
-                        (L.find (\XMILE.Flow{xfName} -> xfName == name) $ xcFlows algBuilder)
-
-                processEquation (Val _) = return ()
-                processEquation (Duo _ expr expl) = do
-                    processEquation expr
-                    processEquation expl
-                processEquation (Var name) = do
+        processFlow flowName equation = do
+            processEquation equation True
+            where
+                processEquation (Val _) _ = return ()
+                processEquation (Duo _ expr expl) _ = do
+                    processEquation expr False
+                    processEquation expl False
+                processEquation (Var name) True = do
+                    addAliase flowName (T.pack name)
+                    addUsages $ T.pack name
+                    addDefaultValueIfNeeded name nameToEquationMap
+                processEquation (Var name) False = do
                     addUsages $ T.pack name
                     addDefaultValueIfNeeded name nameToEquationMap
 
-                addUsages name = do
-                    XMILEAlgBuilder{algUsagesCount} <- get
-                    let val = maybe 0 (+ 1) $ HM.lookup name algUsagesCount
-                    modify (\st -> st{algUsagesCount = HM.insert name val algUsagesCount})
+        addUsages name = do
+            XMILEAlgBuilder{algUsagesCount} <- get
+            let val = maybe 0 (+ 1) $ HM.lookup name algUsagesCount
+            modify (\st -> st{algUsagesCount = HM.insert name val algUsagesCount})
+
+addAliase from to = modify (\st@XMILEAlgBuilder{algAliases} -> st{algAliases = HM.insert from to algAliases})
 
 addDefaultValueIfNeeded name nameToEquationMap = do
     XMILEAlgBuilder{algDefaultValues} <- get
@@ -296,4 +315,4 @@ addDefaultValueIfNeeded name nameToEquationMap = do
                                         algDefaultValues
                                 }
                         )
-                Nothing -> error $ "equation for name " <> name <> " not found."
+                Nothing -> error $ "equation for name '" <> name <> "' not found."
