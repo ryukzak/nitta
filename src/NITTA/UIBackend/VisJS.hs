@@ -107,8 +107,8 @@ algToVizJS fbs =
         calculateIndexes (GraphStructure ns vs : gss) t =
             GraphStructure
                 (map (\n -> n{id = t + id n}) ns)
-                (map (\v -> v{vertexNodeId = t + vertexNodeId v}) vs) :
-            calculateIndexes gss (t + length ns)
+                (map (\v -> v{vertexNodeId = t + vertexNodeId v}) vs)
+                : calculateIndexes gss (t + length ns)
 
         connectGraph =
             foldl

@@ -135,7 +135,7 @@ log2hms lst0 = cntxProcess
         cntxProcess = inner (0 :: Int) lst0
         inner n lst
             | (xs, ys) <- L.partition (\(c, _v, _x) -> c == n) lst
-              , not $ null xs =
+            , not $ null xs =
                 let cycleCntx = HM.fromList $ map (\(_c, v, x) -> (v, x)) xs
                  in cycleCntx : inner (n + 1) ys
             | otherwise = []

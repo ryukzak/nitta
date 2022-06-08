@@ -120,8 +120,8 @@ appendToView step [] = [[step]]
 isConflicted Step{pInterval = a, pDesc = aD} Step{pInterval = b, pDesc = bD}
     -- we can hold a and b in one bucket, if both is a singleton
     | CADStep{} <- descent aD
-      , CADStep{} <- descent bD
-      , width a == 0 && width b == 0 =
+    , CADStep{} <- descent bD
+    , width a == 0 && width b == 0 =
         False
     --  | width a == 0 && width b == 0 = False
     | otherwise = a ==? b

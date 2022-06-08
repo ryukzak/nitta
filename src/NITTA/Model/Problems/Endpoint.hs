@@ -41,10 +41,10 @@ import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
-    { -- |use processor unit as source or target of data
-      epRole :: EndpointRole v
-    , -- |time of operation
-      epAt :: tp
+    { epRole :: EndpointRole v
+    -- ^use processor unit as source or target of data
+    , epAt :: tp
+    -- ^time of operation
     }
     deriving (Generic)
 

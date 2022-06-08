@@ -103,7 +103,8 @@ puCoSimProp name pu0 fsGen =
                 run $ do
                     uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
-                        error $ "process is not complete: " <> incompleteProcessMsg pu fs
+                        error $
+                            "process is not complete: " <> incompleteProcessMsg pu fs
                     case checkProcessIntegrity pu of
                         Left e -> error e
                         Right _ -> return ()

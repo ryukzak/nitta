@@ -61,9 +61,9 @@ instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
     breakLoopDecision dfg bl =
         let origin = recLoop bl
          in fsToDataFlowGraph $
-                (recLoopIn bl){funHistory = [origin]} :
-                (recLoopOut bl){funHistory = [origin]} :
-                (functions dfg L.\\ [origin])
+                (recLoopIn bl){funHistory = [origin]}
+                    : (recLoopOut bl){funHistory = [origin]}
+                    : (functions dfg L.\\ [origin])
 
 instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
     constantFoldingOptions _dfg = []

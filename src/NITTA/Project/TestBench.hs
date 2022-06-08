@@ -62,10 +62,10 @@ class IOTestBench pu v x | pu -> v x where
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
-    { -- |expected data
-      teCntx :: Cntx v x
-    , -- |duration of computational process
-      teComputationDuration :: Int
+    { teCntx :: Cntx v x
+    -- ^expected data
+    , teComputationDuration :: Int
+    -- ^duration of computational process
     }
 
 data TestbenchReport v x = TestbenchReport
@@ -115,11 +115,11 @@ testBenchTopModuleName prj = S.replace ".v" "" $ last $ verilogProjectFiles prj
 verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
         (pInProjectNittaPath </>)
-        $ L.nub $
-            filter (".v" `L.isSuffixOf`) $
-                concatMap
-                    (addPath "")
-                    [hardware pName pUnit, testBenchImplementation prj]
+        $ L.nub
+        $ filter (".v" `L.isSuffixOf`)
+        $ concatMap
+            (addPath "")
+            [hardware pName pUnit, testBenchImplementation prj]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances

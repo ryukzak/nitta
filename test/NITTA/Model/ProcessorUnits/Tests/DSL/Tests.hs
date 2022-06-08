@@ -85,7 +85,8 @@ tests =
                 assertPUCoSimulation
         , expectFail $
             unitTestCase "should not bind, when PU incompatible with F" u $
-                assign $ sub "a" "b" ["c"]
+                assign $
+                    sub "a" "b" ["c"]
         , expectFail $
             unitTestCase "decide should error, when Target in Decision is not present" u $ do
                 assign $ multiply "a" "b" ["c", "d"]

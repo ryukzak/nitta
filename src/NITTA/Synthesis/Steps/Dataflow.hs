@@ -36,9 +36,9 @@ import Numeric.Interval.NonEmpty (Interval, inf, sup)
 data DataflowMetrics = DataflowMetrics
     { pWaitTime :: Float
     , pRestrictedTime :: Bool
-    , -- |number of variables, which is not transferable for affected
-      -- functions.
-      pNotTransferableInputs :: [Float]
+    , pNotTransferableInputs :: [Float]
+    -- ^number of variables, which is not transferable for affected
+    -- functions.
     }
     deriving (Generic)
 
@@ -70,9 +70,12 @@ instance
 
     estimate SynthesisState{numberOfDataflowOptions} _o _d DataflowMetrics{pWaitTime, pNotTransferableInputs, pRestrictedTime} =
         2000
-            + (numberOfDataflowOptions >= threshold) <?> 1000
-            + pRestrictedTime <?> 200
-            - sum pNotTransferableInputs * 5
+            + (numberOfDataflowOptions >= threshold)
+            <?> 1000
+            + pRestrictedTime
+            <?> 200
+            - sum pNotTransferableInputs
+            * 5
             - pWaitTime
 
 threshold = 20

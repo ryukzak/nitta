@@ -113,28 +113,28 @@ import System.Log.Logger
 testing purpose.
 -}
 data TargetSynthesis tag v x t = TargetSynthesis
-    { -- |target name, used for top level module name and project path
-      tName :: String
-    , -- |composition of processor units, IO ports and its interconnect
-      tMicroArch :: BusNetwork tag v x t
-    , -- |optional application source code (lua)
-      tSourceCode :: Maybe Text
-    , -- |algorithm in intermediate data flow graph representation (if
-      -- tSourceCode present will be overwritten)
-      tDFG :: DataFlowGraph v x
-    , -- |values from input interface for testing purpose
-      tReceivedValues :: [(v, [x])]
-    , -- |synthesis method
-      tSynthesisMethod :: SynthesisMethod tag v x t
-    , -- |IP-core library directory
-      tLibPath :: String
-    , -- |output directory, where CAD create project directory with 'tName' name
-      tPath :: String
+    { tName :: String
+    -- ^target name, used for top level module name and project path
+    , tMicroArch :: BusNetwork tag v x t
+    -- ^composition of processor units, IO ports and its interconnect
+    , tSourceCode :: Maybe Text
+    -- ^optional application source code (lua)
+    , tDFG :: DataFlowGraph v x
+    -- ^algorithm in intermediate data flow graph representation (if
+    -- tSourceCode present will be overwritten)
+    , tReceivedValues :: [(v, [x])]
+    -- ^values from input interface for testing purpose
+    , tSynthesisMethod :: SynthesisMethod tag v x t
+    -- ^synthesis method
+    , tLibPath :: String
+    -- ^IP-core library directory
+    , tPath :: String
+    -- ^output directory, where CAD create project directory with 'tName' name
     , tTemplates :: [FilePath]
-    , -- |number of simulation and testbench cycles
-      tSimulationCycleN :: Int
-    , -- |source code format type
-      tSourceCodeType :: FrontendType
+    , tSimulationCycleN :: Int
+    -- ^number of simulation and testbench cycles
+    , tSourceCodeType :: FrontendType
+    -- ^source code format type
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where

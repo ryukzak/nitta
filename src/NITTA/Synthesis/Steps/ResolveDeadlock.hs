@@ -61,7 +61,9 @@ instance
 
     estimate SynthesisState{sParent} _o d _ | 0 < decisionRepeats d sParent = -2
     estimate SynthesisState{} _o _d ResolveDeadlockMetrics{pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables} =
-        1000 + pNumberOfLockedVariables - pBufferCount * 1000
+        1000
+            + pNumberOfLockedVariables
+            - pBufferCount * 1000
             - 20 * pNumberOfTransferableVariables
 
 decisionRepeats d parent =

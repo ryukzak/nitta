@@ -50,10 +50,10 @@ import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
 
 data Fram v x t = Fram
-    { -- |memory cell array
-      memory :: A.Array Int (Cell v x t)
-    , -- |register queue
-      remainBuffers :: [(Buffer v x, Job v x t)]
+    { memory :: A.Array Int (Cell v x t)
+    -- ^memory cell array
+    , remainBuffers :: [(Buffer v x, Job v x t)]
+    -- ^register queue
     , process_ :: Process t (StepInfo v x t)
     }
 
@@ -95,8 +95,8 @@ instance (VarValTime v x t) => Variables (Fram v x t) v where
 data Cell v x t = Cell
     { state :: CellState v x t
     , lastWrite :: Maybe t
-    , -- |current job description
-      job :: Maybe (Job v x t)
+    , job :: Maybe (Job v x t)
+    -- ^current job description
     , history :: [F v x]
     , initialValue :: x
     }
@@ -208,7 +208,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
             Left "can not bind (self transaction)"
     tryBind f fram@Fram{memory, remainBuffers}
         | Just (Constant (X x) (O vs)) <- castF f
-          , Just (addr, _) <- lockableNotUsedCell fram =
+        , Just (addr, _) <- lockableNotUsedCell fram =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 cell =
                     Cell
@@ -224,7 +224,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
                         , process_
                         }
         | Just (Loop (X x) (O _) (I _)) <- castF f
-          , Just (addr, _) <- lockableNotUsedCell fram =
+        , Just (addr, _) <- lockableNotUsedCell fram =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 cell =
                     Cell
@@ -240,7 +240,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
                         , process_
                         }
         | Just r@Buffer{} <- castF f
-          , any (\case ForBuffer{} -> True; DoBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
+        , any (\case ForBuffer{} -> True; DoBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 job = (defJob f){binds}
              in Right
@@ -333,7 +333,8 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_' = execSchedule fram $ do
                     void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish_ binds function $ 0 ... sup epAt
+                        scheduleFunctionFinish_ binds function $
+                            0 ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -361,7 +362,8 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_ = execSchedule fram $ do
                     eps <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish_ binds function $ 0 ... sup epAt
+                        scheduleFunctionFinish_ binds function $
+                            0 ... sup epAt
                     return eps
                 cell' =
                     if not $ null vsRemain
@@ -394,7 +396,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     -- Buffer Target
     endpointDecision fram@Fram{memory, remainBuffers} d@EndpointSt{epRole = Target v, epAt}
         | Just (addr, cell@Cell{history}) <- findForBufferCell fram
-          , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
+        , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
             let process_ = execSchedule fram $ do
                     scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                 cell' =
@@ -421,7 +423,8 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 process_ = execSchedule fram $ do
                     void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $
-                        scheduleFunctionFinish_ binds function $ fBegin ... sup epAt
+                        scheduleFunctionFinish_ binds function $
+                            fBegin ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -522,10 +525,10 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     software tag fram@Fram{memory} =
         Immediate
             (toString $ softwareFile tag fram)
-            $ T.unlines $
-                map
-                    (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
-                    $ A.elems memory
+            $ T.unlines
+            $ map
+                (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
+            $ A.elems memory
     hardwareInstance
         tag
         fram@Fram{memory}

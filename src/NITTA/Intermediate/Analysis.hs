@@ -71,22 +71,22 @@ import NITTA.Intermediate.Types
 import NITTA.Utils.Base
 
 data ProcessWave v x = ProcessWave
-    { -- |Functions that can be executed at this wave
-      pwFs :: [F v x]
-    , -- |Set of output variables related to the functions from this step
-      pwOut :: S.Set v
+    { pwFs :: [F v x]
+    -- ^Functions that can be executed at this wave
+    , pwOut :: S.Set v
+    -- ^Set of output variables related to the functions from this step
     }
     deriving (Show, Generic)
 
 data Builder v x = Builder
-    { -- |Functions that can be calculated due to lack of ready input values
-      pwRemains :: S.Set (F v x)
-    , -- |Variables that defined at the beginning of the process
-      pwIn :: S.Set v
-    , -- |Variables that is ready to be used us inputs
-      pwReadyIn :: S.Set v
-    , -- |Resulting process flow
-      pwGraph :: [ProcessWave v x]
+    { pwRemains :: S.Set (F v x)
+    -- ^Functions that can be calculated due to lack of ready input values
+    , pwIn :: S.Set v
+    -- ^Variables that defined at the beginning of the process
+    , pwReadyIn :: S.Set v
+    -- ^Variables that is ready to be used us inputs
+    , pwGraph :: [ProcessWave v x]
+    -- ^Resulting process flow
     }
     deriving (Show, Generic)
 

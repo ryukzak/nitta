@@ -87,7 +87,8 @@ subForestIO
                         return (True, subForest)
         when firstTime $ do
             debugM "NITTA.Synthesis" $
-                "explore: " <> show sID
+                "explore: "
+                    <> show sID
                     <> " score: "
                     <> ( case sDecision of
                             SynthesisDecision{score} -> show score
