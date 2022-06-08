@@ -100,7 +100,7 @@ algToVizJS fbs =
         calculateIndexes [] _ = []
         calculateIndexes (GraphStructure ns vs : gss) t =
             GraphStructure
-                (map (\n -> n{id = t + id n}) ns)
+                (map (\n@GraphNode{id} -> n{id = t + id}) ns)
                 (map (\v -> v{vertexNodeId = t + vertexNodeId v}) vs)
                 : calculateIndexes gss (t + length ns)
 
