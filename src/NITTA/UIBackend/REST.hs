@@ -57,10 +57,10 @@ import System.Directory
 import System.FilePath
 
 data BackendCtx tag v x t = BackendCtx
-    { -- |root synthesis node
-      root :: DefTree tag v x t
-    , -- |lists of received by IO values
-      receivedValues :: [(v, [x])]
+    { root :: DefTree tag v x t
+    -- ^root synthesis node
+    , receivedValues :: [(v, [x])]
+    -- ^lists of received by IO values
     , outputPath :: String
     }
 
@@ -73,7 +73,8 @@ type SynthesisAPI tag v x t =
                 :> "treeInfo"
                 :> Get '[JSON] TreeInfo
              )
-        :<|> ( "node" :> Capture "sid" SID
+        :<|> ( "node"
+                :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
                         :<|> NodeInspectionAPI tag v x t
                         :<|> TestBenchAPI v x

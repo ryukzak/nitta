@@ -341,7 +341,7 @@ instance (Var v) => Locks (Neg v x) v where
 instance (Var v, Num x) => FunctionSimulation (Neg v x) v x where
     simulate cntx (Neg (I i) (O o)) =
         let x1 = cntx `getCntx` i
-            y = - x1
+            y = -x1
          in [(v, y) | v <- elems o]
 
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)

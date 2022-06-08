@@ -45,30 +45,30 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     ci <- fromMaybe "" <$> lookupEnv "CI"
-    defaultMainWithRerun $
-        testGroup
+    defaultMainWithRerun
+        $ testGroup
             "NITTA"
-            $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
-              , NITTA.Intermediate.Simulation.Tests.tests
-              , NITTA.Intermediate.Value.Tests.tests
-              , NITTA.Frontends.Lua.Tests.tests
-              , NITTA.Frontends.XMILE.MathParserTests.tests
-              , NITTA.Frontends.XMILE.DocumentParserTests.tests
-              , NITTA.Model.Problems.Refactor.Tests.tests
-              , NITTA.Model.Problems.Refactor.Accum.Tests.tests
-              , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
-              , NITTA.Model.ProcessorUnits.Broken.Tests.tests
-              , NITTA.Model.ProcessorUnits.Divider.Tests.tests
-              , NITTA.Model.ProcessorUnits.Fram.Tests.tests
-              , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
-              , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
-              , NITTA.Model.ProcessorUnits.Accum.Tests.tests
-              , NITTA.Model.ProcessorUnits.Shift.Tests.tests
-              , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
-              , NITTA.Tests.tests
-              , NITTA.Utils.Tests.tests
-              ]
-                <> if ci == "true" then [ciOnlyTestGroup] else []
+        $ [ NITTA.Intermediate.Functions.Accum.Tests.tests
+          , NITTA.Intermediate.Simulation.Tests.tests
+          , NITTA.Intermediate.Value.Tests.tests
+          , NITTA.Frontends.Lua.Tests.tests
+          , NITTA.Frontends.XMILE.MathParserTests.tests
+          , NITTA.Frontends.XMILE.DocumentParserTests.tests
+          , NITTA.Model.Problems.Refactor.Tests.tests
+          , NITTA.Model.Problems.Refactor.Accum.Tests.tests
+          , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
+          , NITTA.Model.ProcessorUnits.Broken.Tests.tests
+          , NITTA.Model.ProcessorUnits.Divider.Tests.tests
+          , NITTA.Model.ProcessorUnits.Fram.Tests.tests
+          , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
+          , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
+          , NITTA.Model.ProcessorUnits.Accum.Tests.tests
+          , NITTA.Model.ProcessorUnits.Shift.Tests.tests
+          , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
+          , NITTA.Tests.tests
+          , NITTA.Utils.Tests.tests
+          ]
+            <> if ci == "true" then [ciOnlyTestGroup] else []
 
 ciOnlyTestGroup =
     testGroup

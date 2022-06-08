@@ -43,15 +43,15 @@ instance (ProcessorUnit (pu v x t) v x t) => ProcessIntegrity (pu v x t) where
             ]
 
 checkVerticalRelations f dom codom errmsg =
-    collectChecks $
-        map
+    collectChecks
+        $ map
             ( \x ->
                 let ys = M.findWithDefault S.empty x f
                  in if any (`M.member` codom) $ S.elems ys
                         then Right ()
                         else Left $ errmsg <> ": " <> show (dom M.! x)
             )
-            $ M.keys dom
+        $ M.keys dom
 
 -- TODO: #205 Divider: missing vertical relation between Do instruction and Endpoint
 skipIntegrityErrors = ["instruction not related to endpoint: Instruction: Do"]

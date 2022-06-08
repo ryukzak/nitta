@@ -45,12 +45,12 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 
 data BreakLoop v x = BreakLoop
-    { -- |initial looped value
-      loopX :: x
-    , -- |output variables
-      loopO :: S.Set v
-    , -- |input variable
-      loopI :: v
+    { loopX :: x
+    -- ^initial looped value
+    , loopO :: S.Set v
+    -- ^output variables
+    , loopI :: v
+    -- ^input variable
     }
     deriving (Generic, Eq)
 

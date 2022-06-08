@@ -84,49 +84,69 @@ nittaArgs =
     Nitta
         { filename = def &= argPos 0 &= typFile
         , output_path =
-            "gen" &= typ "PATH" &= help "Target system path"
+            "gen"
+                &= typ "PATH"
+                &= help "Target system path"
                 &= groupname "Common flags"
         , port =
-            0 &= help "Run nitta server for UI on specific port (by default - not run)"
+            0
+                &= help "Run nitta server for UI on specific port (by default - not run)"
                 &= groupname "Common flags"
         , uarch =
-            Nothing &= typ "PATH" &= help "Microarchitecture configuration file"
+            Nothing
+                &= typ "PATH"
+                &= help "Microarchitecture configuration file"
                 &= explicit
                 &= name "uarch"
                 &= groupname "Target system configuration"
         , type_ =
-            Nothing &= name "t" &= typ "fxM.B" &= help "Overrides data type specified in config file"
+            Nothing
+                &= name "t"
+                &= typ "fxM.B"
+                &= help "Overrides data type specified in config file"
                 &= groupname "Target system configuration"
         , io_sync =
-            Nothing &= help "Overrides IO synchronization mode specified in config file"
+            Nothing
+                &= help "Overrides IO synchronization mode specified in config file"
                 &= explicit
                 &= name "io-sync"
                 &= typ "sync|async|onboard"
                 &= groupname "Target system configuration"
         , templates =
-            defTemplates &= typ "PATH[:PATH]" &= help ("Target platform templates (default: '" <> defTemplates <> "')")
+            defTemplates
+                &= typ "PATH[:PATH]"
+                &= help ("Target platform templates (default: '" <> defTemplates <> "')")
                 &= groupname "Target system configuration"
         , fsim =
-            False &= name "f" &= help "Functional simulation with trace"
+            False
+                &= name "f"
+                &= help "Functional simulation with trace"
                 &= groupname "Simulation"
         , lsim =
-            False &= name "l" &= help "Logical (HDL) simulation with trace"
+            False
+                &= name "l"
+                &= help "Logical (HDL) simulation with trace"
                 &= groupname "Simulation"
         , format =
-            "md" &= help "Simulation output format (default: 'md')"
+            "md"
+                &= help "Simulation output format (default: 'md')"
                 &= typ "md|json|csv"
                 &= groupname "Simulation"
         , n =
-            10 &= help "Number of simulation cycles"
+            10
+                &= help "Number of simulation cycles"
                 &= groupname "Simulation"
         , verbose =
-            False &= help "Verbose"
+            False
+                &= help "Verbose"
                 &= groupname "Other"
         , extra_verbose =
-            False &= help "Extra verbose"
+            False
+                &= help "Extra verbose"
                 &= groupname "Other"
         , frontend_language =
-            Nothing &= help "Language used to source algorithm description. (default: decision by file extension)"
+            Nothing
+                &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
         }
@@ -215,7 +235,8 @@ main = do
 
             when lsim $ logicalSimulation format frPrettyLog prj
         )
-        $ parseFX . fromJust $ type_ <|> fromConf "type" <|> Just "fx32.32"
+        $ parseFX . fromJust
+        $ type_ <|> fromConf "type" <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"

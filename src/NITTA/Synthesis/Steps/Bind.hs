@@ -40,21 +40,21 @@ import NITTA.Utils
 import Numeric.Interval.NonEmpty (inf)
 
 data BindMetrics = BindMetrics
-    { -- |Can this binding block another one (for example, one 'Loop' can
-      -- take the last free buffer)?
-      pCritical :: Bool
-    , -- |How many alternative binding we have?
-      pAlternative :: Float
-    , -- |How many ticks requires for executing the function?
-      pRestless :: Float
+    { pCritical :: Bool
+    -- ^Can this binding block another one (for example, one 'Loop' can
+    -- take the last free buffer)?
+    , pAlternative :: Float
+    -- ^How many alternative binding we have?
+    , pRestless :: Float
+    -- ^How many ticks requires for executing the function?
     , pOutputNumber :: Float
-    , -- |How many transactions can be executed with this function?
-      pAllowDataFlow :: Float
-    , -- |May this binding cause deadlock?
-      pPossibleDeadlock :: Bool
+    , pAllowDataFlow :: Float
+    -- ^How many transactions can be executed with this function?
+    , pPossibleDeadlock :: Bool
+    -- ^May this binding cause deadlock?
     , pNumberOfBindedFunctions :: Float
-    , -- |number of binded input variables / number of all input variables
-      pPercentOfBindedInputs :: Float
+    , pPercentOfBindedInputs :: Float
+    -- ^number of binded input variables / number of all input variables
     , pWave :: Maybe Float
     }
     deriving (Generic)
@@ -105,14 +105,22 @@ instance
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
     estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
         3000
-            + pCritical <?> 1000
-            + (pAlternative == 1) <?> 500
-            + pAllowDataFlow * 10
-            + pPercentOfBindedInputs * 50
-            - fromMaybe (-1) pWave * 50
-            - pNumberOfBindedFunctions * 10
-            - pRestless * 4
-            + pOutputNumber * 2
+            + pCritical
+            <?> 1000
+            + (pAlternative == 1)
+            <?> 500
+            + pAllowDataFlow
+            * 10
+            + pPercentOfBindedInputs
+            * 50
+            - fromMaybe (-1) pWave
+            * 50
+            - pNumberOfBindedFunctions
+            * 10
+            - pRestless
+            * 4
+            + pOutputNumber
+            * 2
 
 waitingTimeOfVariables net =
     [ (variable, inf $ tcAvailable constrain)

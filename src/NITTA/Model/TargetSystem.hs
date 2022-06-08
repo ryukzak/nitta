@@ -34,10 +34,10 @@ import NITTA.Utils
 synthesis graph.
 -}
 data TargetSystem u tag v x t = TargetSystem
-    { -- |model of target unit
-      mUnit :: u
-    , -- |whole application algorithm
-      mDataFlowGraph :: DataFlowGraph v x
+    { mUnit :: u
+    -- ^model of target unit
+    , mDataFlowGraph :: DataFlowGraph v x
+    -- ^whole application algorithm
     }
     deriving (Generic)
 
