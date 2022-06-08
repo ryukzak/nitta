@@ -1,10 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Project
@@ -25,14 +21,14 @@ module NITTA.Project (
 
 import Control.Exception
 import Control.Monad.Identity (runIdentity)
-import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
+import Data.HashMap.Strict qualified as HM
+import Data.List qualified as L
 import Data.Maybe
 import Data.String
 import Data.String.Interpolate (__i)
 import Data.String.ToString
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.Text qualified as T
+import Data.Text.IO qualified as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Project.Context

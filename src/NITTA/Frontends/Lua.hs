@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
@@ -40,16 +37,16 @@ module NITTA.Frontends.Lua (
 ) where
 
 import Control.Monad.State
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Hashable
 import Data.Maybe
 import Data.String
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Language.Lua
 import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Utils.Base
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount

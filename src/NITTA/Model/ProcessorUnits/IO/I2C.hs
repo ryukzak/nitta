@@ -1,12 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -26,9 +21,9 @@ module NITTA.Model.ProcessorUnits.IO.I2C (
 
 import Data.Aeson
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Value
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types

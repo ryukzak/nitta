@@ -1,11 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
@@ -39,7 +35,7 @@ module NITTA.Model.Tests.Microarchitecture (
 ) where
 
 import Data.Proxy
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Networks.Bus

@@ -1,13 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -116,12 +109,12 @@ import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.Default
 import Data.List (find)
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Proxy
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Analysis (buildProcessWaves)

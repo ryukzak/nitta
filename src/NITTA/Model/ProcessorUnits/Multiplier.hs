@@ -1,16 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 -- TODO: A promising direction for the improvement is the implementation of the
 -- accumulator into it. It allows multiplying an arbitrary number of arguments,
@@ -334,10 +327,10 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types

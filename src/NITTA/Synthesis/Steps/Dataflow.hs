@@ -1,9 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -21,7 +16,7 @@ module NITTA.Synthesis.Steps.Dataflow (
 ) where
 
 import Data.Aeson (ToJSON)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus

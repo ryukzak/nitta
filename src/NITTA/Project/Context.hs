@@ -1,10 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
@@ -20,7 +14,7 @@ module NITTA.Project.Context (
     implementationContext,
 ) where
 
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Project.TestBench
 import NITTA.Project.Types
 import NITTA.Utils

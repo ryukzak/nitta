@@ -18,7 +18,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers

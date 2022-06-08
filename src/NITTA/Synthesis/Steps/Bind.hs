@@ -1,9 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -22,10 +17,10 @@ module NITTA.Synthesis.Steps.Bind (
 ) where
 
 import Data.Aeson (ToJSON)
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types

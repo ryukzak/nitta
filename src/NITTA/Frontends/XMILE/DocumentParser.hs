@@ -1,5 +1,4 @@
 {-# LANGUAGE Arrows #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -19,7 +18,7 @@ module NITTA.Frontends.XMILE.DocumentParser (
     SimSpec (..),
 ) where
 
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Frontends.XMILE.MathParser
 import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Core

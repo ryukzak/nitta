@@ -1,16 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -31,17 +24,17 @@ import Control.Monad
 import Data.Aeson (ToJSON (toJSON))
 import Data.Aeson.Encode.Pretty
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder
 import Data.Typeable
 import GHC.Generics (Generic)
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -50,7 +43,7 @@ import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty ((...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i

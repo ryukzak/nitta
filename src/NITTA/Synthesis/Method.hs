@@ -1,10 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -27,7 +22,7 @@ module NITTA.Synthesis.Method (
     bestStepIO,
 ) where
 
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits

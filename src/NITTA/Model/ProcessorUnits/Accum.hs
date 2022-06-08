@@ -1,15 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -29,13 +23,13 @@ module NITTA.Model.ProcessorUnits.Accum (
 import Control.Monad (when)
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
-import qualified NITTA.Intermediate.Functions as F
+import Data.Text qualified as T
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types

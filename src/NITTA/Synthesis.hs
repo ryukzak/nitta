@@ -1,9 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : NITTA.Synthesis
@@ -91,7 +86,7 @@ module NITTA.Synthesis (
 import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Frontends
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation

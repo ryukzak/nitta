@@ -1,16 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Broken
@@ -32,8 +25,8 @@ import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
-import qualified NITTA.Intermediate.Functions as F
+import Data.Text qualified as T
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -42,7 +35,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 data Broken v x t = Broken

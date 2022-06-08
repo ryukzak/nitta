@@ -111,6 +111,18 @@ library
       Paths_nitta
   hs-source-dirs:
       src
+  default-extensions:
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       HStringTemplate
@@ -167,6 +179,18 @@ executable nitta
       Paths_nitta
   hs-source-dirs:
       app
+  default-extensions:
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
@@ -199,6 +223,18 @@ executable nitta-api-gen
       Paths_nitta
   hs-source-dirs:
       app
+  default-extensions:
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
@@ -262,6 +298,18 @@ test-suite nitta-test
       Paths_nitta
   hs-source-dirs:
       test
+  default-extensions:
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH

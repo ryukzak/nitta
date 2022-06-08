@@ -1,12 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -24,14 +19,14 @@ module Main (main) where
 import Control.Applicative
 import Control.Exception
 import Control.Monad (when)
-import qualified Data.ByteString.Lazy.Char8 as BS
+import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Functor
 import Data.Maybe
 import Data.Proxy
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
+import Data.Text.IO qualified as T
 import Data.Version
 import GHC.TypeLits
 import NITTA.Frontends

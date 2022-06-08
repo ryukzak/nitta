@@ -1,12 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.BreakLoop
@@ -39,7 +34,7 @@ module NITTA.Model.Problems.Refactor.BreakLoop (
     recLoopOut,
 ) where
 
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types

@@ -1,6 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -43,8 +41,8 @@ import Control.Concurrent.STM (TMVar)
 import Data.Aeson (ToJSON, toJSON)
 import Data.Default
 import Data.List.Split
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus

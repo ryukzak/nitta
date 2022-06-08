@@ -1,17 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Networks.Bus
@@ -36,14 +28,14 @@ module NITTA.Model.Networks.Bus (
 import Control.Monad.State
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
@@ -56,7 +48,7 @@ import NITTA.Project.VerilogSnippets
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
 

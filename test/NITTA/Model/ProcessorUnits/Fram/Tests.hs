@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -19,7 +18,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)

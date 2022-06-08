@@ -1,10 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -25,9 +20,9 @@ module NITTA.Model.Networks.Types (
 ) where
 
 import Data.Aeson
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types

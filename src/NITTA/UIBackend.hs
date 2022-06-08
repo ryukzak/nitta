@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -37,7 +35,7 @@ import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Cors (simpleCors)
 import Servant
 import Servant.Docs hiding (path)
-import qualified Servant.JS as SJS
+import Servant.JS qualified as SJS
 import System.FilePath.Posix (joinPath)
 import WaiAppStatic.Types (LookupResult (LRNotFound), toPieces)
 

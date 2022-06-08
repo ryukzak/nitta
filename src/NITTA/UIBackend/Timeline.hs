@@ -1,14 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.UIBackend.Timeline
@@ -27,10 +20,10 @@ module NITTA.UIBackend.Timeline (
 ) where
 
 import Data.Aeson
-import qualified Data.Map.Strict as M
+import Data.Map.Strict qualified as M
 import Data.Maybe
 import Data.String.ToString
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
 import Numeric.Interval.NonEmpty

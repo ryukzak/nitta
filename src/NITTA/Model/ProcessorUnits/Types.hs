@@ -1,16 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
@@ -62,20 +56,20 @@ import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
 import Data.Kind
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 -- |Typeclass alias for processor unit tag or "name."

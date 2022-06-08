@@ -1,10 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Utils
@@ -53,18 +47,18 @@ module NITTA.Utils (
 import Control.Monad.State (State, modify')
 import Data.Aeson
 import Data.Bits (setBit, testBit)
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.List (sortOn)
 import Data.Maybe
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.ProcessDescription
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Prettyprinter.Render.Text
 import Text.Toml (parseTomlDoc)

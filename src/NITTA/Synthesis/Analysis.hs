@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
-
 {- |
 Module      : NITTA.Synthesis.Analysis
 Description : Analysis synthesis proccess.
@@ -15,7 +12,7 @@ module NITTA.Synthesis.Analysis (
 ) where
 
 import Control.Concurrent.STM
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import GHC.Generics
 import NITTA.Model.TargetSystem (processDuration)
 import NITTA.Synthesis.Explore (isComplete, isLeaf)

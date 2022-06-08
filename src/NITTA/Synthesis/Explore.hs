@@ -1,8 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -27,8 +23,8 @@ module NITTA.Synthesis.Explore (
 import Control.Concurrent.STM
 import Control.Monad (forM, unless, when)
 import Data.Default
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import NITTA.Intermediate.Analysis (estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus

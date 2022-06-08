@@ -1,14 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.UIBackend.VisJS
@@ -28,9 +22,9 @@ module NITTA.UIBackend.VisJS (
 
 import Data.Aeson
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics hiding (from, to)
-import qualified NITTA.Intermediate.Types as F
+import NITTA.Intermediate.Types qualified as F
 import Servant.Docs
 import Prelude hiding (id)
 

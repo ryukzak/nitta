@@ -1,9 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-
 {- |
 Module      : NITTA.Utils.ProcessDescription
 Description : Utilities for process description.
@@ -44,7 +38,7 @@ module NITTA.Utils.ProcessDescription (
 
 import Control.Monad.State
 import Data.Proxy (asProxyTypeOf)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems

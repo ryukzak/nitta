@@ -1,8 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
@@ -17,26 +13,26 @@ module Spec where
 
 import Data.FileEmbed (embedStringFile)
 import Data.Maybe
-import qualified NITTA.Frontends.Lua.Tests
+import NITTA.Frontends.Lua.Tests qualified
 import NITTA.Frontends.Lua.Tests.Providers
-import qualified NITTA.Frontends.XMILE.DocumentParserTests
-import qualified NITTA.Frontends.XMILE.MathParserTests
-import qualified NITTA.Intermediate.Functions.Accum.Tests
-import qualified NITTA.Intermediate.Simulation.Tests
-import qualified NITTA.Intermediate.Value.Tests
-import qualified NITTA.Model.Problems.Refactor.Accum.Tests
-import qualified NITTA.Model.Problems.Refactor.ConstantFolding.Tests
-import qualified NITTA.Model.Problems.Refactor.Tests
-import qualified NITTA.Model.ProcessorUnits.Accum.Tests
-import qualified NITTA.Model.ProcessorUnits.Broken.Tests
-import qualified NITTA.Model.ProcessorUnits.Divider.Tests
-import qualified NITTA.Model.ProcessorUnits.Fram.Tests
-import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
-import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
-import qualified NITTA.Model.ProcessorUnits.Shift.Tests
-import qualified NITTA.Model.ProcessorUnits.Tests.DSL.Tests
-import qualified NITTA.Tests
-import qualified NITTA.Utils.Tests
+import NITTA.Frontends.XMILE.DocumentParserTests qualified
+import NITTA.Frontends.XMILE.MathParserTests qualified
+import NITTA.Intermediate.Functions.Accum.Tests qualified
+import NITTA.Intermediate.Simulation.Tests qualified
+import NITTA.Intermediate.Value.Tests qualified
+import NITTA.Model.Problems.Refactor.Accum.Tests qualified
+import NITTA.Model.Problems.Refactor.ConstantFolding.Tests qualified
+import NITTA.Model.Problems.Refactor.Tests qualified
+import NITTA.Model.ProcessorUnits.Accum.Tests qualified
+import NITTA.Model.ProcessorUnits.Broken.Tests qualified
+import NITTA.Model.ProcessorUnits.Divider.Tests qualified
+import NITTA.Model.ProcessorUnits.Fram.Tests qualified
+import NITTA.Model.ProcessorUnits.IO.SPI.Tests qualified
+import NITTA.Model.ProcessorUnits.Multiplier.Tests qualified
+import NITTA.Model.ProcessorUnits.Shift.Tests qualified
+import NITTA.Model.ProcessorUnits.Tests.DSL.Tests qualified
+import NITTA.Tests qualified
+import NITTA.Utils.Tests qualified
 import System.Environment (lookupEnv, setEnv)
 import Test.Tasty (testGroup)
 import Test.Tasty.Ingredients.Rerun

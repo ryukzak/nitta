@@ -1,13 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Types
@@ -57,16 +52,16 @@ module NITTA.Intermediate.Types (
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
 import Data.Bifunctor
-import qualified Data.Csv as Csv
+import Data.Csv qualified as Csv
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.List (sort, sortOn, transpose)
-import qualified Data.Map.Strict as M
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S hiding (split)
+import Data.Set qualified as S hiding (split)
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Tuple
 import Data.Typeable
 import GHC.Generics

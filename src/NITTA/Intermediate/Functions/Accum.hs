@@ -1,12 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Functions
@@ -32,10 +26,10 @@ module NITTA.Intermediate.Functions.Accum (
 
 import Data.List (nub, partition)
 import Data.List.Split (splitWhen)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base

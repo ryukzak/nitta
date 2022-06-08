@@ -1,13 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -33,12 +25,12 @@ import Control.Monad.Identity (runIdentity)
 import Data.Aeson
 import Data.Default
 import Data.Foldable
-import qualified Data.HashMap.Strict as M
+import Data.HashMap.Strict qualified as M
 import Data.Hashable
 import Data.Maybe
 import Data.String.Interpolate
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.Text qualified as T
+import Data.Text.IO qualified as T
 import GHC.Generics hiding (moduleName)
 import NITTA.Project.Context
 import NITTA.Project.Types

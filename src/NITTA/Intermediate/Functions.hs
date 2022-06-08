@@ -1,11 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Functions
@@ -62,9 +57,9 @@ module NITTA.Intermediate.Functions (
     brokenBuffer,
 ) where
 
-import qualified Data.Bits as B
+import Data.Bits qualified as B
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Set (elems, fromList, union)
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum

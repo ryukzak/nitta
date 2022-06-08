@@ -1,13 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.OptimizeAccum
@@ -22,10 +16,10 @@ module NITTA.Model.Problems.Refactor.OptimizeAccum (
     OptimizeAccumProblem (..),
 ) where
 
-import qualified Data.List as L
-import qualified Data.Map as M
+import Data.List qualified as L
+import Data.Map qualified as M
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types

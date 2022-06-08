@@ -1,12 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Project.TestBench
@@ -28,12 +22,12 @@ module NITTA.Project.TestBench (
 ) where
 
 import Data.Default
-import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
+import Data.HashMap.Strict qualified as HM
+import Data.List qualified as L
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types

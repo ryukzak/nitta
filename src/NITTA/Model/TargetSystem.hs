@@ -1,9 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -22,7 +16,7 @@ module NITTA.Model.TargetSystem (
 
 import Control.Exception (assert)
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
