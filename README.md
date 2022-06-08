@@ -47,7 +47,9 @@ Install [Stack](https://github.com/commercialhaskell/stack) and required develop
 
 ``` console
 $ brew install stack
-$ stack install hlint fourmolu
+$ stack install hlint
+$ wget -qO "~/.local/bin/fourmolu" "https://github.com/fourmolu/fourmolu/releases/download/v0.7.0.1/fourmolu-0.7.0.1-osx-x86_64"
+$ chmod +x "~/.local/bin/fourmolu"
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
@@ -69,7 +71,9 @@ $ npm install --global tern prettier
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 ``` console
 $ sudo apt-get install haskell-stack
-$ stack install hlint fourmolu
+$ stack install hlint
+$ wget -qO "~/.local/bin/fourmolu" "https://github.com/fourmolu/fourmolu/releases/download/v0.7.0.1/fourmolu-0.7.0.1-linux-x86_64"
+$ chmod +x "~/.local/bin/fourmolu"
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
