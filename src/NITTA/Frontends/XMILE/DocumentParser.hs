@@ -1,4 +1,7 @@
+-- All extensions should be enabled explicitly due to doctest in this module.
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |

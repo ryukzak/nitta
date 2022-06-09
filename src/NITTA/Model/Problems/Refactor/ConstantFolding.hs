@@ -1,4 +1,11 @@
+-- All extensions should be enabled explicitly due to doctest in this module.
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding
