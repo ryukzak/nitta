@@ -1,13 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -26,13 +21,13 @@ module NITTA.Frontends.Lua.Tests (
 import Control.Monad.State
 import Data.Default
 import Data.FileEmbed (embedStringFile)
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.String.Interpolate
-import qualified Data.Text as T
-import qualified Language.Lua as Lua
+import Data.Text qualified as T
+import Language.Lua qualified as Lua
 import NITTA.Frontends.Lua
 import NITTA.Frontends.Lua.Tests.Providers
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.Tasty (TestTree, testGroup)

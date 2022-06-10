@@ -1,15 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -29,13 +23,13 @@ module NITTA.Model.ProcessorUnits.Accum (
 import Control.Monad (when)
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
-import qualified NITTA.Intermediate.Functions as F
+import Data.Text qualified as T
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -55,10 +49,10 @@ import Prettyprinter
     @[[(False, "a"), (False, "b")], [(False, "c")], [(False, "d"), (True, "d")], [(False, "f")]]@
 -}
 data Job v x = Job
-    { -- |Contains future parts expression to eval (c + d = e)
-      tasks :: [[(Bool, v)]]
-    , -- |Func of this expression
-      func :: F v x
+    { tasks :: [[(Bool, v)]]
+    -- ^Contains future parts expression to eval (c + d = e)
+    , func :: F v x
+    -- ^Func of this expression
     , state :: JobState
     }
 
@@ -79,12 +73,12 @@ instance (Var v) => Show (Job v x) where
             show' = map (map (second toString))
 
 data Accum v x t = Accum
-    { -- |List of jobs (expressions)
-      remainJobs :: [Job v x]
-    , -- |Current job
-      currentJob :: Maybe (Job v x)
-    , -- |Process
-      process_ :: Process t (StepInfo v x t)
+    { remainJobs :: [Job v x]
+    -- ^List of jobs (expressions)
+    , currentJob :: Maybe (Job v x)
+    -- ^Current job
+    , process_ :: Process t (StepInfo v x t)
+    -- ^Process
     }
 
 instance (VarValTime v x t) => Pretty (Accum v x t) where
@@ -116,8 +110,8 @@ registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
                 { tasks = concat $ actionGroups actions
                 , func = packF f
                 , state = Initialize
-                } :
-            remainJobs
+                }
+                : remainJobs
         }
 
 actionGroups [] = []
@@ -126,8 +120,8 @@ actionGroups as =
         (pulls, as'') = span F.isPull as'
      in [ map (\(F.Push sign (I v)) -> (sign == F.Minus, v)) pushs
         , concatMap (\(F.Pull (O vs)) -> map (True,) $ S.elems vs) pulls
-        ] :
-        actionGroups as''
+        ]
+            : actionGroups as''
 
 targetTask tasks
     | even $ length tasks = Just $ head tasks
@@ -160,7 +154,8 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     _ -> nextTick pu
              in map
                     (\v -> EndpointSt (Target v) $ TimeConstraint (from ... maxBound) (singleton 1))
-                    $ S.elems $ taskVars task
+                    $ S.elems
+                    $ taskVars task
         | Just task <- sourceTask tasks =
             let from = case state of
                     Calculate -> nextTick pu + 2

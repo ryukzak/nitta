@@ -1,11 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.ConstantFolding.Tests
@@ -19,7 +15,7 @@ module NITTA.Model.Problems.Refactor.ConstantFolding.Tests (
     tests,
 ) where
 
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.Functions

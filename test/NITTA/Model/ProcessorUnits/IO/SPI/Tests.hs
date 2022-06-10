@@ -21,7 +21,7 @@ module NITTA.Model.ProcessorUnits.IO.SPI.Tests (
 import Control.Monad (void)
 import Data.Default
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.DataFlow
 import NITTA.Model.Tests.Internals

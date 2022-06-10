@@ -1,10 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -16,8 +11,8 @@ module NITTA.Model.Problems.ViewHelper (
 
 import Data.Aeson
 import Data.Bifunctor
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Set qualified as S
+import Data.Text qualified as T
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems

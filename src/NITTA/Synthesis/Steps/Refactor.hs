@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |

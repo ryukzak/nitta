@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-
 {- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format

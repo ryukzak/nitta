@@ -1,11 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.ResolveDeadlock
@@ -66,8 +62,8 @@ module NITTA.Model.Problems.Refactor.ResolveDeadlock (
 ) where
 
 import Data.Default
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types

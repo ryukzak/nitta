@@ -1,16 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Broken
@@ -32,8 +25,8 @@ import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
-import qualified NITTA.Intermediate.Functions as F
+import Data.Text qualified as T
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -42,7 +35,7 @@ import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 data Broken v x t = Broken
@@ -53,18 +46,18 @@ data Broken v x t = Broken
     , currentWork :: Maybe (t, F v x)
     , currentWorkEndpoints :: [ProcessStepID]
     , process_ :: Process t (StepInfo v x t)
-    , -- |generate verilog code with syntax error
-      brokeVerilog :: Bool
-    , -- |use process unit HW implementation with error
-      wrongVerilogSimulationValue :: Bool
-    , -- |wrong control sequence for data push (receiving data to PU)
-      wrongControlOnPush :: Bool
-    , -- |wrong control sequence for data pull (sending data from PU)
-      wrongControlOnPull :: Bool
-    , -- |lost target endpoint due synthesis
-      lostEndpointTarget :: Bool
-    , -- |lost source endpoint due synthesis
-      lostEndpointSource :: Bool
+    , brokeVerilog :: Bool
+    -- ^generate verilog code with syntax error
+    , wrongVerilogSimulationValue :: Bool
+    -- ^use process unit HW implementation with error
+    , wrongControlOnPush :: Bool
+    -- ^wrong control sequence for data push (receiving data to PU)
+    , wrongControlOnPull :: Bool
+    -- ^wrong control sequence for data pull (sending data from PU)
+    , lostEndpointTarget :: Bool
+    -- ^lost target endpoint due synthesis
+    , lostEndpointSource :: Bool
+    -- ^lost source endpoint due synthesis
     , wrongAttr :: Bool
     , lostFunctionInVerticalRelation :: Bool
     , lostEndpointInVerticalRelation :: Bool
@@ -161,15 +154,15 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
             }
         d@EndpointSt{epRole = Target v', epAt}
             | v == v'
-              , let (newEndpoints, process_') = runSchedule pu $ do
-                        let ins =
-                                if lostInstructionInVerticalRelation
-                                    then return []
-                                    else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
+            , let (newEndpoints, process_') = runSchedule pu $ do
+                    let ins =
+                            if lostInstructionInVerticalRelation
+                                then return []
+                                else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
 
-                        if lostEndpointInVerticalRelation
-                            then return []
-                            else scheduleEndpoint d ins =
+                    if lostEndpointInVerticalRelation
+                        then return []
+                        else scheduleEndpoint d ins =
                 pu
                     { process_ = process_'
                     , targets = []
@@ -190,25 +183,25 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
             }
         EndpointSt{epRole = epRole@(Source v), epAt}
             | not $ null sources
-              , let sources' = sources \\ elems v
-              , sources' /= sources
-              , let (newEndpoints, process_') = runSchedule pu $ do
-                        let doAt = shiftI (if wrongControlOnPull then 0 else -1) epAt
-                        -- Inlined: endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe doAt Out
-                        endpoints <- do
-                            high <- scheduleStep epAt $ EndpointRoleStep epRole
-                            low <- scheduleInstructionUnsafe doAt Out
-                            establishVerticalRelations
-                                (if lostEndpointInVerticalRelation then [] else high)
-                                (if lostInstructionInVerticalRelation then [] else low)
-                            return high
-                        when (null sources') $ do
-                            high <- scheduleFunction (a ... sup epAt) f
-                            let low = endpoints ++ currentWorkEndpoints
-                            establishVerticalRelations
-                                (if lostFunctionInVerticalRelation then [] else high)
-                                (if lostEndpointInVerticalRelation then [] else low)
-                        return endpoints =
+            , let sources' = sources \\ elems v
+            , sources' /= sources
+            , let (newEndpoints, process_') = runSchedule pu $ do
+                    let doAt = shiftI (if wrongControlOnPull then 0 else -1) epAt
+                    -- Inlined: endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe doAt Out
+                    endpoints <- do
+                        high <- scheduleStep epAt $ EndpointRoleStep epRole
+                        low <- scheduleInstructionUnsafe doAt Out
+                        establishVerticalRelations
+                            (if lostEndpointInVerticalRelation then [] else high)
+                            (if lostInstructionInVerticalRelation then [] else low)
+                        return high
+                    when (null sources') $ do
+                        high <- scheduleFunction (a ... sup epAt) f
+                        let low = endpoints ++ currentWorkEndpoints
+                        establishVerticalRelations
+                            (if lostFunctionInVerticalRelation then [] else high)
+                            (if lostEndpointInVerticalRelation then [] else low)
+                    return endpoints =
                 pu
                     { process_ = process_'
                     , sources = sources'
@@ -218,7 +211,7 @@ instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
                     }
     endpointDecision pu@Broken{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-          , Just f <- find (\f -> v `member` variables f) remain =
+        , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 

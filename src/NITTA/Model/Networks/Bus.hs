@@ -1,17 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Networks.Bus
@@ -36,14 +28,14 @@ module NITTA.Model.Networks.Bus (
 import Control.Monad.State
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
@@ -56,22 +48,22 @@ import NITTA.Project.VerilogSnippets
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
-    , -- |List of functions binded to network, but not binded to any process unit.
-      bnRemains :: [F v x]
-    , -- |Map process unit name to list of binded functions.
-      bnBinded :: M.Map tag [F v x]
-    , -- |Network process (bindings and transport instructions)
-      bnProcess :: Process t (StepInfo v x t)
-    , -- |Map of process units.
-      bnPus :: M.Map tag (PU v x t)
-    , -- |Controll bus width.
-      bnSignalBusWidth :: Int
+    , bnRemains :: [F v x]
+    -- ^List of functions binded to network, but not binded to any process unit.
+    , bnBinded :: M.Map tag [F v x]
+    -- ^Map process unit name to list of binded functions.
+    , bnProcess :: Process t (StepInfo v x t)
+    -- ^Network process (bindings and transport instructions)
+    , bnPus :: M.Map tag (PU v x t)
+    -- ^Map of process units.
+    , bnSignalBusWidth :: Int
+    -- ^Controll bus width.
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
     }
@@ -110,13 +102,14 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                     (\(tag, pu) -> map (\ep -> (tag, ep)) $ filter isSource $ endpointOptions pu)
                     $ M.assocs bnPus
             targets =
-                M.fromList $
-                    concatMap
+                M.fromList
+                    $ concatMap
                         ( \(tag, pu) ->
                             concatMap (\ep -> map (,(tag, ep)) $ S.elems $ variables ep) $
-                                filter isTarget $ endpointOptions pu
+                                filter isTarget $
+                                    endpointOptions pu
                         )
-                        $ M.assocs bnPus
+                    $ M.assocs bnPus
          in filter (not . null . dfTargets) $
                 concatMap
                     ( \(src, sEndpoint) ->
@@ -127,7 +120,8 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                             --   x2 -> accum
                             (hold, sendWithColisions) =
                                 L.partition (\v -> isNothing $ targets M.!? v) $
-                                    S.elems $ variables sEndpoint
+                                    S.elems $
+                                        variables sEndpoint
                             sends =
                                 sequence $
                                     M.elems $
@@ -277,7 +271,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
             initSt = M.fromList $ map (\ins -> (SignalTag $ controlSignalLiteral ins, def)) [0 .. bnSignalBusWidth - 1]
 
             merge st PU{unit, uEnv = UnitEnv{ctrlPorts = Just ports}} =
-                foldl merge' st $ zipSignalTagsAndValues ports $microcodeAt unit t
+                foldl merge' st $ zipSignalTagsAndValues ports $ microcodeAt unit t
             merge _ _ = error "internal error"
 
             merge' st (signalTag, value) = M.adjust (+++ value) signalTag st
@@ -352,7 +346,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
             isBufferRepetionOK 0 _ = False
             isBufferRepetionOK n v
                 | bufferSuffix v `S.notMember` variables bn = True
-                | otherwise = isBufferRepetionOK (n -1) (bufferSuffix v)
+                | otherwise = isBufferRepetionOK (n - 1) (bufferSuffix v)
 
             selfSending =
                 concatMap
@@ -376,16 +370,18 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             puOutputs tag =
                 unionsMap variables $
-                    filter (\case Source{} -> True; _ -> False) $ endPointRoles M.! tag
+                    filter (\case Source{} -> True; _ -> False) $
+                        endPointRoles M.! tag
 
             var2endpointRole =
-                M.fromList $
-                    concatMap
+                M.fromList
+                    $ concatMap
                         ( \case
                             (Source vs) -> [(v, vs) | v <- S.elems vs]
                             (Target v) -> [(v, S.singleton v)]
                         )
-                        $ concat $ M.elems endPointRoles
+                    $ concat
+                    $ M.elems endPointRoles
 
             maybeSended = M.keysSet var2endpointRole
 
@@ -583,8 +579,8 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
-                    vsep $
-                        mapMaybe
+                    vsep
+                        $ mapMaybe
                             ( \(tag, PU{unit, uEnv}) ->
                                 let tEnv =
                                         TestEnvironment
@@ -593,7 +589,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                             }
                                  in testEnvironment (toText tag) unit uEnv tEnv
                             )
-                            $ M.assocs bnPus
+                        $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
@@ -607,7 +603,8 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 (\t -> (cycleI, t, cntxToTransfer cycleCntx t))
                                 [0 .. nextTick bn]
                         )
-                        $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
+                        $ zip [0 :: Int ..]
+                        $ take cntxCycleNumber cntxProcess
 
                 assertions = vsep $ map (\cycleTickTransfer -> posedgeCycle <> line <> vsep (map assertion cycleTickTransfer)) tickWithTransfers
 

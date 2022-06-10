@@ -22,7 +22,7 @@ import Data.List (maximumBy, minimumBy)
 import Data.Set (elems, unions)
 import Data.String
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 
 unionsMap f lst = unions $ map f lst
 

@@ -1,13 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -116,12 +109,12 @@ import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.Default
 import Data.List (find)
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Proxy
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Analysis (buildProcessWaves)
@@ -151,17 +144,17 @@ import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 -}
 data UnitTestState u v x = UnitTestState
     { testName :: String
-    , -- |Unit model, should be a process unit or target system.
-      unit :: u
-    , -- |Contains functions assigned to PU.
-      functs :: [F v x]
-    , -- |Initial values for coSimulation
-      cntxCycle :: [(v, x)]
-    , -- |Values for IO immitation
-      receivedValues :: [(v, [x])]
+    , unit :: u
+    -- ^Unit model, should be a process unit or target system.
+    , functs :: [F v x]
+    -- ^Contains functions assigned to PU.
+    , cntxCycle :: [(v, x)]
+    -- ^Initial values for coSimulation
+    , receivedValues :: [(v, [x])]
+    -- ^Values for IO immitation
     , busType :: Maybe (Proxy x)
-    , -- |Report on process unit test bench.
-      report :: Either String (TestbenchReport v x)
+    , report :: Either String (TestbenchReport v x)
+    -- ^Report on process unit test bench.
     }
     deriving (Show)
 
@@ -221,9 +214,13 @@ setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> PUStatement p
 setValue var val = do
     pu@UnitTestState{cntxCycle, unit} <- get
     when (var `elem` map fst cntxCycle) $
-        lift $ assertFailure $ "The variable '" <> toString var <> "' is already set!"
+        lift $
+            assertFailure $
+                "The variable '" <> toString var <> "' is already set!"
     unless (isVarAvailable var unit) $
-        lift $ assertFailure $ "It's not possible to set the variable '" <> toString var <> "'! It's not present in process"
+        lift $
+            assertFailure $
+                "It's not possible to set the variable '" <> toString var <> "'! It's not present in process"
     put pu{cntxCycle = (var, val) : cntxCycle}
     where
         isVarAvailable v pu = S.isSubsetOf (S.fromList [v]) $ unionsMap inputs $ functions pu
@@ -254,7 +251,8 @@ decideNaiveSynthesis :: PUStatement pu v x t ()
 decideNaiveSynthesis = do
     st@UnitTestState{unit, functs} <- get
     when (null functs) $
-        lift $ assertFailure "You should assign function to do naive synthesis!"
+        lift $
+            assertFailure "You should assign function to do naive synthesis!"
     put st{unit = naiveSynthesis functs unit}
 
 -- | Transforms provided variable to Target
@@ -288,7 +286,9 @@ assertBindFullness = do
     UnitTestState{unit, functs} <- get
     isOk <- lift $ isFullyBinded unit functs
     unless isOk $
-        lift $ assertFailure $ "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
+        lift $
+            assertFailure $
+                "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
     where
         isFullyBinded pu fs = do
             assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
@@ -331,9 +331,13 @@ assertSynthesisDone :: PUStatement pu v x t ()
 assertSynthesisDone = do
     UnitTestState{unit, functs, testName} <- get
     unless (null $ endpointOptions unit) $
-        lift $ assertFailure $ "In ''" <> testName <> "'' process still has endpoint options:\n" <> show (pretty $ process unit)
+        lift $
+            assertFailure $
+                "In ''" <> testName <> "'' process still has endpoint options:\n" <> show (pretty $ process unit)
     unless (isProcessComplete unit functs) $
-        lift $ assertFailure $ "In ''" <> testName <> "'' process is incomplete.\nAlgorithm: " <> show functs <> "\nProcess:\n" <> show (pretty $ process unit)
+        lift $
+            assertFailure $
+                "In ''" <> testName <> "'' process is incomplete.\nAlgorithm: " <> show functs <> "\nProcess:\n" <> show (pretty $ process unit)
 
     case checkProcessIntegrity unit of
         Left err -> lift $ assertFailure $ testName <> " broken process: " <> err
@@ -350,13 +354,16 @@ assertPUCoSimulation ::
 assertPUCoSimulation = do
     UnitTestState{unit, functs, testName, cntxCycle} <- get
     unless (checkInputVars unit functs cntxCycle) $
-        lift $ assertFailure "you forgot to set initial values before coSimulation."
+        lift $
+            assertFailure "you forgot to set initial values before coSimulation."
 
     report@TestbenchReport{tbStatus} <-
         lift $ puCoSim testName unit cntxCycle functs False
 
     unless tbStatus $
-        lift $ assertFailure $ "coSimulation failed: \n" <> show report
+        lift $
+            assertFailure $
+                "coSimulation failed: \n" <> show report
     where
         checkInputVars pu fs cntx =
             let requiredVars =
@@ -405,7 +412,8 @@ setReceivedValues :: [(T.Text, [x])] -> TSStatement x ()
 setReceivedValues values = do
     st@UnitTestState{receivedValues} <- get
     unless (null receivedValues) $
-        lift $ assertFailure "setReceivedValues: already setted"
+        lift $
+            assertFailure "setReceivedValues: already setted"
     put st{receivedValues = values}
 
 synthesis :: SynthesisMethod T.Text T.Text x Int -> TSStatement x ()
@@ -422,7 +430,9 @@ doBind tag f = do
     let d = Bind f tag
         opts = bindOptions ts
     unless (d `L.elem` opts) $
-        lift $ assertFailure $ "bind not available: " <> show d <> " in: " <> show opts
+        lift $
+            assertFailure $
+                "bind not available: " <> show d <> " in: " <> show opts
     put st{unit = bindDecision ts d}
 
 doTransfer :: [T.Text] -> TSStatement x ()
@@ -440,12 +450,15 @@ class Refactor u ref where
 refactorAvail' ref options = do
     UnitTestState{unit} <- get
     unless (ref `L.elem` options unit) $
-        lift $ assertFailure "refactorAvail: required refactor not present in option"
+        lift $
+            assertFailure "refactorAvail: required refactor not present in option"
 
 refactor' ref options decision = do
     st@UnitTestState{unit} <- get
     unless (ref `L.elem` options unit) $
-        lift $ assertFailure $ "refactor: required refactor not present in option: " <> show ref
+        lift $
+            assertFailure $
+                "refactor: required refactor not present in option: " <> show ref
     put st{unit = decision unit ref}
 
 instance (Var v, Val x, BreakLoopProblem u v x) => Refactor u (BreakLoop v x) where
@@ -493,7 +506,9 @@ assertSynthesisComplete :: TSStatement x ()
 assertSynthesisComplete = do
     UnitTestState{unit = unit@TargetSystem{mUnit, mDataFlowGraph}} <- get
     unless (isSynthesisComplete unit) $
-        lift $ assertFailure $ "synthesis is not complete: " <> show (transferred mUnit `S.difference` variables mDataFlowGraph)
+        lift $
+            assertFailure $
+                "synthesis is not complete: " <> show (transferred mUnit `S.difference` variables mDataFlowGraph)
 
 assertTargetSystemCoSimulation :: TSStatement x ()
 assertTargetSystemCoSimulation = do

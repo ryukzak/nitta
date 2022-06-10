@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
@@ -40,16 +37,16 @@ module NITTA.Frontends.Lua (
 ) where
 
 import Control.Monad.State
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Hashable
 import Data.Maybe
 import Data.String
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Language.Lua
 import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Utils.Base
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
@@ -83,28 +80,28 @@ instance Hashable LuaValueInstance where
             + hashWithSalt i lviIsConstant
 
 data LuaAlgBuilder x = LuaAlgBuilder
-    { -- | A list containing all expressions to be added to the final graph.
-      algGraph :: [LuaStatement x]
-    , -- | A table that maps a variable name to the most recent corresponding LuaValueInstance.
-      algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
-    , -- | A table needed to generate unique temporary variable names.
-      algVarCounters :: HM.HashMap T.Text Int
-    , -- | A table lists all uses of a particular LuaValueInstance.
-      algVars :: HM.HashMap LuaValueInstance [T.Text]
-    , -- | Map argument index to the variable name and initial value (in text).
-      algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
-    , -- | A table correlating constant with LuaValueInstance which store this constant.
-      algConstants :: HM.HashMap T.Text LuaValueInstance
-    , -- | A list that stores debug information about monitored variables and their display formats.
-      algTraceFuncs :: [([T.Text], Maybe T.Text)]
+    { algGraph :: [LuaStatement x]
+    -- ^ A list containing all expressions to be added to the final graph.
+    , algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
+    -- ^ A table that maps a variable name to the most recent corresponding LuaValueInstance.
+    , algVarCounters :: HM.HashMap T.Text Int
+    -- ^ A table needed to generate unique temporary variable names.
+    , algVars :: HM.HashMap LuaValueInstance [T.Text]
+    -- ^ A table lists all uses of a particular LuaValueInstance.
+    , algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
+    -- ^ Map argument index to the variable name and initial value (in text).
+    , algConstants :: HM.HashMap T.Text LuaValueInstance
+    -- ^ A table correlating constant with LuaValueInstance which store this constant.
+    , algTraceFuncs :: [([T.Text], Maybe T.Text)]
+    -- ^ A list that stores debug information about monitored variables and their display formats.
     }
     deriving (Show)
 
---left part of lua statement
+-- left part of lua statement
 parseLeftExp (VarName (Name v)) = v
 parseLeftExp var = error $ "unexpected lua variable declaration format : " <> show var
 
---right part of lua statement
+-- right part of lua statement
 parseRightExp [fOut] (Binop ShiftL a (Number IntNum s)) = do
     varName <- parseExpArg fOut a
     addVariable [varName] [fOut] [] "shiftL" [readText s]
@@ -186,13 +183,13 @@ addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody
             return value
 addStartupFuncArgs _ _ = undefined
 
---Lua language Stat structure parsing
---LocalAssign
+-- Lua language Stat structure parsing
+-- LocalAssign
 processStatement _ (LocalAssign _names Nothing) = do
     return ()
 processStatement fn (LocalAssign names (Just exps)) =
     processStatement fn $ Assign (map VarName names) exps
---Assign
+-- Assign
 processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
     processStatement fn (Assign lexps [Number ntype ("-" <> ntext)])
 processStatement _ (Assign lexp [rexp]) = do
@@ -202,7 +199,7 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
     mapM_ (\(VarName (Name name)) -> addAlias name (getTempAlias name)) vars
     where
         getTempAlias name = name <> "&"
---startup function recursive call
+-- startup function recursive call
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName = do
         LuaAlgBuilder{algStartupArgs} <- get
@@ -342,10 +339,10 @@ buildAlg syntaxTree =
 
 findStartupFunction (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
-      , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
-      , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
-      , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
-      , fnCall == fnAssign =
+    , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
+    , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
+    , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
+    , fnCall == fnAssign =
         (fnCall, call, funAssign)
 findStartupFunction _ = error "can't find startup function in lua source code"
 
@@ -388,7 +385,8 @@ translateLua src =
                 startupArgNames =
                     map
                         (\(_idx, (varName, _initValue)) -> varName)
-                        $ HM.toList $ algStartupArgs algBuilder
+                        $ HM.toList
+                        $ algStartupArgs algBuilder
              in map (\name -> ([name <> "^0"], Nothing)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]

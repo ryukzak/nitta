@@ -1,11 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -41,10 +35,10 @@ instance (ToJSON t) => ToJSON (Interval t)
 
 -- |Time constrain for processor activity.
 data TimeConstraint t = TimeConstraint
-    { -- |Inclusive interval, when value available to transfer.
-      tcAvailable :: Interval t
-    , -- |Inclusive interval, possible for value transfers.
-      tcDuration :: Interval t
+    { tcAvailable :: Interval t
+    -- ^Inclusive interval, when value available to transfer.
+    , tcDuration :: Interval t
+    -- ^Inclusive interval, possible for value transfers.
     }
     deriving (Eq, Generic)
 

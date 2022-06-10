@@ -1,10 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessIntegrity
@@ -20,11 +16,11 @@ module NITTA.Model.ProcessIntegrity (
 ) where
 
 import Data.Either
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S
-import qualified Data.String.Utils as S
+import Data.Set qualified as S
+import Data.String.Utils qualified as S
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 
@@ -43,15 +39,15 @@ instance (ProcessorUnit (pu v x t) v x t) => ProcessIntegrity (pu v x t) where
             ]
 
 checkVerticalRelations f dom codom errmsg =
-    collectChecks $
-        map
+    collectChecks
+        $ map
             ( \x ->
                 let ys = M.findWithDefault S.empty x f
                  in if any (`M.member` codom) $ S.elems ys
                         then Right ()
                         else Left $ errmsg <> ": " <> show (dom M.! x)
             )
-            $ M.keys dom
+        $ M.keys dom
 
 -- TODO: #205 Divider: missing vertical relation between Do instruction and Endpoint
 skipIntegrityErrors = ["instruction not related to endpoint: Instruction: Do"]

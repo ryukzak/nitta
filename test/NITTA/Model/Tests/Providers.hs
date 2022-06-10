@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
@@ -26,7 +20,7 @@ module NITTA.Model.Tests.Providers (
 
 import Data.CallStack
 import Data.Default
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import Data.Text as T
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions

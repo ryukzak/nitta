@@ -1,10 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -27,7 +22,7 @@ module NITTA.Synthesis.Method (
     bestStepIO,
 ) where
 
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
@@ -73,7 +68,7 @@ bestThreadIO limit tree = do
     subForest <- positiveSubForestIO tree
     case subForest of
         [] -> return tree
-        _ -> bestThreadIO (limit -1) $ maximumOn (score . sDecision) subForest
+        _ -> bestThreadIO (limit - 1) $ maximumOn (score . sDecision) subForest
 
 bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 bestStepIO tree = do
@@ -124,7 +119,7 @@ allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag
 allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree
 allBestThreadIO n tree = do
     subForest <- positiveSubForestIO tree
-    leafs <- mapM (allBestThreadIO (n -1)) subForest
+    leafs <- mapM (allBestThreadIO (n - 1)) subForest
     return $ bestLeaf tree leafs
 
 bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t

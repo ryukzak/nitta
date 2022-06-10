@@ -1,14 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -30,7 +23,7 @@ module APIGen (
 import Data.Aeson
 import Data.Aeson.TypeScript.TH
 import Data.Proxy
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import Data.Version
 import NITTA.Model.Microarchitecture.Builder
 import NITTA.Model.Networks.Types

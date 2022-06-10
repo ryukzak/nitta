@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-dodgy-exports #-}
@@ -34,7 +28,7 @@ import Control.Monad
 import Data.CallStack
 import Data.Data
 import Data.Default
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
@@ -46,7 +40,7 @@ import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Internals
 import NITTA.Project
-import qualified NITTA.Project as P
+import NITTA.Project qualified as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
@@ -103,7 +97,8 @@ puCoSimProp name pu0 fsGen =
                 run $ do
                     uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
-                        error $ "process is not complete: " <> incompleteProcessMsg pu fs
+                        error $
+                            "process is not complete: " <> incompleteProcessMsg pu fs
                     case checkProcessIntegrity pu of
                         Left e -> error e
                         Right _ -> return ()

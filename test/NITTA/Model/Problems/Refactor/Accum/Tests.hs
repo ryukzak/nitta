@@ -1,10 +1,6 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Model.Problems.Refactor.Accum.Tests
@@ -18,7 +14,7 @@ module NITTA.Model.Problems.Refactor.Accum.Tests (
     tests,
 ) where
 
-import qualified Data.Set as S
+import Data.Set qualified as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor

@@ -1,11 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Variable
@@ -23,10 +20,10 @@ module NITTA.Intermediate.Variable (
 
 import Data.Hashable
 import Data.List (stripPrefix)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 
 -- |Variable identifier. Used for simplify type description.

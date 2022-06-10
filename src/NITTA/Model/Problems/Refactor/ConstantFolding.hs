@@ -1,7 +1,9 @@
+-- All extensions should be enabled explicitly due to doctest in this module.
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -57,9 +59,9 @@ module NITTA.Model.Problems.Refactor.ConstantFolding (
 ) where
 
 import Data.Default
-import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
-import qualified Data.Set as S
+import Data.HashMap.Strict qualified as HM
+import Data.List qualified as L
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types

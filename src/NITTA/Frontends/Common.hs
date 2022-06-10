@@ -13,11 +13,11 @@ module NITTA.Frontends.Common (
     getTraceVarFormat,
 ) where
 
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Maybe
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.DataFlow
 import Text.Printf
 

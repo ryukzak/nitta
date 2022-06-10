@@ -1,7 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
@@ -15,8 +11,8 @@
 module NITTA.Intermediate.Tests.Functions () where
 
 import Data.Set (fromList, intersection)
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Set qualified as S
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import Test.QuickCheck

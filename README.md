@@ -51,6 +51,8 @@ $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!   
+
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
 $ brew install icarus-verilog
@@ -72,6 +74,8 @@ $ sudo apt-get install haskell-stack
 $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
+
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!  
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
