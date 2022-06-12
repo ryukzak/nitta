@@ -120,6 +120,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
             60
           ),
           textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
+          textColumn("wave of use", (e: Node) => String((e.parameters as DataflowMetrics).pWaveOfUse), 60),
           detailColumn(),
         ]}
       />

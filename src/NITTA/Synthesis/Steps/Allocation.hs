@@ -82,4 +82,9 @@ instance
                 , mAvgParallels = (fromIntegral (sum fCountByWaves) :: Float) / (fromIntegral numberOfProcessWaves :: Float)
                 }
 
-    estimate _ctx _o _d AllocationMetrics{} = -1
+    estimate _ctx _o _d AllocationMetrics{mParallelism, mMinPusForRemains, mAvgParallels}
+        | mMinPusForRemains == 0 = 5000
+        | mParallelism == Full = -1
+        | mParallelism == Pipeline && (mAvgParallels / mMinPusForRemains >= 3) = 4900
+        | mAvgParallels / mMinPusForRemains >= 2 = 4900
+        | otherwise = -1

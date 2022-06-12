@@ -171,7 +171,7 @@ $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exe
 #     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 $ stack exec ghc-pkg unregister interpolate -- --force
 
-# run formolu for all files
+# run fourmolu for all files
 $ find . -name '*.hs' | xargs fourmolu -m inplace
 
 # show modules dependency

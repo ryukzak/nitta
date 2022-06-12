@@ -58,6 +58,7 @@ instance
     tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
     process TargetSystem{mUnit} = process mUnit
     parallelismType TargetSystem{mUnit} = parallelismType mUnit
+    puSize TargetSystem{mUnit} = puSize mUnit
 
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit

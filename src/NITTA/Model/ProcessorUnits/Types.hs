@@ -130,6 +130,10 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     parallelismType :: u -> ParallelismType
     parallelismType _ = None
 
+    -- |Provide the processor unit size. At the moment it's just the number of subprocessors
+    puSize :: u -> Float
+    puSize _ = 1
+
 bind f pu = case tryBind f pu of
     Right pu' -> pu'
     Left err -> error $ "can't bind function: " <> err

@@ -262,6 +262,8 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
 
     parallelismType _ = error " not support parallelismType for BusNetwork"
 
+    puSize BusNetwork{bnPus} = sum $ map puSize $ M.elems bnPus
+
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
         = Transport v tag tag

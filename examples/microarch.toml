@@ -4,36 +4,7 @@ ioSync = "Sync"
 [[networks]]
 name = "net1"
 
-[[networks.pus]]
-type = "Fram"
-name = "fram1"
-size = 16
-
-[[networks.pus]]
-type = "Fram"
-name = "fram2"
-size = 32
-
-[[networks.pus]]
-type = "Shift"
-name = "shift"
-sRight = true
-
-[[networks.pus]]
-type = "Multiplier"
-name = "mul"
-mock = true
-
-[[networks.pus]]
-type = "Accum"
-name = "accum"
-isInt = true
-
-[[networks.pus]]
-type = "Divider"
-name = "div"
-mock = true
-pipeline = 4
+# Array of PUs
 
 [[networks.pus]]
 type = "SPI"
@@ -45,3 +16,31 @@ cs = "cs"
 isSlave = true
 bufferSize = 6
 bounceFilter = 0
+
+# Array of PU prototypes
+
+[[networks.protos]] 
+type = "Fram"
+name = "fram{x}" # If you want a PU can be allocated only once, remove {x} from the PU name.
+size = 32
+
+[[networks.protos]]
+type = "Shift"
+name = "shift{x}"
+sRight = true
+
+[[networks.protos]]
+type = "Multiplier"
+name = "mul{x}"
+mock = true
+
+[[networks.protos]]
+type = "Accum"
+name = "accum{x}"
+isInt = true
+
+[[networks.protos]]
+type = "Divider"
+name = "div{x}"
+mock = true
+pipeline = 4

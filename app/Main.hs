@@ -21,7 +21,6 @@ import Control.Exception
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
-import Data.Functor
 import Data.Maybe
 import Data.Proxy
 import Data.String.Utils qualified as S
@@ -57,6 +56,7 @@ import Text.Regex
 data Nitta = Nitta
     { filename :: FilePath
     , uarch :: Maybe FilePath
+    , auto_uarch :: Bool
     , type_ :: Maybe String
     , io_sync :: Maybe IOSynchronization
     , port :: Int
@@ -92,6 +92,11 @@ nittaArgs =
                 &= help "Microarchitecture configuration file"
                 &= explicit
                 &= name "uarch"
+                &= groupname "Target system configuration"
+        , auto_uarch =
+            False
+                &= help "Use empty microarchitecture and allocate PUs during synthesis process."
+                &= name "auto-uarch"
                 &= groupname "Target system configuration"
         , type_ =
             Nothing
@@ -162,6 +167,7 @@ main = do
     ( Nitta
             filename
             uarch
+            auto_uarch
             type_
             io_sync
             port
@@ -180,7 +186,7 @@ main = do
 
     toml <- case uarch of
         Nothing -> return Nothing
-        Just path -> T.readFile path <&> (Just . getToml)
+        Just path -> Just . getToml <$> T.readFile path
 
     let fromConf s = getFromTomlSection s =<< toml
     let exactFrontendType = identifyFrontendType filename frontend_language
@@ -194,7 +200,14 @@ main = do
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
                 ioSync = fromJust $ io_sync <|> fromConf "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
-                ma = fromJust $ confMa <|> Just (defMicroarch ioSync) :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
+                ma
+                    | auto_uarch && isJust confMa =
+                        error $
+                            "auto_uarch flag means that an empty uarch with default prototypes will be used. "
+                                <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
+                    | auto_uarch = microarchWithProtos ioSync :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
+                    | isJust confMa = fromJust confMa
+                    | otherwise = defMicroarch ioSync
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -294,6 +307,20 @@ defMicroarch ioSync = defineNetwork "net1" ioSync $ do
     add "accum" AccumIO
     add "div" DividerIO
     add "spi" $
+        SPISlave
+            { slave_mosi = InputPortTag "mosi"
+            , slave_miso = OutputPortTag "miso"
+            , slave_sclk = InputPortTag "sclk"
+            , slave_cs = InputPortTag "cs"
+            }
+
+microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
+    addCustomPrototype "fram{x}" (framWithSize 32) FramIO
+    addPrototype "shift{x}" ShiftIO
+    addPrototype "mul{x}" MultiplierIO
+    addPrototype "accum{x}" AccumIO
+    addPrototype "div{x}" DividerIO
+    add "spi" $ -- use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
         SPISlave
             { slave_mosi = InputPortTag "mosi"
             , slave_miso = OutputPortTag "miso"
