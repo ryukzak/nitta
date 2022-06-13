@@ -2,14 +2,14 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 {- |
-Module      : NITTA.Model.Microarchitecture.Builder
-Description : Create micro architecture functions
+Module      : NITTA.Model.Microarchitecture.Types
+Description : Types for micro architecture description.
 Copyright   : (c) Daniil Prohorov, Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Microarchitecture.Builder (
+module NITTA.Model.Microarchitecture.Types (
     MicroarchitectureDesc (..),
     NetworkDesc (..),
     UnitDesc (..),

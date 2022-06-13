@@ -13,15 +13,12 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-For creating BusNetwork see 'NITTA.Model.Microarchitecture.Builder'.
 -}
 module NITTA.Model.Networks.Bus (
     BusNetwork (..),
     Instruction (..),
     Ports (..),
     IOPorts (..),
-    PUPrototype (..),
     bindedFunctions,
     controlSignalLiteral,
     busNetwork,
@@ -80,20 +77,6 @@ data BusNetwork tag v x t = BusNetwork
     , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
     -- ^Set of the PUs that could be added to the network during synthesis process
     }
-
-data PUPrototype tag v x t where
-    PUPrototype ::
-        (UnitTag tag, PUClasses pu v x t) =>
-        { pTag :: tag
-        -- ^Prototype tag. You can specify tag as a template by adding {x}.
-        --This will allow to allocate PU more than once by replacing {x} with index.
-        --When PU is allocated puTag will look like bnName_pTag.
-        , pProto :: pu
-        -- ^PU prototype
-        , pIOPorts :: IOPorts pu
-        -- ^IO ports that will be used by PU
-        } ->
-        PUPrototype tag v x t
 
 busNetwork name iosync =
     BusNetwork
@@ -812,6 +795,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
 isDrowAllowSignal Sync = bool2verilog False
 isDrowAllowSignal ASync = bool2verilog True
 isDrowAllowSignal OnBoard = "is_drop_allow"
+
 -- * Builder
 
 data BuilderSt tag v x t = BuilderSt
@@ -821,6 +805,7 @@ data BuilderSt tag v x t = BuilderSt
     , prototypes :: M.Map tag (PUPrototype tag v x t)
     }
 
+modifyNetwork :: BusNetwork k v x t -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} builder =
     let st0 =
             BuilderSt
@@ -843,8 +828,16 @@ modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} bui
             , bnPUPrototypes = prototypes
             }
 
+defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
 
+addCustom ::
+    forall tag v x t m pu.
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) =>
+    tag ->
+    pu ->
+    IOPorts pu ->
+    m ()
 addCustom tag pu ioPorts = do
     st@BuilderSt{signalBusWidth, availSignals, pus} <- get
     let ctrlPorts = takePortTags availSignals pu
@@ -865,17 +858,39 @@ addCustom tag pu ioPorts = do
             }
 
 -- |Add PU with the default initial state. Type specify by IOPorts.
+add ::
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
+    tag ->
+    IOPorts pu ->
+    m ()
 add tag ioport = addCustom tag def ioport
 
-addCustomPrototype :: forall tag v x t m pu. (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) => tag -> pu -> IOPorts pu -> m ()
+addCustomPrototype ::
+    forall tag v x t m pu.
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) =>
+    tag ->
+    pu ->
+    IOPorts pu ->
+    m ()
 addCustomPrototype tag pu ioports
-    | typeOf pu == typeRep (Proxy :: Proxy (SPI v x t)) = error "Adding SPI prototype are not supported due to https://github.com/ryukzak/nitta/issues/194"
+    | typeOf pu == typeRep (Proxy :: Proxy (SPI v x t)) =
+        error "Adding SPI prototype are not supported due to https://github.com/ryukzak/nitta/issues/194"
     | otherwise = do
         st@BuilderSt{prototypes} <- get
         put
             st
-                { prototypes = M.insertWith (\_ _ -> error "every prototype must has uniq tag") tag (PUPrototype tag pu ioports) prototypes
+                { prototypes =
+                    M.insertWith
+                        (\_ _ -> error "every prototype must has uniq tag")
+                        tag
+                        (PUPrototype tag pu ioports)
+                        prototypes
                 }
 
 -- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
+addPrototype ::
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
+    tag ->
+    IOPorts pu ->
+    m ()
 addPrototype tag ioports = addCustomPrototype tag def ioports

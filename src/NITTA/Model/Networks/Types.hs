@@ -14,6 +14,7 @@ module NITTA.Model.Networks.Types (
     PU (..),
     PUClasses,
     IOSynchronization (..),
+    PUPrototype (..),
     puInputPorts,
     puOutputPorts,
     puInOutPorts,
@@ -169,3 +170,18 @@ instance FromJSON IOSynchronization
 puInputPorts PU{uEnv} = envInputPorts uEnv
 puOutputPorts PU{uEnv} = envOutputPorts uEnv
 puInOutPorts PU{uEnv} = envInOutPorts uEnv
+
+-- |PU and some additional information required for allocation on BusNetwork
+data PUPrototype tag v x t where
+    PUPrototype ::
+        (UnitTag tag, PUClasses pu v x t) =>
+        { pTag :: tag
+        -- ^Prototype tag. You can specify tag as a template by adding {x}.
+        -- This will allow to allocate PU more than once by replacing {x} with index.
+        -- When PU is allocated puTag will look like bnName_pTag.
+        , pProto :: pu
+        -- ^PU prototype
+        , pIOPorts :: IOPorts pu
+        -- ^IO ports that will be used by PU
+        } ->
+        PUPrototype tag v x t

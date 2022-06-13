@@ -25,7 +25,7 @@ import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import Data.String.Utils qualified as S
 import Data.Version
-import NITTA.Model.Microarchitecture.Builder
+import NITTA.Model.Microarchitecture.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper

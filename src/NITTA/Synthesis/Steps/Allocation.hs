@@ -21,11 +21,8 @@ import Data.Aeson (ToJSON)
 import Data.Map qualified as M
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Analysis (ProcessWave (ProcessWave, pwFs))
-import NITTA.Model.Networks.Bus (
-    BusNetwork (bnPUPrototypes, bnPus, bnRemains),
-    PUPrototype (PUPrototype, pProto),
- )
-import NITTA.Model.Networks.Types (PU (PU, unit))
+import NITTA.Model.Networks.Bus (BusNetwork (bnPUPrototypes, bnPus, bnRemains))
+import NITTA.Model.Networks.Types (PU (PU, unit), PUPrototype (..))
 import NITTA.Model.Problems.Allocation (
     Allocation (Allocation, puTag),
     AllocationProblem (allocationDecision),
