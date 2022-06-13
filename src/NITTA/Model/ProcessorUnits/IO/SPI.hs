@@ -1,12 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -28,10 +23,10 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
 
 import Data.Aeson
 import Data.Default
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Maybe (fromMaybe, mapMaybe)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types

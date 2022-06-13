@@ -1,7 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -19,7 +16,7 @@ module NITTA.Project.VerilogSnippets (
 ) where
 
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 
 snippetClkGen :: T.Text
 snippetClkGen =

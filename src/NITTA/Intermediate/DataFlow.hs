@@ -1,11 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.DataFlow
@@ -22,8 +16,8 @@ module NITTA.Intermediate.DataFlow (
 ) where
 
 import Data.Default
-import qualified Data.List as L
-import qualified Data.Set as S
+import Data.List qualified as L
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
@@ -61,9 +55,9 @@ instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
     breakLoopDecision dfg bl =
         let origin = recLoop bl
          in fsToDataFlowGraph $
-                (recLoopIn bl){funHistory = [origin]} :
-                (recLoopOut bl){funHistory = [origin]} :
-                (functions dfg L.\\ [origin])
+                (recLoopIn bl){funHistory = [origin]}
+                    : (recLoopOut bl){funHistory = [origin]}
+                    : (functions dfg L.\\ [origin])
 
 instance (Var v, Val x) => ConstantFoldingProblem (DataFlowGraph v x) v x where
     constantFoldingOptions _dfg = []

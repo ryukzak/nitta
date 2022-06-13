@@ -18,7 +18,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
@@ -85,7 +85,8 @@ tests =
                 assertPUCoSimulation
         , expectFail $
             unitTestCase "should not bind, when PU incompatible with F" u $
-                assign $ sub "a" "b" ["c"]
+                assign $
+                    sub "a" "b" ["c"]
         , expectFail $
             unitTestCase "decide should error, when Target in Decision is not present" u $ do
                 assign $ multiply "a" "b" ["c", "d"]

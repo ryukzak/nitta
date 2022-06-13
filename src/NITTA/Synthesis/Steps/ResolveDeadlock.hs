@@ -1,10 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -22,7 +16,7 @@ module NITTA.Synthesis.Steps.ResolveDeadlock (
 ) where
 
 import Data.Aeson (ToJSON)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -61,7 +55,9 @@ instance
 
     estimate SynthesisState{sParent} _o d _ | 0 < decisionRepeats d sParent = -2
     estimate SynthesisState{} _o _d ResolveDeadlockMetrics{pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables} =
-        1000 + pNumberOfLockedVariables - pBufferCount * 1000
+        1000
+            + pNumberOfLockedVariables
+            - pBufferCount * 1000
             - 20 * pNumberOfTransferableVariables
 
 decisionRepeats d parent =

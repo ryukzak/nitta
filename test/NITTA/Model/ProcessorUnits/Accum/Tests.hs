@@ -18,11 +18,11 @@ module NITTA.Model.ProcessorUnits.Accum.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Frontends.Lua.Tests.Providers
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Providers

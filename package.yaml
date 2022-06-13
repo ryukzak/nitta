@@ -37,6 +37,19 @@ ghc-options:
   - '-fno-warn-missing-signatures'
   - '-optP-Wno-nonportable-include-path'
 
+default-extensions:
+  - DeriveDataTypeable
+  - DeriveGeneric
+  - ImportQualifiedPost
+  - LambdaCase
+  - NamedFieldPuns
+  - ScopedTypeVariables
+  - MultiParamTypeClasses
+  - FlexibleContexts
+  - FlexibleInstances
+  - TupleSections
+  - UndecidableInstances
+
 dependencies:
   - MissingH
   - base

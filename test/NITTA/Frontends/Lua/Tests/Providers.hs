@@ -1,10 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
@@ -28,7 +23,7 @@ module NITTA.Frontends.Lua.Tests.Providers (
 import Data.CallStack
 import Data.Default
 import Data.Proxy
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types

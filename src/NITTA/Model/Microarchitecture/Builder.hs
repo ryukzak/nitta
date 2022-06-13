@@ -1,10 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Model.Microarchitecture.Builder
@@ -28,8 +24,8 @@ module NITTA.Model.Microarchitecture.Builder (
 import Control.Monad.State.Lazy
 import Data.Aeson
 import Data.Default
-import qualified Data.Map.Strict as M
-import qualified Data.Text as T
+import Data.Map.Strict qualified as M
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics
 import NITTA.Model.Networks.Bus

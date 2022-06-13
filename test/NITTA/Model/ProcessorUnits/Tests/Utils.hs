@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
@@ -30,10 +24,10 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
 
 import Data.CallStack
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.List (delete)
 import Data.Set (elems, empty, fromList, intersection, union)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -42,7 +36,7 @@ import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
 import NITTA.Project
-import qualified NITTA.Project as P
+import NITTA.Project qualified as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
@@ -104,7 +98,8 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs =
-    "expected: " <> show (vsToStringList $ unionsMap variables fs)
+    "expected: "
+        <> show (vsToStringList $ unionsMap variables fs)
         <> " actual: "
         <> show (vsToStringList $ processedVars pu)
 

@@ -1,10 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Simulation
@@ -19,8 +14,8 @@ module NITTA.Intermediate.Simulation (
     simulateAlg,
 ) where
 
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Set (elems)
 import Data.String.Interpolate
 import NITTA.Intermediate.Analysis (reorderAlgorithm)

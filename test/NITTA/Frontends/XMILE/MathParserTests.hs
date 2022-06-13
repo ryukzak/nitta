@@ -12,7 +12,7 @@ module NITTA.Frontends.XMILE.MathParserTests (
     tests,
 ) where
 
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import NITTA.Frontends.XMILE.MathParser
 import Test.Tasty
 import Test.Tasty.ExpectedFailure

@@ -1,16 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
@@ -62,20 +55,20 @@ import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
 import Data.Kind
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 -- |Typeclass alias for processor unit tag or "name."
@@ -123,14 +116,14 @@ instance (ProcessorUnit u v x t) => NextTick u t where
 separated data and relations storage.
 -}
 data Process t i = Process
-    { -- |All process steps desctiption.
-      steps :: [Step t i]
-    , -- |List of relationships between process steps (see 'Relation').
-      relations :: [Relation]
-    , -- |Next tick for instruction. Note: instruction /= endpoint.
-      nextTick_ :: t
-    , -- |Next process step ID
-      nextUid :: ProcessStepID
+    { steps :: [Step t i]
+    -- ^All process steps desctiption.
+    , relations :: [Relation]
+    -- ^List of relationships between process steps (see 'Relation').
+    , nextTick_ :: t
+    -- ^Next tick for instruction. Note: instruction /= endpoint.
+    , nextUid :: ProcessStepID
+    -- ^Next process step ID
     }
     deriving (Generic)
 
@@ -170,12 +163,12 @@ type ProcessStepID = Int
 
 -- |Process step representation
 data Step t i = Step
-    { -- |uniq (inside single the process unit) step ID
-      pID :: ProcessStepID
-    , -- |step time
-      pInterval :: Interval t
-    , -- |step description
-      pDesc :: i
+    { pID :: ProcessStepID
+    -- ^uniq (inside single the process unit) step ID
+    , pInterval :: Interval t
+    -- ^step time
+    , pDesc :: i
+    -- ^step description
     }
     deriving (Show, Generic)
 

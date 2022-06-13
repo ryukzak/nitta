@@ -1,8 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 {- |
 Module      : NITTA.Intermediate.Simulation.Tests
 Description :
@@ -17,9 +12,9 @@ module NITTA.Intermediate.Simulation.Tests (
 
 import Data.CallStack
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.List (permutations)
-import qualified Data.Map as M
+import Data.Map qualified as M
 import Data.Maybe
 import NITTA.Intermediate.Analysis (estimateVarWaves, reorderAlgorithm)
 import NITTA.Intermediate.DataFlow

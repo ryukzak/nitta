@@ -1,12 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Project.TestBench
@@ -28,12 +22,12 @@ module NITTA.Project.TestBench (
 ) where
 
 import Data.Default
-import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
+import Data.HashMap.Strict qualified as HM
+import Data.List qualified as L
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
@@ -62,10 +56,10 @@ class IOTestBench pu v x | pu -> v x where
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
-    { -- |expected data
-      teCntx :: Cntx v x
-    , -- |duration of computational process
-      teComputationDuration :: Int
+    { teCntx :: Cntx v x
+    -- ^expected data
+    , teComputationDuration :: Int
+    -- ^duration of computational process
     }
 
 data TestbenchReport v x = TestbenchReport
@@ -115,11 +109,11 @@ testBenchTopModuleName prj = S.replace ".v" "" $ last $ verilogProjectFiles prj
 verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
         (pInProjectNittaPath </>)
-        $ L.nub $
-            filter (".v" `L.isSuffixOf`) $
-                concatMap
-                    (addPath "")
-                    [hardware pName pUnit, testBenchImplementation prj]
+        $ L.nub
+        $ filter (".v" `L.isSuffixOf`)
+        $ concatMap
+            (addPath "")
+            [hardware pName pUnit, testBenchImplementation prj]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances

@@ -13,7 +13,7 @@ module NITTA.Frontends.XMILE.MathParser (
     XMDuop (..),
 ) where
 
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Maybe (fromMaybe)
 import Data.Text as T
 import Text.Parsec

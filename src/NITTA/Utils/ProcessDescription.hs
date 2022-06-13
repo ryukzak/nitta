@@ -1,9 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-
 {- |
 Module      : NITTA.Utils.ProcessDescription
 Description : Utilities for process description.
@@ -44,7 +38,7 @@ module NITTA.Utils.ProcessDescription (
 
 import Control.Monad.State
 import Data.Proxy (asProxyTypeOf)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -53,11 +47,11 @@ import Numeric.Interval.NonEmpty (singleton, sup)
 
 -- |Process builder state.
 data Schedule pu v x t = Schedule
-    { -- |Defining process.
-      schProcess :: Process t (StepInfo v x t)
-    , -- |Proxy for process unit instruction, which is needed for API simplify. Without that,
-      -- for some function, the user needs to describe type explicitly.
-      iProxy :: Proxy (Instruction pu)
+    { schProcess :: Process t (StepInfo v x t)
+    -- ^Defining process.
+    , iProxy :: Proxy (Instruction pu)
+    -- ^Proxy for process unit instruction, which is needed for API simplify. Without that,
+    -- for some function, the user needs to describe type explicitly.
     }
 
 instance {-# OVERLAPS #-} NextTick (Schedule pu v x t) t where

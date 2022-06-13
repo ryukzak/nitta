@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 {- |
 Module      : NITTA.Model.Tests.Internals
 Description : Internals utils for model tests
@@ -14,7 +12,7 @@ module NITTA.Model.Tests.Internals (
 ) where
 
 import Control.Concurrent.STM.TVar
-import qualified Data.Map as M
+import Data.Map qualified as M
 import GHC.Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)

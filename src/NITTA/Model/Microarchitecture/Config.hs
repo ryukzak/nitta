@@ -1,10 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module NITTA.Model.Microarchitecture.Config (
     mkMicroarchitecture,
@@ -12,10 +8,10 @@ module NITTA.Model.Microarchitecture.Config (
 
 import Data.Aeson
 import Data.Default
-import qualified Data.Text as T
+import Data.Text qualified as T
 import GHC.Generics
 import NITTA.Model.Microarchitecture.Builder hiding (networks)
-import qualified NITTA.Model.ProcessorUnits as PU
+import NITTA.Model.ProcessorUnits qualified as PU
 import NITTA.Utils
 
 data PUConf

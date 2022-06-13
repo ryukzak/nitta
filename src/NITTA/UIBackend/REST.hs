@@ -1,12 +1,6 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -31,9 +25,9 @@ import Control.Monad.Except
 import Data.Aeson
 import Data.Bifunctor
 import Data.Default
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
+import Data.Text qualified as T
 import GHC.Generics
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -57,10 +51,10 @@ import System.Directory
 import System.FilePath
 
 data BackendCtx tag v x t = BackendCtx
-    { -- |root synthesis node
-      root :: DefTree tag v x t
-    , -- |lists of received by IO values
-      receivedValues :: [(v, [x])]
+    { root :: DefTree tag v x t
+    -- ^root synthesis node
+    , receivedValues :: [(v, [x])]
+    -- ^lists of received by IO values
     , outputPath :: String
     }
 
@@ -73,7 +67,8 @@ type SynthesisAPI tag v x t =
                 :> "treeInfo"
                 :> Get '[JSON] TreeInfo
              )
-        :<|> ( "node" :> Capture "sid" SID
+        :<|> ( "node"
+                :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
                         :<|> NodeInspectionAPI tag v x t
                         :<|> TestBenchAPI v x
