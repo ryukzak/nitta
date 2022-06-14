@@ -1,15 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use forM_" #-}
 
 module NITTA.Model.Microarchitecture.Config (
     mkMicroarchitecture,
 ) where
 
-import Control.Monad.State (when)
 import Data.Aeson (
     FromJSON (parseJSON),
     Options (sumEncoding),
@@ -21,7 +17,6 @@ import Data.Aeson (
  )
 import Data.Default (Default (def))
 import Data.HashMap.Internal.Strict (HashMap)
-import Data.Maybe (fromJust, isJust)
 import Data.Text qualified as T
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
@@ -83,8 +78,8 @@ instance FromJSON PUConf where
 
 data NetworkConf = NetworkConf
     { name :: T.Text
-    , pus :: Maybe [PUConf]
-    , protos :: Maybe [PUConf]
+    , pus :: [PUConf]
+    , protos :: [PUConf]
     }
     deriving (Generic, Show)
 
@@ -105,8 +100,8 @@ mkMicroarchitecture ioSync toml =
             | proto = addCustomPrototype
             | otherwise = addCustom
         build NetworkConf{pus, protos} = do
-            when (isJust pus) $ mapM_ (configure False) $ fromJust pus
-            when (isJust protos) $ mapM_ (configure True) $ fromJust protos
+            mapM_ (configure False) pus
+            mapM_ (configure True) protos
             where
                 configure proto Accum{name} = addPU proto name def PU.AccumIO
                 configure proto Divider{name, pipeline, mock} = addPU proto name (PU.divider pipeline mock) PU.DividerIO
@@ -132,6 +127,6 @@ mkMicroarchitecture ioSync toml =
                                     }
         nets = networks (getFromToml toml :: MicroarchitectureConf)
         mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name ioSync) (build net)
-     in if length nets > 1
-            then error "multi-networks are not currently supported"
-            else mkNetwork (head nets)
+     in case nets of
+            [n] -> mkNetwork n
+            _ -> error "multi-networks are not currently supported"

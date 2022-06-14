@@ -243,7 +243,7 @@ instance ToSample (NodeView tag v x t) where
                             { pWaitTime = 1
                             , pRestrictedTime = False
                             , pNotTransferableInputs = [0, 0]
-                            , pWaveOfUse = 0
+                            , pFirstWaveOfTargetUse = 0
                             }
                 , decision =
                     DataflowDecisionView

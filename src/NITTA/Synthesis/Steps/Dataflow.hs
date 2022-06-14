@@ -54,7 +54,7 @@ data DataflowMetrics = DataflowMetrics
     , pNotTransferableInputs :: [Float]
     -- ^number of variables, which is not transferable for affected
     -- functions.
-    , pWaveOfUse :: Float
+    , pFirstWaveOfTargetUse :: Float
     -- ^number of the first wave in which one of the target variables is used
     }
     deriving (Generic)
@@ -76,7 +76,10 @@ instance
         let TimeConstraint{tcAvailable, tcDuration} = epAt $ snd dfSource
             vs = unionsMap (variables . snd) dfTargets
             lvs = length vs
-            waveNum = length . takeWhile (\ProcessWave{pwFs} -> lvs == length (vs `S.difference` unionsMap inputs pwFs)) $ processWaves
+            waveNum =
+                length
+                    . takeWhile (\ProcessWave{pwFs} -> lvs == length (vs `S.difference` unionsMap inputs pwFs))
+                    $ processWaves
          in DataflowMetrics
                 { pWaitTime = fromIntegral (inf tcAvailable)
                 , pRestrictedTime = fromEnum (sup tcDuration) /= maxBound
@@ -85,18 +88,27 @@ instance
                         affectedFunctions = filter (\f -> not $ null (inputs f `S.intersection` vs)) fs
                         notTransferableVars = map (\f -> inputs f S.\\ transferableVars) affectedFunctions
                      in map (fromIntegral . length) notTransferableVars
-                , pWaveOfUse = fromIntegral waveNum :: Float
+                , pFirstWaveOfTargetUse = fromIntegral waveNum :: Float
                 }
 
-    estimate SynthesisState{numberOfDataflowOptions} _o _d DataflowMetrics{pWaitTime, pNotTransferableInputs, pRestrictedTime, pWaveOfUse} =
-        2000
-            + (numberOfDataflowOptions >= threshold)
-            <?> 1000
-            + pRestrictedTime
-            <?> 200
-            - sum pNotTransferableInputs
-            * 5
-            - pWaitTime
-            - pWaveOfUse
+    estimate
+        SynthesisState{numberOfDataflowOptions}
+        _o
+        _d
+        DataflowMetrics
+            { pWaitTime
+            , pNotTransferableInputs
+            , pRestrictedTime
+            , pFirstWaveOfTargetUse
+            } =
+            2000
+                + (numberOfDataflowOptions >= threshold)
+                <?> 1000
+                + pRestrictedTime
+                <?> 200
+                - sum pNotTransferableInputs
+                * 5
+                - pWaitTime
+                - pFirstWaveOfTargetUse
 
 threshold = 20

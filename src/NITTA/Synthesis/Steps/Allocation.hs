@@ -8,7 +8,7 @@
 {- |
 Module      : NITTA.Synthesis.Steps.Allocation
 Description : Implementation of SynthesisDecisionCls that allows to allocate PUs
-Copyright   : (c) Aleksandr Penskoi, 2022
+Copyright   : (c) Aleksandr Penskoi, Vitaliy Zakusilo, 2022
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -24,7 +24,7 @@ import NITTA.Intermediate.Analysis (ProcessWave (ProcessWave, pwFs))
 import NITTA.Model.Networks.Bus (BusNetwork (bnPUPrototypes, bnPus, bnRemains))
 import NITTA.Model.Networks.Types (PU (PU, unit), PUPrototype (..))
 import NITTA.Model.Problems.Allocation (
-    Allocation (Allocation, puTag),
+    Allocation (Allocation, processUnitTag),
     AllocationProblem (allocationDecision),
  )
 import NITTA.Model.ProcessorUnits.Types (
@@ -66,9 +66,9 @@ instance
     where
     decisions SynthesisState{sTarget} o = [(o, allocationDecision sTarget o)]
 
-    parameters SynthesisState{sTarget = TargetSystem{mUnit}, processWaves, numberOfProcessWaves} Allocation{puTag} _ =
+    parameters SynthesisState{sTarget = TargetSystem{mUnit}, processWaves, numberOfProcessWaves} Allocation{processUnitTag} _ =
         let pus = M.elems $ bnPus mUnit
-            tmp = bnPUPrototypes mUnit M.! puTag
+            tmp = bnPUPrototypes mUnit M.! processUnitTag
             mParallelism PUPrototype{pProto} = parallelismType pProto
             canProcessTmp PUPrototype{pProto} f = allowToProcess f pProto
             canProcessPU PU{unit} f = allowToProcess f unit

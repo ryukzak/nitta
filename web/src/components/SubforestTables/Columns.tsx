@@ -212,7 +212,7 @@ export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
 export function showAllocation(decision: Allocation): ReactElement {
   return (
     <div>
-      <strong>{decision.bnTag}</strong> <Icon.ArrowLeft /> {decision.puTag}
+      <strong>{decision.networkTag}</strong> <Icon.ArrowLeft /> {decision.processUnitTag}
     </div>
   );
 }

@@ -324,7 +324,7 @@ tests =
                             Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
                             Bus.addPrototype "accum{x}" AccumIO
                             Bus.addPrototype "mul{x}" MultiplierIO
-                            Bus.add "spi" $ -- use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
+                            Bus.add "spi" $ -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
                                 SPISlave
                                     { slave_mosi = InputPortTag "mosi"
                                     , slave_miso = OutputPortTag "miso"

@@ -456,9 +456,9 @@ doTransfer vs = do
         Nothing -> lift $ assertFailure $ "can't find transfer for: " <> show vs <> " in: " <> show opts
 
 doAllocation :: T.Text -> T.Text -> TSStatement x ()
-doAllocation bnTag puTag = do
+doAllocation networkTag processUnitTag = do
     st@UnitTestState{unit = ts} <- get
-    let d = Allocation{bnTag = bnTag, puTag = puTag}
+    let d = Allocation{networkTag = networkTag, processUnitTag = processUnitTag}
         opts = allocationOptions ts
     unless (d `L.elem` opts) $
         lift $
@@ -526,10 +526,11 @@ assertEmptyDataFlow = do
         error "assertEmptyDataFlow: dataflow should be empty"
 
 mkAllocation :: T.Text -> T.Text -> Statement u v x (Allocation T.Text)
-mkAllocation bnTag puTag = return Allocation{bnTag, puTag}
+mkAllocation networkTag processUnitTag = return Allocation{networkTag, processUnitTag}
 
 mkAllocationOptions :: (Typeable tag, UnitTag tag) => tag -> [tag] -> Statement u v x [Allocation tag]
-mkAllocationOptions bnTag puTags = return $ map (\puTag -> Allocation{bnTag, puTag}) puTags
+mkAllocationOptions networkTag puTags =
+    return $ map (\processUnitTag -> Allocation{networkTag, processUnitTag}) puTags
 
 assertAllocation :: (Typeable a, Eq a, Show a) => Int -> a -> TSStatement x ()
 assertAllocation number alloc = do

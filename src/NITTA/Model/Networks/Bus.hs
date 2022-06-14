@@ -187,7 +187,7 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
     tryBind f net@BusNetwork{bnRemains, bnPus, bnPUPrototypes}
         | any (allowToProcess f) (M.elems bnPus) = Right net{bnRemains = f : bnRemains}
-        -- TODO
+        -- TODO:
         -- There are several issues that need to be addressed: see https://github.com/ryukzak/nitta/pull/195#discussion_r853486450
         -- 1) Now the binding of functions to the network is hardcoded, that prevents use of an empty uarch at the start
         -- 2) If Allocation options are independent of the bnRemains, then they are present in all synthesis states, which means no leaves in the synthesis tree
@@ -423,26 +423,26 @@ instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
     allocationOptions BusNetwork{bnName, bnRemains, bnPUPrototypes} =
         map toOptions $ M.keys $ M.filter (\PUPrototype{pProto} -> any (`allowToProcess` pProto) bnRemains) bnPUPrototypes
         where
-            toOptions puTag =
+            toOptions processUnitTag =
                 Allocation
-                    { bnTag = bnName
-                    , puTag
+                    { networkTag = bnName
+                    , processUnitTag
                     }
 
-    allocationDecision bn@BusNetwork{bnPUPrototypes, bnPus, bnProcess} alloc@Allocation{bnTag, puTag} =
-        let tag = bnTag <> "_" <> fromTemplate puTag (show (length bnPus))
+    allocationDecision bn@BusNetwork{bnPUPrototypes, bnPus, bnProcess} alloc@Allocation{networkTag, processUnitTag} =
+        let tag = networkTag <> "_" <> fromTemplate processUnitTag (show (length bnPus))
             prototype =
-                if M.member puTag bnPUPrototypes
-                    then bnPUPrototypes M.! puTag
-                    else error $ "No suitable prototype for the tag (" <> toString puTag <> ")"
+                if M.member processUnitTag bnPUPrototypes
+                    then bnPUPrototypes M.! processUnitTag
+                    else error $ "No suitable prototype for the tag (" <> toString processUnitTag <> ")"
             addPU t PUPrototype{pProto, pIOPorts} = modifyNetwork bn $ do addCustom t pProto pIOPorts
             nBn = addPU tag prototype
          in nBn
                 { bnProcess = execScheduleWithProcess bn bnProcess $ scheduleAllocation alloc
                 , bnPUPrototypes =
-                    if isTemplate puTag
+                    if isTemplate processUnitTag
                         then bnPUPrototypes
-                        else M.delete puTag bnPUPrototypes
+                        else M.delete processUnitTag bnPUPrototypes
                 }
 
 --------------------------------------------------------------------------

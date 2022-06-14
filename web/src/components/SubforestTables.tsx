@@ -77,10 +77,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       <Table
         name="Refactor"
         nodes={nodes.filter(
-          (e) =>
-            e.decision.tag !== "DataflowDecisionView" &&
-            e.decision.tag !== "BindDecisionView" &&
-            e.decision.tag !== "AllocationView"
+          (e) => !["DataflowDecisionView", "BindDecisionView", "AllocationView"].includes(e.decision.tag)
         )}
         columns={[
           sidColumn(appContext.setSID),
@@ -120,7 +117,11 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
             60
           ),
           textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
-          textColumn("wave of use", (e: Node) => String((e.parameters as DataflowMetrics).pWaveOfUse), 60),
+          textColumn(
+            "first wave of target use",
+            (e: Node) => String((e.parameters as DataflowMetrics).pFirstWaveOfTargetUse),
+            60
+          ),
           detailColumn(),
         ]}
       />

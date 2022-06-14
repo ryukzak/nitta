@@ -320,7 +320,7 @@ microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
     addPrototype "mul{x}" MultiplierIO
     addPrototype "accum{x}" AccumIO
     addPrototype "div{x}" DividerIO
-    add "spi" $ -- use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
+    add "spi" $ -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
         SPISlave
             { slave_mosi = InputPortTag "mosi"
             , slave_miso = OutputPortTag "miso"

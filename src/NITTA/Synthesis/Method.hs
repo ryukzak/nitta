@@ -125,7 +125,9 @@ allBestThreadIO n tree = do
 bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
 bestLeaf tree leafs =
     let successLeafs = filter (\node -> isComplete node && isLeaf node) leafs
-        target = sTarget . sState
      in case successLeafs of
-            _ : _ -> minimumOn (\l -> (processDuration $ target l, puSize $ target l)) successLeafs
             [] -> headDef tree leafs
+            _ : _ ->
+                minimumOn
+                    (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
+                    successLeafs
