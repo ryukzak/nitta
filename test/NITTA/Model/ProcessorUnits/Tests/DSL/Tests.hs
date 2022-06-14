@@ -294,28 +294,77 @@ tests =
                             , Pull $ O $ S.fromList ["d^0#2"]
                             ]
                         ]
-            , unitTestCase "target system: manual synthesis, allocation works correctly" def $ do
-                setNetwork $
-                    Bus.defineNetwork "net1" ASync $ do
-                        Bus.addPrototype "fram{x}" FramIO
-                        Bus.addPrototype "accum" AccumIO
-                setBusType pInt
-                assignLua
-                    [__i|
-                        function sum(a)
-                            local d = a + 1
-                            sum(d)
-                        end
-                        sum(0)
-                        |]
-                doAllocation "net1" "accum"
-                doAllocation "net1" "fram{x}"
-                assertAllocation 1 =<< mkAllocation "net1" "fram{x}"
-                assertAllocation 1 =<< mkAllocation "net1" "accum"
-                assertAllocationOptions =<< mkAllocationOptions "net1" ["fram{x}"]
-                assertPU "net1_accum" (Proxy :: Proxy (Accum T.Text Int Int))
-                assertPU "net1_fram1" (Proxy :: Proxy (Fram T.Text Int Int))
-                synthesizeAndCoSim
+            , testGroup
+                "Allocation synthesis step"
+                [ unitTestCase "target system: manual synthesis, allocation works correctly" def $ do
+                    setNetwork $
+                        Bus.defineNetwork "net1" ASync $ do
+                            Bus.addPrototype "fram{x}" FramIO
+                            Bus.addPrototype "accum" AccumIO
+                    setBusType pInt
+                    assignLua
+                        [__i|
+                            function sum(a)
+                                local d = a + 1
+                                sum(d)
+                            end
+                            sum(0)
+                            |]
+                    doAllocation "net1" "accum"
+                    doAllocation "net1" "fram{x}"
+                    assertAllocation 1 =<< mkAllocation "net1" "fram{x}"
+                    assertAllocation 1 =<< mkAllocation "net1" "accum"
+                    assertAllocationOptions =<< mkAllocationOptions "net1" ["fram{x}"]
+                    assertPU "net1_accum" (Proxy :: Proxy (Accum T.Text Int Int))
+                    assertPU "net1_fram1" (Proxy :: Proxy (Fram T.Text Int Int))
+                    synthesizeAndCoSim
+                , unitTestCase "target system: autosynthesis, allocate required PUs" def $ do
+                    setNetwork $
+                        Bus.defineNetwork "net1" ASync $ do
+                            Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
+                            Bus.addPrototype "accum{x}" AccumIO
+                            Bus.addPrototype "mul{x}" MultiplierIO
+                            Bus.add "spi" $ -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
+                                SPISlave
+                                    { slave_mosi = InputPortTag "mosi"
+                                    , slave_miso = OutputPortTag "miso"
+                                    , slave_sclk = InputPortTag "sclk"
+                                    , slave_cs = InputPortTag "cs"
+                                    }
+                    setBusType pInt
+                    assignLua
+                        [__i|
+                            function counter(x1)
+                                send(x1)
+                                x2 = x1 + 1
+                                counter(x2)
+                            end
+                            counter(0)
+                            |]
+                    synthesizeAndCoSim
+                    assertAllocation 1 =<< mkAllocation "net1" "fram{x}"
+                    assertAllocation 1 =<< mkAllocation "net1" "accum{x}"
+                    assertAllocation 0 =<< mkAllocation "net1" "mul{x}"
+                , unitTestCase "target system: autosynthesis, allocation comes after constant folding" def $ do
+                    setNetwork $
+                        Bus.defineNetwork "net1" ASync $ do
+                            Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
+                            Bus.addPrototype "accum{x}" AccumIO
+                            Bus.addPrototype "mul{x}" MultiplierIO
+                    setBusType pInt
+                    assignLua
+                        [__i|
+                            function mul3(x1)
+                                x1 = (1 + 1 + 1) * x1
+                                mul3(x1)
+                            end
+                            mul3(1)
+                            |]
+                    synthesizeAndCoSim
+                    assertAllocation 1 =<< mkAllocation "net1" "fram{x}"
+                    assertAllocation 1 =<< mkAllocation "net1" "mul{x}"
+                    assertAllocation 0 =<< mkAllocation "net1" "accum{x}"
+                ]
             ]
         , testGroup
             "BusNetwork negative tests"

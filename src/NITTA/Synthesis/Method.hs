@@ -126,5 +126,8 @@ bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag
 bestLeaf tree leafs =
     let successLeafs = filter (\node -> isComplete node && isLeaf node) leafs
      in case successLeafs of
-            _ : _ -> minimumOn (processDuration . sTarget . sState) successLeafs
             [] -> headDef tree leafs
+            _ : _ ->
+                minimumOn
+                    (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
+                    successLeafs
