@@ -136,6 +136,12 @@ nitta> Test suite nitta-test passed
 Completed 2 action(s).
 ```
 
+Run specified test or group:
+```
+$ stack test --test-arguments '-p "pattern for the test name"'
+...
+```
+
 ### Other
 ``` console
 # build only one target

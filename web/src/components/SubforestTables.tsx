@@ -3,7 +3,7 @@ import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Dataflow } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics } from "services/gen/types";
+import { BindMetrics, AllocationMetrics, DataflowMetrics } from "services/gen/types";
 import {
   sidColumn,
   textColumn,
@@ -26,6 +26,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   };
   let known = [
     "RootView",
+    "AllocationView",
     "BindDecisionView",
     "DataflowDecisionView",
     "BreakLoopView",
@@ -75,12 +76,32 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
+        nodes={nodes.filter(
+          (e) =>
+            e.decision.tag !== "DataflowDecisionView" &&
+            e.decision.tag !== "BindDecisionView" &&
+            e.decision.tag !== "AllocationView"
+        )}
         columns={[
           sidColumn(appContext.setSID),
           objectiveColumn(scoresInfo),
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
+          detailColumn(),
+        ]}
+      />
+      <Table
+        name="Allocation"
+        nodes={nodes.filter((e) => e.decision.tag === "AllocationView")}
+        columns={[
+          sidColumn(appContext.setSID),
+          objectiveColumn(scoresInfo),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
+          textColumn("parallelism", (e: Node) => (e.parameters as AllocationMetrics).mParallelism, 200),
+          textColumn("related remains", (e: Node) => (e.parameters as AllocationMetrics).mRelatedRemains, 200),
+          textColumn("max parallels", (e: Node) => (e.parameters as AllocationMetrics).mMaxParallels, 200),
+          textColumn("avg parallels", (e: Node) => (e.parameters as AllocationMetrics).mAvgParallels, 200),
+          textColumn("min PUs for remains", (e: Node) => (e.parameters as AllocationMetrics).mMinPusForRemains, 200),
           detailColumn(),
         ]}
       />

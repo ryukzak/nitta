@@ -4,7 +4,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.OptimizeAccum
+Module      : NITTA.Synthesis.Steps.OptimizeAccum
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3

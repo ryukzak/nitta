@@ -4,7 +4,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.Dataflow
+Module      : NITTA.Synthesis.Steps.Dataflow
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3

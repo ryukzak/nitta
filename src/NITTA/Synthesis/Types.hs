@@ -44,8 +44,10 @@ import Data.List.Split
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
 import Data.Typeable
+import NITTA.Intermediate.Analysis (ProcessWave)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
+import NITTA.Model.Problems.Allocation
 import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
@@ -132,6 +134,8 @@ class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
 data SynthesisState m tag v x t = SynthesisState
     { sParent :: Maybe (Tree m tag v x t)
     , sTarget :: m
+    , sAllocationOptions :: [Allocation tag]
+    -- ^PU allocation options cache
     , sBindOptions :: [Bind tag v x]
     -- ^bind options cache
     , sResolveDeadlockOptions :: [ResolveDeadlock v x]
@@ -148,6 +152,10 @@ data SynthesisState m tag v x t = SynthesisState
     -- ^if algorithm will be represented as a graph, where nodes -
     -- variables of not binded functions, edges - casuality, wave is a
     -- minimal number of a step from an initial node to selected
+    , processWaves :: [ProcessWave v x]
+    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
+    , numberOfProcessWaves :: Int
+    -- ^ Number of execution waves of the algorithm.
     , numberOfDataflowOptions :: Int
     -- ^number of dataflow options
     , transferableVars :: S.Set v

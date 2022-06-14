@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -71,6 +72,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     -- * Synthesize target system
     doBind,
     doTransfer,
+    doAllocation,
     synthesis,
 
     -- * Refactors for PU and target system
@@ -83,6 +85,11 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     mkResolveDeadlock,
 
     -- * Asserts for PU and target system
+    mkAllocation,
+    mkAllocationOptions,
+    assertAllocation,
+    assertAllocationOptions,
+    assertPU,
     assertAllEndpointRoles,
     assertBindFullness,
     assertPUCoSimulation,
@@ -102,6 +109,8 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     traceProcess,
     traceRefactor,
     traceProcessWaves,
+    traceAllocation,
+    traceDataflowState,
 ) where
 
 import Control.Monad.Identity
@@ -110,8 +119,10 @@ import Data.CallStack
 import Data.Default
 import Data.List (find)
 import Data.List qualified as L
+import Data.Map qualified as M
 import Data.Proxy
 import Data.Set qualified as S
+import Data.String.Interpolate
 import Data.String.ToString
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
@@ -123,6 +134,7 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types (PUClasses)
+import NITTA.Model.Networks.Types qualified as NT (PU (PU, unit))
 import NITTA.Model.Problems
 import NITTA.Model.ProcessIntegrity
 import NITTA.Model.ProcessorUnits
@@ -443,6 +455,17 @@ doTransfer vs = do
         Just o -> put st{unit = dataflowDecision ts $ dataflowOption2decision o}
         Nothing -> lift $ assertFailure $ "can't find transfer for: " <> show vs <> " in: " <> show opts
 
+doAllocation :: T.Text -> T.Text -> TSStatement x ()
+doAllocation bnTag puTag = do
+    st@UnitTestState{unit = ts} <- get
+    let d = Allocation{bnTag = bnTag, puTag = puTag}
+        opts = allocationOptions ts
+    unless (d `L.elem` opts) $
+        lift $
+            assertFailure $
+                "allocation not available: " <> show d <> " in: " <> show opts
+    put st{unit = allocationDecision ts d}
+
 class Refactor u ref where
     refactorAvail :: ref -> Statement u v x ()
     refactor :: ref -> Statement u v x ()
@@ -466,7 +489,7 @@ instance (Var v, Val x, BreakLoopProblem u v x) => Refactor u (BreakLoop v x) wh
     refactor ref = refactor' ref breakLoopOptions breakLoopDecision
 
 mkBreakLoop :: (Var v, Val x) => x -> v -> [v] -> Statement u v x (BreakLoop v x)
-mkBreakLoop x i o = return $ BreakLoop x (S.fromList o) i
+mkBreakLoop x input output = return $ BreakLoop x (S.fromList output) input
 
 instance (Var v, Val x, OptimizeAccumProblem u v x) => Refactor u (OptimizeAccum v x) where
     refactorAvail ref = refactorAvail' ref optimizeAccumOptions
@@ -502,13 +525,67 @@ assertEmptyDataFlow = do
     unless (null $ functions mDataFlowGraph) $
         error "assertEmptyDataFlow: dataflow should be empty"
 
+mkAllocation :: T.Text -> T.Text -> Statement u v x (Allocation T.Text)
+mkAllocation bnTag puTag = return Allocation{bnTag, puTag}
+
+mkAllocationOptions :: (Typeable tag, UnitTag tag) => tag -> [tag] -> Statement u v x [Allocation tag]
+mkAllocationOptions bnTag puTags = return $ map (\puTag -> Allocation{bnTag, puTag}) puTags
+
+assertAllocation :: (Typeable a, Eq a, Show a) => Int -> a -> TSStatement x ()
+assertAllocation number alloc = do
+    allocations <- filter isAllocationStep . map (descent . pDesc) . steps . process . unit <$> get
+    let matched = length $ filter (\(AllocationStep a) -> Just alloc == cast a) allocations
+    when (matched /= number) $
+        lift $
+            assertFailure
+                [__i|
+                    Number of allocations does not match the expected
+                    expected: #{ show number }
+                    actual: #{ show matched }
+                    allocation: #{ show alloc }
+                    steps:
+                    #{ showArray allocations }
+                    |]
+
+-- |Asserts that allocation options that provides target system are equals to specified options
+assertAllocationOptions :: [Allocation T.Text] -> TSStatement x ()
+assertAllocationOptions options = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    let actual = allocationOptions mUnit
+    when (options /= actual) $
+        lift $
+            assertFailure
+                [__i|
+                    Allocation options doesn't match expected
+                    expected:
+                    #{ showArray options }
+                    actual:
+                    #{ showArray actual }
+                    |]
+
+assertPU :: (Typeable a) => T.Text -> Proxy a -> TSStatement x ()
+assertPU tag puProxy = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    let pu = M.lookup tag $ bnPus mUnit
+        sameType NT.PU{NT.unit} = typeOf unit == typeRep puProxy
+    case pu of
+        Nothing ->
+            lift . assertFailure $
+                [__i|
+                    The BusNetwork was expected to have a PU with a specific tag (#{tag})
+                    Existing PUs: #{ show $ M.keys $ bnPus mUnit }
+                    |]
+        Just p ->
+            unless (sameType p) . lift . assertFailure $
+                "It was expected that the type of PU would be" <> show (typeRep puProxy) <> "but found" <> show (typeOf p)
+
 assertSynthesisComplete :: TSStatement x ()
 assertSynthesisComplete = do
     UnitTestState{unit = unit@TargetSystem{mUnit, mDataFlowGraph}} <- get
     unless (isSynthesisComplete unit) $
         lift $
             assertFailure $
-                "synthesis is not complete: " <> show (transferred mUnit `S.difference` variables mDataFlowGraph)
+                "synthesis is not complete: " <> show (variables mDataFlowGraph `S.difference` transferred mUnit)
 
 assertTargetSystemCoSimulation :: TSStatement x ()
 assertTargetSystemCoSimulation = do
@@ -559,17 +636,25 @@ traceFunctions = do
 traceEndpoints :: PUStatement pu v x t ()
 traceEndpoints = do
     UnitTestState{unit} <- get
-    lift $ putListLn "Endpoints:" $ endpointOptions unit
+    lift $ putListLn "Endpoints: " $ endpointOptions unit
 
 traceProcess :: (ProcessorUnit u v x Int) => Statement u v x ()
 traceProcess = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
 
+traceDataflowState :: TSStatement x ()
+traceDataflowState = do
+    UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
+    lift $
+        do
+            putStrLn "DataFlowGraph: "
+            print mDataFlowGraph
+
 traceDataflow :: TSStatement x ()
 traceDataflow = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "Dataflow:" $ dataflowOptions mUnit
+    lift $ putListLn "Dataflow: " $ dataflowOptions mUnit
 
 traceProcessWaves :: TSStatement x ()
 traceProcessWaves = do
@@ -579,15 +664,20 @@ traceProcessWaves = do
 traceBind :: TSStatement x ()
 traceBind = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "Bind:" $ bindOptions mUnit
+    lift $ putListLn "Bind: " $ bindOptions mUnit
+
+traceAllocation :: TSStatement x ()
+traceAllocation = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Allocation: " $ allocationOptions mUnit
 
 traceRefactor :: TSStatement x ()
 traceRefactor = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
-    lift $ putListLn "breakLoopOptions:" $ breakLoopOptions mUnit
-    lift $ putListLn "constantFoldingOptions:" $ constantFoldingOptions mUnit
-    lift $ putListLn "optimizeAccumOptions:" $ optimizeAccumOptions mUnit
-    lift $ putListLn "resolveDeadlockOptions:" $ resolveDeadlockOptions mUnit
+    lift $ putListLn "breakLoopOptions: " $ breakLoopOptions mUnit
+    lift $ putListLn "constantFoldingOptions: " $ constantFoldingOptions mUnit
+    lift $ putListLn "optimizeAccumOptions: " $ optimizeAccumOptions mUnit
+    lift $ putListLn "resolveDeadlockOptions: " $ resolveDeadlockOptions mUnit
 
 putListLn name opts = do
     putStrLn name

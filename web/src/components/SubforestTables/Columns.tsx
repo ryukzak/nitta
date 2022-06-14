@@ -3,7 +3,15 @@ import React, { ReactElement } from "react";
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { Bind, Dataflow, BreakLoop, OptimizeAccum, ConstantFolding, ResolveDeadlock } from "services/HaskellApiService";
+import {
+  Allocation,
+  Bind,
+  Dataflow,
+  BreakLoop,
+  OptimizeAccum,
+  ConstantFolding,
+  ResolveDeadlock
+} from "services/HaskellApiService";
 import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
 import { Interval, FView, DecisionView } from "services/gen/types";
 import { Column } from "react-table";
@@ -139,6 +147,7 @@ export function showDecision(decision: DecisionView): ReactElement {
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
   else if (decision.tag === "OptimizeAccumView") return showOptimizeAccum(decision);
   else if (decision.tag === "ResolveDeadlockView") return showResolveDeadlock(decision);
+  else if (decision.tag === "AllocationView") return showAllocation(decision);
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
@@ -198,4 +207,12 @@ export function showOptimizeAccum(d: OptimizeAccum): ReactElement {
 
 export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
   return <div>{decision.newBuffer}</div>;
+}
+
+export function showAllocation(decision: Allocation): ReactElement {
+  return (
+    <div>
+      <strong>{decision.bnTag}</strong> <Icon.ArrowLeft /> {decision.puTag}
+    </div>
+  );
 }

@@ -4,7 +4,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.ConstantFolding
+Module      : NITTA.Synthesis.Steps.ConstantFolding
 Description :
 Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3

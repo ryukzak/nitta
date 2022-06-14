@@ -4,7 +4,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.BreakLoop
+Module      : NITTA.Synthesis.Steps.BreakLoop
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3

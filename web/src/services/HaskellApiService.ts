@@ -17,6 +17,7 @@ import {
   Process,
   Step,
   StepInfoView,
+  IAllocationView,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import {
@@ -40,6 +41,7 @@ export type Decision = DecisionView;
 export type Root = IRootView;
 
 export type Bind = IBindDecisionView;
+export type Allocation = IAllocationView;
 export type Dataflow = IDataflowDecisionView;
 
 export type BreakLoop = IBreakLoopView;

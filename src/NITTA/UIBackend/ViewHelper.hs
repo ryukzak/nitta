@@ -156,6 +156,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
                     , decsionType = case sDecision of
                         Root{} -> "root"
                         SynthesisDecision{metrics}
+                            | Just AllocationMetrics{} <- cast metrics -> "Allocation"
                             | Just BindMetrics{} <- cast metrics -> "Bind"
                             | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
                             | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"

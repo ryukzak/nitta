@@ -15,11 +15,12 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Types (
     -- *Processor unit
-    UnitTag,
+    UnitTag (..),
     ProcessorUnit (..),
     bind,
     allowToProcess,
     NextTick (..),
+    ParallelismType (..),
 
     -- *Process description
     Process (..),
@@ -34,6 +35,7 @@ module NITTA.Model.ProcessorUnits.Types (
     extractInstructionAt,
     withShift,
     isRefactorStep,
+    isAllocationStep,
 
     -- *Control
     Controllable (..),
@@ -56,6 +58,7 @@ import Data.Default
 import Data.Either
 import Data.Kind
 import Data.List qualified as L
+import Data.List.Utils (replace)
 import Data.Maybe
 import Data.Set qualified as S
 import Data.String
@@ -71,8 +74,33 @@ import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
--- |Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
+-- |Class for processor unit tag or "name"
+class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag) => UnitTag tag where
+    -- |Whether the value can be used as a template or not
+    isTemplate :: tag -> Bool
+
+    -- |Create tag from the template and index
+    fromTemplate :: tag -> String -> tag
+
+instance UnitTag T.Text where
+    isTemplate tag = T.isInfixOf (T.pack "{x}") tag
+    fromTemplate tag index = T.replace (T.pack "{x}") (T.pack index) tag
+
+instance UnitTag String where
+    isTemplate tag = "{x}" `L.isInfixOf` tag
+    fromTemplate tag index = replace "{x}" index tag
+
+-- |Processor unit parallelism type
+data ParallelismType
+    = -- |All operations can be performed in parallel mode
+      Full
+    | -- |All operations can be performed in pipeline mode
+      Pipeline
+    | -- |Other processor units
+      None
+    deriving (Show, Generic, Eq)
+
+instance ToJSON ParallelismType
 
 {- |Process unit - part of NITTA process with can execute a function from
 intermediate representation:
@@ -97,6 +125,10 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     --
     -- 'ProcessStepID' may change from one call to another.
     process :: u -> Process t (StepInfo v x t)
+
+    -- |Indicates what type of parallelism is supported by 'ProcessorUnit'
+    parallelismType :: u -> ParallelismType
+    parallelismType _ = None
 
 bind f pu = case tryBind f pu of
     Right pu' -> pu'
@@ -194,6 +226,8 @@ data StepInfo v x t where
         StepInfo v x t
     -- |wrapper for nested process unit step (used for networks)
     NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
+    -- |Process unit allocation step
+    AllocationStep :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
 
 descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
@@ -201,8 +235,12 @@ descent desc = desc
 isRefactorStep RefactorStep{} = True
 isRefactorStep _ = False
 
+isAllocationStep AllocationStep{} = True
+isAllocationStep _ = False
+
 instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
+    show (AllocationStep alloc) = "Allocation: " <> show alloc
     show (RefactorStep ref) = "Refactor: " <> show ref
     show (IntermediateStep F{fun}) = "Intermediate: " <> show fun
     show (EndpointRoleStep eff) = "Endpoint: " <> show eff
