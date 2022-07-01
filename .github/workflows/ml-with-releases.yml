@@ -1,0 +1,81 @@
+name: ML Test & Train + GitHub Release
+# Maybe this should be split to several workflows triggered by different events.  
+
+on:
+  push:
+    tags:
+      - "?.?.*"
+
+# Filtering only to react to pushes to master branch may be needed here. 
+
+jobs:
+  ml-test-train-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: fregante/setup-git-user@v1
+      
+      # To make NITTA Docker workflows faster^H^H^H^H^H^H^H succeed within finite time, this action:
+      #   - saves docker build cache in its post run;
+      #   - restores the cache if it exists in its pre run.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+
+      - name: Build NITTA binaries and dependencies
+        run: |
+          docker build --target build -f ml/synthesis/Dockerfile --tag nitta-build .
+          docker create --name nitta-build-container nitta-build
+          mkdir -p build/nitta/web
+          docker cp nitta-build-container:/app/web/build build/nitta/web
+          docker cp nitta-build-container:/app/build/nitta/nitta build/nitta
+          docker rm -v nitta-build-container
+
+      - name: Smoke test ML for synthesis
+        run: |
+          docker build --target ml-script -f ml/synthesis/Dockerfile --tag nitta-ml-script:latest .
+          docker run nitta-ml-script -m pytest -c ml/synthesis/pytest.ini
+
+      - name: Train and/or evaluate ML model
+        run: |
+          docker run --name model-trainer nitta-ml-script ml/synthesis/src/scripts/train_evaluate_in_ci.py
+          mkdir -p build/model-synthesis
+          docker cp model-trainer:/app/ml/synthesis/models/production build/model-synthesis
+
+      - name: Ensure model is deleted from repository
+        run: |
+          git rm -r ml/synthesis/models/production --ignore-unmatch
+          if [[ $(git status --short -uno) ]]; then
+            git commit -m "Delete manually trained ML model"
+            git push origin HEAD:master
+          else 
+            echo "not committing since nothing changed"
+          fi
+          
+      - name: Prepare release
+        run: |
+          git fetch -f --tags origin ${{ github.ref }}:${{ github.ref }}
+
+          NITTA_VERSION="$(git describe)"
+          TAG_MESSAGE="$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/*/})"
+          
+          echo "Preparing release for NITTA v$NITTA_VERSION, contents:"
+          mkdir build/release
+          echo "$TAG_MESSAGE" | tee build/release/body.txt
+          printf "\n" | tee -a build/release/body.txt
+          cat build/model-synthesis/production/description.txt | tee -a build/release/body.txt
+
+          cp -r examples build/nitta
+          # more to include?
+          # FIXME: remove runtime NITTA dependency from ./web/src/services/gen/PORT, yarn dev's proxy can be used now
+
+          tar -czvf "build/release/nitta-$NITTA_VERSION-linux-amd64.tar.gz" -C build/nitta .
+          zip -j -r "build/release/model-synthesis-$NITTA_VERSION.zip" build/model-synthesis
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: build/release/body.txt
+          files: |
+            build/release/*.tar.gz
+            build/release/*.zip

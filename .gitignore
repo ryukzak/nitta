@@ -21,3 +21,4 @@ hie.yaml
 *.hie
 .idea/
 *.iml
+**/build
