@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 {- |
 Module      : NITTA.Model.Tests.Internals
 Description : Internals utils for model tests
@@ -9,21 +7,31 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Tests.Internals (
-    externalTestCntr,
-    incrCounter,
     runTargetSynthesisWithUniqName,
+    uniqTestPath,
 ) where
 
-import Data.Atomics.Counter (incrCounter, newCounter)
+import Control.Concurrent.STM.TVar
+import Data.Map qualified as M
+import GHC.Conc
 import NITTA.Synthesis
 import System.IO.Unsafe (unsafePerformIO)
 
--- TODO: replace by function like: uniqTestPath :: FilePath -> IO FilePath
+globalNameRegistry = unsafePerformIO $ newTVarIO M.empty
+{-# NOINLINE globalNameRegistry #-}
 
--- |Dirty hack to avoid collision with parallel QuickCheck.
-externalTestCntr = unsafePerformIO $ newCounter 0
-{-# NOINLINE externalTestCntr #-}
+uniqTestPath :: FilePath -> IO FilePath
+uniqTestPath name =
+    atomically $ do
+        nameRegistry <- readTVar globalNameRegistry
+        case M.lookup name nameRegistry of
+            Nothing -> do
+                writeTVar globalNameRegistry $ M.insert name (0 :: Int) nameRegistry
+                return name
+            Just count -> do
+                writeTVar globalNameRegistry $ M.adjust (+ 1) name nameRegistry
+                return (name <> "_" <> show (count + 1))
 
 runTargetSynthesisWithUniqName t@TargetSynthesis{tName} = do
-    i <- incrCounter 1 externalTestCntr
-    runTargetSynthesis t{tName = tName <> "_" <> show i}
+    name <- uniqTestPath tName
+    runTargetSynthesis t{tName = name}

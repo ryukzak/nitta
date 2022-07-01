@@ -1,16 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -31,17 +23,17 @@ import Control.Monad
 import Data.Aeson (ToJSON (toJSON))
 import Data.Aeson.Encode.Pretty
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder
 import Data.Typeable
 import GHC.Generics (Generic)
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -50,19 +42,19 @@ import NITTA.Project.Types (Implementation (Immediate))
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty ((...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
 class (Typeable i) => SimpleIOInterface i
 
 data SimpleIO i v x t = SimpleIO
     { bounceFilter :: Int
-    , -- |if 'Nothing' then size should defined by algorithm
-      bufferSize :: Maybe Int
+    , bufferSize :: Maybe Int
+    -- ^if 'Nothing' then size should defined by algorithm
     , receiveQueue :: [Q v x]
     , receiveN :: Int
-    , -- |set if send buffer overlap receive buffer
-      isReceiveOver :: Bool
+    , isReceiveOver :: Bool
+    -- ^set if send buffer overlap receive buffer
     , sendQueue :: [Q v x]
     , sendN :: Int
     , process_ :: Process t (StepInfo v x t)
@@ -99,13 +91,13 @@ instance
     where
     tryBind f sio@SimpleIO{sendQueue, receiveQueue, receiveN, sendN, bufferSize}
         | Just F.Receive{} <- castF f
-          , fromMaybe maxBound bufferSize == receiveN =
+        , fromMaybe maxBound bufferSize == receiveN =
             Left "IO process unit to small buffer size"
         | Just F.Send{} <- castF f
-          , fromMaybe maxBound bufferSize == sendN =
+        , fromMaybe maxBound bufferSize == sendN =
             Left "IO process unit to small buffer size"
         | Just (F.Receive (O vs)) <- castF f
-          , let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =
+        , let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =
             Right
                 sio
                     { receiveQueue = Q{vars = S.elems vs, function = f, cads} : receiveQueue
@@ -113,7 +105,7 @@ instance
                     , process_
                     }
         | Just (F.Send (I v)) <- castF f
-          , let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =
+        , let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =
             Right
                 sio
                     { sendQueue = Q{vars = [v], function = f, cads} : sendQueue
@@ -144,20 +136,20 @@ instance
     endpointDecision sio@SimpleIO{receiveQueue} d@EndpointSt{epRole = Source vs, epAt}
         | ([q@Q{function, vars = allVars}], receiveQueue') <-
             L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
-          , let remainVars = allVars L.\\ S.elems vs
-                process_ = execSchedule sio $ do
-                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars
-                    when (null remainVars) $ void $ scheduleFunction epAt function
-                receiveQueue'' =
-                    if null remainVars
-                        then receiveQueue'
-                        else q{vars = remainVars} : receiveQueue' =
+        , let remainVars = allVars L.\\ S.elems vs
+              process_ = execSchedule sio $ do
+                void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars
+                when (null remainVars) $ void $ scheduleFunction epAt function
+              receiveQueue'' =
+                if null remainVars
+                    then receiveQueue'
+                    else q{vars = remainVars} : receiveQueue' =
             sio{receiveQueue = receiveQueue'', process_}
     endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}
         | ([Q{function}], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
-          , let (_, process_) = runSchedule sio $ do
-                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
-                    scheduleFunction epAt function =
+        , let process_ = execSchedule sio $ do
+                void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending
+                scheduleFunction epAt function =
             sio
                 { sendQueue = sendQueue'
                 , isReceiveOver = (sendN - length sendQueue) >= (receiveN - length receiveQueue)
@@ -224,7 +216,7 @@ instance UnambiguouslyDecode (SimpleIO i v x t) where
 instance Connected (SimpleIO i v x t) where
     data Ports (SimpleIO i v x t) = SimpleIOPorts
         { wr, oe :: SignalTag
-        , -- |this flag which indicates an end of the data transaction
+        , -- \|this flag which indicates an end of the data transaction
           -- requires for stop computational process while data transferring
           -- to avoid loses
           stop :: String
@@ -256,7 +248,7 @@ protocolDescription tag io d
     | not $ null $ endpointOptions io = error "EndpointProblem is not completed"
     | otherwise =
         let impFile = toString $ tag <> ".json"
-            fbs = getFBs $ process_ io
+            fbs = getIntermediates $ process_ io
          in Immediate impFile $
                 toStrict $
                     toLazyText $

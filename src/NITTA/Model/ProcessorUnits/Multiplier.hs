@@ -1,6 +1,8 @@
+-- All extensions should be enabled explicitly due to doctest in this module.
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -230,7 +232,7 @@ Multiplier:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
             1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
         relations:
-            0) Vertical 0 1
+            0) Vertical {vUp = 0, vDown = 1}
         nextTick: 3
         nextUid: 2
 >>> mapM_ print $ endpointOptions st2
@@ -250,8 +252,8 @@ Multiplier:
             2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
             3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
         relations:
-            0) Vertical 2 3
-            1) Vertical 0 1
+            0) Vertical {vUp = 2, vDown = 3}
+            1) Vertical {vUp = 0, vDown = 1}
         nextTick: 4
         nextUid: 4
 >>> mapM_ print $ endpointOptions st3
@@ -279,9 +281,9 @@ Multiplier:
             4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
             5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
         relations:
-            0) Vertical 4 5
-            1) Vertical 2 3
-            2) Vertical 0 1
+            0) Vertical {vUp = 4, vDown = 5}
+            1) Vertical {vUp = 2, vDown = 3}
+            2) Vertical {vUp = 0, vDown = 1}
         nextTick: 7
         nextUid: 6
 >>> mapM_ print $ endpointOptions st4
@@ -306,14 +308,14 @@ Multiplier:
             7) Step {pID = 7, pInterval = 7 ... 7, pDesc = Instruction: Out}
             8) Step {pID = 8, pInterval = 0 ... 7, pDesc = Intermediate: a * b = c = d}
         relations:
-            0) Vertical 8 6
-            1) Vertical 8 4
-            2) Vertical 8 2
-            3) Vertical 8 0
-            4) Vertical 6 7
-            5) Vertical 4 5
-            6) Vertical 2 3
-            7) Vertical 0 1
+            0) Vertical {vUp = 8, vDown = 6}
+            1) Vertical {vUp = 8, vDown = 4}
+            2) Vertical {vUp = 8, vDown = 2}
+            3) Vertical {vUp = 8, vDown = 0}
+            4) Vertical {vUp = 6, vDown = 7}
+            5) Vertical {vUp = 4, vDown = 5}
+            6) Vertical {vUp = 2, vDown = 3}
+            7) Vertical {vUp = 0, vDown = 1}
         nextTick: 8
         nextUid: 9
 >>> endpointOptions st5
@@ -334,10 +336,10 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, partition, (\\))
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -352,33 +354,33 @@ import Prettyprinter
 synthesis model for that PU.
 -}
 data Multiplier v x t = Multiplier
-    { -- |List of the assigned but not processed functions. To execute a
-      -- function:
-      --
-      -- - removing the function from this list;
-      --
-      -- - transfering information from function to 'targets' and 'sources'
-      --   fields.
-      --
-      -- An assigned function can be executed in random order.
-      remain :: [F v x]
-    , -- |List of variables, which is needed to push to the PU for current
-      -- function evaluation.
-      targets :: [v]
-    , -- |List of variables, which is needed to pull from PU for current
-      -- function evaluation. Pull order is arbitrary. All pulled variables
-      -- correspond to the same value (same result).
-      sources :: [v]
-    , -- |Current work, if some function is executed.
-      currentWork :: Maybe (F v x)
-    , -- |Description of scheduled computation process
-      -- ('NITTA.Model.ProcessorUnits.Types').
-      process_ :: Process t (StepInfo v x t)
-    , -- |HDL implementation of PU contains a multiplier IP core from Altera.
-      -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
-      -- system will be contained non-synthesizable implementation of that
-      -- IP-core.
-      isMocked :: Bool
+    { remain :: [F v x]
+    -- ^List of the assigned but not processed functions. To execute a
+    -- function:
+    --
+    -- - removing the function from this list;
+    --
+    -- - transfering information from function to 'targets' and 'sources'
+    --   fields.
+    --
+    -- An assigned function can be executed in random order.
+    , targets :: [v]
+    -- ^List of variables, which is needed to push to the PU for current
+    -- function evaluation.
+    , sources :: [v]
+    -- ^List of variables, which is needed to pull from PU for current
+    -- function evaluation. Pull order is arbitrary. All pulled variables
+    -- correspond to the same value (same result).
+    , currentWork :: Maybe (F v x)
+    -- ^Current work, if some function is executed.
+    , process_ :: Process t (StepInfo v x t)
+    -- ^Description of scheduled computation process
+    -- ('NITTA.Model.ProcessorUnits.Types').
+    , isMocked :: Bool
+    -- ^HDL implementation of PU contains a multiplier IP core from Altera.
+    -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
+    -- system will be contained non-synthesizable implementation of that
+    -- IP-core.
     }
 
 instance (VarValTime v x t) => Pretty (Multiplier v x t) where
@@ -542,15 +544,15 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
 
     endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
-          , ([_], targets') <- partition (== v) targets
-          , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
-            -- requred because of realisation.
-            let sel = if null targets' then B else A
-          , --  Computation process planning is carried out.
-            let (_, process_') = runSchedule pu $ do
-                    -- this is required for correct work of automatically generated tests,
-                    -- that takes information about time from Process
-                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
+        , ([_], targets') <- partition (== v) targets
+        , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
+          -- requred because of realisation.
+          let sel = if null targets' then B else A
+        , --  Computation process planning is carried out.
+          let process_' = execSchedule pu $ do
+                -- this is required for correct work of automatically generated tests,
+                -- that takes information about time from Process
+                scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load sel =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -558,21 +560,22 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
                 }
     endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just f, process_} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
-          , let sources' = sources \\ S.elems v
-          , sources' /= sources
-          , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
-          , -- Compututation process planning is carring on.
-            let (_, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
-                    when (null sources') $ do
-                        high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
-                        -- Set up the vertical relantions between functional unit
-                        -- and related to that data sending.
-                        establishVerticalRelations high low
-                    -- this is needed to correct work of automatically generated tests
-                    -- that takes time about time from Process
-                    return endpoints =
+        , let sources' = sources \\ S.elems v
+        , sources' /= sources
+        , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
+        , -- Compututation process planning is carring on.
+          let process_' = execSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
+                when (null sources') $ do
+                    -- Set up the vertical relantions between functional unit
+                    -- and related to that data sending.
+
+                    -- FIXME: here ([]) you can see the source of error.
+                    -- Function don't connected to bind step. It should be fixed.
+                    scheduleFunctionFinish_ [] f $ a ... sup epAt
+                -- this is needed to correct work of automatically generated tests
+                -- that takes time about time from Process
+                return endpoints =
             pu
                 { process_ = process_'
                 , -- In case if not all variables what asked - remaining are saved.
@@ -583,7 +586,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
                 }
     endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-          , Just f <- find (\f -> v `S.member` variables f) remain =
+        , Just f <- find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     -- If something went wrong.
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
@@ -617,11 +620,11 @@ instance Controllable (Multiplier v x t) where
         deriving (Show)
 
     data Microcode (Multiplier v x t) = Microcode
-        { -- | Write to mUnit signal.
+        { -- \| Write to mUnit signal.
           wrSignal :: Bool
-        , -- |Uploading to mUnit argument selector.
+        , -- \|Uploading to mUnit argument selector.
           selSignal :: Bool
-        , -- |Downloading from mUnit signal.
+        , -- \|Downloading from mUnit signal.
           oeSignal :: Bool
         }
         deriving (Show, Eq, Ord)
@@ -662,11 +665,11 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 -}
 instance Connected (Multiplier v x t) where
     data Ports (Multiplier v x t) = MultiplierPorts
-        { -- |get data from the bus (data_in)
+        { -- \|get data from the bus (data_in)
           wr :: SignalTag
-        , -- |determine argument on the bus (A | B)
+        , -- \|determine argument on the bus (A | B)
           wrSel :: SignalTag
-        , -- |send result to the bus
+        , -- \|send result to the bus
           oe :: SignalTag
         }
         deriving (Show)

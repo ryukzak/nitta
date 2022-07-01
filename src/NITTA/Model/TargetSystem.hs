@@ -1,9 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -21,7 +15,8 @@ module NITTA.Model.TargetSystem (
 ) where
 
 import Control.Exception (assert)
-import qualified Data.Set as S
+import Data.Default
+import Data.Set qualified as S
 import GHC.Generics
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
@@ -33,12 +28,15 @@ import NITTA.Utils
 synthesis graph.
 -}
 data TargetSystem u tag v x t = TargetSystem
-    { -- |model of target unit
-      mUnit :: u
-    , -- |whole application algorithm
-      mDataFlowGraph :: DataFlowGraph v x
+    { mUnit :: u
+    -- ^model of target unit
+    , mDataFlowGraph :: DataFlowGraph v x
+    -- ^whole application algorithm
     }
     deriving (Generic)
+
+instance (Default u) => Default (TargetSystem u tag v x t) where
+    def = TargetSystem def def
 
 instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (F v x) where
     functions TargetSystem{mUnit, mDataFlowGraph} =
@@ -51,10 +49,21 @@ isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bo
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
 
+instance
+    ( VarValTime v x t
+    , ProcessorUnit u v x t
+    ) =>
+    ProcessorUnit (TargetSystem u tag v x t) v x t
+    where
+    tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
+    process TargetSystem{mUnit} = process mUnit
+    parallelismType TargetSystem{mUnit} = parallelismType mUnit
+    puSize TargetSystem{mUnit} = puSize mUnit
+
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
 
-    bindDecision f@TargetSystem{mUnit} d = f{mUnit = bindDecision mUnit d}
+    bindDecision ts@TargetSystem{mUnit} d = ts{mUnit = bindDecision mUnit d}
 
 instance (DataflowProblem u tag v t) => DataflowProblem (TargetSystem u tag v x t) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit
@@ -102,3 +111,8 @@ instance (Var v, ResolveDeadlockProblem u v x) => ResolveDeadlockProblem (Target
             { mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d
             , mUnit = resolveDeadlockDecision mUnit d
             }
+
+instance (AllocationProblem u tag) => AllocationProblem (TargetSystem u tag v x t) tag where
+    allocationOptions TargetSystem{mUnit} = allocationOptions mUnit
+
+    allocationDecision f@TargetSystem{mUnit} d = f{mUnit = allocationDecision mUnit d}

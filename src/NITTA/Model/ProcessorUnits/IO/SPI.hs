@@ -1,12 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -22,13 +17,16 @@ module NITTA.Model.ProcessorUnits.IO.SPI (
     anySPI,
     Ports (..),
     IOPorts (..),
+    spiMasterPorts,
+    spiSlavePorts,
 ) where
 
 import Data.Aeson
 import Data.Default
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Set qualified as S
 import Data.String.Interpolate
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -46,11 +44,11 @@ instance SimpleIOInterface SPIinterface
 
 type SPI v x t = SimpleIO SPIinterface v x t
 
-anySPI :: (Time t) => Int -> SPI v x t
-anySPI bounceFilter =
+anySPI :: (Time t) => Int -> Maybe Int -> SPI v x t
+anySPI bounceFilter bufferSize =
     SimpleIO
         { bounceFilter
-        , bufferSize = Just 6 -- FIXME:
+        , bufferSize
         , receiveQueue = []
         , receiveN = 0
         , isReceiveOver = False
@@ -75,14 +73,30 @@ instance IOConnected (SPI v x t) where
             }
         deriving (Show)
 
-    inputPorts SPISlave{..} = [slave_mosi, slave_sclk, slave_cs]
-    inputPorts SPIMaster{..} = [master_miso]
+    inputPorts SPISlave{..} = S.fromList [slave_mosi, slave_sclk, slave_cs]
+    inputPorts SPIMaster{..} = S.fromList [master_miso]
 
-    outputPorts SPISlave{..} = [slave_miso]
-    outputPorts SPIMaster{..} = [master_mosi, master_sclk, master_cs]
+    outputPorts SPISlave{..} = S.fromList [slave_miso]
+    outputPorts SPIMaster{..} = S.fromList [master_mosi, master_sclk, master_cs]
+
+spiMasterPorts tag =
+    SPIMaster
+        { master_mosi = OutputPortTag $ tag <> "_mosi"
+        , master_miso = InputPortTag $ tag <> "_miso"
+        , master_sclk = OutputPortTag $ tag <> "_sclk"
+        , master_cs = OutputPortTag $ tag <> "_cs"
+        }
+
+spiSlavePorts tag =
+    SPISlave
+        { slave_mosi = InputPortTag $ tag <> "_mosi"
+        , slave_miso = OutputPortTag $ tag <> "_miso"
+        , slave_sclk = InputPortTag $ tag <> "_sclk"
+        , slave_cs = InputPortTag $ tag <> "_cs"
+        }
 
 instance (Time t) => Default (SPI v x t) where
-    def = anySPI 0
+    def = anySPI 0 $ Just 6
 
 instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_spi"

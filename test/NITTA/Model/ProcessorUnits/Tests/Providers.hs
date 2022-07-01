@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-dodgy-exports #-}
@@ -34,18 +28,19 @@ import Control.Monad
 import Data.CallStack
 import Data.Data
 import Data.Default
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, BreakLoop)
+import NITTA.Model.ProcessIntegrity
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.ProcessorUnits.Tests.DSL
 import NITTA.Model.ProcessorUnits.Tests.Utils
 import NITTA.Model.Tests.Internals
 import NITTA.Project
-import qualified NITTA.Project as P
+import NITTA.Project qualified as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
@@ -72,9 +67,10 @@ puCoSimTestCase ::
     TestTree
 puCoSimTestCase name u cntxCycle alg =
     unitTestCase name u $ do
-        assignsNaive alg cntxCycle
+        mapM_ (assignNaive cntxCycle) alg
         decideNaiveSynthesis
-        assertCoSimulation
+        assertSynthesisDone
+        assertPUCoSimulation
 
 -- *Properties
 
@@ -82,9 +78,12 @@ puCoSimTestCase name u cntxCycle alg =
 finitePUSynthesisProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        return $
-            isProcessComplete pu fs
-                && null (endpointOptions pu)
+        case checkProcessIntegrity pu of
+            Left msg -> error msg
+            Right _ ->
+                return $
+                    isProcessComplete pu fs
+                        && null (endpointOptions pu)
 
 {- |A computational process of functional (Haskell) and logical (Verilog)
 simulation should be identical for any correct algorithm.
@@ -96,15 +95,19 @@ puCoSimProp name pu0 fsGen =
         return $
             monadicIO $
                 run $ do
+                    uniqueName <- uniqTestPath name
                     unless (isProcessComplete pu fs) $
-                        error $ "process is not complete: " <> incompleteProcessMsg pu fs
-                    i <- incrCounter 1 externalTestCntr
+                        error $
+                            "process is not complete: " <> incompleteProcessMsg pu fs
+                    case checkProcessIntegrity pu of
+                        Left e -> error e
+                        Right _ -> return ()
                     pwd <- getCurrentDirectory
-                    let pTargetProjectPath = "gen" </> (toModuleName name <> "_" <> show i)
+                    let pTargetProjectPath = "gen" </> toModuleName uniqueName
                         pInProjectNittaPath = "."
                         prj =
                             Project
-                                { pName = T.pack $ toModuleName name
+                                { pName = T.pack $ toModuleName uniqueName
                                 , pLibPath = "hdl"
                                 , pTargetProjectPath
                                 , pAbsTargetProjectPath = pwd </> pTargetProjectPath
@@ -116,5 +119,5 @@ puCoSimProp name pu0 fsGen =
                                 , pTemplates = ["templates/Icarus"]
                                 }
                     writeProject prj
-                    res <- runTestbench prj
-                    unless (tbStatus res) $ error $ "Fail CoSim in: " <> pTargetProjectPath
+                    report <- runTestbench prj
+                    unless (tbStatus report) $ error $ "Fail CoSim in: " <> pTargetProjectPath

@@ -1,9 +1,9 @@
-import React, { FC, useContext } from "react";
+import React, { FC, useContext, useMemo } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Dataflow } from "services/HaskellApiService";
-import { BindMetrics, DataflowMetrics } from "services/gen/types";
+import { BindMetrics, AllocationMetrics, DataflowMetrics } from "services/gen/types";
 import {
   sidColumn,
   textColumn,
@@ -12,6 +12,7 @@ import {
   parametersColumn,
   detailColumn,
   showDecision,
+  ScoresInfo,
 } from "components/SubforestTables/Columns";
 
 type SubforestTablesProps = {
@@ -25,6 +26,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   };
   let known = [
     "RootView",
+    "AllocationView",
     "BindDecisionView",
     "DataflowDecisionView",
     "BreakLoopView",
@@ -33,6 +35,14 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
     "ResolveDeadlockView",
   ];
 
+  const scoresInfo = useMemo<ScoresInfo>(() => {
+    const scores = nodes.map((n) => n.score);
+    return {
+      minScore: Math.min(...scores),
+      maxScore: Math.max(...scores),
+    };
+  }, [nodes]);
+
   return (
     <>
       <Table
@@ -40,7 +50,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
 
           textColumn("description", (e: Node) => showDecision(e.decision)),
 
@@ -66,12 +76,29 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
+        nodes={nodes.filter(
+          (e) => !["DataflowDecisionView", "BindDecisionView", "AllocationView"].includes(e.decision.tag)
+        )}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
+          detailColumn(),
+        ]}
+      />
+      <Table
+        name="Allocation"
+        nodes={nodes.filter((e) => e.decision.tag === "AllocationView")}
+        columns={[
+          sidColumn(appContext.setSID),
+          objectiveColumn(scoresInfo),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
+          textColumn("parallelism", (e: Node) => (e.parameters as AllocationMetrics).mParallelism, 200),
+          textColumn("related remains", (e: Node) => (e.parameters as AllocationMetrics).mRelatedRemains, 200),
+          textColumn("max parallels", (e: Node) => (e.parameters as AllocationMetrics).mMaxParallels, 200),
+          textColumn("avg parallels", (e: Node) => (e.parameters as AllocationMetrics).mAvgParallels, 200),
+          textColumn("min PUs for remains", (e: Node) => (e.parameters as AllocationMetrics).mMinPusForRemains, 200),
           detailColumn(),
         ]}
       />
@@ -80,7 +107,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source[0], 60),
           textColumn("description", (e: Node) => showDecision(e.decision)),
           textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime, 60),
@@ -90,6 +117,11 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
             60
           ),
           textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
+          textColumn(
+            "first wave of target use",
+            (e: Node) => String((e.parameters as DataflowMetrics).pFirstWaveOfTargetUse),
+            60
+          ),
           detailColumn(),
         ]}
       />
@@ -98,7 +130,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         nodes={nodes.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
         columns={[
           sidColumn(appContext.setSID),
-          objectiveColumn(),
+          objectiveColumn(scoresInfo),
           decisionColumn(),
           parametersColumn(),
           detailColumn(),

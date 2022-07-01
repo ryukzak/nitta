@@ -1,12 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -26,8 +21,9 @@ module NITTA.Model.ProcessorUnits.IO.I2C (
 
 import Data.Aeson
 import Data.Default
+import Data.Set qualified as S
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Value
 import NITTA.Model.ProcessorUnits.IO.SimpleIO
 import NITTA.Model.ProcessorUnits.Types
@@ -66,14 +62,14 @@ instance IOConnected (I2C v x t) where
             }
         deriving (Show)
 
-    inputPorts I2CMaster{} = []
-    inputPorts I2CSlave{..} = [slaveSCL]
+    inputPorts I2CMaster{} = S.empty
+    inputPorts I2CSlave{..} = S.fromList [slaveSCL]
 
-    outputPorts I2CMaster{..} = [masterSCL]
-    outputPorts I2CSlave{} = []
+    outputPorts I2CMaster{..} = S.fromList [masterSCL]
+    outputPorts I2CSlave{} = S.empty
 
-    inoutPorts I2CMaster{..} = [masterSDA]
-    inoutPorts I2CSlave{..} = [slaveSDA]
+    inoutPorts I2CMaster{..} = S.fromList [masterSDA]
+    inoutPorts I2CSlave{..} = S.fromList [slaveSDA]
 
 instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (I2C v x t) where
     moduleName _ _ = "pu_i2c"

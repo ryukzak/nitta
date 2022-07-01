@@ -1,15 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -29,13 +23,13 @@ module NITTA.Model.ProcessorUnits.Accum (
 import Control.Monad (when)
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
-import NITTA.Intermediate.Functions
+import Data.Text qualified as T
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -55,10 +49,10 @@ import Prettyprinter
     @[[(False, "a"), (False, "b")], [(False, "c")], [(False, "d"), (True, "d")], [(False, "f")]]@
 -}
 data Job v x = Job
-    { -- |Contains future parts expression to eval (c + d = e)
-      tasks :: [[(Bool, v)]]
-    , -- |Func of this expression
-      func :: F v x
+    { tasks :: [[(Bool, v)]]
+    -- ^Contains future parts expression to eval (c + d = e)
+    , func :: F v x
+    -- ^Func of this expression
     , state :: JobState
     }
 
@@ -79,12 +73,12 @@ instance (Var v) => Show (Job v x) where
             show' = map (map (second toString))
 
 data Accum v x t = Accum
-    { -- |List of jobs (expressions)
-      remainJobs :: [Job v x]
-    , -- |Current job
-      currentJob :: Maybe (Job v x)
-    , -- |Process
-      process_ :: Process t (StepInfo v x t)
+    { remainJobs :: [Job v x]
+    -- ^List of jobs (expressions)
+    , currentJob :: Maybe (Job v x)
+    -- ^Current job
+    , process_ :: Process t (StepInfo v x t)
+    -- ^Process
     }
 
 instance (VarValTime v x t) => Pretty (Accum v x t) where
@@ -109,25 +103,25 @@ instance (VarValTime v x t) => Default (Accum v x t) where
 
 instance Default x => DefaultX (Accum v x t) x
 
-registerAcc f@Acc{actions} pu@Accum{remainJobs} =
+registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
     pu
         { remainJobs =
             Job
                 { tasks = concat $ actionGroups actions
                 , func = packF f
                 , state = Initialize
-                } :
-            remainJobs
+                }
+                : remainJobs
         }
 
 actionGroups [] = []
 actionGroups as =
-    let (pushs, as') = span isPush as
-        (pulls, as'') = span isPull as'
-     in [ map (\(Push sign (I v)) -> (sign == Minus, v)) pushs
-        , concatMap (\(Pull (O vs)) -> map (True,) $ S.elems vs) pulls
-        ] :
-        actionGroups as''
+    let (pushs, as') = span F.isPush as
+        (pulls, as'') = span F.isPull as'
+     in [ map (\(F.Push sign (I v)) -> (sign == F.Minus, v)) pushs
+        , concatMap (\(F.Pull (O vs)) -> map (True,) $ S.elems vs) pulls
+        ]
+            : actionGroups as''
 
 targetTask tasks
     | even $ length tasks = Just $ head tasks
@@ -139,11 +133,13 @@ sourceTask tasks
 
 instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu
-        | Just (Add a b c) <- castF f =
-            Right $ registerAcc (Acc [Push Plus a, Push Plus b, Pull c]) pu
-        | Just (Sub a b c) <- castF f =
-            Right $ registerAcc (Acc [Push Plus a, Push Minus b, Pull c]) pu
-        | Just f'@Acc{} <- castF f =
+        | Just (F.Add a b c) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c]) pu
+        | Just (F.Sub a b c) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Minus b, F.Pull c]) pu
+        | Just (F.Neg a b) <- castF f =
+            Right $ registerAcc (F.Acc [F.Push F.Minus a, F.Pull b]) pu
+        | Just f'@F.Acc{} <- castF f =
             Right $ registerAcc f' pu
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
@@ -158,7 +154,8 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     _ -> nextTick pu
              in map
                     (\v -> EndpointSt (Target v) $ TimeConstraint (from ... maxBound) (singleton 1))
-                    $ S.elems $ taskVars task
+                    $ S.elems
+                    $ taskVars task
         | Just task <- sourceTask tasks =
             let from = case state of
                     Calculate -> nextTick pu + 2
@@ -185,7 +182,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     instr = case state of
                         Initialize -> ResetAndLoad neg
                         _ -> Load neg
-                    (_, process_') = runSchedule pu $ do
+                    process_' = execSchedule pu $ do
                         scheduleEndpoint d $ scheduleInstructionUnsafe epAt instr
                  in pu
                         { process_ = process_'
@@ -199,7 +196,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         d@EndpointSt{epRole = Source vs, epAt}
             | Just task <- sourceTask tasks =
                 let (_, task') = L.partition ((`S.member` vs) . snd) task
-                    (_, process_') = runSchedule pu $ do
+                    process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (epAt - 1) Out
                         when (null task' && length tasks == 1) $ do
                             let endpoints' = relatedEndpoints process_ $ variables func

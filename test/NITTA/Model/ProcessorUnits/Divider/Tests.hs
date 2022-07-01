@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -19,7 +18,7 @@ module NITTA.Model.ProcessorUnits.Divider.Tests (
 
 import Data.Default
 import Data.String.Interpolate
-import NITTA.LuaFrontend.Tests.Providers
+import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.Tasty (testGroup)
@@ -50,7 +49,7 @@ tests =
             assertEndpoint 7 maxBound $ provide ["c"]
             decideAt 7 7 $ provide ["c"]
             decideAt 8 8 $ provide ["d"]
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "division only mod" u2 $ do
             assign $ division "a" "b" ["c"] []
             setValue "a" 64
@@ -58,7 +57,7 @@ tests =
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 8 8 $ provide ["c"]
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "division only rem" u2 $ do
             assign $ division "a" "b" [] ["d"]
             setValue "a" 64
@@ -66,7 +65,7 @@ tests =
             decideAt 1 1 $ consume "a"
             decideAt 2 2 $ consume "b"
             decideAt 11 11 $ provide ["d"]
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "division success pipeline" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
@@ -77,7 +76,7 @@ tests =
             decideAt 4 4 $ consume "f"
             decideAt 7 7 $ provide ["c"]
             decideAt 10 10 $ provide ["g"]
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "division pipeline on last tick" u2 $ do
             assign $ division "a" "b" ["c"] []
             assign $ division "e" "f" ["g"] []
@@ -113,7 +112,7 @@ tests =
             assertLocks []
             assertEndpoint 11 maxBound $ provide ["g"]
             decideAt 13 13 $ provide ["g"]
-            assertCoSimulation
+            assertPUCoSimulation
         , expectFail $
             unitTestCase "division pipeline after result corrupted" u2 $ do
                 assign $ division "a" "b" ["c"] []

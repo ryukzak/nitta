@@ -1,15 +1,12 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
+
+-- FIXME: should be removed on aeson-typescript update
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {- |
 Module      : APIGen
@@ -26,9 +23,9 @@ module APIGen (
 import Data.Aeson
 import Data.Aeson.TypeScript.TH
 import Data.Proxy
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import Data.Version
-import NITTA.Model.Microarchitecture
+import NITTA.Model.Microarchitecture.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
@@ -36,6 +33,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Synthesis
+import NITTA.Synthesis.Analysis
 import NITTA.UIBackend
 import NITTA.UIBackend.REST
 import NITTA.UIBackend.Timeline
@@ -78,11 +76,13 @@ $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
+$(deriveTypeScript defaultOptions ''TreeInfo)
 $(deriveTypeScript defaultOptions ''ShortNodeView)
 
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
+$(deriveTypeScript defaultOptions ''AllocationMetrics)
 $(deriveTypeScript defaultOptions ''DataflowMetrics)
 $(deriveTypeScript defaultOptions ''BreakLoopMetrics)
 $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
@@ -108,6 +108,7 @@ $(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
 $(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''UnitDesc)
 $(deriveTypeScript defaultOptions ''IOSynchronization)
+$(deriveTypeScript defaultOptions ''ParallelismType)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
@@ -137,41 +138,44 @@ main = do
                 foldl1
                     (<>)
                     [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy Interval)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstraint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
-                    , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (Interval T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimelinePoint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimeConstraint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TimelineWithViewPoint T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (ProcessTimelines T))
                     , -- synthesis tree
                       getTypeScriptDeclarations (Proxy :: Proxy DecisionView)
                     , -- metrics
                       getTypeScriptDeclarations (Proxy :: Proxy BindMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy AllocationMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy BreakLoopMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy OptimizeAccumMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy ResolveDeadlockMetrics)
                     , -- other
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TreeView T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy TreeInfo)
                     , getTypeScriptDeclarations (Proxy :: Proxy ShortNodeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (NodeView T1 T2 T3 T))
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
-                    , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
-                    , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpoints)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (GraphStructure T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (EndpointRole T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (EndpointSt T1 T2))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (UnitEndpoints T1 T2 T3))
                     , -- Process
-                      getTypeScriptDeclarations (Proxy :: Proxy Process)
-                    , getTypeScriptDeclarations (Proxy :: Proxy Step)
+                      getTypeScriptDeclarations (Proxy :: Proxy (Process T1 T2))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (Step T1 T2))
                     , getTypeScriptDeclarations (Proxy :: Proxy Relation)
                     , getTypeScriptDeclarations (Proxy :: Proxy StepInfoView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
+                    , getTypeScriptDeclarations (Proxy :: Proxy (TestbenchReport T1 T2))
                     , -- Microarchitecture
-                      getTypeScriptDeclarations (Proxy :: Proxy MicroarchitectureDesc)
-                    , getTypeScriptDeclarations (Proxy :: Proxy NetworkDesc)
-                    , getTypeScriptDeclarations (Proxy :: Proxy UnitDesc)
+                      getTypeScriptDeclarations (Proxy :: Proxy (MicroarchitectureDesc T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (NetworkDesc T))
+                    , getTypeScriptDeclarations (Proxy :: Proxy (UnitDesc T))
                     , getTypeScriptDeclarations (Proxy :: Proxy IOSynchronization)
+                    , getTypeScriptDeclarations (Proxy :: Proxy ParallelismType)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl

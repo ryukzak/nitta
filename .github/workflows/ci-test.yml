@@ -1,6 +1,7 @@
-name: Tests
+name: NITTA Build and Test
 
-on: [push]
+on:
+  pull_request:
 
 env:
   GH_PAGES_DIR: gh-pages
@@ -41,10 +42,7 @@ jobs:
 
       - name: Check examples by doctest
         run: |
-          stack build --fast
-          # dirty hack for fix Ambiguous module name ‘Data.String.Interpolate’:
-          # it was found in multiple packages: interpolate-0.2.1 string-interpolate-0.3.1.0
-          stack exec ghc-pkg unregister interpolate -- --force
+          stack build
           find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
       - name: Generate backend API
@@ -87,58 +85,6 @@ jobs:
         with:
           folder: ${{ env.GH_PAGES_DIR }}
           branch: gh-pages
-
-  hlint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: 'Set up HLint'
-      uses: rwe/actions-hlint-setup@v1
-
-    - name: 'Run HLint'
-      uses: rwe/actions-hlint-run@v2
-      with:
-        path: .
-        fail-on: suggestion
-
-
-  hs-codestyle-by-fourmolu:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache haskell-stack and fourmolu
-        uses: actions/cache@v2.1.3
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
-
-      - name: Install haskell-stack
-        uses: actions/setup-haskell@v1.1.3
-        with:
-          enable-stack: true
-
-      - name: Install fourmolu
-        run: |
-          mkdir -p ~/.stack
-          touch ~/.stack/config.yaml
-          echo 'allow-newer: true' >> ~/.stack/config.yaml
-          stack install fourmolu
-          echo ~/.local/bin >> $GITHUB_PATH
-
-      - uses: actions/checkout@v2
-      - name: Check formating
-        run: find . -name '*.hs' | xargs fourmolu -m check
-
-
-  ui-codestyle-by-prettier:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Check ts and tsx code style by prettier
-        working-directory: ./web
-        run: |
-          yarn add -s prettier
-          yarn exec -s prettier -- --check src/**/*.{ts,tsx}
 
 
   nitta-hdl:

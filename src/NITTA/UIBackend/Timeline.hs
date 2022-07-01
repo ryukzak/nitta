@@ -1,14 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.UIBackend.Timeline
@@ -27,10 +20,10 @@ module NITTA.UIBackend.Timeline (
 ) where
 
 import Data.Aeson
-import qualified Data.Map.Strict as M
+import Data.Map.Strict qualified as M
 import Data.Maybe
 import Data.String.ToString
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
 import Numeric.Interval.NonEmpty
@@ -97,7 +90,9 @@ processTimelines Process{steps, relations} =
             , verticalRelations = [(u, d) | (Vertical u d) <- relations]
             }
 
-viewpoint FStep{} = ViewPointID{level = "Fun", component = []}
+viewpoint IntermediateStep{} = ViewPointID{level = "Fun", component = []}
+viewpoint RefactorStep{} = ViewPointID{level = "Ref", component = []}
+viewpoint AllocationStep{} = ViewPointID{level = "Allocation", component = []}
 viewpoint CADStep{} = ViewPointID{level = "CAD", component = []}
 viewpoint EndpointRoleStep{} = ViewPointID{level = "EndPoint", component = []}
 viewpoint InstructionStep{} = ViewPointID{level = "INST", component = []}
@@ -119,8 +114,8 @@ appendToView step [] = [[step]]
 isConflicted Step{pInterval = a, pDesc = aD} Step{pInterval = b, pDesc = bD}
     -- we can hold a and b in one bucket, if both is a singleton
     | CADStep{} <- descent aD
-      , CADStep{} <- descent bD
-      , width a == 0 && width b == 0 =
+    , CADStep{} <- descent bD
+    , width a == 0 && width b == 0 =
         False
     --  | width a == 0 && width b == 0 = False
     | otherwise = a ==? b

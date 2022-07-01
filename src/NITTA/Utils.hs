@@ -1,10 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Utils
@@ -29,32 +23,45 @@ module NITTA.Utils (
 
     -- *Process inspection
     endpointAt,
+    getEndpoint,
+    getInstruction,
+    getCad,
     getEndpoints,
     transferred,
     inputsPushedAt,
     stepsInterval,
     relatedEndpoints,
-    isFB,
-    getFBs,
+    isIntermediate,
+    getIntermediate,
+    getIntermediates,
+    isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
+
+    -- *Toml
+    getToml,
+    getFromToml,
+    getFromTomlSection,
 ) where
 
 import Control.Monad.State (State, modify')
+import Data.Aeson
 import Data.Bits (setBit, testBit)
+import Data.HashMap.Strict qualified as HM
 import Data.List (sortOn)
-import Data.Maybe (isJust, mapMaybe)
-import qualified Data.Set as S
-import qualified Data.String.Utils as S
-import qualified Data.Text as T
+import Data.Maybe
+import Data.String.Utils qualified as S
+import Data.Text qualified as T
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
+import NITTA.Utils.ProcessDescription
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Prettyprinter.Render.Text
+import Text.Toml (parseTomlDoc)
 
 type Verilog = Doc ()
 doc2text :: Verilog -> T.Text
@@ -106,15 +113,25 @@ endpointAt t p =
         [] -> Nothing
         eps -> error $ "endpoints collision at: " ++ show t ++ " " ++ show eps
 
-isFB s = isJust $ getFB s
+getCad Step{pDesc} | CADStep cad <- descent pDesc = Just cad
+getCad _ = Nothing
 
-getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
-getFB _ = Nothing
+isIntermediate s = isJust $ getIntermediate s
 
-getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
+getIntermediate Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
+getIntermediate _ = Nothing
+
+getIntermediates p = mapMaybe getIntermediate $ sortOn stepStart $ steps p
+
+isEndpoint ep = isJust $ getEndpoint ep
 
 getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
+
+isInstruction instr = isJust $ getInstruction instr
+
+getInstruction Step{pDesc} | instr@(InstructionStep _) <- descent pDesc = Just instr
+getInstruction _ = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
@@ -126,15 +143,17 @@ stepsInterval ss =
         b = maximum $ map (sup . pInterval) ss
      in a ... b
 
-relatedEndpoints process_ vs =
-    filter
-        ( \case
-            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
-            _ -> False
-        )
-        $ steps process_
-
-isInstruction (InstructionStep _) = True
-isInstruction _ = False
-
 stepStart Step{pInterval} = I.inf pInterval
+
+getToml text = either (error . show) id $ parseTomlDoc "parse error: " text
+
+getFromToml toml = getFromTomlSection T.empty toml
+
+getFromTomlSection section toml
+    | section == T.empty = unwrap $ fromJSON $ toJSON toml
+    | otherwise = case HM.lookup section toml of
+        Just s -> unwrap $ fromJSON $ toJSON s
+        Nothing -> error $ "section not found - " <> T.unpack section
+    where
+        unwrap (Success conf) = conf
+        unwrap (Error msg) = error msg

@@ -1,10 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Simulation
@@ -17,17 +12,15 @@ Stability   : experimental
 module NITTA.Intermediate.Simulation (
     simulateDataFlowGraph,
     simulateAlg,
-    reorderAlgorithm,
 ) where
 
-import qualified Data.HashMap.Strict as HM
-import Data.List (intersect, (\\))
-import qualified Data.Map.Strict as M
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Set (elems)
 import Data.String.Interpolate
+import NITTA.Intermediate.Analysis (reorderAlgorithm)
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.Utils
 
 -- |Functional algorithm simulation
 simulateDataFlowGraph ::
@@ -104,18 +97,3 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
                 )
                 cntx00
                 fs
-
-reorderAlgorithm alg = orderAlgorithm' [] alg
-    where
-        orderAlgorithm' _ [] = []
-        orderAlgorithm' vs fs
-            | loops@(_ : _) <- filter isLoop fs
-              , let loopOutputs = elems $ unionsMap outputs loops =
-                case filter (not . null . intersect loopOutputs . elems . inputs) loops of
-                    [] -> loops ++ orderAlgorithm' (elems (unionsMap variables loops) ++ vs) (fs \\ loops)
-                    ready -> ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-        orderAlgorithm' vs fs
-            | let ready = filter (null . (\\ vs) . elems . inputs) fs
-              , not $ null ready =
-                ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-        orderAlgorithm' _ remain = error $ "Can't sort algorithm: " ++ show remain

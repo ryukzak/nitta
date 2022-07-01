@@ -1,5 +1,4 @@
-import { AxiosResponse, AxiosError } from "axios";
-import React, { useContext, useMemo, useState, useEffect, FC } from "react";
+import React, { useContext, useMemo, FC, useCallback } from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
 
@@ -9,6 +8,7 @@ import { UnitEndpointsData, EndpointOptionData } from "services/HaskellApiServic
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
+import { useApiRequest } from "hooks/useApiRequest";
 
 /**
  * Component to display a microarchitecture with available endpoints.
@@ -19,34 +19,26 @@ export interface IMicroarchitectureViewProps {}
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
   const { selectedSID } = useContext(AppContext) as IAppContext;
 
-  const [ma, setMA] = useState<MicroarchitectureData | null>(null);
-  const [endpoints, setEndpoints] = useState<Endpoints | null>(null);
+  const maRequest = useApiRequest({
+    requester: useCallback(() => api.getMicroarchitecture(selectedSID), [selectedSID]),
+  });
 
-  useEffect(() => {
-    setMA(null);
-    setEndpoints(null);
-    api
-      .getMicroarchitecture(selectedSID)
-      .then((response: AxiosResponse<MicroarchitectureData>) => setMA(response.data))
-      .catch((err: AxiosError) => console.error(err));
-    api
-      .getEndpoints(selectedSID)
-      .then((response: AxiosResponse<UnitEndpointsData[]>) => setEndpoints(collectEndpoints(response.data)))
-      .catch((err: AxiosError) => console.error(err));
-  }, [selectedSID]);
+  const endpointsRequest = useApiRequest({
+    requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]),
+  });
 
   const dot = useMemo(() => {
-    if (ma && endpoints) {
-      return renderMicroarchitectureDot(ma, endpoints);
+    if (maRequest.response && endpointsRequest.response) {
+      return renderMicroarchitectureDot(maRequest.response.data, collectEndpoints(endpointsRequest.response.data));
     }
-  }, [ma, endpoints]);
+  }, [maRequest.response, endpointsRequest.response]);
 
   return (
     <div className="bg-light border graphvizContainer">
       {dot && (
         <>
           <Graphviz dot={dot} options={{ height: 399, width: "100%", zoom: true }} />
-          <DownloadTextFile name={"microarchitecture.dot"} text={dot} />
+          <DownloadTextFile name="microarchitecture.dot" text={dot} />
         </>
       )}
     </div>

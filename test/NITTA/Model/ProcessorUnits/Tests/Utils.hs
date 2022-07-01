@@ -1,11 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
@@ -30,10 +24,10 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
 
 import Data.CallStack
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.List (delete)
 import Data.Set (elems, empty, fromList, intersection, union)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -42,7 +36,7 @@ import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
 import NITTA.Project
-import qualified NITTA.Project as P
+import NITTA.Project qualified as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
@@ -95,14 +89,17 @@ decisions.
 naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
     where
         naiveSynthesis' u
-            | opt : _ <- endpointOptions u =
-                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
+            | ref : _ <- breakLoopOptions u =
+                naiveSynthesis' $ breakLoopDecision u ref
+            | ep : _ <- endpointOptions u =
+                naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision ep
             | otherwise = u
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs =
-    "expected: " <> show (vsToStringList $ unionsMap variables fs)
+    "expected: "
+        <> show (vsToStringList $ unionsMap variables fs)
         <> " actual: "
         <> show (vsToStringList $ processedVars pu)
 
@@ -137,7 +134,7 @@ processAlgOnEndpointGen pu0 algGen' = do
     algSynthesisGen alg [] pu0
 
 -- FIXME: support new synthesis/refactor style
-data PUSynthesisTask r f e = BreakLoop r | Bind f | Transport e
+data PUSynthesisTask r f e = BreakLoop r | Bind f | Endpoint e
 
 algSynthesisGen fRemain fPassed pu = select tasksList
     where
@@ -145,7 +142,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             concat
                 [ map BreakLoop $ breakLoopOptions pu
                 , map Bind fRemain
-                , map Transport $ endpointOptions pu
+                , map Endpoint $ endpointOptions pu
                 ]
 
         select [] = return (pu, fPassed)
@@ -157,7 +154,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
             (Left _err) -> algSynthesisGen fRemain' fPassed pu
             where
                 fRemain' = delete f fRemain
-        taskPattern (Transport e) = do
+        taskPattern (Endpoint e) = do
             d <- endpointOptionToDecision <$> endpointGen e
             let pu' = endpointDecision pu d
             algSynthesisGen fRemain fPassed pu'

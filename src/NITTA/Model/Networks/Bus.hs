@@ -1,17 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Networks.Bus
@@ -20,31 +13,41 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-For creating BusNetwork see 'NITTA.Model.Microarchitecture'.
 -}
 module NITTA.Model.Networks.Bus (
     BusNetwork (..),
+    Instruction (..),
     Ports (..),
     IOPorts (..),
     bindedFunctions,
     controlSignalLiteral,
+    busNetwork,
+
+    -- * Builder
+    modifyNetwork,
+    defineNetwork,
+    addCustom,
+    add,
+    addPrototype,
+    addCustomPrototype,
 ) where
 
 import Control.Monad.State
 import Data.Bifunctor
 import Data.Default
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
+import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits.IO.SPI (SPI)
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
@@ -53,25 +56,43 @@ import NITTA.Project.VerilogSnippets
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, (...))
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
-    , -- |List of functions binded to network, but not binded to any process unit.
-      bnRemains :: [F v x]
-    , -- |Map process unit name to list of binded functions.
-      bnBinded :: M.Map tag [F v x]
-    , -- |Network process (bindings and transport instructions)
-      bnProcess :: Process t (StepInfo v x t)
-    , -- |Map of process units.
-      bnPus :: M.Map tag (PU v x t)
-    , -- |Controll bus width.
-      bnSignalBusWidth :: Int
+    , bnRemains :: [F v x]
+    -- ^List of functions binded to network, but not binded to any process unit.
+    , bnBinded :: M.Map tag [F v x]
+    -- ^Map process unit name to list of binded functions.
+    , bnProcess :: Process t (StepInfo v x t)
+    -- ^Network process (bindings and transport instructions)
+    , bnPus :: M.Map tag (PU v x t)
+    -- ^Map of process units.
+    , bnSignalBusWidth :: Int
+    -- ^Controll bus width.
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
+    , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
+    -- ^Set of the PUs that could be added to the network during synthesis process
     }
+
+busNetwork name iosync =
+    BusNetwork
+        { bnName = name
+        , bnRemains = []
+        , bnBinded = M.empty
+        , bnProcess = def
+        , bnPus = def
+        , bnSignalBusWidth = 0
+        , ioSync = iosync
+        , bnEnv = def
+        , bnPUPrototypes = def
+        }
+
+instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
+    def = busNetwork "defaultBus" ASync
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where
     variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded
@@ -92,13 +113,14 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                     (\(tag, pu) -> map (\ep -> (tag, ep)) $ filter isSource $ endpointOptions pu)
                     $ M.assocs bnPus
             targets =
-                M.fromList $
-                    concatMap
+                M.fromList
+                    $ concatMap
                         ( \(tag, pu) ->
                             concatMap (\ep -> map (,(tag, ep)) $ S.elems $ variables ep) $
-                                filter isTarget $ endpointOptions pu
+                                filter isTarget $
+                                    endpointOptions pu
                         )
-                        $ M.assocs bnPus
+                    $ M.assocs bnPus
          in filter (not . null . dfTargets) $
                 concatMap
                     ( \(src, sEndpoint) ->
@@ -109,7 +131,8 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
                             --   x2 -> accum
                             (hold, sendWithColisions) =
                                 L.partition (\v -> isNothing $ targets M.!? v) $
-                                    S.elems $ variables sEndpoint
+                                    S.elems $
+                                        variables sEndpoint
                             sends =
                                 sequence $
                                     M.elems $
@@ -162,9 +185,13 @@ instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x 
             applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus
 
 instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
-    tryBind f net@BusNetwork{bnRemains, bnPus}
-        | any (allowToProcess f) $ M.elems bnPus =
-            Right net{bnRemains = f : bnRemains}
+    tryBind f net@BusNetwork{bnRemains, bnPus, bnPUPrototypes}
+        | any (allowToProcess f) (M.elems bnPus) = Right net{bnRemains = f : bnRemains}
+        -- TODO:
+        -- There are several issues that need to be addressed: see https://github.com/ryukzak/nitta/pull/195#discussion_r853486450
+        -- 1) Now the binding of functions to the network is hardcoded, that prevents use of an empty uarch at the start
+        -- 2) If Allocation options are independent of the bnRemains, then they are present in all synthesis states, which means no leaves in the synthesis tree
+        | any (\PUPrototype{pProto} -> allowToProcess f pProto) (M.elems bnPUPrototypes) = Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
         Left [i|All sub process units reject the functional block: #{ f }; rejects: #{ rejects }|]
         where
@@ -176,8 +203,8 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         let v2transportStepKey =
                 M.fromList
                     [ (v, pID)
-                    | Step{pID, pDesc} <- steps bnProcess
-                    , isInstruction pDesc
+                    | step@Step{pID, pDesc} <- steps bnProcess
+                    , isInstruction step
                     , v <- case pDesc of
                         (InstructionStep ins) | Just (Transport var _ _) <- castInstruction net ins -> [var]
                         _ -> []
@@ -199,21 +226,21 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                 mapM_
                     ( \(epKey, v) ->
                         when (v `M.member` v2transportStepKey) $
-                            establishVerticalRelation (v2transportStepKey M.! v) epKey
+                            establishVerticalRelations [v2transportStepKey M.! v] [epKey]
                     )
                     enpointStepKeyVars
 
                 -- Vertical relations between FB and Transport
                 mapM_
-                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = FStep f}}} ->
+                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = IntermediateStep f}}} ->
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelation pID (v2transportStepKey M.! v)
+                                    establishVerticalRelations [pID] [v2transportStepKey M.! v]
                             )
                             $ variables f
                     )
-                    $ filter isFB steps
+                    $ filter isIntermediate steps
          in wholeProcess
         where
             includeNestedProcess tag pu = do
@@ -226,7 +253,16 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                                 return (pID, pID')
                             )
                             steps
-                mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
+                mapM_
+                    ( \case
+                        (Vertical h l) -> establishVerticalRelations [pu2netKey M.! h] [pu2netKey M.! l]
+                        (Horizontal h l) -> establishHorizontalRelations [pu2netKey M.! h] [pu2netKey M.! l]
+                    )
+                    relations
+
+    parallelismType _ = error " not support parallelismType for BusNetwork"
+
+    puSize BusNetwork{bnPus} = sum $ map puSize $ M.elems bnPus
 
 instance Controllable (BusNetwork tag v x t) where
     data Instruction (BusNetwork tag v x t)
@@ -254,7 +290,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
             initSt = M.fromList $ map (\ins -> (SignalTag $ controlSignalLiteral ins, def)) [0 .. bnSignalBusWidth - 1]
 
             merge st PU{unit, uEnv = UnitEnv{ctrlPorts = Just ports}} =
-                foldl merge' st $ zipSignalTagsAndValues ports $microcodeAt unit t
+                foldl merge' st $ zipSignalTagsAndValues ports $ microcodeAt unit t
             merge _ _ = error "internal error"
 
             merge' st (signalTag, value) = M.adjust (+++ value) signalTag st
@@ -292,17 +328,25 @@ instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x
                 , bnBinded = M.insert puTag bindedToPU' bnBinded
                 }
 
-instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
+instance (UnitTag tag, VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
     optimizeAccumOptions BusNetwork{bnRemains} = optimizeAccumOptions bnRemains
 
-    optimizeAccumDecision bn@BusNetwork{bnRemains} oa@OptimizeAccum{} =
-        bn{bnRemains = optimizeAccumDecision bnRemains oa}
+    optimizeAccumDecision bn@BusNetwork{bnRemains, bnProcess} oa@OptimizeAccum{} =
+        bn
+            { bnRemains = optimizeAccumDecision bnRemains oa
+            , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                scheduleRefactoring (I.singleton $ nextTick bn) oa
+            }
 
-instance (VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
+instance (UnitTag tag, VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
     constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 
-    constantFoldingDecision bn@BusNetwork{bnRemains} cf@ConstantFolding{} =
-        bn{bnRemains = constantFoldingDecision bnRemains cf}
+    constantFoldingDecision bn@BusNetwork{bnRemains, bnProcess} cf@ConstantFolding{} =
+        bn
+            { bnRemains = constantFoldingDecision bnRemains cf
+            , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                scheduleRefactoring (I.singleton $ nextTick bn) cf
+            }
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
@@ -321,7 +365,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
             isBufferRepetionOK 0 _ = False
             isBufferRepetionOK n v
                 | bufferSuffix v `S.notMember` variables bn = True
-                | otherwise = isBufferRepetionOK (n -1) (bufferSuffix v)
+                | otherwise = isBufferRepetionOK (n - 1) (bufferSuffix v)
 
             selfSending =
                 concatMap
@@ -345,28 +389,60 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             puOutputs tag =
                 unionsMap variables $
-                    filter (\case Source{} -> True; _ -> False) $ endPointRoles M.! tag
+                    filter (\case Source{} -> True; _ -> False) $
+                        endPointRoles M.! tag
 
             var2endpointRole =
-                M.fromList $
-                    concatMap
+                M.fromList
+                    $ concatMap
                         ( \case
                             (Source vs) -> [(v, vs) | v <- S.elems vs]
                             (Target v) -> [(v, S.singleton v)]
                         )
-                        $ concat $ M.elems endPointRoles
+                    $ concat
+                    $ M.elems endPointRoles
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{newBuffer, changeset} =
-        let Just (tag, _) =
-                L.find
-                    (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
-                    $ M.assocs bnBinded
-         in bn
-                { bnRemains = newBuffer : patch changeset bnRemains
-                , bnPus = M.adjust (patch changeset) tag bnPus
-                , bnBinded = M.map (patch changeset) bnBinded
+    resolveDeadlockDecision
+        bn@BusNetwork{bnRemains, bnBinded, bnPus, bnProcess}
+        ref@ResolveDeadlock{newBuffer, changeset} =
+            let Just (tag, _) =
+                    L.find
+                        (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
+                        $ M.assocs bnBinded
+             in bn
+                    { bnRemains = newBuffer : patch changeset bnRemains
+                    , bnPus = M.adjust (patch changeset) tag bnPus
+                    , bnBinded = M.map (patch changeset) bnBinded
+                    , bnProcess = execScheduleWithProcess bn bnProcess $ do
+                        scheduleRefactoring (I.singleton $ nextTick bn) ref
+                    }
+
+instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
+    allocationOptions BusNetwork{bnName, bnRemains, bnPUPrototypes} =
+        map toOptions $ M.keys $ M.filter (\PUPrototype{pProto} -> any (`allowToProcess` pProto) bnRemains) bnPUPrototypes
+        where
+            toOptions processUnitTag =
+                Allocation
+                    { networkTag = bnName
+                    , processUnitTag
+                    }
+
+    allocationDecision bn@BusNetwork{bnPUPrototypes, bnPus, bnProcess} alloc@Allocation{networkTag, processUnitTag} =
+        let tag = networkTag <> "_" <> fromTemplate processUnitTag (show (length bnPus))
+            prototype =
+                if M.member processUnitTag bnPUPrototypes
+                    then bnPUPrototypes M.! processUnitTag
+                    else error $ "No suitable prototype for the tag (" <> toString processUnitTag <> ")"
+            addPU t PUPrototype{pProto, pIOPorts} = modifyNetwork bn $ do addCustom t pProto pIOPorts
+            nBn = addPU tag prototype
+         in nBn
+                { bnProcess = execScheduleWithProcess bn bnProcess $ scheduleAllocation alloc
+                , bnPUPrototypes =
+                    if isTemplate processUnitTag
+                        then bnPUPrototypes
+                        else M.delete processUnitTag bnPUPrototypes
                 }
 
 --------------------------------------------------------------------------
@@ -383,9 +459,9 @@ bnExternalPorts pus =
     M.assocs $
         M.map
             ( \pu ->
-                ( map inputPortTag $ puInputPorts pu
-                , map outputPortTag $ puOutputPorts pu
-                , map inoutPortTag $ puInOutPorts pu
+                ( map inputPortTag $ S.toList $ puInputPorts pu
+                , map outputPortTag $ S.toList $ puOutputPorts pu
+                , map inoutPortTag $ S.toList $ puInOutPorts pu
                 )
             )
             pus
@@ -503,8 +579,8 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
         | let io2v n = [i|, .#{ n }( #{ n } )|]
-              is = map (io2v . inputPortTag) $ inputPorts ioPorts
-              os = map (io2v . outputPortTag) $ outputPorts ioPorts =
+              is = map (io2v . inputPortTag) $ S.toList $ inputPorts ioPorts
+              os = map (io2v . outputPortTag) $ S.toList $ outputPorts ioPorts =
             [__i|
                     #{ tag } \#
                             ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
@@ -531,9 +607,9 @@ instance Connected (BusNetwork tag v x t) where
 
 instance IOConnected (BusNetwork tag v x t) where
     data IOPorts (BusNetwork tag v x t) = BusNetworkIO
-        { extInputs :: [InputPortTag]
-        , extOutputs :: [OutputPortTag]
-        , extInOuts :: [InoutPortTag]
+        { extInputs :: S.Set InputPortTag
+        , extOutputs :: S.Set OutputPortTag
+        , extInOuts :: S.Set InoutPortTag
         }
         deriving (Show)
     inputPorts = extInputs
@@ -548,8 +624,8 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
-                    vsep $
-                        mapMaybe
+                    vsep
+                        $ mapMaybe
                             ( \(tag, PU{unit, uEnv}) ->
                                 let tEnv =
                                         TestEnvironment
@@ -558,7 +634,7 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                             }
                                  in testEnvironment (toText tag) unit uEnv tEnv
                             )
-                            $ M.assocs bnPus
+                        $ M.assocs bnPus
 
                 externalPortNames = map pretty $ concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
                 externalIO = vsep $ punctuate ", " ("" : map (\p -> [i|.#{ p }( #{ p } )|]) externalPortNames)
@@ -572,7 +648,8 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
                                 (\t -> (cycleI, t, cntxToTransfer cycleCntx t))
                                 [0 .. nextTick bn]
                         )
-                        $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
+                        $ zip [0 :: Int ..]
+                        $ take cntxCycleNumber cntxProcess
 
                 assertions = vsep $ map (\cycleTickTransfer -> posedgeCycle <> line <> vsep (map assertion cycleTickTransfer)) tickWithTransfers
 
@@ -720,3 +797,102 @@ instance (UnitTag tag, VarValTime v x t) => Testable (BusNetwork tag v x t) v x 
 isDrowAllowSignal Sync = bool2verilog False
 isDrowAllowSignal ASync = bool2verilog True
 isDrowAllowSignal OnBoard = "is_drop_allow"
+
+-- * Builder
+
+data BuilderSt tag v x t = BuilderSt
+    { signalBusWidth :: Int
+    , availSignals :: [SignalTag]
+    , pus :: M.Map tag (PU v x t)
+    , prototypes :: M.Map tag (PUPrototype tag v x t)
+    }
+
+modifyNetwork :: BusNetwork k v x t -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} builder =
+    let st0 =
+            BuilderSt
+                { signalBusWidth = bnSignalBusWidth
+                , availSignals = map (SignalTag . controlSignalLiteral) [bnSignalBusWidth :: Int ..]
+                , pus = bnPus
+                , prototypes = bnPUPrototypes
+                }
+        BuilderSt{signalBusWidth, pus, prototypes} = execState builder st0
+        netIOPorts ps =
+            BusNetworkIO
+                { extInputs = unionsMap puInputPorts ps
+                , extOutputs = unionsMap puOutputPorts ps
+                , extInOuts = unionsMap puInOutPorts ps
+                }
+     in net
+            { bnPus = pus
+            , bnSignalBusWidth = signalBusWidth
+            , bnEnv = bnEnv{ioPorts = Just $ netIOPorts $ M.elems pus}
+            , bnPUPrototypes = prototypes
+            }
+
+defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
+
+addCustom ::
+    forall tag v x t m pu.
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) =>
+    tag ->
+    pu ->
+    IOPorts pu ->
+    m ()
+addCustom tag pu ioPorts = do
+    st@BuilderSt{signalBusWidth, availSignals, pus} <- get
+    let ctrlPorts = takePortTags availSignals pu
+        puEnv =
+            def
+                { ctrlPorts = Just ctrlPorts
+                , ioPorts = Just ioPorts
+                , valueIn = Just ("data_bus", "attr_bus")
+                , valueOut = Just (toText tag <> "_data_out", toText tag <> "_attr_out")
+                }
+        pu' = PU pu def puEnv
+        usedPortsLen = length $ usedPortTags ctrlPorts
+    put
+        st
+            { signalBusWidth = signalBusWidth + usedPortsLen
+            , availSignals = drop usedPortsLen availSignals
+            , pus = M.insertWith (\_ _ -> error "every PU must has uniq tag") tag pu' pus
+            }
+
+-- |Add PU with the default initial state. Type specify by IOPorts.
+add ::
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
+    tag ->
+    IOPorts pu ->
+    m ()
+add tag ioport = addCustom tag def ioport
+
+addCustomPrototype ::
+    forall tag v x t m pu.
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) =>
+    tag ->
+    pu ->
+    IOPorts pu ->
+    m ()
+addCustomPrototype tag pu ioports
+    | typeOf pu == typeRep (Proxy :: Proxy (SPI v x t)) =
+        error "Adding SPI prototype are not supported due to https://github.com/ryukzak/nitta/issues/194"
+    | otherwise = do
+        st@BuilderSt{prototypes} <- get
+        put
+            st
+                { prototypes =
+                    M.insertWith
+                        (\_ _ -> error "every prototype must has uniq tag")
+                        tag
+                        (PUPrototype tag pu ioports)
+                        prototypes
+                }
+
+-- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
+addPrototype ::
+    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
+    tag ->
+    IOPorts pu ->
+    m ()
+addPrototype tag ioports = addCustomPrototype tag def ioports

@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "description": "NITTA Web UI",
   "private": true,
+  "proxy": "http://localhost:8080",
   "dependencies": {
     "@types/react-table": "^6.8.5",
     "axios": "^0.21.0",
     "bootstrap": "^5.0.1",
+    "chart.js": "^3.3.2",
     "glyphicons-only-bootstrap": "^1.0.1",
     "graphviz-react": "^1.0.4",
     "http-method-enum": "^1.0.0",
@@ -14,6 +16,7 @@
     "react": "^17.0.1",
     "react-bootstrap": "^1.0.0-beta.11",
     "react-bootstrap-icons": "^1.3.0",
+    "react-chartjs-2": "^3.0.3",
     "react-d3-tree": "^1.15.3",
     "react-dom": "^17.0.1",
     "react-json-view": "^1.19.1",
@@ -30,7 +33,7 @@
     "@types/react-router-dom": "^5.1.6"
   },
   "scripts": {
-    "backstart": "cd .. && stack exec nitta -- --web examples/teacup.lua",
+    "backstart": "cd .. && stack exec nitta -- --port=8080 examples/teacup.lua",
     "start": "react-scripts --max_old_space_size=4096 start",
     "build": "react-scripts --max_old_space_size=4096 build",
     "test": "react-scripts test",

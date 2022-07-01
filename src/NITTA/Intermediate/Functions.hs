@@ -1,11 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Intermediate.Functions
@@ -35,11 +30,14 @@ module NITTA.Intermediate.Functions (
     shiftR,
     Sub (..),
     sub,
+    Neg (..),
+    neg,
     module NITTA.Intermediate.Functions.Accum,
 
     -- *Memory
     Constant (..),
     constant,
+    isConst,
     Loop (..),
     loop,
     isLoop,
@@ -59,9 +57,9 @@ module NITTA.Intermediate.Functions (
     brokenBuffer,
 ) where
 
-import qualified Data.Bits as B
+import Data.Bits qualified as B
 import Data.Default
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Set (elems, fromList, union)
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
@@ -170,7 +168,8 @@ instance (Var v) => FunctionSimulation (Loop v x) v x where
             -- if output variables are not defined - set initial value
             Nothing -> [(v, x) | v <- elems vs]
 
-data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq, Show)
+data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq)
+instance (Var v, Show x) => Show (LoopBegin v x) where show = label
 instance (Var v) => Label (LoopBegin v x) where
     label (LoopBegin _ os) = "LoopBegin() = " <> show os
 instance (Var v) => Function (LoopBegin v x) v where
@@ -183,7 +182,8 @@ instance (Var v) => Locks (LoopBegin v x) v where
 instance (Var v) => FunctionSimulation (LoopBegin v x) v x where
     simulate cntx (LoopBegin l _) = simulate cntx l
 
-data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq, Show)
+data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq)
+instance (Var v, Show x) => Show (LoopEnd v x) where show = label
 instance (Var v) => Label (LoopEnd v x) where
     label (LoopEnd (Loop _ os _) i) = "LoopEnd(" <> show i <> ") pair out: " <> show os
 instance (Var v) => Function (LoopEnd v x) v where
@@ -318,12 +318,36 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
             (qx, rx) = dx `quotRem` nx
          in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
 
+data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
+instance Label (Neg v x) where label Neg{} = "neg"
+instance (Var v) => Show (Neg v x) where
+    show (Neg i o) = "-" <> show i <> " = " <> show o
+
+neg :: (Var v, Val x) => v -> [v] -> F v x
+neg i o = packF $ Neg (I i) $ O $ fromList o
+
+instance (Ord v) => Function (Neg v x) v where
+    inputs (Neg i _) = variables i
+    outputs (Neg _ o) = variables o
+instance (Ord v) => Patch (Neg v x) (v, v) where
+    patch diff (Neg i o) = Neg (patch diff i) (patch diff o)
+instance (Var v) => Locks (Neg v x) v where
+    locks = inputsLockOutputs
+instance (Var v, Num x) => FunctionSimulation (Neg v x) v x where
+    simulate cntx (Neg (I i) (O o)) =
+        let x1 = cntx `getCntx` i
+            y = -x1
+         in [(v, y) | v <- elems o]
+
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)
 instance (Show x) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance (Var v, Show x) => Show (Constant v x) where
     show (Constant (X x) os) = "const(" <> show x <> ") = " <> show os
 constant :: (Var v, Val x) => x -> [v] -> F v x
 constant x vs = packF $ Constant (X x) $ O $ fromList vs
+isConst f
+    | Just Constant{} <- castF f = True
+    | otherwise = False
 
 instance (Show x, Eq x, Typeable x) => Function (Constant v x) v where
     outputs (Constant _ o) = variables o

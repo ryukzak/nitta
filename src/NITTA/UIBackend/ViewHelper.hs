@@ -1,16 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -41,10 +33,10 @@ module NITTA.UIBackend.ViewHelper (
 
 import Control.Concurrent.STM
 import Data.Aeson
-import qualified Data.HashMap.Strict as HM
+import Data.HashMap.Strict qualified as HM
 import Data.Maybe
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Set qualified as S
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -164,6 +156,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
                     , decsionType = case sDecision of
                         Root{} -> "root"
                         SynthesisDecision{metrics}
+                            | Just AllocationMetrics{} <- cast metrics -> "Allocation"
                             | Just BindMetrics{} <- cast metrics -> "Bind"
                             | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
                             | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"
@@ -250,6 +243,7 @@ instance ToSample (NodeView tag v x t) where
                             { pWaitTime = 1
                             , pRestrictedTime = False
                             , pNotTransferableInputs = [0, 0]
+                            , pFirstWaveOfTargetUse = 0
                             }
                 , decision =
                     DataflowDecisionView

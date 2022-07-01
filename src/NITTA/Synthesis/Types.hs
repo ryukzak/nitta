@@ -1,6 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -43,12 +41,13 @@ import Control.Concurrent.STM (TMVar)
 import Data.Aeson (ToJSON, toJSON)
 import Data.Default
 import Data.List.Split
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Data.Typeable
+import NITTA.Intermediate.Analysis (ProcessWave)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
+import NITTA.Model.Problems.Allocation
 import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
@@ -56,6 +55,7 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.UIBackend.ViewHelperCls
+import NITTA.Utils.Base
 import Servant
 
 -- |Default synthesis tree type.
@@ -86,8 +86,8 @@ instance Read SID where
     readsPrec _ [x] | x == sidSep = [(SID [], "")]
     readsPrec d (x : xs)
         | x == sidSep
-          , let is = map (readsPrec d) $ splitOn [sidSep] xs
-          , not $ any null is =
+        , let is = map (readsPrec d) $ splitOn [sidSep] xs
+        , not $ any null is =
             [(SID $ map fst $ concat is, "")]
     readsPrec _ _ = []
 
@@ -105,15 +105,15 @@ instance ToJSON SID where
     toJSON sid = toJSON $ show sid
 
 instance FromHttpApiData SID where
-    parseUrlPiece = Right . read . T.unpack
+    parseUrlPiece = Right . readText
 
 -- |Synthesis tree
 data Tree m tag v x t = Tree
     { sID :: SID
     , sState :: SynthesisState m tag v x t
     , sDecision :: SynthesisDecision (SynthesisState m tag v x t) m
-    , -- |lazy mutable field with different synthesis options and sub nodes
-      sSubForestVar :: TMVar [Tree m tag v x t]
+    , sSubForestVar :: TMVar [Tree m tag v x t]
+    -- ^lazy mutable field with different synthesis options and sub nodes
     }
 
 targetUnit = mUnit . sTarget . sState
@@ -134,27 +134,33 @@ class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
 data SynthesisState m tag v x t = SynthesisState
     { sParent :: Maybe (Tree m tag v x t)
     , sTarget :: m
-    , -- |bind options cache
-      sBindOptions :: [Bind tag v x]
+    , sAllocationOptions :: [Allocation tag]
+    -- ^PU allocation options cache
+    , sBindOptions :: [Bind tag v x]
+    -- ^bind options cache
     , sResolveDeadlockOptions :: [ResolveDeadlock v x]
     , sOptimizeAccumOptions :: [OptimizeAccum v x]
     , sConstantFoldingOptions :: [ConstantFolding v x]
     , sBreakLoopOptions :: [BreakLoop v x]
-    , -- |dataflow options cache
-      sDataflowOptions :: [DataflowSt tag v (TimeConstraint t)]
-    , -- |a map from functions to possible processor unit tags
-      bindingAlternative :: M.Map (F v x) [tag]
-    , -- |a function set, which binding may cause dead lock
-      possibleDeadlockBinds :: S.Set (F v x)
-    , -- |if algorithm will be represented as a graph, where nodes -
-      -- variables of not binded functions, edges - casuality, wave is a
-      -- minimal number of a step from an initial node to selected
-      bindWaves :: M.Map v Int
-    , -- |number of dataflow options
-      numberOfDataflowOptions :: Int
-    , -- |a variable set, which can be transferred on the current
-      -- synthesis step
-      transferableVars :: S.Set v
+    , sDataflowOptions :: [DataflowSt tag v (TimeConstraint t)]
+    -- ^dataflow options cache
+    , bindingAlternative :: M.Map (F v x) [tag]
+    -- ^a map from functions to possible processor unit tags
+    , possibleDeadlockBinds :: S.Set (F v x)
+    -- ^a function set, which binding may cause dead lock
+    , bindWaves :: M.Map v Int
+    -- ^if algorithm will be represented as a graph, where nodes -
+    -- variables of not binded functions, edges - casuality, wave is a
+    -- minimal number of a step from an initial node to selected
+    , processWaves :: [ProcessWave v x]
+    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
+    , numberOfProcessWaves :: Int
+    -- ^ Number of execution waves of the algorithm.
+    , numberOfDataflowOptions :: Int
+    -- ^number of dataflow options
+    , transferableVars :: S.Set v
+    -- ^a variable set, which can be transferred on the current
+    -- synthesis step
     }
 
 -- * Utils

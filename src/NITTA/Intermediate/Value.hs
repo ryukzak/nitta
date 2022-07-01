@@ -1,12 +1,8 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
@@ -43,7 +39,7 @@ import Data.Maybe
 import Data.Proxy
 import Data.Ratio
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import Data.Validity hiding (invalid)
 import GHC.Generics

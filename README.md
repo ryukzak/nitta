@@ -1,58 +1,57 @@
-# Reconfigurable real-time computational platform NITTA
+# NITTA - Tool for Hard Real-Time CGRA Processors
 
 [![Tests](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml/badge.svg?branch=master)](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
-[![haddock](https://img.shields.io/badge/Doc-haddock-blue)](https://ryukzak.github.io/nitta/haddock/index.html)
-[![API Doc](https://img.shields.io/badge/Doc-API-blue)](https://github.com/ryukzak/nitta/blob/gh-pages/rest-api/rest_api.markdown)
+[![haddock](https://img.shields.io/badge/Doc-haddock-blue)](https://ryukzak.github.io/nitta/haddock/nitta/index.html)
+[![REST API Doc](https://img.shields.io/badge/Doc-API-blue)](https://github.com/ryukzak/nitta/blob/gh-pages/rest-api/rest_api.markdown)
 
 ## Overview
 
+Kind: research pet project.
+
 Project status: early prototype.
 
-### Application area
+We develop the tool for generating and programming specialized non-von Neumann CGRA processors used for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
 
-- developing cyber-physical systems which are based on adaptive robust control algorithms and artificial intelligence with high requirements on latency and computational volume, power, and area consumption; 
-- developing hardware programmable accelerators and co-processors;
-- developing problem-oriented programmable ASIC; 
-- developing dynamically reconfigurable IP-core and soft-core for FPGA.
+- Provide high speed and parallel execution of irregular algorithms (where GPU is not applicable) in hard real-time (clock accuracy).
+- Make the processor reconfigurable for different application domains.
+- Provide a high-level language for application developers and fast compilation.
 
-### Project goals
+Our future users can resolve the following tasks:
 
-- rapid prototyping of control and cyber-physical systems;
-- hardware in the loop simulation;
-- target system synthesis and its components;
-- integration of the real-time system with non-real-time environment and automation of its interaction;
-- developing of IP-core for embedded systems and systems on a chip.
+- Development of embedded and cyber-physical systems.
+- Hardware and software testing and rapid prototyping (HIL and PIL).
+- Development of programmable accelerators and coprocessors.
 
-### Key features
+## Links
 
-- the orientation on model-driven engineering and not on software engineering; 
-- automation of most of the development stages, including algorithm and model design and functional simulation, prototyping and complex verification, complex automatization of cross-layer testing and synthesis and optimization of a target system;
-- deeply computational platform reconfiguration on hardware, software and tool levels, transparency of CAD system workflow.
+Project page: <https://ryukzak.github.io/projects/nitta/>
 
-### Contact
+Publications: <https://ryukzak.github.io/publications/> (with NITTA tag)
 
 Maintainer: Aleksandr Penskoi <aleksandr.penskoi@gmail.com>
 
-Project chat (telegram):  <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
+Project chat (telegram): <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 
 Project CI chat (telegram): <https://t.me/nitta_ci>
 
-### Publication
+## Contributing
 
-Papers about the project you can find here (English and Russian): <https://nitta.io/nitta-corp/docs>.
+See: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Install development dependency
+## Setup development environment
 
 ### Mac OS X
 
-Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 
 ``` console
 $ brew install stack
 $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
+
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!   
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
@@ -61,19 +60,22 @@ $ brew tap homebrew/cask
 $ brew cask install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required developer tools.
+Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
-$ brew install npm
+$ brew install npm yarn
 $ npm install --global tern prettier
 ```
 
 ### Ubuntu
-Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
+
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 ``` console
 $ sudo apt-get install haskell-stack
 $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
+
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!  
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
@@ -81,15 +83,15 @@ $ sudo apt-get install iverilog
 $ sudo apt-get install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required developer tools.
+Install [npm](https://github.com/npm/cli) and required developer tools for UI.
 ``` console
-$ sudo apt-get install npm
+$ sudo apt-get install npm yarn
 $ npm install --global tern prettier yarn
 ```
 
 ## Build
 
-Inside the project path:
+Inside the project path
 
 ### Build backend
 
@@ -112,82 +114,7 @@ $ stack exec nitta-api-gen # for REST API description
 
 For the fast rebuild, the project adds `--fast` flag.
 
-## Usage
-
-``` console
-$ stack exec nitta -- --help
-nitta v0.0.0.1 - CAD for reconfigurable real-time ASIP
-
-nitta [OPTIONS] FILE
-
-Common flags:
-  -t     --type=ITEM                  Data type (default: 'fx32.32')
-  -i     --io-sync=IOSYNCHRONIZATION  IO synchronization mode: sync, async,
-                                      onboard
-  -p     --port=INT                   Run nitta server for UI on specific
-                                      port (by default - not run)
-         --templates=ITEM             Specify target platform templates (':',
-                                      default:
-                                      'templates/Icarus:templates/DE0-Nano')
-  -n=INT                              Number of computation cycles for
-                                      simulation and testbench
-         --fsim                       Functional simulation with trace
-  -l     --lsim                       Logical (HDL) simulation with trace
-  -v     --verbose                    Verbose
-  -o     --output-path=ITEM           Place the output into specified
-                                      directory
-         --format=ITEM                Specify logical (HDL) or functional
-                                      simulation output format: md, json, csv
-                                      (default: 'md')
-  -?     --help                       Display help message
-  -V     --version                    Print version information
-         --numeric-version            Print just the version number
-```
-
-#### Logical simulation for a specific algorithm:
-``` console
-$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx12.32
-
-| Cycle  | temp_cup_1  | time_0  |
-|:-------|:------------|:--------|
-| 1      | 180.000     | 0.000   |
-| 2      | 178.625     | 0.125   |
-| 3      | 177.375     | 0.250   |
-| 4      | 176.125     | 0.375   |
-| 5      | 174.875     | 0.500   |
-| 6      | 173.625     | 0.625   |
-| 7      | 172.375     | 0.750   |
-| 8      | 171.125     | 0.875   |
-| 9      | 169.875     | 1.000   |
-| 10     | 168.750     | 1.125   |
-[NOTICE : NITTA] synthesis process...ok
-[NOTICE : NITTA] write target project to: "gen/main"...ok
-```
-
-#### Synthesis a target system for a specific algorithm:
-``` console
-$ stack exec nitta -- examples/teacup.lua -v
-read source code from: "examples/teacup.lua"...
-read source code from: "examples/teacup.lua"...ok
-will trace: 
-TraceVar {tvFmt = "%.3f", tvVar = "temp_cup_1"}
-TraceVar {tvFmt = "%.3f", tvVar = "time_0"}
-synthesis process...
-synthesis process...ok
-write target project to: "gen/main"...
-write target project to: "gen/main"...ok
-run logical synthesis...
-run logical simulation...ok
-```
-
-#### Run with user interface:
-``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080
-Running NITTA server at http://localhost:8080 
-...
-```
-
-#### Testing
+### Testing
 ``` console
 $ stack build --test
 nitta-0.0.0.1: unregistering (dependencies changed)
@@ -209,7 +136,13 @@ nitta> Test suite nitta-test passed
 Completed 2 action(s).
 ```
 
-#### Build command examples
+Run specified test or group:
+```
+$ stack test --test-arguments '-p "pattern for the test name"'
+...
+```
+
+### Other
 ``` console
 # build only one target
 $ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
@@ -238,7 +171,7 @@ $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exe
 #     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 $ stack exec ghc-pkg unregister interpolate -- --force
 
-# run formolu for all files
+# run fourmolu for all files
 $ find . -name '*.hs' | xargs fourmolu -m inplace
 
 # show modules dependency
@@ -248,3 +181,82 @@ $ graphmod -q -p src | pbcopy
 stack exec ghc-pkg unregister interpolate -- --force
 stack exec -- haddock test/**/*.hs -odocs -h
 ```
+
+
+## Usage
+
+``` console
+$ stack exec nitta -- --help
+nitta v0.0.0.1 - tool for hard real-time CGRA processors
+
+nitta [OPTIONS] FILE
+
+Target system configuration:
+         --uarch=PATH                  Microarchitecture configuration file
+  -t     --type=fxM.B                  Overrides data type specified in
+                                       config file
+         --io-sync=sync|async|onboard  Overrides IO synchronization mode
+                                       specified in config file
+         --templates=PATH[:PATH]       Target platform templates (default:
+                                       'templates/Icarus:templates/DE0-Nano')
+Common flags:
+  -p     --port=INT                    Run nitta server for UI on specific
+                                       port (by default - not run)
+  -o     --output-path=PATH            Target system path
+Simulation:
+  -n=INT                               Number of simulation cycles
+  -f     --fsim                        Functional simulation with trace
+  -l     --lsim                        Logical (HDL) simulation with trace
+         --format=md|json|csv          Simulation output format (default:
+                                       'md')
+Other:
+  -v     --verbose                     Verbose
+  -e     --extra-verbose               Extra verbose
+  -?     --help                        Display help message
+  -V     --version                     Print version information
+         --numeric-version             Print just the version number
+```
+
+### Logical simulation for a specific algorithm:
+``` console
+$ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
+```
+
+### Synthesis of a target system for a specific algorithm:
+``` console
+$ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
+[NOTICE : NITTA] synthesis process...ok
+[NOTICE : NITTA] write target project to: "gen/main"...ok
+[NOTICE : NITTA] run testbench (gen/main)...ok
+| Cycle  | temp_cup_1  | time_0  |
+|:-------|:------------|:--------|
+| 1      | 180.000     | 0.000   |
+| 2      | 178.625     | 0.125   |
+| 3      | 177.375     | 0.250   |
+| 4      | 176.125     | 0.375   |
+| 5      | 174.875     | 0.500   |
+| 6      | 173.625     | 0.625   |
+| 7      | 172.375     | 0.750   |
+| 8      | 171.125     | 0.875   |
+| 9      | 169.875     | 1.000   |
+| 10     | 168.750     | 1.125   |
+```
+
+### Run with user interface:
+``` console
+$ stack exec nitta -- examples/teacup.lua -p=8080
+Running NITTA server at http://localhost:8080 ...
+```
+

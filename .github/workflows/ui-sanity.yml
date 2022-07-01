@@ -1,0 +1,18 @@
+name: User Interface Sanity
+
+on:
+  pull_request:
+    paths:
+      - "web/**"
+
+jobs:
+
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check ts and tsx code style by prettier
+        working-directory: ./web
+        run: |
+          yarn add -s prettier
+          yarn exec -s prettier -- --check src/**/*.{ts,tsx}

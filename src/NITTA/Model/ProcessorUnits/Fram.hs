@@ -1,15 +1,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Fram
@@ -28,16 +21,16 @@ module NITTA.Model.ProcessorUnits.Fram (
 
 import Control.Applicative ((<|>))
 import Control.Monad
-import qualified Data.Array as A
+import Data.Array qualified as A
 import Data.Array.Base (numElements)
 import Data.Bits (testBit)
 import Data.Default
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -46,14 +39,14 @@ import NITTA.Model.Time
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (inf, sup, (...))
+import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
 
 data Fram v x t = Fram
-    { -- |memory cell array
-      memory :: A.Array Int (Cell v x t)
-    , -- |register queue
-      remainBuffers :: [(Buffer v x, Job v x t)]
+    { memory :: A.Array Int (Cell v x t)
+    -- ^memory cell array
+    , remainBuffers :: [(Buffer v x, Job v x t)]
+    -- ^register queue
     , process_ :: Process t (StepInfo v x t)
     }
 
@@ -95,8 +88,8 @@ instance (VarValTime v x t) => Variables (Fram v x t) v where
 data Cell v x t = Cell
     { state :: CellState v x t
     , lastWrite :: Maybe t
-    , -- |current job description
-      job :: Maybe (Job v x t)
+    , job :: Maybe (Job v x t)
+    -- ^current job description
     , history :: [F v x]
     , initialValue :: x
     }
@@ -104,7 +97,7 @@ data Cell v x t = Cell
 data Job v x t = Job
     { function :: F v x
     , startAt :: Maybe t
-    , binds, endpoints :: [ProcessStepID]
+    , binds :: [ProcessStepID]
     }
     deriving (Show, Eq)
 
@@ -113,7 +106,6 @@ defJob f =
         { function = f
         , startAt = Nothing
         , binds = []
-        , endpoints = []
         }
 
 instance WithFunctions (Cell v x t) (F v x) where
@@ -209,7 +201,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
             Left "can not bind (self transaction)"
     tryBind f fram@Fram{memory, remainBuffers}
         | Just (Constant (X x) (O vs)) <- castF f
-          , Just (addr, _) <- lockableNotUsedCell fram =
+        , Just (addr, _) <- lockableNotUsedCell fram =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 cell =
                     Cell
@@ -225,7 +217,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
                         , process_
                         }
         | Just (Loop (X x) (O _) (I _)) <- castF f
-          , Just (addr, _) <- lockableNotUsedCell fram =
+        , Just (addr, _) <- lockableNotUsedCell fram =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 cell =
                     Cell
@@ -241,7 +233,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
                         , process_
                         }
         | Just r@Buffer{} <- castF f
-          , any (\case ForBuffer{} -> True; DoBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
+        , any (\case ForBuffer{} -> True; DoBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 job = (defJob f){binds}
              in Right
@@ -252,6 +244,7 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
         | otherwise = Left $ "unsupport or cells over: " ++ show f
 
     process Fram{process_} = process_
+    parallelismType _ = Full
 
 instance (Var v) => Locks (Fram v x t) v where
     -- FIXME:
@@ -275,7 +268,9 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
                 revoke <- scheduleFunctionRevoke $ recLoop bl
                 f1 <- scheduleFunctionBind $ recLoopOut bl
                 f2 <- scheduleFunctionBind $ recLoopIn bl
-                establishVerticalRelations binds (f1 ++ f2 ++ revoke)
+                ref <- scheduleRefactoring (singleton $ nextTick fram) bl
+                establishVerticalRelations ref (f1 ++ f2 ++ revoke)
+                establishVerticalRelations binds ref
                 return (f1, f2)
             iJob = (defJob $ recLoopOut bl){binds = iPid, startAt = Just 0}
             oJob = (defJob $ recLoopIn bl){binds = oPid}
@@ -321,7 +316,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
 
     -- Constant
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}
-        | Just (addr, cell@Cell{state = DoConstant vs', job = Just Job{function, binds, endpoints}}) <-
+        | Just (addr, cell@Cell{state = DoConstant vs', job = Just Job{function, binds}}) <-
             L.find
                 ( \case
                     (_, Cell{state = DoConstant vs'}) -> (vs' L.\\ S.elems vs) /= vs'
@@ -329,12 +324,11 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 )
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
-                ((), process_') = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (0 ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        establishVerticalRelations fPID (endpoints ++ endpoints')
+                process_' = execSchedule fram $ do
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
+                    when (null vsRemain) $
+                        scheduleFunctionFinish_ binds function $
+                            0 ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -351,7 +345,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     }
     -- Loop
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}
-        | Just (addr, cell@Cell{state = DoLoopSource vs' oJob, job = Just job@Job{binds, function, startAt, endpoints}}) <-
+        | Just (addr, cell@Cell{state = DoLoopSource vs' oJob, job = Just job@Job{binds, function, startAt}}) <-
             L.find
                 ( \case
                     (_, Cell{state = DoLoopSource vs' _}) -> (vs' L.\\ S.elems vs) /= vs'
@@ -359,18 +353,17 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 )
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
-                (endpoints', process_) = runSchedule fram $ do
+                process_ = execSchedule fram $ do
                     eps <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (0 ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        establishVerticalRelations fPID $ eps ++ endpoints
+                    when (null vsRemain) $
+                        scheduleFunctionFinish_ binds function $
+                            0 ... sup epAt
                     return eps
                 cell' =
                     if not $ null vsRemain
                         then
                             cell
-                                { job = Just job{startAt = startAt <|> Just (inf epAt - 1), endpoints = endpoints' ++ endpoints}
+                                { job = Just job{startAt = startAt <|> Just (inf epAt - 1)}
                                 , state = DoLoopSource vsRemain oJob
                                 }
                         else
@@ -380,13 +373,11 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                                 }
              in fram{process_, memory = memory A.// [(addr, cell')]}
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Target v, epAt}
-        | Just (addr, cell@Cell{job = Just Job{function, binds, endpoints}}) <-
+        | Just (addr, cell@Cell{job = Just Job{function, binds}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
-            let ((), process_) = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
-                    fPID <- scheduleFunction epAt function
-                    establishVerticalRelations binds fPID
-                    establishVerticalRelations fPID (endpoints ++ endpoints')
+            let process_ = execSchedule fram $ do
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
+                    scheduleFunctionFinish binds function epAt
                 cell' =
                     cell
                         { job = Nothing
@@ -399,12 +390,12 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     -- Buffer Target
     endpointDecision fram@Fram{memory, remainBuffers} d@EndpointSt{epRole = Target v, epAt}
         | Just (addr, cell@Cell{history}) <- findForBufferCell fram
-          , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
-            let (endpoints, process_) = runSchedule fram $ do
+        , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
+            let process_ = execSchedule fram $ do
                     scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr
                 cell' =
                     cell
-                        { job = Just j{startAt = Just $ inf epAt, endpoints}
+                        { job = Just j{startAt = Just $ inf epAt}
                         , state = DoBuffer $ S.elems vs
                         , lastWrite = Just $ sup epAt
                         , history = function : history
@@ -415,7 +406,7 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                     , process_
                     }
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}
-        | Just (addr, cell@Cell{state = DoBuffer vs', job = Just Job{function, startAt = Just fBegin, binds, endpoints}}) <-
+        | Just (addr, cell@Cell{state = DoBuffer vs', job = Just Job{function, startAt = Just fBegin, binds}}) <-
             L.find
                 ( \case
                     (_, Cell{state = DoBuffer vs'}) -> (vs' L.\\ S.elems vs) /= vs'
@@ -423,12 +414,11 @@ instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
                 )
                 $ A.assocs memory =
             let vsRemain = vs' L.\\ S.elems vs
-                ((), process_) = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
-                    when (null vsRemain) $ do
-                        fPID <- scheduleFunction (fBegin ... sup epAt) function
-                        establishVerticalRelations binds fPID
-                        establishVerticalRelations fPID (endpoints ++ endpoints')
+                process_ = execSchedule fram $ do
+                    void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr
+                    when (null vsRemain) $
+                        scheduleFunctionFinish_ binds function $
+                            fBegin ... sup epAt
                 cell' = case vsRemain of
                     [] ->
                         cell
@@ -529,10 +519,10 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
     software tag fram@Fram{memory} =
         Immediate
             (toString $ softwareFile tag fram)
-            $ T.unlines $
-                map
-                    (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
-                    $ A.elems memory
+            $ T.unlines
+            $ map
+                (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
+            $ A.elems memory
     hardwareInstance
         tag
         fram@Fram{memory}

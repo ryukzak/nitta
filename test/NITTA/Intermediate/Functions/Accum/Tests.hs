@@ -1,9 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : NITTA.Intermediate.Functions.Accum.Tests
@@ -18,7 +14,7 @@ module NITTA.Intermediate.Functions.Accum.Tests (
 ) where
 
 import Data.Set (fromList)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import Test.Tasty (testGroup)

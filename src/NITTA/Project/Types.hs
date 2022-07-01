@@ -1,11 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -29,7 +23,8 @@ module NITTA.Project.Types (
 ) where
 
 import Data.Default
-import qualified Data.Text as T
+import Data.Set qualified as S
+import Data.Text qualified as T
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
@@ -42,25 +37,25 @@ be writable to disk.
 -- FIXME: collision between target project name and output directory. Maybe
 -- pName or pTargetProjectPath should be maybe? Or both?
 data Project m v x = Project
-    { -- |target project name
-      pName :: T.Text
-    , -- |IP-core library path
-      pLibPath :: FilePath
-    , -- |output path for target project
-      pTargetProjectPath :: FilePath
-    , -- |absolute output path for target project
-      pAbsTargetProjectPath :: FilePath
-    , -- |relative to the project path output path for NITTA processor inside target project
-      pInProjectNittaPath :: FilePath
-    , -- |absolute output path for NITTA processor inside target project
-      pAbsNittaPath :: FilePath
-    , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
-      pUnit :: m
+    { pName :: T.Text
+    -- ^target project name
+    , pLibPath :: FilePath
+    -- ^IP-core library path
+    , pTargetProjectPath :: FilePath
+    -- ^output path for target project
+    , pAbsTargetProjectPath :: FilePath
+    -- ^absolute output path for target project
+    , pInProjectNittaPath :: FilePath
+    -- ^relative to the project path output path for NITTA processor inside target project
+    , pAbsNittaPath :: FilePath
+    -- ^absolute output path for NITTA processor inside target project
+    , pUnit :: m
+    -- ^'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
     , pUnitEnv :: UnitEnv m
-    , -- |testbench context with input values
-      pTestCntx :: Cntx v x
-    , -- |Target platform templates
-      pTemplates :: [FilePath]
+    , pTestCntx :: Cntx v x
+    -- ^testbench context with input values
+    , pTemplates :: [FilePath]
+    -- ^Target platform templates
     }
 
 defProjectTemplates :: [FilePath]
@@ -100,16 +95,16 @@ data Implementation
 `data_bus`, `dataOut` into `accum_data_out`.
 -}
 data UnitEnv m = UnitEnv
-    { -- |clock signal
-      sigClk :: T.Text
-    , -- |reset signal
-      sigRst :: T.Text
-    , -- |posedge on computation cycle begin
-      sigCycleBegin :: T.Text
-    , -- |positive on computation cycle
-      sigInCycle :: T.Text
-    , -- |posedge on computation cycle end
-      sigCycleEnd :: T.Text
+    { sigClk :: T.Text
+    -- ^clock signal
+    , sigRst :: T.Text
+    -- ^reset signal
+    , sigCycleBegin :: T.Text
+    -- ^posedge on computation cycle begin
+    , sigInCycle :: T.Text
+    -- ^positive on computation cycle
+    , sigCycleEnd :: T.Text
+    -- ^posedge on computation cycle end
     , ctrlPorts :: Maybe (Ports m)
     , ioPorts :: Maybe (IOPorts m)
     , valueIn, valueOut :: Maybe (T.Text, T.Text)
@@ -129,6 +124,11 @@ instance Default (UnitEnv m) where
             , valueOut = Nothing
             }
 
-envInputPorts UnitEnv{ioPorts} = concatMap inputPorts ioPorts
-envOutputPorts UnitEnv{ioPorts} = concatMap outputPorts ioPorts
-envInOutPorts UnitEnv{ioPorts} = concatMap inoutPorts ioPorts
+envInputPorts UnitEnv{ioPorts = Just ports} = inputPorts ports
+envInputPorts UnitEnv{ioPorts = Nothing} = S.empty
+
+envOutputPorts UnitEnv{ioPorts = Just ports} = outputPorts ports
+envOutputPorts UnitEnv{ioPorts = Nothing} = S.empty
+
+envInOutPorts UnitEnv{ioPorts = Just ports} = inoutPorts ports
+envInOutPorts UnitEnv{ioPorts = Nothing} = S.empty

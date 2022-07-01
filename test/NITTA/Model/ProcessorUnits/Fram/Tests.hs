@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -19,7 +18,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 ) where
 
 import Data.Default
-import qualified Data.Text as T
+import Data.Text qualified as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
@@ -40,11 +39,11 @@ tests =
         , unitTestCase "test BreakLoop" u2 $ do
             assign $ loop 10 "b" ["a"]
             setValue "b" 64
-            breakLoop 10 "b" ["a"]
+            refactor =<< mkBreakLoop 10 "b" ["a"]
             decideAt 1 1 $ provide ["a"]
             decideAt 2 2 $ consume "b"
             traceProcess
-            assertCoSimulation
+            assertPUCoSimulation
         , puCoSimTestCase
             "loop function"
             u

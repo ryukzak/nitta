@@ -1,12 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.Problems.Endpoint
@@ -29,11 +24,11 @@ module NITTA.Model.Problems.Endpoint (
 ) where
 
 import Data.Aeson (ToJSON)
-import qualified Data.Map.Strict as M
+import Data.Map.Strict qualified as M
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.ToString
-import qualified Data.String.Utils as S
+import Data.String.Utils qualified as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Time
@@ -41,19 +36,19 @@ import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
-    { -- |use processor unit as source or target of data
-      epRole :: EndpointRole v
-    , -- |time of operation
-      epAt :: tp
+    { epRole :: EndpointRole v
+    -- ^use processor unit as source or target of data
+    , epAt :: tp
+    -- ^time of operation
     }
     deriving (Generic)
 
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{epRole} = variables epRole
 
-instance (Var v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
+instance (ToString v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
     show EndpointSt{epRole, epAt} = "?" <> show epRole <> "@(" <> show epAt <> ")"
-instance (Var v, Time t) => Show (EndpointSt v (Interval t)) where
+instance (ToString v, Time t) => Show (EndpointSt v (Interval t)) where
     show EndpointSt{epRole, epAt} = "!" <> show epRole <> "@(" <> show epAt <> ")"
 
 instance (Ord v) => Patch (EndpointSt v tp) (Changeset v) where
@@ -81,7 +76,7 @@ data EndpointRole v
       Target v
     deriving (Eq, Ord, Generic)
 
-instance (Var v) => Show (EndpointRole v) where
+instance (ToString v) => Show (EndpointRole v) where
     show (Source vs) = "Source " <> S.join "," (vsToStringList vs)
     show (Target v) = "Target " <> toString v
 

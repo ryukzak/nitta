@@ -1,8 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -27,18 +23,17 @@ module NITTA.Synthesis.Explore (
 import Control.Concurrent.STM
 import Control.Monad (forM, unless, when)
 import Data.Default
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
+import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
+import NITTA.Model.Problems.Allocation
 import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Bind ()
-import NITTA.Synthesis.Dataflow ()
-import NITTA.Synthesis.Refactor ()
+import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
 import NITTA.Utils
 import System.Log.Logger
@@ -89,7 +84,8 @@ subForestIO
                         return (True, subForest)
         when firstTime $ do
             debugM "NITTA.Synthesis" $
-                "explore: " <> show sID
+                "explore: "
+                    <> show sID
                     <> " score: "
                     <> ( case sDecision of
                             SynthesisDecision{score} -> show score
@@ -112,7 +108,8 @@ isLeaf
     Tree
         { sState =
             SynthesisState
-                { sBindOptions = []
+                { sAllocationOptions = []
+                , sBindOptions = []
                 , sDataflowOptions = []
                 , sBreakLoopOptions = []
                 , sResolveDeadlockOptions = []
@@ -128,12 +125,13 @@ isComplete = isSynthesisComplete . sTarget . sState
 exploreSubForestVar parent@Tree{sID, sState} =
     let edges =
             concat
-                ( map (decisonAndContext parent) (sBindOptions sState)
-                    ++ map (decisonAndContext parent) (sDataflowOptions sState)
-                    ++ map (decisonAndContext parent) (sBreakLoopOptions sState)
-                    ++ map (decisonAndContext parent) (sResolveDeadlockOptions sState)
-                    ++ map (decisonAndContext parent) (sOptimizeAccumOptions sState)
-                    ++ map (decisonAndContext parent) (sConstantFoldingOptions sState)
+                ( map (decisionAndContext parent) (sAllocationOptions sState)
+                    ++ map (decisionAndContext parent) (sBindOptions sState)
+                    ++ map (decisionAndContext parent) (sDataflowOptions sState)
+                    ++ map (decisionAndContext parent) (sBreakLoopOptions sState)
+                    ++ map (decisionAndContext parent) (sResolveDeadlockOptions sState)
+                    ++ map (decisionAndContext parent) (sOptimizeAccumOptions sState)
+                    ++ map (decisionAndContext parent) (sConstantFoldingOptions sState)
                 )
      in forM (zip [0 ..] edges) $ \(i, (desc, ctx')) -> do
             sSubForestVar <- newEmptyTMVar
@@ -145,7 +143,7 @@ exploreSubForestVar parent@Tree{sID, sState} =
                     , sSubForestVar
                     }
 
-decisonAndContext parent@Tree{sState = ctx} o =
+decisionAndContext parent@Tree{sState = ctx} o =
     [ (SynthesisDecision o d p e, nodeCtx (Just parent) model)
     | (d, model) <- decisions ctx o
     , let p = parameters ctx o d
@@ -155,9 +153,12 @@ decisonAndContext parent@Tree{sState = ctx} o =
 nodeCtx parent nModel =
     let sBindOptions = bindOptions nModel
         sDataflowOptions = dataflowOptions nModel
+        fs = functions $ mDataFlowGraph nModel
+        processWaves = buildProcessWaves [] fs
      in SynthesisState
             { sTarget = nModel
             , sParent = parent
+            , sAllocationOptions = allocationOptions nModel
             , sBindOptions
             , sDataflowOptions
             , sResolveDeadlockOptions = resolveDeadlockOptions nModel
@@ -176,10 +177,9 @@ nodeCtx parent nModel =
                     , Lock{lockBy} <- locks f
                     , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
                     ]
-            , bindWaves =
-                estimateWaves
-                    (functions $ mDataFlowGraph nModel)
-                    (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions))
+            , bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs
+            , processWaves
+            , numberOfProcessWaves = length processWaves
             , numberOfDataflowOptions = length sDataflowOptions
             , transferableVars =
                 S.unions
@@ -188,23 +188,3 @@ nodeCtx parent nModel =
                     , (_, ep) <- targets
                     ]
             }
-
--- |see usage for 'bindWaves' above
-estimateWaves fs alreadyVars =
-    let io =
-            [ (is, os)
-            | f <- fs
-            , let is = S.elems (inputs f) L.\\ alreadyVars
-                  os = S.elems $ outputs f
-            ]
-     in inner io 0 def
-    where
-        inner [] _n acc = acc
-        inner io n acc =
-            let (first, another) = L.partition (null . fst) io
-                firstVs = concatMap snd first
-                io' = map (\(is, os) -> (is L.\\ firstVs, os)) another
-                acc' = M.union acc $ M.fromList $ map (\v -> (v, n)) firstVs
-             in if null first
-                    then acc -- in case of cycle (maybe some loops are not broken)
-                    else inner io' (n + 1) acc'

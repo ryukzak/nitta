@@ -1,8 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : NITTA.Synthesis
@@ -18,13 +14,13 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
-    # tName                                                                                        NITTA.LuaFrontend
-    # tMicroArch --------------------------\
-    # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
-                      |                    |     |  |
-                      *<--lua2functions    |     |  |
-                      |                    |     |  v         NITTA.Model:TargetSystem----------\
-    # tDFG <----------+                    +--------*--------> # mUnit            |             |    NITTA.Model...
+    # tName                                                                              NITTA.Frontends
+    # tMicroArch -----------------------------\
+    # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
+                   |                          |     |  |
+                   *<-translate               |     |  |
+                   |                          |     |  v      NITTA.Model:TargetSystem----------\
+    # tDFG <-------+                          +--------*--------> # mUnit         |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
         +----------------------------------------*-----------> # mDataFlowGraph   |             \-----+  System   |
@@ -77,11 +73,9 @@ NITTA.Project.Types:Project            |        |                               
 @
 -}
 module NITTA.Synthesis (
-    module NITTA.Synthesis.Bind,
-    module NITTA.Synthesis.Dataflow,
     module NITTA.Synthesis.Explore,
     module NITTA.Synthesis.Method,
-    module NITTA.Synthesis.Refactor,
+    module NITTA.Synthesis.Steps,
     module NITTA.Synthesis.Types,
     mkModelWithOneNetwork,
     TargetSynthesis (..),
@@ -92,21 +86,19 @@ module NITTA.Synthesis (
 import Control.Monad (when)
 import Data.Default as D
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
+import NITTA.Frontends
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
-import NITTA.Synthesis.Bind
-import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
-import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
 import System.Directory
 import System.FilePath
@@ -116,26 +108,28 @@ import System.Log.Logger
 testing purpose.
 -}
 data TargetSynthesis tag v x t = TargetSynthesis
-    { -- |target name, used for top level module name and project path
-      tName :: String
-    , -- |composition of processor units, IO ports and its interconnect
-      tMicroArch :: BusNetwork tag v x t
-    , -- |optional application source code (lua)
-      tSourceCode :: Maybe Text
-    , -- |algorithm in intermediate data flow graph representation (if
-      -- tSourceCode present will be overwritten)
-      tDFG :: DataFlowGraph v x
-    , -- |values from input interface for testing purpose
-      tReceivedValues :: [(v, [x])]
-    , -- |synthesis method
-      tSynthesisMethod :: SynthesisMethod tag v x t
-    , -- |IP-core library directory
-      tLibPath :: String
-    , -- |output directory, where CAD create project directory with 'tName' name
-      tPath :: String
+    { tName :: String
+    -- ^target name, used for top level module name and project path
+    , tMicroArch :: BusNetwork tag v x t
+    -- ^composition of processor units, IO ports and its interconnect
+    , tSourceCode :: Maybe Text
+    -- ^optional application source code (lua)
+    , tDFG :: DataFlowGraph v x
+    -- ^algorithm in intermediate data flow graph representation (if
+    -- tSourceCode present will be overwritten)
+    , tReceivedValues :: [(v, [x])]
+    -- ^values from input interface for testing purpose
+    , tSynthesisMethod :: SynthesisMethod tag v x t
+    -- ^synthesis method
+    , tLibPath :: String
+    -- ^IP-core library directory
+    , tPath :: String
+    -- ^output directory, where CAD create project directory with 'tName' name
     , tTemplates :: [FilePath]
-    , -- |number of simulation and testbench cycles
-      tSimulationCycleN :: Int
+    , tSimulationCycleN :: Int
+    -- ^number of simulation and testbench cycles
+    , tSourceCodeType :: FrontendType
+    -- ^source code format type
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
@@ -151,7 +145,13 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
+            , tSourceCodeType = Lua
             }
+
+instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v x t) v x t where
+    tryBind _ _ = error "Not Implemented"
+    process TargetSynthesis{tMicroArch} = process tMicroArch
+    parallelismType TargetSynthesis{tMicroArch} = parallelismType tMicroArch
 
 runTargetSynthesis leaf = do
     prj <- synthesizeTargetSystem leaf
@@ -169,6 +169,7 @@ synthesizeTargetSystem
         , tPath
         , tTemplates
         , tSimulationCycleN
+        , tSourceCodeType
         } = do
         -- TODO: check that tName is a valid verilog module name
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
@@ -181,7 +182,7 @@ synthesizeTargetSystem
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
-                let tmp = frDataFlow $ lua2functions src
+                let tmp = frDataFlow $ translate tSourceCodeType src
                 noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 

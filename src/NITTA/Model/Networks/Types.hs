@@ -1,10 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -19,15 +14,16 @@ module NITTA.Model.Networks.Types (
     PU (..),
     PUClasses,
     IOSynchronization (..),
+    PUPrototype (..),
     puInputPorts,
     puOutputPorts,
     puInOutPorts,
 ) where
 
 import Data.Aeson
-import qualified Data.List as L
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
@@ -100,6 +96,7 @@ instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
     process PU{unit, diff} =
         let p = process unit
          in p{steps = map (patch diff) $ steps p}
+    parallelismType PU{unit} = parallelismType unit
 
 instance (Ord v) => Patch (PU v x t) (Changeset v) where
     patch diff' PU{unit, diff, uEnv} =
@@ -168,7 +165,23 @@ data IOSynchronization
     deriving (Show, Read, Typeable, Generic)
 
 instance ToJSON IOSynchronization
+instance FromJSON IOSynchronization
 
 puInputPorts PU{uEnv} = envInputPorts uEnv
 puOutputPorts PU{uEnv} = envOutputPorts uEnv
 puInOutPorts PU{uEnv} = envInOutPorts uEnv
+
+-- |PU and some additional information required for allocation on BusNetwork
+data PUPrototype tag v x t where
+    PUPrototype ::
+        (UnitTag tag, PUClasses pu v x t) =>
+        { pTag :: tag
+        -- ^Prototype tag. You can specify tag as a template by adding {x}.
+        -- This will allow to allocate PU more than once by replacing {x} with index.
+        -- When PU is allocated processUnitTag will look like bnName_pTag.
+        , pProto :: pu
+        -- ^PU prototype
+        , pIOPorts :: IOPorts pu
+        -- ^IO ports that will be used by PU
+        } ->
+        PUPrototype tag v x t

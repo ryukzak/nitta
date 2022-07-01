@@ -1,13 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -25,14 +19,15 @@ module NITTA.Model.ProcessorUnits.Divider (
     IOPorts (..),
 ) where
 
+import Control.Monad
 import Data.Default
 import Data.List (partition)
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.Set as S
+import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -112,6 +107,7 @@ instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
             Right pu{remains = f : remains}
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
+    parallelismType _ = Pipeline
 
 instance (Var v, Time t) => Locks (Divider v x t) v where
     locks Divider{jobs, remains} = L.nub $ byArguments ++ byResults
@@ -217,7 +213,7 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                                 scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag
                             }
     endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
-        | ([job@WaitResults{results}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
+        | ([job@WaitResults{results, function}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
             let ([(tag, allVs)], results') = partition ((vs `S.isSubsetOf`) . snd) results
                 allVs' = allVs S.\\ vs
                 results'' = filterEmptyResults $ (tag, allVs') : results'
@@ -229,6 +225,8 @@ instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
                     { jobs = jobs''
                     , process_ = execSchedule pu $ do
                         scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag
+                        when (null jobs') $ do
+                            scheduleFunctionFinish_ [] function $ 0 ... sup epAt
                     }
     endpointDecision _pu d = error [i|incorrect decision #{ d } for Divider|]
 

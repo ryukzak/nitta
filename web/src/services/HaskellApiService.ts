@@ -13,9 +13,11 @@ import {
   UnitDesc,
   Relation,
   TimeConstraint,
+  TreeInfo,
   Process,
   Step,
   StepInfoView,
+  IAllocationView,
 } from "services/gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
 import {
@@ -39,6 +41,7 @@ export type Decision = DecisionView;
 export type Root = IRootView;
 
 export type Bind = IBindDecisionView;
+export type Allocation = IAllocationView;
 export type Dataflow = IDataflowDecisionView;
 
 export type BreakLoop = IBreakLoopView;
@@ -78,6 +81,7 @@ export function synthesize<T extends Array<any>>(
 
 export const api = {
   getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => jsAPI.getSynthesisTree(),
+  getTreeInfo: (): AxiosPromise<TreeInfo> => jsAPI.getTreeInfo(),
 
   // Synthesis tree navigation
   getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidHistory(sid),

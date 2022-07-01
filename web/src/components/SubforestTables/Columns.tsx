@@ -3,13 +3,25 @@ import React, { ReactElement } from "react";
 import { Popover, OverlayTrigger } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { Bind, Dataflow, BreakLoop, OptimizeAccum, ConstantFolding, ResolveDeadlock } from "services/HaskellApiService";
+import {
+  Allocation,
+  Bind,
+  Dataflow,
+  BreakLoop,
+  OptimizeAccum,
+  ConstantFolding,
+  ResolveDeadlock
+} from "services/HaskellApiService";
 import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
 import { Interval, FView, DecisionView } from "services/gen/types";
+import { Column } from "react-table";
+import { Color } from "utils/color";
 
 const style = {
   fontWeight: 600,
 };
+
+const GOOD_SCORE_COLOR = Color.fromHex("#84e371");
 
 export function sidColumn(onUpdateNid: (sid: string) => void) {
   return {
@@ -98,12 +110,33 @@ export function parametersColumn() {
   };
 }
 
-export function objectiveColumn() {
+export interface ScoresInfo {
+  minScore: number;
+  maxScore: number;
+}
+
+export function objectiveColumn(scoresInfo: ScoresInfo): Column {
+  const objectiveCellStyle = { ...style, padding: "0" };
   return {
     Header: "Z(d)",
     maxWidth: 50,
-    style: style,
-    Cell: (row: { original: Node }) => row.original.score,
+    style: objectiveCellStyle,
+    Cell: (row: { original: Node }) => {
+      const cellColor = new Color({
+        ...GOOD_SCORE_COLOR.obj,
+        a: (row.original.score - scoresInfo.minScore) / (scoresInfo.maxScore - scoresInfo.minScore),
+      });
+
+      if (scoresInfo.minScore === scoresInfo.maxScore) {
+        cellColor.obj.a = 1;
+      }
+
+      return (
+        <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
+          {row.original.score}
+        </div>
+      );
+    },
   };
 }
 
@@ -114,6 +147,7 @@ export function showDecision(decision: DecisionView): ReactElement {
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
   else if (decision.tag === "OptimizeAccumView") return showOptimizeAccum(decision);
   else if (decision.tag === "ResolveDeadlockView") return showResolveDeadlock(decision);
+  else if (decision.tag === "AllocationView") return showAllocation(decision);
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
@@ -173,4 +207,12 @@ export function showOptimizeAccum(d: OptimizeAccum): ReactElement {
 
 export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
   return <div>{decision.newBuffer}</div>;
+}
+
+export function showAllocation(decision: Allocation): ReactElement {
+  return (
+    <div>
+      <strong>{decision.networkTag}</strong> <Icon.ArrowLeft /> {decision.processUnitTag}
+    </div>
+  );
 }

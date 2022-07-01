@@ -1,10 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -16,8 +11,8 @@ module NITTA.Model.Problems.ViewHelper (
 
 import Data.Aeson
 import Data.Bifunctor
-import qualified Data.Set as S
-import qualified Data.Text as T
+import Data.Set qualified as S
+import Data.Text qualified as T
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -39,6 +34,10 @@ data DecisionView
     | BindDecisionView
         { function :: FView
         , pu :: T.Text
+        }
+    | AllocationView
+        { networkTag :: T.Text
+        , processUnitTag :: T.Text
         }
     | DataflowDecisionView
         { source :: (T.Text, EndpointSt T.Text (Interval Int))
@@ -68,6 +67,13 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
         BindDecisionView
             { function = view f
             , pu = toText pu
+            }
+
+instance (UnitTag tag) => Viewable (Allocation tag) DecisionView where
+    view Allocation{networkTag, processUnitTag} =
+        AllocationView
+            { networkTag = toText networkTag
+            , processUnitTag = toText processUnitTag
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where

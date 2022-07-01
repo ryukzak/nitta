@@ -18,8 +18,8 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests (
 ) where
 
 import Data.String.Interpolate
-import qualified Data.Text as T
-import NITTA.LuaFrontend.Tests.Providers
+import Data.Text qualified as T
+import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Providers
 import Test.QuickCheck
@@ -98,7 +98,7 @@ tests =
             decideAt 4 4 $ provide ["c"]
 
             assertLocks []
-            assertCoSimulation
+            assertPUCoSimulation
         , unitTestCase "multiplier coSim smoke test" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             setValue "a" 2
@@ -106,7 +106,7 @@ tests =
             decide $ consume "a"
             decide $ consume "b"
             decide $ provide ["c", "d"]
-            assertCoSimulation
+            assertPUCoSimulation
         ]
     where
         u = multiplier True :: Multiplier T.Text Int Int

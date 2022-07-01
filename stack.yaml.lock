@@ -19,19 +19,19 @@ packages:
   original:
     hackage: alex-tools-0.5.0.1
 - completed:
-    hackage: aeson-typescript-0.2.0.0@sha256:d4bd016c04612bd6cbc02e3e38315de3bbf4f50c408f720b4472928b6ac4b59f,2642
+    hackage: aeson-typescript-0.3.0.1@sha256:ef93ed6b34432215bc41d8abe7d253bfef67520d8f1192ce688812810e1deb53,3024
     pantry-tree:
-      size: 1719
-      sha256: 92ba5548e53be350edd6f5961a51375d77c0358a738a9a4f6bb496bf85f6935a
+      size: 2500
+      sha256: 74767a8c77aa54fca3e288adee242cf845b9ed06e3a450df48be30657e430450
   original:
-    hackage: aeson-typescript-0.2.0.0
+    hackage: aeson-typescript-0.3.0.1
 - completed:
-    hackage: prettyprinter-1.7.0@sha256:6a9569e21fa61163a7f066d23d701e23e917893e8f39733d6e617ec72787ae5f,6007
+    hackage: prettyprinter-1.7.1@sha256:9c43c9d8c3cd9f445596e5a2379574bba87f935a4d1fa41b5407ee3cf4edc743,6987
     pantry-tree:
-      size: 3194
-      sha256: d22f820a1f63497f7fd7e1f04b7d356d92de35582258f6ad55428c88b09e63ff
+      size: 3460
+      sha256: cd6f393bf7cba603a1958a139915fc343efd5488e36fd7b3b5c6956c002d04fa
   original:
-    hackage: prettyprinter-1.7.0
+    hackage: prettyprinter-1.7.1
 - completed:
     hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
     pantry-tree:
@@ -39,9 +39,16 @@ packages:
       sha256: c3c27de2989ed3537567ef531406ccd88c6e715cf85e8da554fca1da78c1104d
   original:
     hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
+- completed:
+    hackage: MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
+    pantry-tree:
+      size: 5271
+      sha256: 6cd6a7213615d72a7db3234c7fcd4346ceb4889bc8fb14b302b5878768018fcd
+  original:
+    hackage: MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
 snapshots:
 - completed:
-    size: 534126
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/31.yaml
-    sha256: 637fb77049b25560622a224845b7acfe81a09fdb6a96a3c75997a10b651667f6
-  original: lts-16.31
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+  original: lts-18.28

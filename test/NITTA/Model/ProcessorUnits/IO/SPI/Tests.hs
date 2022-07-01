@@ -21,9 +21,9 @@ module NITTA.Model.ProcessorUnits.IO.SPI.Tests (
 import Control.Monad (void)
 import Data.Default
 import Data.String.Interpolate
-import qualified Data.Text as T
+import Data.Text qualified as T
+import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.DataFlow
-import NITTA.LuaFrontend.Tests.Providers
 import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
@@ -31,7 +31,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
 
--- FIXME: avoid NITTA.Model.Tests.Internals usage
+-- TODO:  https://github.com/ryukzak/nitta/issues/122
 
 test_multiple_receives =
     [ testCase "receive two variables" $

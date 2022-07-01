@@ -1,16 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
@@ -22,11 +15,12 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Types (
     -- *Processor unit
-    UnitTag,
+    UnitTag (..),
     ProcessorUnit (..),
     bind,
     allowToProcess,
     NextTick (..),
+    ParallelismType (..),
 
     -- *Process description
     Process (..),
@@ -34,10 +28,14 @@ module NITTA.Model.ProcessorUnits.Types (
     Step (..),
     StepInfo (..),
     Relation (..),
+    isVertical,
+    isHorizontal,
     descent,
     whatsHappen,
     extractInstructionAt,
     withShift,
+    isRefactorStep,
+    isAllocationStep,
 
     -- *Control
     Controllable (..),
@@ -59,23 +57,50 @@ import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
 import Data.Kind
-import qualified Data.List as L
+import Data.List qualified as L
+import Data.List.Utils (replace)
 import Data.Maybe
+import Data.Set qualified as S
 import Data.String
 import Data.String.Interpolate
 import Data.String.ToString
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Typeable
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
-import qualified Numeric.Interval.NonEmpty as I
+import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
--- |Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
+-- |Class for processor unit tag or "name"
+class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag) => UnitTag tag where
+    -- |Whether the value can be used as a template or not
+    isTemplate :: tag -> Bool
+
+    -- |Create tag from the template and index
+    fromTemplate :: tag -> String -> tag
+
+instance UnitTag T.Text where
+    isTemplate tag = T.isInfixOf (T.pack "{x}") tag
+    fromTemplate tag index = T.replace (T.pack "{x}") (T.pack index) tag
+
+instance UnitTag String where
+    isTemplate tag = "{x}" `L.isInfixOf` tag
+    fromTemplate tag index = replace "{x}" index tag
+
+-- |Processor unit parallelism type
+data ParallelismType
+    = -- |All operations can be performed in parallel mode
+      Full
+    | -- |All operations can be performed in pipeline mode
+      Pipeline
+    | -- |Other processor units
+      None
+    deriving (Show, Generic, Eq)
+
+instance ToJSON ParallelismType
 
 {- |Process unit - part of NITTA process with can execute a function from
 intermediate representation:
@@ -101,6 +126,14 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     -- 'ProcessStepID' may change from one call to another.
     process :: u -> Process t (StepInfo v x t)
 
+    -- |Indicates what type of parallelism is supported by 'ProcessorUnit'
+    parallelismType :: u -> ParallelismType
+    parallelismType _ = None
+
+    -- |Provide the processor unit size. At the moment it's just the number of subprocessors
+    puSize :: u -> Float
+    puSize _ = 1
+
 bind f pu = case tryBind f pu of
     Right pu' -> pu'
     Left err -> error $ "can't bind function: " <> err
@@ -119,14 +152,14 @@ instance (ProcessorUnit u v x t) => NextTick u t where
 separated data and relations storage.
 -}
 data Process t i = Process
-    { -- |All process steps desctiption.
-      steps :: [Step t i]
-    , -- |List of relationships between process steps (see 'Relation').
-      relations :: [Relation]
-    , -- |Next tick for instruction. Note: instruction /= endpoint.
-      nextTick_ :: t
-    , -- |Next process step ID
-      nextUid :: ProcessStepID
+    { steps :: [Step t i]
+    -- ^All process steps desctiption.
+    , relations :: [Relation]
+    -- ^List of relationships between process steps (see 'Relation').
+    , nextTick_ :: t
+    -- ^Next tick for instruction. Note: instruction /= endpoint.
+    , nextUid :: ProcessStepID
+    -- ^Next process step ID
     }
     deriving (Generic)
 
@@ -158,7 +191,7 @@ instance {-# OVERLAPS #-} NextTick (Process t si) t where
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
         where
-            get Step{pDesc} | FStep f <- descent pDesc = Just f
+            get Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
             get _ = Nothing
 
 -- |Unique ID of a process step. Uniquity presented only inside PU.
@@ -166,12 +199,12 @@ type ProcessStepID = Int
 
 -- |Process step representation
 data Step t i = Step
-    { -- |uniq (inside single the process unit) step ID
-      pID :: ProcessStepID
-    , -- |step time
-      pInterval :: Interval t
-    , -- |step description
-      pDesc :: i
+    { pID :: ProcessStepID
+    -- ^uniq (inside single the process unit) step ID
+    , pInterval :: Interval t
+    -- ^step time
+    , pDesc :: i
+    -- ^step description
     }
     deriving (Show, Generic)
 
@@ -184,8 +217,10 @@ instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
 data StepInfo v x t where
     -- |CAD level step
     CADStep :: String -> StepInfo v x t
-    -- |intermidiate level step (funcution execution)
-    FStep :: F v x -> StepInfo v x t
+    -- |Apply refactoring
+    RefactorStep :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
+    -- |intermidiate level step (function execution)
+    IntermediateStep :: F v x -> StepInfo v x t
     -- |endpoint level step (source or target)
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |process unit instruction (depends on process unit type)
@@ -195,19 +230,29 @@ data StepInfo v x t where
         StepInfo v x t
     -- |wrapper for nested process unit step (used for networks)
     NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
+    -- |Process unit allocation step
+    AllocationStep :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
 
 descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
 
+isRefactorStep RefactorStep{} = True
+isRefactorStep _ = False
+
+isAllocationStep AllocationStep{} = True
+isAllocationStep _ = False
+
 instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (CADStep msg) = "CAD: " <> msg
-    show (FStep F{fun}) = "Intermediate: " <> show fun
+    show (AllocationStep alloc) = "Allocation: " <> show alloc
+    show (RefactorStep ref) = "Refactor: " <> show ref
+    show (IntermediateStep F{fun}) = "Intermediate: " <> show fun
     show (EndpointRoleStep eff) = "Endpoint: " <> show eff
     show (InstructionStep instr) = "Instruction: " <> show instr
     show NestedStep{nTitle, nStep = Step{pDesc}} = "@" <> toString nTitle <> " " <> show pDesc
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
-    patch diff (FStep f) = FStep $ patch diff f
+    patch diff (IntermediateStep f) = IntermediateStep $ patch diff f
     patch diff (EndpointRoleStep ep) = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _ instr = instr
@@ -217,8 +262,18 @@ data Relation
     = -- |Vertical relationships (up and down). For example, the intermediate
       -- step (function execution) can be translated to a sequence of endpoint
       -- steps (receiving and sending variable), and process unit instructions.
-      Vertical ProcessStepID ProcessStepID
-    deriving (Show, Eq, Generic)
+      Vertical {vUp, vDown :: ProcessStepID}
+    | -- |Horizontal relationships (on one level). For example, we bind the
+      -- function and apply the refactoring. The binding step should be
+      -- connected to refactoring steps, including new binding steps.
+      Horizontal {hPrev, hNext :: ProcessStepID}
+    deriving (Show, Generic, Ord, Eq)
+
+isVertical Vertical{} = True
+isVertical _ = False
+
+isHorizontal Horizontal{} = True
+isHorizontal _ = False
 
 instance ToJSON Relation
 
@@ -344,16 +399,16 @@ class IOConnected pu where
     data IOPorts pu :: Type
 
     -- |External input ports, which go outside of NITTA mUnit.
-    inputPorts :: IOPorts pu -> [InputPortTag]
-    inputPorts _ = []
+    inputPorts :: IOPorts pu -> S.Set InputPortTag
+    inputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
-    outputPorts :: IOPorts pu -> [OutputPortTag]
-    outputPorts _ = []
+    outputPorts :: IOPorts pu -> S.Set OutputPortTag
+    outputPorts _ = S.empty
 
     -- |External output ports, which go outside of NITTA mUnit.
-    inoutPorts :: IOPorts pu -> [InoutPortTag]
-    inoutPorts _ = []
+    inoutPorts :: IOPorts pu -> S.Set InoutPortTag
+    inoutPorts _ = S.empty
 
 newtype InputPortTag = InputPortTag {inputPortTag :: T.Text} deriving (Eq, Ord)
 instance Show InputPortTag where show = toString . inputPortTag
