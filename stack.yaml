@@ -46,11 +46,14 @@ extra-deps:
 - prettyprinter-1.7.1
 - servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
 - MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
+- regex-posix-clib-2.7@sha256:998fca06da3d719818f0691ef0b8b9b7375afeea228cb08bd9e2db53f96b0cd7,1232
 
 allow-newer: true
 
-# Override default flag values for local packages and extra-deps
-flags: {}
+# Setting flags also override default flag values for local packages and extra-deps
+flags:
+  regex-posix:
+    _regex-posix-clib: true
 
 # Extra package databases containing global packages
 extra-package-dbs: []
