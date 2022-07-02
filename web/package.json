@@ -19,7 +19,7 @@
     "react-chartjs-2": "^3.0.3",
     "react-d3-tree": "^1.15.3",
     "react-dom": "^17.0.1",
-    "react-json-view": "^1.19.1",
+    "react-json-view": "^1.21.3",
     "react-router-dom": "^5.0.1",
     "react-scripts": "^4.0.3",
     "react-table": "^6.11.0",
@@ -27,10 +27,13 @@
     "typescript": "^3.9.4"
   },
   "devDependencies": {
-    "@types/react": "16.9.55",
+    "@types/react": "^17.0.47",
     "@types/react-bootstrap": "^0.32.19",
-    "@types/react-dom": "16.9.9",
+    "@types/react-dom": "^17.0.17",
     "@types/react-router-dom": "^5.1.6"
+  },
+  "resolutions": {
+    "@types/react": "^17.0.47"
   },
   "scripts": {
     "backstart": "cd .. && stack exec nitta -- --port=8080 examples/teacup.lua",
