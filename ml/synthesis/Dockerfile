@@ -96,7 +96,6 @@ FROM build AS ml-script
 
 COPY examples examples/
 COPY ml ml/
-WORKDIR /app
 ENV PYTHONPATH=/app/ml/synthesis/src
 ENV PYTHONUNBUFFERED=1
 ENTRYPOINT ["python3"]
