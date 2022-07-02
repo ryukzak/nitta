@@ -7,7 +7,7 @@
   "dependencies": {
     "@types/react-table": "^6.8.5",
     "axios": "^0.21.0",
-    "bootstrap": "^5.2.0-beta1",
+    "bootstrap": "^5.1.3",
     "chart.js": "^3.3.2",
     "glyphicons-only-bootstrap": "^1.0.1",
     "graphviz-react": "^1.0.4",
@@ -33,7 +33,8 @@
     "@types/react-router-dom": "^5.1.6"
   },
   "resolutions": {
-    "@types/react": "^17.0.47"
+    "@types/react": "^17.0.47",
+    "autoprefixer": "10.4.5"
   },
   "scripts": {
     "backstart": "cd .. && stack exec nitta -- --port=8080 examples/teacup.lua",
