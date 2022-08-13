@@ -18,25 +18,21 @@ module pu_multiplier
 
 reg [DATA_WIDTH-1:0]              arg [0:1];
 reg                               arg_invalid [0:1];
-reg                               fst_arg_valid;
+reg                               arg_sel;
+
 always @(posedge clk) begin
     if ( rst ) begin
         arg[0] <= 0;
         arg[1] <= 0;
-        fst_arg_valid   <= 0;
+        arg_sel <= 0;
     end else begin
         if ( signal_wr ) begin
-            arg[fst_arg_valid] <= data_in[DATA_WIDTH-1:0];
-            arg_invalid[fst_arg_valid] <= attr_in[INVALID];
-            if ( fst_arg_valid ) begin
-                fst_arg_valid  <= 0;
-            end else begin
-                fst_arg_valid  <= 1;
-            end
+            arg[arg_sel] <= data_in[DATA_WIDTH-1:0];
+            arg_invalid[arg_sel] <= attr_in[INVALID];
+            arg_sel <= !arg_sel;
         end
     end
 end
-
 
 
 wire signed [DATA_WIDTH-1:0]         mult_result;
@@ -66,9 +62,9 @@ always @(posedge clk) begin
         f <= 0;
         write_multresult <= 0;
     end else begin
-        f <= fst_arg_valid; // actual register will be updateted only on next clk
-        if ( fst_arg_valid == 0 && f == 1 ) write_multresult <= 1;
-        else                             write_multresult <= 0;
+        f <= arg_sel; // actual register will be updateted only on next clk
+        if ( arg_sel == 0 && f == 1 ) write_multresult <= 1;
+        else                          write_multresult <= 0;
     end
 end
 

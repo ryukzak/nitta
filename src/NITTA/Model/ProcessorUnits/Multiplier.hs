@@ -544,13 +544,12 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
 
     endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
-          , ([_], targets') <- partition (== v) targets
-          ,
-           --  Computation process planning is carried out.
-            let process_' = execSchedule pu $ do
-                    -- this is required for correct work of automatically generated tests,
-                    -- that takes information about time from Process
-                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Load =
+        , ([_], targets') <- partition (== v) targets
+        , --  Computation process planning is carried out.
+          let process_' = execSchedule pu $ do
+                -- this is required for correct work of automatically generated tests,
+                -- that takes information about time from Process
+                scheduleEndpoint d $ scheduleInstructionUnsafe epAt Load =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -596,6 +595,10 @@ us to control the PU at the hardware level.
   view;
 
 - microcode describes the structure of processors that controls signals.
+
+The implementation had the internal register, which allows us to simply push the
+data in the unit, without any specification of argument position. It will be
+always a sequence of the first and second arguments.
 -}
 instance Controllable (Multiplier v x t) where
     data Instruction (Multiplier v x t)
@@ -606,7 +609,7 @@ instance Controllable (Multiplier v x t) where
     data Microcode (Multiplier v x t) = Microcode
         { -- \| Write to mUnit signal.
           wrSignal :: Bool
-        , -- |Downloading from mUnit signal.
+        , -- \| Downloading from mUnit signal.
           oeSignal :: Bool
         }
         deriving (Show, Eq, Ord)
@@ -646,7 +649,7 @@ instance Connected (Multiplier v x t) where
     data Ports (Multiplier v x t) = MultiplierPorts
         { -- \|get data from the bus (data_in)
           wr :: SignalTag
-        , -- |send result to the bus
+        , -- \|send result to the bus
           oe :: SignalTag
         }
         deriving (Show)
@@ -745,9 +748,3 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                         [i|oe <= #{bool2verilog oeSignal};|]
                             <> [i| wr <= #{bool2verilog wrSignal};|]
                     }
-
-
-
-
-
-
