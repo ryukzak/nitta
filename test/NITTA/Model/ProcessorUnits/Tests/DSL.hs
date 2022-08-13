@@ -219,7 +219,7 @@ assignNaive cntxs f = do
 
 -- | set initital values for coSimulation input variables
 setValues :: (Function f v, WithFunctions pu f) => [(v, x)] -> PUStatement pu v x t ()
-setValues = mapM_ $ uncurry setValue
+setValues vxs = mapM_ (\(v, x) -> setValue v x) vxs
 
 -- | set initital value for coSimulation input variables
 setValue :: (Var v, Function f v, WithFunctions pu f) => v -> x -> PUStatement pu v x t ()
