@@ -230,7 +230,7 @@ Multiplier:
     Process:
         steps:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
         relations:
             0) Vertical {vUp = 0, vDown = 1}
         nextTick: 3
@@ -248,9 +248,9 @@ Multiplier:
     Process:
         steps:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
             2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
         relations:
             0) Vertical {vUp = 2, vDown = 3}
             1) Vertical {vUp = 0, vDown = 1}
@@ -275,9 +275,9 @@ Multiplier:
     Process:
         steps:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
             2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
             4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
             5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
         relations:
@@ -299,9 +299,9 @@ Multiplier:
     Process:
         steps:
             0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
-            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+            1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
             2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
-            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+            3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
             4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
             5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
             6) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
