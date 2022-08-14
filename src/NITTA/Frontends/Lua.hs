@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
@@ -14,13 +18,64 @@ and stores it into a NITTA's data flow graph.
 
 Supported Lua costructions are:
 
-* Simple math operators (addition, subtraction, multiplication and division);
+- Simple math operators (addition, subtraction, multiplication and division);
+- Variable assignments;
+- Bitwise left and right shifts;
+- Recursive calls.
 
-* Variable assignments;
+The naming of variables in the output dataflow graph:
 
-* Bitwise left and right shifts;
+@
+    x^1#2 -- for variables
+    | | |
+    | | +-- value access number (one for each), e.g.
+    | |     x = 1; send(x); reg(x) -- two accesses
+    | |
+    | +---- value assignment number (one for each, optional)
+    |       x = f(1); x = g(2) -- two assignments
+    |
+    +------ original variable name
 
-* Recursive calls.
+    !123#3 -- for constant
+      |  |
+      |  +--- value access number
+      |
+      +------ value: 123
+
+    _a#4 -- for an unnamed variable (example see below)
+     | |
+     | +--- value access number
+     |
+     +----- char of unnamed variable (a, b..., aa, ab, ...)
+@
+
+Example:
+
+>>> :{
+void $ mapM print $ functions (frDataFlow $ translateLua $ T.pack $ unlines
+    [ "function f()"
+    , "    local a = 1 + 2 + 3"
+    , "    local b = a + 4 + 5"
+    , "    b = b * 1 + 2"
+    , "    c, d = b / 2"
+    , "    send(b)"
+    , "end"
+    , "f()"
+    ] :: DataFlowGraph String Int)
+:}
+const(1) = !1#0 = !1#1
+const(2) = !2#0 = !2#1 = !2#2
+!1#0 + !2#0 = _0#a
+const(3) = !3#0
+_0#a + !3#0 = a^0#0
+const(4) = !4#0
+a^0#0 + !4#0 = _0#b
+const(5) = !5#0
+_0#b + !5#0 = b^0#0
+b^0#0 * !1#1 = _1#b
+_1#b + !2#1 = b^1#0 = b^1#1
+!2#2 / b^1#0 = _; !2#2 mod b^1#0 = _
+send(b^1#1)
 -}
 module NITTA.Frontends.Lua (
     translateLua,
@@ -43,10 +98,11 @@ import Data.Maybe
 import Data.String
 import Data.String.ToString
 import Data.Text qualified as T
-import Language.Lua
+import Language.Lua hiding (Var)
 import NITTA.Frontends.Common
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions qualified as F
+import NITTA.Intermediate.Types
 import NITTA.Utils.Base
 
 getUniqueLuaVariableName LuaValueInstance{lviName, lviIsConstant = True} luaValueAccessCount = "!" <> lviName <> "#" <> showText luaValueAccessCount
@@ -374,6 +430,7 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
                 Just names -> map fromText names
                 _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
 
+translateLua :: (Var v, Val x) => T.Text -> FrontendResult v x
 translateLua src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
