@@ -39,7 +39,7 @@ tests =
         , unitTestCase "test BreakLoop" u2 $ do
             assign $ loop 10 "b" ["a"]
             setValue "b" 64
-            refactor =<< mkBreakLoop 10 "b" ["a"]
+            mkBreakLoop 10 "b" ["a"] >>= \r -> refactor r
             decideAt 1 1 $ provide ["a"]
             decideAt 2 2 $ consume "b"
             traceProcess

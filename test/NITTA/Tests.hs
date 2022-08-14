@@ -45,11 +45,11 @@ test_fibonacci =
         synthesizeAndCoSim
     , unitTestCase "io_drop_data" def $ do
         setNetwork $ marchSPIDropData True pInt
-        mapM_ bind2network algWithSend
+        mapM_ (\f -> bind2network f) algWithSend
         synthesizeAndCoSim
     , unitTestCase "io_no_drop_data" def $ do
         setNetwork $ marchSPI True pInt
-        mapM_ bind2network algWithSend
+        mapM_ (\f -> bind2network f) algWithSend
         synthesizeAndCoSim
     ]
     where
@@ -65,7 +65,7 @@ test_add_and_io =
         setNetwork $ microarch Sync SlaveSPI
         setBusType pIntX32
         mapM_
-            bind2network
+            (\f -> bind2network f)
             [ F.receive ["a"]
             , F.receive ["b"]
             , F.receive ["e"]
@@ -100,7 +100,7 @@ test_manual =
                 sum(0,0,0)
             |]
         mapM_
-            (uncurry doBind)
+            (\(tag, pu) -> doBind tag pu)
             [ ("fram1", F.loop 0 "d^0#2" ["a^0#0"])
             , ("fram1", F.loop 0 "f^0#0" ["b^0#0"])
             , ("fram1", F.loop 0 "e^0#0" ["c^0#0"])
@@ -111,18 +111,18 @@ test_manual =
             , ("accum", F.add "d^0#1" "!2#0" ["f^0#0"])
             , ("accum", F.add "d^0#0" "!1#0" ["e^0#0"])
             ]
-        refactor =<< mkBreakLoop 0 "d^0#2" ["a^0#0"]
-        refactor =<< mkBreakLoop 0 "f^0#0" ["b^0#0"]
-        refactor =<< mkBreakLoop 0 "e^0#0" ["c^0#0"]
+        mkBreakLoop 0 "d^0#2" ["a^0#0"] >>= \r -> refactor r
+        mkBreakLoop 0 "f^0#0" ["b^0#0"] >>= \r -> refactor r
+        mkBreakLoop 0 "e^0#0" ["c^0#0"] >>= \r -> refactor r
         doTransfer ["a^0#0"]
         doTransfer ["b^0#0"]
-        refactor =<< mkResolveDeadlock ["_0#d"]
+        mkResolveDeadlock ["_0#d"] >>= \r -> refactor r
         doBind "fram1" $ F.buffer "_0#d@buf" ["_0#d"]
         doTransfer ["_0#d@buf"]
         doTransfer ["_0#d"]
         doTransfer ["c^0#0"]
         doTransfer ["d^0#2"]
-        refactor =<< mkResolveDeadlock ["d^0#0", "d^0#1"]
+        mkResolveDeadlock ["d^0#0", "d^0#1"] >>= \r -> refactor r
         doBind "fram1" $ F.buffer "d^0#0@buf" ["d^0#0", "d^0#1"]
         doTransfer ["d^0#0@buf"]
         doTransfer ["d^0#1"]
