@@ -29,11 +29,11 @@ interface Endpoints {
 }
 
 export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
-  const algorithmGraph = useAlgorithmGraph(selectedSID);
-  const procState = useProcState(selectedSID);
-  const endpoints = useEndpoints(selectedSID);
+  const algorithmGraph = useAlgorithmGraph(selectedSid);
+  const procState = useProcState(selectedSid);
+  const endpoints = useEndpoints(selectedSid);
 
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
@@ -117,9 +117,9 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
   return result;
 }
 
-function useAlgorithmGraph(selectedSID: string): IntermediateGraph | null {
+function useAlgorithmGraph(selectedSid: string): IntermediateGraph | null {
   const response = useApiRequest({
-    requester: useCallback(() => api.getIntermediateView(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getIntermediateView(selectedSid), [selectedSid]),
   });
   const result = useApiResponse(response, makeGraphData, null);
   return result;
@@ -145,8 +145,8 @@ function makeGraphData(graphData: IntermediateGraph): IntermediateGraph | null {
   };
 }
 
-function useProcState(selectedSID: string): ProcessState {
-  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSID), [selectedSID]) });
+function useProcState(selectedSid: string): ProcessState {
+  const response = useApiRequest({ requester: useCallback(() => api.getRootPath(selectedSid), [selectedSid]) });
   const result = useApiResponse(response, makeProcState, defaultProcState);
   return result;
 }
@@ -170,8 +170,8 @@ function makeProcState(nodes: Node[]): ProcessState {
   return procState;
 }
 
-function useEndpoints(selectedSID: string): Endpoints {
-  const response = useApiRequest({ requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]) });
+function useEndpoints(selectedSid: string): Endpoints {
+  const response = useApiRequest({ requester: useCallback(() => api.getEndpoints(selectedSid), [selectedSid]) });
   const result = useApiResponse(response, collectEndpoints, defaultEndpoints);
   return result;
 }

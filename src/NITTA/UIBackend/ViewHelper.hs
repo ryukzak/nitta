@@ -70,7 +70,7 @@ instance ToSample (TreeView ShortNodeView) where
             TreeNodeView
                 { rootLabel =
                     ShortNodeView
-                        { sid = showText $ SID []
+                        { sid = showText $ Sid []
                         , isTerminal = False
                         , isFinish = False
                         , isProcessed = True
@@ -82,7 +82,7 @@ instance ToSample (TreeView ShortNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = showText $ SID [0]
+                                { sid = showText $ Sid [0]
                                 , isTerminal = False
                                 , isFinish = False
                                 , isProcessed = False
@@ -95,7 +95,7 @@ instance ToSample (TreeView ShortNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             ShortNodeView
-                                { sid = showText $ SID [1]
+                                { sid = showText $ Sid [1]
                                 , isTerminal = False
                                 , isFinish = False
                                 , isProcessed = False
@@ -212,7 +212,7 @@ instance ToSample (NodeView tag v x t) where
     toSamples _ =
         samples
             [ NodeView
-                { sid = showText $ SID [0, 1, 3, 1]
+                { sid = showText $ Sid [0, 1, 3, 1]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
@@ -233,7 +233,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1032
                 }
             , NodeView
-                { sid = showText $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ Sid [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
@@ -254,7 +254,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = showText $ SID [0, 1, 3, 1, 6]
+                { sid = showText $ Sid [0, 1, 3, 1, 6]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
@@ -263,7 +263,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 5000
                 }
             , NodeView
-                { sid = showText $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ Sid [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
@@ -276,7 +276,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = showText $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ Sid [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
@@ -289,7 +289,7 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             , NodeView
-                { sid = showText $ SID [0, 1, 3, 1, 5]
+                { sid = showText $ Sid [0, 1, 3, 1, 5]
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0

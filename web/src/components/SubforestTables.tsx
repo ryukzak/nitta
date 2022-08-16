@@ -49,7 +49,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         name="Binding"
         nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
-          sidColumn(appContext.setSID),
+          sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
 
           textColumn("description", (e: Node) => showDecision(e.decision)),
@@ -80,7 +80,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           (e) => !["DataflowDecisionView", "BindDecisionView", "AllocationView"].includes(e.decision.tag)
         )}
         columns={[
-          sidColumn(appContext.setSID),
+          sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
@@ -91,7 +91,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         name="Allocation"
         nodes={nodes.filter((e) => e.decision.tag === "AllocationView")}
         columns={[
-          sidColumn(appContext.setSID),
+          sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
           textColumn("description", (e: Node) => showDecision(e.decision)),
           textColumn("parallelism", (e: Node) => (e.parameters as AllocationMetrics).mParallelism, 200),
@@ -106,7 +106,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         name="Dataflow"
         nodes={nodes.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
-          sidColumn(appContext.setSID),
+          sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source[0], 60),
           textColumn("description", (e: Node) => showDecision(e.decision)),
@@ -129,7 +129,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
         name="Other"
         nodes={nodes.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
         columns={[
-          sidColumn(appContext.setSID),
+          sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
           decisionColumn(),
           parametersColumn(),

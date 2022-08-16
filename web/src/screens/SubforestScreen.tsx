@@ -15,12 +15,12 @@ export const SubforestScreen: FC = () => {
 
   useEffect(() => {
     api
-      .getSubforest(appContext.selectedSID)
+      .getSubforest(appContext.selectedSid)
       .then((response: AxiosResponse<Node[]>) => {
         setSubforest(response.data);
       })
       .catch((err) => console.log(err));
-  }, [appContext.selectedSID]);
+  }, [appContext.selectedSid]);
 
   if (!subforest) {
     return (

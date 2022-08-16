@@ -14,7 +14,7 @@ export const TestBenchScreen: FC = () => {
 
   useEffect(() => {
     api
-      .runTestBench(appContext.selectedSID, "web_ui", 5)
+      .runTestBench(appContext.selectedSid, "web_ui", 5)
       .then((response: AxiosResponse<TestBenchReportData | null>) => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
@@ -22,7 +22,7 @@ export const TestBenchScreen: FC = () => {
       .catch((err: AxiosError) => {
         setRequestSuccess(false);
       });
-  }, [appContext.selectedSID]);
+  }, [appContext.selectedSid]);
 
   if (requestSuccess === null) {
     return (

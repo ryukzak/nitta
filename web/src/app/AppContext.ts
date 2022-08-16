@@ -1,11 +1,11 @@
 import React from "react";
 
-import { SID } from "services/HaskellApiService";
+import { Sid } from "services/HaskellApiService";
 
 export interface IAppContext {
-  selectedSID: SID;
-  setSID: (sid: SID) => void;
-  resetSID: () => void;
+  selectedSid: Sid;
+  setSid: (sid: Sid) => void;
+  resetSid: () => void;
 }
 
 // exported to use with useContext hook in functional components

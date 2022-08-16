@@ -3,7 +3,7 @@ import { Route, Switch, Redirect } from "react-router-dom";
 
 import { IAppContext, AppContextProvider } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
-import { SID, sidSeparator } from "services/HaskellApiService";
+import { Sid, sidSeparator } from "services/HaskellApiService";
 
 import { SynthesisGraph } from "components/SynthesisGraph";
 import { NodeScreen } from "screens/NodeScreen";
@@ -24,14 +24,14 @@ export default class App extends Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
-      selectedSID: sidSeparator,
+      selectedSid: sidSeparator,
 
-      setSID: (sid: SID) => {
-        this.setState({ selectedSID: sid });
+      setSid: (sid: Sid) => {
+        this.setState({ selectedSid: sid });
       },
 
-      resetSID: () => {
-        this.setState({ selectedSID: sidSeparator });
+      resetSid: () => {
+        this.setState({ selectedSid: sidSeparator });
       },
     };
   }

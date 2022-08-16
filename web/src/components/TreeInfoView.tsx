@@ -15,14 +15,14 @@ import "react-table/react-table.css";
 export interface ITreeInfoViewProps {}
 
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
       return api.getTreeInfo();
-      // getTreeInfo result depends on selectedSID on server side, thus need to re-request the result when it's changed
+      // getTreeInfo result depends on selectedSid on server side, thus need to re-request the result when it's changed
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSID]),
+    }, [selectedSid]),
   });
 
   return (

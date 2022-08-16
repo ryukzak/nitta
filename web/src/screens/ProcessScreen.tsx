@@ -31,7 +31,7 @@ export const ProcessScreen: FC = () => {
     setDetail([]);
     setHighlight({ up: [], current: [], down: [] });
     api
-      .getTimelines(appContext.selectedSID)
+      .getTimelines(appContext.selectedSid)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessScreen.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
@@ -48,7 +48,7 @@ export const ProcessScreen: FC = () => {
         setPIdIndex(pIdIndex);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedSID]);
+  }, [appContext.selectedSid]);
 
   if (!data) return <pre>LOADING</pre>;
 

@@ -1,19 +1,19 @@
 import { AxiosResponse, AxiosError } from "axios";
 import React, { FC, useContext, useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
+import { SynthesisTree, api, Sid, reLastSid, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 
 type Node = {
   name: string;
-  sid: SID;
+  sid: Sid;
   isTerminal: boolean;
   isProcessed: boolean;
   decsionType: string;
   children: Node[];
 };
 
-function synthesisTree2D3Tree(node: SynthesisTree, knownSid: Set<SID>, selectedSid: SID | null): Node {
+function synthesisTree2D3Tree(node: SynthesisTree, knownSid: Set<Sid>, selectedSid: Sid | null): Node {
   let label = node.rootLabel;
   knownSid.add(label.sid);
 
@@ -32,7 +32,7 @@ function synthesisTree2D3Tree(node: SynthesisTree, knownSid: Set<SID>, selectedS
 
   return {
     sid: label.sid,
-    name: reLastSID.exec(label.sid)![0] + " " + label.decsionType,
+    name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
     isProcessed: label.isProcessed,
     isTerminal: label.isTerminal,
     decsionType: label.decsionType,
@@ -44,12 +44,12 @@ export const SynthesisGraphRender: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [synthesisTree, setSynthesisTree] = useState<Node | null>(null);
-  const [knownSid] = useState<Set<SID>>(new Set());
-  const [selectedSid, setSelectedSid] = useState<SID | null>(null);
+  const [knownSid] = useState<Set<Sid>>(new Set());
+  const [selectedSid, setSelectedSid] = useState<Sid | null>(null);
   const [dataGraph, setDataGraph] = useState<Node[]>([] as Node[]);
 
   useEffect(() => {
-    const sid = appContext.selectedSID;
+    const sid = appContext.selectedSid;
     if (knownSid.has(sid)) return;
     console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid})`);
     api
@@ -61,16 +61,16 @@ export const SynthesisGraphRender: FC = () => {
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedSID, knownSid]);
+  }, [appContext.selectedSid, knownSid]);
 
   useEffect(() => {
-    const sid = appContext.selectedSID;
+    const sid = appContext.selectedSid;
     if (synthesisTree && sid !== selectedSid && knownSid.has(sid)) {
       console.log(`SynthesisGraphRender.setSelectedSid(${sid}) old: ${selectedSid}`);
       setSelectedSid(sid);
       setDataGraph([synthesisTree]);
     }
-  }, [appContext.selectedSID, selectedSid, knownSid, synthesisTree]);
+  }, [appContext.selectedSid, selectedSid, knownSid, synthesisTree]);
 
   const renderNode = (props: any) => {
     var datum = props.nodeDatum as Node;
@@ -87,7 +87,7 @@ export const SynthesisGraphRender: FC = () => {
 
     return (
       <g>
-        {datum.sid ? <circle r="10" fill={color} onClick={() => appContext.setSID(datum.sid)} /> : ""}
+        {datum.sid ? <circle r="10" fill={color} onClick={() => appContext.setSid(datum.sid)} /> : ""}
         <text fill="black" strokeWidth="1" x="20">
           {datum.name}
         </text>
