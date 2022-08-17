@@ -17,14 +17,14 @@ import { useApiRequest } from "hooks/useApiRequest";
 export interface IMicroarchitectureViewProps {}
 
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const maRequest = useApiRequest({
-    requester: useCallback(() => api.getMicroarchitecture(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getMicroarchitecture(selectedSid), [selectedSid]),
   });
 
   const endpointsRequest = useApiRequest({
-    requester: useCallback(() => api.getEndpoints(selectedSID), [selectedSID]),
+    requester: useCallback(() => api.getEndpoints(selectedSid), [selectedSid]),
   });
 
   const dot = useMemo(() => {

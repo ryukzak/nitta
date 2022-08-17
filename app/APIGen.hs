@@ -66,21 +66,8 @@ apiGenArgs =
         &= program "nitta-api-gen"
         &= summary ("nitta-api-gen v" ++ showVersion version ++ " - Generate REST API files for NITTA UI Backend")
 
-$(deriveTypeScript defaultOptions ''ViewPointID)
-$(deriveTypeScript defaultOptions ''TimelinePoint)
-$(deriveTypeScript defaultOptions ''Interval)
-$(deriveTypeScript defaultOptions ''TimeConstraint)
-$(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
-$(deriveTypeScript defaultOptions ''ProcessTimelines)
+$(deriveTypeScript defaultOptions ''ParallelismType)
 
-$(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
-$(deriveTypeScript defaultOptions ''FView)
-$(deriveTypeScript defaultOptions ''TreeView)
-$(deriveTypeScript defaultOptions ''TreeInfo)
-$(deriveTypeScript defaultOptions ''ShortNodeView)
-
-$(deriveTypeScript defaultOptions ''NodeView)
-$(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
 $(deriveTypeScript defaultOptions ''AllocationMetrics)
 $(deriveTypeScript defaultOptions ''DataflowMetrics)
@@ -88,27 +75,43 @@ $(deriveTypeScript defaultOptions ''BreakLoopMetrics)
 $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
 $(deriveTypeScript defaultOptions ''ResolveDeadlockMetrics)
 
+$(deriveTypeScript defaultOptions ''ViewPointID)
+$(deriveTypeScript defaultOptions ''TimelinePoint)
+$(deriveTypeScript defaultOptions ''Interval)
+$(deriveTypeScript defaultOptions ''TimeConstraint)
+$(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
+$(deriveTypeScript defaultOptions ''ProcessTimelines)
+
+$(deriveTypeScript defaultOptions ''Sid) -- in according to custom ToJSON instance, the real type description is hardcoded.
+$(deriveTypeScript defaultOptions ''FView)
+$(deriveTypeScript defaultOptions ''TreeView)
+$(deriveTypeScript defaultOptions ''TreeInfo)
+$(deriveTypeScript defaultOptions ''ShortNodeView)
+
+$(deriveTypeScript defaultOptions ''EndpointRole)
+$(deriveTypeScript defaultOptions ''EndpointSt)
+
+$(deriveTypeScript defaultOptions ''DecisionView)
+$(deriveTypeScript defaultOptions ''NodeView)
+
 $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''GraphNode)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
-$(deriveTypeScript defaultOptions ''EndpointRole)
-$(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''UnitEndpoints)
 
-$(deriveTypeScript defaultOptions ''Process)
+$(deriveTypeScript defaultOptions ''StepInfoView)
 $(deriveTypeScript defaultOptions ''Step)
 $(deriveTypeScript defaultOptions ''Relation)
-$(deriveTypeScript defaultOptions ''StepInfoView)
+$(deriveTypeScript defaultOptions ''Process)
 
 $(deriveTypeScript defaultOptions ''TestbenchReport)
 
 -- Microarchitecture
-$(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
+$(deriveTypeScript defaultOptions ''IOSynchronization)
 $(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''UnitDesc)
-$(deriveTypeScript defaultOptions ''IOSynchronization)
-$(deriveTypeScript defaultOptions ''ParallelismType)
+$(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs

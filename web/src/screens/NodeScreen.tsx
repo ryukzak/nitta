@@ -9,13 +9,13 @@ import { TreeInfoView } from "components/TreeInfoView";
 export interface INodeScreenProps {}
 
 export const NodeScreen: FC<INodeScreenProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
-  if (!selectedSID) return <pre> synthesis is not selected </pre>;
+  if (!selectedSid) return <pre> synthesis is not selected </pre>;
 
   return (
     <div className="m-3">
-      <pre>{selectedSID}</pre>
+      <pre>{selectedSid}</pre>
 
       <h3>Tree info:</h3>
       <TreeInfoView />

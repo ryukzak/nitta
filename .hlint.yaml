@@ -20,22 +20,24 @@
 
 # Ignore:
 
-- ignore: {name: "Eta reduce"}
-- ignore: {name: "Avoid lambda"}
-- ignore: {name: "Use zipWith"}
-- ignore: {name: "Use tuple-section"}
-- ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
-- ignore: {name: "Use camelCase", within: "NITTA.Intermediate.Value.Tests"}
-- ignore: {name: "Evaluate", within: "NITTA.Intermediate.Value.Tests"}
-- ignore: {name: "Use <$>", within: "NITTA.UIBackend.ViewHelper"}
-- ignore: {name: "Avoid lambda using `infix`", within: "NITTA.Project.Template"}
-- ignore: {name: "Reduce duplication", within: "NITTA.Model.Tests.Microarchitecture"}
-- ignore: {name: "Use list comprehension", within: "Spec"}
-- ignore: {name: "Fuse mapM_/map", within: "NITTA.Intermediate.Simulation.Tests"}
+- ignore: { name: "Avoid lambda" }
+- ignore: { name: "Eta reduce" }
+- ignore: { name: "Use tuple-section" }
+- ignore: { name: "Use zipWith" }
 
-- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Multiplier.Tests"}
-- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Divider.Tests"}
-- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Tests.DSL.Tests"}
-- ignore: {name: "Reduce duplication", within: "NITTA.Utils.Tests" }
-- ignore: {name: "Reduce duplication", within: "NITTA.Tests" }
-- ignore: {name: "Reduce duplication", within: "NITTA.Model.ProcessorUnits.Accum.Tests" }
+- ignore: { within: "NITTA.Intermediate.Simulation.Tests", name: "Fuse mapM_/map" }
+- ignore: { within: "NITTA.Intermediate.Value.Tests", name: "Evaluate" }
+- ignore: { within: "NITTA.Intermediate.Value.Tests", name: "Use camelCase" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Accum.Tests", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Divider.Tests", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Fram", name: "Redundant map" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Multiplier.Tests", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Tests.DSL", name: "Use uncurry" }
+- ignore: { within: "NITTA.Model.ProcessorUnits.Tests.DSL.Tests", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Model.Tests.Microarchitecture", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Project.Template", name: "Avoid lambda using `infix`" }
+- ignore: { within: "NITTA.Tests", name: "Reduce duplication" }
+- ignore: { within: "NITTA.Tests", name: "Use uncurry" }
+- ignore: { within: "NITTA.UIBackend.ViewHelper", name: "Use <$>" }
+- ignore: { within: "NITTA.Utils.Tests", name: "Reduce duplication" }
+- ignore: { within: "Spec", name: "Use list comprehension" }

@@ -5,50 +5,40 @@
 
 packages:
 - completed:
+    hackage: alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3,995
+    pantry-tree:
+      size: 262
+      sha256: 98715aed391e9e76b61cc0491843b2a860d0aba0d062a4a696574632b8ad6753
+  original:
+    hackage: alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3
+- completed:
+    name: htoml
+    version: 1.0.0.3
+    git: https://github.com/mirokuratczyk/htoml.git
+    pantry-tree:
+      size: 10869
+      sha256: 7f4578a5e8c97ff32f6e136750447b2769e80e8ccc2eb9b92bb2b3a02acccf9d
+    commit: 33971287445c5e2531d9605a287486dfc3cbe1da
+  original:
+    git: https://github.com/mirokuratczyk/htoml.git
+    commit: 33971287445c5e2531d9605a287486dfc3cbe1da
+- completed:
     hackage: language-lua-0.11.0.1@sha256:b3bdf864965279f830323d5ed7d38073b2687b3a07b7fa73aa13782560f48f89,2919
     pantry-tree:
       size: 3473
       sha256: e4f6fcc91fbde9c6a6e3c9281a51dee49706d5868866695cc09f9bdf031799d4
   original:
-    hackage: language-lua-0.11.0.1
+    hackage: language-lua-0.11.0.1@sha256:b3bdf864965279f830323d5ed7d38073b2687b3a07b7fa73aa13782560f48f89
 - completed:
-    hackage: alex-tools-0.5.0.1@sha256:97ca9aa79d50151dd88b49b817389d92b2a70d13d9e4972e64eaf67aced97a2c,1023
-    pantry-tree:
-      size: 323
-      sha256: 23db3c5cdcaa9b9807b067737b99a8504cb836e77b0c5c05644fe256ce34c8bf
-  original:
-    hackage: alex-tools-0.5.0.1
-- completed:
-    hackage: aeson-typescript-0.3.0.1@sha256:ef93ed6b34432215bc41d8abe7d253bfef67520d8f1192ce688812810e1deb53,3024
-    pantry-tree:
-      size: 2500
-      sha256: 74767a8c77aa54fca3e288adee242cf845b9ed06e3a450df48be30657e430450
-  original:
-    hackage: aeson-typescript-0.3.0.1
-- completed:
-    hackage: prettyprinter-1.7.1@sha256:9c43c9d8c3cd9f445596e5a2379574bba87f935a4d1fa41b5407ee3cf4edc743,6987
-    pantry-tree:
-      size: 3460
-      sha256: cd6f393bf7cba603a1958a139915fc343efd5488e36fd7b3b5c6956c002d04fa
-  original:
-    hackage: prettyprinter-1.7.1
-- completed:
-    hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
+    hackage: servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2,3522
     pantry-tree:
       size: 961
-      sha256: c3c27de2989ed3537567ef531406ccd88c6e715cf85e8da554fca1da78c1104d
+      sha256: ba201c0f2aa274afa40dfd3c31abe6e5b0791f14320f7167e750c57508dc70f6
   original:
-    hackage: servant-js-0.9.4.2@sha256:2419d2cba7ff71926293fa11fc50eaed24a77ba34e7c778eab4cfa1f4bc4a748,3385
-- completed:
-    hackage: MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
-    pantry-tree:
-      size: 5271
-      sha256: 6cd6a7213615d72a7db3234c7fcd4346ceb4889bc8fb14b302b5878768018fcd
-  original:
-    hackage: MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
+    hackage: servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2
 snapshots:
 - completed:
-    size: 590100
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
-    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
-  original: lts-18.28
+    size: 619164
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/18.yaml
+    sha256: 65b9809265860e085b4f61d4eb00d5d73e41190693620385a69cc9d9df7a901d
+  original: lts-19.18

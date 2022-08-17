@@ -8,27 +8,27 @@ import { JsonView } from "components/JsonView";
 export interface IDebugScreenProps {}
 
 export const DebugScreen: FC<IDebugScreenProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
   useEffect(() => {
     api
-      .getDebugInfo(selectedSID)
+      .getDebugInfo(selectedSid)
       .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => console.error(err));
-  }, [selectedSID]);
+  }, [selectedSid]);
 
   const [synthesisNodeData, setSynthesisNodeData] = useState<any | null>(null);
   useEffect(() => {
     api
-      .getNode(selectedSID)
+      .getNode(selectedSid)
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => console.error(err));
-  }, [selectedSID]);
+  }, [selectedSid]);
 
   return (
     <div className="m-3">
-      {selectedSID ? (
+      {selectedSid ? (
         synthesisNodeData ? (
           <div className="d-flex flex-column">
             <h3>Current node</h3>

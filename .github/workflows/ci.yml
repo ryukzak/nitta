@@ -2,15 +2,32 @@ name: NITTA Build and Test
 
 on:
   pull_request:
+  push:
+    branches: master
 
 env:
   GH_PAGES_DIR: gh-pages
 
 jobs:
+  notify-about-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send msg on push
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        format: html
+        args: |
+            Repository: <strong>${{ github.event.repository.full_name }}</strong>
+            Ref: <strong>${{ github.ref }}</strong>
+            Event: <strong>${{ github.event_name }}</strong>
+            Info:  ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.html_url }}
 
   nitta:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
 
@@ -24,6 +41,7 @@ jobs:
         uses: haskell/actions/setup@v1.2
         with:
           enable-stack: true
+          stack-no-global: true
           stack-version: 'latest'
 
       - name: Build nitta backend dependencies and doctest
@@ -86,9 +104,9 @@ jobs:
           folder: ${{ env.GH_PAGES_DIR }}
           branch: gh-pages
 
-
-  nitta-hdl:
+  verilog-formatting:
     runs-on: ubuntu-latest
+    needs: nitta
     container: ryukzak/alpine-iverilog
     defaults:
       run:
@@ -99,3 +117,46 @@ jobs:
           make -C hdl > make_hdl.log
           cat make_hdl.log
           test "$(grep -ci error make_hdl.log)" -eq 0
+
+  haskell-lint:
+    runs-on: ubuntu-latest
+    needs: nitta
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Set up HLint'
+      uses: haskell/actions/hlint-setup@v1
+      with:
+        version: '3.4'
+
+    - name: 'Run HLint'
+      uses: haskell/actions/hlint-run@v1
+      with:
+        path: .
+        fail-on: suggestion
+
+  haskell-formatting:
+    runs-on: ubuntu-latest
+    needs: nitta
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache haskell-stack and fourmolu
+        uses: actions/cache@v2.1.3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
+
+      - name: Check formatting
+        uses: fourmolu/fourmolu-action@v2
+
+  typescript-formatting:
+    runs-on: ubuntu-latest
+    needs: nitta
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check ts and tsx code style by prettier
+        working-directory: ./web
+        run: |
+          yarn add -s prettier
+          yarn exec -s prettier -- --check src/**/*.{ts,tsx}

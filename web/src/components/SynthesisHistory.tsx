@@ -3,7 +3,7 @@ import React, { useEffect, useState, ReactElement, useContext, FC } from "react"
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, Node, SID } from "services/HaskellApiService";
+import { api, Node, Sid } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
 
 type Row = { original: Node; index: number };
@@ -22,7 +22,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
 
   useEffect(() => {
     api
-      .getRootPath(appContext.selectedSID)
+      .getRootPath(appContext.selectedSid)
       .then((response: AxiosResponse<Node[]>) => {
         let result = response.data;
         if (props.reverse) {
@@ -31,7 +31,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
         setHistory(result);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedSID, props.reverse]);
+  }, [appContext.selectedSid, props.reverse]);
 
   function Table(props: { name: string; columns: Column[]; history: Node[] }) {
     if (props.history.length === 0)
@@ -59,13 +59,13 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
     return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
   }
 
-  function stepColumn(onUpdateNid: (sid: SID) => void) {
+  function stepColumn(onUpdateNid: (sid: Sid) => void) {
     return {
       Header: "step",
       maxWidth: 40,
       Cell: (row: Row) => {
         let sid = row.original.sid;
-        if (sid === appContext.selectedSID) return <>{stepNumber(row)}</>;
+        if (sid === appContext.selectedSid) return <>{stepNumber(row)}</>;
         return (
           <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(sid)}>
             {stepNumber(row)}
@@ -93,7 +93,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
         name="History"
         history={synthesisHistory}
         columns={[
-          stepColumn(appContext.setSID),
+          stepColumn(appContext.setSid),
           textColumn("decision type", (n: Node) => n.decision.tag, 160),
           textColumn("description", (n: Node) => {
             if (n.sid === "-") return <>INITIAL STATE</>;

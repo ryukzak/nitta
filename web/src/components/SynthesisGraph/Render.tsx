@@ -1,70 +1,41 @@
 import { AxiosResponse, AxiosError } from "axios";
 import React, { FC, useContext, useState, useEffect } from "react";
-import { Tree as D3Tree } from "react-d3-tree";
-
-import { SynthesisTree, api, SID, reLastSID, sidSeparator } from "services/HaskellApiService";
+import Tree from "react-d3-tree";
+import { SynthesisTree, api, Sid, reLastSid, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
 
-type Tree = {
+type Node = {
   name: string;
-  sid: SID;
-  attributes: GraphAttributes;
+  sid: Sid;
   isTerminal: boolean;
   isProcessed: boolean;
-  children: Tree[];
-  nodeSvgShape: GraphAttributes;
-  nodeSvgShapeOriginal?: GraphAttributes;
+  decsionType: string;
+  children: Node[];
 };
 
-type GraphAttributes = {
-  [key: string]: any;
-};
-
-function synthesisTree2D3Tree(node: SynthesisTree, knownSID: Set<SID>): Tree {
+function synthesisTree2D3Tree(node: SynthesisTree, knownSid: Set<Sid>, selectedSid: Sid | null): Node {
   let label = node.rootLabel;
-  knownSID.add(label.sid);
+  knownSid.add(label.sid);
 
-  var childrens: Tree[] = [];
+  var childrens: Node[] = [];
+  var skipped: number = 0;
   node.subForest.forEach((e: SynthesisTree) => {
-    childrens.push(synthesisTree2D3Tree(e, knownSID));
-  });
-
-  return {
-    sid: label.sid,
-    name: reLastSID.exec(label.sid)![0],
-    isProcessed: label.isProcessed,
-    isTerminal: label.isTerminal,
-    attributes: {
-      dec: label.decsionType,
-      ch: label.duration + " / " + label.score,
-    },
-    nodeSvgShape: label.isTerminal ? nodeShape("lime") : label.isProcessed ? nodeShape("black") : nodeShape("white"),
-    children: childrens,
-  };
-}
-
-function selectCurrentNode(currentSID: SID, node: Tree): Tree {
-  var childrens: Tree[] = [];
-
-  var skipped = 0;
-  node.children.forEach((e: Tree) => {
-    if (e.isProcessed || e.sid === currentSID) {
-      childrens.push(selectCurrentNode(currentSID, e));
+    if (e.rootLabel.isProcessed || e.rootLabel.sid === selectedSid) {
+      childrens.push(synthesisTree2D3Tree(e, knownSid, selectedSid));
     } else {
       skipped++;
     }
   });
   if (skipped > 0) {
-    childrens.push({ name: `...and ${skipped} more` } as Tree);
+    childrens.push({ name: `...and ${skipped} more` } as Node);
   }
 
   return {
-    name: node.name,
-    isProcessed: node.isProcessed,
-    sid: node.sid,
-    isTerminal: node.isTerminal,
-    attributes: node.attributes,
-    nodeSvgShape: currentSID === node.sid ? nodeShape("cyan") : node.nodeSvgShape,
+    sid: label.sid,
+    name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
+    isProcessed: label.isProcessed,
+    isTerminal: label.isTerminal,
+    decsionType: label.decsionType,
     children: childrens,
   };
 }
@@ -72,36 +43,57 @@ function selectCurrentNode(currentSID: SID, node: Tree): Tree {
 export const SynthesisGraphRender: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
-  const [synthesisTree, setSynthesisTree] = useState<Tree | null>(null);
-  const [knownSID] = useState<Set<SID>>(new Set());
-
-  const [currentSID, setCurrentSID] = useState<SID | null>(null);
-
-  const [dataGraph, setDataGraph] = useState<Tree[]>([] as Tree[]);
+  const [synthesisTree, setSynthesisTree] = useState<Node | null>(null);
+  const [knownSid] = useState<Set<Sid>>(new Set());
+  const [selectedSid, setSelectedSid] = useState<Sid | null>(null);
+  const [dataGraph, setDataGraph] = useState<Node[]>([] as Node[]);
 
   useEffect(() => {
-    const sid = appContext.selectedSID;
-    if (knownSID.has(sid)) return;
+    const sid = appContext.selectedSid;
+    if (knownSid.has(sid)) return;
     console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid})`);
     api
       .getSynthesisTree()
       .then((response: AxiosResponse<SynthesisTree>) => {
-        let root = synthesisTree2D3Tree(response.data, knownSID);
+        let root = synthesisTree2D3Tree(response.data, knownSid, sid);
         setSynthesisTree(root);
-        knownSID.add(sidSeparator);
+        knownSid.add(sidSeparator);
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedSID, knownSID]);
+  }, [appContext.selectedSid, knownSid]);
 
   useEffect(() => {
-    const sid = appContext.selectedSID;
-    if (synthesisTree && sid !== currentSID && knownSID.has(sid)) {
-      console.log(`SynthesisGraphRender.setCurrentSID(${sid}) old: ${currentSID}`);
-      setCurrentSID(sid);
-      setDataGraph([selectCurrentNode(sid, synthesisTree)]);
+    const sid = appContext.selectedSid;
+    if (synthesisTree && sid !== selectedSid && knownSid.has(sid)) {
+      console.log(`SynthesisGraphRender.setSelectedSid(${sid}) old: ${selectedSid}`);
+      setSelectedSid(sid);
+      setDataGraph([synthesisTree]);
     }
-  }, [appContext.selectedSID, currentSID, knownSID, synthesisTree]);
+  }, [appContext.selectedSid, selectedSid, knownSid, synthesisTree]);
+
+  const renderNode = (props: any) => {
+    var datum = props.nodeDatum as Node;
+    var color = "white";
+    if (datum.isProcessed) {
+      color = "black";
+    }
+    if (datum.isTerminal) {
+      color = "lime";
+    }
+    if (datum.sid === selectedSid) {
+      color = "cyan";
+    }
+
+    return (
+      <g>
+        {datum.sid ? <circle r="10" fill={color} onClick={() => appContext.setSid(datum.sid)} /> : ""}
+        <text fill="black" strokeWidth="1" x="20">
+          {datum.name}
+        </text>
+      </g>
+    );
+  };
 
   if (!dataGraph === null || dataGraph.length === 0) {
     return (
@@ -112,7 +104,7 @@ export const SynthesisGraphRender: FC = () => {
   }
   return (
     <div className="h-100">
-      <D3Tree
+      <Tree
         data={dataGraph}
         nodeSize={{ x: 160, y: 60 }}
         separation={{ siblings: 1, nonSiblings: 1 }}
@@ -121,43 +113,8 @@ export const SynthesisGraphRender: FC = () => {
         collapsible={false}
         zoom={0.7}
         transitionDuration={0}
-        nodeSvgShape={{
-          shape: "rect",
-          shapeProps: {
-            r: 10,
-            cx: 0,
-            cy: 0,
-            fill: "white",
-          },
-        }}
-        styles={{
-          nodes: {
-            node: {
-              name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" },
-            },
-            leafNode: {
-              name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" },
-            },
-          },
-        }}
-        onClick={(node: any) => {
-          appContext.setSID(node.sid);
-        }}
+        renderCustomNodeElement={renderNode}
       />
     </div>
   );
 };
-
-function nodeShape(color: string): GraphAttributes {
-  return {
-    shape: "circle",
-    shapeProps: {
-      r: 10,
-      cx: 0,
-      cy: 0,
-      fill: color,
-    },
-  };
-}

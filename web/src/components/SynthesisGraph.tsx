@@ -2,7 +2,7 @@ import React, { useContext, useState, FC } from "react";
 import { Popover, OverlayTrigger, Button } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { synthesize, api, reLastSID, sidSeparator } from "services/HaskellApiService";
+import { synthesize, api, reLastSid, sidSeparator } from "services/HaskellApiService";
 
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
@@ -24,9 +24,9 @@ export const SynthesisGraph: FC = () => {
   const reduceSynthesisGraphView = () => (height > minHeight ? setHeight(height - step) : null);
 
   const backNavigation = () => {
-    let newId = appContext.selectedSID.replace(reLastSID, "");
-    if (newId != null && newId.length !== 0) appContext.setSID(newId);
-    else appContext.setSID(sidSeparator);
+    let newId = appContext.selectedSid.replace(reLastSid, "");
+    if (newId != null && newId.length !== 0) appContext.setSid(newId);
+    else appContext.setSid(sidSeparator);
   };
 
   return (
@@ -42,7 +42,7 @@ export const SynthesisGraph: FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID)}>
+          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSid)}>
             Forward
           </Button>
         </div>

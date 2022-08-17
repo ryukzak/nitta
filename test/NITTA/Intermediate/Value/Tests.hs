@@ -143,11 +143,8 @@ case_fx_Integral = do
 
 -- *Utils
 
-instance GenUnchecked (FX m b)
-
 instance (KnownNat b, KnownNat m) => GenValid (FX m b) where
     genValid = FX <$> choose (minMaxRaw (def :: FX m b))
-    shrinkValid = filter isValid . shrinkUnchecked
 
 addIntegrity ::
     ( KnownNat m1
@@ -203,7 +200,7 @@ repack a _ =
     let n1 = fromIntegral $ scalingFactorPower a
         n2 = fromIntegral $ scalingFactorPower (def :: FX m2 b2)
         offset = n2 - n1
-     in FX (rawFX a `shiftL` offset)
+     in FX (rawFX a `shift` offset)
 
 case_fx_repack = do
     (read "0.5" :: FX 2 4) @?= repack (read "0.5" :: FX 3 4) Proxy

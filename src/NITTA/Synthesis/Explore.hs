@@ -52,17 +52,17 @@ rootSynthesisTreeSTM model = do
             }
 
 -- |Get specific by @nId@ node from a synthesis tree.
-getTreeIO tree (SID []) = return tree
-getTreeIO tree (SID (i : is)) = do
+getTreeIO tree (Sid []) = return tree
+getTreeIO tree (Sid (i : is)) = do
     subForest <- subForestIO tree
-    unless (i < length subForest) $ error "getTreeIO - wrong SID"
-    getTreeIO (subForest !! i) (SID is)
+    unless (i < length subForest) $ error "getTreeIO - wrong Sid"
+    getTreeIO (subForest !! i) (Sid is)
 
 -- |Get list of all nodes from root to selected.
-getTreePathIO _ (SID []) = return []
-getTreePathIO tree (SID (i : is)) = do
-    h <- getTreeIO tree $ SID [i]
-    t <- getTreePathIO h $ SID is
+getTreePathIO _ (Sid []) = return []
+getTreePathIO tree (Sid (i : is)) = do
+    h <- getTreeIO tree $ Sid [i]
+    t <- getTreePathIO h $ Sid is
     return $ h : t
 
 {- |Get all available edges for the node. Edges calculated only for the first
@@ -137,7 +137,7 @@ exploreSubForestVar parent@Tree{sID, sState} =
             sSubForestVar <- newEmptyTMVar
             return
                 Tree
-                    { sID = sID <> SID [i]
+                    { sID = sID <> Sid [i]
                     , sState = ctx'
                     , sDecision = desc
                     , sSubForestVar

@@ -54,7 +54,7 @@ instance Monoid TreeInfo where
             , stepsSuccess = HM.empty
             }
 
-getTreeInfo tree@Tree{sID = SID sid, sSubForestVar} = do
+getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
     let isSuccess = isComplete tree && isLeaf tree
