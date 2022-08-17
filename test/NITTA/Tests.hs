@@ -100,7 +100,7 @@ test_manual =
                 sum(0,0,0)
             |]
         mapM_
-            (\(tag, pu) -> doBind tag pu)
+            (\(tag, unit) -> doBind tag unit)
             [ ("fram1", F.loop 0 "d^0#2" ["a^0#0"])
             , ("fram1", F.loop 0 "f^0#0" ["b^0#0"])
             , ("fram1", F.loop 0 "e^0#0" ["c^0#0"])
