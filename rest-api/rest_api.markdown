@@ -34,30 +34,30 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "score": 1032,
-    "parameters": {
-        "pOutputNumber": 2,
-        "pAlternative": 1,
-        "pWave": 2,
-        "pAllowDataFlow": 1,
-        "pCritical": false,
-        "pPercentOfBindedInputs": 0.2,
-        "pPossibleDeadlock": false,
-        "pNumberOfBindedFunctions": 1,
-        "pRestless": 0
-    },
     "decision": {
         "function": {
-            "fvHistory": [],
-            "fvFun": "buffer(a) = b = c"
+            "fvFun": "buffer(a) = b = c",
+            "fvHistory": []
         },
-        "tag": "BindDecisionView",
-        "pu": "pu"
+        "pu": "pu",
+        "tag": "BindDecisionView"
     },
     "duration": 0,
-    "sid": "-0-1-3-1",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": {
+        "pAllowDataFlow": 1,
+        "pAlternative": 1,
+        "pCritical": false,
+        "pNumberOfBindedFunctions": 1,
+        "pOutputNumber": 2,
+        "pPercentOfBindedInputs": 0.2,
+        "pPossibleDeadlock": false,
+        "pRestless": 0,
+        "pWave": 2
+    },
+    "score": 1032,
+    "sid": "-0-1-3-1"
 }
 ```
 
@@ -65,16 +65,23 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "score": 1999,
-    "parameters": {
-        "pNotTransferableInputs": [
-            0,
-            0
-        ],
-        "pRestrictedTime": false,
-        "pWaitTime": 1
-    },
     "decision": {
+        "source": [
+            "PU1",
+            {
+                "epAt": [
+                    1,
+                    1
+                ],
+                "epRole": {
+                    "contents": [
+                        "a1",
+                        "a2"
+                    ],
+                    "tag": "Source"
+                }
+            }
+        ],
         "tag": "DataflowDecisionView",
         "targets": [
             [
@@ -85,33 +92,27 @@ Typescript interfaces can be finded here: `types.ts`
                         1
                     ],
                     "epRole": {
-                        "tag": "Target",
-                        "contents": "a2"
+                        "contents": "a2",
+                        "tag": "Target"
                     }
                 }
             ]
-        ],
-        "source": [
-            "PU1",
-            {
-                "epAt": [
-                    1,
-                    1
-                ],
-                "epRole": {
-                    "tag": "Source",
-                    "contents": [
-                        "a1",
-                        "a2"
-                    ]
-                }
-            }
         ]
     },
     "duration": 0,
-    "sid": "-0-1-3-1-5",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": {
+        "pFirstWaveOfTargetUse": 0,
+        "pNotTransferableInputs": [
+            0,
+            0
+        ],
+        "pRestrictedTime": false,
+        "pWaitTime": 1
+    },
+    "score": 1999,
+    "sid": "-0-1-3-1-5"
 }
 ```
 
@@ -119,21 +120,21 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "score": 5000,
-    "parameters": [],
     "decision": {
-        "tag": "BreakLoopView",
-        "value": "12.5",
         "input": "c",
         "outputs": [
             "a",
             "b"
-        ]
+        ],
+        "tag": "BreakLoopView",
+        "value": "12.5"
     },
     "duration": 0,
-    "sid": "-0-1-3-1-6",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": [],
+    "score": 5000,
+    "sid": "-0-1-3-1-6"
 }
 ```
 
@@ -141,31 +142,31 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "score": 1999,
-    "parameters": [],
     "decision": {
-        "old": [
-            {
-                "fvHistory": [],
-                "fvFun": "a + b = c"
-            },
-            {
-                "fvHistory": [],
-                "fvFun": "c + d = e"
-            }
-        ],
-        "tag": "OptimizeAccumView",
         "new": [
             {
-                "fvHistory": [],
-                "fvFun": "a + b + d = e"
+                "fvFun": "a + b + d = e",
+                "fvHistory": []
             }
-        ]
+        ],
+        "old": [
+            {
+                "fvFun": "a + b = c",
+                "fvHistory": []
+            },
+            {
+                "fvFun": "c + d = e",
+                "fvHistory": []
+            }
+        ],
+        "tag": "OptimizeAccumView"
     },
     "duration": 0,
-    "sid": "-0-1-3-1-5",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": [],
+    "score": 1999,
+    "sid": "-0-1-3-1-5"
 }
 ```
 
@@ -173,35 +174,35 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "score": 1999,
-    "parameters": [],
     "decision": {
-        "tag": "ConstantFoldingView",
-        "cRefOld": [
-            {
-                "fvHistory": [],
-                "fvFun": "a = 1"
-            },
-            {
-                "fvHistory": [],
-                "fvFun": "b = 2"
-            },
-            {
-                "fvHistory": [],
-                "fvFun": "a + b = r"
-            }
-        ],
         "cRefNew": [
             {
-                "fvHistory": [],
-                "fvFun": "r = 3"
+                "fvFun": "r = 3",
+                "fvHistory": []
             }
-        ]
+        ],
+        "cRefOld": [
+            {
+                "fvFun": "a = 1",
+                "fvHistory": []
+            },
+            {
+                "fvFun": "b = 2",
+                "fvHistory": []
+            },
+            {
+                "fvFun": "a + b = r",
+                "fvHistory": []
+            }
+        ],
+        "tag": "ConstantFoldingView"
     },
     "duration": 0,
-    "sid": "-0-1-3-1-5",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": [],
+    "score": 1999,
+    "sid": "-0-1-3-1-5"
 }
 ```
 
@@ -318,30 +319,30 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "dbgPULocks": [],
+    "dbgCurrentStateFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
     "dbgEndpointOptions": [],
     "dbgFunctionLocks": [
         [
             "PU or function tag",
             [
                 {
-                    "locked": "b",
-                    "lockBy": "a"
+                    "lockBy": "a",
+                    "locked": "b"
                 }
             ]
         ]
     ],
-    "dbgCurrentStateFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
-    ]
+    "dbgPULocks": []
 }
 ```
 
@@ -349,34 +350,34 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
+    "dbgCurrentStateFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
+    "dbgEndpointOptions": [],
+    "dbgFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
     "dbgPULocks": [
         [
             "",
             []
         ]
-    ],
-    "dbgEndpointOptions": [],
-    "dbgFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
-    ],
-    "dbgCurrentStateFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
     ]
 }
 ```
@@ -385,28 +386,38 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "dbgPULocks": [],
+    "dbgCurrentStateFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
     "dbgEndpointOptions": [
         {
-            "unitTag": "PU1",
             "unitEndpoints": [
                 {
                     "epAt": {
-                        "tcDuration": [
-                            1,
-                            1
-                        ],
                         "tcAvailable": [
                             1,
                             10
+                        ],
+                        "tcDuration": [
+                            1,
+                            1
                         ]
                     },
                     "epRole": {
-                        "tag": "Target",
-                        "contents": "x"
+                        "contents": "x",
+                        "tag": "Target"
                     }
                 }
-            ]
+            ],
+            "unitTag": "PU1"
         }
     ],
     "dbgFunctionLocks": [
@@ -414,23 +425,13 @@ Typescript interfaces can be finded here: `types.ts`
             "PU or function tag",
             [
                 {
-                    "locked": "b",
-                    "lockBy": "a"
+                    "lockBy": "a",
+                    "locked": "b"
                 }
             ]
         ]
     ],
-    "dbgCurrentStateFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
-    ]
+    "dbgPULocks": []
 }
 ```
 
@@ -438,6 +439,29 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
+    "dbgCurrentStateFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
+    "dbgEndpointOptions": [],
+    "dbgFunctionLocks": [
+        [
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
+        ]
+    ],
     "dbgPULocks": [
         [
             "",
@@ -447,29 +471,6 @@ Typescript interfaces can be finded here: `types.ts`
             "",
             []
         ]
-    ],
-    "dbgEndpointOptions": [],
-    "dbgFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
-    ],
-    "dbgCurrentStateFunctionLocks": [
-        [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
-        ]
     ]
 }
 ```
@@ -478,33 +479,38 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
-    "dbgPULocks": [
+    "dbgCurrentStateFunctionLocks": [
         [
-            "",
-            []
+            "PU or function tag",
+            [
+                {
+                    "lockBy": "a",
+                    "locked": "b"
+                }
+            ]
         ]
     ],
     "dbgEndpointOptions": [
         {
-            "unitTag": "PU1",
             "unitEndpoints": [
                 {
                     "epAt": {
-                        "tcDuration": [
-                            1,
-                            1
-                        ],
                         "tcAvailable": [
                             1,
                             10
+                        ],
+                        "tcDuration": [
+                            1,
+                            1
                         ]
                     },
                     "epRole": {
-                        "tag": "Target",
-                        "contents": "x"
+                        "contents": "x",
+                        "tag": "Target"
                     }
                 }
-            ]
+            ],
+            "unitTag": "PU1"
         }
     ],
     "dbgFunctionLocks": [
@@ -512,21 +518,16 @@ Typescript interfaces can be finded here: `types.ts`
             "PU or function tag",
             [
                 {
-                    "locked": "b",
-                    "lockBy": "a"
+                    "lockBy": "a",
+                    "locked": "b"
                 }
             ]
         ]
     ],
-    "dbgCurrentStateFunctionLocks": [
+    "dbgPULocks": [
         [
-            "PU or function tag",
-            [
-                {
-                    "locked": "b",
-                    "lockBy": "a"
-                }
-            ]
+            "",
+            []
         ]
     ]
 }
@@ -564,25 +565,25 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     }
 ]
 ```
@@ -592,46 +593,46 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     }
 ]
 ```
@@ -641,67 +642,67 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     }
 ]
 ```
@@ -711,88 +712,88 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     },
     {
-        "unitTag": "PU1",
         "unitEndpoints": [
             {
                 "epAt": {
-                    "tcDuration": [
-                        1,
-                        1
-                    ],
                     "tcAvailable": [
                         1,
                         10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
                     ]
                 },
                 "epRole": {
-                    "tag": "Target",
-                    "contents": "x"
+                    "contents": "x",
+                    "tag": "Target"
                 }
             }
-        ]
+        ],
+        "unitTag": "PU1"
     }
 ]
 ```
@@ -829,30 +830,30 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -862,56 +863,56 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -921,16 +922,23 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "score": 1999,
-        "parameters": {
-            "pNotTransferableInputs": [
-                0,
-                0
-            ],
-            "pRestrictedTime": false,
-            "pWaitTime": 1
-        },
         "decision": {
+            "source": [
+                "PU1",
+                {
+                    "epAt": [
+                        1,
+                        1
+                    ],
+                    "epRole": {
+                        "contents": [
+                            "a1",
+                            "a2"
+                        ],
+                        "tag": "Source"
+                    }
+                }
+            ],
             "tag": "DataflowDecisionView",
             "targets": [
                 [
@@ -941,33 +949,27 @@ Typescript interfaces can be finded here: `types.ts`
                             1
                         ],
                         "epRole": {
-                            "tag": "Target",
-                            "contents": "a2"
+                            "contents": "a2",
+                            "tag": "Target"
                         }
                     }
                 ]
-            ],
-            "source": [
-                "PU1",
-                {
-                    "epAt": [
-                        1,
-                        1
-                    ],
-                    "epRole": {
-                        "tag": "Source",
-                        "contents": [
-                            "a1",
-                            "a2"
-                        ]
-                    }
-                }
             ]
         },
         "duration": 0,
-        "sid": "-0-1-3-1-5",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pFirstWaveOfTargetUse": 0,
+            "pNotTransferableInputs": [
+                0,
+                0
+            ],
+            "pRestrictedTime": false,
+            "pWaitTime": 1
+        },
+        "score": 1999,
+        "sid": "-0-1-3-1-5"
     }
 ]
 ```
@@ -977,82 +979,82 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -1084,40 +1086,40 @@ Typescript interfaces can be finded here: `types.ts`
 {
     "edges": [
         {
-            "to": 1,
-            "from": 2,
-            "fontAllign": "bottom",
             "edgeWidth": "2",
-            "label": "x#0"
+            "fontAllign": "bottom",
+            "from": 2,
+            "label": "x#0",
+            "to": 1
         },
         {
-            "to": 2,
-            "from": 1,
-            "fontAllign": "bottom",
             "edgeWidth": "2",
-            "label": "tmp_0#0"
+            "fontAllign": "bottom",
+            "from": 1,
+            "label": "tmp_0#0",
+            "to": 2
         }
     ],
     "nodes": [
         {
+            "fontSize": "20",
             "function": "buffer(x#0) = tmp_0#0",
             "history": [],
-            "nodeColor": "#cbbeb5",
-            "nodeSize": "30",
-            "fontSize": "20",
-            "nodeShape": "box",
             "id": 1,
-            "label": "r"
+            "label": "r",
+            "nodeColor": "#cbbeb5",
+            "nodeShape": "box",
+            "nodeSize": "30"
         },
         {
+            "fontSize": "20",
             "function": "Loop (X 0.000000) (O [x#0]) (I tmp_0#0)",
             "history": [],
-            "nodeColor": "#cbbeb5",
-            "nodeSize": "30",
-            "fontSize": "20",
-            "nodeShape": "box",
             "id": 2,
-            "label": "loop(0.000000, tmp_0#0) = x#0"
+            "label": "loop(0.000000, tmp_0#0) = x#0",
+            "nodeColor": "#cbbeb5",
+            "nodeShape": "box",
+            "nodeSize": "30"
         }
     ]
 }
@@ -1198,98 +1200,98 @@ Typescript interfaces can be finded here: `types.ts`
 
 ```javascript
 {
+    "nextTick_": 5,
+    "nextUid": 7,
     "relations": [
         {
+            "tag": "Vertical",
             "vDown": 4,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
+            "tag": "Vertical",
             "vDown": 2,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
+            "tag": "Vertical",
             "vDown": 0,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
-            "vDown": 5,
             "tag": "Vertical",
+            "vDown": 5,
             "vUp": 4
         },
         {
-            "vDown": 3,
             "tag": "Vertical",
+            "vDown": 3,
             "vUp": 2
         },
         {
-            "vDown": 1,
             "tag": "Vertical",
+            "vDown": 1,
             "vUp": 0
         }
     ],
     "steps": [
         {
+            "pDesc": "Intermediate+x_0#0 +1@const#0 = x#0;",
+            "pID": 6,
             "pInterval": [
                 0,
                 5
-            ],
-            "pID": 6,
-            "pDesc": "Intermediate+x_0#0 +1@const#0 = x#0;"
+            ]
         },
         {
+            "pDesc": "InstructionOut",
+            "pID": 5,
             "pInterval": [
                 4,
                 4
-            ],
-            "pID": 5,
-            "pDesc": "InstructionOut"
+            ]
         },
         {
+            "pDesc": "EndpointSource x#0",
+            "pID": 4,
             "pInterval": [
                 5,
                 5
-            ],
-            "pID": 4,
-            "pDesc": "EndpointSource x#0"
+            ]
         },
         {
-            "pInterval": [
-                2,
-                2
-            ],
+            "pDesc": "InstructionLoad False",
             "pID": 3,
-            "pDesc": "InstructionLoad False"
-        },
-        {
             "pInterval": [
                 2,
                 2
-            ],
+            ]
+        },
+        {
+            "pDesc": "EndpointTarget 1@const#0",
             "pID": 2,
-            "pDesc": "EndpointTarget 1@const#0"
+            "pInterval": [
+                2,
+                2
+            ]
         },
         {
-            "pInterval": [
-                1,
-                1
-            ],
+            "pDesc": "InstructionResetAndLoad False",
             "pID": 1,
-            "pDesc": "InstructionResetAndLoad False"
-        },
-        {
             "pInterval": [
                 1,
                 1
-            ],
+            ]
+        },
+        {
+            "pDesc": "EndpointTarget x_0#0",
             "pID": 0,
-            "pDesc": "EndpointTarget x_0#0"
+            "pInterval": [
+                1,
+                1
+            ]
         }
-    ],
-    "nextUid": 7,
-    "nextTick_": 5
+    ]
 }
 ```
 
@@ -1351,30 +1353,30 @@ null
 
 ```javascript
 {
-    "score": 1032,
-    "parameters": {
-        "pOutputNumber": 2,
-        "pAlternative": 1,
-        "pWave": 2,
-        "pAllowDataFlow": 1,
-        "pCritical": false,
-        "pPercentOfBindedInputs": 0.2,
-        "pPossibleDeadlock": false,
-        "pNumberOfBindedFunctions": 1,
-        "pRestless": 0
-    },
     "decision": {
         "function": {
-            "fvHistory": [],
-            "fvFun": "buffer(a) = b = c"
+            "fvFun": "buffer(a) = b = c",
+            "fvHistory": []
         },
-        "tag": "BindDecisionView",
-        "pu": "pu"
+        "pu": "pu",
+        "tag": "BindDecisionView"
     },
     "duration": 0,
-    "sid": "-0-1-3-1",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": {
+        "pAllowDataFlow": 1,
+        "pAlternative": 1,
+        "pCritical": false,
+        "pNumberOfBindedFunctions": 1,
+        "pOutputNumber": 2,
+        "pPercentOfBindedInputs": 0.2,
+        "pPossibleDeadlock": false,
+        "pRestless": 0,
+        "pWave": 2
+    },
+    "score": 1032,
+    "sid": "-0-1-3-1"
 }
 ```
 
@@ -1382,16 +1384,23 @@ null
 
 ```javascript
 {
-    "score": 1999,
-    "parameters": {
-        "pNotTransferableInputs": [
-            0,
-            0
-        ],
-        "pRestrictedTime": false,
-        "pWaitTime": 1
-    },
     "decision": {
+        "source": [
+            "PU1",
+            {
+                "epAt": [
+                    1,
+                    1
+                ],
+                "epRole": {
+                    "contents": [
+                        "a1",
+                        "a2"
+                    ],
+                    "tag": "Source"
+                }
+            }
+        ],
         "tag": "DataflowDecisionView",
         "targets": [
             [
@@ -1402,33 +1411,27 @@ null
                         1
                     ],
                     "epRole": {
-                        "tag": "Target",
-                        "contents": "a2"
+                        "contents": "a2",
+                        "tag": "Target"
                     }
                 }
             ]
-        ],
-        "source": [
-            "PU1",
-            {
-                "epAt": [
-                    1,
-                    1
-                ],
-                "epRole": {
-                    "tag": "Source",
-                    "contents": [
-                        "a1",
-                        "a2"
-                    ]
-                }
-            }
         ]
     },
     "duration": 0,
-    "sid": "-0-1-3-1-5",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": {
+        "pFirstWaveOfTargetUse": 0,
+        "pNotTransferableInputs": [
+            0,
+            0
+        ],
+        "pRestrictedTime": false,
+        "pWaitTime": 1
+    },
+    "score": 1999,
+    "sid": "-0-1-3-1-5"
 }
 ```
 
@@ -1436,21 +1439,21 @@ null
 
 ```javascript
 {
-    "score": 5000,
-    "parameters": [],
     "decision": {
-        "tag": "BreakLoopView",
-        "value": "12.5",
         "input": "c",
         "outputs": [
             "a",
             "b"
-        ]
+        ],
+        "tag": "BreakLoopView",
+        "value": "12.5"
     },
     "duration": 0,
-    "sid": "-0-1-3-1-6",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": [],
+    "score": 5000,
+    "sid": "-0-1-3-1-6"
 }
 ```
 
@@ -1458,31 +1461,31 @@ null
 
 ```javascript
 {
-    "score": 1999,
-    "parameters": [],
     "decision": {
-        "old": [
-            {
-                "fvHistory": [],
-                "fvFun": "a + b = c"
-            },
-            {
-                "fvHistory": [],
-                "fvFun": "c + d = e"
-            }
-        ],
-        "tag": "OptimizeAccumView",
         "new": [
             {
-                "fvHistory": [],
-                "fvFun": "a + b + d = e"
+                "fvFun": "a + b + d = e",
+                "fvHistory": []
             }
-        ]
+        ],
+        "old": [
+            {
+                "fvFun": "a + b = c",
+                "fvHistory": []
+            },
+            {
+                "fvFun": "c + d = e",
+                "fvHistory": []
+            }
+        ],
+        "tag": "OptimizeAccumView"
     },
     "duration": 0,
-    "sid": "-0-1-3-1-5",
+    "isFinish": false,
     "isTerminal": false,
-    "isFinish": false
+    "parameters": [],
+    "score": 1999,
+    "sid": "-0-1-3-1-5"
 }
 ```
 
@@ -1511,98 +1514,98 @@ null
 
 ```javascript
 {
+    "nextTick_": 5,
+    "nextUid": 7,
     "relations": [
         {
+            "tag": "Vertical",
             "vDown": 4,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
+            "tag": "Vertical",
             "vDown": 2,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
+            "tag": "Vertical",
             "vDown": 0,
-            "tag": "Vertical",
             "vUp": 6
         },
         {
-            "vDown": 5,
             "tag": "Vertical",
+            "vDown": 5,
             "vUp": 4
         },
         {
-            "vDown": 3,
             "tag": "Vertical",
+            "vDown": 3,
             "vUp": 2
         },
         {
-            "vDown": 1,
             "tag": "Vertical",
+            "vDown": 1,
             "vUp": 0
         }
     ],
     "steps": [
         {
+            "pDesc": "Intermediate+x_0#0 +1@const#0 = x#0;",
+            "pID": 6,
             "pInterval": [
                 0,
                 5
-            ],
-            "pID": 6,
-            "pDesc": "Intermediate+x_0#0 +1@const#0 = x#0;"
+            ]
         },
         {
+            "pDesc": "InstructionOut",
+            "pID": 5,
             "pInterval": [
                 4,
                 4
-            ],
-            "pID": 5,
-            "pDesc": "InstructionOut"
+            ]
         },
         {
+            "pDesc": "EndpointSource x#0",
+            "pID": 4,
             "pInterval": [
                 5,
                 5
-            ],
-            "pID": 4,
-            "pDesc": "EndpointSource x#0"
+            ]
         },
         {
-            "pInterval": [
-                2,
-                2
-            ],
+            "pDesc": "InstructionLoad False",
             "pID": 3,
-            "pDesc": "InstructionLoad False"
-        },
-        {
             "pInterval": [
                 2,
                 2
-            ],
+            ]
+        },
+        {
+            "pDesc": "EndpointTarget 1@const#0",
             "pID": 2,
-            "pDesc": "EndpointTarget 1@const#0"
+            "pInterval": [
+                2,
+                2
+            ]
         },
         {
-            "pInterval": [
-                1,
-                1
-            ],
+            "pDesc": "InstructionResetAndLoad False",
             "pID": 1,
-            "pDesc": "InstructionResetAndLoad False"
-        },
-        {
             "pInterval": [
                 1,
                 1
-            ],
+            ]
+        },
+        {
+            "pDesc": "EndpointTarget x_0#0",
             "pID": 0,
-            "pDesc": "EndpointTarget x_0#0"
+            "pInterval": [
+                1,
+                1
+            ]
         }
-    ],
-    "nextUid": 7,
-    "nextTick_": 5
+    ]
 }
 ```
 
@@ -1736,30 +1739,30 @@ null
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -1769,56 +1772,56 @@ null
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -1828,16 +1831,23 @@ null
 ```javascript
 [
     {
-        "score": 1999,
-        "parameters": {
-            "pNotTransferableInputs": [
-                0,
-                0
-            ],
-            "pRestrictedTime": false,
-            "pWaitTime": 1
-        },
         "decision": {
+            "source": [
+                "PU1",
+                {
+                    "epAt": [
+                        1,
+                        1
+                    ],
+                    "epRole": {
+                        "contents": [
+                            "a1",
+                            "a2"
+                        ],
+                        "tag": "Source"
+                    }
+                }
+            ],
             "tag": "DataflowDecisionView",
             "targets": [
                 [
@@ -1848,33 +1858,27 @@ null
                             1
                         ],
                         "epRole": {
-                            "tag": "Target",
-                            "contents": "a2"
+                            "contents": "a2",
+                            "tag": "Target"
                         }
                     }
                 ]
-            ],
-            "source": [
-                "PU1",
-                {
-                    "epAt": [
-                        1,
-                        1
-                    ],
-                    "epRole": {
-                        "tag": "Source",
-                        "contents": [
-                            "a1",
-                            "a2"
-                        ]
-                    }
-                }
             ]
         },
         "duration": 0,
-        "sid": "-0-1-3-1-5",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pFirstWaveOfTargetUse": 0,
+            "pNotTransferableInputs": [
+                0,
+                0
+            ],
+            "pRestrictedTime": false,
+            "pWaitTime": 1
+        },
+        "score": 1999,
+        "sid": "-0-1-3-1-5"
     }
 ]
 ```
@@ -1884,82 +1888,82 @@ null
 ```javascript
 [
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     },
     {
-        "score": 1032,
-        "parameters": {
-            "pOutputNumber": 2,
-            "pAlternative": 1,
-            "pWave": 2,
-            "pAllowDataFlow": 1,
-            "pCritical": false,
-            "pPercentOfBindedInputs": 0.2,
-            "pPossibleDeadlock": false,
-            "pNumberOfBindedFunctions": 1,
-            "pRestless": 0
-        },
         "decision": {
             "function": {
-                "fvHistory": [],
-                "fvFun": "buffer(a) = b = c"
+                "fvFun": "buffer(a) = b = c",
+                "fvHistory": []
             },
-            "tag": "BindDecisionView",
-            "pu": "pu"
+            "pu": "pu",
+            "tag": "BindDecisionView"
         },
         "duration": 0,
-        "sid": "-0-1-3-1",
+        "isFinish": false,
         "isTerminal": false,
-        "isFinish": false
+        "parameters": {
+            "pAllowDataFlow": 1,
+            "pAlternative": 1,
+            "pCritical": false,
+            "pNumberOfBindedFunctions": 1,
+            "pOutputNumber": 2,
+            "pPercentOfBindedInputs": 0.2,
+            "pPossibleDeadlock": false,
+            "pRestless": 0,
+            "pWave": 2
+        },
+        "score": 1032,
+        "sid": "-0-1-3-1"
     }
 ]
 ```
@@ -1997,6 +2001,45 @@ null
 
 ```javascript
 {
+    "tbCompilerDump": "stdout:\nstderr:\n",
+    "tbFiles": [
+        "web_ui_net/web_ui_net.v",
+        "lib/div/div_mock.v",
+        "lib/div/pu_div.v",
+        "lib/i2c/bounce_filter.v",
+        "lib/i2c/buffer.v",
+        "lib/multiplier/mult_mock.v",
+        "lib/multiplier/pu_multiplier.v",
+        "lib/spi/pu_slave_spi_driver.v",
+        "lib/spi/spi_slave_driver.v",
+        "lib/spi/i2n_splitter.v",
+        "lib/spi/spi_master_driver.v",
+        "lib/spi/n2i_splitter.v",
+        "lib/spi/pu_slave_spi.v",
+        "lib/spi/pu_master_spi.v",
+        "lib/pu_accum.v",
+        "lib/pu_fram.v",
+        "lib/pu_shift.v",
+        "lib/pu_simple_control.v",
+        "web_ui_net_tb.v"
+    ],
+    "tbFunctionalSimulationLog": [
+        {
+            "tmp_0#0": 0,
+            "u#0": 0,
+            "x#0": 0
+        },
+        {
+            "tmp_0#0": 0,
+            "u#0": 0,
+            "x#0": 0
+        }
+    ],
+    "tbFunctions": [
+        "buffer(x#0) = tmp_0#0",
+        "LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)",
+        "LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
+    ],
     "tbLogicalSimulationLog": [
         {
             "tmp_0#0": 0,
@@ -2009,6 +2052,8 @@ null
             "x#0": 0
         }
     ],
+    "tbPath": "/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui",
+    "tbSimulationDump": "stdout:\nVCD info: dumpfile web_ui_net_tb.vcd opened for output.\n0:0\tactual: 0.000  0\t\n0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t\n0:2\tactual: 0.000  0\t\n0:3\tactual: 0.000  0\t\n0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t\n0:5\tactual: 0.000  0\t\n1:0\tactual: 0.000  0\t\n1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t\n1:2\tactual: 0.000  0\t\n1:3\tactual: 0.000  0\t\n1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t\n1:5\tactual: 0.000  0\t\nstderr:\n",
     "tbStatus": true,
     "tbSynthesisSteps": [
         "Step {pID = 19, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}",
@@ -2031,48 +2076,7 @@ null
         "Step {pID = 2, pInterval = 1 ... 1, pDesc = Transport \"x#0\" \"fram2\" \"fram1\"}",
         "Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}",
         "Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
-    ],
-    "tbPath": "/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui",
-    "tbFunctionalSimulationLog": [
-        {
-            "tmp_0#0": 0,
-            "u#0": 0,
-            "x#0": 0
-        },
-        {
-            "tmp_0#0": 0,
-            "u#0": 0,
-            "x#0": 0
-        }
-    ],
-    "tbCompilerDump": "stdout:\nstderr:\n",
-    "tbFunctions": [
-        "buffer(x#0) = tmp_0#0",
-        "LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)",
-        "LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
-    ],
-    "tbFiles": [
-        "web_ui_net/web_ui_net.v",
-        "lib/div/div_mock.v",
-        "lib/div/pu_div.v",
-        "lib/i2c/bounce_filter.v",
-        "lib/i2c/buffer.v",
-        "lib/multiplier/mult_mock.v",
-        "lib/multiplier/pu_multiplier.v",
-        "lib/spi/pu_slave_spi_driver.v",
-        "lib/spi/spi_slave_driver.v",
-        "lib/spi/i2n_splitter.v",
-        "lib/spi/spi_master_driver.v",
-        "lib/spi/n2i_splitter.v",
-        "lib/spi/pu_slave_spi.v",
-        "lib/spi/pu_master_spi.v",
-        "lib/pu_accum.v",
-        "lib/pu_fram.v",
-        "lib/pu_shift.v",
-        "lib/pu_simple_control.v",
-        "web_ui_net_tb.v"
-    ],
-    "tbSimulationDump": "stdout:\nVCD info: dumpfile web_ui_net_tb.vcd opened for output.\n0:0\tactual: 0.000  0\t\n0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t\n0:2\tactual: 0.000  0\t\n0:3\tactual: 0.000  0\t\n0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t\n0:5\tactual: 0.000  0\t\n1:0\tactual: 0.000  0\t\n1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t\n1:2\tactual: 0.000  0\t\n1:3\tactual: 0.000  0\t\n1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t\n1:5\tactual: 0.000  0\t\nstderr:\n"
+    ]
 }
 ```
 
@@ -2094,41 +2098,41 @@ null
 
 ```javascript
 {
+    "rootLabel": {
+        "decsionType": "-",
+        "duration": 0,
+        "isFinish": false,
+        "isProcessed": true,
+        "isTerminal": false,
+        "score": null,
+        "sid": "-"
+    },
     "subForest": [
         {
-            "subForest": [],
             "rootLabel": {
-                "score": 4052,
-                "isProcessed": false,
+                "decsionType": "Bind",
                 "duration": 0,
-                "sid": "-0",
-                "isTerminal": false,
                 "isFinish": false,
-                "decsionType": "Bind"
-            }
+                "isProcessed": false,
+                "isTerminal": false,
+                "score": 4052,
+                "sid": "-0"
+            },
+            "subForest": []
         },
         {
-            "subForest": [],
             "rootLabel": {
-                "score": 3021,
-                "isProcessed": false,
+                "decsionType": "Bind",
                 "duration": 0,
-                "sid": "-1",
-                "isTerminal": false,
                 "isFinish": false,
-                "decsionType": "Bind"
-            }
+                "isProcessed": false,
+                "isTerminal": false,
+                "score": 3021,
+                "sid": "-1"
+            },
+            "subForest": []
         }
-    ],
-    "rootLabel": {
-        "score": null,
-        "isProcessed": true,
-        "duration": 0,
-        "sid": "-",
-        "isTerminal": false,
-        "isFinish": false,
-        "decsionType": "-"
-    }
+    ]
 }
 ```
 
@@ -2150,12 +2154,12 @@ null
 
 ```javascript
 {
-    "notProcessed": 0,
     "durationSuccess": {},
-    "success": 0,
-    "stepsSuccess": {},
+    "failed": 0,
     "nodes": 0,
-    "failed": 0
+    "notProcessed": 0,
+    "stepsSuccess": {},
+    "success": 0
 }
 ```
 

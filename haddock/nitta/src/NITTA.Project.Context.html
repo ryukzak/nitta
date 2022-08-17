@@ -1,13 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
-</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
-</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
-</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
-</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
-</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
-</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
-</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
-</span><span id="line-9"></span><span>
-</span><span id="line-10"></span><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-comment">{- |
 Module      : NITTA.Project.Context
 Description : Context for project template
 Copyright   : (c) Aleksandr Penskoi, 2021
@@ -15,54 +9,54 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.Context</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier">projectContext</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#implementationContext"><span class="hs-identifier">implementationContext</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-21"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.Context</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-13"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier">projectContext</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#implementationContext"><span class="hs-identifier">implementationContext</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.TestBench.html"><span class="hs-identifier">NITTA.Project.TestBench</span></a></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html"><span class="hs-identifier">NITTA.Project.Types</span></a></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Ginger</span></span><span>
 </span><span id="line-22"></span><span>
-</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
-</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.TestBench.html"><span class="hs-identifier">NITTA.Project.TestBench</span></a></span><span>
-</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html"><span class="hs-identifier">NITTA.Project.Types</span></a></span><span>
-</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
-</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Ginger</span></span><span>
-</span><span id="line-28"></span><span>
-</span><span id="line-29"></span><span id="nittaContextDict"><span class="annot"><span class="annottext">nittaContextDict :: Project m v x -&gt; GVal m
+</span><span id="line-23"></span><span id="nittaContextDict"><span class="annot"><span class="annottext">nittaContextDict :: Project m v x -&gt; GVal m
 </span><a href="NITTA.Project.Context.html#nittaContextDict"><span class="hs-identifier hs-var hs-var">nittaContextDict</span></a></span></span><span>
-</span><span id="line-30"></span><span>    </span><span id="local-6989586621680110527"><span class="annot"><span class="annottext">prj :: Project m v x
-</span><a href="#local-6989586621680110527"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span>
-</span><span id="line-31"></span><span>        </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680110525"><span class="annot"><span class="annottext">Text
+</span><span id="line-24"></span><span>    </span><span id="local-6989586621680159154"><span class="annot"><span class="annottext">prj :: Project m v x
+</span><a href="#local-6989586621680159154"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span>
+</span><span id="line-25"></span><span>        </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680159152"><span class="annot"><span class="annottext">Text
 pName :: forall m v x. Project m v x -&gt; Text
 pName :: Text
 </span><a href="NITTA.Project.Types.html#pName"><span class="hs-identifier hs-var hs-var">pName</span></a></span></span><span>
-</span><span id="line-32"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110523"><span class="annot"><span class="annottext">m
+</span><span id="line-26"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159150"><span class="annot"><span class="annottext">m
 pUnit :: forall m v x. Project m v x -&gt; m
 pUnit :: m
 </span><a href="NITTA.Project.Types.html#pUnit"><span class="hs-identifier hs-var hs-var">pUnit</span></a></span></span><span>
-</span><span id="line-33"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110521"><span class="annot"><span class="annottext">UnitEnv m
+</span><span id="line-27"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159148"><span class="annot"><span class="annottext">UnitEnv m
 pUnitEnv :: forall m v x. Project m v x -&gt; UnitEnv m
 pUnitEnv :: UnitEnv m
 </span><a href="NITTA.Project.Types.html#pUnitEnv"><span class="hs-identifier hs-var hs-var">pUnitEnv</span></a></span></span><span>
-</span><span id="line-34"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110519"><span class="annot"><span class="annottext">FilePath
+</span><span id="line-28"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159146"><span class="annot"><span class="annottext">FilePath
 pTargetProjectPath :: forall m v x. Project m v x -&gt; FilePath
 pTargetProjectPath :: FilePath
 </span><a href="NITTA.Project.Types.html#pTargetProjectPath"><span class="hs-identifier hs-var hs-var">pTargetProjectPath</span></a></span></span><span>
-</span><span id="line-35"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110517"><span class="annot"><span class="annottext">FilePath
+</span><span id="line-29"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159144"><span class="annot"><span class="annottext">FilePath
 pInProjectNittaPath :: forall m v x. Project m v x -&gt; FilePath
 pInProjectNittaPath :: FilePath
 </span><a href="NITTA.Project.Types.html#pInProjectNittaPath"><span class="hs-identifier hs-var hs-var">pInProjectNittaPath</span></a></span></span><span>
-</span><span id="line-36"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110515"><span class="annot"><span class="annottext">FilePath
+</span><span id="line-30"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159142"><span class="annot"><span class="annottext">FilePath
 pAbsTargetProjectPath :: forall m v x. Project m v x -&gt; FilePath
 pAbsTargetProjectPath :: FilePath
 </span><a href="NITTA.Project.Types.html#pAbsTargetProjectPath"><span class="hs-identifier hs-var hs-var">pAbsTargetProjectPath</span></a></span></span><span>
-</span><span id="line-37"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110513"><span class="annot"><span class="annottext">FilePath
+</span><span id="line-31"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159140"><span class="annot"><span class="annottext">FilePath
 pAbsNittaPath :: forall m v x. Project m v x -&gt; FilePath
 pAbsNittaPath :: FilePath
 </span><a href="NITTA.Project.Types.html#pAbsNittaPath"><span class="hs-identifier hs-var hs-var">pAbsNittaPath</span></a></span></span><span>
-</span><span id="line-38"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-39"></span><span>        </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
+</span><span id="line-32"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-33"></span><span>        </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
 forall (m :: * -&gt; *). [Pair m] -&gt; GVal m
 </span><span class="hs-identifier hs-var">dict</span></span><span>
-</span><span id="line-40"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span id="line-34"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;instance&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; GVal m) -&gt; Text -&gt; GVal m
@@ -77,56 +71,56 @@ Text -&gt; pu -&gt; UnitEnv pu -&gt; Verilog
 </span><a href="NITTA.Project.Types.html#hardwareInstance"><span class="hs-identifier hs-var">hardwareInstance</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; m -&gt; Text
 forall pu. TargetSystemComponent pu =&gt; Text -&gt; pu -&gt; Text
 </span><a href="NITTA.Project.Types.html#moduleName"><span class="hs-identifier hs-var">moduleName</span></a></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110525"><span class="hs-identifier hs-var">pName</span></a></span><span> </span><span class="annot"><span class="annottext">m
-</span><a href="#local-6989586621680110523"><span class="hs-identifier hs-var">pUnit</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m
-</span><a href="#local-6989586621680110523"><span class="hs-identifier hs-var">pUnit</span></a></span><span> </span><span class="annot"><span class="annottext">UnitEnv m
-</span><a href="#local-6989586621680110521"><span class="hs-identifier hs-var">pUnitEnv</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-41"></span><span>            </span><span class="hs-special">,</span><span>
-</span><span id="line-42"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159152"><span class="hs-identifier hs-var">pName</span></a></span><span> </span><span class="annot"><span class="annottext">m
+</span><a href="#local-6989586621680159150"><span class="hs-identifier hs-var">pUnit</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">m
+</span><a href="#local-6989586621680159150"><span class="hs-identifier hs-var">pUnit</span></a></span><span> </span><span class="annot"><span class="annottext">UnitEnv m
+</span><a href="#local-6989586621680159148"><span class="hs-identifier hs-var">pUnitEnv</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>            </span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;paths&quot;</span></span><span>
-</span><span id="line-43"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
+</span><span id="line-37"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
 forall (m :: * -&gt; *). [Pair m] -&gt; GVal m
 </span><span class="hs-identifier hs-var">dict</span></span><span>
-</span><span id="line-44"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span id="line-38"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;abs_project&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680110515"><span class="hs-identifier hs-var">pAbsTargetProjectPath</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-45"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159142"><span class="hs-identifier hs-var">pAbsTargetProjectPath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;project&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680110519"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-46"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159146"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;abs_nitta&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680110513"><span class="hs-identifier hs-var">pAbsNittaPath</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-47"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159140"><span class="hs-identifier hs-var">pAbsNittaPath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;nitta&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680110517"><span class="hs-identifier hs-var">pInProjectNittaPath</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-48"></span><span>                    </span><span class="hs-special">]</span><span>
-</span><span id="line-49"></span><span>                </span><span class="hs-special">)</span><span>
-</span><span id="line-50"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159144"><span class="hs-identifier hs-var">pInProjectNittaPath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-43"></span><span>                </span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;files&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; GVal m) -&gt; [FilePath] -&gt; GVal m
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Project m v x -&gt; [FilePath]
-forall m v x.
+forall {m} {v} {x}.
 (TargetSystemComponent m, Testable m v x) =&gt;
 Project m v x -&gt; [FilePath]
 </span><a href="NITTA.Project.TestBench.html#verilogProjectFiles"><span class="hs-identifier hs-var">verilogProjectFiles</span></a></span><span> </span><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110527"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-51"></span><span>            </span><span class="hs-special">,</span><span>
-</span><span id="line-52"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159154"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span>            </span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;testbench&quot;</span></span><span>
-</span><span id="line-53"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
+</span><span id="line-47"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Pair m] -&gt; GVal m
 forall (m :: * -&gt; *). [Pair m] -&gt; GVal m
 </span><span class="hs-identifier hs-var">dict</span></span><span>
-</span><span id="line-54"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span id="line-48"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;module_name&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal m
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; GVal m) -&gt; FilePath -&gt; GVal m
@@ -136,15 +130,15 @@ forall m v x.
 (TargetSystemComponent m, Testable m v x) =&gt;
 Project m v x -&gt; FilePath
 </span><a href="NITTA.Project.TestBench.html#testBenchTopModuleName"><span class="hs-identifier hs-var">testBenchTopModuleName</span></a></span><span> </span><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110527"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-55"></span><span>                    </span><span class="hs-special">]</span><span>
-</span><span id="line-56"></span><span>                </span><span class="hs-special">)</span><span>
-</span><span id="line-57"></span><span>            </span><span class="hs-special">]</span><span>
-</span><span id="line-58"></span><span>
-</span><span id="line-59"></span><span class="hs-comment">-- |projectContext - used for template generation</span><span>
-</span><span id="line-60"></span><span id="projectContext"><span class="annot"><span class="annottext">projectContext :: Project m v x -&gt; GingerContext p (Writer Text) Text
-</span><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier hs-var hs-var">projectContext</span></a></span></span><span> </span><span id="local-6989586621680110504"><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110504"><span class="hs-identifier hs-var">prj</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; GVal (Run p (Writer Text) Text))
+</span><a href="#local-6989586621680159154"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-50"></span><span>                </span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- |projectContext - used for template generation</span><span>
+</span><span id="line-54"></span><span id="projectContext"><span class="annot"><span class="annottext">projectContext :: Project m v x -&gt; GingerContext p (Writer Text) Text
+</span><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier hs-var hs-var">projectContext</span></a></span></span><span> </span><span id="local-6989586621680159115"><span class="annot"><span class="annottext">Project m v x
+</span><a href="#local-6989586621680159115"><span class="hs-identifier hs-var">prj</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; GVal (Run p (Writer Text) Text))
 -&gt; GingerContext p (Writer Text) Text
 forall p.
 (Text -&gt; GVal (Run p (Writer Text) Text))
@@ -155,15 +149,15 @@ forall p.
 -&gt; GingerContext p (Writer Text) Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">Text
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;nitta&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Project m v x -&gt; GVal (Run p (Writer Text) Text)
-forall m v x (m :: * -&gt; *).
+forall {m} {v} {x} {m :: * -&gt; *}.
 (TargetSystemComponent m, Testable m v x) =&gt;
 Project m v x -&gt; GVal m
 </span><a href="NITTA.Project.Context.html#nittaContextDict"><span class="hs-identifier hs-var">nittaContextDict</span></a></span><span> </span><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110504"><span class="hs-identifier hs-var">prj</span></a></span><span>
-</span><span id="line-62"></span><span>    </span><span id="local-6989586621680110502"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110502"><span class="hs-identifier hs-var">unknown</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal (Run p (Writer Text) Text)
+</span><a href="#local-6989586621680159115"><span class="hs-identifier hs-var">prj</span></a></span><span>
+</span><span id="line-56"></span><span>    </span><span id="local-6989586621680159113"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159113"><span class="hs-identifier hs-var">unknown</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal (Run p (Writer Text) Text)
 forall a. HasCallStack =&gt; FilePath -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; GVal (Run p (Writer Text) Text))
 -&gt; FilePath -&gt; GVal (Run p (Writer Text) Text)
@@ -173,16 +167,16 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; FilePath
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110502"><span class="hs-identifier hs-var">unknown</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+</span><a href="#local-6989586621680159113"><span class="hs-identifier hs-var">unknown</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;' not defined (see 'NITTA.Project.Template')&quot;</span></span><span>
-</span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span class="hs-comment">-- |projectContext - used for Implementation generation</span><span>
-</span><span id="line-65"></span><span id="implementationContext"><span class="annot"><span class="annottext">implementationContext :: Project m v x -&gt; a -&gt; GingerContext p (Writer Text) Text
-</span><a href="NITTA.Project.Context.html#implementationContext"><span class="hs-identifier hs-var hs-var">implementationContext</span></a></span></span><span> </span><span id="local-6989586621680110499"><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110499"><span class="hs-identifier hs-var">prj</span></a></span></span><span> </span><span id="local-6989586621680110498"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680110498"><span class="hs-identifier hs-var">nest</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; GVal (Run p (Writer Text) Text))
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="hs-comment">-- |projectContext - used for Implementation generation</span><span>
+</span><span id="line-59"></span><span id="implementationContext"><span class="annot"><span class="annottext">implementationContext :: Project m v x -&gt; a -&gt; GingerContext p (Writer Text) Text
+</span><a href="NITTA.Project.Context.html#implementationContext"><span class="hs-identifier hs-var hs-var">implementationContext</span></a></span></span><span> </span><span id="local-6989586621680159091"><span class="annot"><span class="annottext">Project m v x
+</span><a href="#local-6989586621680159091"><span class="hs-identifier hs-var">prj</span></a></span></span><span> </span><span id="local-6989586621680159090"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680159090"><span class="hs-identifier hs-var">nest</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; GVal (Run p (Writer Text) Text))
 -&gt; GingerContext p (Writer Text) Text
 forall p.
 (Text -&gt; GVal (Run p (Writer Text) Text))
@@ -193,14 +187,14 @@ forall p.
 -&gt; GingerContext p (Writer Text) Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">Text
+</span><span id="line-60"></span><span>    </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;nitta&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Project m v x -&gt; GVal (Run p (Writer Text) Text)
-forall m v x (m :: * -&gt; *).
+forall {m} {v} {x} {m :: * -&gt; *}.
 (TargetSystemComponent m, Testable m v x) =&gt;
 Project m v x -&gt; GVal m
 </span><a href="NITTA.Project.Context.html#nittaContextDict"><span class="hs-identifier hs-var">nittaContextDict</span></a></span><span> </span><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110499"><span class="hs-identifier hs-var">prj</span></a></span><span>
-</span><span id="line-67"></span><span>    </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159091"><span class="hs-identifier hs-var">prj</span></a></span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;impl&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Pair (Run p (Writer Text) Text)]
 -&gt; GVal (Run p (Writer Text) Text)
 forall (m :: * -&gt; *). [Pair m] -&gt; GVal m
@@ -212,9 +206,9 @@ forall (m :: * -&gt; *). [Pair m] -&gt; GVal m
 </span><span class="hs-string">&quot;nest&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a -&gt; GVal (Run p (Writer Text) Text)
 forall (m :: * -&gt; *) a. ToGVal m a =&gt; a -&gt; GVal m
 </span><span class="hs-identifier hs-var">toGVal</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680110498"><span class="hs-identifier hs-var">nest</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
-</span><span id="line-68"></span><span>    </span><span id="local-6989586621680110497"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110497"><span class="hs-identifier hs-var">unknown</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal (Run p (Writer Text) Text)
+</span><a href="#local-6989586621680159090"><span class="hs-identifier hs-var">nest</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-62"></span><span>    </span><span id="local-6989586621680159089"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159089"><span class="hs-identifier hs-var">unknown</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; GVal (Run p (Writer Text) Text)
 forall a. HasCallStack =&gt; FilePath -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; GVal (Run p (Writer Text) Text))
 -&gt; FilePath -&gt; GVal (Run p (Writer Text) Text)
@@ -224,8 +218,8 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; FilePath
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110497"><span class="hs-identifier hs-var">unknown</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+</span><a href="#local-6989586621680159089"><span class="hs-identifier hs-var">unknown</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;' not defined (see 'NITTA.Project.Template')&quot;</span></span><span>
-</span><span id="line-69"></span></pre></body></html>
+</span><span id="line-63"></span></pre></body></html>

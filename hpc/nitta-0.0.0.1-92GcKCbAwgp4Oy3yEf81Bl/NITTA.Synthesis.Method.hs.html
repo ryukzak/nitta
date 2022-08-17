@@ -1,0 +1,156 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE PartialTypeSignatures #-}
+<span class="lineno">    3 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    4 </span>
+<span class="lineno">    5 </span>{- |
+<span class="lineno">    6 </span>Module      : NITTA.Synthesis.Method
+<span class="lineno">    7 </span>Description : Synthesis method implementation.
+<span class="lineno">    8 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">    9 </span>License     : BSD3
+<span class="lineno">   10 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   11 </span>Stability   : experimental
+<span class="lineno">   12 </span>-}
+<span class="lineno">   13 </span>module NITTA.Synthesis.Method (
+<span class="lineno">   14 </span>    DefTree,
+<span class="lineno">   15 </span>    SynthesisMethod,
+<span class="lineno">   16 </span>    simpleSynthesisIO,
+<span class="lineno">   17 </span>    smartBindSynthesisIO,
+<span class="lineno">   18 </span>    obviousBindThreadIO,
+<span class="lineno">   19 </span>    allBestThreadIO,
+<span class="lineno">   20 </span>    stateOfTheArtSynthesisIO,
+<span class="lineno">   21 </span>    allBindsAndRefsIO,
+<span class="lineno">   22 </span>    bestStepIO,
+<span class="lineno">   23 </span>) where
+<span class="lineno">   24 </span>
+<span class="lineno">   25 </span>import Data.List qualified as L
+<span class="lineno">   26 </span>import Data.Typeable
+<span class="lineno">   27 </span>import Debug.Trace
+<span class="lineno">   28 </span>import NITTA.Model.ProcessorUnits
+<span class="lineno">   29 </span>import NITTA.Model.TargetSystem
+<span class="lineno">   30 </span>import NITTA.Synthesis.Explore
+<span class="lineno">   31 </span>import NITTA.Synthesis.Steps
+<span class="lineno">   32 </span>import NITTA.Synthesis.Types
+<span class="lineno">   33 </span>import NITTA.Utils (maximumOn, minimumOn)
+<span class="lineno">   34 </span>import Safe
+<span class="lineno">   35 </span>import System.Log.Logger
+<span class="lineno">   36 </span>
+<span class="lineno">   37 </span>{- |The constant, which restricts the maximum number of synthesis steps. Avoids
+<span class="lineno">   38 </span>the endless synthesis process.
+<span class="lineno">   39 </span>-}
+<span class="lineno">   40 </span><span class="decl"><span class="istickedoff">stepLimit = 750 :: Int</span></span>
+<span class="lineno">   41 </span>
+<span class="lineno">   42 </span>-- |The most complex synthesis method, which embedded all another. That all.
+<span class="lineno">   43 </span>stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   44 </span><span class="decl"><span class="istickedoff">stateOfTheArtSynthesisIO tree = do</span>
+<span class="lineno">   45 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;stateOfTheArtSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
+<span class="lineno">   46 </span><span class="spaces">    </span><span class="istickedoff">l1 &lt;- simpleSynthesisIO tree</span>
+<span class="lineno">   47 </span><span class="spaces">    </span><span class="istickedoff">l2 &lt;- smartBindSynthesisIO tree</span>
+<span class="lineno">   48 </span><span class="spaces">    </span><span class="istickedoff">l3 &lt;- bestThreadIO stepLimit tree</span>
+<span class="lineno">   49 </span><span class="spaces">    </span><span class="istickedoff">l4 &lt;- bestThreadIO stepLimit =&lt;&lt; allBindsAndRefsIO tree</span>
+<span class="lineno">   50 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf <span class="nottickedoff">tree</span> [l1, l2, l3, l4]</span></span>
+<span class="lineno">   51 </span>
+<span class="lineno">   52 </span>-- |Schedule process by simple synthesis.
+<span class="lineno">   53 </span>simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   54 </span><span class="decl"><span class="istickedoff">simpleSynthesisIO root = do</span>
+<span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;simpleSynthesisIO: &quot; &lt;&gt; show (sID root)</span></span>
+<span class="lineno">   56 </span><span class="spaces">    </span><span class="istickedoff">lastObliviousNode &lt;- obviousBindThreadIO root</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO 1 lastObliviousNode</span></span>
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   60 </span><span class="decl"><span class="istickedoff">smartBindSynthesisIO tree = do</span>
+<span class="lineno">   61 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;smartBindSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">tree' &lt;- smartBindThreadIO tree</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO 1 tree'</span></span>
+<span class="lineno">   64 </span>
+<span class="lineno">   65 </span>bestThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; Int -&gt; SynthesisMethod tag v x t
+<span class="lineno">   66 </span><span class="decl"><span class="istickedoff">bestThreadIO 0 node = <span class="nottickedoff">return $ trace &quot;bestThreadIO reach step limit!&quot; node</span></span>
+<span class="lineno">   67 </span><span class="spaces"></span><span class="istickedoff">bestThreadIO limit tree = do</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
+<span class="lineno">   69 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">   70 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">   71 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; bestThreadIO (limit - 1) $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span>bestStepIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   74 </span><span class="decl"><span class="nottickedoff">bestStepIO tree = do</span>
+<span class="lineno">   75 </span><span class="spaces">    </span><span class="nottickedoff">subForest &lt;- positiveSubForestIO tree</span>
+<span class="lineno">   76 </span><span class="spaces">    </span><span class="nottickedoff">case subForest of</span>
+<span class="lineno">   77 </span><span class="spaces">        </span><span class="nottickedoff">[] -&gt; error &quot;all step is over&quot;</span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="nottickedoff">_ -&gt; return $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   81 </span><span class="decl"><span class="istickedoff">obviousBindThreadIO tree = do</span>
+<span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
+<span class="lineno">   83 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) <span class="nottickedoff">obviousBindThreadIO</span> $</span>
+<span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">L.find</span>
+<span class="lineno">   85 </span><span class="spaces">            </span><span class="istickedoff">( ( \case</span>
+<span class="lineno">   86 </span><span class="spaces">                    </span><span class="istickedoff">Just BindMetrics{pPossibleDeadlock = True} -&gt; <span class="nottickedoff">False</span></span>
+<span class="lineno">   87 </span><span class="spaces">                    </span><span class="istickedoff">Just BindMetrics{pAlternative = 1} -&gt; <span class="nottickedoff">True</span></span>
+<span class="lineno">   88 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
+<span class="lineno">   89 </span><span class="spaces">              </span><span class="istickedoff">)</span>
+<span class="lineno">   90 </span><span class="spaces">                </span><span class="istickedoff">. cast</span>
+<span class="lineno">   91 </span><span class="spaces">                </span><span class="istickedoff">. <span class="nottickedoff">sDecision</span></span>
+<span class="lineno">   92 </span><span class="spaces">            </span><span class="istickedoff">)</span>
+<span class="lineno">   93 </span><span class="spaces">            </span><span class="istickedoff">subForest</span></span>
+<span class="lineno">   94 </span>
+<span class="lineno">   95 </span>allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   96 </span><span class="decl"><span class="istickedoff">allBindsAndRefsIO tree = do</span>
+<span class="lineno">   97 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;-</span>
+<span class="lineno">   98 </span><span class="spaces">        </span><span class="istickedoff">filter ((\d -&gt; isBind d || isRefactor d) . sDecision)</span>
+<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; positiveSubForestIO tree</span>
+<span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO $ minimumOn (score . sDecision) subForest</span></span>
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span><span class="decl"><span class="istickedoff">refactorThreadIO tree = do</span>
+<span class="lineno">  105 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
+<span class="lineno">  106 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) refactorThreadIO $</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="istickedoff">L.find (isRefactor . sDecision) subForest</span></span>
+<span class="lineno">  108 </span>
+<span class="lineno">  109 </span>smartBindThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">  110 </span><span class="decl"><span class="istickedoff">smartBindThreadIO tree = do</span>
+<span class="lineno">  111 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;-</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">filter ((\d -&gt; isBind d || isRefactor d) . sDecision)</span>
+<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; (positiveSubForestIO =&lt;&lt; refactorThreadIO tree)</span>
+<span class="lineno">  114 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; smartBindThreadIO $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">  117 </span>
+<span class="lineno">  118 </span>allBestThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; Int -&gt; SynthesisMethod tag v x t
+<span class="lineno">  119 </span><span class="decl"><span class="istickedoff">allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree</span>
+<span class="lineno">  120 </span><span class="spaces"></span><span class="istickedoff">allBestThreadIO n tree = do</span>
+<span class="lineno">  121 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
+<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">leafs &lt;- mapM (allBestThreadIO (n - 1)) subForest</span>
+<span class="lineno">  123 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf tree leafs</span></span>
+<span class="lineno">  124 </span>
+<span class="lineno">  125 </span>bestLeaf :: (VarValTime v x t, UnitTag tag) =&gt; DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
+<span class="lineno">  126 </span><span class="decl"><span class="istickedoff">bestLeaf tree leafs =</span>
+<span class="lineno">  127 </span><span class="spaces">    </span><span class="istickedoff">let successLeafs = filter (\node -&gt; isComplete node &amp;&amp; isLeaf node) leafs</span>
+<span class="lineno">  128 </span><span class="spaces">     </span><span class="istickedoff">in case successLeafs of</span>
+<span class="lineno">  129 </span><span class="spaces">            </span><span class="istickedoff">[] -&gt; headDef tree leafs</span>
+<span class="lineno">  130 </span><span class="spaces">            </span><span class="istickedoff">_ : _ -&gt;</span>
+<span class="lineno">  131 </span><span class="spaces">                </span><span class="istickedoff">minimumOn</span>
+<span class="lineno">  132 </span><span class="spaces">                    </span><span class="istickedoff">(\Tree{sState = SynthesisState{sTarget}} -&gt; (processDuration sTarget, puSize sTarget))</span>
+<span class="lineno">  133 </span><span class="spaces">                    </span><span class="istickedoff">successLeafs</span></span>
+
+</pre>
+</body>
+</html>

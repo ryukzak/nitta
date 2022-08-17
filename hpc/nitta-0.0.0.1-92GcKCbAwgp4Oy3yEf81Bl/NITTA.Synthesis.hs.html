@@ -1,0 +1,260 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE AllowAmbiguousTypes #-}
+<span class="lineno">    2 </span>
+<span class="lineno">    3 </span>{- |
+<span class="lineno">    4 </span>Module      : NITTA.Synthesis
+<span class="lineno">    5 </span>Description : Entry point for synthesis process and target system generation.
+<span class="lineno">    6 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">    7 </span>License     : BSD3
+<span class="lineno">    8 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">    9 </span>Stability   : experimental
+<span class="lineno">   10 </span>
+<span class="lineno">   11 </span>TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow shown on fig.
+<span class="lineno">   12 </span>
+<span class="lineno">   13 </span>@
+<span class="lineno">   14 </span>====================================================================================================================
+<span class="lineno">   15 </span>                                                                                                             Prepare
+<span class="lineno">   16 </span>NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
+<span class="lineno">   17 </span>    # tName                                                                              NITTA.Frontends
+<span class="lineno">   18 </span>    # tMicroArch -----------------------------\
+<span class="lineno">   19 </span>    # tSourceCode -+                          |     /--+-- mkModelWithOneNetwork
+<span class="lineno">   20 </span>                   |                          |     |  |
+<span class="lineno">   21 </span>                   *&lt;-translate               |     |  |
+<span class="lineno">   22 </span>                   |                          |     |  v      NITTA.Model:TargetSystem----------\
+<span class="lineno">   23 </span>    # tDFG &lt;-------+                          +--------*--------&gt; # mUnit         |             |    NITTA.Model...
+<span class="lineno">   24 </span>        |                                        |                                |             |     /-----------\
+<span class="lineno">   25 </span>        |                                        v                                |             |     |  Target   |
+<span class="lineno">   26 </span>        +----------------------------------------*-----------&gt; # mDataFlowGraph   |             \-----+  System   |
+<span class="lineno">   27 </span>                                                                                  |                   | Imitation |
+<span class="lineno">   28 </span>    # tReceivedValues                                                             |                   |   Model   |
+<span class="lineno">   29 </span>    # tVerbose                                                                    |                   \-----------/
+<span class="lineno">   30 </span>    # tSynthesisMethod ----------------------------------\                        |
+<span class="lineno">   31 </span>                                                         |                        |
+<span class="lineno">   32 </span>                                                         |                        |
+<span class="lineno">   33 </span>===================================================================================================================
+<span class="lineno">   34 </span>                                                         |                        |               Synthesis process
+<span class="lineno">   35 </span>        NITTA.Synthesis.Types:Tree                       |                        |           NITTA.Synthesis.Types
+<span class="lineno">   36 </span>            # sID                                        |                        |          NITTA.Synthesis.Method
+<span class="lineno">   37 </span>            # sState &lt;------------------------------------------------------------+
+<span class="lineno">   38 </span>            # sDecision                                  |
+<span class="lineno">   39 </span>                # option                                 |
+<span class="lineno">   40 </span>                # decision                               *&lt;-- search for best synthesis path
+<span class="lineno">   41 </span>                # metrics                                |
+<span class="lineno">   42 </span>                # score                                  v
+<span class="lineno">   43 </span>            # sSubForestVar -------------------------&gt;// * // -----\
+<span class="lineno">   44 </span>                                                                   |
+<span class="lineno">   45 </span>                                                                   v
+<span class="lineno">   46 </span>                                                            NITTA.Synthesis.Types:Tree
+<span class="lineno">   47 </span>                                                                # sState
+<span class="lineno">   48 </span>                                                                    # sTarget
+<span class="lineno">   49 </span>                                       /------------------------------- # mUnit
+<span class="lineno">   50 </span>                                       |        /---------------------- # mDataFlowGraph
+<span class="lineno">   51 </span>                                       |        |                   # ...
+<span class="lineno">   52 </span>                                       |        |               # ...
+<span class="lineno">   53 </span>                                       |        |
+<span class="lineno">   54 </span>===================================================================================================================
+<span class="lineno">   55 </span>                                       |        |                                         Target project generation
+<span class="lineno">   56 </span>NITTA.Project.Types:Project            |        |                                                 NITTA.Project....
+<span class="lineno">   57 </span> |      # pName &lt;--------- $tName      |        |
+<span class="lineno">   58 </span> |      # pLibPath                     |        +&lt;----- $tReceivedValues
+<span class="lineno">   59 </span> |      # pTargetProjectPath           |        |
+<span class="lineno">   60 </span> |      # pModel&lt;----------------------/        *&lt;----- functional simulation (FIXME)
+<span class="lineno">   61 </span> |                                              |
+<span class="lineno">   62 </span> |      # pTestCntx &lt;---------------------------/
+<span class="lineno">   63 </span> |
+<span class="lineno">   64 </span> |
+<span class="lineno">   65 </span> *&lt;---------- $writeProject
+<span class="lineno">   66 </span> |                # TargetSystem
+<span class="lineno">   67 </span> |                    # hardware
+<span class="lineno">   68 </span> |                    # software
+<span class="lineno">   69 </span> |                # TestBench
+<span class="lineno">   70 </span> |                # Templates
+<span class="lineno">   71 </span> |
+<span class="lineno">   72 </span> \---&gt; filesystem
+<span class="lineno">   73 </span>@
+<span class="lineno">   74 </span>-}
+<span class="lineno">   75 </span>module NITTA.Synthesis (
+<span class="lineno">   76 </span>    module NITTA.Synthesis.Explore,
+<span class="lineno">   77 </span>    module NITTA.Synthesis.Method,
+<span class="lineno">   78 </span>    module NITTA.Synthesis.Steps,
+<span class="lineno">   79 </span>    module NITTA.Synthesis.Types,
+<span class="lineno">   80 </span>    mkModelWithOneNetwork,
+<span class="lineno">   81 </span>    TargetSynthesis (..),
+<span class="lineno">   82 </span>    runTargetSynthesis,
+<span class="lineno">   83 </span>    synthesizeTargetSystem,
+<span class="lineno">   84 </span>) where
+<span class="lineno">   85 </span>
+<span class="lineno">   86 </span>import Control.Monad (when)
+<span class="lineno">   87 </span>import Data.Default as D
+<span class="lineno">   88 </span>import Data.Text (Text)
+<span class="lineno">   89 </span>import Data.Text qualified as T
+<span class="lineno">   90 </span>import NITTA.Frontends
+<span class="lineno">   91 </span>import NITTA.Intermediate.DataFlow
+<span class="lineno">   92 </span>import NITTA.Intermediate.Simulation
+<span class="lineno">   93 </span>import NITTA.Intermediate.Types
+<span class="lineno">   94 </span>import NITTA.Model.Networks.Bus
+<span class="lineno">   95 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   96 </span>import NITTA.Model.TargetSystem
+<span class="lineno">   97 </span>import NITTA.Model.Time
+<span class="lineno">   98 </span>import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
+<span class="lineno">   99 </span>import NITTA.Synthesis.Explore
+<span class="lineno">  100 </span>import NITTA.Synthesis.Method
+<span class="lineno">  101 </span>import NITTA.Synthesis.Steps
+<span class="lineno">  102 </span>import NITTA.Synthesis.Types
+<span class="lineno">  103 </span>import System.Directory
+<span class="lineno">  104 </span>import System.FilePath
+<span class="lineno">  105 </span>import System.Log.Logger
+<span class="lineno">  106 </span>
+<span class="lineno">  107 </span>{- |Description of synthesis task. Applicable for target system synthesis and
+<span class="lineno">  108 </span>testing purpose.
+<span class="lineno">  109 </span>-}
+<span class="lineno">  110 </span>data TargetSynthesis tag v x t = TargetSynthesis
+<span class="lineno">  111 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tName</span></span></span> :: String
+<span class="lineno">  112 </span>    -- ^target name, used for top level module name and project path
+<span class="lineno">  113 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tMicroArch</span></span></span> :: BusNetwork tag v x t
+<span class="lineno">  114 </span>    -- ^composition of processor units, IO ports and its interconnect
+<span class="lineno">  115 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSourceCode</span></span></span> :: Maybe Text
+<span class="lineno">  116 </span>    -- ^optional application source code (lua)
+<span class="lineno">  117 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tDFG</span></span></span> :: DataFlowGraph v x
+<span class="lineno">  118 </span>    -- ^algorithm in intermediate data flow graph representation (if
+<span class="lineno">  119 </span>    -- tSourceCode present will be overwritten)
+<span class="lineno">  120 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tReceivedValues</span></span></span> :: [(v, [x])]
+<span class="lineno">  121 </span>    -- ^values from input interface for testing purpose
+<span class="lineno">  122 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSynthesisMethod</span></span></span> :: SynthesisMethod tag v x t
+<span class="lineno">  123 </span>    -- ^synthesis method
+<span class="lineno">  124 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tLibPath</span></span></span> :: String
+<span class="lineno">  125 </span>    -- ^IP-core library directory
+<span class="lineno">  126 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tPath</span></span></span> :: String
+<span class="lineno">  127 </span>    -- ^output directory, where CAD create project directory with 'tName' name
+<span class="lineno">  128 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tTemplates</span></span></span> :: [FilePath]
+<span class="lineno">  129 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSimulationCycleN</span></span></span> :: Int
+<span class="lineno">  130 </span>    -- ^number of simulation and testbench cycles
+<span class="lineno">  131 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSourceCodeType</span></span></span> :: FrontendType
+<span class="lineno">  132 </span>    -- ^source code format type
+<span class="lineno">  133 </span>    }
+<span class="lineno">  134 </span>
+<span class="lineno">  135 </span>instance (UnitTag tag, VarValTime v x t) =&gt; Default (TargetSynthesis tag v x t) where
+<span class="lineno">  136 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  137 </span><span class="spaces">        </span><span class="istickedoff">TargetSynthesis</span>
+<span class="lineno">  138 </span><span class="spaces">            </span><span class="istickedoff">{ tName = <span class="nottickedoff">undefined</span></span>
+<span class="lineno">  139 </span><span class="spaces">            </span><span class="istickedoff">, tMicroArch = <span class="nottickedoff">undefined</span></span>
+<span class="lineno">  140 </span><span class="spaces">            </span><span class="istickedoff">, tSourceCode = Nothing</span>
+<span class="lineno">  141 </span><span class="spaces">            </span><span class="istickedoff">, tDFG = <span class="nottickedoff">undefined</span></span>
+<span class="lineno">  142 </span><span class="spaces">            </span><span class="istickedoff">, tReceivedValues = def</span>
+<span class="lineno">  143 </span><span class="spaces">            </span><span class="istickedoff">, tSynthesisMethod = stateOfTheArtSynthesisIO</span>
+<span class="lineno">  144 </span><span class="spaces">            </span><span class="istickedoff">, tLibPath = &quot;hdl&quot;</span>
+<span class="lineno">  145 </span><span class="spaces">            </span><span class="istickedoff">, tTemplates = defProjectTemplates</span>
+<span class="lineno">  146 </span><span class="spaces">            </span><span class="istickedoff">, tPath = joinPath [&quot;gen&quot;]</span>
+<span class="lineno">  147 </span><span class="spaces">            </span><span class="istickedoff">, tSimulationCycleN = 5</span>
+<span class="lineno">  148 </span><span class="spaces">            </span><span class="istickedoff">, tSourceCodeType = <span class="nottickedoff">Lua</span></span>
+<span class="lineno">  149 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  150 </span>
+<span class="lineno">  151 </span>instance (UnitTag tag, VarValTime v x t) =&gt; ProcessorUnit (TargetSynthesis tag v x t) v x t where
+<span class="lineno">  152 </span>    <span class="decl"><span class="nottickedoff">tryBind _ _ = error &quot;Not Implemented&quot;</span></span>
+<span class="lineno">  153 </span>    <span class="decl"><span class="nottickedoff">process TargetSynthesis{tMicroArch} = process tMicroArch</span></span>
+<span class="lineno">  154 </span>    <span class="decl"><span class="nottickedoff">parallelismType TargetSynthesis{tMicroArch} = parallelismType tMicroArch</span></span>
+<span class="lineno">  155 </span>
+<span class="lineno">  156 </span><span class="decl"><span class="istickedoff">runTargetSynthesis leaf = do</span>
+<span class="lineno">  157 </span><span class="spaces">    </span><span class="istickedoff">prj &lt;- synthesizeTargetSystem leaf</span>
+<span class="lineno">  158 </span><span class="spaces">    </span><span class="istickedoff">traverse runTestbench prj</span></span>
+<span class="lineno">  159 </span>
+<span class="lineno">  160 </span><span class="decl"><span class="istickedoff">synthesizeTargetSystem</span>
+<span class="lineno">  161 </span><span class="spaces">    </span><span class="istickedoff">TargetSynthesis</span>
+<span class="lineno">  162 </span><span class="spaces">        </span><span class="istickedoff">{ tName</span>
+<span class="lineno">  163 </span><span class="spaces">        </span><span class="istickedoff">, tMicroArch</span>
+<span class="lineno">  164 </span><span class="spaces">        </span><span class="istickedoff">, tSourceCode</span>
+<span class="lineno">  165 </span><span class="spaces">        </span><span class="istickedoff">, tDFG</span>
+<span class="lineno">  166 </span><span class="spaces">        </span><span class="istickedoff">, tReceivedValues</span>
+<span class="lineno">  167 </span><span class="spaces">        </span><span class="istickedoff">, tSynthesisMethod</span>
+<span class="lineno">  168 </span><span class="spaces">        </span><span class="istickedoff">, tLibPath</span>
+<span class="lineno">  169 </span><span class="spaces">        </span><span class="istickedoff">, tPath</span>
+<span class="lineno">  170 </span><span class="spaces">        </span><span class="istickedoff">, tTemplates</span>
+<span class="lineno">  171 </span><span class="spaces">        </span><span class="istickedoff">, tSimulationCycleN</span>
+<span class="lineno">  172 </span><span class="spaces">        </span><span class="istickedoff">, tSourceCodeType</span>
+<span class="lineno">  173 </span><span class="spaces">        </span><span class="istickedoff">} = do</span>
+<span class="lineno">  174 </span><span class="spaces">        </span><span class="istickedoff">-- TODO: check that tName is a valid verilog module name</span>
+<span class="lineno">  175 </span><span class="spaces">        </span><span class="istickedoff">when (' ' `elem` tName) $ <span class="nottickedoff">error &quot;TargetSynthesis name contain wrong symbols&quot;</span></span>
+<span class="lineno">  176 </span><span class="spaces">        </span><span class="istickedoff">tDFG' &lt;- maybe (return tDFG) <span class="nottickedoff">translateToIntermediate</span> tSourceCode</span>
+<span class="lineno">  177 </span><span class="spaces">        </span><span class="istickedoff">root &lt;- synthesisTreeRootIO (mkModelWithOneNetwork tMicroArch tDFG')</span>
+<span class="lineno">  178 </span><span class="spaces">        </span><span class="istickedoff">synthesise root &gt;&gt;= \case</span>
+<span class="lineno">  179 </span><span class="spaces">            </span><span class="istickedoff">Left err -&gt; return $ Left err</span>
+<span class="lineno">  180 </span><span class="spaces">            </span><span class="istickedoff">Right leafNode -&gt; do</span>
+<span class="lineno">  181 </span><span class="spaces">                </span><span class="istickedoff">Right &lt;$&gt; writeProject' leafNode</span>
+<span class="lineno">  182 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  183 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff">translateToIntermediate src = do</span></span>
+<span class="lineno">  184 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">infoM &quot;NITTA&quot; &quot;Lua transpiler...&quot;</span></span>
+<span class="lineno">  185 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">let tmp = frDataFlow $ translate tSourceCodeType src</span></span>
+<span class="lineno">  186 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">noticeM &quot;NITTA&quot; &quot;Lua transpiler...ok&quot;</span></span>
+<span class="lineno">  187 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">return tmp</span></span>
+<span class="lineno">  188 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  189 </span><span class="spaces">            </span><span class="istickedoff">synthesise root = do</span>
+<span class="lineno">  190 </span><span class="spaces">                </span><span class="istickedoff">infoM &quot;NITTA&quot; <span class="nottickedoff">&quot;synthesis process...&quot;</span></span>
+<span class="lineno">  191 </span><span class="spaces">                </span><span class="istickedoff">node &lt;- tSynthesisMethod root</span>
+<span class="lineno">  192 </span><span class="spaces">                </span><span class="istickedoff">case (isComplete node, isLeaf node) of</span>
+<span class="lineno">  193 </span><span class="spaces">                    </span><span class="istickedoff">(True, True) -&gt; do</span>
+<span class="lineno">  194 </span><span class="spaces">                        </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">&quot;synthesis process...ok&quot;</span></span>
+<span class="lineno">  195 </span><span class="spaces">                        </span><span class="istickedoff">return $ Right node</span>
+<span class="lineno">  196 </span><span class="spaces">                    </span><span class="istickedoff">(False, True) -&gt; do</span>
+<span class="lineno">  197 </span><span class="spaces">                        </span><span class="istickedoff">let msg = &quot;synthesis process...fail; is not complete&quot;</span>
+<span class="lineno">  198 </span><span class="spaces">                        </span><span class="istickedoff">noticeM &quot;NITTA&quot; <span class="nottickedoff">msg</span></span>
+<span class="lineno">  199 </span><span class="spaces">                        </span><span class="istickedoff">return $ Left msg</span>
+<span class="lineno">  200 </span><span class="spaces">                    </span><span class="istickedoff">(True, False) -&gt; <span class="nottickedoff">do</span></span>
+<span class="lineno">  201 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">let msg = &quot;synthesis process...fail; is not leaf&quot;</span></span>
+<span class="lineno">  202 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">noticeM &quot;NITTA&quot; msg</span></span>
+<span class="lineno">  203 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">return $ Left msg</span></span>
+<span class="lineno">  204 </span><span class="spaces">                    </span><span class="istickedoff">(False, False) -&gt; <span class="nottickedoff">do</span></span>
+<span class="lineno">  205 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">let msg = &quot;synthesis process...fail; is not complete; is not leaf&quot;</span></span>
+<span class="lineno">  206 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">noticeM &quot;NITTA&quot; msg</span></span>
+<span class="lineno">  207 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">return $ Left msg</span></span>
+<span class="lineno">  208 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  209 </span><span class="spaces">            </span><span class="istickedoff">writeProject' leaf = do</span>
+<span class="lineno">  210 </span><span class="spaces">                </span><span class="istickedoff">pInProjectNittaPath &lt;- either <span class="nottickedoff">(error . T.unpack)</span> id &lt;$&gt; collectNittaPath tTemplates</span>
+<span class="lineno">  211 </span><span class="spaces">                </span><span class="istickedoff">pwd &lt;- getCurrentDirectory</span>
+<span class="lineno">  212 </span><span class="spaces">                </span><span class="istickedoff">let prj =</span>
+<span class="lineno">  213 </span><span class="spaces">                        </span><span class="istickedoff">Project</span>
+<span class="lineno">  214 </span><span class="spaces">                            </span><span class="istickedoff">{ pName = <span class="nottickedoff">T.pack tName</span></span>
+<span class="lineno">  215 </span><span class="spaces">                            </span><span class="istickedoff">, pLibPath = tLibPath</span>
+<span class="lineno">  216 </span><span class="spaces">                            </span><span class="istickedoff">, pTargetProjectPath = tPath &lt;/&gt; tName</span>
+<span class="lineno">  217 </span><span class="spaces">                            </span><span class="istickedoff">, pAbsTargetProjectPath = <span class="nottickedoff">pwd &lt;/&gt; tPath &lt;/&gt; tName</span></span>
+<span class="lineno">  218 </span><span class="spaces">                            </span><span class="istickedoff">, pInProjectNittaPath</span>
+<span class="lineno">  219 </span><span class="spaces">                            </span><span class="istickedoff">, pAbsNittaPath = pwd &lt;/&gt; tPath &lt;/&gt; tName &lt;/&gt; pInProjectNittaPath</span>
+<span class="lineno">  220 </span><span class="spaces">                            </span><span class="istickedoff">, pUnit = targetUnit leaf</span>
+<span class="lineno">  221 </span><span class="spaces">                            </span><span class="istickedoff">, pUnitEnv = bnEnv $ targetUnit leaf</span>
+<span class="lineno">  222 </span><span class="spaces">                            </span><span class="istickedoff">, -- because application algorithm can be refactored we need to use</span>
+<span class="lineno">  223 </span><span class="spaces">                              </span><span class="istickedoff">-- synthesised version</span>
+<span class="lineno">  224 </span><span class="spaces">                              </span><span class="istickedoff">pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf</span>
+<span class="lineno">  225 </span><span class="spaces">                            </span><span class="istickedoff">, pTemplates = tTemplates</span>
+<span class="lineno">  226 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  227 </span><span class="spaces">                </span><span class="istickedoff">writeProject prj</span>
+<span class="lineno">  228 </span><span class="spaces">                </span><span class="istickedoff">return prj</span></span>
+<span class="lineno">  229 </span>
+<span class="lineno">  230 </span>{- |Make a model of NITTA process with one network and a specific algorithm. All
+<span class="lineno">  231 </span>functions are already bound to the network.
+<span class="lineno">  232 </span>-}
+<span class="lineno">  233 </span><span class="decl"><span class="istickedoff">mkModelWithOneNetwork arch dfg =</span>
+<span class="lineno">  234 </span><span class="spaces">    </span><span class="istickedoff">TargetSystem</span>
+<span class="lineno">  235 </span><span class="spaces">        </span><span class="istickedoff">{ mUnit = foldl (flip bind) arch $ functions dfg</span>
+<span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">, mDataFlowGraph = dfg</span>
+<span class="lineno">  237 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
+
+</pre>
+</body>
+</html>

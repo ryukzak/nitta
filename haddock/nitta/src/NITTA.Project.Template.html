@@ -1,18 +1,10 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveGeneric #-}</span><span>
-</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
-</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
-</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
-</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
-</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
-</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
-</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
-</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE TupleSections #-}</span><span>
-</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
-</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
-</span><span id="line-12"></span><span>
-</span><span id="line-13"></span><span class="hs-pragma">{-# OPTIONS -fno-warn-orphans #-}</span><span>
-</span><span id="line-14"></span><span>
-</span><span id="line-15"></span><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# OPTIONS -fno-warn-orphans #-}</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-comment">{- |
 Module      : NITTA.Project.Template
 Description : Generate target project by specific templates
 Copyright   : (c) Aleksandr Penskoi, 2021
@@ -20,63 +12,63 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-23"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.Template</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Project.Template.html#writeRenderedTemplates"><span class="hs-identifier">writeRenderedTemplates</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-25"></span><span>    </span><span class="annot"><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier">collectNittaPath</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-26"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier">projectContext</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-27"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-28"></span><span>
-</span><span id="line-29"></span><span class="hs-comment">-- TODO: Fix imports inside template</span><span>
-</span><span id="line-30"></span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span>
-</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">runIdentity</span></span><span class="hs-special">)</span><span>
-</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson</span></span><span>
-</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>
-</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
-</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span>
-</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span>
-</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
-</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
-</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.IO</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
-</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">moduleName</span></span><span class="hs-special">)</span><span>
-</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Context.html"><span class="hs-identifier">NITTA.Project.Context</span></a></span><span>
-</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html"><span class="hs-identifier">NITTA.Project.Types</span></a></span><span>
-</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Directory</span></span><span>
-</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>
-</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
-</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Path.WildMatch</span></span><span>
-</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Ginger</span></span><span>
-</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Toml</span></span><span>
-</span><span id="line-51"></span><span>
-</span><span id="line-52"></span><span class="hs-keyword">data</span><span> </span><span id="Conf"><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-var">Conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Conf"><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-var">Conf</span></a></span></span><span>
-</span><span id="line-53"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="template"><span class="annot"><span class="annottext">Conf -&gt; TemplateConf
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Project.Template</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Project.Template.html#writeRenderedTemplates"><span class="hs-identifier">writeRenderedTemplates</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier">collectNittaPath</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier">projectContext</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- TODO: Fix imports inside template</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">runIdentity</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.HashMap.Strict</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Hashable</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.IO</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">moduleName</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Context.html"><span class="hs-identifier">NITTA.Project.Context</span></a></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html"><span class="hs-identifier">NITTA.Project.Types</span></a></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Directory</span></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Path.WildMatch</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Ginger</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Toml</span></span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">data</span><span> </span><span id="Conf"><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-var">Conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Conf"><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-var">Conf</span></a></span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="template"><span class="annot"><span class="annottext">Conf -&gt; TemplateConf
 </span><a href="NITTA.Project.Template.html#template"><span class="hs-identifier hs-var hs-var">template</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span>
-</span><span id="line-54"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="signals"><span class="annot"><span class="annottext">Conf -&gt; HashMap Text Text
+</span><span id="line-46"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="signals"><span class="annot"><span class="annottext">Conf -&gt; HashMap Text Text
 </span><a href="NITTA.Project.Template.html#signals"><span class="hs-identifier hs-var hs-var">signals</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.HashMap</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
-</span><span id="line-55"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-56"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680110731"><span id="local-6989586621680110733"><span id="local-6989586621680110735"><span class="annot"><span class="annottext">Int -&gt; Conf -&gt; ShowS
+</span><span id="line-47"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680159558"><span id="local-6989586621680159560"><span id="local-6989586621680159569"><span class="annot"><span class="annottext">Int -&gt; Conf -&gt; ShowS
 [Conf] -&gt; ShowS
-Conf -&gt; String
+Conf -&gt; FilePath
 (Int -&gt; Conf -&gt; ShowS)
--&gt; (Conf -&gt; String) -&gt; ([Conf] -&gt; ShowS) -&gt; Show Conf
+-&gt; (Conf -&gt; FilePath) -&gt; ([Conf] -&gt; ShowS) -&gt; Show Conf
 forall a.
-(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
 showList :: [Conf] -&gt; ShowS
 $cshowList :: [Conf] -&gt; ShowS
-show :: Conf -&gt; String
-$cshow :: Conf -&gt; String
+show :: Conf -&gt; FilePath
+$cshow :: Conf -&gt; FilePath
 showsPrec :: Int -&gt; Conf -&gt; ShowS
 $cshowsPrec :: Int -&gt; Conf -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span id="local-6989586621680110728"><span id="local-6989586621680110729"></span></span><span class="hs-keyword">data</span><span> </span><span id="TemplateConf"><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-var">TemplateConf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TemplateConf"><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-var">TemplateConf</span></a></span></span><span>
-</span><span id="line-59"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="nittaPath"><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe String
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span id="local-6989586621680159554"><span id="local-6989586621680159555"></span></span><span class="hs-keyword">data</span><span> </span><span id="TemplateConf"><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-var">TemplateConf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TemplateConf"><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-var">TemplateConf</span></a></span></span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="nittaPath"><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe FilePath
 </span><a href="NITTA.Project.Template.html#nittaPath"><span class="hs-identifier hs-var hs-var">nittaPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-60"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="ignore"><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe [String]
+</span><span id="line-52"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="ignore"><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe [FilePath]
 </span><a href="NITTA.Project.Template.html#ignore"><span class="hs-identifier hs-var hs-var">ignore</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
-</span><span id="line-61"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-62"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. TemplateConf -&gt; Rep TemplateConf x)
+</span><span id="line-53"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. TemplateConf -&gt; Rep TemplateConf x)
 -&gt; (forall x. Rep TemplateConf x -&gt; TemplateConf)
 -&gt; Generic TemplateConf
 forall x. Rep TemplateConf x -&gt; TemplateConf
@@ -85,244 +77,249 @@ forall a.
 (forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
 $cto :: forall x. Rep TemplateConf x -&gt; TemplateConf
 $cfrom :: forall x. TemplateConf -&gt; Rep TemplateConf x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110715"><span id="local-6989586621680110717"><span id="local-6989586621680110719"><span class="annot"><span class="annottext">Int -&gt; TemplateConf -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159536"><span id="local-6989586621680159538"><span id="local-6989586621680159546"><span class="annot"><span class="annottext">Int -&gt; TemplateConf -&gt; ShowS
 [TemplateConf] -&gt; ShowS
-TemplateConf -&gt; String
+TemplateConf -&gt; FilePath
 (Int -&gt; TemplateConf -&gt; ShowS)
--&gt; (TemplateConf -&gt; String)
+-&gt; (TemplateConf -&gt; FilePath)
 -&gt; ([TemplateConf] -&gt; ShowS)
 -&gt; Show TemplateConf
 forall a.
-(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; FilePath) -&gt; ([a] -&gt; ShowS) -&gt; Show a
 showList :: [TemplateConf] -&gt; ShowS
 $cshowList :: [TemplateConf] -&gt; ShowS
-show :: TemplateConf -&gt; String
-$cshow :: TemplateConf -&gt; String
+show :: TemplateConf -&gt; FilePath
+$cshow :: TemplateConf -&gt; FilePath
 showsPrec :: Int -&gt; TemplateConf -&gt; ShowS
 $cshowsPrec :: Int -&gt; TemplateConf -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span id="defNittaPath"><span class="annot"><span class="annottext">defNittaPath :: p
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span id="defNittaPath"><span class="annot"><span class="annottext">defNittaPath :: p
 </span><a href="NITTA.Project.Template.html#defNittaPath"><span class="hs-identifier hs-var hs-var">defNittaPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
 </span><span class="hs-string">&quot;.&quot;</span></span><span>
-</span><span id="line-65"></span><span id="templateConfFileName"><span class="annot"><span class="annottext">templateConfFileName :: p
+</span><span id="line-57"></span><span id="templateConfFileName"><span class="annot"><span class="annottext">templateConfFileName :: p
 </span><a href="NITTA.Project.Template.html#templateConfFileName"><span class="hs-identifier hs-var hs-var">templateConfFileName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
 </span><span class="hs-string">&quot;template.toml&quot;</span></span><span>
-</span><span id="line-66"></span><span>
-</span><span id="line-67"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-68"></span><span>    </span><span id="local-6989586621680110710"><span class="annot"><span class="annottext">def :: TemplateConf
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-60"></span><span>    </span><span id="local-6989586621680159521"><span class="annot"><span class="annottext">def :: TemplateConf
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-69"></span><span>        </span><span class="annot"><span class="annottext">TemplateConf :: Maybe String -&gt; Maybe [String] -&gt; TemplateConf
+</span><span id="line-61"></span><span>        </span><span class="annot"><span class="annottext">TemplateConf :: Maybe FilePath -&gt; Maybe [FilePath] -&gt; TemplateConf
 </span><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span>
-</span><span id="line-70"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">nittaPath :: Maybe String
-</span><a href="NITTA.Project.Template.html#nittaPath"><span class="hs-identifier hs-var">nittaPath</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe String
+</span><span id="line-62"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">nittaPath :: Maybe FilePath
+</span><a href="NITTA.Project.Template.html#nittaPath"><span class="hs-identifier hs-var">nittaPath</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Maybe FilePath
 forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">String
-forall p. IsString p =&gt; p
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+forall {p}. IsString p =&gt; p
 </span><a href="NITTA.Project.Template.html#defNittaPath"><span class="hs-identifier hs-var">defNittaPath</span></a></span><span>
-</span><span id="line-71"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ignore :: Maybe [String]
-</span><a href="NITTA.Project.Template.html#ignore"><span class="hs-identifier hs-var">ignore</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Maybe [String]
+</span><span id="line-63"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ignore :: Maybe [FilePath]
+</span><a href="NITTA.Project.Template.html#ignore"><span class="hs-identifier hs-var">ignore</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; Maybe [FilePath]
 forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
-forall p. IsString p =&gt; p
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">FilePath
+forall {p}. IsString p =&gt; p
 </span><a href="NITTA.Project.Template.html#templateConfFileName"><span class="hs-identifier hs-var">templateConfFileName</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-72"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-73"></span><span>
-</span><span id="line-74"></span><span id="local-6989586621680110707"><span id="local-6989586621680110708"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621680110708"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621680110708"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">M.HashMap</span></span><span> </span><span class="annot"><a href="#local-6989586621680110708"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680110707"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-75"></span><span>    </span><span id="local-6989586621680110705"><span class="annot"><span class="annottext">def :: HashMap k v
-</span><a href="#local-6989586621680110705"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(k, v)] -&gt; HashMap k v
+</span><span id="line-64"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span id="local-6989586621680159908"><span id="local-6989586621680159909"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621680159909"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Hashable</span></span><span> </span><span class="annot"><a href="#local-6989586621680159909"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">M.HashMap</span></span><span> </span><span class="annot"><a href="#local-6989586621680159909"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680159908"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span>    </span><span id="local-6989586621680159513"><span class="annot"><span class="annottext">def :: HashMap k v
+</span><a href="#local-6989586621680159513"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(k, v)] -&gt; HashMap k v
 forall k v. (Eq k, Hashable k) =&gt; [(k, v)] -&gt; HashMap k v
 </span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span></span></span><span>
-</span><span id="line-76"></span><span>
-</span><span id="line-77"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680110700"><span id="local-6989586621680110702"><span class="annot"><span class="hs-identifier hs-type">FromJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span><span>
-</span><span id="line-78"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680110691"><span id="local-6989586621680110693"><span id="local-6989586621680110695"><span id="local-6989586621680110697"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span></span></span><span>
-</span><span id="line-79"></span><span>
-</span><span id="line-80"></span><span class="hs-comment">{- |collectNittaPath - read nittaPath from all provided target templates and
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680159508"><span id="local-6989586621680159510"><span class="annot"><span class="hs-identifier hs-type">FromJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span><span>
+</span><span id="line-70"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680159499"><span id="local-6989586621680159501"><span id="local-6989586621680159503"><span id="local-6989586621680159505"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span></span></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="hs-comment">{- |collectNittaPath - read nittaPath from all provided target templates and
 return it if all of them are the same.
 -}</span><span>
-</span><span id="line-83"></span><span class="annot"><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier hs-type">collectNittaPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">)</span><span>
-</span><span id="line-84"></span><span id="collectNittaPath"><span class="annot"><span class="annottext">collectNittaPath :: [String] -&gt; IO (Either Text String)
-</span><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier hs-var hs-var">collectNittaPath</span></a></span></span><span> </span><span id="local-6989586621680110689"><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110689"><span class="hs-identifier hs-var">templates</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-85"></span><span>    </span><span id="local-6989586621680110688"><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621680110688"><span class="hs-identifier hs-var">paths</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO (String, String))
--&gt; [String] -&gt; IO [(String, String)]
+</span><span id="line-75"></span><span class="annot"><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier hs-type">collectNittaPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span id="collectNittaPath"><span class="annot"><span class="annottext">collectNittaPath :: [FilePath] -&gt; IO (Either Text FilePath)
+</span><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier hs-var hs-var">collectNittaPath</span></a></span></span><span> </span><span id="local-6989586621680159497"><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159497"><span class="hs-identifier hs-var">templates</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-77"></span><span>    </span><span id="local-6989586621680159496"><span class="annot"><span class="annottext">[(FilePath, FilePath)]
+</span><a href="#local-6989586621680159496"><span class="hs-identifier hs-var">paths</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO (FilePath, FilePath))
+-&gt; [FilePath] -&gt; IO [(FilePath, FilePath)]
 forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 (Traversable t, Monad m) =&gt;
 (a -&gt; m b) -&gt; t a -&gt; m (t b)
-</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680110686"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110686"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110686"><span class="hs-identifier hs-var">fn</span></a></span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; (String, String))
--&gt; (Conf -&gt; String) -&gt; Conf -&gt; (String, String)
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680159494"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159494"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159494"><span class="hs-identifier hs-var">fn</span></a></span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; (FilePath, FilePath))
+-&gt; (Conf -&gt; FilePath) -&gt; Conf -&gt; (FilePath, FilePath)
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Conf -&gt; String
-</span><a href="#local-6989586621680110684"><span class="hs-identifier hs-var">getNittaPath</span></a></span><span> </span><span class="annot"><span class="annottext">(Conf -&gt; (String, String)) -&gt; IO Conf -&gt; IO (String, String)
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Conf -&gt; FilePath
+</span><a href="#local-6989586621680159492"><span class="hs-identifier hs-var">getNittaPath</span></a></span><span> </span><span class="annot"><span class="annottext">(Conf -&gt; (FilePath, FilePath))
+-&gt; IO Conf -&gt; IO (FilePath, FilePath)
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO Conf
-</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var">readTemplateConfDef</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110686"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-forall p. IsString p =&gt; p
-</span><a href="NITTA.Project.Template.html#templateConfFileName"><span class="hs-identifier hs-var">templateConfFileName</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110689"><span class="hs-identifier hs-var">templates</span></a></span><span>
-</span><span id="line-86"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680110680"><span class="annot"><span class="annottext">path :: String
-</span><a href="#local-6989586621680110680"><span class="hs-identifier hs-var hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">[(String, String)] -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO Conf
+</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var">readTemplateConfDef</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159494"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+forall {p}. IsString p =&gt; p
+</span><a href="NITTA.Project.Template.html#templateConfFileName"><span class="hs-identifier hs-var">templateConfFileName</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159497"><span class="hs-identifier hs-var">templates</span></a></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680159485"><span class="annot"><span class="annottext">path :: FilePath
+</span><a href="#local-6989586621680159485"><span class="hs-identifier hs-var hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
-</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621680110688"><span class="hs-identifier hs-var">paths</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
-forall p. IsString p =&gt; p
-</span><a href="NITTA.Project.Template.html#defNittaPath"><span class="hs-identifier hs-var">defNittaPath</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">(String, String) -&gt; String
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)]
+</span><a href="#local-6989586621680159496"><span class="hs-identifier hs-var">paths</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">FilePath
+forall {p}. IsString p =&gt; p
+</span><a href="NITTA.Project.Template.html#defNittaPath"><span class="hs-identifier hs-var">defNittaPath</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">(FilePath, FilePath) -&gt; FilePath
 forall a b. (a, b) -&gt; b
-</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">((String, String) -&gt; String) -&gt; (String, String) -&gt; String
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">((FilePath, FilePath) -&gt; FilePath)
+-&gt; (FilePath, FilePath) -&gt; FilePath
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(String, String)] -&gt; (String, String)
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)] -&gt; (FilePath, FilePath)
 forall a. [a] -&gt; a
-</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621680110688"><span class="hs-identifier hs-var">paths</span></a></span><span>
-</span><span id="line-87"></span><span>        </span><span id="local-6989586621680110677"><span class="annot"><span class="annottext">err :: Text
-</span><a href="#local-6989586621680110677"><span class="hs-identifier hs-var hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-88"></span><span>            </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)]
+</span><a href="#local-6989586621680159496"><span class="hs-identifier hs-var">paths</span></a></span><span>
+</span><span id="line-79"></span><span>        </span><span id="local-6989586621680159465"><span class="annot"><span class="annottext">err :: Text
+</span><a href="#local-6989586621680159465"><span class="hs-identifier hs-var hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>            </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;inconsistency of nittaPath: &quot;</span></span><span>
-</span><span id="line-89"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+</span><span id="line-81"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((String, String) -&gt; Text) -&gt; [(String, String)] -&gt; [Text]
+</span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((FilePath, FilePath) -&gt; Text) -&gt; [(FilePath, FilePath)] -&gt; [Text]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680110675"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110675"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110674"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110674"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="">[i|#{f} -&gt; '#{p}'|]</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621680110688"><span class="hs-identifier hs-var">paths</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">Either Text String -&gt; IO (Either Text String)
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680159463"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159463"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159462"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159462"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="">[i|#{f} -&gt; '#{p}'|]</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)]
+</span><a href="#local-6989586621680159496"><span class="hs-identifier hs-var">paths</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>    </span><span class="annot"><span class="annottext">Either Text FilePath -&gt; IO (Either Text FilePath)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Either Text String -&gt; IO (Either Text String))
--&gt; Either Text String -&gt; IO (Either Text String)
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Either Text FilePath -&gt; IO (Either Text FilePath))
+-&gt; Either Text FilePath -&gt; IO (Either Text FilePath)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-91"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">((String, String) -&gt; Bool) -&gt; [(String, String)] -&gt; Bool
+</span><span id="line-83"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">((FilePath, FilePath) -&gt; Bool) -&gt; [(FilePath, FilePath)] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
-</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
-</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110680"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; Bool)
--&gt; ((String, String) -&gt; String) -&gt; (String, String) -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159485"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Bool)
+-&gt; ((FilePath, FilePath) -&gt; FilePath)
+-&gt; (FilePath, FilePath)
+-&gt; Bool
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(String, String) -&gt; String
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(FilePath, FilePath) -&gt; FilePath
 forall a b. (a, b) -&gt; b
-</span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(String, String)]
-</span><a href="#local-6989586621680110688"><span class="hs-identifier hs-var">paths</span></a></span><span>
-</span><span id="line-92"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either Text String
+</span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(FilePath, FilePath)]
+</span><a href="#local-6989586621680159496"><span class="hs-identifier hs-var">paths</span></a></span><span>
+</span><span id="line-84"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Either Text FilePath
 forall a b. b -&gt; Either a b
-</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110680"><span class="hs-identifier hs-var">path</span></a></span><span>
-</span><span id="line-93"></span><span>            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text String
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159485"><span class="hs-identifier hs-var">path</span></a></span><span>
+</span><span id="line-85"></span><span>            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either Text FilePath
 forall a b. a -&gt; Either a b
 </span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110677"><span class="hs-identifier hs-var">err</span></a></span><span>
-</span><span id="line-94"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-95"></span><span>        </span><span id="local-6989586621680110684"><span class="annot"><span class="annottext">getNittaPath :: Conf -&gt; String
-</span><a href="#local-6989586621680110684"><span class="hs-identifier hs-var hs-var">getNittaPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe String -&gt; String
+</span><a href="#local-6989586621680159465"><span class="hs-identifier hs-var">err</span></a></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-87"></span><span>        </span><span id="local-6989586621680159492"><span class="annot"><span class="annottext">getNittaPath :: Conf -&gt; FilePath
+</span><a href="#local-6989586621680159492"><span class="hs-identifier hs-var hs-var">getNittaPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Maybe FilePath -&gt; FilePath
 forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ShowS
-forall a. HasCallStack =&gt; String -&gt; a
-</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;internal error&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Maybe String -&gt; String)
--&gt; (Conf -&gt; Maybe String) -&gt; Conf -&gt; String
+forall a. HasCallStack =&gt; FilePath -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;internal error&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Maybe FilePath -&gt; FilePath)
+-&gt; (Conf -&gt; Maybe FilePath) -&gt; Conf -&gt; FilePath
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe String
-</span><a href="NITTA.Project.Template.html#nittaPath"><span class="hs-identifier hs-var hs-var">nittaPath</span></a></span><span> </span><span class="annot"><span class="annottext">(TemplateConf -&gt; Maybe String)
--&gt; (Conf -&gt; TemplateConf) -&gt; Conf -&gt; Maybe String
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TemplateConf -&gt; Maybe FilePath
+</span><a href="NITTA.Project.Template.html#nittaPath"><span class="hs-identifier hs-var hs-var">nittaPath</span></a></span><span> </span><span class="annot"><span class="annottext">(TemplateConf -&gt; Maybe FilePath)
+-&gt; (Conf -&gt; TemplateConf) -&gt; Conf -&gt; Maybe FilePath
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Conf -&gt; TemplateConf
 </span><a href="NITTA.Project.Template.html#template"><span class="hs-identifier hs-var hs-var">template</span></a></span><span>
-</span><span id="line-96"></span><span>
-</span><span id="line-97"></span><span id="readTemplateConfDef"><span class="annot"><span class="annottext">readTemplateConfDef :: String -&gt; IO Conf
-</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var hs-var">readTemplateConfDef</span></a></span></span><span> </span><span id="local-6989586621680110665"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110665"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-98"></span><span>    </span><span id="local-6989586621680110664"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110664"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-99"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; IO Bool
-</span><span class="hs-identifier hs-var">doesFileExist</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110665"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO Text) -&gt; IO Text
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span id="readTemplateConfDef"><span class="annot"><span class="annottext">readTemplateConfDef :: FilePath -&gt; IO Conf
+</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var hs-var">readTemplateConfDef</span></a></span></span><span> </span><span id="local-6989586621680159428"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159428"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-90"></span><span>    </span><span id="local-6989586621680159427"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159427"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-91"></span><span>        </span><span class="annot"><span class="annottext">FilePath -&gt; IO Bool
+</span><span class="hs-identifier hs-var">doesFileExist</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159428"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO Text) -&gt; IO Text
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-100"></span><span>            </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO Text
-</span><span class="hs-identifier hs-var">T.readFile</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110665"><span class="hs-identifier hs-var">fn</span></a></span><span>
-</span><span id="line-101"></span><span>            </span><span class="annot"><span class="annottext">Bool
+</span><span id="line-92"></span><span>            </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO Text
+</span><span class="hs-identifier hs-var">T.readFile</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159428"><span class="hs-identifier hs-var">fn</span></a></span><span>
+</span><span id="line-93"></span><span>            </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; IO Text
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;&quot;</span></span><span>
-</span><span id="line-102"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680110661"><span class="annot"><span class="annottext">conf :: Table
-</span><a href="#local-6989586621680110661"><span class="hs-identifier hs-var hs-var">conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ParseError -&gt; Table)
+</span><span id="line-94"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680159416"><span class="annot"><span class="annottext">conf :: Table
+</span><a href="#local-6989586621680159416"><span class="hs-identifier hs-var hs-var">conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ParseError -&gt; Table)
 -&gt; (Table -&gt; Table) -&gt; Either ParseError Table -&gt; Table
 forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
-</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Table
-forall a. HasCallStack =&gt; String -&gt; a
-</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Table) -&gt; (ParseError -&gt; String) -&gt; ParseError -&gt; Table
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; Table
+forall a. HasCallStack =&gt; FilePath -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Table)
+-&gt; (ParseError -&gt; FilePath) -&gt; ParseError -&gt; Table
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ParseError -&gt; String
-forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ParseError -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Table -&gt; Table
 forall a. a -&gt; a
 </span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">(Either ParseError Table -&gt; Table)
 -&gt; Either ParseError Table -&gt; Table
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text -&gt; Either ParseError Table
-</span><span class="hs-identifier hs-var">parseTomlDoc</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110665"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Text -&gt; Either ParseError Table
+</span><span class="hs-identifier hs-var">parseTomlDoc</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159428"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;: parse error: &quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110664"><span class="hs-identifier hs-var">text</span></a></span><span>
-</span><span id="line-103"></span><span>    </span><span class="annot"><span class="annottext">Conf -&gt; IO Conf
+</span><a href="#local-6989586621680159427"><span class="hs-identifier hs-var">text</span></a></span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="annottext">Conf -&gt; IO Conf
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span>
-</span><span id="line-104"></span><span>        </span><span class="annot"><span class="annottext">Conf :: TemplateConf -&gt; HashMap Text Text -&gt; Conf
+</span><span id="line-96"></span><span>        </span><span class="annot"><span class="annottext">Conf :: TemplateConf -&gt; HashMap Text Text -&gt; Conf
 </span><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-type">Conf</span></a></span><span>
-</span><span id="line-105"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">template :: TemplateConf
+</span><span id="line-97"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">template :: TemplateConf
 </span><a href="NITTA.Project.Template.html#template"><span class="hs-identifier hs-var">template</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Table -&gt; TemplateConf
-forall b a.
+forall {b} {a}.
 (Default b, FromJSON b, ToJSON a) =&gt;
 Text -&gt; HashMap Text a -&gt; b
-</span><a href="#local-6989586621680110656"><span class="hs-identifier hs-var">confLookup</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159411"><span class="hs-identifier hs-var">confLookup</span></a></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;template&quot;</span></span><span> </span><span class="annot"><span class="annottext">Table
-</span><a href="#local-6989586621680110661"><span class="hs-identifier hs-var">conf</span></a></span><span>
-</span><span id="line-106"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">signals :: HashMap Text Text
+</span><a href="#local-6989586621680159416"><span class="hs-identifier hs-var">conf</span></a></span><span>
+</span><span id="line-98"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">signals :: HashMap Text Text
 </span><a href="NITTA.Project.Template.html#signals"><span class="hs-identifier hs-var">signals</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Table -&gt; HashMap Text Text
-forall b a.
+forall {b} {a}.
 (Default b, FromJSON b, ToJSON a) =&gt;
 Text -&gt; HashMap Text a -&gt; b
-</span><a href="#local-6989586621680110656"><span class="hs-identifier hs-var">confLookup</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159411"><span class="hs-identifier hs-var">confLookup</span></a></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;signals&quot;</span></span><span> </span><span class="annot"><span class="annottext">Table
-</span><a href="#local-6989586621680110661"><span class="hs-identifier hs-var">conf</span></a></span><span>
-</span><span id="line-107"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-108"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-109"></span><span>        </span><span id="local-6989586621680110656"><span class="annot"><span class="annottext">confLookup :: Text -&gt; HashMap Text a -&gt; b
-</span><a href="#local-6989586621680110656"><span class="hs-identifier hs-var hs-var">confLookup</span></a></span></span><span> </span><span id="local-6989586621680110655"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110655"><span class="hs-identifier hs-var">sec</span></a></span></span><span> </span><span id="local-6989586621680110654"><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680110654"><span class="hs-identifier hs-var">conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-110"></span><span>            </span><span class="annot"><span class="annottext">b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><a href="#local-6989586621680159416"><span class="hs-identifier hs-var">conf</span></a></span><span>
+</span><span id="line-99"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>        </span><span id="local-6989586621680159411"><span class="annot"><span class="annottext">confLookup :: Text -&gt; HashMap Text a -&gt; b
+</span><a href="#local-6989586621680159411"><span class="hs-identifier hs-var hs-var">confLookup</span></a></span></span><span> </span><span id="local-6989586621680159396"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159396"><span class="hs-identifier hs-var">sec</span></a></span></span><span> </span><span id="local-6989586621680159395"><span class="annot"><span class="annottext">HashMap Text a
+</span><a href="#local-6989586621680159395"><span class="hs-identifier hs-var">conf</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>            </span><span class="annot"><span class="annottext">b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 </span><span class="hs-identifier hs-var">maybe</span></span><span>
-</span><span id="line-111"></span><span>                </span><span class="annot"><span class="annottext">b
+</span><span id="line-103"></span><span>                </span><span class="annot"><span class="annottext">b
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
-</span><span id="line-112"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Result b -&gt; b
-forall p. String -&gt; Result p -&gt; p
-</span><a href="#local-6989586621680110652"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110665"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span id="line-104"></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; Result b -&gt; b
+forall {a}. FilePath -&gt; Result a -&gt; a
+</span><a href="#local-6989586621680159393"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159428"><span class="hs-identifier hs-var">fn</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot; in section [&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot; in section [&quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; FilePath
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110655"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680159396"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;]: &quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Result b -&gt; b) -&gt; (a -&gt; Result b) -&gt; a -&gt; b
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Result b
@@ -332,269 +329,269 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Value
 forall a. ToJSON a =&gt; a -&gt; Value
 </span><span class="hs-identifier hs-var">toJSON</span></span><span class="hs-special">)</span><span>
-</span><span id="line-113"></span><span>                </span><span class="annot"><span class="annottext">(Maybe a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span id="line-105"></span><span>                </span><span class="annot"><span class="annottext">(Maybe a -&gt; b) -&gt; Maybe a -&gt; b
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; HashMap Text a -&gt; Maybe a
 forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
 </span><span class="hs-identifier hs-var">M.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110655"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680110654"><span class="hs-identifier hs-var">conf</span></a></span><span>
-</span><span id="line-114"></span><span>        </span><span id="local-6989586621680110652"><span class="annot"><span class="annottext">unwrap :: String -&gt; Result p -&gt; p
-</span><a href="#local-6989586621680110652"><span class="hs-identifier hs-var hs-var">unwrap</span></a></span></span><span> </span><span id="local-6989586621680110647"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110647"><span class="hs-identifier hs-var">_prefix</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Success</span></span><span> </span><span id="local-6989586621680110645"><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680110645"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680110645"><span class="hs-identifier hs-var">a</span></a></span><span>
-</span><span id="line-115"></span><span>        </span><span class="annot"><a href="#local-6989586621680110652"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span id="local-6989586621680110644"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110644"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Error</span></span><span> </span><span id="local-6989586621680110642"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110642"><span class="hs-identifier hs-var">msg</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; p
-forall a. HasCallStack =&gt; String -&gt; a
-</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; p) -&gt; String -&gt; p
+</span><a href="#local-6989586621680159396"><span class="hs-identifier hs-var">sec</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
+</span><a href="#local-6989586621680159395"><span class="hs-identifier hs-var">conf</span></a></span><span>
+</span><span id="line-106"></span><span>        </span><span id="local-6989586621680159393"><span class="annot"><span class="annottext">unwrap :: FilePath -&gt; Result a -&gt; a
+</span><a href="#local-6989586621680159393"><span class="hs-identifier hs-var hs-var">unwrap</span></a></span></span><span> </span><span id="local-6989586621680159385"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159385"><span class="hs-identifier hs-var">_prefix</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Success</span></span><span> </span><span id="local-6989586621680159383"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680159383"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680159383"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-107"></span><span>        </span><span class="annot"><a href="#local-6989586621680159393"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span id="local-6989586621680159382"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159382"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Error</span></span><span> </span><span id="local-6989586621680159380"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159380"><span class="hs-identifier hs-var">msg</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; a
+forall a. HasCallStack =&gt; FilePath -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; a) -&gt; FilePath -&gt; a
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110644"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159382"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110642"><span class="hs-identifier hs-var">msg</span></a></span><span>
-</span><span id="line-116"></span><span>
-</span><span id="line-117"></span><span id="applyCustomSignal"><span class="annot"><span class="annottext">applyCustomSignal :: HashMap k Text -&gt; UnitEnv m -&gt; UnitEnv m
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159380"><span class="hs-identifier hs-var">msg</span></a></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span id="applyCustomSignal"><span class="annot"><span class="annottext">applyCustomSignal :: HashMap k Text -&gt; UnitEnv m -&gt; UnitEnv m
 </span><a href="NITTA.Project.Template.html#applyCustomSignal"><span class="hs-identifier hs-var hs-var">applyCustomSignal</span></a></span></span><span>
-</span><span id="line-118"></span><span>    </span><span id="local-6989586621680110640"><span class="annot"><span class="annottext">HashMap k Text
-</span><a href="#local-6989586621680110640"><span class="hs-identifier hs-var">signals</span></a></span></span><span>
-</span><span id="line-119"></span><span>    </span><span id="local-6989586621680110639"><span class="annot"><span class="annottext">env :: UnitEnv m
-</span><a href="#local-6989586621680110639"><span class="hs-identifier hs-var">env</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span class="hs-special">{</span><span id="local-6989586621680110637"><span class="annot"><span class="annottext">Text
+</span><span id="line-110"></span><span>    </span><span id="local-6989586621680159369"><span class="annot"><span class="annottext">HashMap k Text
+</span><a href="#local-6989586621680159369"><span class="hs-identifier hs-var">signals</span></a></span></span><span>
+</span><span id="line-111"></span><span>    </span><span id="local-6989586621680159368"><span class="annot"><span class="annottext">env :: UnitEnv m
+</span><a href="#local-6989586621680159368"><span class="hs-identifier hs-var">env</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span class="hs-special">{</span><span id="local-6989586621680159366"><span class="annot"><span class="annottext">Text
 sigClk :: forall m. UnitEnv m -&gt; Text
 sigClk :: Text
-</span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var hs-var">sigClk</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110635"><span class="annot"><span class="annottext">Text
+</span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var hs-var">sigClk</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159364"><span class="annot"><span class="annottext">Text
 sigRst :: forall m. UnitEnv m -&gt; Text
 sigRst :: Text
 </span><a href="NITTA.Project.Types.html#sigRst"><span class="hs-identifier hs-var hs-var">sigRst</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-120"></span><span>        </span><span class="annot"><span class="annottext">UnitEnv m
-</span><a href="#local-6989586621680110639"><span class="hs-identifier hs-var">env</span></a></span><span>
-</span><span id="line-121"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sigClk :: Text
+</span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">UnitEnv m
+</span><a href="#local-6989586621680159368"><span class="hs-identifier hs-var">env</span></a></span><span>
+</span><span id="line-113"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sigClk :: Text
 </span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var">sigClk</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text -&gt; Text
 forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110637"><span class="hs-identifier hs-var">sigClk</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
+</span><a href="#local-6989586621680159366"><span class="hs-identifier hs-var">sigClk</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">k -&gt; HashMap k Text -&gt; Maybe Text
 forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
 </span><span class="hs-identifier hs-var">M.lookup</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><span class="hs-string">&quot;clk&quot;</span></span><span> </span><span class="annot"><span class="annottext">HashMap k Text
-</span><a href="#local-6989586621680110640"><span class="hs-identifier hs-var">signals</span></a></span><span>
-</span><span id="line-122"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigRst :: Text
+</span><a href="#local-6989586621680159369"><span class="hs-identifier hs-var">signals</span></a></span><span>
+</span><span id="line-114"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sigRst :: Text
 </span><a href="NITTA.Project.Types.html#sigRst"><span class="hs-identifier hs-var">sigRst</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text -&gt; Text
 forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110635"><span class="hs-identifier hs-var">sigRst</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
+</span><a href="#local-6989586621680159364"><span class="hs-identifier hs-var">sigRst</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Text -&gt; Text) -&gt; Maybe Text -&gt; Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">k -&gt; HashMap k Text -&gt; Maybe Text
 forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
 </span><span class="hs-identifier hs-var">M.lookup</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><span class="hs-string">&quot;rst&quot;</span></span><span> </span><span class="annot"><span class="annottext">HashMap k Text
-</span><a href="#local-6989586621680110640"><span class="hs-identifier hs-var">signals</span></a></span><span>
-</span><span id="line-123"></span><span>            </span><span class="hs-comment">-- , sigCycleBegin = fromMaybe sigCycleBegin $ M.lookup &quot;cycleBegin&quot; signals</span><span>
-</span><span id="line-124"></span><span>            </span><span class="hs-comment">-- , sigInCycle = fromMaybe sigInCycle $ M.lookup &quot;inCycle&quot; signals</span><span>
-</span><span id="line-125"></span><span>            </span><span class="hs-comment">-- , sigCycleEnd = fromMaybe sigCycleEnd $ M.lookup &quot;cycleEnd&quot; signals</span><span>
-</span><span id="line-126"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-127"></span><span>
-</span><span id="line-128"></span><span id="writeRenderedTemplates"><span class="annot"><span class="annottext">writeRenderedTemplates :: Project m v x -&gt; IO ()
-</span><a href="NITTA.Project.Template.html#writeRenderedTemplates"><span class="hs-identifier hs-var hs-var">writeRenderedTemplates</span></a></span></span><span> </span><span id="local-6989586621680110633"><span class="annot"><span class="annottext">prj :: Project m v x
-</span><a href="#local-6989586621680110633"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span class="hs-special">{</span><span id="local-6989586621680110631"><span class="annot"><span class="annottext">String
-pTargetProjectPath :: forall m v x. Project m v x -&gt; String
-pTargetProjectPath :: String
-</span><a href="NITTA.Project.Types.html#pTargetProjectPath"><span class="hs-identifier hs-var hs-var">pTargetProjectPath</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110629"><span class="annot"><span class="annottext">[String]
-pTemplates :: forall m v x. Project m v x -&gt; [String]
-pTemplates :: [String]
-</span><a href="NITTA.Project.Types.html#pTemplates"><span class="hs-identifier hs-var hs-var">pTemplates</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110627"><span class="annot"><span class="annottext">UnitEnv m
+</span><a href="#local-6989586621680159369"><span class="hs-identifier hs-var">signals</span></a></span><span>
+</span><span id="line-115"></span><span>            </span><span class="hs-comment">-- , sigCycleBegin = fromMaybe sigCycleBegin $ M.lookup &quot;cycleBegin&quot; signals</span><span>
+</span><span id="line-116"></span><span>            </span><span class="hs-comment">-- , sigInCycle = fromMaybe sigInCycle $ M.lookup &quot;inCycle&quot; signals</span><span>
+</span><span id="line-117"></span><span>            </span><span class="hs-comment">-- , sigCycleEnd = fromMaybe sigCycleEnd $ M.lookup &quot;cycleEnd&quot; signals</span><span>
+</span><span id="line-118"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span id="writeRenderedTemplates"><span class="annot"><span class="annottext">writeRenderedTemplates :: Project m v x -&gt; IO ()
+</span><a href="NITTA.Project.Template.html#writeRenderedTemplates"><span class="hs-identifier hs-var hs-var">writeRenderedTemplates</span></a></span></span><span> </span><span id="local-6989586621680159346"><span class="annot"><span class="annottext">prj :: Project m v x
+</span><a href="#local-6989586621680159346"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span class="hs-special">{</span><span id="local-6989586621680159344"><span class="annot"><span class="annottext">FilePath
+pTargetProjectPath :: forall m v x. Project m v x -&gt; FilePath
+pTargetProjectPath :: FilePath
+</span><a href="NITTA.Project.Types.html#pTargetProjectPath"><span class="hs-identifier hs-var hs-var">pTargetProjectPath</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159342"><span class="annot"><span class="annottext">[FilePath]
+pTemplates :: forall m v x. Project m v x -&gt; [FilePath]
+pTemplates :: [FilePath]
+</span><a href="NITTA.Project.Types.html#pTemplates"><span class="hs-identifier hs-var hs-var">pTemplates</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159340"><span class="annot"><span class="annottext">UnitEnv m
 pUnitEnv :: forall m v x. Project m v x -&gt; UnitEnv m
 pUnitEnv :: UnitEnv m
 </span><a href="NITTA.Project.Types.html#pUnitEnv"><span class="hs-identifier hs-var hs-var">pUnitEnv</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-129"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; String -&gt; IO ()
+</span><span id="line-121"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; FilePath -&gt; IO ()
 </span><span class="hs-identifier hs-var">createDirectoryIfMissing</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110631"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span>
-</span><span id="line-130"></span><span>    </span><span class="annot"><span class="annottext">[String] -&gt; (String -&gt; IO ()) -&gt; IO ()
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159344"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span>
+</span><span id="line-122"></span><span>    </span><span class="annot"><span class="annottext">[FilePath] -&gt; (FilePath -&gt; IO ()) -&gt; IO ()
 forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
 (Foldable t, Applicative f) =&gt;
 t a -&gt; (a -&gt; f b) -&gt; f ()
-</span><span class="hs-identifier hs-var">for_</span></span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110629"><span class="hs-identifier hs-var">pTemplates</span></a></span><span> </span><span class="annot"><span class="annottext">((String -&gt; IO ()) -&gt; IO ()) -&gt; (String -&gt; IO ()) -&gt; IO ()
+</span><span class="hs-identifier hs-var">for_</span></span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159342"><span class="hs-identifier hs-var">pTemplates</span></a></span><span> </span><span class="annot"><span class="annottext">((FilePath -&gt; IO ()) -&gt; IO ()) -&gt; (FilePath -&gt; IO ()) -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680110623"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110623"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-131"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
-</span><span class="hs-identifier hs-var">infoM</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;NITTA&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680159336"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159336"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-123"></span><span>        </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">infoM</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;NITTA&quot;</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;process template: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;process template: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110623"><span class="hs-identifier hs-var">tPath</span></a></span><span>
-</span><span id="line-132"></span><span>        </span><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-type">Conf</span></a></span><span>
-</span><span id="line-133"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">template :: Conf -&gt; TemplateConf
-</span><a href="NITTA.Project.Template.html#template"><span class="hs-identifier hs-var">template</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span class="hs-special">{</span><span id="local-6989586621680110621"><span class="annot"><span class="annottext">Maybe [String]
-ignore :: Maybe [String]
-ignore :: TemplateConf -&gt; Maybe [String]
-</span><a href="#local-6989586621680110621"><span class="hs-identifier hs-var hs-var">ignore</span></a></span></span><span class="hs-special">}</span><span>
-</span><span id="line-134"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680110620"><span class="annot"><span class="annottext">HashMap Text Text
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159336"><span class="hs-identifier hs-var">tPath</span></a></span><span>
+</span><span id="line-124"></span><span>        </span><span class="annot"><a href="NITTA.Project.Template.html#Conf"><span class="hs-identifier hs-type">Conf</span></a></span><span>
+</span><span id="line-125"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">template :: Conf -&gt; TemplateConf
+</span><a href="NITTA.Project.Template.html#template"><span class="hs-identifier hs-var">template</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span><span class="hs-special">{</span><span id="local-6989586621680159334"><span class="annot"><span class="annottext">Maybe [FilePath]
+ignore :: Maybe [FilePath]
+ignore :: TemplateConf -&gt; Maybe [FilePath]
+</span><a href="#local-6989586621680159334"><span class="hs-identifier hs-var hs-var">ignore</span></a></span></span><span class="hs-special">}</span><span>
+</span><span id="line-126"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680159333"><span class="annot"><span class="annottext">HashMap Text Text
 signals :: HashMap Text Text
 signals :: Conf -&gt; HashMap Text Text
-</span><a href="#local-6989586621680110620"><span class="hs-identifier hs-var hs-var">signals</span></a></span></span><span>
-</span><span id="line-135"></span><span>            </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-136"></span><span>            </span><span class="annot"><span class="annottext">String -&gt; IO Conf
-</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var">readTemplateConfDef</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO Conf) -&gt; String -&gt; IO Conf
+</span><a href="#local-6989586621680159333"><span class="hs-identifier hs-var hs-var">signals</span></a></span></span><span>
+</span><span id="line-127"></span><span>            </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-128"></span><span>            </span><span class="annot"><span class="annottext">FilePath -&gt; IO Conf
+</span><a href="NITTA.Project.Template.html#readTemplateConfDef"><span class="hs-identifier hs-var">readTemplateConfDef</span></a></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO Conf) -&gt; FilePath -&gt; IO Conf
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110623"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-forall p. IsString p =&gt; p
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159336"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+forall {p}. IsString p =&gt; p
 </span><a href="NITTA.Project.Template.html#templateConfFileName"><span class="hs-identifier hs-var">templateConfFileName</span></a></span><span>
-</span><span id="line-137"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680110619"><span class="annot"><span class="annottext">notIgnored :: String -&gt; Bool
-</span><a href="#local-6989586621680110619"><span class="hs-identifier hs-var hs-var">notIgnored</span></a></span></span><span> </span><span id="local-6989586621680110618"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110618"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span id="line-129"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680159331"><span class="annot"><span class="annottext">notIgnored :: FilePath -&gt; Bool
+</span><a href="#local-6989586621680159331"><span class="hs-identifier hs-var hs-var">notIgnored</span></a></span></span><span> </span><span id="local-6989586621680159330"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159330"><span class="hs-identifier hs-var">fn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Bool) -&gt; [String] -&gt; Bool
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Bool) -&gt; [FilePath] -&gt; Bool
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
-</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680110616"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110616"><span class="hs-identifier hs-var">wc</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
-</span><span class="hs-identifier hs-var">wildCheckCase</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110616"><span class="hs-identifier hs-var">wc</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110618"><span class="hs-identifier hs-var">fn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([String] -&gt; Bool) -&gt; [String] -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680159328"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159328"><span class="hs-identifier hs-var">wc</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; Bool
+</span><span class="hs-identifier hs-var">wildCheckCase</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159328"><span class="hs-identifier hs-var">wc</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159330"><span class="hs-identifier hs-var">fn</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; Bool) -&gt; [FilePath] -&gt; Bool
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Maybe [String] -&gt; [String]
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; Maybe [FilePath] -&gt; [FilePath]
 forall a. a -&gt; Maybe a -&gt; a
-</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Maybe [String]
-</span><a href="#local-6989586621680110621"><span class="hs-identifier hs-var">ignore</span></a></span><span>
-</span><span id="line-138"></span><span>            </span><span id="local-6989586621680110614"><span class="annot"><span class="annottext">context :: GingerContext p (Writer Text) Text
-</span><a href="#local-6989586621680110614"><span class="hs-identifier hs-var hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Project m v x -&gt; GingerContext p (Writer Text) Text
-forall m v x p.
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Maybe [FilePath]
+</span><a href="#local-6989586621680159334"><span class="hs-identifier hs-var">ignore</span></a></span><span>
+</span><span id="line-130"></span><span>            </span><span id="local-6989586621680159321"><span class="annot"><span class="annottext">context :: GingerContext p (Writer Text) Text
+</span><a href="#local-6989586621680159321"><span class="hs-identifier hs-var hs-var">context</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Project m v x -&gt; GingerContext p (Writer Text) Text
+forall {m} {v} {x} {p}.
 (TargetSystemComponent m, Testable m v x) =&gt;
 Project m v x -&gt; GingerContext p (Writer Text) Text
 </span><a href="NITTA.Project.Context.html#projectContext"><span class="hs-identifier hs-var">projectContext</span></a></span><span> </span><span class="annot"><span class="annottext">(Project m v x -&gt; GingerContext p (Writer Text) Text)
 -&gt; Project m v x -&gt; GingerContext p (Writer Text) Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Project m v x
-</span><a href="#local-6989586621680110633"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pUnitEnv :: UnitEnv m
+</span><a href="#local-6989586621680159346"><span class="hs-identifier hs-var">prj</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pUnitEnv :: UnitEnv m
 </span><a href="NITTA.Project.Types.html#pUnitEnv"><span class="hs-identifier hs-var">pUnitEnv</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HashMap Text Text -&gt; UnitEnv m -&gt; UnitEnv m
-forall k m.
+forall {k} {m}.
 (Eq k, Hashable k, IsString k) =&gt;
 HashMap k Text -&gt; UnitEnv m -&gt; UnitEnv m
 </span><a href="NITTA.Project.Template.html#applyCustomSignal"><span class="hs-identifier hs-var">applyCustomSignal</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text Text
-</span><a href="#local-6989586621680110620"><span class="hs-identifier hs-var">signals</span></a></span><span> </span><span class="annot"><span class="annottext">UnitEnv m
-</span><a href="#local-6989586621680110627"><span class="hs-identifier hs-var">pUnitEnv</span></a></span><span class="hs-special">}</span><span>
-</span><span id="line-139"></span><span>        </span><span id="local-6989586621680110613"><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110613"><span class="hs-identifier hs-var">tFiles</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(String -&gt; Bool) -&gt; [String] -&gt; [String]
+</span><a href="#local-6989586621680159333"><span class="hs-identifier hs-var">signals</span></a></span><span> </span><span class="annot"><span class="annottext">UnitEnv m
+</span><a href="#local-6989586621680159340"><span class="hs-identifier hs-var">pUnitEnv</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-131"></span><span>        </span><span id="local-6989586621680159320"><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159320"><span class="hs-identifier hs-var">tFiles</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Bool) -&gt; [FilePath] -&gt; [FilePath]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
-</span><a href="#local-6989586621680110619"><span class="hs-identifier hs-var">notIgnored</span></a></span><span> </span><span class="annot"><span class="annottext">([String] -&gt; [String]) -&gt; IO [String] -&gt; IO [String]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Bool
+</span><a href="#local-6989586621680159331"><span class="hs-identifier hs-var">notIgnored</span></a></span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; [FilePath]) -&gt; IO [FilePath] -&gt; IO [FilePath]
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO [String]
-</span><a href="NITTA.Project.Template.html#findAllFiles"><span class="hs-identifier hs-var">findAllFiles</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110623"><span class="hs-identifier hs-var">tPath</span></a></span><span>
-</span><span id="line-140"></span><span>        </span><span class="annot"><span class="annottext">[String] -&gt; (String -&gt; IO ()) -&gt; IO ()
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO [FilePath]
+</span><a href="NITTA.Project.Template.html#findAllFiles"><span class="hs-identifier hs-var">findAllFiles</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159336"><span class="hs-identifier hs-var">tPath</span></a></span><span>
+</span><span id="line-132"></span><span>        </span><span class="annot"><span class="annottext">[FilePath] -&gt; (FilePath -&gt; IO ()) -&gt; IO ()
 forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
 (Foldable t, Applicative f) =&gt;
 t a -&gt; (a -&gt; f b) -&gt; f ()
-</span><span class="hs-identifier hs-var">for_</span></span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110613"><span class="hs-identifier hs-var">tFiles</span></a></span><span> </span><span class="annot"><span class="annottext">((String -&gt; IO ()) -&gt; IO ()) -&gt; (String -&gt; IO ()) -&gt; IO ()
+</span><span class="hs-identifier hs-var">for_</span></span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159320"><span class="hs-identifier hs-var">tFiles</span></a></span><span> </span><span class="annot"><span class="annottext">((FilePath -&gt; IO ()) -&gt; IO ()) -&gt; (FilePath -&gt; IO ()) -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680110611"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110611"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-141"></span><span>            </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
--&gt; String -&gt; String -&gt; String -&gt; IO ()
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680159318"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159318"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-133"></span><span>            </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
+-&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; IO ()
 </span><a href="NITTA.Project.Template.html#writeRendedTemplate"><span class="hs-identifier hs-var">writeRendedTemplate</span></a></span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
-forall p. GingerContext p (Writer Text) Text
-</span><a href="#local-6989586621680110614"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110631"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110623"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110611"><span class="hs-identifier hs-var">tFile</span></a></span><span>
-</span><span id="line-142"></span><span>
-</span><span id="line-143"></span><span id="writeRendedTemplate"><span class="annot"><span class="annottext">writeRendedTemplate :: GingerContext SourcePos (Writer Text) Text
--&gt; String -&gt; String -&gt; String -&gt; IO ()
-</span><a href="NITTA.Project.Template.html#writeRendedTemplate"><span class="hs-identifier hs-var hs-var">writeRendedTemplate</span></a></span></span><span> </span><span id="local-6989586621680110609"><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
-</span><a href="#local-6989586621680110609"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span id="local-6989586621680110608"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110608"><span class="hs-identifier hs-var">opath</span></a></span></span><span> </span><span id="local-6989586621680110607"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110607"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span id="local-6989586621680110606"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110606"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-144"></span><span>    </span><span class="hs-comment">-- Why we use Text and unpack it immidiatly? We need to avoid lazyness.</span><span>
-</span><span id="line-145"></span><span>    </span><span class="annot"><span class="annottext">IO Text -&gt; IO (Either IOException Text)
+forall {p}. GingerContext p (Writer Text) Text
+</span><a href="#local-6989586621680159321"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159344"><span class="hs-identifier hs-var">pTargetProjectPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159336"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159318"><span class="hs-identifier hs-var">tFile</span></a></span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span id="writeRendedTemplate"><span class="annot"><span class="annottext">writeRendedTemplate :: GingerContext SourcePos (Writer Text) Text
+-&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; IO ()
+</span><a href="NITTA.Project.Template.html#writeRendedTemplate"><span class="hs-identifier hs-var hs-var">writeRendedTemplate</span></a></span></span><span> </span><span id="local-6989586621680159308"><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
+</span><a href="#local-6989586621680159308"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span id="local-6989586621680159307"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159307"><span class="hs-identifier hs-var">opath</span></a></span></span><span> </span><span id="local-6989586621680159306"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159306"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span id="local-6989586621680159305"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159305"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-comment">-- Why we use Text and unpack it immidiatly? We need to avoid lazyness.</span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="annottext">IO Text -&gt; IO (Either IOException Text)
 forall e a. Exception e =&gt; IO a -&gt; IO (Either e a)
-</span><span class="hs-identifier hs-var">try</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; IO Text
-</span><span class="hs-identifier hs-var">T.readFile</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO Text) -&gt; String -&gt; IO Text
+</span><span class="hs-identifier hs-var">try</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; IO Text
+</span><span class="hs-identifier hs-var">T.readFile</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO Text) -&gt; FilePath -&gt; IO Text
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110607"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110606"><span class="hs-identifier hs-var">tFile</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO (Either IOException Text)
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159306"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159305"><span class="hs-identifier hs-var">tFile</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO (Either IOException Text)
 -&gt; (Either IOException Text -&gt; IO ()) -&gt; IO ()
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-146"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680110604"><span class="annot"><span class="annottext">IOException
-</span><a href="#local-6989586621680110604"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOException</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-147"></span><span>            </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
-</span><span class="hs-identifier hs-var">warningM</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;NITTA&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
+</span><span id="line-138"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680159303"><span class="annot"><span class="annottext">IOException
+</span><a href="#local-6989586621680159303"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOException</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-139"></span><span>            </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">warningM</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;NITTA&quot;</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;template problem SKIP: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;template problem SKIP: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IOException -&gt; String
-forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IOException -&gt; FilePath
+forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">IOException
-</span><a href="#local-6989586621680110604"><span class="hs-identifier hs-var">e</span></a></span><span>
-</span><span id="line-148"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621680110602"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110602"><span class="hs-identifier hs-var">src</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
--&gt; String -&gt; String -&gt; String -&gt; String -&gt; IO ()
+</span><a href="#local-6989586621680159303"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-140"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621680159301"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680159301"><span class="hs-identifier hs-var">src</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
+-&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; IO ()
 </span><a href="NITTA.Project.Template.html#writeRendedTemplate%27"><span class="hs-identifier hs-var">writeRendedTemplate'</span></a></span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
-</span><a href="#local-6989586621680110609"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110608"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110607"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110606"><span class="hs-identifier hs-var">tFile</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
+</span><a href="#local-6989586621680159308"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159307"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159306"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159305"><span class="hs-identifier hs-var">tFile</span></a></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; FilePath
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680110602"><span class="hs-identifier hs-var">src</span></a></span><span>
-</span><span id="line-149"></span><span>
-</span><span id="line-150"></span><span id="writeRendedTemplate%27"><span class="annot"><span class="annottext">writeRendedTemplate' :: GingerContext SourcePos (Writer Text) Text
--&gt; String -&gt; String -&gt; String -&gt; String -&gt; IO ()
-</span><a href="NITTA.Project.Template.html#writeRendedTemplate%27"><span class="hs-identifier hs-var hs-var">writeRendedTemplate'</span></a></span></span><span> </span><span id="local-6989586621680110600"><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
-</span><a href="#local-6989586621680110600"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span id="local-6989586621680110599"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110599"><span class="hs-identifier hs-var">opath</span></a></span></span><span> </span><span id="local-6989586621680110598"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110598"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span id="local-6989586621680110597"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110597"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span id="local-6989586621680110596"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110596"><span class="hs-identifier hs-var">src</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-151"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680110595"><span class="annot"><span class="annottext">raiseError :: ParserError -&gt; a
-</span><a href="#local-6989586621680110595"><span class="hs-identifier hs-var hs-var">raiseError</span></a></span></span><span> </span><span id="local-6989586621680110594"><span class="annot"><span class="annottext">ParserError
-</span><a href="#local-6989586621680110594"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; a
-forall a. HasCallStack =&gt; String -&gt; a
-</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; a) -&gt; String -&gt; a
+</span><a href="#local-6989586621680159301"><span class="hs-identifier hs-var">src</span></a></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span id="writeRendedTemplate%27"><span class="annot"><span class="annottext">writeRendedTemplate' :: GingerContext SourcePos (Writer Text) Text
+-&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; FilePath -&gt; IO ()
+</span><a href="NITTA.Project.Template.html#writeRendedTemplate%27"><span class="hs-identifier hs-var hs-var">writeRendedTemplate'</span></a></span></span><span> </span><span id="local-6989586621680159285"><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
+</span><a href="#local-6989586621680159285"><span class="hs-identifier hs-var">context</span></a></span></span><span> </span><span id="local-6989586621680159284"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159284"><span class="hs-identifier hs-var">opath</span></a></span></span><span> </span><span id="local-6989586621680159283"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159283"><span class="hs-identifier hs-var">tPath</span></a></span></span><span> </span><span id="local-6989586621680159282"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159282"><span class="hs-identifier hs-var">tFile</span></a></span></span><span> </span><span id="local-6989586621680159281"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159281"><span class="hs-identifier hs-var">src</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-143"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680159274"><span class="annot"><span class="annottext">raiseError :: ParserError -&gt; a
+</span><a href="#local-6989586621680159274"><span class="hs-identifier hs-var hs-var">raiseError</span></a></span></span><span> </span><span id="local-6989586621680159273"><span class="annot"><span class="annottext">ParserError
+</span><a href="#local-6989586621680159273"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; a
+forall a. HasCallStack =&gt; FilePath -&gt; a
+</span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; a) -&gt; FilePath -&gt; a
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110598"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110597"><span class="hs-identifier hs-var">tFile</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159283"><span class="hs-identifier hs-var">tPath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159282"><span class="hs-identifier hs-var">tFile</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;: &quot;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe String -&gt; ParserError -&gt; String
-</span><span class="hs-identifier hs-var">formatParserError</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Maybe String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe FilePath -&gt; ParserError -&gt; FilePath
+</span><span class="hs-identifier hs-var">formatParserError</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; Maybe FilePath
 forall a. a -&gt; Maybe a
-</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110596"><span class="hs-identifier hs-var">src</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ParserError
-</span><a href="#local-6989586621680110594"><span class="hs-identifier hs-var">err</span></a></span><span>
-</span><span id="line-152"></span><span>    </span><span id="local-6989586621680110592"><span class="annot"><span class="annottext">Template SourcePos
-</span><a href="#local-6989586621680110592"><span class="hs-identifier hs-var">template</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-153"></span><span>        </span><span class="annot"><span class="annottext">(ParserError -&gt; IO (Template SourcePos))
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159281"><span class="hs-identifier hs-var">src</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ParserError
+</span><a href="#local-6989586621680159273"><span class="hs-identifier hs-var">err</span></a></span><span>
+</span><span id="line-144"></span><span>    </span><span id="local-6989586621680159271"><span class="annot"><span class="annottext">Template SourcePos
+</span><a href="#local-6989586621680159271"><span class="hs-identifier hs-var">template</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-145"></span><span>        </span><span class="annot"><span class="annottext">(ParserError -&gt; IO (Template SourcePos))
 -&gt; (Template SourcePos -&gt; IO (Template SourcePos))
 -&gt; Either ParserError (Template SourcePos)
 -&gt; IO (Template SourcePos)
 forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
 </span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">ParserError -&gt; IO (Template SourcePos)
-forall a. ParserError -&gt; a
-</span><a href="#local-6989586621680110595"><span class="hs-identifier hs-var">raiseError</span></a></span><span> </span><span class="annot"><span class="annottext">Template SourcePos -&gt; IO (Template SourcePos)
+forall {a}. ParserError -&gt; a
+</span><a href="#local-6989586621680159274"><span class="hs-identifier hs-var">raiseError</span></a></span><span> </span><span class="annot"><span class="annottext">Template SourcePos -&gt; IO (Template SourcePos)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Either ParserError (Template SourcePos)
  -&gt; IO (Template SourcePos))
@@ -612,43 +609,43 @@ forall a. Identity a -&gt; a
 -&gt; IO (Template SourcePos)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-154"></span><span>            </span><span class="annot"><span class="annottext">IncludeResolver Identity
--&gt; Maybe String
--&gt; String
+</span><span id="line-146"></span><span>            </span><span class="annot"><span class="annottext">IncludeResolver Identity
+-&gt; Maybe FilePath
+-&gt; FilePath
 -&gt; Identity (Either ParserError (Template SourcePos))
 forall (m :: * -&gt; *).
 Monad m =&gt;
 IncludeResolver m
--&gt; Maybe String
--&gt; String
+-&gt; Maybe FilePath
+-&gt; FilePath
 -&gt; m (Either ParserError (Template SourcePos))
-</span><span class="hs-identifier hs-var">parseGinger</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Identity (Maybe String) -&gt; IncludeResolver Identity
+</span><span class="hs-identifier hs-var">parseGinger</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Identity (Maybe FilePath) -&gt; IncludeResolver Identity
 forall a b. a -&gt; b -&gt; a
-</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Identity (Maybe String) -&gt; IncludeResolver Identity)
--&gt; Identity (Maybe String) -&gt; IncludeResolver Identity
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(Identity (Maybe FilePath) -&gt; IncludeResolver Identity)
+-&gt; Identity (Maybe FilePath) -&gt; IncludeResolver Identity
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Maybe String -&gt; Identity (Maybe String)
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Maybe FilePath -&gt; Identity (Maybe FilePath)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Maybe String
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Maybe FilePath
 forall a. Maybe a
-</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe String
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe FilePath
 forall a. Maybe a
-</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110596"><span class="hs-identifier hs-var">src</span></a></span><span>
-</span><span id="line-155"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; String -&gt; IO ()
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159281"><span class="hs-identifier hs-var">src</span></a></span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; FilePath -&gt; IO ()
 </span><span class="hs-identifier hs-var">createDirectoryIfMissing</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; FilePath -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110599"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159284"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
 </span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">ShowS
-</span><span class="hs-identifier hs-var">takeDirectory</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110597"><span class="hs-identifier hs-var">tFile</span></a></span><span>
-</span><span id="line-156"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Text -&gt; IO ()
-</span><span class="hs-identifier hs-var">T.writeFile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110599"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110597"><span class="hs-identifier hs-var">tFile</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; IO ()) -&gt; Text -&gt; IO ()
+</span><span class="hs-identifier hs-var">takeDirectory</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159282"><span class="hs-identifier hs-var">tFile</span></a></span><span>
+</span><span id="line-148"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; Text -&gt; IO ()
+</span><span class="hs-identifier hs-var">T.writeFile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159284"><span class="hs-identifier hs-var">opath</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159282"><span class="hs-identifier hs-var">tFile</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; IO ()) -&gt; Text -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
 -&gt; Template SourcePos -&gt; Text
@@ -657,59 +654,59 @@ forall p h.
  Monoid h) =&gt;
 GingerContext p (Writer h) h -&gt; Template p -&gt; h
 </span><span class="hs-identifier hs-var">runGinger</span></span><span> </span><span class="annot"><span class="annottext">GingerContext SourcePos (Writer Text) Text
-</span><a href="#local-6989586621680110600"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">Template SourcePos
-</span><a href="#local-6989586621680110592"><span class="hs-identifier hs-var">template</span></a></span><span>
-</span><span id="line-157"></span><span>
-</span><span id="line-158"></span><span class="hs-comment">-- |List all files inside path</span><span>
-</span><span id="line-159"></span><span id="findAllFiles"><span class="annot"><span class="annottext">findAllFiles :: String -&gt; IO [String]
-</span><a href="NITTA.Project.Template.html#findAllFiles"><span class="hs-identifier hs-var hs-var">findAllFiles</span></a></span></span><span> </span><span id="local-6989586621680110586"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110586"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO [String]
-</span><a href="#local-6989586621680110585"><span class="hs-identifier hs-var">findAllFiles'</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680159285"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">Template SourcePos
+</span><a href="#local-6989586621680159271"><span class="hs-identifier hs-var">template</span></a></span><span>
+</span><span id="line-149"></span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- |List all files inside path</span><span>
+</span><span id="line-151"></span><span id="findAllFiles"><span class="annot"><span class="annottext">findAllFiles :: FilePath -&gt; IO [FilePath]
+</span><a href="NITTA.Project.Template.html#findAllFiles"><span class="hs-identifier hs-var hs-var">findAllFiles</span></a></span></span><span> </span><span id="local-6989586621680159265"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159265"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO [FilePath]
+</span><a href="#local-6989586621680159264"><span class="hs-identifier hs-var">findAllFiles'</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;&quot;</span></span><span>
-</span><span id="line-160"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-161"></span><span>        </span><span id="local-6989586621680110585"><span class="annot"><span class="annottext">findAllFiles' :: String -&gt; IO [String]
-</span><a href="#local-6989586621680110585"><span class="hs-identifier hs-var hs-var">findAllFiles'</span></a></span></span><span> </span><span id="local-6989586621680110584"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110584"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-162"></span><span>            </span><span id="local-6989586621680110583"><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110583"><span class="hs-identifier hs-var">items</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; [String] -&gt; [String]
+</span><span id="line-152"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-153"></span><span>        </span><span id="local-6989586621680159264"><span class="annot"><span class="annottext">findAllFiles' :: FilePath -&gt; IO [FilePath]
+</span><a href="#local-6989586621680159264"><span class="hs-identifier hs-var hs-var">findAllFiles'</span></a></span></span><span> </span><span id="local-6989586621680159255"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159255"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-154"></span><span>            </span><span id="local-6989586621680159254"><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159254"><span class="hs-identifier hs-var">items</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; [FilePath] -&gt; [FilePath]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110584"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([String] -&gt; [String]) -&gt; IO [String] -&gt; IO [String]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159255"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; [FilePath]) -&gt; IO [FilePath] -&gt; IO [FilePath]
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO [String]
-</span><span class="hs-identifier hs-var">listDirectory</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110586"><span class="hs-identifier hs-var">root</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110584"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-163"></span><span>            </span><span class="annot"><span class="annottext">[[String]] -&gt; [String]
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO [FilePath]
+</span><span class="hs-identifier hs-var">listDirectory</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159265"><span class="hs-identifier hs-var">root</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159255"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-155"></span><span>            </span><span class="annot"><span class="annottext">[[FilePath]] -&gt; [FilePath]
 forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">concat</span></span><span>
-</span><span id="line-164"></span><span>                </span><span class="annot"><span class="annottext">([[String]] -&gt; [String]) -&gt; IO [[String]] -&gt; IO [String]
+</span><span id="line-156"></span><span>                </span><span class="annot"><span class="annottext">([[FilePath]] -&gt; [FilePath]) -&gt; IO [[FilePath]] -&gt; IO [FilePath]
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO [String]) -&gt; [String] -&gt; IO [[String]]
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO [FilePath]) -&gt; [FilePath] -&gt; IO [[FilePath]]
 forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 (Traversable t, Monad m) =&gt;
 (a -&gt; m b) -&gt; t a -&gt; m (t b)
 </span><span class="hs-identifier hs-var">mapM</span></span><span>
-</span><span id="line-165"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680110580"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110580"><span class="hs-identifier hs-var">item</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-166"></span><span>                        </span><span id="local-6989586621680110579"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680110579"><span class="hs-identifier hs-var">isDir</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO Bool
-</span><span class="hs-identifier hs-var">doesDirectoryExist</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110586"><span class="hs-identifier hs-var">root</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110580"><span class="hs-identifier hs-var">item</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-167"></span><span>                        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680110579"><span class="hs-identifier hs-var">isDir</span></a></span><span>
-</span><span id="line-168"></span><span>                            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO [String]
-</span><a href="#local-6989586621680110585"><span class="hs-identifier hs-var">findAllFiles'</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110580"><span class="hs-identifier hs-var">item</span></a></span><span>
-</span><span id="line-169"></span><span>                            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">[String] -&gt; IO [String]
+</span><span id="line-157"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680159251"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159251"><span class="hs-identifier hs-var">item</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-158"></span><span>                        </span><span id="local-6989586621680159250"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680159250"><span class="hs-identifier hs-var">isDir</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO Bool
+</span><span class="hs-identifier hs-var">doesDirectoryExist</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159265"><span class="hs-identifier hs-var">root</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159251"><span class="hs-identifier hs-var">item</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-159"></span><span>                        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680159250"><span class="hs-identifier hs-var">isDir</span></a></span><span>
+</span><span id="line-160"></span><span>                            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO [FilePath]
+</span><a href="#local-6989586621680159264"><span class="hs-identifier hs-var">findAllFiles'</span></a></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159251"><span class="hs-identifier hs-var">item</span></a></span><span>
+</span><span id="line-161"></span><span>                            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; IO [FilePath]
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680110580"><span class="hs-identifier hs-var">item</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-170"></span><span>                    </span><span class="hs-special">)</span><span>
-</span><span id="line-171"></span><span>                    </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621680110583"><span class="hs-identifier hs-var">items</span></a></span><span>
-</span><span id="line-172"></span></pre></body></html>
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680159251"><span class="hs-identifier hs-var">item</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-162"></span><span>                    </span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>                    </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621680159254"><span class="hs-identifier hs-var">items</span></a></span><span>
+</span><span id="line-164"></span></pre></body></html>

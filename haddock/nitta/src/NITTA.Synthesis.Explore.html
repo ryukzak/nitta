@@ -1,12 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
-</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
-</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
-</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
-</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
-</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
-</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
-</span><span id="line-8"></span><span>
-</span><span id="line-9"></span><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE NoMonomorphismRestriction #-}</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-comment">{- |
 Module      : NITTA.Synthesis.Explore
 Description : Explore synthesis tree
 Copyright   : (c) Aleksandr Penskoi, 2021
@@ -14,35 +10,36 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.Explore</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#synthesisTreeRootIO"><span class="hs-identifier">synthesisTreeRootIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier">getTreeIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier">getTreePathIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#subForestIO"><span class="hs-identifier">subForestIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier">positiveSubForestIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier">isComplete</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier">isLeaf</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-25"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-26"></span><span>
-</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent.STM</span></span><span>
-</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">forM</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unless</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">when</span></span><span class="hs-special">)</span><span>
-</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
-</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
-</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html"><span class="hs-identifier">NITTA.Intermediate.Analysis</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier">estimateVarWaves</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
-</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html"><span class="hs-identifier">NITTA.Model.Networks.Bus</span></a></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Bind.html"><span class="hs-identifier">NITTA.Model.Problems.Bind</span></a></span><span>
-</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html"><span class="hs-identifier">NITTA.Model.Problems.Dataflow</span></a></span><span>
-</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.html"><span class="hs-identifier">NITTA.Model.Problems.Refactor</span></a></span><span>
-</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.TargetSystem.html"><span class="hs-identifier">NITTA.Model.TargetSystem</span></a></span><span>
-</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.html"><span class="hs-identifier">NITTA.Synthesis.Steps</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
-</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span>
-</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
-</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
-</span><span id="line-43"></span><span>
-</span><span id="line-44"></span><span class="hs-comment">-- |Make synthesis tree</span><span>
-</span><span id="line-45"></span><span id="synthesisTreeRootIO"><span class="annot"><span class="annottext">synthesisTreeRootIO :: TargetSystem (BusNetwork tag v x t) tag v x t
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.Explore</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#synthesisTreeRootIO"><span class="hs-identifier">synthesisTreeRootIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier">getTreeIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier">getTreePathIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#subForestIO"><span class="hs-identifier">subForestIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier">positiveSubForestIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier">isComplete</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier">isLeaf</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent.STM</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">forM</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">unless</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">when</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html"><span class="hs-identifier">NITTA.Intermediate.Analysis</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier">buildProcessWaves</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier">estimateVarWaves</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html"><span class="hs-identifier">NITTA.Model.Networks.Bus</span></a></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html"><span class="hs-identifier">NITTA.Model.Problems.Allocation</span></a></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Bind.html"><span class="hs-identifier">NITTA.Model.Problems.Bind</span></a></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html"><span class="hs-identifier">NITTA.Model.Problems.Dataflow</span></a></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.html"><span class="hs-identifier">NITTA.Model.Problems.Refactor</span></a></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.TargetSystem.html"><span class="hs-identifier">NITTA.Model.TargetSystem</span></a></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.html"><span class="hs-identifier">NITTA.Synthesis.Steps</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- |Make synthesis tree</span><span>
+</span><span id="line-42"></span><span id="synthesisTreeRootIO"><span class="annot"><span class="annottext">synthesisTreeRootIO :: TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Explore.html#synthesisTreeRootIO"><span class="hs-identifier hs-var hs-var">synthesisTreeRootIO</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">STM
@@ -64,54 +61,54 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; STM
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
-forall x v tag t.
-(Val x, Hashable v, Suffix v, ToString v, ToString tag, IsString v,
- IsString tag, Bounded t, Typeable v, Typeable tag, Typeable t,
- Show t, Default t, Integral t, Ord v, Ord tag) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; STM
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Explore.html#rootSynthesisTreeSTM"><span class="hs-identifier hs-var">rootSynthesisTreeSTM</span></a></span><span>
-</span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span id="rootSynthesisTreeSTM"><span class="annot"><span class="annottext">rootSynthesisTreeSTM :: TargetSystem (BusNetwork tag v x t) tag v x t
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span id="rootSynthesisTreeSTM"><span class="annot"><span class="annottext">rootSynthesisTreeSTM :: TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; STM
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
-</span><a href="NITTA.Synthesis.Explore.html#rootSynthesisTreeSTM"><span class="hs-identifier hs-var hs-var">rootSynthesisTreeSTM</span></a></span></span><span> </span><span id="local-6989586621680121573"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
-</span><a href="#local-6989586621680121573"><span class="hs-identifier hs-var">model</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-48"></span><span>    </span><span id="local-6989586621680121572"><span class="annot"><span class="annottext">TMVar
+</span><a href="NITTA.Synthesis.Explore.html#rootSynthesisTreeSTM"><span class="hs-identifier hs-var hs-var">rootSynthesisTreeSTM</span></a></span></span><span> </span><span id="local-6989586621680182554"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="#local-6989586621680182554"><span class="hs-identifier hs-var">model</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-45"></span><span>    </span><span id="local-6989586621680182553"><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121572"><span class="hs-identifier hs-var">sSubForestVar</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM
+</span><a href="#local-6989586621680182553"><span class="hs-identifier hs-var">sSubForestVar</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM
   (TMVar
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 forall a. STM (TMVar a)
 </span><span class="hs-identifier hs-var">newEmptyTMVar</span></span><span>
-</span><span id="line-49"></span><span>    </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-46"></span><span>    </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; STM
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span>
-</span><span id="line-50"></span><span>        </span><span class="annot"><span class="annottext">Tree :: forall m tag v x t.
-SID
+</span><span id="line-47"></span><span>        </span><span class="annot"><span class="annottext">Tree :: forall m tag v x t.
+Sid
 -&gt; SynthesisState m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 -&gt; TMVar [Tree m tag v x t]
 -&gt; Tree m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
-</span><span id="line-51"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sID :: SID
-</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SID
+</span><span id="line-48"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sID :: Sid
+</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Sid
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
-</span><span id="line-52"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sState :: SynthesisState
+</span><span id="line-49"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sState :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 </span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe
   (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 -&gt; TargetSystem (BusNetwork tag v x t) tag v x t
 -&gt; SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-forall x a k t.
-(Val x, Hashable a, Suffix a, ToString a, ToString k, IsString a,
- IsString k, Bounded t, Typeable a, Typeable k, Typeable t, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+forall {k} {x} {t} {a}.
+(UnitTag k, Val x, Bounded t, Hashable a, Suffix a, Show t,
+ Default t, Integral t, Ord a, Typeable t, Typeable a, ToString a,
+ IsString a) =&gt;
 Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 -&gt; TargetSystem (BusNetwork k a x t) k a x t
 -&gt; SynthesisState
@@ -120,8 +117,8 @@ Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
   (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
-</span><a href="#local-6989586621680121573"><span class="hs-identifier hs-var">model</span></a></span><span>
-</span><span id="line-53"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sDecision :: SynthesisDecision
+</span><a href="#local-6989586621680182554"><span class="hs-identifier hs-var">model</span></a></span><span>
+</span><span id="line-50"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sDecision :: SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -131,129 +128,129 @@ forall a. Maybe a
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 forall ctx m. SynthesisDecision ctx m
 </span><a href="NITTA.Synthesis.Types.html#Root"><span class="hs-identifier hs-var">Root</span></a></span><span>
-</span><span id="line-54"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TMVar
+</span><span id="line-51"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Types.html#sSubForestVar"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span><span>
-</span><span id="line-55"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-56"></span><span>
-</span><span id="line-57"></span><span class="hs-comment">-- |Get specific by @nId@ node from a synthesis tree.</span><span>
-</span><span id="line-58"></span><span id="getTreeIO"><span class="annot"><span class="annottext">getTreeIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+</span><span id="line-52"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- |Get specific by @nId@ node from a synthesis tree.</span><span>
+</span><span id="line-55"></span><span id="getTreeIO"><span class="annot"><span class="annottext">getTreeIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Sid
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
-</span><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var hs-var">getTreeIO</span></a></span></span><span> </span><span id="local-6989586621680121562"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121562"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var hs-var">getTreeIO</span></a></span></span><span> </span><span id="local-6989586621680182505"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182505"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-type">Sid</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121562"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-59"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var">getTreeIO</span></a></span><span> </span><span id="local-6989586621680121560"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121560"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680121559"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121559"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680121558"><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680121558"><span class="hs-identifier hs-var">is</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-60"></span><span>    </span><span id="local-6989586621680121557"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121557"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182505"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-56"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var">getTreeIO</span></a></span><span> </span><span id="local-6989586621680182503"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182503"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-type">Sid</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680182502"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680182502"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680182501"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621680182501"><span class="hs-identifier hs-var">is</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-57"></span><span>    </span><span id="local-6989586621680182500"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182500"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#subForestIO"><span class="hs-identifier hs-var">subForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121560"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
+</span><a href="#local-6989586621680182503"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
 forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
 </span><span class="hs-identifier hs-var">unless</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121559"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+</span><a href="#local-6989586621680182502"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
 forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121557"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
+</span><a href="#local-6989586621680182500"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; IO ()
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><span class="hs-string">&quot;getTreeIO - wrong SID&quot;</span></span><span>
-</span><span id="line-62"></span><span>    </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+</span><span class="hs-string">&quot;getTreeIO - wrong Sid&quot;</span></span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Sid
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var">getTreeIO</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121557"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182500"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; Int
 -&gt; Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 forall a. [a] -&gt; Int -&gt; a
 </span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121559"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Int] -&gt; SID
-</span><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-var">SID</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680121558"><span class="hs-identifier hs-var">is</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span class="hs-comment">-- |Get list of all nodes from root to selected.</span><span>
-</span><span id="line-65"></span><span id="getTreePathIO"><span class="annot"><span class="annottext">getTreePathIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+</span><a href="#local-6989586621680182502"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Int] -&gt; Sid
+</span><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-var">Sid</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621680182501"><span class="hs-identifier hs-var">is</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- |Get list of all nodes from root to selected.</span><span>
+</span><span id="line-62"></span><span id="getTreePathIO"><span class="annot"><span class="annottext">getTreePathIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Sid
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier hs-var hs-var">getTreePathIO</span></a></span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-type">Sid</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-66"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier hs-var">getTreePathIO</span></a></span><span> </span><span id="local-6989586621680121552"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121552"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-type">SID</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680121551"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121551"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680121550"><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680121550"><span class="hs-identifier hs-var">is</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-67"></span><span>    </span><span id="local-6989586621680121549"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121549"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+</span><span id="line-63"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier hs-var">getTreePathIO</span></a></span><span> </span><span id="local-6989586621680182465"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182465"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-type">Sid</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680182464"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680182464"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680182463"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621680182463"><span class="hs-identifier hs-var">is</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-64"></span><span>    </span><span id="local-6989586621680182462"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182462"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Sid
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+-&gt; Sid
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Explore.html#getTreeIO"><span class="hs-identifier hs-var">getTreeIO</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121552"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">(SID
+</span><a href="#local-6989586621680182465"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">(Sid
  -&gt; IO
       (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t))
--&gt; SID
+-&gt; Sid
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; SID
-</span><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-var">SID</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121551"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-68"></span><span>    </span><span id="local-6989586621680121548"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121548"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; SID
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Sid
+</span><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-var">Sid</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680182464"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-65"></span><span>    </span><span id="local-6989586621680182461"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182461"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Sid
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#getTreePathIO"><span class="hs-identifier hs-var">getTreePathIO</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121549"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">(SID
+</span><a href="#local-6989586621680182462"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">(Sid
  -&gt; IO
       [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
--&gt; SID
+-&gt; Sid
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; SID
-</span><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-var">SID</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680121550"><span class="hs-identifier hs-var">is</span></a></span><span>
-</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Sid
+</span><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-var">Sid</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621680182463"><span class="hs-identifier hs-var">is</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
@@ -265,33 +262,33 @@ forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121549"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182462"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121548"><span class="hs-identifier hs-var">t</span></a></span><span>
-</span><span id="line-70"></span><span>
-</span><span id="line-71"></span><span class="hs-comment">{- |Get all available edges for the node. Edges calculated only for the first
+</span><a href="#local-6989586621680182461"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="hs-comment">{- |Get all available edges for the node. Edges calculated only for the first
 call.
 -}</span><span>
-</span><span id="line-74"></span><span id="subForestIO"><span class="annot"><span class="annottext">subForestIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-71"></span><span id="subForestIO"><span class="annot"><span class="annottext">subForestIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#subForestIO"><span class="hs-identifier hs-var hs-var">subForestIO</span></a></span></span><span>
-</span><span id="line-75"></span><span>    </span><span id="local-6989586621680121547"><span class="annot"><span class="annottext">tree :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121547"><span class="hs-identifier hs-var">tree</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
-</span><span id="line-76"></span><span>        </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680121546"><span class="annot"><span class="annottext">TMVar
+</span><span id="line-72"></span><span>    </span><span id="local-6989586621680182417"><span class="annot"><span class="annottext">tree :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182417"><span class="hs-identifier hs-var">tree</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
+</span><span id="line-73"></span><span>        </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680182416"><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: forall m tag v x t. Tree m tag v x t -&gt; TMVar [Tree m tag v x t]
-</span><a href="#local-6989586621680121546"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span></span><span>
-</span><span id="line-77"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121545"><span class="annot"><span class="annottext">SID
-sID :: SID
-sID :: forall m tag v x t. Tree m tag v x t -&gt; SID
-</span><a href="#local-6989586621680121545"><span class="hs-identifier hs-var hs-var">sID</span></a></span></span><span>
-</span><span id="line-78"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121544"><span class="annot"><span class="annottext">SynthesisDecision
+</span><a href="#local-6989586621680182416"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span></span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182415"><span class="annot"><span class="annottext">Sid
+sID :: Sid
+sID :: forall m tag v x t. Tree m tag v x t -&gt; Sid
+</span><a href="#local-6989586621680182415"><span class="hs-identifier hs-var hs-var">sID</span></a></span></span><span>
+</span><span id="line-75"></span><span>        </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182414"><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -302,12 +299,12 @@ sDecision :: SynthesisDecision
 sDecision :: forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
-</span><a href="#local-6989586621680121544"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span></span><span>
-</span><span id="line-79"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-80"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680121543"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680121543"><span class="hs-identifier hs-var">firstTime</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121542"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121542"><span class="hs-identifier hs-var">subForest</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-81"></span><span>            </span><span class="annot"><span class="annottext">STM
+</span><a href="#local-6989586621680182414"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span></span><span>
+</span><span id="line-76"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680182413"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680182413"><span class="hs-identifier hs-var">firstTime</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182412"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182412"><span class="hs-identifier hs-var">subForest</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-78"></span><span>            </span><span class="annot"><span class="annottext">STM
   (Bool,
    [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 -&gt; IO
@@ -328,7 +325,7 @@ forall a. STM a -&gt; IO a
       [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-82"></span><span>                </span><span class="annot"><span class="annottext">TMVar
+</span><span id="line-79"></span><span>                </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; STM
      (Maybe
@@ -336,7 +333,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 forall a. TMVar a -&gt; STM (Maybe a)
 </span><span class="hs-identifier hs-var">tryReadTMVar</span></span><span> </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121546"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span> </span><span class="annot"><span class="annottext">STM
+</span><a href="#local-6989586621680182416"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span> </span><span class="annot"><span class="annottext">STM
   (Maybe
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 -&gt; (Maybe
@@ -349,8 +346,8 @@ forall a. TMVar a -&gt; STM (Maybe a)
       [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-83"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680121540"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121540"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Bool,
+</span><span id="line-80"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680182410"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182410"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Bool,
  [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 -&gt; STM
      (Bool,
@@ -358,33 +355,33 @@ forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121540"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-84"></span><span>                    </span><span class="annot"><span class="annottext">Maybe
+</span><a href="#local-6989586621680182410"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>                    </span><span class="annot"><span class="annottext">Maybe
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-85"></span><span>                        </span><span id="local-6989586621680121539"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121539"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-82"></span><span>                        </span><span id="local-6989586621680182409"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182409"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; STM
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, ToString v,
+ Show t, Default t, Integral t, Typeable t, Typeable v, Ord v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; STM
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#exploreSubForestVar"><span class="hs-identifier hs-var">exploreSubForestVar</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121547"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-86"></span><span>                        </span><span class="annot"><span class="annottext">TMVar
+</span><a href="#local-6989586621680182417"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-83"></span><span>                        </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; STM ()
 forall a. TMVar a -&gt; a -&gt; STM ()
 </span><span class="hs-identifier hs-var">putTMVar</span></span><span> </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121546"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121539"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-87"></span><span>                        </span><span class="annot"><span class="annottext">(Bool,
+</span><a href="#local-6989586621680182416"><span class="hs-identifier hs-var">sSubForestVar</span></a></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680182409"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-84"></span><span>                        </span><span class="annot"><span class="annottext">(Bool,
  [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 -&gt; STM
      (Bool,
@@ -392,91 +389,92 @@ forall a. TMVar a -&gt; a -&gt; STM ()
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121539"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-88"></span><span>        </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
+</span><a href="#local-6989586621680182409"><span class="hs-identifier hs-var">subForest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>        </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
 forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
 </span><span class="hs-identifier hs-var">when</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680121543"><span class="hs-identifier hs-var">firstTime</span></a></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
+</span><a href="#local-6989586621680182413"><span class="hs-identifier hs-var">firstTime</span></a></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-89"></span><span>            </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; IO ()
+</span><span id="line-86"></span><span>            </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; IO ()
 </span><span class="hs-identifier hs-var">debugM</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;NITTA.Synthesis&quot;</span></span><span> </span><span class="annot"><span class="annottext">([Char] -&gt; IO ()) -&gt; [Char] -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-90"></span><span>                </span><span class="annot"><span class="annottext">[Char]
-</span><span class="hs-string">&quot;explore: &quot;</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><span id="line-87"></span><span>                </span><span class="annot"><span class="annottext">[Char]
+</span><span class="hs-string">&quot;explore: &quot;</span></span><span>
+</span><span id="line-88"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SID -&gt; [Char]
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Sid -&gt; [Char]
 forall a. Show a =&gt; a -&gt; [Char]
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">SID
-</span><a href="#local-6989586621680121545"><span class="hs-identifier hs-var">sID</span></a></span><span>
-</span><span id="line-91"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Sid
+</span><a href="#local-6989586621680182415"><span class="hs-identifier hs-var">sID</span></a></span><span>
+</span><span id="line-89"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot; score: &quot;</span></span><span>
-</span><span id="line-92"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><span id="line-90"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121544"><span class="hs-identifier hs-var">sDecision</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-93"></span><span>                            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680121533"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621680182414"><span class="hs-identifier hs-var">sDecision</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-91"></span><span>                            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680182396"><span class="annot"><span class="annottext">Float
 score :: forall ctx m. SynthesisDecision ctx m -&gt; Float
 score :: Float
 </span><a href="NITTA.Synthesis.Types.html#score"><span class="hs-identifier hs-var hs-var">score</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Float -&gt; [Char]
 forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Float
-</span><a href="#local-6989586621680121533"><span class="hs-identifier hs-var">score</span></a></span><span>
-</span><span id="line-94"></span><span>                            </span><span class="annot"><span class="annottext">SynthesisDecision
+</span><a href="#local-6989586621680182396"><span class="hs-identifier hs-var">score</span></a></span><span>
+</span><span id="line-92"></span><span>                            </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;-&quot;</span></span><span>
-</span><span id="line-95"></span><span>                       </span><span class="hs-special">)</span><span>
-</span><span id="line-96"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><span id="line-93"></span><span>                       </span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot; decision: &quot;</span></span><span>
-</span><span id="line-97"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
+</span><span id="line-95"></span><span>                    </span><span class="annot"><span class="annottext">[Char] -&gt; [Char] -&gt; [Char]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121544"><span class="hs-identifier hs-var">sDecision</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-98"></span><span>                            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680121531"><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680182414"><span class="hs-identifier hs-var">sDecision</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-96"></span><span>                            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680182388"><span class="annot"><span class="annottext">d
 decision :: ()
 decision :: d
 </span><a href="NITTA.Synthesis.Types.html#decision"><span class="hs-identifier hs-var hs-var">decision</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">d -&gt; [Char]
 forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">d
-</span><a href="#local-6989586621680121531"><span class="hs-identifier hs-var">decision</span></a></span><span>
-</span><span id="line-99"></span><span>                            </span><span class="annot"><span class="annottext">SynthesisDecision
+</span><a href="#local-6989586621680182388"><span class="hs-identifier hs-var">decision</span></a></span><span>
+</span><span id="line-97"></span><span>                            </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;-&quot;</span></span><span>
-</span><span id="line-100"></span><span>                       </span><span class="hs-special">)</span><span>
-</span><span id="line-101"></span><span>
-</span><span id="line-102"></span><span>        </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><span id="line-98"></span><span>                       </span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span>        </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121542"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-103"></span><span>
-</span><span id="line-104"></span><span class="hs-comment">{- |For synthesis method is more usefull, because throw away all useless trees in
+</span><a href="#local-6989586621680182412"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="hs-comment">{- |For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}</span><span>
-</span><span id="line-107"></span><span id="positiveSubForestIO"><span class="annot"><span class="annottext">positiveSubForestIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-105"></span><span id="positiveSubForestIO"><span class="annot"><span class="annottext">positiveSubForestIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var hs-var">positiveSubForestIO</span></a></span></span><span> </span><span id="local-6989586621680121529"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121529"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var hs-var">positiveSubForestIO</span></a></span></span><span> </span><span id="local-6989586621680182354"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182354"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
  -&gt; Bool)
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
@@ -528,46 +526,48 @@ forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#subForestIO"><span class="hs-identifier hs-var">subForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121529"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-108"></span><span>
-</span><span id="line-109"></span><span id="isLeaf"><span class="annot"><span class="annottext">isLeaf :: Tree m tag v x t -&gt; Bool
+</span><a href="#local-6989586621680182354"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span id="isLeaf"><span class="annot"><span class="annottext">isLeaf :: Tree m tag v x t -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var hs-var">isLeaf</span></a></span></span><span>
-</span><span id="line-110"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
-</span><span id="line-111"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
+</span><span id="line-108"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
+</span><span id="line-109"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-112"></span><span>            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span>
-</span><span id="line-113"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sBindOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; [Bind tag v x]
+</span><span id="line-110"></span><span>            </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span>
+</span><span id="line-111"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sAllocationOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; [Allocation tag]
+</span><a href="NITTA.Synthesis.Types.html#sAllocationOptions"><span class="hs-identifier hs-var">sAllocationOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sBindOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; [Bind tag v x]
 </span><a href="NITTA.Synthesis.Types.html#sBindOptions"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-114"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sDataflowOptions :: forall m tag v x t.
+</span><span id="line-113"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sDataflowOptions :: forall m tag v x t.
 SynthesisState m tag v x t -&gt; [DataflowSt tag v (TimeConstraint t)]
 </span><a href="NITTA.Synthesis.Types.html#sDataflowOptions"><span class="hs-identifier hs-var">sDataflowOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-115"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sBreakLoopOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; [BreakLoop v x]
+</span><span id="line-114"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sBreakLoopOptions :: forall m tag v x t. SynthesisState m tag v x t -&gt; [BreakLoop v x]
 </span><a href="NITTA.Synthesis.Types.html#sBreakLoopOptions"><span class="hs-identifier hs-var">sBreakLoopOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-116"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sResolveDeadlockOptions :: forall m tag v x t.
+</span><span id="line-115"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sResolveDeadlockOptions :: forall m tag v x t.
 SynthesisState m tag v x t -&gt; [ResolveDeadlock v x]
 </span><a href="NITTA.Synthesis.Types.html#sResolveDeadlockOptions"><span class="hs-identifier hs-var">sResolveDeadlockOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-117"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sOptimizeAccumOptions :: forall m tag v x t.
+</span><span id="line-116"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sOptimizeAccumOptions :: forall m tag v x t.
 SynthesisState m tag v x t -&gt; [OptimizeAccum v x]
 </span><a href="NITTA.Synthesis.Types.html#sOptimizeAccumOptions"><span class="hs-identifier hs-var">sOptimizeAccumOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-118"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sConstantFoldingOptions :: forall m tag v x t.
+</span><span id="line-117"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sConstantFoldingOptions :: forall m tag v x t.
 SynthesisState m tag v x t -&gt; [ConstantFolding v x]
 </span><a href="NITTA.Synthesis.Types.html#sConstantFoldingOptions"><span class="hs-identifier hs-var">sConstantFoldingOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-119"></span><span>                </span><span class="hs-special">}</span><span>
-</span><span id="line-120"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span id="line-118"></span><span>                </span><span class="hs-special">}</span><span>
+</span><span id="line-119"></span><span>        </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-121"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var">isLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">Tree m tag v x t
+</span><span id="line-120"></span><span class="annot"><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var">isLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">Tree m tag v x t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-122"></span><span>
-</span><span id="line-123"></span><span id="isComplete"><span class="annot"><span class="annottext">isComplete :: Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span id="isComplete"><span class="annot"><span class="annottext">isComplete :: Tree (TargetSystem u tag v x t) tag v x t -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier hs-var hs-var">isComplete</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem u tag v x t -&gt; Bool
 forall u v x t tag.
 ProcessorUnit u v x t =&gt;
@@ -592,29 +592,29 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 -&gt; SynthesisState (TargetSystem u tag v x t) tag v x t
 forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var hs-var">sState</span></a></span><span>
-</span><span id="line-124"></span><span class="hs-comment">-- *Internal</span><span>
-</span><span id="line-125"></span><span>
-</span><span id="line-126"></span><span id="exploreSubForestVar"><span class="annot"><span class="annottext">exploreSubForestVar :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-123"></span><span class="hs-comment">-- *Internal</span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span id="exploreSubForestVar"><span class="annot"><span class="annottext">exploreSubForestVar :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; STM
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="NITTA.Synthesis.Explore.html#exploreSubForestVar"><span class="hs-identifier hs-var hs-var">exploreSubForestVar</span></a></span></span><span> </span><span id="local-6989586621680121517"><span class="annot"><span class="annottext">parent :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span id="local-6989586621680121516"><span class="annot"><span class="annottext">SID
-sID :: SID
-sID :: forall m tag v x t. Tree m tag v x t -&gt; SID
-</span><a href="#local-6989586621680121516"><span class="hs-identifier hs-var hs-var">sID</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121515"><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#exploreSubForestVar"><span class="hs-identifier hs-var hs-var">exploreSubForestVar</span></a></span></span><span> </span><span id="local-6989586621680182133"><span class="annot"><span class="annottext">parent :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span id="local-6989586621680182132"><span class="annot"><span class="annottext">Sid
+sID :: Sid
+sID :: forall m tag v x t. Tree m tag v x t -&gt; Sid
+</span><a href="#local-6989586621680182132"><span class="hs-identifier hs-var hs-var">sID</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182131"><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 sState :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var hs-var">sState</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-127"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680121514"><span class="annot"><span class="annottext">edges :: [(SynthesisDecision
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var hs-var">sState</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680182130"><span class="annot"><span class="annottext">edges :: [(SynthesisDecision
     (SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
     (TargetSystem (BusNetwork tag v x t) tag v x t),
   SynthesisState
     (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-</span><a href="#local-6989586621680121514"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-128"></span><span>            </span><span class="annot"><span class="annottext">[[(SynthesisDecision
+</span><a href="#local-6989586621680182130"><span class="hs-identifier hs-var hs-var">edges</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-127"></span><span>            </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
      (TargetSystem (BusNetwork tag v x t) tag v x t),
@@ -628,7 +628,75 @@ sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
 forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">concat</span></span><span>
-</span><span id="line-129"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">(Bind tag v x
+</span><span id="line-128"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">(Allocation tag
+ -&gt; [(SynthesisDecision
+        (SynthesisState
+           (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t),
+      SynthesisState
+        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)])
+-&gt; [Allocation tag]
+-&gt; [[(SynthesisDecision
+        (SynthesisState
+           (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t),
+      SynthesisState
+        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; Allocation tag
+-&gt; [(SynthesisDecision
+       (SynthesisState
+          (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+       (TargetSystem (BusNetwork tag v x t) tag v x t),
+     SynthesisState
+       (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
+(SynthesisDecisionCls ctx m o d p,
+ SynthesisDecisionCls
+   (SynthesisState
+      (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
+   (TargetSystem (BusNetwork k a x t) k a x t)
+   o
+   d
+   p,
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
+Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+-&gt; o
+-&gt; [(SynthesisDecision ctx m,
+     SynthesisState
+       (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+  (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+-&gt; [Allocation tag]
+forall m tag v x t. SynthesisState m tag v x t -&gt; [Allocation tag]
+</span><a href="NITTA.Synthesis.Types.html#sAllocationOptions"><span class="hs-identifier hs-var hs-var">sAllocationOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
+  (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
+     (SynthesisState
+        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+     (TargetSystem (BusNetwork tag v x t) tag v x t),
+   SynthesisState
+     (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]]
+-&gt; [[(SynthesisDecision
+        (SynthesisState
+           (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t),
+      SynthesisState
+        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]]
+-&gt; [[(SynthesisDecision
+        (SynthesisState
+           (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t),
+      SynthesisState
+        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">(Bind tag v x
  -&gt; [(SynthesisDecision
         (SynthesisState
            (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -651,7 +719,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -660,23 +728,23 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [Bind tag v x]
 forall m tag v x t. SynthesisState m tag v x t -&gt; [Bind tag v x]
 </span><a href="NITTA.Synthesis.Types.html#sBindOptions"><span class="hs-identifier hs-var hs-var">sBindOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-130"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -719,7 +787,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -728,24 +796,24 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [DataflowSt tag v (TimeConstraint t)]
 forall m tag v x t.
 SynthesisState m tag v x t -&gt; [DataflowSt tag v (TimeConstraint t)]
 </span><a href="NITTA.Synthesis.Types.html#sDataflowOptions"><span class="hs-identifier hs-var hs-var">sDataflowOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-131"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -788,7 +856,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -797,23 +865,23 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [BreakLoop v x]
 forall m tag v x t. SynthesisState m tag v x t -&gt; [BreakLoop v x]
 </span><a href="NITTA.Synthesis.Types.html#sBreakLoopOptions"><span class="hs-identifier hs-var hs-var">sBreakLoopOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-132"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -856,7 +924,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -865,24 +933,24 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [ResolveDeadlock v x]
 forall m tag v x t.
 SynthesisState m tag v x t -&gt; [ResolveDeadlock v x]
 </span><a href="NITTA.Synthesis.Types.html#sResolveDeadlockOptions"><span class="hs-identifier hs-var hs-var">sResolveDeadlockOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-133"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -925,7 +993,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -934,24 +1002,24 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [OptimizeAccum v x]
 forall m tag v x t.
 SynthesisState m tag v x t -&gt; [OptimizeAccum v x]
 </span><a href="NITTA.Synthesis.Types.html#sOptimizeAccumOptions"><span class="hs-identifier hs-var hs-var">sOptimizeAccumOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-134"></span><span>                    </span><span class="annot"><span class="annottext">[[(SynthesisDecision
      (SynthesisState
         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -994,7 +1062,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
        (TargetSystem (BusNetwork tag v x t) tag v x t),
      SynthesisState
        (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-forall ctx m o d p k a x t.
+forall {ctx} {m} {o} {d} {p} {k} {a} {x} {t}.
 (SynthesisDecisionCls ctx m o d p,
  SynthesisDecisionCls
    (SynthesisState
@@ -1003,24 +1071,24 @@ forall ctx m o d p k a x t.
    o
    d
    p,
- ToJSON p, Viewable d DecisionView, Val x, Hashable a, Suffix a,
- ToString a, ToString k, IsString a, IsString k, Bounded t,
- Typeable p, Typeable a, Typeable k, Typeable t, Show d, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+ ToJSON p, Viewable d DecisionView, UnitTag k, Val x, Bounded t,
+ Hashable a, Suffix a, Show d, Show t, Default t, Integral t,
+ Typeable p, Typeable t, Typeable a, Ord a, ToString a,
+ IsString a) =&gt;
 Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var">decisonAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121517"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var">decisionAndContext</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680182133"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; [ConstantFolding v x]
 forall m tag v x t.
 SynthesisState m tag v x t -&gt; [ConstantFolding v x]
 </span><a href="NITTA.Synthesis.Types.html#sConstantFoldingOptions"><span class="hs-identifier hs-var hs-var">sConstantFoldingOptions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121515"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680182131"><span class="hs-identifier hs-var">sState</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-135"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-136"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[(Int,
   (SynthesisDecision
@@ -1065,7 +1133,7 @@ forall a b. [a] -&gt; [b] -&gt; [(a, b)]
     (TargetSystem (BusNetwork tag v x t) tag v x t),
   SynthesisState
     (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)]
-</span><a href="#local-6989586621680121514"><span class="hs-identifier hs-var">edges</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(((Int,
+</span><a href="#local-6989586621680182130"><span class="hs-identifier hs-var">edges</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(((Int,
    (SynthesisDecision
       (SynthesisState
          (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -1088,17 +1156,17 @@ forall a b. [a] -&gt; [b] -&gt; [(a, b)]
 -&gt; STM
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680121511"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121511"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680121510"><span class="annot"><span class="annottext">SynthesisDecision
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680182127"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680182127"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680182126"><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121510"><span class="hs-identifier hs-var">desc</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121509"><span class="annot"><span class="annottext">SynthesisState
+</span><a href="#local-6989586621680182126"><span class="hs-identifier hs-var">desc</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182125"><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121509"><span class="hs-identifier hs-var">ctx'</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-137"></span><span>            </span><span id="local-6989586621680121508"><span class="annot"><span class="annottext">TMVar
+</span><a href="#local-6989586621680182125"><span class="hs-identifier hs-var">ctx'</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-137"></span><span>            </span><span id="local-6989586621680182124"><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121508"><span class="hs-identifier hs-var">sSubForestVar</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM
+</span><a href="#local-6989586621680182124"><span class="hs-identifier hs-var">sSubForestVar</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">STM
   (TMVar
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t])
 forall a. STM (TMVar a)
@@ -1109,24 +1177,24 @@ forall a. STM (TMVar a)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span>
 </span><span id="line-139"></span><span>                </span><span class="annot"><span class="annottext">Tree :: forall m tag v x t.
-SID
+Sid
 -&gt; SynthesisState m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 -&gt; TMVar [Tree m tag v x t]
 -&gt; Tree m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span>
-</span><span id="line-140"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sID :: SID
-</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SID
-</span><a href="#local-6989586621680121516"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="annot"><span class="annottext">SID -&gt; SID -&gt; SID
+</span><span id="line-140"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sID :: Sid
+</span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Sid
+</span><a href="#local-6989586621680182132"><span class="hs-identifier hs-var">sID</span></a></span><span> </span><span class="annot"><span class="annottext">Sid -&gt; Sid -&gt; Sid
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; SID
-</span><a href="NITTA.Synthesis.Types.html#SID"><span class="hs-identifier hs-var">SID</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121511"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Sid
+</span><a href="NITTA.Synthesis.Types.html#Sid"><span class="hs-identifier hs-var">Sid</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680182127"><span class="hs-identifier hs-var">i</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-141"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sState :: SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 </span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisState
   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121509"><span class="hs-identifier hs-var">ctx'</span></a></span><span>
+</span><a href="#local-6989586621680182125"><span class="hs-identifier hs-var">ctx'</span></a></span><span>
 </span><span id="line-142"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sDecision :: SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
@@ -1135,43 +1203,43 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121510"><span class="hs-identifier hs-var">desc</span></a></span><span>
+</span><a href="#local-6989586621680182126"><span class="hs-identifier hs-var">desc</span></a></span><span>
 </span><span id="line-143"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 sSubForestVar :: TMVar
   [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121508"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span><span>
+</span><a href="#local-6989586621680182124"><span class="hs-identifier hs-var hs-var">sSubForestVar</span></a></span><span>
 </span><span id="line-144"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-145"></span><span>
-</span><span id="line-146"></span><span id="decisonAndContext"><span class="annot"><span class="annottext">decisonAndContext :: Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><span id="line-146"></span><span id="decisionAndContext"><span class="annot"><span class="annottext">decisionAndContext :: Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o
 -&gt; [(SynthesisDecision ctx m,
      SynthesisState
        (TargetSystem (BusNetwork k a x t) k a x t) k a x t)]
-</span><a href="NITTA.Synthesis.Explore.html#decisonAndContext"><span class="hs-identifier hs-var hs-var">decisonAndContext</span></a></span></span><span> </span><span id="local-6989586621680121507"><span class="annot"><span class="annottext">parent :: Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121507"><span class="hs-identifier hs-var">parent</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
-</span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680121506"><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121506"><span class="hs-identifier hs-var">ctx</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680121505"><span class="annot"><span class="annottext">o
-</span><a href="#local-6989586621680121505"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Synthesis.Explore.html#decisionAndContext"><span class="hs-identifier hs-var hs-var">decisionAndContext</span></a></span></span><span> </span><span id="local-6989586621680182083"><span class="annot"><span class="annottext">parent :: Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><a href="#local-6989586621680182083"><span class="hs-identifier hs-var">parent</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
+</span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680182082"><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><a href="#local-6989586621680182082"><span class="hs-identifier hs-var">ctx</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680182081"><span class="annot"><span class="annottext">o
+</span><a href="#local-6989586621680182081"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-147"></span><span>    </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">o -&gt; d -&gt; p -&gt; Float -&gt; SynthesisDecision ctx m
 forall p ctx m o d.
 (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p,
  Viewable d DecisionView) =&gt;
 o -&gt; d -&gt; p -&gt; Float -&gt; SynthesisDecision ctx m
 </span><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-var">SynthesisDecision</span></a></span><span> </span><span class="annot"><span class="annottext">o
-</span><a href="#local-6989586621680121505"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
-</span><a href="#local-6989586621680121504"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680121503"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Float
-</span><a href="#local-6989586621680121502"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
+</span><a href="#local-6989586621680182081"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680182080"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621680182079"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621680182078"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 -&gt; TargetSystem (BusNetwork k a x t) k a x t
 -&gt; SynthesisState
      (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-forall x a k t.
-(Val x, Hashable a, Suffix a, ToString a, ToString k, IsString a,
- IsString k, Bounded t, Typeable a, Typeable k, Typeable t, Show t,
- Default t, Integral t, Ord a, Ord k) =&gt;
+forall {k} {x} {t} {a}.
+(UnitTag k, Val x, Bounded t, Hashable a, Suffix a, Show t,
+ Default t, Integral t, Ord a, Typeable t, Typeable a, ToString a,
+ IsString a) =&gt;
 Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 -&gt; TargetSystem (BusNetwork k a x t) k a x t
 -&gt; SynthesisState
@@ -1180,64 +1248,79 @@ Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 -&gt; Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121507"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121501"><span class="hs-identifier hs-var">model</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-148"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680121504"><span class="annot"><span class="annottext">d
-</span><a href="#local-6989586621680121504"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121501"><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121501"><span class="hs-identifier hs-var">model</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><a href="#local-6989586621680182083"><span class="hs-identifier hs-var">parent</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680182077"><span class="hs-identifier hs-var">model</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680182080"><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680182080"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680182077"><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680182077"><span class="hs-identifier hs-var">model</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o -&gt; [(d, TargetSystem (BusNetwork k a x t) k a x t)]
 forall ctx m o d p.
 SynthesisDecisionCls ctx m o d p =&gt;
 ctx -&gt; o -&gt; [(d, m)]
 </span><a href="NITTA.Synthesis.Types.html#decisions"><span class="hs-identifier hs-var">decisions</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121506"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
-</span><a href="#local-6989586621680121505"><span class="hs-identifier hs-var">o</span></a></span><span>
-</span><span id="line-149"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680121503"><span class="annot"><span class="annottext">p :: p
-</span><a href="#local-6989586621680121503"><span class="hs-identifier hs-var hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><a href="#local-6989586621680182082"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
+</span><a href="#local-6989586621680182081"><span class="hs-identifier hs-var">o</span></a></span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680182079"><span class="annot"><span class="annottext">p :: p
+</span><a href="#local-6989586621680182079"><span class="hs-identifier hs-var hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o -&gt; d -&gt; p
 forall ctx m o d p.
 SynthesisDecisionCls ctx m o d p =&gt;
 ctx -&gt; o -&gt; d -&gt; p
 </span><a href="NITTA.Synthesis.Types.html#parameters"><span class="hs-identifier hs-var">parameters</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121506"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
-</span><a href="#local-6989586621680121505"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
-</span><a href="#local-6989586621680121504"><span class="hs-identifier hs-var">d</span></a></span><span>
-</span><span id="line-150"></span><span>          </span><span id="local-6989586621680121502"><span class="annot"><span class="annottext">e :: Float
-</span><a href="#local-6989586621680121502"><span class="hs-identifier hs-var hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
+</span><a href="#local-6989586621680182082"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
+</span><a href="#local-6989586621680182081"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680182080"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-150"></span><span>          </span><span id="local-6989586621680182078"><span class="annot"><span class="annottext">e :: Float
+</span><a href="#local-6989586621680182078"><span class="hs-identifier hs-var hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
 -&gt; o -&gt; d -&gt; p -&gt; Float
 forall ctx m o d p.
 SynthesisDecisionCls ctx m o d p =&gt;
 ctx -&gt; o -&gt; d -&gt; p -&gt; Float
 </span><a href="NITTA.Synthesis.Types.html#estimate"><span class="hs-identifier hs-var">estimate</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisState (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="#local-6989586621680121506"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
-</span><a href="#local-6989586621680121505"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
-</span><a href="#local-6989586621680121504"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680121503"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680182082"><span class="hs-identifier hs-var">ctx</span></a></span><span> </span><span class="annot"><span class="annottext">o
+</span><a href="#local-6989586621680182081"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680182080"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621680182079"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-151"></span><span>    </span><span class="hs-special">]</span><span>
 </span><span id="line-152"></span><span>
 </span><span id="line-153"></span><span id="nodeCtx"><span class="annot"><span class="annottext">nodeCtx :: Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 -&gt; TargetSystem (BusNetwork k a x t) k a x t
 -&gt; SynthesisState
      (TargetSystem (BusNetwork k a x t) k a x t) k a x t
-</span><a href="NITTA.Synthesis.Explore.html#nodeCtx"><span class="hs-identifier hs-var hs-var">nodeCtx</span></a></span></span><span> </span><span id="local-6989586621680121497"><span class="annot"><span class="annottext">Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
-</span><a href="#local-6989586621680121497"><span class="hs-identifier hs-var">parent</span></a></span></span><span> </span><span id="local-6989586621680121496"><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-154"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680121495"><span class="annot"><span class="annottext">sBindOptions :: [Bind k a x]
-</span><a href="#local-6989586621680121495"><span class="hs-identifier hs-var hs-var">sBindOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [Bind k a x]
+</span><a href="NITTA.Synthesis.Explore.html#nodeCtx"><span class="hs-identifier hs-var hs-var">nodeCtx</span></a></span></span><span> </span><span id="local-6989586621680181974"><span class="annot"><span class="annottext">Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
+</span><a href="#local-6989586621680181974"><span class="hs-identifier hs-var">parent</span></a></span></span><span> </span><span id="local-6989586621680181973"><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680181972"><span class="annot"><span class="annottext">sBindOptions :: [Bind k a x]
+</span><a href="#local-6989586621680181972"><span class="hs-identifier hs-var hs-var">sBindOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [Bind k a x]
 forall u tag v x. BindProblem u tag v x =&gt; u -&gt; [Bind tag v x]
 </span><a href="NITTA.Model.Problems.Bind.html#bindOptions"><span class="hs-identifier hs-var">bindOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-155"></span><span>        </span><span id="local-6989586621680121493"><span class="annot"><span class="annottext">sDataflowOptions :: [DataflowSt k a (TimeConstraint t)]
-</span><a href="#local-6989586621680121493"><span class="hs-identifier hs-var hs-var">sDataflowOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-155"></span><span>        </span><span id="local-6989586621680181970"><span class="annot"><span class="annottext">sDataflowOptions :: [DataflowSt k a (TimeConstraint t)]
+</span><a href="#local-6989586621680181970"><span class="hs-identifier hs-var hs-var">sDataflowOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
 -&gt; [DataflowSt k a (TimeConstraint t)]
 forall u tag v t.
 DataflowProblem u tag v t =&gt;
 u -&gt; [DataflowSt tag v (TimeConstraint t)]
 </span><a href="NITTA.Model.Problems.Dataflow.html#dataflowOptions"><span class="hs-identifier hs-var">dataflowOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-156"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">SynthesisState :: forall m tag v x t.
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-156"></span><span>        </span><span id="local-6989586621680181968"><span class="annot"><span class="annottext">fs :: [F a x]
+</span><a href="#local-6989586621680181968"><span class="hs-identifier hs-var hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataFlowGraph a x -&gt; [F a x]
+forall a f. WithFunctions a f =&gt; a -&gt; [f]
+</span><a href="NITTA.Intermediate.Types.html#functions"><span class="hs-identifier hs-var">functions</span></a></span><span> </span><span class="annot"><span class="annottext">(DataFlowGraph a x -&gt; [F a x]) -&gt; DataFlowGraph a x -&gt; [F a x]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; DataFlowGraph a x
+forall u tag v x t. TargetSystem u tag v x t -&gt; DataFlowGraph v x
+</span><a href="NITTA.Model.TargetSystem.html#mDataFlowGraph"><span class="hs-identifier hs-var hs-var">mDataFlowGraph</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-157"></span><span>        </span><span id="local-6989586621680181965"><span class="annot"><span class="annottext">processWaves :: [ProcessWave a x]
+</span><a href="#local-6989586621680181965"><span class="hs-identifier hs-var hs-var">processWaves</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [F a x] -&gt; [ProcessWave a x]
+forall v x. (Var v, Val x) =&gt; [v] -&gt; [F v x] -&gt; [ProcessWave v x]
+</span><a href="NITTA.Intermediate.Analysis.html#buildProcessWaves"><span class="hs-identifier hs-var">buildProcessWaves</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680181968"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-158"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">SynthesisState :: forall m tag v x t.
 Maybe (Tree m tag v x t)
 -&gt; m
+-&gt; [Allocation tag]
 -&gt; [Bind tag v x]
 -&gt; [ResolveDeadlock v x]
 -&gt; [OptimizeAccum v x]
@@ -1247,62 +1330,69 @@ Maybe (Tree m tag v x t)
 -&gt; Map (F v x) [tag]
 -&gt; Set (F v x)
 -&gt; Map v Int
+-&gt; [ProcessWave v x]
+-&gt; Int
 -&gt; Int
 -&gt; Set v
 -&gt; SynthesisState m tag v x t
 </span><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span>
-</span><span id="line-157"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sTarget :: TargetSystem (BusNetwork k a x t) k a x t
+</span><span id="line-159"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sTarget :: TargetSystem (BusNetwork k a x t) k a x t
 </span><a href="NITTA.Synthesis.Types.html#sTarget"><span class="hs-identifier hs-var">sTarget</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-158"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sParent :: Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-160"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sParent :: Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
 </span><a href="NITTA.Synthesis.Types.html#sParent"><span class="hs-identifier hs-var">sParent</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Tree (TargetSystem (BusNetwork k a x t) k a x t) k a x t)
-</span><a href="#local-6989586621680121497"><span class="hs-identifier hs-var">parent</span></a></span><span>
-</span><span id="line-159"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Bind k a x]
+</span><a href="#local-6989586621680181974"><span class="hs-identifier hs-var">parent</span></a></span><span>
+</span><span id="line-161"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sAllocationOptions :: [Allocation k]
+</span><a href="NITTA.Synthesis.Types.html#sAllocationOptions"><span class="hs-identifier hs-var">sAllocationOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [Allocation k]
+forall u tag. AllocationProblem u tag =&gt; u -&gt; [Allocation tag]
+</span><a href="NITTA.Model.Problems.Allocation.html#allocationOptions"><span class="hs-identifier hs-var">allocationOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-162"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Bind k a x]
 sBindOptions :: [Bind k a x]
 sBindOptions :: [Bind k a x]
-</span><a href="#local-6989586621680121495"><span class="hs-identifier hs-var hs-var">sBindOptions</span></a></span><span>
-</span><span id="line-160"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)]
+</span><a href="#local-6989586621680181972"><span class="hs-identifier hs-var hs-var">sBindOptions</span></a></span><span>
+</span><span id="line-163"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)]
 sDataflowOptions :: [DataflowSt k a (TimeConstraint t)]
 sDataflowOptions :: [DataflowSt k a (TimeConstraint t)]
-</span><a href="#local-6989586621680121493"><span class="hs-identifier hs-var hs-var">sDataflowOptions</span></a></span><span>
-</span><span id="line-161"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sResolveDeadlockOptions :: [ResolveDeadlock a x]
+</span><a href="#local-6989586621680181970"><span class="hs-identifier hs-var hs-var">sDataflowOptions</span></a></span><span>
+</span><span id="line-164"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sResolveDeadlockOptions :: [ResolveDeadlock a x]
 </span><a href="NITTA.Synthesis.Types.html#sResolveDeadlockOptions"><span class="hs-identifier hs-var">sResolveDeadlockOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [ResolveDeadlock a x]
 forall u v x.
 ResolveDeadlockProblem u v x =&gt;
 u -&gt; [ResolveDeadlock v x]
 </span><a href="NITTA.Model.Problems.Refactor.ResolveDeadlock.html#resolveDeadlockOptions"><span class="hs-identifier hs-var">resolveDeadlockOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-162"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sBreakLoopOptions :: [BreakLoop a x]
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-165"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sBreakLoopOptions :: [BreakLoop a x]
 </span><a href="NITTA.Synthesis.Types.html#sBreakLoopOptions"><span class="hs-identifier hs-var">sBreakLoopOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [BreakLoop a x]
 forall u v x. BreakLoopProblem u v x =&gt; u -&gt; [BreakLoop v x]
 </span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopOptions"><span class="hs-identifier hs-var">breakLoopOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-163"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sConstantFoldingOptions :: [ConstantFolding a x]
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-166"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sConstantFoldingOptions :: [ConstantFolding a x]
 </span><a href="NITTA.Synthesis.Types.html#sConstantFoldingOptions"><span class="hs-identifier hs-var">sConstantFoldingOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [ConstantFolding a x]
 forall u v x.
 ConstantFoldingProblem u v x =&gt;
 u -&gt; [ConstantFolding v x]
 </span><a href="NITTA.Model.Problems.Refactor.ConstantFolding.html#constantFoldingOptions"><span class="hs-identifier hs-var">constantFoldingOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-164"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sOptimizeAccumOptions :: [OptimizeAccum a x]
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-167"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sOptimizeAccumOptions :: [OptimizeAccum a x]
 </span><a href="NITTA.Synthesis.Types.html#sOptimizeAccumOptions"><span class="hs-identifier hs-var">sOptimizeAccumOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; [OptimizeAccum a x]
 forall u v x.
 OptimizeAccumProblem u v x =&gt;
 u -&gt; [OptimizeAccum v x]
 </span><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#optimizeAccumOptions"><span class="hs-identifier hs-var">optimizeAccumOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span>
-</span><span id="line-165"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bindingAlternative :: Map (F a x) [k]
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span>
+</span><span id="line-168"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bindingAlternative :: Map (F a x) [k]
 </span><a href="NITTA.Synthesis.Types.html#bindingAlternative"><span class="hs-identifier hs-var">bindingAlternative</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-166"></span><span>                </span><span class="annot"><span class="annottext">(Map (F a x) [k] -&gt; Bind k a x -&gt; Map (F a x) [k])
+</span><span id="line-169"></span><span>                </span><span class="annot"><span class="annottext">(Map (F a x) [k] -&gt; Bind k a x -&gt; Map (F a x) [k])
 -&gt; Map (F a x) [k] -&gt; [Bind k a x] -&gt; Map (F a x) [k]
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-167"></span><span>                    </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680121484"><span class="annot"><span class="annottext">Map (F a x) [k]
-</span><a href="#local-6989586621680121484"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Bind.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span id="local-6989586621680121482"><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680121482"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680121481"><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680121481"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Maybe [k] -&gt; Maybe [k])
+</span><span id="line-170"></span><span>                    </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680181956"><span class="annot"><span class="annottext">Map (F a x) [k]
+</span><a href="#local-6989586621680181956"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Bind.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span id="local-6989586621680181954"><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680181954"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680181953"><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621680181953"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Maybe [k] -&gt; Maybe [k])
 -&gt; F a x -&gt; Map (F a x) [k] -&gt; Map (F a x) [k]
 forall k a.
 Ord k =&gt;
@@ -1314,102 +1404,102 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[k] -&gt; ([k] -&gt; [k]) -&gt; Maybe [k] -&gt; [k]
 forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 </span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680121481"><span class="hs-identifier hs-var">tag</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680121481"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">k -&gt; [k] -&gt; [k]
+</span><a href="#local-6989586621680181953"><span class="hs-identifier hs-var">tag</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621680181953"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">k -&gt; [k] -&gt; [k]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680121482"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Map (F a x) [k]
-</span><a href="#local-6989586621680121484"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-168"></span><span>                    </span><span class="annot"><span class="annottext">Map (F a x) [k]
+</span><a href="#local-6989586621680181954"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Map (F a x) [k]
+</span><a href="#local-6989586621680181956"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-171"></span><span>                    </span><span class="annot"><span class="annottext">Map (F a x) [k]
 forall k a. Map k a
 </span><span class="hs-identifier hs-var">M.empty</span></span><span>
-</span><span id="line-169"></span><span>                    </span><span class="annot"><span class="annottext">[Bind k a x]
-</span><a href="#local-6989586621680121495"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span>
-</span><span id="line-170"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">possibleDeadlockBinds :: Set (F a x)
+</span><span id="line-172"></span><span>                    </span><span class="annot"><span class="annottext">[Bind k a x]
+</span><a href="#local-6989586621680181972"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span>
+</span><span id="line-173"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">possibleDeadlockBinds :: Set (F a x)
 </span><a href="NITTA.Synthesis.Types.html#possibleDeadlockBinds"><span class="hs-identifier hs-var">possibleDeadlockBinds</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-171"></span><span>                </span><span class="annot"><span class="annottext">[F a x] -&gt; Set (F a x)
+</span><span id="line-174"></span><span>                </span><span class="annot"><span class="annottext">[F a x] -&gt; Set (F a x)
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span>
-</span><span id="line-172"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680121475"><span class="hs-identifier hs-var">f</span></a></span><span>
-</span><span id="line-173"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Bind.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span id="local-6989586621680121475"><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680121475"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680121474"><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680121474"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Bind k a x]
-</span><a href="#local-6989586621680121495"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span>
-</span><span id="line-174"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Lock"><span class="hs-identifier hs-type">Lock</span></a></span><span class="hs-special">{</span><span id="local-6989586621680121472"><span class="annot"><span class="annottext">a
+</span><span id="line-175"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680181947"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-176"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Bind.html#Bind"><span class="hs-identifier hs-type">Bind</span></a></span><span> </span><span id="local-6989586621680181947"><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680181947"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680181946"><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621680181946"><span class="hs-identifier hs-var">tag</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Bind k a x]
+</span><a href="#local-6989586621680181972"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span>
+</span><span id="line-177"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Lock"><span class="hs-identifier hs-type">Lock</span></a></span><span class="hs-special">{</span><span id="local-6989586621680181944"><span class="annot"><span class="annottext">a
 lockBy :: forall v. Lock v -&gt; v
 lockBy :: a
 </span><a href="NITTA.Intermediate.Types.html#lockBy"><span class="hs-identifier hs-var hs-var">lockBy</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; [Lock a]
 forall x v. Locks x v =&gt; x -&gt; [Lock v]
 </span><a href="NITTA.Intermediate.Types.html#locks"><span class="hs-identifier hs-var">locks</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680121475"><span class="hs-identifier hs-var">f</span></a></span><span>
-</span><span id="line-175"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680121472"><span class="hs-identifier hs-var">lockBy</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Set a -&gt; Bool
+</span><a href="#local-6989586621680181947"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-178"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680181944"><span class="hs-identifier hs-var">lockBy</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Set a -&gt; Bool
 forall a. Ord a =&gt; a -&gt; Set a -&gt; Bool
 </span><span class="hs-operator hs-var">`S.member`</span></span><span> </span><span class="annot"><span class="annottext">(F a x -&gt; Set a) -&gt; [F a x] -&gt; Set a
-forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k -&gt; BusNetwork k a x t -&gt; [F a x]
-forall k v x t. Ord k =&gt; k -&gt; BusNetwork k v x t -&gt; [F v x]
+forall {k} {v} {x} {t}. Ord k =&gt; k -&gt; BusNetwork k v x t -&gt; [F v x]
 </span><a href="NITTA.Model.Networks.Bus.html#bindedFunctions"><span class="hs-identifier hs-var">bindedFunctions</span></a></span><span> </span><span class="annot"><span class="annottext">k
-</span><a href="#local-6989586621680121474"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">(BusNetwork k a x t -&gt; [F a x]) -&gt; BusNetwork k a x t -&gt; [F a x]
+</span><a href="#local-6989586621680181946"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">(BusNetwork k a x t -&gt; [F a x]) -&gt; BusNetwork k a x t -&gt; [F a x]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; BusNetwork k a x t
 forall u tag v x t. TargetSystem u tag v x t -&gt; u
 </span><a href="NITTA.Model.TargetSystem.html#mUnit"><span class="hs-identifier hs-var hs-var">mUnit</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-176"></span><span>                    </span><span class="hs-special">]</span><span>
-</span><span id="line-177"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bindWaves :: Map a Int
-</span><a href="NITTA.Synthesis.Types.html#bindWaves"><span class="hs-identifier hs-var">bindWaves</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-178"></span><span>                </span><span class="annot"><span class="annottext">[a] -&gt; [F a x] -&gt; Map a Int
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-179"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-180"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bindWaves :: Map a Int
+</span><a href="NITTA.Synthesis.Types.html#bindWaves"><span class="hs-identifier hs-var">bindWaves</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [F a x] -&gt; Map a Int
 forall v x a. (Var v, Val x, Num a) =&gt; [v] -&gt; [F v x] -&gt; Map v a
-</span><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier hs-var">estimateVarWaves</span></a></span><span>
-</span><span id="line-179"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set a -&gt; [a]
+</span><a href="NITTA.Intermediate.Analysis.html#estimateVarWaves"><span class="hs-identifier hs-var">estimateVarWaves</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set a -&gt; [a]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.elems</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">BusNetwork k a x t -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; BusNetwork k a x t
 forall u tag v x t. TargetSystem u tag v x t -&gt; u
 </span><a href="NITTA.Model.TargetSystem.html#mUnit"><span class="hs-identifier hs-var hs-var">mUnit</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Set a
+</span><a href="#local-6989586621680181973"><span class="hs-identifier hs-var">nModel</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; Set a -&gt; Set a
 forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">S.\\</span></span><span> </span><span class="annot"><span class="annottext">(Bind k a x -&gt; Set a) -&gt; [Bind k a x] -&gt; Set a
-forall a1 a2. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">Bind k a x -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">[Bind k a x]
-</span><a href="#local-6989586621680121495"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-180"></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DataFlowGraph a x -&gt; [F a x]
-forall a f. WithFunctions a f =&gt; a -&gt; [f]
-</span><a href="NITTA.Intermediate.Types.html#functions"><span class="hs-identifier hs-var">functions</span></a></span><span> </span><span class="annot"><span class="annottext">(DataFlowGraph a x -&gt; [F a x]) -&gt; DataFlowGraph a x -&gt; [F a x]
-forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t -&gt; DataFlowGraph a x
-forall u tag v x t. TargetSystem u tag v x t -&gt; DataFlowGraph v x
-</span><a href="NITTA.Model.TargetSystem.html#mDataFlowGraph"><span class="hs-identifier hs-var hs-var">mDataFlowGraph</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
-</span><a href="#local-6989586621680121496"><span class="hs-identifier hs-var">nModel</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-181"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">numberOfDataflowOptions :: Int
+</span><a href="#local-6989586621680181972"><span class="hs-identifier hs-var">sBindOptions</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680181968"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><span id="line-181"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[ProcessWave a x]
+processWaves :: [ProcessWave a x]
+processWaves :: [ProcessWave a x]
+</span><a href="NITTA.Synthesis.Types.html#processWaves"><span class="hs-identifier hs-var hs-var">processWaves</span></a></span><span>
+</span><span id="line-182"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">numberOfProcessWaves :: Int
+</span><a href="NITTA.Synthesis.Types.html#numberOfProcessWaves"><span class="hs-identifier hs-var">numberOfProcessWaves</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[ProcessWave a x] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[ProcessWave a x]
+</span><a href="#local-6989586621680181965"><span class="hs-identifier hs-var">processWaves</span></a></span><span>
+</span><span id="line-183"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">numberOfDataflowOptions :: Int
 </span><a href="NITTA.Synthesis.Types.html#numberOfDataflowOptions"><span class="hs-identifier hs-var">numberOfDataflowOptions</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)] -&gt; Int
 forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)]
-</span><a href="#local-6989586621680121493"><span class="hs-identifier hs-var">sDataflowOptions</span></a></span><span>
-</span><span id="line-182"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">transferableVars :: Set a
+</span><a href="#local-6989586621680181970"><span class="hs-identifier hs-var">sDataflowOptions</span></a></span><span>
+</span><span id="line-184"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">transferableVars :: Set a
 </span><a href="NITTA.Synthesis.Types.html#transferableVars"><span class="hs-identifier hs-var">transferableVars</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-183"></span><span>                </span><span class="annot"><span class="annottext">[Set a] -&gt; Set a
+</span><span id="line-185"></span><span>                </span><span class="annot"><span class="annottext">[Set a] -&gt; Set a
 forall (f :: * -&gt; *) a. (Foldable f, Ord a) =&gt; f (Set a) -&gt; Set a
 </span><span class="hs-identifier hs-var">S.unions</span></span><span>
-</span><span id="line-184"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">EndpointSt a (TimeConstraint t) -&gt; Set a
+</span><span id="line-186"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">EndpointSt a (TimeConstraint t) -&gt; Set a
 forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">EndpointSt a (TimeConstraint t)
-</span><a href="#local-6989586621680121456"><span class="hs-identifier hs-var">ep</span></a></span><span>
-</span><span id="line-185"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><span class="annottext">(k, EndpointSt a (TimeConstraint t))
-</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680121454"><span class="annot"><span class="annottext">[(k, EndpointSt a (TimeConstraint t))]
-</span><a href="#local-6989586621680121454"><span class="hs-identifier hs-var">targets</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)]
-</span><a href="#local-6989586621680121493"><span class="hs-identifier hs-var">sDataflowOptions</span></a></span><span>
-</span><span id="line-186"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k
-</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680121456"><span class="annot"><span class="annottext">EndpointSt a (TimeConstraint t)
-</span><a href="#local-6989586621680121456"><span class="hs-identifier hs-var">ep</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(k, EndpointSt a (TimeConstraint t))]
-</span><a href="#local-6989586621680121454"><span class="hs-identifier hs-var">targets</span></a></span><span>
-</span><span id="line-187"></span><span>                    </span><span class="hs-special">]</span><span>
-</span><span id="line-188"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-189"></span></pre></body></html>
+</span><a href="#local-6989586621680181928"><span class="hs-identifier hs-var">ep</span></a></span><span>
+</span><span id="line-187"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowSt"><span class="hs-identifier hs-type">DataflowSt</span></a></span><span> </span><span class="annot"><span class="annottext">(k, EndpointSt a (TimeConstraint t))
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680181926"><span class="annot"><span class="annottext">[(k, EndpointSt a (TimeConstraint t))]
+</span><a href="#local-6989586621680181926"><span class="hs-identifier hs-var">targets</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[DataflowSt k a (TimeConstraint t)]
+</span><a href="#local-6989586621680181970"><span class="hs-identifier hs-var">sDataflowOptions</span></a></span><span>
+</span><span id="line-188"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k
+</span><span class="hs-identifier">_</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680181928"><span class="annot"><span class="annottext">EndpointSt a (TimeConstraint t)
+</span><a href="#local-6989586621680181928"><span class="hs-identifier hs-var">ep</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(k, EndpointSt a (TimeConstraint t))]
+</span><a href="#local-6989586621680181926"><span class="hs-identifier hs-var">targets</span></a></span><span>
+</span><span id="line-189"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-190"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-191"></span></pre></body></html>

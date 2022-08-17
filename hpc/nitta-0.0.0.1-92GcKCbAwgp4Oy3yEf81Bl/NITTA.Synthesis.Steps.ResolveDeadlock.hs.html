@@ -1,0 +1,101 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE GADTs #-}
+<span class="lineno">    2 </span>{-# LANGUAGE NoMonomorphismRestriction #-}
+<span class="lineno">    3 </span>
+<span class="lineno">    4 </span>{-# OPTIONS -fno-warn-orphans #-}
+<span class="lineno">    5 </span>
+<span class="lineno">    6 </span>{- |
+<span class="lineno">    7 </span>Module      : NITTA.Synthesis.Steps.ResolveDeadlock
+<span class="lineno">    8 </span>Description :
+<span class="lineno">    9 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">   10 </span>License     : BSD3
+<span class="lineno">   11 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   12 </span>Stability   : experimental
+<span class="lineno">   13 </span>-}
+<span class="lineno">   14 </span>module NITTA.Synthesis.Steps.ResolveDeadlock (
+<span class="lineno">   15 </span>    ResolveDeadlockMetrics (..),
+<span class="lineno">   16 </span>) where
+<span class="lineno">   17 </span>
+<span class="lineno">   18 </span>import Data.Aeson (ToJSON)
+<span class="lineno">   19 </span>import Data.Set qualified as S
+<span class="lineno">   20 </span>import GHC.Generics
+<span class="lineno">   21 </span>import NITTA.Intermediate.Types
+<span class="lineno">   22 </span>import NITTA.Model.Networks.Bus
+<span class="lineno">   23 </span>import NITTA.Model.Problems.Refactor
+<span class="lineno">   24 </span>import NITTA.Model.ProcessorUnits
+<span class="lineno">   25 </span>import NITTA.Model.TargetSystem
+<span class="lineno">   26 </span>import NITTA.Synthesis.Types
+<span class="lineno">   27 </span>
+<span class="lineno">   28 </span>data ResolveDeadlockMetrics = ResolveDeadlockMetrics
+<span class="lineno">   29 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pNumberOfLockedVariables</span></span></span> :: Float
+<span class="lineno">   30 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pBufferCount</span></span></span> :: Float
+<span class="lineno">   31 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pNumberOfTransferableVariables</span></span></span> :: Float
+<span class="lineno">   32 </span>    }
+<span class="lineno">   33 </span>    deriving (Generic)
+<span class="lineno">   34 </span>
+<span class="lineno">   35 </span>instance ToJSON ResolveDeadlockMetrics
+<span class="lineno">   36 </span>
+<span class="lineno">   37 </span>instance
+<span class="lineno">   38 </span>    (UnitTag tag, VarValTime v x t) =&gt;
+<span class="lineno">   39 </span>    SynthesisDecisionCls
+<span class="lineno">   40 </span>        (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+<span class="lineno">   41 </span>        (TargetSystem (BusNetwork tag v x t) tag v x t)
+<span class="lineno">   42 </span>        (ResolveDeadlock v x)
+<span class="lineno">   43 </span>        (ResolveDeadlock v x)
+<span class="lineno">   44 </span>        ResolveDeadlockMetrics
+<span class="lineno">   45 </span>    where
+<span class="lineno">   46 </span>    <span class="decl"><span class="istickedoff">decisions SynthesisState{sTarget} o = [(o, resolveDeadlockDecision sTarget o)]</span></span>
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>    <span class="decl"><span class="istickedoff">parameters SynthesisState{transferableVars} ResolveDeadlock{newBuffer} _ =</span>
+<span class="lineno">   49 </span><span class="spaces">        </span><span class="istickedoff">let buffered = outputs newBuffer</span>
+<span class="lineno">   50 </span><span class="spaces">         </span><span class="istickedoff">in ResolveDeadlockMetrics</span>
+<span class="lineno">   51 </span><span class="spaces">                </span><span class="istickedoff">{ pNumberOfLockedVariables = fromIntegral $ S.size buffered</span>
+<span class="lineno">   52 </span><span class="spaces">                </span><span class="istickedoff">, pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems buffered</span>
+<span class="lineno">   53 </span><span class="spaces">                </span><span class="istickedoff">, pNumberOfTransferableVariables = fromIntegral (S.size $ buffered `S.intersection` transferableVars)</span>
+<span class="lineno">   54 </span><span class="spaces">                </span><span class="istickedoff">}</span></span>
+<span class="lineno">   55 </span>
+<span class="lineno">   56 </span>    <span class="decl"><span class="istickedoff">estimate SynthesisState{sParent} _o d _ | <span class="tickonlyfalse">0 &lt; decisionRepeats d sParent</span> = <span class="nottickedoff">-2</span></span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">estimate SynthesisState{} _o _d ResolveDeadlockMetrics{pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables} =</span>
+<span class="lineno">   58 </span><span class="spaces">        </span><span class="istickedoff">1000</span>
+<span class="lineno">   59 </span><span class="spaces">            </span><span class="istickedoff">+ pNumberOfLockedVariables</span>
+<span class="lineno">   60 </span><span class="spaces">            </span><span class="istickedoff">- pBufferCount * 1000</span>
+<span class="lineno">   61 </span><span class="spaces">            </span><span class="istickedoff">- 20 * pNumberOfTransferableVariables</span></span>
+<span class="lineno">   62 </span>
+<span class="lineno">   63 </span><span class="decl"><span class="istickedoff">decisionRepeats d parent =</span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">let ds = toRootDecisionStrings parent</span>
+<span class="lineno">   65 </span><span class="spaces">     </span><span class="istickedoff">in length $ takeWhile (== show d) ds</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span><span class="decl"><span class="istickedoff">toRootDecisionStrings parent =</span>
+<span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">map</span>
+<span class="lineno">   69 </span><span class="spaces">        </span><span class="istickedoff">( ( \case</span>
+<span class="lineno">   70 </span><span class="spaces">                </span><span class="istickedoff">SynthesisDecision{decision} -&gt; show decision</span>
+<span class="lineno">   71 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">&quot;&quot;</span></span>
+<span class="lineno">   72 </span><span class="spaces">          </span><span class="istickedoff">)</span>
+<span class="lineno">   73 </span><span class="spaces">            </span><span class="istickedoff">. sDecision</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="istickedoff">)</span>
+<span class="lineno">   75 </span><span class="spaces">        </span><span class="istickedoff">$ toRoot parent</span></span>
+<span class="lineno">   76 </span>
+<span class="lineno">   77 </span><span class="decl"><span class="istickedoff">toRoot (Just tree@Tree{sState = SynthesisState{sParent}}) = tree : <span class="nottickedoff">toRoot sParent</span></span>
+<span class="lineno">   78 </span><span class="spaces"></span><span class="istickedoff">toRoot _ = <span class="nottickedoff">[]</span></span></span>
+
+</pre>
+</body>
+</html>

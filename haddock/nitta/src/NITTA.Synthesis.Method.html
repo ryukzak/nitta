@@ -1,13 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ConstraintKinds #-}</span><span>
-</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
-</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
-</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase #-}</span><span>
-</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
-</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE PartialTypeSignatures #-}</span><span>
-</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
-</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
-</span><span id="line-9"></span><span>
-</span><span id="line-10"></span><span class="hs-comment">{- |
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE PartialTypeSignatures #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-comment">{- |
 Module      : NITTA.Synthesis.Method
 Description : Synthesis method implementation.
 Copyright   : (c) Aleksandr Penskoi, 2021
@@ -15,79 +10,81 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.Method</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier">DefTree</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier">SynthesisMethod</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier">simpleSynthesisIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier">smartBindSynthesisIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier">obviousBindThreadIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier">allBestThreadIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-25"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier">stateOfTheArtSynthesisIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-26"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier">allBindsAndRefsIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-27"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier">bestStepIO</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-28"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-29"></span><span>
-</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">L</span></span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span>
-</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Debug.Trace</span></span><span>
-</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits</span></a></span><span>
-</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.TargetSystem.html"><span class="hs-identifier">NITTA.Model.TargetSystem</span></a></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Explore.html"><span class="hs-identifier">NITTA.Synthesis.Explore</span></a></span><span>
-</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.html"><span class="hs-identifier">NITTA.Synthesis.Steps</span></a></span><span>
-</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span>
-</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.Base.html#maximumOn"><span class="hs-identifier">maximumOn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Utils.Base.html#minimumOn"><span class="hs-identifier">minimumOn</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Safe</span></span><span>
-</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
-</span><span id="line-41"></span><span>
-</span><span id="line-42"></span><span class="hs-comment">{- |The constant, which restricts the maximum number of synthesis steps. Avoids
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.Method</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier">DefTree</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier">SynthesisMethod</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier">simpleSynthesisIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier">smartBindSynthesisIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier">obviousBindThreadIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier">allBestThreadIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier">stateOfTheArtSynthesisIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier">allBindsAndRefsIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier">bestStepIO</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">L</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Debug.Trace</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits</span></a></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.TargetSystem.html"><span class="hs-identifier">NITTA.Model.TargetSystem</span></a></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Explore.html"><span class="hs-identifier">NITTA.Synthesis.Explore</span></a></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.html"><span class="hs-identifier">NITTA.Synthesis.Steps</span></a></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.html"><span class="hs-identifier">NITTA.Utils</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.Base.html#maximumOn"><span class="hs-identifier">maximumOn</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Utils.Base.html#minimumOn"><span class="hs-identifier">minimumOn</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Safe</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Log.Logger</span></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-comment">{- |The constant, which restricts the maximum number of synthesis steps. Avoids
 the endless synthesis process.
 -}</span><span>
-</span><span id="line-45"></span><span id="stepLimit"><span class="annot"><span class="annottext">stepLimit :: Int
+</span><span id="line-40"></span><span id="stepLimit"><span class="annot"><span class="annottext">stepLimit :: Int
 </span><a href="NITTA.Synthesis.Method.html#stepLimit"><span class="hs-identifier hs-var hs-var">stepLimit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">750</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
-</span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span class="hs-comment">-- |The most complex synthesis method, which embedded all another. That all.</span><span>
-</span><span id="line-48"></span><span id="local-6989586621680121897"><span id="local-6989586621680121898"><span id="local-6989586621680121899"><span id="local-6989586621680121900"><span class="annot"><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier hs-type">stateOfTheArtSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121900"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121899"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121898"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121897"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121897"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121900"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121899"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121898"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-49"></span><span id="stateOfTheArtSynthesisIO"><span class="annot"><span class="annottext">stateOfTheArtSynthesisIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier hs-var hs-var">stateOfTheArtSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680121896"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- |The most complex synthesis method, which embedded all another. That all.</span><span>
+</span><span id="line-43"></span><span id="local-6989586621680183764"><span id="local-6989586621680183766"><span id="local-6989586621680183767"><span id="local-6989586621680183768"><span class="annot"><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier hs-type">stateOfTheArtSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183768"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183767"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183766"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183764"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183764"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183768"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183767"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183766"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-44"></span><span id="stateOfTheArtSynthesisIO"><span class="annot"><span class="annottext">stateOfTheArtSynthesisIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#stateOfTheArtSynthesisIO"><span class="hs-identifier hs-var hs-var">stateOfTheArtSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680183533"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
 </span><span class="hs-identifier hs-var">infoM</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;NITTA.Synthesis&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;stateOfTheArtSynthesisIO: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SID -&gt; String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Sid -&gt; String
 forall a. Show a =&gt; a -&gt; String
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; SID
-forall m tag v x t. Tree m tag v x t -&gt; SID
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Sid
+forall m tag v x t. Tree m tag v x t -&gt; Sid
 </span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var hs-var">sID</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-51"></span><span>    </span><span id="local-6989586621680121892"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121892"><span class="hs-identifier hs-var">l1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span>    </span><span id="local-6989586621680183529"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183529"><span class="hs-identifier hs-var">l1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier hs-var">simpleSynthesisIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-52"></span><span>    </span><span id="local-6989586621680121891"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121891"><span class="hs-identifier hs-var">l2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621680183528"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183528"><span class="hs-identifier hs-var">l2</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier hs-var">smartBindSynthesisIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-53"></span><span>    </span><span id="local-6989586621680121890"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121890"><span class="hs-identifier hs-var">l3</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-48"></span><span>    </span><span id="local-6989586621680183527"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183527"><span class="hs-identifier hs-var">l3</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var">bestThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><a href="NITTA.Synthesis.Method.html#stepLimit"><span class="hs-identifier hs-var">stepLimit</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-54"></span><span>    </span><span id="local-6989586621680121888"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121888"><span class="hs-identifier hs-var">l4</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-49"></span><span>    </span><span id="local-6989586621680183525"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183525"><span class="hs-identifier hs-var">l4</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
@@ -100,8 +97,8 @@ forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-var">allBindsAndRefsIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-55"></span><span>    </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -110,124 +107,132 @@ forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-var">bestLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121896"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121892"><span class="hs-identifier hs-var">l1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121891"><span class="hs-identifier hs-var">l2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121890"><span class="hs-identifier hs-var">l3</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121888"><span class="hs-identifier hs-var">l4</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-56"></span><span>
-</span><span id="line-57"></span><span class="hs-comment">-- |Schedule process by simple synthesis.</span><span>
-</span><span id="line-58"></span><span id="local-6989586621680122036"><span id="local-6989586621680122038"><span id="local-6989586621680122039"><span id="local-6989586621680122040"><span class="annot"><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier hs-type">simpleSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122040"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122039"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122038"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122036"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122036"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122040"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122039"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122038"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-59"></span><span id="simpleSynthesisIO"><span class="annot"><span class="annottext">simpleSynthesisIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier hs-var hs-var">simpleSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680121885"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121885"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-60"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
+</span><a href="#local-6989586621680183533"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183529"><span class="hs-identifier hs-var">l1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183528"><span class="hs-identifier hs-var">l2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183527"><span class="hs-identifier hs-var">l3</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183525"><span class="hs-identifier hs-var">l4</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- |Schedule process by simple synthesis.</span><span>
+</span><span id="line-53"></span><span id="local-6989586621680183519"><span id="local-6989586621680183520"><span id="local-6989586621680183521"><span id="local-6989586621680183522"><span class="annot"><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier hs-type">simpleSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183522"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183521"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183520"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183519"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183519"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183522"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183521"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183520"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-54"></span><span id="simpleSynthesisIO"><span class="annot"><span class="annottext">simpleSynthesisIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#simpleSynthesisIO"><span class="hs-identifier hs-var hs-var">simpleSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680183508"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183508"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
 </span><span class="hs-identifier hs-var">infoM</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;NITTA.Synthesis&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;simpleSynthesisIO: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SID -&gt; String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Sid -&gt; String
 forall a. Show a =&gt; a -&gt; String
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; SID
-forall m tag v x t. Tree m tag v x t -&gt; SID
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Sid
+forall m tag v x t. Tree m tag v x t -&gt; Sid
 </span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var hs-var">sID</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121885"><span class="hs-identifier hs-var">root</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-61"></span><span>    </span><span id="local-6989586621680121884"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121884"><span class="hs-identifier hs-var">lastObliviousNode</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183508"><span class="hs-identifier hs-var">root</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>    </span><span id="local-6989586621680183507"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183507"><span class="hs-identifier hs-var">lastObliviousNode</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier hs-var">obviousBindThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121885"><span class="hs-identifier hs-var">root</span></a></span><span>
-</span><span id="line-62"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183508"><span class="hs-identifier hs-var">root</span></a></span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var">allBestThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121884"><span class="hs-identifier hs-var">lastObliviousNode</span></a></span><span>
-</span><span id="line-63"></span><span>
-</span><span id="line-64"></span><span id="local-6989586621680121880"><span id="local-6989586621680121881"><span id="local-6989586621680121882"><span id="local-6989586621680121883"><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier hs-type">smartBindSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121883"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121882"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121881"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121880"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121880"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121883"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121882"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121881"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-65"></span><span id="smartBindSynthesisIO"><span class="annot"><span class="annottext">smartBindSynthesisIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier hs-var hs-var">smartBindSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680121879"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121879"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
+</span><a href="#local-6989586621680183507"><span class="hs-identifier hs-var">lastObliviousNode</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span id="local-6989586621680183503"><span id="local-6989586621680183504"><span id="local-6989586621680183505"><span id="local-6989586621680183506"><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier hs-type">smartBindSynthesisIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183506"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183505"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183504"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183503"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183503"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183506"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183505"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183504"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-60"></span><span id="smartBindSynthesisIO"><span class="annot"><span class="annottext">smartBindSynthesisIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#smartBindSynthesisIO"><span class="hs-identifier hs-var hs-var">smartBindSynthesisIO</span></a></span></span><span> </span><span id="local-6989586621680183492"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183492"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
 </span><span class="hs-identifier hs-var">infoM</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;NITTA.Synthesis&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; String -&gt; IO ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;smartBindSynthesisIO: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SID -&gt; String
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Sid -&gt; String
 forall a. Show a =&gt; a -&gt; String
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; SID
-forall m tag v x t. Tree m tag v x t -&gt; SID
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Sid
+forall m tag v x t. Tree m tag v x t -&gt; Sid
 </span><a href="NITTA.Synthesis.Types.html#sID"><span class="hs-identifier hs-var hs-var">sID</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121879"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-67"></span><span>    </span><span id="local-6989586621680121878"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121878"><span class="hs-identifier hs-var">tree'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183492"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>    </span><span id="local-6989586621680183491"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183491"><span class="hs-identifier hs-var">tree'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-var">smartBindThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121879"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-68"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183492"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var">allBestThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121878"><span class="hs-identifier hs-var">tree'</span></a></span><span>
-</span><span id="line-69"></span><span>
-</span><span id="line-70"></span><span id="local-6989586621680122031"><span id="local-6989586621680122032"><span id="local-6989586621680122033"><span id="local-6989586621680122034"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-type">bestThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122034"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122033"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122032"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122031"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122031"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122034"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122033"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122032"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-71"></span><span id="bestThreadIO"><span class="annot"><span class="annottext">bestThreadIO :: Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183491"><span class="hs-identifier hs-var">tree'</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span id="local-6989586621680183740"><span id="local-6989586621680183741"><span id="local-6989586621680183742"><span id="local-6989586621680183743"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-type">bestThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183743"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183742"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183741"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183740"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183740"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183743"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183742"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183741"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-66"></span><span id="bestThreadIO"><span class="annot"><span class="annottext">bestThreadIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var hs-var">bestThreadIO</span></a></span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">0</span></span><span> </span><span id="local-6989586621680121876"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121876"><span class="hs-identifier hs-var">node</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><span class="hs-number">0</span></span><span> </span><span id="local-6989586621680183431"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183431"><span class="hs-identifier hs-var">node</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO (DefTree tag v x t))
+-&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; DefTree tag v x t -&gt; DefTree tag v x t
 forall a. String -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">trace</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;bestThreadIO reach step limit!&quot;</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121876"><span class="hs-identifier hs-var">node</span></a></span><span>
-</span><span id="line-72"></span><span class="annot"><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var">bestThreadIO</span></a></span><span> </span><span id="local-6989586621680121875"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121875"><span class="hs-identifier hs-var">limit</span></a></span></span><span> </span><span id="local-6989586621680121874"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121874"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-73"></span><span>    </span><span id="local-6989586621680121873"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121873"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+</span><a href="#local-6989586621680183431"><span class="hs-identifier hs-var">node</span></a></span><span>
+</span><span id="line-67"></span><span class="annot"><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var">bestThreadIO</span></a></span><span> </span><span id="local-6989586621680183430"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680183430"><span class="hs-identifier hs-var">limit</span></a></span></span><span> </span><span id="local-6989586621680183429"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183429"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-68"></span><span>    </span><span id="local-6989586621680183428"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183428"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121874"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-74"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121873"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-75"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183429"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183428"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-70"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121874"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-76"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183429"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-71"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int -&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var">bestThreadIO</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121875"><span class="hs-identifier hs-var">limit</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680183430"><span class="hs-identifier hs-var">limit</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO (DefTree tag v x t))
+-&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Float)
 -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-forall (t1 :: * -&gt; *) a t2.
+forall {t1 :: * -&gt; *} {a} {t2}.
 (Foldable t1, Ord a) =&gt;
 (t2 -&gt; a) -&gt; t1 t2 -&gt; t2
 </span><a href="NITTA.Utils.Base.html#maximumOn"><span class="hs-identifier hs-var">maximumOn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisDecision
@@ -258,37 +263,40 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121873"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-77"></span><span>
-</span><span id="line-78"></span><span id="local-6989586621680121865"><span id="local-6989586621680121866"><span id="local-6989586621680121867"><span id="local-6989586621680121868"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier hs-type">bestStepIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121868"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121867"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121866"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121865"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121865"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121868"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121867"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121866"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-79"></span><span id="bestStepIO"><span class="annot"><span class="annottext">bestStepIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier hs-var hs-var">bestStepIO</span></a></span></span><span> </span><span id="local-6989586621680121864"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121864"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-80"></span><span>    </span><span id="local-6989586621680121863"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121863"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+</span><a href="#local-6989586621680183428"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span id="local-6989586621680183420"><span id="local-6989586621680183421"><span id="local-6989586621680183422"><span id="local-6989586621680183423"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier hs-type">bestStepIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183423"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183422"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183421"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183420"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183420"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183423"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183422"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183421"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-74"></span><span id="bestStepIO"><span class="annot"><span class="annottext">bestStepIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#bestStepIO"><span class="hs-identifier hs-var hs-var">bestStepIO</span></a></span></span><span> </span><span id="local-6989586621680183384"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183384"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621680183383"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183383"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121864"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-81"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121863"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-82"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO (DefTree tag v x t)
+</span><a href="#local-6989586621680183384"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183383"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO (DefTree tag v x t)
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;all step is over&quot;</span></span><span>
-</span><span id="line-83"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><span id="line-78"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO (DefTree tag v x t))
+-&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Float)
 -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-forall (t1 :: * -&gt; *) a t2.
+forall {t1 :: * -&gt; *} {a} {t2}.
 (Foldable t1, Ord a) =&gt;
 (t2 -&gt; a) -&gt; t1 t2 -&gt; t2
 </span><a href="NITTA.Utils.Base.html#maximumOn"><span class="hs-identifier hs-var">maximumOn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisDecision
@@ -319,32 +327,34 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121863"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-84"></span><span>
-</span><span id="line-85"></span><span id="local-6989586621680121858"><span id="local-6989586621680121859"><span id="local-6989586621680121860"><span id="local-6989586621680121861"><span class="annot"><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier hs-type">obviousBindThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121861"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121860"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121859"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121858"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121858"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121861"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121860"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121859"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-86"></span><span id="obviousBindThreadIO"><span class="annot"><span class="annottext">obviousBindThreadIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier hs-var hs-var">obviousBindThreadIO</span></a></span></span><span> </span><span id="local-6989586621680121857"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121857"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-87"></span><span>    </span><span id="local-6989586621680121856"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121856"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+</span><a href="#local-6989586621680183383"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span id="local-6989586621680183378"><span id="local-6989586621680183379"><span id="local-6989586621680183380"><span id="local-6989586621680183381"><span class="annot"><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier hs-type">obviousBindThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183381"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183380"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183379"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183378"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183378"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183381"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183380"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183379"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-81"></span><span id="obviousBindThreadIO"><span class="annot"><span class="annottext">obviousBindThreadIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#obviousBindThreadIO"><span class="hs-identifier hs-var hs-var">obviousBindThreadIO</span></a></span></span><span> </span><span id="local-6989586621680183313"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183313"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621680183312"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183312"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121857"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">IO (DefTree tag v x t)
--&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183313"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-83"></span><span>    </span><span class="annot"><span class="annottext">IO (DefTree tag v x t)
+-&gt; (DefTree tag v x t -&gt; IO (DefTree tag v x t))
 -&gt; Maybe (DefTree tag v x t)
 -&gt; IO (DefTree tag v x t)
 forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
-</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121857"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183313"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
@@ -352,24 +362,24 @@ SynthesisMethod tag v x t
 -&gt; Maybe (DefTree tag v x t) -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-89"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
+</span><span id="line-84"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
 -&gt; [DefTree tag v x t] -&gt; Maybe (DefTree tag v x t)
 forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">L.find</span></span><span>
-</span><span id="line-90"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-91"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Bind.html#BindMetrics"><span class="hs-identifier hs-type">BindMetrics</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pPossibleDeadlock :: BindMetrics -&gt; Bool
+</span><span id="line-85"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-86"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Bind.html#BindMetrics"><span class="hs-identifier hs-type">BindMetrics</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pPossibleDeadlock :: BindMetrics -&gt; Bool
 </span><a href="NITTA.Synthesis.Steps.Bind.html#pPossibleDeadlock"><span class="hs-identifier hs-var">pPossibleDeadlock</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-92"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Bind.html#BindMetrics"><span class="hs-identifier hs-type">BindMetrics</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pAlternative :: BindMetrics -&gt; Float
+</span><span id="line-87"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Bind.html#BindMetrics"><span class="hs-identifier hs-type">BindMetrics</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pAlternative :: BindMetrics -&gt; Float
 </span><a href="NITTA.Synthesis.Steps.Bind.html#pAlternative"><span class="hs-identifier hs-var">pAlternative</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float
 </span><span class="hs-number">1</span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-93"></span><span>                    </span><span class="annot"><span class="annottext">Maybe BindMetrics
+</span><span id="line-88"></span><span>                    </span><span class="annot"><span class="annottext">Maybe BindMetrics
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-94"></span><span>              </span><span class="hs-special">)</span><span>
-</span><span id="line-95"></span><span>                </span><span class="annot"><span class="annottext">(Maybe BindMetrics -&gt; Bool)
+</span><span id="line-89"></span><span>              </span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>                </span><span class="annot"><span class="annottext">(Maybe BindMetrics -&gt; Bool)
 -&gt; (DefTree tag v x t -&gt; Maybe BindMetrics)
 -&gt; DefTree tag v x t
 -&gt; Bool
@@ -381,7 +391,7 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 -&gt; Maybe BindMetrics
 forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span>
-</span><span id="line-96"></span><span>                </span><span class="annot"><span class="annottext">(SynthesisDecision
+</span><span id="line-91"></span><span>                </span><span class="annot"><span class="annottext">(SynthesisDecision
    (SynthesisState
       (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
    (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -403,45 +413,47 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span>
-</span><span id="line-97"></span><span>            </span><span class="hs-special">)</span><span>
-</span><span id="line-98"></span><span>            </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121856"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-99"></span><span>
-</span><span id="line-100"></span><span id="local-6989586621680121846"><span id="local-6989586621680121847"><span id="local-6989586621680121848"><span id="local-6989586621680121849"><span class="annot"><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-type">allBindsAndRefsIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121849"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121848"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121847"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121846"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121846"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121849"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121848"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121847"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-101"></span><span id="allBindsAndRefsIO"><span class="annot"><span class="annottext">allBindsAndRefsIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-var hs-var">allBindsAndRefsIO</span></a></span></span><span> </span><span id="local-6989586621680121845"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121845"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-102"></span><span>    </span><span id="local-6989586621680121844"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121844"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-103"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
+</span><span id="line-92"></span><span>            </span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>            </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183312"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span id="local-6989586621680183302"><span id="local-6989586621680183303"><span id="local-6989586621680183304"><span id="local-6989586621680183305"><span class="annot"><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-type">allBindsAndRefsIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183303"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183302"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183302"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183303"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-96"></span><span id="allBindsAndRefsIO"><span class="annot"><span class="annottext">allBindsAndRefsIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-var hs-var">allBindsAndRefsIO</span></a></span></span><span> </span><span id="local-6989586621680183264"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183264"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-97"></span><span>    </span><span id="local-6989586621680183263"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183263"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-98"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
 -&gt; [DefTree tag v x t] -&gt; [DefTree tag v x t]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680121843"><span class="annot"><span class="annottext">SynthesisDecision
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680183262"><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121843"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
+</span><a href="#local-6989586621680183262"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 -&gt; Bool
-forall ctx m. SynthesisDecision ctx m -&gt; Bool
+forall {ctx} {m}. SynthesisDecision ctx m -&gt; Bool
 </span><a href="NITTA.Synthesis.Steps.Bind.html#isBind"><span class="hs-identifier hs-var">isBind</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121843"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680183262"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 -&gt; Bool
-forall ctx m. SynthesisDecision ctx m -&gt; Bool
-</span><a href="NITTA.Synthesis.Steps.Refactor.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
+forall {ctx} {m}. SynthesisDecision ctx m -&gt; Bool
+</span><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121843"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
+</span><a href="#local-6989586621680183262"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
    (SynthesisState
       (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
    (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -463,35 +475,36 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-104"></span><span>            </span><span class="annot"><span class="annottext">([DefTree tag v x t] -&gt; [DefTree tag v x t])
+</span><span id="line-99"></span><span>            </span><span class="annot"><span class="annottext">([DefTree tag v x t] -&gt; [DefTree tag v x t])
 -&gt; IO [DefTree tag v x t] -&gt; IO [DefTree tag v x t]
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121845"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-105"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121844"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-106"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183264"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183263"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-101"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121845"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-107"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183264"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-102"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-var">allBindsAndRefsIO</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#allBindsAndRefsIO"><span class="hs-identifier hs-var">allBindsAndRefsIO</span></a></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO (DefTree tag v x t))
+-&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Float)
 -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-forall (t1 :: * -&gt; *) a t2.
+forall {t1 :: * -&gt; *} {a} {t2}.
 (Foldable t1, Ord a) =&gt;
 (t2 -&gt; a) -&gt; t1 t2 -&gt; t2
 </span><a href="NITTA.Utils.Base.html#minimumOn"><span class="hs-identifier hs-var">minimumOn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisDecision
@@ -522,27 +535,27 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121844"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-108"></span><span>
-</span><span id="line-109"></span><span id="refactorThreadIO"><span class="annot"><span class="annottext">refactorThreadIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680183263"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span id="refactorThreadIO"><span class="annot"><span class="annottext">refactorThreadIO :: Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
-</span><a href="NITTA.Synthesis.Method.html#refactorThreadIO"><span class="hs-identifier hs-var hs-var">refactorThreadIO</span></a></span></span><span> </span><span id="local-6989586621680121837"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121837"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-110"></span><span>    </span><span id="local-6989586621680121836"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121836"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Method.html#refactorThreadIO"><span class="hs-identifier hs-var hs-var">refactorThreadIO</span></a></span></span><span> </span><span id="local-6989586621680183227"><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680183227"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-105"></span><span>    </span><span id="local-6989586621680183226"><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+</span><a href="#local-6989586621680183226"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121837"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-111"></span><span>    </span><span class="annot"><span class="annottext">IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+</span><a href="#local-6989586621680183227"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 -&gt; (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
     -&gt; IO
          (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t))
@@ -556,7 +569,7 @@ forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-</span><a href="#local-6989586621680121837"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><a href="#local-6989586621680183227"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Method.html#refactorThreadIO"><span class="hs-identifier hs-var">refactorThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe
@@ -569,7 +582,7 @@ forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
-</span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">(Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
+</span><span id="line-107"></span><span>        </span><span class="annot"><span class="annottext">(Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
  -&gt; Bool)
 -&gt; [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 -&gt; Maybe
@@ -580,8 +593,8 @@ forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Maybe
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 -&gt; Bool
-forall ctx m. SynthesisDecision ctx m -&gt; Bool
-</span><a href="NITTA.Synthesis.Steps.Refactor.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
+forall {ctx} {m}. SynthesisDecision ctx m -&gt; Bool
+</span><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
    (SynthesisState
       (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
    (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -603,43 +616,45 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-</span><a href="#local-6989586621680121836"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-113"></span><span>
-</span><span id="line-114"></span><span id="local-6989586621680121832"><span id="local-6989586621680121833"><span id="local-6989586621680121834"><span id="local-6989586621680121835"><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-type">smartBindThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121835"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121834"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121833"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121832"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121832"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121835"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121834"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121833"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-115"></span><span id="smartBindThreadIO"><span class="annot"><span class="annottext">smartBindThreadIO :: SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-var hs-var">smartBindThreadIO</span></a></span></span><span> </span><span id="local-6989586621680121831"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121831"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-116"></span><span>    </span><span id="local-6989586621680121830"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121830"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
-</span><span id="line-117"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
+</span><a href="#local-6989586621680183226"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span id="local-6989586621680183222"><span id="local-6989586621680183223"><span id="local-6989586621680183224"><span id="local-6989586621680183225"><span class="annot"><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-type">smartBindThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183225"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183224"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183223"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183222"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183222"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183225"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183224"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183223"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-110"></span><span id="smartBindThreadIO"><span class="annot"><span class="annottext">smartBindThreadIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-var hs-var">smartBindThreadIO</span></a></span></span><span> </span><span id="local-6989586621680183171"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183171"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-111"></span><span>    </span><span id="local-6989586621680183170"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183170"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-112"></span><span>        </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
 -&gt; [DefTree tag v x t] -&gt; [DefTree tag v x t]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680121829"><span class="annot"><span class="annottext">SynthesisDecision
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680183169"><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121829"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
+</span><a href="#local-6989586621680183169"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 -&gt; Bool
-forall ctx m. SynthesisDecision ctx m -&gt; Bool
+forall {ctx} {m}. SynthesisDecision ctx m -&gt; Bool
 </span><a href="NITTA.Synthesis.Steps.Bind.html#isBind"><span class="hs-identifier hs-var">isBind</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121829"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680183169"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
 -&gt; Bool
-forall ctx m. SynthesisDecision ctx m -&gt; Bool
-</span><a href="NITTA.Synthesis.Steps.Refactor.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
+forall {ctx} {m}. SynthesisDecision ctx m -&gt; Bool
+</span><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision
   (SynthesisState
      (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
   (TargetSystem (BusNetwork tag v x t) tag v x t)
-</span><a href="#local-6989586621680121829"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
+</span><a href="#local-6989586621680183169"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SynthesisDecision
    (SynthesisState
       (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
    (TargetSystem (BusNetwork tag v x t) tag v x t)
@@ -661,46 +676,47 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-118"></span><span>            </span><span class="annot"><span class="annottext">([DefTree tag v x t] -&gt; [DefTree tag v x t])
+</span><span id="line-113"></span><span>            </span><span class="annot"><span class="annottext">([DefTree tag v x t] -&gt; [DefTree tag v x t])
 -&gt; IO [DefTree tag v x t] -&gt; IO [DefTree tag v x t]
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO [DefTree tag v x t])
 -&gt; IO (DefTree tag v x t) -&gt; IO [DefTree tag v x t]
 forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
-</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 </span><a href="NITTA.Synthesis.Method.html#refactorThreadIO"><span class="hs-identifier hs-var">refactorThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121831"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-119"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121830"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-120"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183171"><span class="hs-identifier hs-var">tree</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183170"><span class="hs-identifier hs-var">subForest</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-115"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121831"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-121"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183171"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-116"></span><span>        </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 SynthesisMethod tag v x t
-</span><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-var">smartBindThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
+</span><a href="NITTA.Synthesis.Method.html#smartBindThreadIO"><span class="hs-identifier hs-var">smartBindThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; IO (DefTree tag v x t))
+-&gt; DefTree tag v x t -&gt; IO (DefTree tag v x t)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Float)
 -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-forall (t1 :: * -&gt; *) a t2.
+forall {t1 :: * -&gt; *} {a} {t2}.
 (Foldable t1, Ord a) =&gt;
 (t2 -&gt; a) -&gt; t1 t2 -&gt; t2
 </span><a href="NITTA.Utils.Base.html#maximumOn"><span class="hs-identifier hs-var">maximumOn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SynthesisDecision
@@ -731,35 +747,37 @@ forall m tag v x t.
 Tree m tag v x t
 -&gt; SynthesisDecision (SynthesisState m tag v x t) m
 </span><a href="NITTA.Synthesis.Types.html#sDecision"><span class="hs-identifier hs-var hs-var">sDecision</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121830"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-122"></span><span>
-</span><span id="line-123"></span><span id="local-6989586621680121825"><span id="local-6989586621680121826"><span id="local-6989586621680121827"><span id="local-6989586621680121828"><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-type">allBestThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121828"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121827"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121826"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121825"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121825"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121828"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121827"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680121826"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-124"></span><span id="allBestThreadIO"><span class="annot"><span class="annottext">allBestThreadIO :: Int -&gt; SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183170"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span id="local-6989586621680183165"><span id="local-6989586621680183166"><span id="local-6989586621680183167"><span id="local-6989586621680183168"><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-type">allBestThreadIO</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183168"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183167"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183166"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183165"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisMethod"><span class="hs-identifier hs-type">SynthesisMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183165"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183168"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183167"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183166"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-119"></span><span id="allBestThreadIO"><span class="annot"><span class="annottext">allBestThreadIO :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var hs-var">allBestThreadIO</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680121824"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121824"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680183119"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183119"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; SynthesisMethod tag v x t
 forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestThreadIO"><span class="hs-identifier hs-var">bestThreadIO</span></a></span><span> </span><span class="annot"><span class="annottext">Int
 </span><a href="NITTA.Synthesis.Method.html#stepLimit"><span class="hs-identifier hs-var">stepLimit</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121824"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-125"></span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var">allBestThreadIO</span></a></span><span> </span><span id="local-6989586621680121823"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121823"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621680121822"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121822"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-126"></span><span>    </span><span id="local-6989586621680121821"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121821"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
-forall tag v x t.
-(IsString tag, IsString v, ToString tag, ToString v, Suffix v,
- Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t,
- Show t, Default t, Integral t, Ord tag, Ord v) =&gt;
+</span><a href="#local-6989586621680183119"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-120"></span><span class="annot"><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var">allBestThreadIO</span></a></span><span> </span><span id="local-6989586621680183118"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680183118"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621680183117"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183117"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-121"></span><span>    </span><span id="local-6989586621680183116"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183116"><span class="hs-identifier hs-var">subForest</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; IO [DefTree tag v x t]
+forall {tag} {x} {t} {v}.
+(UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t,
+ Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v,
+ IsString v) =&gt;
 Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 -&gt; IO
      [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 </span><a href="NITTA.Synthesis.Explore.html#positiveSubForestIO"><span class="hs-identifier hs-var">positiveSubForestIO</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121822"><span class="hs-identifier hs-var">tree</span></a></span><span>
-</span><span id="line-127"></span><span>    </span><span id="local-6989586621680121820"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121820"><span class="hs-identifier hs-var">leafs</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183117"><span class="hs-identifier hs-var">tree</span></a></span><span>
+</span><span id="line-122"></span><span>    </span><span id="local-6989586621680183115"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183115"><span class="hs-identifier hs-var">leafs</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 -&gt; [DefTree tag v x t] -&gt; IO [DefTree tag v x t]
 forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 (Traversable t, Monad m) =&gt;
@@ -769,12 +787,12 @@ forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 Int -&gt; SynthesisMethod tag v x t
 </span><a href="NITTA.Synthesis.Method.html#allBestThreadIO"><span class="hs-identifier hs-var">allBestThreadIO</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680121823"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621680183118"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">Int
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121821"><span class="hs-identifier hs-var">subForest</span></a></span><span>
-</span><span id="line-128"></span><span>    </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
+</span><a href="#local-6989586621680183116"><span class="hs-identifier hs-var">subForest</span></a></span><span>
+</span><span id="line-123"></span><span>    </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -783,71 +801,61 @@ forall v x t tag.
 (VarValTime v x t, UnitTag tag) =&gt;
 DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
 </span><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-var">bestLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121822"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121820"><span class="hs-identifier hs-var">leafs</span></a></span><span>
-</span><span id="line-129"></span><span>
-</span><span id="line-130"></span><span id="local-6989586621680122022"><span id="local-6989586621680122023"><span id="local-6989586621680122024"><span id="local-6989586621680122025"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-type">bestLeaf</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122023"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122022"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122022"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122023"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122022"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122023"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122022"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680122023"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
-</span><span id="line-131"></span><span id="bestLeaf"><span class="annot"><span class="annottext">bestLeaf :: DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-</span><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-var hs-var">bestLeaf</span></a></span></span><span> </span><span id="local-6989586621680121818"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121818"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span id="local-6989586621680121817"><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121817"><span class="hs-identifier hs-var">leafs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-132"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680121816"><span class="annot"><span class="annottext">successLeafs :: [DefTree tag v x t]
-</span><a href="#local-6989586621680121816"><span class="hs-identifier hs-var hs-var">successLeafs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
+</span><a href="#local-6989586621680183117"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183115"><span class="hs-identifier hs-var">leafs</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span id="local-6989586621680183731"><span id="local-6989586621680183732"><span id="local-6989586621680183733"><span id="local-6989586621680183734"><span class="annot"><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-type">bestLeaf</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183734"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183733"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183732"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183731"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183731"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183734"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183733"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183732"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183731"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183734"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183733"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183732"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#DefTree"><span class="hs-identifier hs-type">DefTree</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183731"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183734"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183733"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183732"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span>
+</span><span id="line-126"></span><span id="bestLeaf"><span class="annot"><span class="annottext">bestLeaf :: forall v x t tag.
+(VarValTime v x t, UnitTag tag) =&gt;
+DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
+</span><a href="NITTA.Synthesis.Method.html#bestLeaf"><span class="hs-identifier hs-var hs-var">bestLeaf</span></a></span></span><span> </span><span id="local-6989586621680183093"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183093"><span class="hs-identifier hs-var">tree</span></a></span></span><span> </span><span id="local-6989586621680183092"><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183092"><span class="hs-identifier hs-var">leafs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680183091"><span class="annot"><span class="annottext">successLeafs :: [DefTree tag v x t]
+</span><a href="#local-6989586621680183091"><span class="hs-identifier hs-var hs-var">successLeafs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; Bool)
 -&gt; [DefTree tag v x t] -&gt; [DefTree tag v x t]
 forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
-</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680121815"><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121815"><span class="hs-identifier hs-var">node</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Bool
-forall u v1 x1 t1 tag1 tag2 v2 x2 t2.
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680183090"><span class="annot"><span class="annottext">DefTree tag v x t
+</span><a href="#local-6989586621680183090"><span class="hs-identifier hs-var">node</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Bool
+forall {u} {v1} {x1} {t1} {tag1} {tag2} {v2} {x2} {t2}.
 ProcessorUnit u v1 x1 t1 =&gt;
 Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isComplete"><span class="hs-identifier hs-var">isComplete</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121815"><span class="hs-identifier hs-var">node</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><a href="#local-6989586621680183090"><span class="hs-identifier hs-var">node</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
 </span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; Bool
-forall m tag v x t. Tree m tag v x t -&gt; Bool
+forall {m} {tag} {v} {x} {t}. Tree m tag v x t -&gt; Bool
 </span><a href="NITTA.Synthesis.Explore.html#isLeaf"><span class="hs-identifier hs-var">isLeaf</span></a></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121815"><span class="hs-identifier hs-var">node</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121817"><span class="hs-identifier hs-var">leafs</span></a></span><span>
-</span><span id="line-133"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121816"><span class="hs-identifier hs-var">successLeafs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-134"></span><span>            </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; t)
--&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
-forall (t1 :: * -&gt; *) a t2.
-(Foldable t1, Ord a) =&gt;
-(t2 -&gt; a) -&gt; t1 t2 -&gt; t2
-</span><a href="NITTA.Utils.Base.html#minimumOn"><span class="hs-identifier hs-var">minimumOn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t -&gt; t
-forall a u tag v x t.
-(Num a, NextTick u a) =&gt;
-TargetSystem u tag v x t -&gt; a
-</span><a href="NITTA.Model.TargetSystem.html#processDuration"><span class="hs-identifier hs-var">processDuration</span></a></span><span> </span><span class="annot"><span class="annottext">(TargetSystem (BusNetwork tag v x t) tag v x t -&gt; t)
--&gt; (DefTree tag v x t
-    -&gt; TargetSystem (BusNetwork tag v x t) tag v x t)
--&gt; DefTree tag v x t
--&gt; t
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SynthesisState
-  (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
--&gt; TargetSystem (BusNetwork tag v x t) tag v x t
-forall m tag v x t. SynthesisState m tag v x t -&gt; m
-</span><a href="NITTA.Synthesis.Types.html#sTarget"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span><span> </span><span class="annot"><span class="annottext">(SynthesisState
-   (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
- -&gt; TargetSystem (BusNetwork tag v x t) tag v x t)
--&gt; (DefTree tag v x t
-    -&gt; SynthesisState
-         (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
--&gt; DefTree tag v x t
--&gt; TargetSystem (BusNetwork tag v x t) tag v x t
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
--&gt; SynthesisState
-     (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
-forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
-</span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var hs-var">sState</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121816"><span class="hs-identifier hs-var">successLeafs</span></a></span><span>
-</span><span id="line-135"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
+</span><a href="#local-6989586621680183090"><span class="hs-identifier hs-var">node</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183092"><span class="hs-identifier hs-var">leafs</span></a></span><span>
+</span><span id="line-128"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183091"><span class="hs-identifier hs-var">successLeafs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-129"></span><span>            </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
 forall a. a -&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">headDef</span></span><span> </span><span class="annot"><span class="annottext">DefTree tag v x t
-</span><a href="#local-6989586621680121818"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
-</span><a href="#local-6989586621680121817"><span class="hs-identifier hs-var">leafs</span></a></span><span>
-</span><span id="line-136"></span></pre></body></html>
+</span><a href="#local-6989586621680183093"><span class="hs-identifier hs-var">tree</span></a></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183092"><span class="hs-identifier hs-var">leafs</span></a></span><span>
+</span><span id="line-130"></span><span>            </span><span class="annot"><span class="annottext">DefTree tag v x t
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-131"></span><span>                </span><span class="annot"><span class="annottext">(DefTree tag v x t -&gt; (t, Float))
+-&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
+forall {t1 :: * -&gt; *} {a} {t2}.
+(Foldable t1, Ord a) =&gt;
+(t2 -&gt; a) -&gt; t1 t2 -&gt; t2
+</span><a href="NITTA.Utils.Base.html#minimumOn"><span class="hs-identifier hs-var">minimumOn</span></a></span><span>
+</span><span id="line-132"></span><span>                    </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><a href="NITTA.Synthesis.Types.html#Tree"><span class="hs-identifier hs-type">Tree</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">sState :: forall m tag v x t. Tree m tag v x t -&gt; SynthesisState m tag v x t
+</span><a href="NITTA.Synthesis.Types.html#sState"><span class="hs-identifier hs-var">sState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisState"><span class="hs-identifier hs-type">SynthesisState</span></a></span><span class="hs-special">{</span><span id="local-6989586621680183082"><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+sTarget :: forall m tag v x t. SynthesisState m tag v x t -&gt; m
+sTarget :: TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="NITTA.Synthesis.Types.html#sTarget"><span class="hs-identifier hs-var hs-var">sTarget</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t -&gt; t
+forall {a} {u} {tag} {v} {x} {t}.
+(Num a, NextTick u a) =&gt;
+TargetSystem u tag v x t -&gt; a
+</span><a href="NITTA.Model.TargetSystem.html#processDuration"><span class="hs-identifier hs-var">processDuration</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="#local-6989586621680183082"><span class="hs-identifier hs-var">sTarget</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t -&gt; Float
+forall u v x t. ProcessorUnit u v x t =&gt; u -&gt; Float
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#puSize"><span class="hs-identifier hs-var">puSize</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork tag v x t) tag v x t
+</span><a href="#local-6989586621680183082"><span class="hs-identifier hs-var">sTarget</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-133"></span><span>                    </span><span class="annot"><span class="annottext">[DefTree tag v x t]
+</span><a href="#local-6989586621680183091"><span class="hs-identifier hs-var">successLeafs</span></a></span><span>
+</span><span id="line-134"></span></pre></body></html>

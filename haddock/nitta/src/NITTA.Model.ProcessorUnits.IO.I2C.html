@@ -1,15 +1,10 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DuplicateRecordFields #-}</span><span>
-</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE FlexibleContexts #-}</span><span>
-</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
-</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
-</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE NamedFieldPuns #-}</span><span>
-</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
-</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
-</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE RecordWildCards #-}</span><span>
-</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
-</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
-</span><span id="line-11"></span><span>
-</span><span id="line-12"></span><span class="hs-comment">{- |
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE QuasiQuotes #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE RecordWildCards #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies #-}</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-comment">{- |
 Module      : NITTA.Model.ProcessorUnits.IO.I2C
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
@@ -17,36 +12,36 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-20"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.I2C</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier">I2C</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier">i2cUnit</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Ports"><span class="hs-identifier">Ports</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier">IOPorts</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-25"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-26"></span><span>
-</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson</span></span><span>
-</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
-</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
-</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
-</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
-</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html"><span class="hs-identifier">NITTA.Intermediate.Value</span></a></span><span>
-</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.SimpleIO</span></a></span><span>
-</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Types</span></a></span><span>
-</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html"><span class="hs-identifier">NITTA.Model.Time</span></a></span><span>
-</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.html"><span class="hs-identifier">NITTA.Project</span></a></span><span>
-</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span>
-</span><span id="line-38"></span><span>
-</span><span id="line-39"></span><span class="hs-keyword">data</span><span> </span><span id="I2Cinterface"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-var">I2Cinterface</span></a></span></span><span>
-</span><span id="line-40"></span><span>
-</span><span id="line-41"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIOInterface"><span class="hs-identifier hs-type">SimpleIOInterface</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-type">I2Cinterface</span></a></span><span>
-</span><span id="line-42"></span><span>
-</span><span id="line-43"></span><span class="hs-keyword">type</span><span> </span><span id="I2C"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-var">I2C</span></a></span></span><span> </span><span id="local-6989586621680114043"><span class="annot"><a href="#local-6989586621680114043"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680114042"><span class="annot"><a href="#local-6989586621680114042"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680114041"><span class="annot"><a href="#local-6989586621680114041"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIO"><span class="hs-identifier hs-type">SimpleIO</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-type">I2Cinterface</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114043"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114042"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114041"><span class="hs-identifier hs-type">t</span></a></span><span>
-</span><span id="line-44"></span><span>
-</span><span id="line-45"></span><span id="local-6989586621680114038"><span id="local-6989586621680114039"><span id="local-6989586621680114040"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier hs-type">i2cUnit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114040"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114039"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114038"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114040"><span class="hs-identifier hs-type">t</span></a></span></span></span></span><span>
-</span><span id="line-46"></span><span id="i2cUnit"><span class="annot"><span class="annottext">i2cUnit :: Int -&gt; I2C v x t
-</span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier hs-var hs-var">i2cUnit</span></a></span></span><span> </span><span id="local-6989586621680114036"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680114036"><span class="hs-identifier hs-var">bounceFilter</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-47"></span><span>    </span><span class="annot"><span class="annottext">SimpleIO :: forall i v x t.
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.I2C</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier">I2C</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier">i2cUnit</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Ports"><span class="hs-identifier">Ports</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier">IOPorts</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-20"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Default</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.Interpolate</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html"><span class="hs-identifier">NITTA.Intermediate.Value</span></a></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.IO.SimpleIO</span></a></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html"><span class="hs-identifier">NITTA.Model.ProcessorUnits.Types</span></a></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html"><span class="hs-identifier">NITTA.Model.Time</span></a></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Project.html"><span class="hs-identifier">NITTA.Project</span></a></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="I2Cinterface"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-var">I2Cinterface</span></a></span></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIOInterface"><span class="hs-identifier hs-type">SimpleIOInterface</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-type">I2Cinterface</span></a></span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">type</span><span> </span><span id="I2C"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-var">I2C</span></a></span></span><span> </span><span id="local-6989586621680166159"><span class="annot"><a href="#local-6989586621680166159"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680166158"><span class="annot"><a href="#local-6989586621680166158"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680166157"><span class="annot"><a href="#local-6989586621680166157"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIO"><span class="hs-identifier hs-type">SimpleIO</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2Cinterface"><span class="hs-identifier hs-type">I2Cinterface</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166159"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166158"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166157"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span id="local-6989586621680166302"><span id="local-6989586621680166303"><span id="local-6989586621680166305"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier hs-type">i2cUnit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166305"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166303"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166302"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166305"><span class="hs-identifier hs-type">t</span></a></span></span></span></span><span>
+</span><span id="line-41"></span><span id="i2cUnit"><span class="annot"><span class="annottext">i2cUnit :: forall t v x. Time t =&gt; Int -&gt; I2C v x t
+</span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#i2cUnit"><span class="hs-identifier hs-var hs-var">i2cUnit</span></a></span></span><span> </span><span id="local-6989586621680166149"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680166149"><span class="hs-identifier hs-var">bounceFilter</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><span class="annottext">SimpleIO :: forall i v x t.
 Int
 -&gt; Maybe Int
 -&gt; [Q v x]
@@ -57,49 +52,49 @@ Int
 -&gt; Process t (StepInfo v x t)
 -&gt; SimpleIO i v x t
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIO"><span class="hs-identifier hs-type">SimpleIO</span></a></span><span>
-</span><span id="line-48"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span id="line-43"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">Int
 $sel:bounceFilter:SimpleIO :: Int
 bounceFilter :: Int
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AbounceFilter%3ASimpleIO"><span class="hs-identifier hs-var hs-var">bounceFilter</span></a></span><span>
-</span><span id="line-49"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:bufferSize:SimpleIO :: Maybe Int
+</span><span id="line-44"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:bufferSize:SimpleIO :: Maybe Int
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AbufferSize%3ASimpleIO"><span class="hs-identifier hs-var">bufferSize</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Maybe Int
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">6</span></span><span> </span><span class="hs-comment">-- FIXME:</span><span>
-</span><span id="line-50"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:receiveQueue:SimpleIO :: [Q v x]
+</span><span id="line-45"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:receiveQueue:SimpleIO :: [Q v x]
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AreceiveQueue%3ASimpleIO"><span class="hs-identifier hs-var">receiveQueue</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-51"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:receiveN:SimpleIO :: Int
+</span><span id="line-46"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:receiveN:SimpleIO :: Int
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AreceiveN%3ASimpleIO"><span class="hs-identifier hs-var">receiveN</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
-</span><span id="line-52"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:isReceiveOver:SimpleIO :: Bool
+</span><span id="line-47"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:isReceiveOver:SimpleIO :: Bool
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AisReceiveOver%3ASimpleIO"><span class="hs-identifier hs-var">isReceiveOver</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-53"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:sendQueue:SimpleIO :: [Q v x]
+</span><span id="line-48"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:sendQueue:SimpleIO :: [Q v x]
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AsendQueue%3ASimpleIO"><span class="hs-identifier hs-var">sendQueue</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-54"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:sendN:SimpleIO :: Int
+</span><span id="line-49"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:sendN:SimpleIO :: Int
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3AsendN%3ASimpleIO"><span class="hs-identifier hs-var">sendN</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
-</span><span id="line-55"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:process_:SimpleIO :: Process t (StepInfo v x t)
+</span><span id="line-50"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">$sel:process_:SimpleIO :: Process t (StepInfo v x t)
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3Aprocess_%3ASimpleIO"><span class="hs-identifier hs-var">process_</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
 forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
-</span><span id="line-56"></span><span>        </span><span class="hs-special">}</span><span>
-</span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span id="local-6989586621680114023"><span id="local-6989586621680114024"><span id="local-6989586621680114025"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOConnected"><span class="hs-identifier hs-type">IOConnected</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114023"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-59"></span><span>    </span><span class="hs-keyword">data</span><span> </span><span id="IOPorts"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier hs-var">IOPorts</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114025"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114024"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680114023"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-60"></span><span>        </span><span class="hs-glyph">=</span><span> </span><span id="I2CMaster"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-var">I2CMaster</span></a></span></span><span>
-</span><span id="line-61"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AmasterSDA%3AI2CMaster"><span class="annot"><span class="annottext">IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><span id="line-51"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span id="local-6989586621680166266"><span id="local-6989586621680166267"><span id="local-6989586621680166268"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOConnected"><span class="hs-identifier hs-type">IOConnected</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166268"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166267"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166266"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-keyword">data</span><span> </span><span id="IOPorts"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier hs-var">IOPorts</span></a></span></span><span> </span><span id="local-6989586621680166266"><span id="local-6989586621680166267"><span id="local-6989586621680166268"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166268"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166267"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166266"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-55"></span><span>        </span><span class="hs-glyph">=</span><span> </span><span id="I2CMaster"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-var">I2CMaster</span></a></span></span><span>
+</span><span id="line-56"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AmasterSDA%3AI2CMaster"><span class="annot"><span class="annottext">forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
 </span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#%24sel%3AmasterSDA%3AI2CMaster"><span class="hs-identifier hs-var hs-var">masterSDA</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#InoutPortTag"><span class="hs-identifier hs-type">InoutPortTag</span></a></span><span>
-</span><span id="line-62"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AmasterSCL%3AI2CMaster"><span class="annot"><span class="annottext">IOPorts (I2C v x t) -&gt; OutputPortTag
+</span><span id="line-57"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AmasterSCL%3AI2CMaster"><span class="annot"><span class="annottext">forall v x t. IOPorts (I2C v x t) -&gt; OutputPortTag
 </span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#%24sel%3AmasterSCL%3AI2CMaster"><span class="hs-identifier hs-var hs-var">masterSCL</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#OutputPortTag"><span class="hs-identifier hs-type">OutputPortTag</span></a></span><span>
-</span><span id="line-63"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-64"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="I2CSlave"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-var">I2CSlave</span></a></span></span><span>
-</span><span id="line-65"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AslaveSDA%3AI2CMaster"><span class="annot"><span class="annottext">IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><span id="line-58"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-59"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="I2CSlave"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-var">I2CSlave</span></a></span></span><span>
+</span><span id="line-60"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="%24sel%3AslaveSDA%3AI2CMaster"><span class="annot"><span class="annottext">forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
 </span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#%24sel%3AslaveSDA%3AI2CMaster"><span class="hs-identifier hs-var hs-var">slaveSDA</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#InoutPortTag"><span class="hs-identifier hs-type">InoutPortTag</span></a></span><span>
-</span><span id="line-66"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AslaveSCL%3AI2CMaster"><span class="annot"><span class="annottext">IOPorts (I2C v x t) -&gt; InputPortTag
+</span><span id="line-61"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AslaveSCL%3AI2CMaster"><span class="annot"><span class="annottext">forall v x t. IOPorts (I2C v x t) -&gt; InputPortTag
 </span><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#%24sel%3AslaveSCL%3AI2CMaster"><span class="hs-identifier hs-var hs-var">slaveSCL</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#InputPortTag"><span class="hs-identifier hs-type">InputPortTag</span></a></span><span>
-</span><span id="line-67"></span><span>            </span><span class="hs-special">}</span><span>
-</span><span id="line-68"></span><span>        </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680114007"><span id="local-6989586621680114009"><span id="local-6989586621680114011"><span class="annot"><span class="annottext">Int -&gt; IOPorts (I2C v x t) -&gt; ShowS
+</span><span id="line-62"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-63"></span><span>        </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680166112"><span id="local-6989586621680166114"><span id="local-6989586621680166126"><span class="annot"><span class="annottext">Int -&gt; IOPorts (I2C v x t) -&gt; ShowS
 [IOPorts (I2C v x t)] -&gt; ShowS
 IOPorts (I2C v x t) -&gt; String
 (Int -&gt; IOPorts (I2C v x t) -&gt; ShowS)
@@ -118,127 +113,159 @@ $cshow :: forall v x t. IOPorts (I2C v x t) -&gt; String
 showsPrec :: Int -&gt; IOPorts (I2C v x t) -&gt; ShowS
 $cshowsPrec :: forall v x t. Int -&gt; IOPorts (I2C v x t) -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-69"></span><span>
-</span><span id="line-70"></span><span>    </span><span id="local-6989586621680114005"><span class="annot"><span class="annottext">inputPorts :: IOPorts (I2C v x t) -&gt; Set InputPortTag
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span>    </span><span id="local-6989586621680166108"><span class="annot"><span class="annottext">inputPorts :: IOPorts (I2C v x t) -&gt; Set InputPortTag
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#inputPorts"><span class="hs-identifier hs-var hs-var hs-var hs-var">inputPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set InputPortTag
 forall a. Set a
 </span><span class="hs-identifier hs-var">S.empty</span></span><span>
-</span><span id="line-71"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#inputPorts"><span class="hs-identifier hs-var">inputPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680114001"><span id="local-6989586621680114002"><span class="annot"><a href="#local-6989586621680114001"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InputPortTag] -&gt; Set InputPortTag
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#inputPorts"><span class="hs-identifier hs-var">inputPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680166104"><span id="local-6989586621680166105"><span class="annot"><span class="annottext">InoutPortTag
+InputPortTag
+slaveSCL :: InputPortTag
+slaveSDA :: InoutPortTag
+$sel:slaveSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InputPortTag
+$sel:slaveSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680166104"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InputPortTag] -&gt; Set InputPortTag
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">InputPortTag
-</span><a href="#local-6989586621680114001"><span class="hs-identifier hs-var">slaveSCL</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-72"></span><span>
-</span><span id="line-73"></span><span>    </span><span id="local-6989586621680113999"><span class="annot"><span class="annottext">outputPorts :: IOPorts (I2C v x t) -&gt; Set OutputPortTag
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#outputPorts"><span class="hs-identifier hs-var hs-var hs-var hs-var">outputPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113996"><span id="local-6989586621680113997"><span class="annot"><a href="#local-6989586621680113996"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[OutputPortTag] -&gt; Set OutputPortTag
+</span><a href="#local-6989586621680166104"><span class="hs-identifier hs-var">slaveSCL</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span>    </span><span id="local-6989586621680166100"><span class="annot"><span class="annottext">outputPorts :: IOPorts (I2C v x t) -&gt; Set OutputPortTag
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#outputPorts"><span class="hs-identifier hs-var hs-var hs-var hs-var">outputPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680166097"><span id="local-6989586621680166098"><span class="annot"><span class="annottext">InoutPortTag
+OutputPortTag
+masterSCL :: OutputPortTag
+masterSDA :: InoutPortTag
+$sel:masterSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; OutputPortTag
+$sel:masterSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680166097"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[OutputPortTag] -&gt; Set OutputPortTag
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">OutputPortTag
-</span><a href="#local-6989586621680113996"><span class="hs-identifier hs-var">masterSCL</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-74"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#outputPorts"><span class="hs-identifier hs-var">outputPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set OutputPortTag
+</span><a href="#local-6989586621680166097"><span class="hs-identifier hs-var">masterSCL</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#outputPorts"><span class="hs-identifier hs-var">outputPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set OutputPortTag
 forall a. Set a
 </span><span class="hs-identifier hs-var">S.empty</span></span><span>
-</span><span id="line-75"></span><span>
-</span><span id="line-76"></span><span>    </span><span id="local-6989586621680113995"><span class="annot"><span class="annottext">inoutPorts :: IOPorts (I2C v x t) -&gt; Set InoutPortTag
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#inoutPorts"><span class="hs-identifier hs-var hs-var hs-var hs-var">inoutPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113992"><span id="local-6989586621680113993"><span class="annot"><a href="#local-6989586621680113992"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InoutPortTag] -&gt; Set InoutPortTag
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span>    </span><span id="local-6989586621680166093"><span class="annot"><span class="annottext">inoutPorts :: IOPorts (I2C v x t) -&gt; Set InoutPortTag
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#inoutPorts"><span class="hs-identifier hs-var hs-var hs-var hs-var">inoutPorts</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680166090"><span id="local-6989586621680166091"><span class="annot"><span class="annottext">InoutPortTag
+OutputPortTag
+masterSCL :: OutputPortTag
+masterSDA :: InoutPortTag
+$sel:masterSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; OutputPortTag
+$sel:masterSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680166090"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InoutPortTag] -&gt; Set InoutPortTag
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">InoutPortTag
-</span><a href="#local-6989586621680113993"><span class="hs-identifier hs-var">masterSDA</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-77"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#inoutPorts"><span class="hs-identifier hs-var">inoutPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113990"><span id="local-6989586621680113991"><span class="annot"><a href="#local-6989586621680113990"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InoutPortTag] -&gt; Set InoutPortTag
+</span><a href="#local-6989586621680166091"><span class="hs-identifier hs-var">masterSDA</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#inoutPorts"><span class="hs-identifier hs-var">inoutPorts</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680166088"><span id="local-6989586621680166089"><span class="annot"><span class="annottext">InoutPortTag
+InputPortTag
+slaveSCL :: InputPortTag
+slaveSDA :: InoutPortTag
+$sel:slaveSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InputPortTag
+$sel:slaveSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680166088"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[InoutPortTag] -&gt; Set InoutPortTag
 forall a. Ord a =&gt; [a] -&gt; Set a
 </span><span class="hs-identifier hs-var">S.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">InoutPortTag
-</span><a href="#local-6989586621680113991"><span class="hs-identifier hs-var">slaveSDA</span></a></span><span class="hs-special">]</span></span></span></span><span>
-</span><span id="line-78"></span><span>
-</span><span id="line-79"></span><span id="local-6989586621680113987"><span id="local-6989586621680113988"><span id="local-6989586621680113989"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680113989"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113989"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113988"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113987"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#TargetSystemComponent"><span class="hs-identifier hs-type">TargetSystemComponent</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113989"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113988"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680113987"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-80"></span><span>    </span><span id="local-6989586621680113981"><span class="annot"><span class="annottext">moduleName :: Text -&gt; I2C v x t -&gt; Text
+</span><a href="#local-6989586621680166089"><span class="hs-identifier hs-var">slaveSDA</span></a></span><span class="hs-special">]</span></span></span></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span id="local-6989586621680166231"><span id="local-6989586621680166232"><span id="local-6989586621680166233"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="#local-6989586621680166233"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166233"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166232"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166231"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Project.Types.html#TargetSystemComponent"><span class="hs-identifier hs-type">TargetSystemComponent</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2C"><span class="hs-identifier hs-type">I2C</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166233"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166232"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680166231"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621680166073"><span class="annot"><span class="annottext">moduleName :: Text -&gt; I2C v x t -&gt; Text
 </span><a href="NITTA.Project.Types.html#moduleName"><span class="hs-identifier hs-var hs-var hs-var hs-var">moduleName</span></a></span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">I2C v x t
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;pu_i2c&quot;</span></span><span>
-</span><span id="line-81"></span><span>    </span><span id="local-6989586621680113979"><span class="annot"><span class="annottext">hardware :: Text -&gt; I2C v x t -&gt; Implementation
-</span><a href="NITTA.Project.Types.html#hardware"><span class="hs-identifier hs-var hs-var hs-var hs-var">hardware</span></a></span></span><span> </span><span id="local-6989586621680113977"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113977"><span class="hs-identifier hs-var">_tag</span></a></span></span><span> </span><span id="local-6989586621680113976"><span class="annot"><span class="annottext">I2C v x t
-</span><a href="#local-6989586621680113976"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-82"></span><span>        </span><span class="annot"><span class="annottext">Maybe String -&gt; [Implementation] -&gt; Implementation
+</span><span id="line-76"></span><span>    </span><span id="local-6989586621680166071"><span class="annot"><span class="annottext">hardware :: Text -&gt; I2C v x t -&gt; Implementation
+</span><a href="NITTA.Project.Types.html#hardware"><span class="hs-identifier hs-var hs-var hs-var hs-var">hardware</span></a></span></span><span> </span><span id="local-6989586621680166069"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680166069"><span class="hs-identifier hs-var">_tag</span></a></span></span><span> </span><span id="local-6989586621680166068"><span class="annot"><span class="annottext">I2C v x t
+</span><a href="#local-6989586621680166068"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>        </span><span class="annot"><span class="annottext">Maybe String -&gt; [Implementation] -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#Aggregate"><span class="hs-identifier hs-var">Aggregate</span></a></span><span>
-</span><span id="line-83"></span><span>            </span><span class="annot"><span class="annottext">Maybe String
+</span><span id="line-78"></span><span>            </span><span class="annot"><span class="annottext">Maybe String
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-84"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-79"></span><span>            </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/bounce_filter.v&quot;</span></span><span>
-</span><span id="line-85"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-80"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/buffer.v&quot;</span></span><span>
-</span><span id="line-86"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-81"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/i2c_master_driver.v&quot;</span></span><span>
-</span><span id="line-87"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-82"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/i2c_to_nitta_splitter.v&quot;</span></span><span>
-</span><span id="line-88"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-83"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/nitta_to_i2c_splitter.v&quot;</span></span><span>
-</span><span id="line-89"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-84"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/pu_i2c_master_driver.v&quot;</span></span><span>
-</span><span id="line-90"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-85"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/pu_i2c_slave_driver.v&quot;</span></span><span>
-</span><span id="line-91"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-86"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/pu_master_i2c.v&quot;</span></span><span>
-</span><span id="line-92"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
+</span><span id="line-87"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Implementation
 </span><a href="NITTA.Project.Types.html#FromLibrary"><span class="hs-identifier hs-var">FromLibrary</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;i2c/pu_slave_i2c.v&quot;</span></span><span>
-</span><span id="line-93"></span><span>            </span><span class="hs-special">]</span><span>
-</span><span id="line-94"></span><span>
-</span><span id="line-95"></span><span>    </span><span id="local-6989586621680113973"><span class="annot"><span class="annottext">software :: Text -&gt; I2C v x t -&gt; Implementation
-</span><a href="NITTA.Project.Types.html#software"><span class="hs-identifier hs-var hs-var hs-var hs-var">software</span></a></span></span><span> </span><span id="local-6989586621680113971"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113971"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680113970"><span class="annot"><span class="annottext">I2C v x t
-</span><a href="#local-6989586621680113970"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; I2C v x t -&gt; Text -&gt; Implementation
+</span><span id="line-88"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span>    </span><span id="local-6989586621680166061"><span class="annot"><span class="annottext">software :: Text -&gt; I2C v x t -&gt; Implementation
+</span><a href="NITTA.Project.Types.html#software"><span class="hs-identifier hs-var hs-var hs-var hs-var">software</span></a></span></span><span> </span><span id="local-6989586621680166059"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680166059"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680166058"><span class="annot"><span class="annottext">I2C v x t
+</span><a href="#local-6989586621680166058"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; I2C v x t -&gt; Text -&gt; Implementation
 forall i v x t.
 (VarValTime v x t, SimpleIOInterface i, ToJSON v) =&gt;
 Text -&gt; SimpleIO i v x t -&gt; Text -&gt; Implementation
 </span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#protocolDescription"><span class="hs-identifier hs-var">protocolDescription</span></a></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113971"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">I2C v x t
-</span><a href="#local-6989586621680113970"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680166059"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">I2C v x t
+</span><a href="#local-6989586621680166058"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;I2C Processor Unit&quot;</span></span><span>
-</span><span id="line-96"></span><span>
-</span><span id="line-97"></span><span>    </span><span id="local-6989586621680113968"><span class="annot"><span class="annottext">hardwareInstance :: Text -&gt; I2C v x t -&gt; UnitEnv (I2C v x t) -&gt; Verilog
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span>    </span><span id="local-6989586621680165942"><span class="annot"><span class="annottext">hardwareInstance :: Text -&gt; I2C v x t -&gt; UnitEnv (I2C v x t) -&gt; Verilog
 </span><a href="NITTA.Project.Types.html#hardwareInstance"><span class="hs-identifier hs-var hs-var hs-var hs-var">hardwareInstance</span></a></span></span><span>
-</span><span id="line-98"></span><span>        </span><span id="local-6989586621680113966"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113966"><span class="hs-identifier hs-var">tag</span></a></span></span><span>
-</span><span id="line-99"></span><span>        </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIO"><span class="hs-identifier hs-type">SimpleIO</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113965"><span class="annot"><span class="annottext">Int
+</span><span id="line-93"></span><span>        </span><span id="local-6989586621680165940"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165940"><span class="hs-identifier hs-var">tag</span></a></span></span><span>
+</span><span id="line-94"></span><span>        </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIO"><span class="hs-identifier hs-type">SimpleIO</span></a></span><span class="hs-special">{</span><span id="local-6989586621680165939"><span class="annot"><span class="annottext">Int
 bounceFilter :: Int
 $sel:bounceFilter:SimpleIO :: forall i v x t. SimpleIO i v x t -&gt; Int
-</span><a href="#local-6989586621680113965"><span class="hs-identifier hs-var hs-var">bounceFilter</span></a></span></span><span class="hs-special">}</span><span>
-</span><span id="line-100"></span><span>        </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span>
-</span><span id="line-101"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680113963"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165939"><span class="hs-identifier hs-var hs-var">bounceFilter</span></a></span></span><span class="hs-special">}</span><span>
+</span><span id="line-95"></span><span>        </span><span class="annot"><a href="NITTA.Project.Types.html#UnitEnv"><span class="hs-identifier hs-type">UnitEnv</span></a></span><span>
+</span><span id="line-96"></span><span>            </span><span class="hs-special">{</span><span> </span><span id="local-6989586621680165937"><span class="annot"><span class="annottext">Text
 sigClk :: forall m. UnitEnv m -&gt; Text
 sigClk :: Text
 </span><a href="NITTA.Project.Types.html#sigClk"><span class="hs-identifier hs-var hs-var">sigClk</span></a></span></span><span>
-</span><span id="line-102"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680113961"><span class="annot"><span class="annottext">Text
+</span><span id="line-97"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680165935"><span class="annot"><span class="annottext">Text
 sigRst :: forall m. UnitEnv m -&gt; Text
 sigRst :: Text
 </span><a href="NITTA.Project.Types.html#sigRst"><span class="hs-identifier hs-var hs-var">sigRst</span></a></span></span><span>
-</span><span id="line-103"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680113959"><span class="annot"><span class="annottext">Text
+</span><span id="line-98"></span><span>            </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680165933"><span class="annot"><span class="annottext">Text
 sigCycleBegin :: forall m. UnitEnv m -&gt; Text
 sigCycleBegin :: Text
 </span><a href="NITTA.Project.Types.html#sigCycleBegin"><span class="hs-identifier hs-var hs-var">sigCycleBegin</span></a></span></span><span>
-</span><span id="line-104"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ctrlPorts :: forall m. UnitEnv m -&gt; Maybe (Ports m)
-</span><a href="NITTA.Project.Types.html#ctrlPorts"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIOPorts"><span class="hs-identifier hs-type">SimpleIOPorts</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113953"><span id="local-6989586621680113954"><span id="local-6989586621680113955"><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3Astop%3ASimpleIOPorts"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span><span class="hs-special">}</span><span>
-</span><span id="line-105"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioPorts :: forall m. UnitEnv m -&gt; Maybe (IOPorts m)
-</span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680113948"><span class="annot"><span class="annottext">IOPorts (I2C v x t)
-</span><a href="#local-6989586621680113948"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span>
-</span><span id="line-106"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueIn :: forall m. UnitEnv m -&gt; Maybe (Text, Text)
-</span><a href="NITTA.Project.Types.html#valueIn"><span class="hs-identifier hs-var">valueIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680113946"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113946"><span class="hs-identifier hs-var">dataIn</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680113945"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113945"><span class="hs-identifier hs-var">attrIn</span></a></span></span><span class="hs-special">)</span><span>
-</span><span id="line-107"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueOut :: forall m. UnitEnv m -&gt; Maybe (Text, Text)
-</span><a href="NITTA.Project.Types.html#valueOut"><span class="hs-identifier hs-var">valueOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680113943"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113943"><span class="hs-identifier hs-var">dataOut</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680113942"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113942"><span class="hs-identifier hs-var">attrOut</span></a></span></span><span class="hs-special">)</span><span>
-</span><span id="line-108"></span><span>            </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-109"></span><span>            </span><span class="annot"><span class="">[__i|
+</span><span id="line-99"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ctrlPorts :: forall m. UnitEnv m -&gt; Maybe (Ports m)
+</span><a href="NITTA.Project.Types.html#ctrlPorts"><span class="hs-identifier hs-var">ctrlPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#SimpleIOPorts"><span class="hs-identifier hs-type">SimpleIOPorts</span></a></span><span class="hs-special">{</span><span id="local-6989586621680165927"><span id="local-6989586621680165928"><span id="local-6989586621680165929"><span class="annot"><span class="annottext">String
+SignalTag
+$sel:stop:SimpleIOPorts :: forall i v x t. Ports (SimpleIO i v x t) -&gt; String
+$sel:oe:SimpleIOPorts :: forall i v x t. Ports (SimpleIO i v x t) -&gt; SignalTag
+$sel:wr:SimpleIOPorts :: forall i v x t. Ports (SimpleIO i v x t) -&gt; SignalTag
+stop :: String
+oe :: SignalTag
+wr :: SignalTag
+</span><a href="NITTA.Model.ProcessorUnits.IO.SimpleIO.html#%24sel%3Astop%3ASimpleIOPorts"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span><span class="hs-special">}</span><span>
+</span><span id="line-100"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioPorts :: forall m. UnitEnv m -&gt; Maybe (IOPorts m)
+</span><a href="NITTA.Project.Types.html#ioPorts"><span class="hs-identifier hs-var">ioPorts</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680165922"><span class="annot"><span class="annottext">IOPorts (I2C v x t)
+</span><a href="#local-6989586621680165922"><span class="hs-identifier hs-var">ioPorts</span></a></span></span><span>
+</span><span id="line-101"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueIn :: forall m. UnitEnv m -&gt; Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueIn"><span class="hs-identifier hs-var">valueIn</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680165920"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165920"><span class="hs-identifier hs-var">dataIn</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680165919"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165919"><span class="hs-identifier hs-var">attrIn</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">valueOut :: forall m. UnitEnv m -&gt; Maybe (Text, Text)
+</span><a href="NITTA.Project.Types.html#valueOut"><span class="hs-identifier hs-var">valueOut</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680165917"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165917"><span class="hs-identifier hs-var">dataOut</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680165916"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165916"><span class="hs-identifier hs-var">attrOut</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-103"></span><span>            </span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-104"></span><span>            </span><span class="annot"><span class="">[__i|
                 #{ module_ ioPorts } \#
                         ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                         , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
@@ -255,28 +282,40 @@ sigCycleBegin :: Text
                     #{ nest 4 $ extIO ioPorts }
                     );
             |]</span></span><span>
-</span><span id="line-126"></span><span>            </span><span class="hs-keyword">where</span><span>
-</span><span id="line-127"></span><span>                </span><span id="local-6989586621680113941"><span class="annot"><span class="annottext">module_ :: IOPorts (I2C v x t) -&gt; Text
-</span><a href="#local-6989586621680113941"><span class="hs-identifier hs-var hs-var">module_</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span id="line-121"></span><span>            </span><span class="hs-keyword">where</span><span>
+</span><span id="line-122"></span><span>                </span><span id="local-6989586621680165915"><span class="annot"><span class="annottext">module_ :: IOPorts (I2C v x t) -&gt; Text
+</span><a href="#local-6989586621680165915"><span class="hs-identifier hs-var hs-var">module_</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;pu_master_i2c&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
-</span><span id="line-128"></span><span>                </span><span class="annot"><a href="#local-6989586621680113941"><span class="hs-identifier hs-var">module_</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span id="line-123"></span><span>                </span><span class="annot"><a href="#local-6989586621680165915"><span class="hs-identifier hs-var">module_</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;pu_slave_i2c&quot;</span></span><span>
-</span><span id="line-129"></span><span>                </span><span id="local-6989586621680113940"><span class="annot"><span class="annottext">extIO :: IOPorts (I2C v x t) -&gt; p
-</span><a href="#local-6989586621680113940"><span class="hs-identifier hs-var hs-var">extIO</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113930"><span id="local-6989586621680113931"><span class="annot"><a href="#local-6989586621680113930"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-130"></span><span>                    </span><span class="annot"><span class="">[__i|
+</span><span id="line-124"></span><span>                </span><span id="local-6989586621680165914"><span class="annot"><span class="annottext">extIO :: IOPorts (I2C v x t) -&gt; dst
+</span><a href="#local-6989586621680165914"><span class="hs-identifier hs-var hs-var">extIO</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CMaster"><span class="hs-identifier hs-type">I2CMaster</span></a></span><span class="hs-special">{</span><span id="local-6989586621680165865"><span id="local-6989586621680165866"><span class="annot"><span class="annottext">InoutPortTag
+OutputPortTag
+masterSCL :: OutputPortTag
+masterSDA :: InoutPortTag
+$sel:masterSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; OutputPortTag
+$sel:masterSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680165865"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-125"></span><span>                    </span><span class="annot"><span class="">[__i|
                         , .scl( #{ masterSCL } )
                         , .sda( #{ masterSDA } )
                     |]</span></span><span>
-</span><span id="line-134"></span><span>                </span><span class="annot"><a href="#local-6989586621680113940"><span class="hs-identifier hs-var">extIO</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680113928"><span id="local-6989586621680113929"><span class="annot"><a href="#local-6989586621680113928"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-135"></span><span>                    </span><span class="annot"><span class="">[__i|
+</span><span id="line-129"></span><span>                </span><span class="annot"><a href="#local-6989586621680165914"><span class="hs-identifier hs-var">extIO</span></a></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.IO.I2C.html#I2CSlave"><span class="hs-identifier hs-type">I2CSlave</span></a></span><span class="hs-special">{</span><span id="local-6989586621680165863"><span id="local-6989586621680165864"><span class="annot"><span class="annottext">InoutPortTag
+InputPortTag
+slaveSCL :: InputPortTag
+slaveSDA :: InoutPortTag
+$sel:slaveSCL:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InputPortTag
+$sel:slaveSDA:I2CMaster :: forall v x t. IOPorts (I2C v x t) -&gt; InoutPortTag
+</span><a href="#local-6989586621680165863"><span class="hs-glyph hs-var hs-var hs-var hs-var">..</span></a></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-130"></span><span>                    </span><span class="annot"><span class="">[__i|
                         , .scl( #{ slaveSCL } )
                         , .sda( #{ slaveSDA } )
                     |]</span></span><span>
-</span><span id="line-139"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#hardwareInstance"><span class="hs-identifier hs-var">hardwareInstance</span></a></span><span> </span><span id="local-6989586621680113927"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680113927"><span class="hs-identifier hs-var">_title</span></a></span></span><span> </span><span id="local-6989586621680113926"><span class="annot"><span class="annottext">I2C v x t
-</span><a href="#local-6989586621680113926"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span id="local-6989586621680113925"><span class="annot"><span class="annottext">UnitEnv (I2C v x t)
-</span><a href="#local-6989586621680113925"><span class="hs-identifier hs-var">_env</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Verilog
+</span><span id="line-134"></span><span>    </span><span class="annot"><a href="NITTA.Project.Types.html#hardwareInstance"><span class="hs-identifier hs-var">hardwareInstance</span></a></span><span> </span><span id="local-6989586621680165862"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680165862"><span class="hs-identifier hs-var">_title</span></a></span></span><span> </span><span id="local-6989586621680165861"><span class="annot"><span class="annottext">I2C v x t
+</span><a href="#local-6989586621680165861"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span id="local-6989586621680165860"><span class="annot"><span class="annottext">UnitEnv (I2C v x t)
+</span><a href="#local-6989586621680165860"><span class="hs-identifier hs-var">_env</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Verilog
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;internal error&quot;</span></span></span></span></span><span>
-</span><span id="line-140"></span></pre></body></html>
+</span><span id="line-135"></span></pre></body></html>

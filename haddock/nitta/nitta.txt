@@ -127,6 +127,23 @@ instance NITTA.Intermediate.Variable.Suffix GHC.Base.String
 instance NITTA.Intermediate.Variable.Suffix Data.Text.Internal.Text
 
 
+module NITTA.Model.Problems.Allocation
+data Allocation tag
+Allocation :: tag -> tag -> Allocation tag
+
+-- | Tag of the BusNetwork where PU will be allocated
+[networkTag] :: Allocation tag -> tag
+
+-- | Tag of the prototype that will be used for allocation
+[processUnitTag] :: Allocation tag -> tag
+class AllocationProblem u tag | u -> tag
+allocationOptions :: AllocationProblem u tag => u -> [Allocation tag]
+allocationDecision :: AllocationProblem u tag => u -> Allocation tag -> u
+instance GHC.Classes.Eq tag => GHC.Classes.Eq (NITTA.Model.Problems.Allocation.Allocation tag)
+instance GHC.Generics.Generic (NITTA.Model.Problems.Allocation.Allocation tag)
+instance Data.String.ToString.ToString tag => GHC.Show.Show (NITTA.Model.Problems.Allocation.Allocation tag)
+
+
 module NITTA.Project.VerilogSnippets
 snippetClkGen :: Text
 snippetDumpFile :: Text -> Text
@@ -141,10 +158,10 @@ view :: Viewable t v => t -> v
 
 
 module NITTA.Utils.Base
-unionsMap :: Ord a1 => (a2 -> Set a1) -> [a2] -> Set a1
+unionsMap :: Ord a => (a -> Set a) -> [a] -> Set a
 oneOf :: Set c -> c
-minimumOn :: (Foldable t1, Ord a) => (t2 -> a) -> t1 t2 -> t2
-maximumOn :: (Foldable t1, Ord a) => (t2 -> a) -> t1 t2 -> t2
+minimumOn :: (Foldable t, Ord a) => (t -> a) -> t t -> t
+maximumOn :: (Foldable t, Ord a) => (t -> a) -> t t -> t
 toText :: ToString a => a -> Text
 fromText :: IsString a => Text -> a
 showText :: Show a => a -> Text
@@ -192,10 +209,10 @@ defX :: DefaultX u x => u -> x
 class FixedPointCompatible a
 scalingFactorPower :: FixedPointCompatible a => a -> Integer
 fractionalBitSize :: FixedPointCompatible a => a -> Int
-scalingFactor :: (Floating a1, FixedPointCompatible a2) => a2 -> a1
+scalingFactor :: (Floating a, FixedPointCompatible a) => a -> a
 
 -- | Minimal and maximal raw value.
-minMaxRaw :: (Num b, Val x) => x -> (b, b)
+minMaxRaw :: (Num b, Val p) => p -> (b, b)
 
 -- | All values with attributes.
 data Attr x
@@ -379,12 +396,12 @@ log2md :: ToString a => [HashMap a String] -> String
 --   &gt;&gt;&gt; BS.putStr $ log2json records
 --   [
 --       {
---           "x2": 3.4,
---           "x1": 1.2
+--           "x1": 1.2,
+--           "x2": 3.4
 --       },
 --       {
---           "x2": 2.3,
---           "x1": 3.4
+--           "x1": 3.4,
+--           "x2": 2.3
 --       }
 --   ]
 --   </pre>
@@ -404,7 +421,7 @@ log2csv :: ToString a => [HashMap a String] -> ByteString
 
 -- | Make sequence of received values '[ Map v x ]'
 cntxReceivedBySlice :: Ord v => Cntx v x -> [Map v x]
-getCntx :: (Eq a, Hashable a, ToString a) => CycleCntx a p -> a -> p
+getCntx :: (Eq a, Hashable a, ToString a) => CycleCntx a v -> a -> v
 updateCntx :: (Eq v, Hashable v, ToString v) => CycleCntx v x -> [(v, x)] -> Either String (CycleCntx v x)
 
 -- | Patch class allows replacing one variable by another. Especially for
@@ -581,7 +598,7 @@ endpointOptionToDecision :: (Num a, Ord a) => EndpointSt v (TimeConstraint a) ->
 isSource :: EndpointSt v tp -> Bool
 isTarget :: EndpointSt v tp -> Bool
 isSubroleOf :: Ord a => EndpointRole a -> EndpointRole a -> Bool
-setAt :: tp1 -> EndpointSt v tp2 -> EndpointSt v tp1
+setAt :: tp -> EndpointSt v tp -> EndpointSt v tp
 updAt :: (t -> tp) -> EndpointSt v t -> EndpointSt v tp
 instance GHC.Generics.Generic (NITTA.Model.Problems.Endpoint.EndpointRole v)
 instance GHC.Classes.Ord v => GHC.Classes.Ord (NITTA.Model.Problems.Endpoint.EndpointRole v)
@@ -600,8 +617,14 @@ instance Data.Aeson.Types.ToJSON.ToJSON v => Data.Aeson.Types.ToJSON.ToJSON (NIT
 
 module NITTA.Model.ProcessorUnits.Types
 
--- | Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
+-- | Class for processor unit tag or "name"
+class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag) => UnitTag tag
+
+-- | Whether the value can be used as a template or not
+isTemplate :: UnitTag tag => tag -> Bool
+
+-- | Create tag from the template and index
+fromTemplate :: UnitTag tag => tag -> String -> tag
 
 -- | Process unit - part of NITTA process with can execute a function from
 --   intermediate representation:
@@ -615,10 +638,30 @@ type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag)
 class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t
 tryBind :: ProcessorUnit u v x t => F v x -> u -> Either String u
 process :: ProcessorUnit u v x t => u -> Process t (StepInfo v x t)
-bind :: ProcessorUnit p v x t => F v x -> p -> p
+
+-- | Indicates what type of parallelism is supported by
+--   <a>ProcessorUnit</a>
+parallelismType :: ProcessorUnit u v x t => u -> ParallelismType
+
+-- | Provide the processor unit size. At the moment it's just the number of
+--   subprocessors
+puSize :: ProcessorUnit u v x t => u -> Float
+bind :: ProcessorUnit u v x t => F v x -> u -> u
 allowToProcess :: ProcessorUnit b v x t => F v x -> b -> Bool
 class NextTick u t | u -> t
 nextTick :: NextTick u t => u -> t
+
+-- | Processor unit parallelism type
+data ParallelismType
+
+-- | All operations can be performed in parallel mode
+Full :: ParallelismType
+
+-- | All operations can be performed in pipeline mode
+Pipeline :: ParallelismType
+
+-- | Other processor units
+None :: ParallelismType
 
 -- | Computational process description. It was designed in ISO 15926 style,
 --   with separated data and relations storage.
@@ -674,6 +717,9 @@ data StepInfo v x t
 -- | wrapper for nested process unit step (used for networks)
 [NestedStep] :: UnitTag tag => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
 
+-- | Process unit allocation step
+[AllocationStep] :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
+
 -- | Relations between process steps.
 data Relation
 
@@ -710,6 +756,7 @@ extractInstructionAt :: (ProcessorUnit u v x t, Typeable u) => u -> t -> [Instru
 --   </ol>
 withShift :: (Eq p, Num p) => p -> p -> p
 isRefactorStep :: StepInfo v x t -> Bool
+isAllocationStep :: StepInfo v x t -> Bool
 
 -- | Type class for controllable units. Defines two level of a unit
 --   behaviour representation (see ahead).
@@ -786,6 +833,9 @@ OutputPortTag :: Text -> OutputPortTag
 newtype InoutPortTag
 InoutPortTag :: Text -> InoutPortTag
 [inoutPortTag] :: InoutPortTag -> Text
+instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Types.ParallelismType
+instance GHC.Generics.Generic NITTA.Model.ProcessorUnits.Types.ParallelismType
+instance GHC.Show.Show NITTA.Model.ProcessorUnits.Types.ParallelismType
 instance GHC.Generics.Generic (NITTA.Model.ProcessorUnits.Types.Step t i)
 instance (GHC.Show.Show t, GHC.Show.Show i) => GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Step t i)
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Types.Relation
@@ -820,6 +870,9 @@ instance Data.Default.Class.Default t => Data.Default.Class.Default (NITTA.Model
 instance NITTA.Model.ProcessorUnits.Types.NextTick (NITTA.Model.ProcessorUnits.Types.Process t si) t
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.ProcessorUnits.Types.Relation
 instance (Data.Aeson.Types.ToJSON.ToJSON t, Data.Aeson.Types.ToJSON.ToJSON i) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.ProcessorUnits.Types.Step t i)
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.ProcessorUnits.Types.ParallelismType
+instance NITTA.Model.ProcessorUnits.Types.UnitTag Data.Text.Internal.Text
+instance NITTA.Model.ProcessorUnits.Types.UnitTag GHC.Base.String
 
 
 module NITTA.Model.Problems.Dataflow
@@ -1401,7 +1454,7 @@ data TraceVar
 TraceVar :: Maybe Text -> Text -> TraceVar
 [tvFmt] :: TraceVar -> Maybe Text
 [tvVar] :: TraceVar -> Text
-prettyLog :: (Real t, Show t, PrintfArg t, PrintfType v, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
+prettyLog :: (Real t, Show t, PrintfType v, PrintfArg t, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
 getTraceVarFormat :: Maybe Text -> Text
 instance GHC.Show.Show NITTA.Frontends.Common.TraceVar
 
@@ -1481,7 +1534,7 @@ simulateAlg :: (Var v, Val x) => Int -> CycleCntx v x -> [(v, [x])] -> [F v x] -
 
 
 module NITTA.Frontends.XMILE.Frontend
-translateXMILE :: (Hashable a, Suffix a, ToString a, IsString a, Val t, Ord a, Typeable a) => Text -> FrontendResult a t
+translateXMILE :: (Hashable v, Suffix v, ToString v, IsString v, Val x, Ord v, Typeable v) => Text -> FrontendResult v x
 data FrontendResult v x
 FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
 [frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
@@ -1507,8 +1560,64 @@ instance GHC.Show.Show (NITTA.Frontends.XMILE.Frontend.XMILEAlgBuilder v x)
 --   <li>Bitwise left and right shifts;</li>
 --   <li>Recursive calls.</li>
 --   </ul>
+--   
+--   The naming of variables in the output dataflow graph:
+--   
+--   <pre>
+--   x^1#2 -- for variables
+--   | | |
+--   | | +-- value access number (one for each), e.g.
+--   | |     x = 1; send(x); reg(x) -- two accesses
+--   | |
+--   | +---- value assignment number (one for each, optional)
+--   |       x = f(1); x = g(2) -- two assignments
+--   |
+--   +------ original variable name
+--   
+--   !123#3 -- for constant
+--     |  |
+--     |  +--- value access number
+--     |
+--     +------ value: 123
+--   
+--   _a#4 -- for an unnamed variable (example see below)
+--    | |
+--    | +--- value access number
+--    |
+--    +----- char of unnamed variable (a, b..., aa, ab, ...)
+--   </pre>
+--   
+--   Example:
+--   
+--   <pre>
+--   &gt;&gt;&gt; :{
+--   void $ mapM print $ functions (frDataFlow $ translateLua $ T.pack $ unlines
+--       [ "function f()"
+--       , "    local a = 1 + 2 + 3"
+--       , "    local b = a + 4 + 5"
+--       , "    b = b * 1 + 2"
+--       , "    c, d = b / 2"
+--       , "    send(b)"
+--       , "end"
+--       , "f()"
+--       ] :: DataFlowGraph String Int)
+--   :}
+--   const(1) = !1#0 = !1#1
+--   const(2) = !2#0 = !2#1 = !2#2
+--   !1#0 + !2#0 = _0#a
+--   const(3) = !3#0
+--   _0#a + !3#0 = a^0#0
+--   const(4) = !4#0
+--   a^0#0 + !4#0 = _0#b
+--   const(5) = !5#0
+--   _0#b + !5#0 = b^0#0
+--   b^0#0 * !1#1 = _1#b
+--   _1#b + !2#1 = b^1#0 = b^1#1
+--   !2#2 / b^1#0 = _; !2#2 mod b^1#0 = _
+--   send(b^1#1)
+--   </pre>
 module NITTA.Frontends.Lua
-translateLua :: (ToString a, Suffix a, Hashable a, Val t, IsString a, Ord a, Typeable a) => Text -> FrontendResult a t
+translateLua :: (Var v, Val x) => Text -> FrontendResult v x
 data FrontendResult v x
 FrontendResult :: DataFlowGraph v x -> [TraceVar] -> ([HashMap v x] -> [HashMap String String]) -> FrontendResult v x
 [frDataFlow] :: FrontendResult v x -> DataFlowGraph v x
@@ -1583,10 +1692,10 @@ data TraceVar
 TraceVar :: Maybe Text -> Text -> TraceVar
 [tvFmt] :: TraceVar -> Maybe Text
 [tvVar] :: TraceVar -> Text
-prettyLog :: (Real t, Show t, PrintfArg t, PrintfType v, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
+prettyLog :: (Real t, Show t, PrintfType v, PrintfArg t, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
 getTraceVarFormat :: Maybe Text -> Text
-identifyFrontendType :: [Char] -> Maybe FrontendType -> FrontendType
-translate :: (ToString a, Suffix a, Hashable a, Val t, IsString a, Typeable a, Ord a) => FrontendType -> Text -> FrontendResult a t
+identifyFrontendType :: String -> Maybe FrontendType -> FrontendType
+translate :: (IsString v, ToString v, Suffix v, Hashable v, Val x, Typeable v, Ord v) => FrontendType -> Text -> FrontendResult v x
 instance Data.Data.Data NITTA.Frontends.FrontendType
 instance GHC.Show.Show NITTA.Frontends.FrontendType
 
@@ -1603,19 +1712,19 @@ module NITTA.Utils.ProcessDescription
 -- | Execute process builder and return list of new step UID and new
 --   process description. The initial process state is getting from the PU
 --   by the <a>process</a> function.
-runSchedule :: ProcessorUnit u v x t => u -> StateT (Schedule u v x t) Identity a -> (a, Process t (StepInfo v x t))
+runSchedule :: ProcessorUnit u v x t => u -> State (Schedule u v x t) a -> (a, Process t (StepInfo v x t))
 
 -- | Execute process builder and return new process description. The
 --   initial process state is getting from the PU by the <a>process</a>
 --   function.
-execSchedule :: ProcessorUnit u v x t => u -> StateT (Schedule u v x t) Identity a -> Process t (StepInfo v x t)
+execSchedule :: ProcessorUnit u v x t => u -> State (Schedule u v x t) a -> Process t (StepInfo v x t)
 
 -- | Execute process builder and return new process description. The
 --   initial process state is passed explicetly.
 --   
 --   Why can not we get a process here? In the case of Bus Network, it also
 --   fetches processes from underlying units.
-execScheduleWithProcess :: pu -> Process t (StepInfo v x t) -> StateT (Schedule pu v x t) Identity a -> Process t (StepInfo v x t)
+execScheduleWithProcess :: p -> Process t (StepInfo v x t) -> State (Schedule p v x t) a -> Process t (StepInfo v x t)
 
 -- | Add process step with passed the time and info.
 scheduleStep :: MonadState (Schedule pu v x t) m => Interval t -> StepInfo v x t -> m [ProcessStepID]
@@ -1623,8 +1732,8 @@ scheduleStep :: MonadState (Schedule pu v x t) m => Interval t -> StepInfo v x t
 -- | Add to the process description information about endpoint behaviour,
 --   and it's low-level implementation (on instruction level). Vertical
 --   relations connect endpoint level and instruction level steps.
-scheduleEndpoint :: forall m pu v x t. MonadState (Schedule pu v x t) m => EndpointSt v (Interval t) -> m [ProcessStepID] -> m [ProcessStepID]
-scheduleEndpoint_ :: forall f pu v x t. MonadState (Schedule pu v x t) f => EndpointSt v (Interval t) -> f [ProcessStepID] -> f ()
+scheduleEndpoint :: forall {m} {pu} {v} {x} {t}. MonadState (Schedule pu v x t) m => EndpointSt v (Interval t) -> m [ProcessStepID] -> m [ProcessStepID]
+scheduleEndpoint_ :: forall {f} {pu} {v} {x} {t}. MonadState (Schedule pu v x t) f => EndpointSt v (Interval t) -> f [ProcessStepID] -> f ()
 scheduleFunctionBind :: (MonadState (Schedule pu v x t) m, Show a) => a -> m [ProcessStepID]
 scheduleFunctionRevoke :: (MonadState (Schedule pu v x t) m, Show a) => a -> m [ProcessStepID]
 
@@ -1641,26 +1750,27 @@ scheduleRefactoring :: (MonadState (Schedule pu v x t) m, Typeable ref, Show ref
 --   evaluation. Unsafe means: without instruction collision check and
 --   nextTick consistency.
 scheduleInstructionUnsafe :: (MonadState (Schedule pu v x t) m, Show (Instruction pu), Typeable pu, Num t) => Interval t -> Instruction pu -> m [ProcessStepID]
-scheduleInstructionUnsafe_ :: forall f pu v x t. (MonadState (Schedule pu v x t) f, Show (Instruction pu), Typeable pu, Num t) => Interval t -> Instruction pu -> f ()
+scheduleInstructionUnsafe_ :: forall {f} {pu} {v} {x} {t}. (MonadState (Schedule pu v x t) f, Show (Instruction pu), Typeable pu, Num t) => Interval t -> Instruction pu -> f ()
 
 -- | Add to the process description information about nested step.
-scheduleNestedStep :: forall m pu v x t tag. (MonadState (Schedule pu v x t) m, Typeable tag, Ord tag, ToString tag, IsString tag) => tag -> Step t (StepInfo v x t) -> m ProcessStepID
+scheduleNestedStep :: forall {m} {pu} {v} {x} {t} {tag}. (MonadState (Schedule pu v x t) m, UnitTag tag) => tag -> Step t (StepInfo v x t) -> m ProcessStepID
 
 -- | Add to the process description information about vertical relations,
 --   which are defined by the Cartesian product of high and low lists.
-establishVerticalRelations :: forall m pu v x t. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
+establishVerticalRelations :: forall {m} {pu} {v} {x} {t}. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
 
 -- | Add to the process description information about horizontal relations
 --   (inside level), which are defined by the Cartesian product of high and
 --   low lists.
-establishHorizontalRelations :: forall m pu v x t. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
+establishHorizontalRelations :: forall {m} {pu} {v} {x} {t}. MonadState (Schedule pu v x t) m => [ProcessStepID] -> [ProcessStepID] -> m ()
 
 -- | Get a current slice of the computational process.
 getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
-relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
+relatedEndpoints :: Ord a => Process t (StepInfo a x t) -> Set a -> [Step t (StepInfo a x t)]
 
 -- | Helper for instruction extraction from a rigid type variable.
 castInstruction :: (Typeable a, Typeable pu) => pu -> a -> Maybe (Instruction pu)
+scheduleAllocation :: (MonadState (Schedule pu v x t) m, Typeable a, Show a, Eq a) => a -> m [ProcessStepID]
 instance NITTA.Model.ProcessorUnits.Types.NextTick (NITTA.Utils.ProcessDescription.Schedule pu v x t) t
 
 
@@ -1672,25 +1782,25 @@ shiftI :: (Num a, Ord a) => a -> Interval a -> Interval a
 modify'_ :: (s -> s) -> State s ()
 bool2verilog :: Bool -> Text
 values2dump :: (Foldable t, Show a) => t a -> [Char]
-hdlValDump :: Val x => x -> Text
+hdlValDump :: Val p => p -> Text
 toModuleName :: [Char] -> [Char]
 endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
-getEndpoint :: Step t1 (StepInfo v x t2) -> Maybe (EndpointRole v)
-getInstruction :: Step t1 (StepInfo v x t2) -> Maybe (StepInfo v x t2)
-getCad :: Step t1 (StepInfo v x t2) -> Maybe String
-getEndpoints :: Ord t1 => Process t1 (StepInfo v x t2) -> [EndpointRole v]
+getEndpoint :: Step t (StepInfo v x t) -> Maybe (EndpointRole v)
+getInstruction :: Step t (StepInfo v x t) -> Maybe (StepInfo v x t)
+getCad :: Step t (StepInfo v x t) -> Maybe String
+getEndpoints :: Ord t => Process t (StepInfo v x t) -> [EndpointRole v]
 transferred :: ProcessorUnit u a1 x t => u -> Set a1
-inputsPushedAt :: (Ord a1, Ord a2, Function f a2) => Process a1 (StepInfo a2 x t2) -> f -> a1
+inputsPushedAt :: (Ord a, Ord a, Function f a) => Process a (StepInfo a x t2) -> f -> a
 stepsInterval :: Ord a => [Step a i] -> Interval a
 relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
-isIntermediate :: Step t1 (StepInfo v x t2) -> Bool
-getIntermediate :: Step t1 (StepInfo v x t2) -> Maybe (F v x)
-getIntermediates :: Ord t1 => Process t1 (StepInfo v x t2) -> [F v x]
-isEndpoint :: Step t1 (StepInfo v x t2) -> Bool
-isInstruction :: Step t1 (StepInfo v x t2) -> Bool
+isIntermediate :: Step t (StepInfo v x t) -> Bool
+getIntermediate :: Step t (StepInfo v x t) -> Maybe (F v x)
+getIntermediates :: Ord t => Process t (StepInfo v x t) -> [F v x]
+isEndpoint :: Step t (StepInfo v x t) -> Bool
+isInstruction :: Step t (StepInfo v x t) -> Bool
 getToml :: Text -> Table
-getFromToml :: (FromJSON p, ToJSON a) => HashMap Text a -> p
-getFromTomlSection :: (FromJSON p, ToJSON a) => Text -> HashMap Text a -> p
+getFromToml :: (FromJSON a, ToJSON a) => HashMap Text a -> a
+getFromTomlSection :: (FromJSON a, ToJSON a) => Text -> HashMap Text a -> a
 
 
 module NITTA.Project.Types
@@ -1868,6 +1978,11 @@ ASync :: IOSynchronization
 
 -- | defined by onboard signal (sync - false, async - true)
 OnBoard :: IOSynchronization
+
+-- | PU and some additional information required for allocation on
+--   BusNetwork
+data PUPrototype tag v x t
+[PUPrototype] :: (UnitTag tag, PUClasses pu v x t) => {pTag :: tag "Prototype tag. You can specify tag as a template by adding {x}. This will allow to allocate PU more than once by replacing {x} with index. When PU is allocated processUnitTag will look like bnName_pTag.", pProto :: pu "PU prototype", pIOPorts :: IOPorts pu "IO ports that will be used by PU"} -> PUPrototype tag v x t
 puInputPorts :: PU v x t -> Set InputPortTag
 puOutputPorts :: PU v x t -> Set OutputPortTag
 puInOutPorts :: PU v x t -> Set InoutPortTag
@@ -1920,7 +2035,7 @@ module NITTA.Project
 
 -- | Write project with all available parts.
 writeProject :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
-runTestbench :: (WithFunctions u a, ProcessorUnit u v1 x1 t, Hashable v2, IsString v2, DefaultX u x2, Val x2, Show a, Read x3, Eq v2, TargetSystemComponent u, Testable u v2 x3) => Project u v2 x3 -> IO (TestbenchReport v2 x3)
+runTestbench :: (WithFunctions u a, ProcessorUnit u v x t, Hashable v, IsString v, DefaultX u p, Val p, Show a, Read x, Eq v, TargetSystemComponent u, Testable u v x) => Project u v x -> IO (TestbenchReport v x)
 
 
 module NITTA.Model.ProcessorUnits.Shift
@@ -2087,7 +2202,7 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --   [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
 --   [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
 --   Ok, 30 modules loaded.
---   &gt; :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set Prettyprinter.Render.Text
+--   &gt; :module +NITTA.Model.ProcessorUnits.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set Prettyprinter.Render.Text
 --   &gt; :set prompt "ESC[34mλ&gt; ESC[m"
 --   </pre>
 --   
@@ -2171,7 +2286,7 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --       Process:
 --           steps:
 --               0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
---               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+--               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
 --           relations:
 --               0) Vertical {vUp = 0, vDown = 1}
 --           nextTick: 3
@@ -2192,9 +2307,9 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --       Process:
 --           steps:
 --               0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
---               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+--               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
 --               2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
---               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+--               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
 --           relations:
 --               0) Vertical {vUp = 2, vDown = 3}
 --               1) Vertical {vUp = 0, vDown = 1}
@@ -2223,9 +2338,9 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --       Process:
 --           steps:
 --               0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
---               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+--               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
 --               2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
---               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+--               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
 --               4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
 --               5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
 --           relations:
@@ -2250,9 +2365,9 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Shift.S
 --       Process:
 --           steps:
 --               0) Step {pID = 0, pInterval = 0 ... 2, pDesc = Endpoint: Target a}
---               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load A}
+--               1) Step {pID = 1, pInterval = 0 ... 2, pDesc = Instruction: Load}
 --               2) Step {pID = 2, pInterval = 3 ... 3, pDesc = Endpoint: Target b}
---               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load B}
+--               3) Step {pID = 3, pInterval = 3 ... 3, pDesc = Instruction: Load}
 --               4) Step {pID = 4, pInterval = 6 ... 6, pDesc = Endpoint: Source c}
 --               5) Step {pID = 5, pInterval = 6 ... 6, pDesc = Instruction: Out}
 --               6) Step {pID = 6, pInterval = 7 ... 7, pDesc = Endpoint: Source d}
@@ -2292,17 +2407,12 @@ data Multiplier v x t
 -- | A processor unit control ports (signals, flags).
 data family Ports pu :: Type
 data family IOPorts pu :: Type
-instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
-instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
-instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Multiplier.ArgumentSelector
-instance GHC.Show.Show NITTA.Model.ProcessorUnits.Multiplier.ArgumentSelector
 instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
-instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v t
-instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
-instance NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) x
@@ -2313,7 +2423,10 @@ instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (N
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x t
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v t
+instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
+instance NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
@@ -2706,7 +2819,7 @@ module NITTA.Model.ProcessorUnits
 module NITTA.UIBackend.Timeline
 data ViewPointID
 data TimelinePoint t
-processTimelines :: (Num t1, Typeable v, IsString v, ToString v, Suffix v, Hashable v, Show t2, Ord t1, Ord v, Enum t1) => Process t1 (StepInfo v x t2) -> ProcessTimelines t1
+processTimelines :: (Num t, Typeable v, IsString v, ToString v, Suffix v, Hashable v, Show t, Ord t, Ord v, Enum t) => Process t (StepInfo v x t) -> ProcessTimelines t
 data ProcessTimelines t
 ProcessTimelines :: [TimelineWithViewPoint t] -> [(ProcessStepID, ProcessStepID)] -> ProcessTimelines t
 [$sel:timelines:ProcessTimelines] :: ProcessTimelines t -> [TimelineWithViewPoint t]
@@ -2755,6 +2868,7 @@ instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NIT
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem u v x) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem u v x) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem u v x) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
+instance NITTA.Model.Problems.Allocation.AllocationProblem u tag => NITTA.Model.Problems.Allocation.AllocationProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag
 
 
 module NITTA.Model.ProcessIntegrity
@@ -2769,6 +2883,9 @@ RootView :: DecisionView
 BindDecisionView :: FView -> Text -> DecisionView
 [$sel:function:RootView] :: DecisionView -> FView
 [$sel:pu:RootView] :: DecisionView -> Text
+AllocationView :: Text -> Text -> DecisionView
+[$sel:networkTag:RootView] :: DecisionView -> Text
+[$sel:processUnitTag:RootView] :: DecisionView -> Text
 DataflowDecisionView :: (Text, EndpointSt Text (Interval Int)) -> [(Text, EndpointSt Text (Interval Int))] -> DecisionView
 [$sel:source:RootView] :: DecisionView -> (Text, EndpointSt Text (Interval Int))
 [$sel:targets:RootView] :: DecisionView -> [(Text, EndpointSt Text (Interval Int))]
@@ -2790,6 +2907,7 @@ IntervalView :: Text -> IntervalView
 instance GHC.Generics.Generic NITTA.Model.Problems.ViewHelper.IntervalView
 instance GHC.Generics.Generic NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Bind.Bind tag v x) NITTA.Model.Problems.ViewHelper.DecisionView
+instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Allocation.Allocation tag) NITTA.Model.Problems.ViewHelper.DecisionView
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Dataflow.DataflowSt tag v (Numeric.Interval.NonEmpty.Internal.Interval t)) NITTA.Model.Problems.ViewHelper.DecisionView
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Model.Problems.ViewHelper.DecisionView
@@ -2800,10 +2918,9 @@ instance NITTA.Model.Time.Time t => NITTA.UIBackend.ViewHelperCls.Viewable (Nume
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Problems.ViewHelper.IntervalView
 
 
--- | For creating BusNetwork see <a>Builder</a>.
 module NITTA.Model.Networks.Bus
 data BusNetwork tag v x t
-BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) -> Map tag (PU v x t) -> Int -> IOSynchronization -> UnitEnv (BusNetwork tag v x t) -> BusNetwork tag v x t
+BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) -> Map tag (PU v x t) -> Int -> IOSynchronization -> UnitEnv (BusNetwork tag v x t) -> Map tag (PUPrototype tag v x t) -> BusNetwork tag v x t
 [bnName] :: BusNetwork tag v x t -> tag
 
 -- | List of functions binded to network, but not binded to any process
@@ -2823,6 +2940,10 @@ BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) ->
 [bnSignalBusWidth] :: BusNetwork tag v x t -> Int
 [ioSync] :: BusNetwork tag v x t -> IOSynchronization
 [bnEnv] :: BusNetwork tag v x t -> UnitEnv (BusNetwork tag v x t)
+
+-- | Set of the PUs that could be added to the network during synthesis
+--   process
+[bnPUPrototypes] :: BusNetwork tag v x t -> Map tag (PUPrototype tag v x t)
 data family Instruction pu :: Type
 
 -- | A processor unit control ports (signals, flags).
@@ -2831,6 +2952,17 @@ data family IOPorts pu :: Type
 bindedFunctions :: Ord k => k -> BusNetwork k v x t -> [F v x]
 controlSignalLiteral :: Interpolatable (IsCustomSink dst) src dst => src -> dst
 busNetwork :: Default t => tag -> IOSynchronization -> BusNetwork tag v x t
+modifyNetwork :: BusNetwork k v x t -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+addCustom :: forall tag v x t m pu. (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) => tag -> pu -> IOPorts pu -> m ()
+
+-- | Add PU with the default initial state. Type specify by IOPorts.
+add :: (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) => tag -> IOPorts pu -> m ()
+
+-- | Add PU to prototypes with the default initial state. Type specify by
+--   IOPorts.
+addPrototype :: (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) => tag -> IOPorts pu -> m ()
+addCustomPrototype :: forall tag v x t m pu. (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, UnitTag tag) => tag -> pu -> IOPorts pu -> m ()
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.Networks.Bus.BusNetwork tag v x t))
 instance (Data.Default.Class.Default t, Data.String.IsString tag) => Data.Default.Class.Default (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
@@ -2847,6 +2979,7 @@ instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValT
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
+instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => NITTA.Model.Problems.Allocation.AllocationProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
 instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.Networks.Bus.BusNetwork tag v x t)
@@ -2875,8 +3008,8 @@ estimate :: SynthesisDecisionCls ctx m o d p => ctx -> o -> d -> p -> Float
 
 -- | Synthesis tree
 data Tree m tag v x t
-Tree :: SID -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m -> TMVar [Tree m tag v x t] -> Tree m tag v x t
-[sID] :: Tree m tag v x t -> SID
+Tree :: Sid -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m -> TMVar [Tree m tag v x t] -> Tree m tag v x t
+[sID] :: Tree m tag v x t -> Sid
 [sState] :: Tree m tag v x t -> SynthesisState m tag v x t
 [sDecision] :: Tree m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m
 
@@ -2886,9 +3019,12 @@ data SynthesisDecision ctx m
 [Root] :: SynthesisDecision ctx m
 [SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => {option :: o, decision :: d, metrics :: p, score :: Float} -> SynthesisDecision ctx m
 data SynthesisState m tag v x t
-SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> Int -> Set v -> SynthesisState m tag v x t
+SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> [ProcessWave v x] -> Int -> Int -> Set v -> SynthesisState m tag v x t
 [sParent] :: SynthesisState m tag v x t -> Maybe (Tree m tag v x t)
 [sTarget] :: SynthesisState m tag v x t -> m
+
+-- | PU allocation options cache
+[sAllocationOptions] :: SynthesisState m tag v x t -> [Allocation tag]
 
 -- | bind options cache
 [sBindOptions] :: SynthesisState m tag v x t -> [Bind tag v x]
@@ -2911,6 +3047,13 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Bind tag v x] -> [ResolveDea
 --   of a step from an initial node to selected
 [bindWaves] :: SynthesisState m tag v x t -> Map v Int
 
+-- | Execution waves of the algorithm. See detailed description in
+--   NITTA.Intermediate.Analysis module.
+[processWaves] :: SynthesisState m tag v x t -> [ProcessWave v x]
+
+-- | Number of execution waves of the algorithm.
+[numberOfProcessWaves] :: SynthesisState m tag v x t -> Int
+
 -- | number of dataflow options
 [numberOfDataflowOptions] :: SynthesisState m tag v x t -> Int
 
@@ -2919,8 +3062,8 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Bind tag v x] -> [ResolveDea
 
 -- | Synthesis node ID. ID is a relative path, encoded as a sequence of an
 --   option index.
-newtype SID
-SID :: [Int] -> SID
+newtype Sid
+Sid :: [Int] -> Sid
 
 -- | Default synthesis tree type.
 type DefTree tag v x t = Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
@@ -2929,15 +3072,15 @@ type DefTree tag v x t = Tree (TargetSystem (BusNetwork tag v x t) tag v x t) ta
 --   tree. It receives a node and explores it deeply by IO.
 type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
 (<?>) :: Num p => Bool -> p -> p
-targetUnit :: Tree (TargetSystem c tag1 v1 x1 t1) tag2 v2 x2 t2 -> c
-targetDFG :: Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -> DataFlowGraph v1 x1
-instance GHC.Show.Show NITTA.Synthesis.Types.SID
-instance GHC.Read.Read NITTA.Synthesis.Types.SID
-instance Data.Default.Class.Default NITTA.Synthesis.Types.SID
-instance GHC.Base.Semigroup NITTA.Synthesis.Types.SID
-instance GHC.Base.Monoid NITTA.Synthesis.Types.SID
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Types.SID
-instance Web.Internal.HttpApiData.FromHttpApiData NITTA.Synthesis.Types.SID
+targetUnit :: Tree (TargetSystem c tag v x t) tag v x t -> c
+targetDFG :: Tree (TargetSystem u tag v x t) tag v x t -> DataFlowGraph v x
+instance GHC.Show.Show NITTA.Synthesis.Types.Sid
+instance GHC.Read.Read NITTA.Synthesis.Types.Sid
+instance Data.Default.Class.Default NITTA.Synthesis.Types.Sid
+instance GHC.Base.Semigroup NITTA.Synthesis.Types.Sid
+instance GHC.Base.Monoid NITTA.Synthesis.Types.Sid
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Types.Sid
+instance Web.Internal.HttpApiData.FromHttpApiData NITTA.Synthesis.Types.Sid
 
 
 module NITTA.Synthesis.Steps.ResolveDeadlock
@@ -2961,12 +3104,15 @@ instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValT
 
 module NITTA.Synthesis.Steps.Dataflow
 data DataflowMetrics
-DataflowMetrics :: Float -> Bool -> [Float] -> DataflowMetrics
+DataflowMetrics :: Float -> Bool -> [Float] -> Float -> DataflowMetrics
 [pWaitTime] :: DataflowMetrics -> Float
 [pRestrictedTime] :: DataflowMetrics -> Bool
 
 -- | number of variables, which is not transferable for affected functions.
 [pNotTransferableInputs] :: DataflowMetrics -> [Float]
+
+-- | number of the first wave in which one of the target variables is used
+[pFirstWaveOfTargetUse] :: DataflowMetrics -> Float
 instance GHC.Generics.Generic NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (NITTA.Model.Time.TimeConstraint t)) (NITTA.Model.Problems.Dataflow.DataflowSt tag v (Numeric.Interval.NonEmpty.Internal.Interval t)) NITTA.Synthesis.Steps.Dataflow.DataflowMetrics
@@ -2986,10 +3132,6 @@ BreakLoopMetrics :: BreakLoopMetrics
 instance GHC.Generics.Generic NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) NITTA.Synthesis.Steps.BreakLoop.BreakLoopMetrics
-
-
-module NITTA.Synthesis.Steps.Refactor
-isRefactor :: SynthesisDecision ctx m -> Bool
 
 
 module NITTA.Synthesis.Steps.Bind
@@ -3023,28 +3165,53 @@ instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Bind.BindMetrics
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Bind.Bind tag v x) (NITTA.Model.Problems.Bind.Bind tag v x) NITTA.Synthesis.Steps.Bind.BindMetrics
 
 
+module NITTA.Synthesis.Steps.Allocation
+data AllocationMetrics
+AllocationMetrics :: ParallelismType -> Float -> Float -> Float -> Float -> AllocationMetrics
+
+-- | PU prototype parallelism type
+[mParallelism] :: AllocationMetrics -> ParallelismType
+
+-- | The number of remaining functions that can be bound to pu
+[mRelatedRemains] :: AllocationMetrics -> Float
+
+-- | The minimum number of PUs for each of the remaining functions that can
+--   process it
+[mMinPusForRemains] :: AllocationMetrics -> Float
+
+-- | The maximum number of functions that could be processed in parallel
+[mMaxParallels] :: AllocationMetrics -> Float
+
+-- | The number of functions that can be processed in parallel on average
+[mAvgParallels] :: AllocationMetrics -> Float
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.Allocation.AllocationMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Allocation.AllocationMetrics
+instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Allocation.Allocation tag) (NITTA.Model.Problems.Allocation.Allocation tag) NITTA.Synthesis.Steps.Allocation.AllocationMetrics
+
+
 module NITTA.Synthesis.Steps
+isRefactor :: SynthesisDecision ctx m -> Bool
 
 
 module NITTA.Synthesis.Explore
 
 -- | Make synthesis tree
-synthesisTreeRootIO :: (Val x, Hashable v, Suffix v, ToString v, ToString tag, IsString v, IsString tag, Bounded t, Typeable v, Typeable tag, Typeable t, Show t, Default t, Integral t, Ord v, Ord tag) => TargetSystem (BusNetwork tag v x t) tag v x t -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+synthesisTreeRootIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => TargetSystem (BusNetwork tag v x t) tag v x t -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 
 -- | Get specific by <tt>nId</tt> node from a synthesis tree.
-getTreeIO :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t, Show t, Default t, Integral t, Ord tag, Ord v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> SID -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+getTreeIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t, Show t, Default t, Integral t, Ord tag, Ord v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> SID -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+getTreePathIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 
 -- | Get all available edges for the node. Edges calculated only for the
 --   first call.
-subForestIO :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t, Show t, Default t, Integral t, Ord tag, Ord v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+subForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 
 -- | For synthesis method is more usefull, because throw away all useless
 --   trees in subForest (objective function value less than zero).
-positiveSubForestIO :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded t, Typeable tag, Typeable v, Typeable t, Show t, Default t, Integral t, Ord tag, Ord v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-isComplete :: ProcessorUnit u v1 x1 t1 => Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -> Bool
+positiveSubForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+isComplete :: ProcessorUnit u v x t => Tree (TargetSystem u tag v x t) tag v x t -> Bool
 isLeaf :: Tree m tag v x t -> Bool
 
 
@@ -3071,7 +3238,7 @@ bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 
 
 module NITTA.Synthesis.Analysis
-getTreeInfo :: (ProcessorUnit u v1 x1 t1, Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -> IO TreeInfo
+getTreeInfo :: (ProcessorUnit u v x t, Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag v x t) tag v x t -> IO TreeInfo
 
 -- | Metrics of synthesis tree process
 data TreeInfo
@@ -3156,7 +3323,7 @@ module NITTA.Synthesis
 
 -- | Make a model of NITTA process with one network and a specific
 --   algorithm. All functions are already bound to the network.
-mkModelWithOneNetwork :: ProcessorUnit u v x t1 => u -> DataFlowGraph v x -> TargetSystem u tag v x t2
+mkModelWithOneNetwork :: ProcessorUnit u v x t => u -> DataFlowGraph v x -> TargetSystem u tag v x t
 
 -- | Description of synthesis task. Applicable for target system synthesis
 --   and testing purpose.
@@ -3195,8 +3362,8 @@ TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph
 
 -- | source code format type
 [tSourceCodeType] :: TargetSynthesis tag v x t -> FrontendType
-runTargetSynthesis :: (Bounded t, IsString v1, IsString tag2, ToString v1, ToString tag2, Suffix v1, Hashable v1, Val x2, Default t, Typeable t, Typeable v1, Typeable tag2, Show t, Integral t, Ord v1, Ord tag2) => TargetSynthesis tag2 v1 x2 t -> IO (Either [Char] (TestbenchReport v1 x2))
-synthesizeTargetSystem :: (IsString tag2, IsString v2, ToString tag2, ToString v2, Suffix v2, Hashable v2, Val x2, Bounded t, Typeable tag2, Typeable v2, Typeable t, Show t, Default t, Integral t, Ord tag2, Ord v2) => TargetSynthesis tag2 v2 x2 t -> IO (Either [Char] (Project (BusNetwork tag2 v2 x2 t) v2 x2))
+runTargetSynthesis :: (Bounded t, Suffix v1, Hashable v1, UnitTag tag2, Val p, Default t, Show t, Integral t, Typeable t, Typeable v1, Ord v1, ToString v1, IsString v1) => TargetSynthesis tag2 v1 p t -> IO (Either String (TestbenchReport v1 p))
+synthesizeTargetSystem :: forall {tag2} {x2} {v2} {t}. (UnitTag tag2, Suffix v2, Hashable v2, Val x2, Bounded t, Show t, Default t, Integral t, Typeable v2, Typeable t, Ord v2, ToString v2, IsString v2) => TargetSynthesis tag2 v2 x2 t -> IO (Either String (Project (BusNetwork tag2 v2 x2 t) v2 x2))
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Synthesis.TargetSynthesis tag v x t) v x t
 
@@ -3217,7 +3384,7 @@ FView :: Text -> [Text] -> FView
 --   typescript types.
 class Viewable t v | t -> v
 view :: Viewable t v => t -> v
-viewNodeTree :: (ProcessorUnit u v1 x1 t1, NextTick u a, Num a, Enum a) => Tree (TargetSystem u tag1 v1 x1 t1) tag2 v2 x2 t2 -> IO (TreeView ShortNodeView)
+viewNodeTree :: (ProcessorUnit u v x t, NextTick u b, Num b, Enum b) => Tree (TargetSystem u tag v x t) tag v x t -> IO (TreeView ShortNodeView)
 data TreeView a
 data ShortNodeView
 data NodeView tag v x t
@@ -3240,22 +3407,14 @@ instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.NodeView tag
 instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.TreeView NITTA.UIBackend.ViewHelper.ShortNodeView)
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.UIBackend.ViewHelper.ShortNodeView
 instance Data.Aeson.Types.ToJSON.ToJSON a => Data.Aeson.Types.ToJSON.ToJSON (NITTA.UIBackend.ViewHelper.TreeView a)
-instance Servant.Docs.Internal.ToSample GHC.Integer.Type.Integer
+instance Servant.Docs.Internal.ToSample GHC.Num.Integer.Integer
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Analysis.TreeInfo
 instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Analysis.TreeInfo
 instance (Data.Aeson.Types.ToJSON.ToJSONKey v, Data.Aeson.Types.ToJSON.ToJSON v, Data.Aeson.Types.ToJSON.ToJSON x) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Project.TestBench.TestbenchReport v x)
 instance Servant.Docs.Internal.ToSample (NITTA.Project.TestBench.TestbenchReport GHC.Base.String GHC.Types.Int)
 
 
-module NITTA.Model.Microarchitecture.Builder
-defineNetwork :: Default t => k -> IOSynchronization -> StateT (BuilderSt k v x t) Identity a -> BusNetwork k v x t
-modifyNetwork :: BusNetwork k v x t -> StateT (BuilderSt k v x t) Identity a -> BusNetwork k v x t
-
--- | Add PU with the default initial state. Type specify by IOPorts.
-add :: (MonadState (BuilderSt a v x t) m, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, Controllable pu, ToString a, Typeable pu, Show (Instruction pu), Default pu, Ord a) => a -> IOPorts pu -> m ()
-
--- | Add PU with the custom initial state. Type specify by IOPorts.
-addCustom :: forall m a v x t pu. (MonadState (BuilderSt a v x t) m, Ord a, ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, UnambiguouslyDecode pu, TargetSystemComponent pu, IOTestBench pu v x, Locks pu v, ToString a, Typeable pu, Show (Instruction pu), Controllable pu) => a -> pu -> IOPorts pu -> m ()
+module NITTA.Model.Microarchitecture.Types
 data MicroarchitectureDesc tag
 MicroarchitectureDesc :: [NetworkDesc tag] -> IOSynchronization -> MicroarchitectureDesc tag
 [$sel:networks:MicroarchitectureDesc] :: MicroarchitectureDesc tag -> [NetworkDesc tag]
@@ -3270,17 +3429,17 @@ UnitDesc :: tag -> Text -> UnitDesc tag
 [$sel:unitTag:UnitDesc] :: UnitDesc tag -> tag
 [$sel:unitType:UnitDesc] :: UnitDesc tag -> Text
 microarchitectureDesc :: forall tag v x t. Typeable x => BusNetwork tag v x t -> MicroarchitectureDesc tag
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.UnitDesc tag)
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.NetworkDesc tag)
-instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.NetworkDesc tag)
-instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Builder.UnitDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Types.UnitDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Types.NetworkDesc tag)
+instance GHC.Generics.Generic (NITTA.Model.Microarchitecture.Types.MicroarchitectureDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Types.MicroarchitectureDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Types.NetworkDesc tag)
+instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Model.Microarchitecture.Types.UnitDesc tag)
 
 
 module NITTA.UIBackend.REST
-type SynthesisAPI tag v x t = (Description "Get whole synthesis tree" :> "synthesisTree" :> Get '[JSON] (TreeView ShortNodeView)) :<|> (Description "Get synthesis tree info" :> "treeInfo" :> Get '[JSON] TreeInfo) :<|> ("node" :> Capture "sid" SID :> (SynthesisTreeNavigationAPI tag v x t :<|> NodeInspectionAPI tag v x t :<|> TestBenchAPI v x :<|> SynthesisMethodsAPI tag v x t :<|> SynthesisPracticesAPI tag v x t))
-synthesisServer :: (IsString tag, IsString v, ToString tag, ToString v, Suffix v, Hashable v, Val x, Bounded a, ToJSONKey v, ToJSON v, ToJSON x, ToJSON a, Label v, MonadIO m1, MonadIO m2, MonadIO m3, MonadIO m4, MonadIO m5, MonadIO m6, MonadIO m7, MonadIO m8, MonadIO m9, MonadIO m10, MonadIO m11, MonadIO m12, MonadIO m13, MonadIO m14, MonadIO m15, MonadIO m16, MonadIO m17, MonadIO m18, MonadIO m19, MonadIO m20, MonadIO m21, Typeable tag, Typeable v, Typeable a, Show a, Default a, Integral a, Ord tag, Ord v) => BackendCtx tag v x a -> m2 (TreeView ShortNodeView) :<|> (m1 TreeInfo :<|> (SID -> (m4 [NodeView tag v x a] :<|> (m5 (Maybe (NodeView tag v x a)) :<|> m3 [NodeView tag v x a])) :<|> ((m8 (NodeView tag v x a) :<|> (m7 (GraphStructure GraphEdge) :<|> (m6 (ProcessTimelines a) :<|> (m9 (Process a StepInfoView) :<|> ((tag -> m10 (Process a StepInfoView)) :<|> (m11 [UnitEndpoints tag v a] :<|> (m12 (MicroarchitectureDesc tag) :<|> m13 (Debug tag v a)))))))) :<|> ((String -> Int -> m14 (TestbenchReport v x)) :<|> ((m15 SID :<|> (m16 SID :<|> m17 SID)) :<|> (m18 SID :<|> (m19 SID :<|> (m20 SID :<|> (Int -> m21 SID)))))))))
+type SynthesisAPI tag v x t = (Description "Get whole synthesis tree" :> "synthesisTree" :> Get '[JSON] (TreeView ShortNodeView)) :<|> (Description "Get synthesis tree info" :> "treeInfo" :> Get '[JSON] TreeInfo) :<|> ("node" :> Capture "sid" Sid :> (SynthesisTreeNavigationAPI tag v x t :<|> NodeInspectionAPI tag v x t :<|> TestBenchAPI v x :<|> SynthesisMethodsAPI tag v x t :<|> SynthesisPracticesAPI tag v x t))
+synthesisServer :: (UnitTag tag, Suffix v, Hashable v, Val x, Bounded a, ToJSONKey v, ToJSON v, ToJSON x, ToJSON a, Label v, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, Show a, Default a, Integral a, Typeable v, Typeable a, Ord v, ToString v, IsString v) => BackendCtx tag v x a -> m (TreeView ShortNodeView) :<|> (m TreeInfo :<|> (Sid -> (m [NodeView tag v x a] :<|> (m (Maybe (NodeView tag v x a)) :<|> m [NodeView tag v x a])) :<|> ((m (NodeView tag v x a) :<|> (m (GraphStructure GraphEdge) :<|> (m (ProcessTimelines a) :<|> (m (Process a StepInfoView) :<|> ((tag -> m (Process a StepInfoView)) :<|> (m [UnitEndpoints tag v a] :<|> (m (MicroarchitectureDesc tag) :<|> m (Debug tag v a)))))))) :<|> ((String -> Int -> m (TestbenchReport v x)) :<|> ((m Sid :<|> (m Sid :<|> m Sid)) :<|> (m Sid :<|> (m Sid :<|> (m Sid :<|> (Int -> m Sid)))))))))
 data BackendCtx tag v x t
 BackendCtx :: DefTree tag v x t -> [(v, [x])] -> String -> BackendCtx tag v x t
 
@@ -3304,26 +3463,26 @@ instance Servant.Docs.Internal.ToSample (NITTA.Model.Problems.Endpoint.EndpointS
 instance Servant.Docs.Internal.ToSample GHC.Types.Char
 instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample (NITTA.Intermediate.Types.Lock tag)
 instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample [(Data.Text.Internal.Text, [NITTA.Intermediate.Types.Lock tag])]
-instance Servant.Docs.Internal.ToCapture (Servant.API.Capture.Capture "sid" NITTA.Synthesis.Types.SID)
+instance Servant.Docs.Internal.ToCapture (Servant.API.Capture.Capture "sid" NITTA.Synthesis.Types.Sid)
 instance Servant.Docs.Internal.ToCapture (Servant.API.Capture.Capture "tag" tag)
 instance Servant.Docs.Internal.ToParam (Servant.API.QueryParam.QueryParam' mods "deep" GHC.Types.Int)
 instance Servant.Docs.Internal.ToParam (Servant.API.QueryParam.QueryParam' mods "pName" GHC.Base.String)
 instance Servant.Docs.Internal.ToParam (Servant.API.QueryParam.QueryParam' mods "loopsNumber" GHC.Types.Int)
-instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Types.SID
+instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Types.Sid
 instance NITTA.Model.Time.Time t => Servant.Docs.Internal.ToSample (NITTA.Model.ProcessorUnits.Types.Process t NITTA.UIBackend.ViewHelper.StepInfoView)
-instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample (NITTA.Model.Microarchitecture.Builder.MicroarchitectureDesc tag)
+instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.ToSample (NITTA.Model.Microarchitecture.Types.MicroarchitectureDesc tag)
 
 
 module NITTA.UIBackend
 
 -- | Run backend server.
-backendServer :: (Val _1, Hashable _2, Suffix _2, ToString _2, ToString _3, IsString _2, IsString _3, Bounded _4, ToJSONKey _2, ToJSON _2, ToJSON _1, ToJSON _4, ToJSON _3, FromHttpApiData _3, Label _2, Typeable _2, Typeable _3, Typeable _4, Show _4, Default _4, Integral _4, Ord _2, Ord _3) => Int -> [(_2, [_1])] -> String -> TargetSystem (BusNetwork _3 _2 _1 _4) _3 _2 _1 _4 -> IO ()
-prepareJSAPI :: Interpolatable 'True src Text => src -> FilePath -> IO ()
+backendServer :: (UnitTag w, Val w, Bounded w, Hashable w, Suffix w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, Label w, Show w, Default w, Integral w, Typeable w, Typeable w, Ord w, ToString w, IsString w) => Port -> [(w, [w])] -> String -> TargetSystem (BusNetwork w w w w) w w w w -> IO ()
+prepareJSAPI :: Interpolatable 'True p Text => p -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath
 
 module NITTA.Model.Microarchitecture.Config
-mkMicroarchitecture :: (IsString v, ToString v, Suffix v, Hashable v, Val x, ToJSON v, Typeable v, Ord v, ToJSON a) => IOSynchronization -> HashMap Text a -> BusNetwork Text v x Int
+mkMicroarchitecture :: (Val v, Var x, ToJSON a, ToJSON x) => IOSynchronization -> HashMap Text a -> BusNetwork Text x v Int
 instance GHC.Show.Show NITTA.Model.Microarchitecture.Config.PUConf
 instance GHC.Generics.Generic NITTA.Model.Microarchitecture.Config.PUConf
 instance GHC.Show.Show NITTA.Model.Microarchitecture.Config.NetworkConf

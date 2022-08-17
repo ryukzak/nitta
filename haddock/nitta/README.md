@@ -1,6 +1,6 @@
 # NITTA - Tool for Hard Real-Time CGRA Processors
 
-[![Tests](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml/badge.svg?branch=master)](https://github.com/ryukzak/nitta/actions/workflows/ci-test.yml)
+[![NITTA Build and Test](https://github.com/ryukzak/nitta/actions/workflows/ci.yml/badge.svg)](https://github.com/ryukzak/nitta/actions/workflows/ci.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
 [![haddock](https://img.shields.io/badge/Doc-haddock-blue)](https://ryukzak.github.io/nitta/haddock/nitta/index.html)
 [![REST API Doc](https://img.shields.io/badge/Doc-API-blue)](https://github.com/ryukzak/nitta/blob/gh-pages/rest-api/rest_api.markdown)
@@ -51,6 +51,8 @@ $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!   
+
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
 $ brew install icarus-verilog
@@ -72,6 +74,8 @@ $ sudo apt-get install haskell-stack
 $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
+
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!  
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
@@ -132,6 +136,12 @@ nitta> Test suite nitta-test passed
 Completed 2 action(s).
 ```
 
+Run specified test or group:
+```
+$ stack test --test-arguments '-p "pattern for the test name"'
+...
+```
+
 ### Other
 ``` console
 # build only one target
@@ -161,7 +171,7 @@ $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exe
 #     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 $ stack exec ghc-pkg unregister interpolate -- --force
 
-# run formolu for all files
+# run fourmolu for all files
 $ find . -name '*.hs' | xargs fourmolu -m inplace
 
 # show modules dependency

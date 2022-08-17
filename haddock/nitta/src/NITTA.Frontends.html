@@ -1,6 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
-</span><span id="line-2"></span><span>
-</span><span id="line-3"></span><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621680156035"><span id="local-6989586621680156036"><span id="local-6989586621680156037"></span></span></span><span class="hs-comment">{- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
 Copyright   : (c) Artur Gogiyan, 2022
@@ -8,25 +6,25 @@ License     : BSD3
 Maintainer  : artur.gogiyan@gmail.com
 Stability   : experimental
 -}</span><span>
-</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Frontends</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-12"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#FrontendType"><span class="hs-identifier">FrontendType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-13"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#FrontendResult"><span class="hs-identifier">FrontendResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#TraceVar"><span class="hs-identifier">TraceVar</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#prettyLog"><span class="hs-identifier">prettyLog</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#getTraceVarFormat"><span class="hs-identifier">getTraceVarFormat</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-17"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier">identifyFrontendType</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-18"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#translate"><span class="hs-identifier">translate</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-19"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-20"></span><span>
-</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span>
-</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span>
-</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.Common.html"><span class="hs-identifier">NITTA.Frontends.Common</span></a></span><span>
-</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.Lua.html"><span class="hs-identifier">NITTA.Frontends.Lua</span></a></span><span>
-</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.Frontend.html"><span class="hs-identifier">NITTA.Frontends.XMILE.Frontend</span></a></span><span>
-</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>
-</span><span id="line-27"></span><span>
-</span><span id="line-28"></span><span class="hs-keyword">data</span><span> </span><span id="FrontendType"><span class="annot"><a href="NITTA.Frontends.html#FrontendType"><span class="hs-identifier hs-var">FrontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Lua"><span class="annot"><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="XMILE"><span class="annot"><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span></span><span>
-</span><span id="line-29"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680108776"><span id="local-6989586621680108778"><span id="local-6989586621680108780"><span class="annot"><span class="annottext">Int -&gt; FrontendType -&gt; ShowS
+</span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Frontends</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-10"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#FrontendType"><span class="hs-identifier">FrontendType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-11"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#FrontendResult"><span class="hs-identifier">FrontendResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-12"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#TraceVar"><span class="hs-identifier">TraceVar</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-13"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#prettyLog"><span class="hs-identifier">prettyLog</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.Common.html#getTraceVarFormat"><span class="hs-identifier">getTraceVarFormat</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier">identifyFrontendType</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Frontends.html#translate"><span class="hs-identifier">translate</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.Common.html"><span class="hs-identifier">NITTA.Frontends.Common</span></a></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.Lua.html"><span class="hs-identifier">NITTA.Frontends.Lua</span></a></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Frontends.XMILE.Frontend.html"><span class="hs-identifier">NITTA.Frontends.XMILE.Frontend</span></a></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">data</span><span> </span><span id="FrontendType"><span class="annot"><a href="NITTA.Frontends.html#FrontendType"><span class="hs-identifier hs-var">FrontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Lua"><span class="annot"><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="XMILE"><span class="annot"><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span></span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680156022"><span id="local-6989586621680156024"><span id="local-6989586621680156026"><span class="annot"><span class="annottext">Int -&gt; FrontendType -&gt; ShowS
 [FrontendType] -&gt; ShowS
 FrontendType -&gt; String
 (Int -&gt; FrontendType -&gt; ShowS)
@@ -41,9 +39,7 @@ show :: FrontendType -&gt; String
 $cshow :: FrontendType -&gt; String
 showsPrec :: Int -&gt; FrontendType -&gt; ShowS
 $cshowsPrec :: Int -&gt; FrontendType -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="%24cXMILE"><span id="%24cLua"><span id="%24tFrontendType"><span id="local-6989586621680108746"><span id="local-6989586621680108748"><span id="local-6989586621680108750"><span id="local-6989586621680108752"><span id="local-6989586621680108754"><span id="local-6989586621680108756"><span id="local-6989586621680108758"><span id="local-6989586621680108760"><span id="local-6989586621680108762"><span id="local-6989586621680108764"><span id="local-6989586621680108766"><span id="local-6989586621680108768"><span id="local-6989586621680108770"><span id="local-6989586621680108772"><span class="annot"><span class="annottext">Typeable FrontendType
-DataType
-Constr
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680155991"><span id="local-6989586621680155993"><span id="local-6989586621680155995"><span id="local-6989586621680155997"><span id="local-6989586621680155999"><span id="local-6989586621680156001"><span id="local-6989586621680156003"><span id="local-6989586621680156005"><span id="local-6989586621680156007"><span id="local-6989586621680156009"><span id="local-6989586621680156011"><span id="local-6989586621680156013"><span id="local-6989586621680156015"><span id="local-6989586621680156017"><span class="annot"><span class="annottext">Typeable FrontendType
 Typeable FrontendType
 -&gt; (forall (c :: * -&gt; *).
     (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
@@ -83,10 +79,6 @@ Typeable FrontendType
 FrontendType -&gt; DataType
 FrontendType -&gt; Constr
 (forall b. Data b =&gt; b -&gt; b) -&gt; FrontendType -&gt; FrontendType
-(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
--&gt; (forall g. g -&gt; c g) -&gt; FrontendType -&gt; c FrontendType
-(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
--&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c FrontendType
 forall a.
 Typeable a
 -&gt; (forall (c :: * -&gt; *).
@@ -147,44 +139,53 @@ forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
 Typeable t =&gt;
 (forall d e. (Data d, Data e) =&gt; c (t d e))
 -&gt; Maybe (c FrontendType)
-$cXMILE :: Constr
-$cLua :: Constr
-$tFrontendType :: DataType
-gmapMo :: (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
+gmapMo :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
 $cgmapMo :: forall (m :: * -&gt; *).
 MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
-gmapMp :: (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
+gmapMp :: forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
 $cgmapMp :: forall (m :: * -&gt; *).
 MonadPlus m =&gt;
 (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
-gmapM :: (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
+gmapM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
 $cgmapM :: forall (m :: * -&gt; *).
 Monad m =&gt;
 (forall d. Data d =&gt; d -&gt; m d) -&gt; FrontendType -&gt; m FrontendType
-gmapQi :: Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; u
+gmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; u
 $cgmapQi :: forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; u
-gmapQ :: (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; [u]
+gmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; [u]
 $cgmapQ :: forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; FrontendType -&gt; [u]
-gmapQr :: (r' -&gt; r -&gt; r)
+gmapQr :: forall r r'.
+(r' -&gt; r -&gt; r)
 -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; FrontendType -&gt; r
 $cgmapQr :: forall r r'.
 (r' -&gt; r -&gt; r)
 -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; FrontendType -&gt; r
-gmapQl :: (r -&gt; r' -&gt; r)
+gmapQl :: forall r r'.
+(r -&gt; r' -&gt; r)
 -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; FrontendType -&gt; r
 $cgmapQl :: forall r r'.
 (r -&gt; r' -&gt; r)
 -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; FrontendType -&gt; r
 gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; FrontendType -&gt; FrontendType
 $cgmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; FrontendType -&gt; FrontendType
-dataCast2 :: (forall d e. (Data d, Data e) =&gt; c (t d e))
+dataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
 -&gt; Maybe (c FrontendType)
 $cdataCast2 :: forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
 Typeable t =&gt;
 (forall d e. (Data d, Data e) =&gt; c (t d e))
 -&gt; Maybe (c FrontendType)
-dataCast1 :: (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c FrontendType)
+dataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c FrontendType)
 $cdataCast1 :: forall (t :: * -&gt; *) (c :: * -&gt; *).
 Typeable t =&gt;
 (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c FrontendType)
@@ -192,45 +193,46 @@ dataTypeOf :: FrontendType -&gt; DataType
 $cdataTypeOf :: FrontendType -&gt; DataType
 toConstr :: FrontendType -&gt; Constr
 $ctoConstr :: FrontendType -&gt; Constr
-gunfold :: (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+gunfold :: forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
 -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c FrontendType
 $cgunfold :: forall (c :: * -&gt; *).
 (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
 -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c FrontendType
-gfoldl :: (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+gfoldl :: forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
 -&gt; (forall g. g -&gt; c g) -&gt; FrontendType -&gt; c FrontendType
 $cgfoldl :: forall (c :: * -&gt; *).
 (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
 -&gt; (forall g. g -&gt; c g) -&gt; FrontendType -&gt; c FrontendType
-$cp1Data :: Typeable FrontendType
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-30"></span><span>
-</span><span id="line-31"></span><span id="identifyFrontendType"><span class="annot"><span class="annottext">identifyFrontendType :: String -&gt; Maybe FrontendType -&gt; FrontendType
-</span><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier hs-var hs-var">identifyFrontendType</span></a></span></span><span> </span><span id="local-6989586621680108741"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680108741"><span class="hs-identifier hs-var">fileName</span></a></span></span><span> </span><span id="local-6989586621680108740"><span class="annot"><span class="annottext">Maybe FrontendType
-</span><a href="#local-6989586621680108740"><span class="hs-identifier hs-var">frontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FrontendType -&gt; Maybe FrontendType -&gt; FrontendType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span id="identifyFrontendType"><span class="annot"><span class="annottext">identifyFrontendType :: String -&gt; Maybe FrontendType -&gt; FrontendType
+</span><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier hs-var hs-var">identifyFrontendType</span></a></span></span><span> </span><span id="local-6989586621680155989"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680155989"><span class="hs-identifier hs-var">fileName</span></a></span></span><span> </span><span id="local-6989586621680155988"><span class="annot"><span class="annottext">Maybe FrontendType
+</span><a href="#local-6989586621680155988"><span class="hs-identifier hs-var">frontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FrontendType -&gt; Maybe FrontendType -&gt; FrontendType
 forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">FrontendType
-</span><a href="#local-6989586621680108738"><span class="hs-identifier hs-var">identifyByExtension</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe FrontendType
-</span><a href="#local-6989586621680108740"><span class="hs-identifier hs-var">frontendType</span></a></span><span>
-</span><span id="line-32"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-33"></span><span>        </span><span id="local-6989586621680108738"><span class="annot"><span class="annottext">identifyByExtension :: FrontendType
-</span><a href="#local-6989586621680108738"><span class="hs-identifier hs-var hs-var">identifyByExtension</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-34"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">(String, String) -&gt; String
+</span><a href="#local-6989586621680155986"><span class="hs-identifier hs-var">identifyByExtension</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe FrontendType
+</span><a href="#local-6989586621680155988"><span class="hs-identifier hs-var">frontendType</span></a></span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-31"></span><span>        </span><span id="local-6989586621680155986"><span class="annot"><span class="annottext">identifyByExtension :: FrontendType
+</span><a href="#local-6989586621680155986"><span class="hs-identifier hs-var hs-var">identifyByExtension</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-32"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">(String, String) -&gt; String
 forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">((String, String) -&gt; String) -&gt; (String, String) -&gt; String
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; (String, String)
 </span><span class="hs-identifier hs-var">splitExtension</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680108741"><span class="hs-identifier hs-var">fileName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-35"></span><span>                </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680155989"><span class="hs-identifier hs-var">fileName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-33"></span><span>                </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;.lua&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FrontendType
 </span><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span><span>
-</span><span id="line-36"></span><span>                </span><span class="annot"><span class="annottext">String
+</span><span id="line-34"></span><span>                </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;.xmile&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FrontendType
 </span><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span><span>
-</span><span id="line-37"></span><span>                </span><span id="local-6989586621680108736"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680108736"><span class="hs-identifier hs-var">ext</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; FrontendType
+</span><span id="line-35"></span><span>                </span><span id="local-6989586621680155978"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680155978"><span class="hs-identifier hs-var">ext</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; FrontendType
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; FrontendType) -&gt; String -&gt; FrontendType
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -238,27 +240,24 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-string">&quot;unknown file extensions: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680108736"><span class="hs-identifier hs-var">ext</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><a href="#local-6989586621680155978"><span class="hs-identifier hs-var">ext</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot; for &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680108741"><span class="hs-identifier hs-var">fileName</span></a></span><span>
-</span><span id="line-38"></span><span>
-</span><span id="line-39"></span><span id="translate"><span class="annot"><span class="annottext">translate :: FrontendType -&gt; Text -&gt; FrontendResult a t
+</span><a href="#local-6989586621680155989"><span class="hs-identifier hs-var">fileName</span></a></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span id="translate"><span class="annot"><span class="annottext">translate :: FrontendType -&gt; Text -&gt; FrontendResult v x
 </span><a href="NITTA.Frontends.html#translate"><span class="hs-identifier hs-var hs-var">translate</span></a></span></span><span> </span><span class="annot"><span class="annottext">FrontendType
-</span><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; FrontendResult a t
-forall a t.
-(ToString a, Suffix a, Hashable a, Val t, IsString a, Ord a,
- Typeable a) =&gt;
-Text -&gt; FrontendResult a t
+</span><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; FrontendResult v x
+forall v x. (Var v, Val x) =&gt; Text -&gt; FrontendResult v x
 </span><a href="NITTA.Frontends.Lua.html#translateLua"><span class="hs-identifier hs-var">translateLua</span></a></span><span>
-</span><span id="line-40"></span><span class="annot"><a href="NITTA.Frontends.html#translate"><span class="hs-identifier hs-var">translate</span></a></span><span> </span><span class="annot"><span class="annottext">FrontendType
-</span><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; FrontendResult a t
-forall a t.
-(Hashable a, Suffix a, ToString a, IsString a, Val t, Ord a,
- Typeable a) =&gt;
-Text -&gt; FrontendResult a t
+</span><span id="line-38"></span><span class="annot"><a href="NITTA.Frontends.html#translate"><span class="hs-identifier hs-var">translate</span></a></span><span> </span><span class="annot"><span class="annottext">FrontendType
+</span><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; FrontendResult v x
+forall {v} {x}.
+(Hashable v, Suffix v, ToString v, IsString v, Val x, Ord v,
+ Typeable v) =&gt;
+Text -&gt; FrontendResult v x
 </span><a href="NITTA.Frontends.XMILE.Frontend.html#translateXMILE"><span class="hs-identifier hs-var">translateXMILE</span></a></span><span>
-</span><span id="line-41"></span></pre></body></html>
+</span><span id="line-39"></span></pre></body></html>
