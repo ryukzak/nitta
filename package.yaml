@@ -32,6 +32,7 @@ extra-doc-files:
 ghc-options:
   - '-j'
   - '-Wall'
+  - '-Werror'
   - '-Wcompat'
   - '-Wredundant-constraints'
   - '-fno-warn-missing-signatures'
