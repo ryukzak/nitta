@@ -41,6 +41,7 @@ jobs:
         uses: haskell/actions/setup@v1.2
         with:
           enable-stack: true
+          stack-no-global: true
           stack-version: 'latest'
 
       - name: Build nitta backend dependencies and doctest
