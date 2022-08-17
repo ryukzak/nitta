@@ -82,7 +82,7 @@ $(deriveTypeScript defaultOptions ''TimeConstraint)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 
-$(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
+$(deriveTypeScript defaultOptions ''Sid) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''TreeInfo)

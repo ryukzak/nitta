@@ -29,7 +29,7 @@ module NITTA.Synthesis.Types (
     Tree (..),
     SynthesisDecision (..),
     SynthesisState (..),
-    SID (..),
+    Sid (..),
     DefTree,
     SynthesisMethod,
     (<?>),
@@ -70,46 +70,46 @@ type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
 {- |Synthesis node ID. ID is a relative path, encoded as a sequence of an option
 index.
 -}
-newtype SID = SID [Int]
+newtype Sid = Sid [Int]
 
--- |SID separator for @Show SID@ and @Read SID@.
+-- |Sid separator for @Show Sid@ and @Read Sid@.
 sidSep = '-'
 
-instance Show SID where
-    show (SID []) = [sidSep]
-    show (SID is) = show' is
+instance Show Sid where
+    show (Sid []) = [sidSep]
+    show (Sid is) = show' is
         where
             show' [] = ""
             show' (x : xs) = sidSep : show x ++ show' xs
 
-instance Read SID where
-    readsPrec _ [x] | x == sidSep = [(SID [], "")]
+instance Read Sid where
+    readsPrec _ [x] | x == sidSep = [(Sid [], "")]
     readsPrec d (x : xs)
         | x == sidSep
         , let is = map (readsPrec d) $ splitOn [sidSep] xs
         , not $ any null is =
-            [(SID $ map fst $ concat is, "")]
+            [(Sid $ map fst $ concat is, "")]
     readsPrec _ _ = []
 
-instance Default SID where
-    def = SID []
+instance Default Sid where
+    def = Sid []
 
-instance Semigroup SID where
-    (SID a) <> (SID b) = SID (a <> b)
+instance Semigroup Sid where
+    (Sid a) <> (Sid b) = Sid (a <> b)
 
-instance Monoid SID where
-    mempty = SID []
+instance Monoid Sid where
+    mempty = Sid []
     mappend = (<>)
 
-instance ToJSON SID where
+instance ToJSON Sid where
     toJSON sid = toJSON $ show sid
 
-instance FromHttpApiData SID where
+instance FromHttpApiData Sid where
     parseUrlPiece = Right . readText
 
 -- |Synthesis tree
 data Tree m tag v x t = Tree
-    { sID :: SID
+    { sID :: Sid
     , sState :: SynthesisState m tag v x t
     , sDecision :: SynthesisDecision (SynthesisState m tag v x t) m
     , sSubForestVar :: TMVar [Tree m tag v x t]

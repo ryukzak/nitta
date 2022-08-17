@@ -15,16 +15,16 @@ import "components/Graphviz.scss";
 export interface IProcessViewProps {}
 
 export const ProcessView: FC<IProcessViewProps> = (props) => {
-  const { selectedSID } = useContext(AppContext) as IAppContext;
+  const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const [process, setProcess] = useState<ProcessData | null>(null);
 
   useEffect(() => {
     api
-      .getProcess(selectedSID)
+      .getProcess(selectedSid)
       .then((response: AxiosResponse<ProcessData>) => setProcess(response.data))
       .catch((err: AxiosError) => console.error(err));
-  }, [selectedSID]);
+  }, [selectedSid]);
 
   if (!process) {
     return <pre>LOADING...</pre>;

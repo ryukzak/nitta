@@ -68,7 +68,7 @@ type SynthesisAPI tag v x t =
                 :> Get '[JSON] TreeInfo
              )
         :<|> ( "node"
-                :> Capture "sid" SID
+                :> Capture "sid" Sid
                 :> ( SynthesisTreeNavigationAPI tag v x t
                         :<|> NodeInspectionAPI tag v x t
                         :<|> TestBenchAPI v x
@@ -160,10 +160,10 @@ type SynthesisMethodsAPI tag v x t =
         \not an essential difference."
         :> ( ( Description "Composition of all available synthesis methods"
                 :> "stateOfTheArtSynthesisIO"
-                :> Post '[JSON] SID
+                :> Post '[JSON] Sid
              )
-                :<|> "simpleSynthesis" :> Post '[JSON] SID
-                :<|> "smartBindSynthesisIO" :> Post '[JSON] SID
+                :<|> "simpleSynthesis" :> Post '[JSON] Sid
+                :<|> "smartBindSynthesisIO" :> Post '[JSON] Sid
            )
 
 synthesisMethods BackendCtx{root} sid =
@@ -175,22 +175,22 @@ type SynthesisPracticesAPI tag v x t =
     Summary "SynthesisPractice is a set of small elements of the synthesis process."
         :> ( ( Description "Make the best synthesis step by the objective function"
                 :> "bestStep"
-                :> Post '[JSON] SID
+                :> Post '[JSON] Sid
              )
                 :<|> ( Description "Make all possible oblivious binds"
                         :> "obviousBindThread"
-                        :> Post '[JSON] SID
+                        :> Post '[JSON] Sid
                      )
                 :<|> ( Description "Make all possible binds and refactorings"
                         :> "allBindsAndRefsIO"
-                        :> Post '[JSON] SID
+                        :> Post '[JSON] Sid
                      )
                 :<|> ( Description
                         "Explore all best synthesis threads from current \
                         \and `deep` nested levels."
                         :> "allBestThreads"
                         :> QueryParam' '[Required] "deep" Int
-                        :> Post '[JSON] SID
+                        :> Post '[JSON] Sid
                      )
            )
 
@@ -295,7 +295,7 @@ debug BackendCtx{root} sid = liftIO $ do
 
 -- API Description
 
-instance ToCapture (Capture "sid" SID) where
+instance ToCapture (Capture "sid" Sid) where
     toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
 
 instance ToCapture (Capture "tag" tag) where
@@ -320,8 +320,8 @@ instance ToParam (QueryParam' mods "pName" String) where
 instance ToParam (QueryParam' mods "loopsNumber" Int) where
     toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
 
-instance ToSample SID where
-    toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]
+instance ToSample Sid where
+    toSamples _ = [("The synthesis node path from the root by edge indexes.", Sid [1, 1, 3])]
 
 instance (Time t) => ToSample (Process t StepInfoView) where
     toSamples _ =
