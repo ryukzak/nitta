@@ -2,6 +2,8 @@ name: NITTA Build and Test
 
 on:
   pull_request:
+  push:
+    branches: master
 
 env:
   GH_PAGES_DIR: gh-pages
