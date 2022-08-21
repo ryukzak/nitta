@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 from components.common.data_loading import load_all_existing_training_data
 from components.common.model_loading import load_model
@@ -11,14 +12,20 @@ from consts import MODELS_DIR
 if __name__ == '__main__':
     model_dir = MODELS_DIR / "production"
 
-    get_data_for_many_examples_parallel([
-        Path(r"examples/fibonacci.lua"),
-        Path(r"examples/spi2.lua"),
-        Path(r"examples/counter.lua"),
-        # Path(r"examples/sum.lua"),  # too slow
-        # Path(r"examples/constantFolding.lua"),  # too much memory needed
-        # Path(r"examples/spi3.lua"),  # too much memory needed
-    ])
+    examples = [
+        "examples/fibonacci.lua",
+        "examples/spi2.lua",
+        "examples/counter.lua",
+        # "examples/sum.lua",  # too slow
+        # "examples/constantFolding.lua",  # too much memory needed
+        # "examples/spi3.lua",  # too much memory needed
+    ]
+    if len(sys.argv) > 1:
+        examples = sys.argv[1:]
+    else:
+        print("Used default examples: ", examples)
+
+    get_data_for_many_examples_parallel([ Path(fn) for fn in examples ])
 
     try:
         model, meta = load_model(model_dir)
@@ -31,6 +38,7 @@ if __name__ == '__main__':
         training_data = load_all_existing_training_data()
         preprocessed = preprocess_df(training_data)
         train_ds, val_ds = create_datasets(preprocessed)
+
         model, meta = train_and_save_baseline_model(train_ds, val_ds, output_model_name="production")
 
     # TODO: use TF Asset to save metadata
