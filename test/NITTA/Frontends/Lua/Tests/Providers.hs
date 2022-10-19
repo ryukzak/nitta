@@ -33,6 +33,7 @@ import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
+import NITTA.Utils.Tests
 
 traceLuaSimulationTestCase ::
     forall x.
@@ -43,7 +44,7 @@ traceLuaSimulationTestCase ::
     String ->
     TestTree
 traceLuaSimulationTestCase _ name src expect =
-    testCase name $
+    testCaseM name $
         let FrontendResult{frDataFlow, frPrettyLog} :: FrontendResult T.Text x = translateLua src
             cntx = simulateDataFlowGraph 5 def def frDataFlow
             actual = log2md $ frPrettyLog $ map cycleCntx $ cntxProcess cntx

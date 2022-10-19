@@ -42,6 +42,7 @@ import NITTA.Model.Tests.Internals
 import NITTA.Project
 import NITTA.Project qualified as P
 import NITTA.Utils
+import NITTA.Utils.Tests
 import System.Directory
 import System.FilePath.Posix
 import Test.QuickCheck.Monadic
@@ -76,7 +77,7 @@ puCoSimTestCase name u cntxCycle alg =
 
 -- |Is unit synthesis process complete (by function and variables).
 finitePUSynthesisProp name pu0 fsGen =
-    testProperty name $ do
+    testProperty (modifyTestName name) $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         case checkProcessIntegrity pu of
             Left msg -> error msg
@@ -89,13 +90,13 @@ finitePUSynthesisProp name pu0 fsGen =
 simulation should be identical for any correct algorithm.
 -}
 puCoSimProp name pu0 fsGen =
-    testProperty name $ do
+    testProperty (modifyTestName name) $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         pTestCntx <- initialCycleCntxGen fs
         return $
             monadicIO $
                 run $ do
-                    uniqueName <- uniqTestPath name
+                    uniqueName <- uniqTestPath (modifyTestName name)
                     unless (isProcessComplete pu fs) $
                         error $
                             "process is not complete: " <> incompleteProcessMsg pu fs

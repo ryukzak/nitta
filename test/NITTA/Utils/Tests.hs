@@ -7,10 +7,11 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils.Tests (
-    tests,
+    tests, modifyTestName, testCaseM
 ) where
 
 import Data.Set (fromList)
+import Data.String.Utils (replace)
 import NITTA.Intermediate.Functions ()
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -21,13 +22,13 @@ import Test.Tasty.HUnit
 tests =
     testGroup
         "NITTA.Utils.Tests"
-        [ testCase "values2dump" $ do
+        [ testCaseM "values2dump" $ do
             "0" @=? values2dump [Undef, Undef, Undef, Undef]
             "0" @=? values2dump [Bool False, Bool False, Bool False, Bool False]
             "f" @=? values2dump [Bool True, Bool True, Bool True, Bool True]
             "17" @=? values2dump [Bool True, Bool False, Bool True, Bool True, Bool True]
             "000000" @=? values2dump (replicate 24 $ Bool False)
-        , testCase "endpoint role equality" $ do
+        , testCaseM "endpoint role equality" $ do
             let source = Source . fromList
             Target "a" == Target "a" @? "Target eq"
             Target "a" /= Target "b" @? "Target not eq"
@@ -37,3 +38,8 @@ tests =
             source ["b", "a"] == source ["a", "b"] @? "Source eq"
             source ["b", "a"] /= source ["a", "c"] @? "Source not eq"
         ]
+
+modifyTestName name = replace " " "_" $ replace ":" "_" name
+
+testCaseM name = testCase $ modifyTestName name
+

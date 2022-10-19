@@ -27,14 +27,14 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
+import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit
 import Test.Tasty.TH
 
 -- TODO:  https://github.com/ryukzak/nitta/issues/122
 
 test_multiple_receives =
-    [ testCase "receive two variables" $
+    [ testCaseM "receive two variables" $
         void $
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
@@ -49,7 +49,7 @@ test_multiple_receives =
                             , send "c"
                             ]
                     }
-    , testCase "receive variable two times" $
+    , testCaseM "receive variable two times" $
         void $
             runTargetSynthesisWithUniqName
                 (def :: TargetSynthesis _ _ _ Int)
