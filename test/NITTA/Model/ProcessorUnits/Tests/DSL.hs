@@ -188,7 +188,8 @@ unitTestCase ::
     StateT (UnitTestState u v x) IO () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
-    void $ evalUnitTestState name pu alg
+    let modifiedName = S.replace " " "_" $ S.replace ":" "" name
+    void $ evalUnitTestState modifiedName pu alg
 
 evalUnitTestState name st alg =
     evalStateT
