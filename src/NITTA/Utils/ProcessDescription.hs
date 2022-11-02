@@ -142,6 +142,7 @@ scheduleFunctionBind f = do
 scheduleGroupBinding (GroupBinding _ binds) = do
     schedule <- get
     scheduleStep (singleton $ nextTick schedule) $ CADStep $ "group binding " <> show (map (\(Bind f _) -> f) binds)
+scheduleGroupBinding (Bind _ _) = error "try Bind on GroupBingings"
 
 scheduleFunctionRevoke f = do
     schedule <- get

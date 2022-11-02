@@ -152,6 +152,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v
     tryBind _ _ = error "Not Implemented"
     process TargetSynthesis{tMicroArch} = process tMicroArch
     parallelismType TargetSynthesis{tMicroArch} = parallelismType tMicroArch
+    unitType TargetSynthesis{tMicroArch} = unitType tMicroArch
 
 runTargetSynthesis leaf = do
     prj <- synthesizeTargetSystem leaf

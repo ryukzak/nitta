@@ -26,7 +26,7 @@ data GroupBindingT = NonAlternativeBinds | AllBinds | FirstWaveBinds
 data Bind tag v x
     = Bind (F v x) tag
     | GroupBinding GroupBindingT [Bind tag v x]
-    deriving (Generic, Eq)
+    deriving (Generic)
 
 instance (ToString tag, Ord tag) => Eq (Bind tag v x) where
     (==) (Bind f1 tag1) (Bind f2 tag2) = f1 == f2 && tag2 == tag1

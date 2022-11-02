@@ -97,12 +97,7 @@ instance
                     _ -> Nothing
                 }
     parameters
-        SynthesisState
-            { bindingAlternative
-            , sTarget = sTarget@TargetSystem{mUnit}
-            , possibleDeadlockBinds
-            , bindWaves
-            }
+        SynthesisState {}
         (GroupBinding t binds)
         _ =
             BindMetrics

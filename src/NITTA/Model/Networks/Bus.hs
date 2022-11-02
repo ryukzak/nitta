@@ -60,7 +60,7 @@ import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
-import Debug.Trace
+-- import Debug.Trace
 
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
@@ -302,7 +302,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 ----------------------------------------------------------------------
 
 instance
-    (UnitTag tag, VarValTime v x t) =>
+    (UnitTag tag, VarValTime v x t,  Show tag) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
     bindOptions BusNetwork{bnRemains, bnPus} = if not $ null singleOptionsList then groupBinding singleOptionsList ++ concat singleOptionsList else []
@@ -332,7 +332,7 @@ instance
 
             toCountDict lst = M.fromList $ L.nub $ map (\x -> (x, count lst x)) lst
                 where
-                    count lst x = length $ filter (==x) lst
+                    count lst_ x = length $ filter (==x) lst_
             fromCountDict dict = concatMap (\(value, count) -> replicate count value) $ M.toList dict
 
             createDataMap elements = M.fromList $ map (\el -> (toCountDict $ map snd el, map fst el)) elements
@@ -371,6 +371,7 @@ instance
             , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
             , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
             }
+    bindDecision BusNetwork{} (GroupBinding FirstWaveBinds _) = error "incompletedl yet"
 
 -- where
 --   bnPus' = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag) bnPus binds

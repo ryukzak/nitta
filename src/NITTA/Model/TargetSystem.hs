@@ -17,6 +17,7 @@ module NITTA.Model.TargetSystem (
 import Control.Exception (assert)
 import Data.Default
 import Data.Set qualified as S
+-- import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
@@ -59,6 +60,7 @@ instance
     process TargetSystem{mUnit} = process mUnit
     parallelismType TargetSystem{mUnit} = parallelismType mUnit
     puSize TargetSystem{mUnit} = puSize mUnit
+    unitType TargetSystem{mUnit} = unitType mUnit
 
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit

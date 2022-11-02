@@ -73,13 +73,13 @@ import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
-import Data.Typeable
+--import Data.Typeable
 
 -- |Typeclass alias for processor unit tag or "name."
-type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
+-- type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
 
 -- |Class for processor unit tag or "name"
-class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag) => UnitTag tag where
+class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag, Show tag) => UnitTag tag where
     -- |Whether the value can be used as a template or not
     isTemplate :: tag -> Bool
 
