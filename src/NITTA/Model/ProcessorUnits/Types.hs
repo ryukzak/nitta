@@ -142,7 +142,7 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
 
 bind f pu = case tryBind f pu of
     Right pu' -> pu'
-    Left err -> error $ "can't bind function: " <> err
+    Left err -> error $ "can't bind function: " <> err <> " " <> show (unitType pu)
 
 allowToProcess f pu = isRight $ tryBind f pu
 

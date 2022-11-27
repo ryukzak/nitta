@@ -313,7 +313,9 @@ instance
                 , allowToProcess f pu
                 ]
 
-            singleOptionsList = map optionsFor bnRemains
+            singleOptionsList = trace ("singleOptionsList :" <> show res) res
+                where
+                    res = map optionsFor bnRemains
 
             puFunctionDict = M.fromAscListWith (++) $
                 concatMap (\f -> [ (unitType pu, [(f, puTitle)])
@@ -342,8 +344,10 @@ instance
             afterFiltering = map (\(k, v) -> map (uncurry Bind ) $ zip v $ fromCountDict k )$ M.toList $ createDataMap listsOfValues
 
             groupBinding options
-                | not $ null $ filter (\x -> length x > 1) options = trace (show $ M.elems puFunctionDict) $ map (GroupBinding AllBinds) $ afterFiltering
-                | otherwise = [GroupBinding NonAlternativeBinds $ concat options]
+                | not $ any (\x -> length x > 1) options = trace (show $ M.elems puFunctionDict) $ map (GroupBinding AllBinds) $ afterFiltering
+                | otherwise = [GroupBinding NonAlternativeBinds $ trace ("KEK " <> show options ) res]
+                where
+                  res = concat options
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
         bn
@@ -359,7 +363,7 @@ instance
               bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
             , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
             , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
-            , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
+            , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) (trace ("GROUP BINDING DECISION: " <> show binds) binds)
             }
 
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding AllBinds binds) =

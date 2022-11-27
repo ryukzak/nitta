@@ -44,7 +44,7 @@ instance (ToString tag, Ord tag) => Ord (Bind tag v x) where
 
 instance (ToString tag) => Show (Bind tag v x) where
     show (Bind f tag) = "Bind " <> show f <> " " <> toString tag
-    show (GroupBinding t bindings) = "GroupBiding (" <> show t <> ") " <> concatMap (\(Bind f tag) -> show f <> " " <> toString tag) bindings
+    show (GroupBinding t bindings) = "GroupBinding (" <> show t <> ") " <> concatMap (\(Bind f tag) -> show f <> " " <> toString tag) bindings
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [Bind tag v x]

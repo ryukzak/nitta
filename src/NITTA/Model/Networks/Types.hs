@@ -32,6 +32,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Project.Types
+import Debug.Trace
 
 type PUClasses pu v x t =
     ( ByTime pu t
@@ -92,7 +93,10 @@ instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{diff, unit, uEnv} =
         case tryBind fb unit of
             Right unit' -> Right PU{unit = unit', diff, uEnv}
-            Left err -> Left err
+            Left err -> let 
+                    tag = show $ unitType unit
+                in
+                    trace tag (Left err)
     process PU{unit, diff} =
         let p = process unit
          in p{steps = map (patch diff) $ steps p}

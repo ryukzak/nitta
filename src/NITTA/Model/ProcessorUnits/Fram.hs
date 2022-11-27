@@ -199,7 +199,10 @@ addrWidth Fram{memory} = log2 $ numElements memory
 instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
     tryBind f fram
         | not $ null (variables f `S.intersection` variables fram) =
-            Left "can not bind (self transaction)"
+            res        
+            where
+                tp = typeOf fram
+                res = seq tp Left "can not bind (self transaction)"
     tryBind f fram@Fram{memory, remainBuffers}
         | Just (Constant (X x) (O vs)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram =
@@ -212,8 +215,10 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
                         , lastWrite = Nothing
                         , initialValue = x
                         }
+                fram2 = moduleName T.empty fram 
+                f2 = typeOf f 
              in Right
-                    fram
+                    (seq (seq f2 fram2) fram)
                         { memory = memory A.// [(addr, cell)]
                         , process_
                         }

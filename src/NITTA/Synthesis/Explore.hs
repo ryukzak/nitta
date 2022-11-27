@@ -37,6 +37,7 @@ import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
 import NITTA.Utils
 import System.Log.Logger
+import Debug.Trace
 
 -- |Make synthesis tree
 synthesisTreeRootIO = atomically . rootSynthesisTreeSTM
@@ -151,11 +152,14 @@ decisionAndContext parent@Tree{sState = ctx} o =
     ]
 
 nodeCtx parent nModel =
-    let sBindOptions = bindOptions nModel
-        sBindOptionsF = filter (\case (Bind _ _) -> True; (GroupBinding _ _) -> False) $ bindOptions nModel
+    let sBindOptions = trace ("Bind options: " <> (show $ bindOptions nModel)) (bindOptions nModel)
+        sBindOptionsB = filter (\case (Bind _ _) -> True; (GroupBinding _ _) -> False) $ bindOptions nModel
+        -- sBindOptionsGB = filter (\case (Bind _ _) -> False; (GroupBinding _ _) -> True) $ bindOptions nModel
+        -- gbToB lst = concatMap (\(GroupBinding _ x) -> x) lst
+        -- sBindOptionsL = sBindOptionsB ++ gbToB sBindOptionsGB
         sDataflowOptions = dataflowOptions nModel
         bindFunction st (Bind f tag) = M.alter (return . maybe [tag] (tag :)) f st
-        bindFunction st (GroupBinding _ _) = st
+        bindFunction st (GroupBinding _ lst) =  foldl bindFunction st lst
         fs = functions $ mDataFlowGraph nModel
         processWaves = buildProcessWaves [] fs
      in SynthesisState
@@ -176,7 +180,7 @@ nodeCtx parent nModel =
             , possibleDeadlockBinds =
                 S.fromList
                     [ f
-                    | (Bind f tag) <- sBindOptionsF
+                    | (Bind f tag) <- sBindOptionsB
                     , Lock{lockBy} <- locks f
                     , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
                     ]
