@@ -238,7 +238,7 @@ span.spaces    { background: white }
 <span class="lineno">  219 </span><span class="spaces">                            </span><span class="istickedoff">( \Step{pID, pDesc} -&gt;</span>
 <span class="lineno">  220 </span><span class="spaces">                                </span><span class="istickedoff">case pDesc of</span>
 <span class="lineno">  221 </span><span class="spaces">                                    </span><span class="istickedoff">NestedStep{nStep = Step{pDesc = EndpointRoleStep role}} -&gt;</span>
-<span class="lineno">  222 </span><span class="spaces">                                        </span><span class="istickedoff">zip (repeat <span class="nottickedoff">pID</span>) $ S.elems $ variables role</span>
+<span class="lineno">  222 </span><span class="spaces">                                        </span><span class="istickedoff">map (<span class="nottickedoff">pID</span>,) $ S.elems $ variables role</span>
 <span class="lineno">  223 </span><span class="spaces">                                    </span><span class="istickedoff">_ -&gt; []</span>
 <span class="lineno">  224 </span><span class="spaces">                            </span><span class="istickedoff">)</span>
 <span class="lineno">  225 </span><span class="spaces">                            </span><span class="istickedoff">steps</span>
