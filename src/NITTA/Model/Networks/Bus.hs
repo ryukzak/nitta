@@ -219,7 +219,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                             ( \Step{pID, pDesc} ->
                                 case pDesc of
                                     NestedStep{nStep = Step{pDesc = EndpointRoleStep role}} ->
-                                        zip (repeat pID) $ S.elems $ variables role
+                                        map (pID,) $ S.elems $ variables role
                                     _ -> []
                             )
                             steps
