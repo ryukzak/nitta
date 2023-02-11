@@ -32,13 +32,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Cache haskell-stack
-        uses: actions/cache@v3
+        uses: actions/cache@v3.2.5
         with:
           path: ~/.stack
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v2
+        uses: haskell/actions/setup@v1.1.4
         with:
           enable-stack: true
           stack-no-global: true
@@ -67,7 +67,7 @@ jobs:
         run: stack exec nitta-api-gen -- -v
 
       - name: Cache node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v3.2.5
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -142,13 +142,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Cache haskell-stack and fourmolu
-        uses: actions/cache@v3
+        uses: actions/cache@v3.2.5
         with:
           path: ~/.stack
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
-        uses: fourmolu/fourmolu-action@v2
+        uses: fourmolu/fourmolu-action@v6
 
   typescript-formatting:
     runs-on: ubuntu-latest
