@@ -148,7 +148,7 @@ jobs:
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
-        uses: fourmolu/fourmolu-action@v2
+        uses: fourmolu/fourmolu-action@v6
 
   typescript-formatting:
     runs-on: ubuntu-latest
