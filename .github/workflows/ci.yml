@@ -38,7 +38,7 @@ jobs:
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v1.1.4
+        uses: haskell/actions/setup@v2.3.3
         with:
           enable-stack: true
           stack-no-global: true
