@@ -99,7 +99,7 @@ jobs:
 
       - name: Publish generated content to GitHub Pages
         if: ${{ github.ref == 'refs/heads/master'}}
-        uses: JamesIves/github-pages-deploy-action@4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           folder: ${{ env.GH_PAGES_DIR }}
           branch: gh-pages
