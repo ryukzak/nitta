@@ -144,7 +144,6 @@ import NITTA.Model.Tests.Internals
 import NITTA.Project
 import NITTA.Synthesis
 import NITTA.Utils
-import NITTA.Utils.Tests
 import Numeric.Interval.NonEmpty hiding (elem)
 import Prettyprinter (pretty)
 import System.Directory
@@ -188,8 +187,8 @@ unitTestCase ::
     u ->
     StateT (UnitTestState u v x) IO () ->
     TestTree
-unitTestCase name pu alg = testCase (modifyTestName name) $ do
-    void $ evalUnitTestState (modifyTestName name) pu alg
+unitTestCase name pu alg = testCase (toModuleName name) $ do
+    void $ evalUnitTestState (toModuleName name) pu alg
 
 evalUnitTestState name st alg =
     evalStateT

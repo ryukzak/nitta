@@ -7,11 +7,10 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils.Tests (
-    tests, modifyTestName, testCaseM
+    tests, testCaseM
 ) where
 
 import Data.Set (fromList)
-import Data.String.Utils (replace)
 import NITTA.Intermediate.Functions ()
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
@@ -39,7 +38,6 @@ tests =
             source ["b", "a"] /= source ["a", "c"] @? "Source not eq"
         ]
 
-modifyTestName name = replace " " "_" $ replace ":" "_" name
 
-testCaseM name = testCase $ modifyTestName name
+testCaseM name = testCase $ toModuleName name
 

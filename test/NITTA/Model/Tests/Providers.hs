@@ -29,6 +29,7 @@ import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import NITTA.Synthesis
+import NITTA.Utils
 import NITTA.Utils.Tests
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure)
@@ -49,7 +50,7 @@ nittaCoSimTestCase n tMicroArch alg =
         reportE <-
             runTargetSynthesisWithUniqName
                 def
-                    { tName = modifyTestName n
+                    { tName = toModuleName n
                     , tMicroArch
                     , tDFG = fsToDataFlowGraph alg
                     }
