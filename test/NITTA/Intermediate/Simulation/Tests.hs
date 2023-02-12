@@ -26,7 +26,6 @@ import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 
-
 simulationTests =
     testGroup
         "functional simulation"

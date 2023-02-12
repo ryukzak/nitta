@@ -14,10 +14,10 @@ module NITTA.Frontends.XMILE.MathParserTests (
 
 import Data.HashMap.Strict qualified as HM
 import NITTA.Frontends.XMILE.MathParser
+import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
-import NITTA.Utils.Tests (testCaseM)
 
 tests =
     testGroup

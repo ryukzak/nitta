@@ -7,7 +7,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils.Tests (
-    tests, testCaseM
+    tests,
+    testCaseM,
 ) where
 
 import Data.Set (fromList)
@@ -38,6 +39,4 @@ tests =
             source ["b", "a"] /= source ["a", "c"] @? "Source not eq"
         ]
 
-
 testCaseM name = testCase $ toModuleName name
-

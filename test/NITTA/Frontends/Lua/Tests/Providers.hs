@@ -31,9 +31,9 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
+import NITTA.Utils.Tests
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
-import NITTA.Utils.Tests
 
 traceLuaSimulationTestCase ::
     forall x.
