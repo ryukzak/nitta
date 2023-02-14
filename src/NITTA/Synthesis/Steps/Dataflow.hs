@@ -52,10 +52,10 @@ data DataflowMetrics = DataflowMetrics
     { pWaitTime :: Float
     , pRestrictedTime :: Bool
     , pNotTransferableInputs :: [Float]
-    -- ^number of variables, which is not transferable for affected
-    -- functions.
+    -- ^ number of variables, which is not transferable for affected
+    --  functions.
     , pFirstWaveOfTargetUse :: Float
-    -- ^number of the first wave in which one of the target variables is used
+    -- ^ number of the first wave in which one of the target variables is used
     }
     deriving (Generic)
 

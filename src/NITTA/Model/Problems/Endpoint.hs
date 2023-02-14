@@ -37,9 +37,9 @@ import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
     { epRole :: EndpointRole v
-    -- ^use processor unit as source or target of data
+    -- ^ use processor unit as source or target of data
     , epAt :: tp
-    -- ^time of operation
+    -- ^ time of operation
     }
     deriving (Generic)
 
@@ -70,9 +70,9 @@ class EndpointProblem u v t | u -> v t where
     endpointDecision :: u -> EndpointSt v (Interval t) -> u
 
 data EndpointRole v
-    = -- |get data from PU
+    = -- | get data from PU
       Source (S.Set v)
-    | -- |put data to PU
+    | -- | put data to PU
       Target v
     deriving (Eq, Ord, Generic)
 
@@ -95,7 +95,7 @@ isSubroleOf (Target a) (Target b) = a == b
 isSubroleOf (Source as) (Source bs) = as `S.isSubsetOf` bs
 isSubroleOf _ _ = False
 
-{- |The simplest way to convert an endpoint synthesis option to a endpoint
+{- | The simplest way to convert an endpoint synthesis option to a endpoint
 decision.
 -}
 endpointOptionToDecision EndpointSt{epRole, epAt} =

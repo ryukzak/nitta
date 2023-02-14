@@ -64,10 +64,10 @@ instance (Var v) => Show (Acc v x) where
 
 instance Label (Acc v x) where label Acc{} = "Acc"
 
--- |Create function with type F of Acc
+-- | Create function with type F of Acc
 acc lst = packF $ Acc lst
 
--- |Special function for generating Acc from string, examples in tests
+-- | Special function for generating Acc from string, examples in tests
 accFromStr desc = packF $ accGen $ toBlocksSplit desc
 
 isPull Pull{} = True

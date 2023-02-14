@@ -44,9 +44,9 @@ import Prettyprinter
 
 data Fram v x t = Fram
     { memory :: A.Array Int (Cell v x t)
-    -- ^memory cell array
+    -- ^ memory cell array
     , remainBuffers :: [(Buffer v x, Job v x t)]
-    -- ^register queue
+    -- ^ register queue
     , process_ :: Process t (StepInfo v x t)
     }
 
@@ -84,12 +84,12 @@ instance (VarValTime v x t) => WithFunctions (Fram v x t) (F v x) where
 instance (VarValTime v x t) => Variables (Fram v x t) v where
     variables fram = S.unions $ map variables $ functions fram
 
--- |Memory cell
+-- | Memory cell
 data Cell v x t = Cell
     { state :: CellState v x t
     , lastWrite :: Maybe t
     , job :: Maybe (Job v x t)
-    -- ^current job description
+    -- ^ current job description
     , history :: [F v x]
     , initialValue :: x
     }
@@ -122,7 +122,7 @@ instance (Default x) => Default (Cell v x t) where
             , initialValue = def
             }
 
-{- |Memory cell states. Add Loop&Buffer for optimisation.
+{- | Memory cell states. Add Loop&Buffer for optimisation.
 @
                bind                    source
     NotUsed ----------> DoConstant ------------+----> Done
@@ -190,7 +190,7 @@ oJobV Job{function}
     | Just (LoopEnd _ (I v)) <- castF function = v
     | otherwise = undefined
 
--- |Function for calculating width of array in Fram
+-- | Function for calculating width of array in Fram
 addrWidth Fram{memory} = log2 $ numElements memory
     where
         log2 = ceiling . (logBase 2 :: Double -> Double) . fromIntegral

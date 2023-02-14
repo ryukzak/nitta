@@ -50,11 +50,11 @@ class (Typeable i) => SimpleIOInterface i
 data SimpleIO i v x t = SimpleIO
     { bounceFilter :: Int
     , bufferSize :: Maybe Int
-    -- ^if 'Nothing' then size should defined by algorithm
+    -- ^ if 'Nothing' then size should defined by algorithm
     , receiveQueue :: [Q v x]
     , receiveN :: Int
     , isReceiveOver :: Bool
-    -- ^set if send buffer overlap receive buffer
+    -- ^ set if send buffer overlap receive buffer
     , sendQueue :: [Q v x]
     , sendN :: Int
     , process_ :: Process t (StepInfo v x t)
@@ -157,7 +157,7 @@ instance
                 }
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
-{- |Access to received data buffer was implemented like a queue. OE signal read
+{- | Access to received data buffer was implemented like a queue. OE signal read
 received value multiple times __without changing__ "pointer" to the next value.
 OE and WR signals simultaneously read received value and __increment__ "pointer"
 to the next value. We do that for the reduced number of signal lines.

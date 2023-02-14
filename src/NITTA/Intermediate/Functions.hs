@@ -18,7 +18,7 @@ representation. Function has zero or many inputs and zero or many output.
 Function can contains state between process cycles.
 -}
 module NITTA.Intermediate.Functions (
-    -- *Arithmetics
+    -- * Arithmetics
     Add (..),
     add,
     Division (..),
@@ -34,7 +34,7 @@ module NITTA.Intermediate.Functions (
     neg,
     module NITTA.Intermediate.Functions.Accum,
 
-    -- *Memory
+    -- * Memory
     Constant (..),
     constant,
     isConst,
@@ -46,13 +46,13 @@ module NITTA.Intermediate.Functions (
     Buffer (..),
     buffer,
 
-    -- *Input/Output
+    -- * Input/Output
     Receive (..),
     receive,
     Send (..),
     send,
 
-    -- *Internal
+    -- * Internal
     BrokenBuffer (..),
     brokenBuffer,
 ) where
@@ -66,7 +66,7 @@ import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
 
-{- |Loop -- function for transfer data between computational cycles.
+{- | Loop -- function for transfer data between computational cycles.
 Let see the simple example with the following implementation of the
 Fibonacci algorithm.
 
@@ -359,7 +359,7 @@ instance FunctionSimulation (Constant v x) v x where
 
 -- TODO: separete into two different functions
 
--- |Functional unit that implements logic shift operations
+-- | Functional unit that implements logic shift operations
 data ShiftLR v x
     = ShiftL Int (I v) (O v)
     | ShiftR Int (I v) (O v)
@@ -424,7 +424,7 @@ instance (Var v, Val x) => FunctionSimulation (Receive v x) v x where
             -- if output variables are not defined - set initial value
             Nothing -> [(v, def) | v <- elems vs]
 
--- |Special function for negative tests only.
+-- | Special function for negative tests only.
 data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, Eq)
 
 instance Label (BrokenBuffer v x) where label BrokenBuffer{} = "broken"

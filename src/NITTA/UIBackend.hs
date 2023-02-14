@@ -99,7 +99,7 @@ application receivedValues model outputPath = do
 isLocalPortFree port =
     isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
 
--- |Run backend server.
+-- | Run backend server.
 backendServer port receivedValues outputPath modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" <> show port <> " ..."
     -- on OS X, if we run system with busy port - application ignore that.

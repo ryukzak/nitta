@@ -47,17 +47,17 @@ data Broken v x t = Broken
     , currentWorkEndpoints :: [ProcessStepID]
     , process_ :: Process t (StepInfo v x t)
     , brokeVerilog :: Bool
-    -- ^generate verilog code with syntax error
+    -- ^ generate verilog code with syntax error
     , wrongVerilogSimulationValue :: Bool
-    -- ^use process unit HW implementation with error
+    -- ^ use process unit HW implementation with error
     , wrongControlOnPush :: Bool
-    -- ^wrong control sequence for data push (receiving data to PU)
+    -- ^ wrong control sequence for data push (receiving data to PU)
     , wrongControlOnPull :: Bool
-    -- ^wrong control sequence for data pull (sending data from PU)
+    -- ^ wrong control sequence for data pull (sending data from PU)
     , lostEndpointTarget :: Bool
-    -- ^lost target endpoint due synthesis
+    -- ^ lost target endpoint due synthesis
     , lostEndpointSource :: Bool
-    -- ^lost source endpoint due synthesis
+    -- ^ lost source endpoint due synthesis
     , wrongAttr :: Bool
     , lostFunctionInVerticalRelation :: Bool
     , lostEndpointInVerticalRelation :: Bool

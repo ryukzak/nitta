@@ -92,5 +92,5 @@ resolveDeadlock buffered =
             , changeset = diff
             }
 
--- |The constant, which restrict maximum length of a buffer sequence.
+-- | The constant, which restrict maximum length of a buffer sequence.
 maxBufferStack = 2 :: Int

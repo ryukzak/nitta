@@ -63,14 +63,14 @@ case_find_startup_function_no_args =
         expectedValues = ("sum", [], [])
      in (actualName, actualArg, actualArgValue) @?= expectedValues
 
--- |local a = 2
+-- | local a = 2
 case_process_local_assignment_statement =
     let assignment = Lua.LocalAssign [Lua.Name "a"] (Just [Lua.Number Lua.IntNum "2"])
         expected = HM.fromList [("a", LuaValueInstance "a" 0 False)]
         (_, LuaAlgBuilder{algLatestLuaValueInstance}) = runState (processStatement "_" assignment) defaultAlgBuilder
      in algLatestLuaValueInstance @?= expected
 
--- |a = 2
+-- | a = 2
 case_process_assignment_statement =
     let assignment = Lua.Assign [Lua.VarName (Lua.Name "a")] [Lua.Number Lua.IntNum "2"]
         expected = HM.fromList [("a", LuaValueInstance "a" 0 False)]

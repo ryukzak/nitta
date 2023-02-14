@@ -23,7 +23,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
 import NITTA.Utils.Base
 
-{- |Data flow graph - intermediate representation of application algorithm.
+{- | Data flow graph - intermediate representation of application algorithm.
 Right now can be replaced by @[F v x]@, but for future features like
 conduction statement, we don't do that.
 -}
@@ -77,7 +77,7 @@ instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =
         fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))
 
--- |Convert @[ F v x ]@ to 'DataFlowGraph'.
+-- | Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs
 
 addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)

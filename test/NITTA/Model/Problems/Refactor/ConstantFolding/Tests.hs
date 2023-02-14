@@ -36,7 +36,8 @@ tests =
     testGroup
         "Refactor problem (Constant folding)"
         [ testCase "simple sum 2 numbers" $
-            let -- Start algorithm:
+            let
+                -- Start algorithm:
                 -- a = 1
                 -- b = 2
                 -- tmp1 = a + b
@@ -51,9 +52,11 @@ tests =
                 res = buffer "tmp1" ["res"]
                 loopRes = loop 1 "e" ["res"]
                 resRes = constant 3 ["res"]
-             in [a, b, tmp1, res, loopRes] `refactorTo` [loopRes, resRes]
+             in
+                [a, b, tmp1, res, loopRes] `refactorTo` [loopRes, resRes]
         , testCase "sum 4 numbers" $
-            let -- Start algorithm:
+            let
+                -- Start algorithm:
                 -- a = 1
                 -- b = 2
                 -- c = 3
@@ -75,7 +78,8 @@ tests =
                 res = buffer "sum" ["res"]
                 calcTmp = constant 10 ["sum"]
                 loopRes = loop 1 "e" ["sum"]
-             in [a, b, c, d, tmp1, tmp2, summ, res, loopRes] `refactorTo` [calcTmp, loopRes]
+             in
+                [a, b, c, d, tmp1, tmp2, summ, res, loopRes] `refactorTo` [calcTmp, loopRes]
         , luaTestCase
             "Constants folding optimisation"
             [__i|
