@@ -350,43 +350,43 @@ described computational process on the multiplier.
 </span><span id="line-350"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Interval.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">inf</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">sup</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(...)</span></span><span class="hs-special">)</span><span>
 </span><span id="line-351"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span>
 </span><span id="line-352"></span><span>
-</span><span id="line-353"></span><span class="hs-comment">{- |It is a PU model state representation, which describes each state of
+</span><span id="line-353"></span><span class="hs-comment">{- | It is a PU model state representation, which describes each state of
 synthesis model for that PU.
 -}</span><span>
 </span><span id="line-356"></span><span class="hs-keyword">data</span><span> </span><span id="Multiplier"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-var">Multiplier</span></a></span></span><span> </span><span id="local-6989586621680163103"><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680163102"><span class="annot"><a href="#local-6989586621680163102"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680163101"><span class="annot"><a href="#local-6989586621680163101"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Multiplier"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-var">Multiplier</span></a></span></span><span>
 </span><span id="line-357"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="%24sel%3Aremain%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; [F v x]
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3Aremain%3AMultiplier"><span class="hs-identifier hs-var hs-var">remain</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163102"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-358"></span><span>    </span><span class="hs-comment">-- ^List of the assigned but not processed functions. To execute a</span><span>
-</span><span id="line-359"></span><span>    </span><span class="hs-comment">-- function:</span><span>
+</span><span id="line-358"></span><span>    </span><span class="hs-comment">-- ^ List of the assigned but not processed functions. To execute a</span><span>
+</span><span id="line-359"></span><span>    </span><span class="hs-comment">--  function:</span><span>
 </span><span id="line-360"></span><span>    </span><span class="hs-comment">--</span><span>
-</span><span id="line-361"></span><span>    </span><span class="hs-comment">-- - removing the function from this list;</span><span>
+</span><span id="line-361"></span><span>    </span><span class="hs-comment">--  - removing the function from this list;</span><span>
 </span><span id="line-362"></span><span>    </span><span class="hs-comment">--</span><span>
-</span><span id="line-363"></span><span>    </span><span class="hs-comment">-- - transfering information from function to 'targets' and 'sources'</span><span>
-</span><span id="line-364"></span><span>    </span><span class="hs-comment">--   fields.</span><span>
+</span><span id="line-363"></span><span>    </span><span class="hs-comment">--  - transfering information from function to 'targets' and 'sources'</span><span>
+</span><span id="line-364"></span><span>    </span><span class="hs-comment">--    fields.</span><span>
 </span><span id="line-365"></span><span>    </span><span class="hs-comment">--</span><span>
-</span><span id="line-366"></span><span>    </span><span class="hs-comment">-- An assigned function can be executed in random order.</span><span>
+</span><span id="line-366"></span><span>    </span><span class="hs-comment">--  An assigned function can be executed in random order.</span><span>
 </span><span id="line-367"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Atargets%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; [v]
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3Atargets%3AMultiplier"><span class="hs-identifier hs-var hs-var">targets</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-368"></span><span>    </span><span class="hs-comment">-- ^List of variables, which is needed to push to the PU for current</span><span>
-</span><span id="line-369"></span><span>    </span><span class="hs-comment">-- function evaluation.</span><span>
+</span><span id="line-368"></span><span>    </span><span class="hs-comment">-- ^ List of variables, which is needed to push to the PU for current</span><span>
+</span><span id="line-369"></span><span>    </span><span class="hs-comment">--  function evaluation.</span><span>
 </span><span id="line-370"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Asources%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; [v]
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3Asources%3AMultiplier"><span class="hs-identifier hs-var hs-var">sources</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-371"></span><span>    </span><span class="hs-comment">-- ^List of variables, which is needed to pull from PU for current</span><span>
-</span><span id="line-372"></span><span>    </span><span class="hs-comment">-- function evaluation. Pull order is arbitrary. All pulled variables</span><span>
-</span><span id="line-373"></span><span>    </span><span class="hs-comment">-- correspond to the same value (same result).</span><span>
+</span><span id="line-371"></span><span>    </span><span class="hs-comment">-- ^ List of variables, which is needed to pull from PU for current</span><span>
+</span><span id="line-372"></span><span>    </span><span class="hs-comment">--  function evaluation. Pull order is arbitrary. All pulled variables</span><span>
+</span><span id="line-373"></span><span>    </span><span class="hs-comment">--  correspond to the same value (same result).</span><span>
 </span><span id="line-374"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AcurrentWork%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; Maybe (F v x)
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3AcurrentWork%3AMultiplier"><span class="hs-identifier hs-var hs-var">currentWork</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163102"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-375"></span><span>    </span><span class="hs-comment">-- ^Current work, if some function is executed.</span><span>
+</span><span id="line-375"></span><span>    </span><span class="hs-comment">-- ^ Current work, if some function is executed.</span><span>
 </span><span id="line-376"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3Aprocess_%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; Process t (StepInfo v x t)
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3Aprocess_%3AMultiplier"><span class="hs-identifier hs-var hs-var">process_</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163101"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163103"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163102"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163101"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-377"></span><span>    </span><span class="hs-comment">-- ^Description of scheduled computation process</span><span>
-</span><span id="line-378"></span><span>    </span><span class="hs-comment">-- ('NITTA.Model.ProcessorUnits.Types').</span><span>
+</span><span id="line-377"></span><span>    </span><span class="hs-comment">-- ^ Description of scheduled computation process</span><span>
+</span><span id="line-378"></span><span>    </span><span class="hs-comment">--  ('NITTA.Model.ProcessorUnits.Types').</span><span>
 </span><span id="line-379"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="%24sel%3AisMocked%3AMultiplier"><span class="annot"><span class="annottext">forall v x t. Multiplier v x t -&gt; Bool
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3AisMocked%3AMultiplier"><span class="hs-identifier hs-var hs-var">isMocked</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-380"></span><span>    </span><span class="hs-comment">-- ^HDL implementation of PU contains a multiplier IP core from Altera.</span><span>
-</span><span id="line-381"></span><span>    </span><span class="hs-comment">-- Icarus Verilog can not simulate it. If `isMocked` is set, a target</span><span>
-</span><span id="line-382"></span><span>    </span><span class="hs-comment">-- system will be contained non-synthesizable implementation of that</span><span>
-</span><span id="line-383"></span><span>    </span><span class="hs-comment">-- IP-core.</span><span>
+</span><span id="line-380"></span><span>    </span><span class="hs-comment">-- ^ HDL implementation of PU contains a multiplier IP core from Altera.</span><span>
+</span><span id="line-381"></span><span>    </span><span class="hs-comment">--  Icarus Verilog can not simulate it. If `isMocked` is set, a target</span><span>
+</span><span id="line-382"></span><span>    </span><span class="hs-comment">--  system will be contained non-synthesizable implementation of that</span><span>
+</span><span id="line-383"></span><span>    </span><span class="hs-comment">--  IP-core.</span><span>
 </span><span id="line-384"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-385"></span><span>
 </span><span id="line-386"></span><span id="local-6989586621680163073"><span id="local-6989586621680163074"><span id="local-6989586621680163075"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680162614"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163075"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163074"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163073"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Pretty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163075"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163074"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163073"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
@@ -455,7 +455,7 @@ forall a. Default a =&gt; a
 </span><a href="#local-6989586621680162529"><span class="hs-identifier hs-var">mock</span></a></span><span>
 </span><span id="line-410"></span><span>        </span><span class="hs-special">}</span><span>
 </span><span id="line-411"></span><span>
-</span><span id="line-412"></span><span class="hs-comment">-- |Default initial state of multiplier PU model.</span><span>
+</span><span id="line-412"></span><span class="hs-comment">-- | Default initial state of multiplier PU model.</span><span>
 </span><span id="line-413"></span><span id="local-6989586621680163005"><span id="local-6989586621680163006"><span id="local-6989586621680163007"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Time.html#Time"><span class="hs-identifier hs-type">Time</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163007"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163005"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163007"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-414"></span><span>    </span><span id="local-6989586621680162520"><span class="annot"><span class="annottext">def :: Multiplier v x t
 </span><a href="#local-6989586621680162520"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Multiplier v x t
@@ -465,7 +465,7 @@ forall {t} {v} {x}. Default t =&gt; Bool -&gt; Multiplier v x t
 </span><span id="line-415"></span><span>
 </span><span id="line-416"></span><span id="local-6989586621680163000"><span id="local-6989586621680163001"><span id="local-6989586621680163002"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680162516"><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="#local-6989586621680163002"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#DefaultX"><span class="hs-identifier hs-type">DefaultX</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163001"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163002"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680163000"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680163002"><span class="hs-identifier hs-type">x</span></a></span></span></span></span></span><span>
 </span><span id="line-417"></span><span>
-</span><span id="line-418"></span><span class="hs-comment">{- |This class is allowed to extract all bound functions. It has a very simple
+</span><span id="line-418"></span><span class="hs-comment">{- | This class is allowed to extract all bound functions. It has a very simple
 implementation: we take process description (all planned functions), and
 function in progress, if it is.
 -}</span><span>
@@ -496,7 +496,7 @@ forall a. Maybe a -&gt; [a]
 </span><span class="hs-identifier hs-var">maybeToList</span></span><span> </span><span class="annot"><span class="annottext">Maybe (F v x)
 </span><a href="#local-6989586621680162504"><span class="hs-identifier hs-var">currentWork</span></a></span></span></span></span><span>
 </span><span id="line-427"></span><span>
-</span><span id="line-428"></span><span class="hs-comment">{- |Tracking internal dependencies on the processed variables. It includes:
+</span><span id="line-428"></span><span class="hs-comment">{- | Tracking internal dependencies on the processed variables. It includes:
 
 - dependencies between inputs and outputs of currently evaluated function;
 
@@ -567,7 +567,7 @@ forall x v. Locks x v =&gt; x -&gt; [Lock v]
 </span><a href="NITTA.Intermediate.Types.html#locks"><span class="hs-identifier hs-var">locks</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
 </span><a href="#local-6989586621680162487"><span class="hs-identifier hs-var">remain</span></a></span></span></span></span><span>
 </span><span id="line-446"></span><span>
-</span><span id="line-447"></span><span class="hs-comment">{- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
+</span><span id="line-447"></span><span class="hs-comment">{- | That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
 'ResolveDeadlockProblem', 'ConstantFoldingProblem') describes the possibility of PU to modify an
 algorithm. Empty implementation means that multiplier PU doesn't have such
 possibilities.
@@ -1153,7 +1153,7 @@ Multiplier a x t -&gt; F a x -&gt; Multiplier a x t
 forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="">[i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span></span></span><span>
 </span><span id="line-590"></span><span>
-</span><span id="line-591"></span><span class="hs-comment">{- |For each PU, we can specify the instruction set and microcode, which allows
+</span><span id="line-591"></span><span class="hs-comment">{- | For each PU, we can specify the instruction set and microcode, which allows
 us to control the PU at the hardware level.
 
 - instructions set describes a computation process from a programmer point of
@@ -1373,7 +1373,7 @@ forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;can not take port tags, tags are over&quot;</span></span></span></span></span><span>
 </span><span id="line-626"></span><span>
-</span><span id="line-627"></span><span class="hs-comment">{- |Default microcode state should be equal to @nop@ function, which should be a
+</span><span id="line-627"></span><span class="hs-comment">{- | Default microcode state should be equal to @nop@ function, which should be a
 safe way to do nothing (not take a bus, not change internal PU state, etc.).
 -}</span><span>
 </span><span id="line-630"></span><span id="local-6989586621680162775"><span id="local-6989586621680162776"><span id="local-6989586621680162777"><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Microcode"><span class="hs-identifier hs-type">Microcode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162777"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162776"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162775"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
@@ -1389,7 +1389,7 @@ safe way to do nothing (not take a bus, not change internal PU state, etc.).
 </span><span class="hs-identifier hs-var">False</span></span><span>
 </span><span id="line-635"></span><span>            </span><span class="hs-special">}</span></span></span></span><span>
 </span><span id="line-636"></span><span>
-</span><span id="line-637"></span><span class="hs-comment">{- |Instruction and microcode should have exact matching, which allows us to
+</span><span id="line-637"></span><span class="hs-comment">{- | Instruction and microcode should have exact matching, which allows us to
 translate PU instructions to microcode value.
 -}</span><span>
 </span><span id="line-640"></span><span id="local-6989586621680162767"><span id="local-6989586621680162768"><span id="local-6989586621680162769"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnambiguouslyDecode"><span class="hs-identifier hs-type">UnambiguouslyDecode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162769"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162768"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162767"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
@@ -1409,7 +1409,7 @@ forall a. Default a =&gt; a
 </span><a href="NITTA.Model.ProcessorUnits.Multiplier.html#%24sel%3AoeSignal%3AMicrocode"><span class="hs-identifier hs-var">oeSignal</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">}</span></span></span></span><span>
 </span><span id="line-643"></span><span>
-</span><span id="line-644"></span><span class="hs-comment">{- |Processor unit control signal ports. In
+</span><span id="line-644"></span><span class="hs-comment">{- | Processor unit control signal ports. In
 'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
 @ControlUnit@.
 -}</span><span>
@@ -1466,7 +1466,7 @@ showsPrec :: Int -&gt; IOPorts (Multiplier v x t) -&gt; String -&gt; String
 $cshowsPrec :: forall v x t. Int -&gt; IOPorts (Multiplier v x t) -&gt; String -&gt; String
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span></span></span></span><span>
 </span><span id="line-660"></span><span>
-</span><span id="line-661"></span><span class="hs-comment">{- |Usage of PU requires some artifacts of a synthesis process:
+</span><span id="line-661"></span><span class="hs-comment">{- | Usage of PU requires some artifacts of a synthesis process:
 
 - Hardware implementation, which depends from 'isMocked' value:
 
@@ -1568,12 +1568,12 @@ forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;internal error&quot;</span></span></span></span></span><span>
 </span><span id="line-712"></span><span>
-</span><span id="line-713"></span><span class="hs-comment">{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
+</span><span id="line-713"></span><span class="hs-comment">{- | Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
 means that multiplier, as expected, doesn't have any IO.
 -}</span><span>
 </span><span id="line-716"></span><span id="local-6989586621680162717"><span id="local-6989586621680162718"><span id="local-6989586621680162719"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680161965"><span id="local-6989586621680161967"><span class="annot"><a href="NITTA.Project.TestBench.html#IOTestBench"><span class="hs-identifier hs-type">IOTestBench</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Multiplier.html#Multiplier"><span class="hs-identifier hs-type">Multiplier</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162719"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162718"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162717"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680162719"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680162718"><span class="hs-identifier hs-type">x</span></a></span></span></span></span></span></span><span>
 </span><span id="line-717"></span><span>
-</span><span id="line-718"></span><span class="hs-comment">{- |The main purpose of this class is to generate autotests for PU. It allows to
+</span><span id="line-718"></span><span class="hs-comment">{- | The main purpose of this class is to generate autotests for PU. It allows to
 generate testbench for the PU according to its model and scheduled computational
 process. You can see tests in @test/Spec.hs@. Testbench contains:
 

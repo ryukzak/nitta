@@ -85,21 +85,21 @@ span.spaces    { background: white }
 <span class="lineno">   66 </span>
 <span class="lineno">   67 </span>data ProcessWave v x = ProcessWave
 <span class="lineno">   68 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">pwFs</span></span></span> :: [F v x]
-<span class="lineno">   69 </span>    -- ^Functions that can be executed at this wave
+<span class="lineno">   69 </span>    -- ^ Functions that can be executed at this wave
 <span class="lineno">   70 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">pwOut</span></span></span> :: S.Set v
-<span class="lineno">   71 </span>    -- ^Set of output variables related to the functions from this step
+<span class="lineno">   71 </span>    -- ^ Set of output variables related to the functions from this step
 <span class="lineno">   72 </span>    }
 <span class="lineno">   73 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
 <span class="lineno">   74 </span>
 <span class="lineno">   75 </span>data Builder v x = Builder
 <span class="lineno">   76 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwRemains</span></span></span> :: S.Set (F v x)
-<span class="lineno">   77 </span>    -- ^Functions that can be calculated due to lack of ready input values
+<span class="lineno">   77 </span>    -- ^ Functions that can be calculated due to lack of ready input values
 <span class="lineno">   78 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwIn</span></span></span> :: S.Set v
-<span class="lineno">   79 </span>    -- ^Variables that defined at the beginning of the process
+<span class="lineno">   79 </span>    -- ^ Variables that defined at the beginning of the process
 <span class="lineno">   80 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwReadyIn</span></span></span> :: S.Set v
-<span class="lineno">   81 </span>    -- ^Variables that is ready to be used us inputs
+<span class="lineno">   81 </span>    -- ^ Variables that is ready to be used us inputs
 <span class="lineno">   82 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">pwGraph</span></span></span> :: [ProcessWave v x]
-<span class="lineno">   83 </span>    -- ^Resulting process flow
+<span class="lineno">   83 </span>    -- ^ Resulting process flow
 <span class="lineno">   84 </span>    }
 <span class="lineno">   85 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
 <span class="lineno">   86 </span>
@@ -120,7 +120,7 @@ span.spaces    { background: white }
 <span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">go n (ProcessWave{pwFs} : pss) = go (n + 1) pss &lt;&gt; [(out, n) | out &lt;- S.toList $ unionsMap outputs pwFs]</span>
 <span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">go _ [] = []</span></span>
 <span class="lineno">  103 </span>
-<span class="lineno">  104 </span>-- |Divide function into execution waves.
+<span class="lineno">  104 </span>-- | Divide function into execution waves.
 <span class="lineno">  105 </span>buildProcessWaves :: (Var v, Val x) =&gt; [v] -&gt; [F v x] -&gt; [ProcessWave v x]
 <span class="lineno">  106 </span><span class="decl"><span class="istickedoff">buildProcessWaves vars fs =</span>
 <span class="lineno">  107 </span><span class="spaces">    </span><span class="istickedoff">let pwIn = S.fromList vars</span>

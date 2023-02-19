@@ -37,7 +37,7 @@ span.spaces    { background: white }
 <span class="lineno">   18 </span>Function can contains state between process cycles.
 <span class="lineno">   19 </span>-}
 <span class="lineno">   20 </span>module NITTA.Intermediate.Functions (
-<span class="lineno">   21 </span>    -- *Arithmetics
+<span class="lineno">   21 </span>    -- * Arithmetics
 <span class="lineno">   22 </span>    Add (..),
 <span class="lineno">   23 </span>    add,
 <span class="lineno">   24 </span>    Division (..),
@@ -53,7 +53,7 @@ span.spaces    { background: white }
 <span class="lineno">   34 </span>    neg,
 <span class="lineno">   35 </span>    module NITTA.Intermediate.Functions.Accum,
 <span class="lineno">   36 </span>
-<span class="lineno">   37 </span>    -- *Memory
+<span class="lineno">   37 </span>    -- * Memory
 <span class="lineno">   38 </span>    Constant (..),
 <span class="lineno">   39 </span>    constant,
 <span class="lineno">   40 </span>    isConst,
@@ -65,13 +65,13 @@ span.spaces    { background: white }
 <span class="lineno">   46 </span>    Buffer (..),
 <span class="lineno">   47 </span>    buffer,
 <span class="lineno">   48 </span>
-<span class="lineno">   49 </span>    -- *Input/Output
+<span class="lineno">   49 </span>    -- * Input/Output
 <span class="lineno">   50 </span>    Receive (..),
 <span class="lineno">   51 </span>    receive,
 <span class="lineno">   52 </span>    Send (..),
 <span class="lineno">   53 </span>    send,
 <span class="lineno">   54 </span>
-<span class="lineno">   55 </span>    -- *Internal
+<span class="lineno">   55 </span>    -- * Internal
 <span class="lineno">   56 </span>    BrokenBuffer (..),
 <span class="lineno">   57 </span>    brokenBuffer,
 <span class="lineno">   58 </span>) where
@@ -85,7 +85,7 @@ span.spaces    { background: white }
 <span class="lineno">   66 </span>import NITTA.Intermediate.Types
 <span class="lineno">   67 </span>import NITTA.Utils.Base
 <span class="lineno">   68 </span>
-<span class="lineno">   69 </span>{- |Loop -- function for transfer data between computational cycles.
+<span class="lineno">   69 </span>{- | Loop -- function for transfer data between computational cycles.
 <span class="lineno">   70 </span>Let see the simple example with the following implementation of the
 <span class="lineno">   71 </span>Fibonacci algorithm.
 <span class="lineno">   72 </span>
@@ -378,7 +378,7 @@ span.spaces    { background: white }
 <span class="lineno">  359 </span>
 <span class="lineno">  360 </span>-- TODO: separete into two different functions
 <span class="lineno">  361 </span>
-<span class="lineno">  362 </span>-- |Functional unit that implements logic shift operations
+<span class="lineno">  362 </span>-- | Functional unit that implements logic shift operations
 <span class="lineno">  363 </span>data ShiftLR v x
 <span class="lineno">  364 </span>    = ShiftL Int (I v) (O v)
 <span class="lineno">  365 </span>    | ShiftR Int (I v) (O v)
@@ -443,7 +443,7 @@ span.spaces    { background: white }
 <span class="lineno">  424 </span><span class="spaces">            </span><span class="istickedoff">-- if output variables are not defined - set initial value</span>
 <span class="lineno">  425 </span><span class="spaces">            </span><span class="istickedoff">Nothing -&gt; [(v, def) | v &lt;- elems vs]</span></span>
 <span class="lineno">  426 </span>
-<span class="lineno">  427 </span>-- |Special function for negative tests only.
+<span class="lineno">  427 </span>-- | Special function for negative tests only.
 <span class="lineno">  428 </span>data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">  429 </span>
 <span class="lineno">  430 </span>instance Label (BrokenBuffer v x) where <span class="decl"><span class="nottickedoff">label BrokenBuffer{} = &quot;broken&quot;</span></span>

@@ -71,7 +71,7 @@ span.spaces    { background: white }
 <span class="lineno">   52 </span>    , Locks pu v
 <span class="lineno">   53 </span>    )
 <span class="lineno">   54 </span>
-<span class="lineno">   55 </span>-- |Existential container for a processor unit .
+<span class="lineno">   55 </span>-- | Existential container for a processor unit .
 <span class="lineno">   56 </span>data PU v x t where
 <span class="lineno">   57 </span>    PU ::
 <span class="lineno">   58 </span>        (PUClasses pu v x t) =&gt;
@@ -175,11 +175,11 @@ span.spaces    { background: white }
 <span class="lineno">  156 </span>    <span class="decl"><span class="nottickedoff">testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs</span></span>
 <span class="lineno">  157 </span>
 <span class="lineno">  158 </span>data IOSynchronization
-<span class="lineno">  159 </span>    = -- |IO cycle synchronously to process cycle
+<span class="lineno">  159 </span>    = -- | IO cycle synchronously to process cycle
 <span class="lineno">  160 </span>      Sync
-<span class="lineno">  161 </span>    | -- |if IO cycle lag behiend - ignore them
+<span class="lineno">  161 </span>    | -- | if IO cycle lag behiend - ignore them
 <span class="lineno">  162 </span>      ASync
-<span class="lineno">  163 </span>    | -- |defined by onboard signal (sync - false, async - true)
+<span class="lineno">  163 </span>    | -- | defined by onboard signal (sync - false, async - true)
 <span class="lineno">  164 </span>      OnBoard
 <span class="lineno">  165 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>, Typeable, Generic)
 <span class="lineno">  166 </span>
@@ -190,18 +190,18 @@ span.spaces    { background: white }
 <span class="lineno">  171 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
 <span class="lineno">  172 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
 <span class="lineno">  173 </span>
-<span class="lineno">  174 </span>-- |PU and some additional information required for allocation on BusNetwork
+<span class="lineno">  174 </span>-- | PU and some additional information required for allocation on BusNetwork
 <span class="lineno">  175 </span>data PUPrototype tag v x t where
 <span class="lineno">  176 </span>    PUPrototype ::
 <span class="lineno">  177 </span>        (UnitTag tag, PUClasses pu v x t) =&gt;
 <span class="lineno">  178 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTag</span></span></span> :: tag
-<span class="lineno">  179 </span>        -- ^Prototype tag. You can specify tag as a template by adding {x}.
-<span class="lineno">  180 </span>        -- This will allow to allocate PU more than once by replacing {x} with index.
-<span class="lineno">  181 </span>        -- When PU is allocated processUnitTag will look like bnName_pTag.
+<span class="lineno">  179 </span>        -- ^ Prototype tag. You can specify tag as a template by adding {x}.
+<span class="lineno">  180 </span>        --  This will allow to allocate PU more than once by replacing {x} with index.
+<span class="lineno">  181 </span>        --  When PU is allocated processUnitTag will look like bnName_pTag.
 <span class="lineno">  182 </span>        , <span class="decl"><span class="nottickedoff">pProto</span></span> :: pu
-<span class="lineno">  183 </span>        -- ^PU prototype
+<span class="lineno">  183 </span>        -- ^ PU prototype
 <span class="lineno">  184 </span>        , <span class="decl"><span class="nottickedoff">pIOPorts</span></span> :: IOPorts pu
-<span class="lineno">  185 </span>        -- ^IO ports that will be used by PU
+<span class="lineno">  185 </span>        -- ^ IO ports that will be used by PU
 <span class="lineno">  186 </span>        } -&gt;
 <span class="lineno">  187 </span>        PUPrototype tag v x t
 

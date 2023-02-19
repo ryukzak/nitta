@@ -59,11 +59,11 @@ span.spaces    { background: white }
 <span class="lineno">   40 </span>import Prettyprinter
 <span class="lineno">   41 </span>import System.FilePath.Posix (joinPath, (&lt;/&gt;))
 <span class="lineno">   42 </span>
-<span class="lineno">   43 </span>-- |Type class for all testable parts of a target system.
+<span class="lineno">   43 </span>-- | Type class for all testable parts of a target system.
 <span class="lineno">   44 </span>class Testable m v x | m -&gt; v x where
 <span class="lineno">   45 </span>    testBenchImplementation :: Project m v x -&gt; Implementation
 <span class="lineno">   46 </span>
-<span class="lineno">   47 </span>{- |Processor units with input/output ports should be tested by generation
+<span class="lineno">   47 </span>{- | Processor units with input/output ports should be tested by generation
 <span class="lineno">   48 </span>external input ports signals and checking output port signals.
 <span class="lineno">   49 </span>-}
 <span class="lineno">   50 </span>class IOTestBench pu v x | pu -&gt; v x where
@@ -73,12 +73,12 @@ span.spaces    { background: white }
 <span class="lineno">   54 </span>    testEnvironment :: T.Text -&gt; pu -&gt; UnitEnv pu -&gt; TestEnvironment v x -&gt; Maybe Verilog
 <span class="lineno">   55 </span>    <span class="decl"><span class="istickedoff">testEnvironment _title _pu _env _tEnv = Nothing</span></span>
 <span class="lineno">   56 </span>
-<span class="lineno">   57 </span>-- |Information required for testbench generation.
+<span class="lineno">   57 </span>-- | Information required for testbench generation.
 <span class="lineno">   58 </span>data TestEnvironment v x = TestEnvironment
 <span class="lineno">   59 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">teCntx</span></span></span> :: Cntx v x
-<span class="lineno">   60 </span>    -- ^expected data
+<span class="lineno">   60 </span>    -- ^ expected data
 <span class="lineno">   61 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">teComputationDuration</span></span></span> :: Int
-<span class="lineno">   62 </span>    -- ^duration of computational process
+<span class="lineno">   62 </span>    -- ^ duration of computational process
 <span class="lineno">   63 </span>    }
 <span class="lineno">   64 </span>
 <span class="lineno">   65 </span>data TestbenchReport v x = TestbenchReport
@@ -119,12 +119,12 @@ span.spaces    { background: white }
 <span class="lineno">  100 </span><span class="spaces">                        </span><span class="istickedoff">#{ nest 4 $ pretty tbSimulationDump }</span>
 <span class="lineno">  101 </span><span class="spaces">                </span><span class="istickedoff">|]</span></span>
 <span class="lineno">  102 </span>
-<span class="lineno">  103 </span>-- |Get name of testbench top module.
+<span class="lineno">  103 </span>-- | Get name of testbench top module.
 <span class="lineno">  104 </span>testBenchTopModuleName ::
 <span class="lineno">  105 </span>    (TargetSystemComponent m, Testable m v x) =&gt; Project m v x -&gt; FilePath
 <span class="lineno">  106 </span><span class="decl"><span class="istickedoff">testBenchTopModuleName prj = S.replace &quot;.v&quot; &quot;&quot; $ last $ verilogProjectFiles prj</span></span>
 <span class="lineno">  107 </span>
-<span class="lineno">  108 </span>-- |Generate list of project verilog files (including testbench).
+<span class="lineno">  108 </span>-- | Generate list of project verilog files (including testbench).
 <span class="lineno">  109 </span><span class="decl"><span class="istickedoff">verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =</span>
 <span class="lineno">  110 </span><span class="spaces">    </span><span class="istickedoff">map</span>
 <span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">(pInProjectNittaPath &lt;/&gt;)</span>
@@ -140,14 +140,14 @@ span.spaces    { background: white }
 <span class="lineno">  121 </span><span class="spaces">        </span><span class="istickedoff">addPath _ (FromLibrary fn) = [joinPath [&quot;lib&quot;, fn]]</span>
 <span class="lineno">  122 </span><span class="spaces">        </span><span class="istickedoff">addPath _ Empty = <span class="nottickedoff">[]</span></span></span>
 <span class="lineno">  123 </span>
-<span class="lineno">  124 </span>-- |Data Type for SnippetTestBench function
+<span class="lineno">  124 </span>-- | Data Type for SnippetTestBench function
 <span class="lineno">  125 </span>data SnippetTestBenchConf m = SnippetTestBenchConf
 <span class="lineno">  126 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tbcSignals</span></span></span> :: [T.Text]
 <span class="lineno">  127 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tbcPorts</span></span></span> :: Ports m
 <span class="lineno">  128 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tbcMC2verilogLiteral</span></span></span> :: Microcode m -&gt; T.Text
 <span class="lineno">  129 </span>    }
 <span class="lineno">  130 </span>
-<span class="lineno">  131 </span>-- |Function for testBench PU test
+<span class="lineno">  131 </span>-- | Function for testBench PU test
 <span class="lineno">  132 </span>snippetTestBench ::
 <span class="lineno">  133 </span>    forall m v x t.
 <span class="lineno">  134 </span>    ( VarValTime v x t

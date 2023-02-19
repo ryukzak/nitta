@@ -82,19 +82,19 @@ span.spaces    { background: white }
 <span class="lineno">   63 </span>data BusNetwork tag v x t = BusNetwork
 <span class="lineno">   64 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnName</span></span></span> :: tag
 <span class="lineno">   65 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnRemains</span></span></span> :: [F v x]
-<span class="lineno">   66 </span>    -- ^List of functions binded to network, but not binded to any process unit.
+<span class="lineno">   66 </span>    -- ^ List of functions binded to network, but not binded to any process unit.
 <span class="lineno">   67 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnBinded</span></span></span> :: M.Map tag [F v x]
-<span class="lineno">   68 </span>    -- ^Map process unit name to list of binded functions.
+<span class="lineno">   68 </span>    -- ^ Map process unit name to list of binded functions.
 <span class="lineno">   69 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnProcess</span></span></span> :: Process t (StepInfo v x t)
-<span class="lineno">   70 </span>    -- ^Network process (bindings and transport instructions)
+<span class="lineno">   70 </span>    -- ^ Network process (bindings and transport instructions)
 <span class="lineno">   71 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnPus</span></span></span> :: M.Map tag (PU v x t)
-<span class="lineno">   72 </span>    -- ^Map of process units.
+<span class="lineno">   72 </span>    -- ^ Map of process units.
 <span class="lineno">   73 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnSignalBusWidth</span></span></span> :: Int
-<span class="lineno">   74 </span>    -- ^Controll bus width.
+<span class="lineno">   74 </span>    -- ^ Controll bus width.
 <span class="lineno">   75 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">ioSync</span></span></span> :: IOSynchronization
 <span class="lineno">   76 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnEnv</span></span></span> :: UnitEnv (BusNetwork tag v x t)
 <span class="lineno">   77 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnPUPrototypes</span></span></span> :: M.Map tag (PUPrototype tag v x t)
-<span class="lineno">   78 </span>    -- ^Set of the PUs that could be added to the network during synthesis process
+<span class="lineno">   78 </span>    -- ^ Set of the PUs that could be added to the network during synthesis process
 <span class="lineno">   79 </span>    }
 <span class="lineno">   80 </span>
 <span class="lineno">   81 </span><span class="decl"><span class="istickedoff">busNetwork name iosync =</span>
@@ -468,7 +468,7 @@ span.spaces    { background: white }
 <span class="lineno">  449 </span>
 <span class="lineno">  450 </span><span class="decl"><span class="istickedoff">controlSignalLiteral ix = [i|control_bus[#{ ix }]|]</span></span>
 <span class="lineno">  451 </span>
-<span class="lineno">  452 </span>-- |Add binding to Map tag [F v x] dict
+<span class="lineno">  452 </span>-- | Add binding to Map tag [F v x] dict
 <span class="lineno">  453 </span><span class="decl"><span class="istickedoff">registerBinding tag f dict =</span>
 <span class="lineno">  454 </span><span class="spaces">    </span><span class="istickedoff">M.alter (maybe (Just [f]) (Just . (f :))) tag dict</span></span>
 <span class="lineno">  455 </span>
@@ -878,7 +878,7 @@ span.spaces    { background: white }
 <span class="lineno">  859 </span><span class="spaces">            </span><span class="istickedoff">, pus = M.insertWith <span class="nottickedoff">(\_ _ -&gt; error &quot;every PU must has uniq tag&quot;)</span> tag pu' pus</span>
 <span class="lineno">  860 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  861 </span>
-<span class="lineno">  862 </span>-- |Add PU with the default initial state. Type specify by IOPorts.
+<span class="lineno">  862 </span>-- | Add PU with the default initial state. Type specify by IOPorts.
 <span class="lineno">  863 </span>add ::
 <span class="lineno">  864 </span>    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =&gt;
 <span class="lineno">  865 </span>    tag -&gt;
@@ -908,7 +908,7 @@ span.spaces    { background: white }
 <span class="lineno">  889 </span><span class="spaces">                        </span><span class="istickedoff">prototypes</span>
 <span class="lineno">  890 </span><span class="spaces">                </span><span class="istickedoff">}</span></span>
 <span class="lineno">  891 </span>
-<span class="lineno">  892 </span>-- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
+<span class="lineno">  892 </span>-- | Add PU to prototypes with the default initial state. Type specify by IOPorts.
 <span class="lineno">  893 </span>addPrototype ::
 <span class="lineno">  894 </span>    (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =&gt;
 <span class="lineno">  895 </span>    tag -&gt;

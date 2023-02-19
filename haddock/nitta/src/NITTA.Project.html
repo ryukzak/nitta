@@ -46,7 +46,7 @@ Stability   : experimental
 </span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Ginger</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">length</span></span><span class="hs-special">)</span><span>
 </span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Regex</span></span><span>
 </span><span id="line-48"></span><span>
-</span><span id="line-49"></span><span class="hs-comment">-- |Write project with all available parts.</span><span>
+</span><span id="line-49"></span><span class="hs-comment">-- | Write project with all available parts.</span><span>
 </span><span id="line-50"></span><span id="writeProject"><span class="annot"><span class="annottext">writeProject :: Project m v x -&gt; IO ()
 </span><a href="NITTA.Project.html#writeProject"><span class="hs-identifier hs-var hs-var">writeProject</span></a></span></span><span> </span><span id="local-6989586621680160438"><span class="annot"><span class="annottext">prj :: Project m v x
 </span><a href="#local-6989586621680160438"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span class="hs-special">{</span><span id="local-6989586621680160436"><span class="annot"><span class="annottext">FilePath
@@ -615,12 +615,12 @@ forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span id="line-137"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-138"></span><span>
-</span><span id="line-139"></span><span class="hs-comment">-- |Ginger is powerfull but slow down testing two times.</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- | Ginger is powerfull but slow down testing two times.</span><span>
 </span><span id="line-140"></span><span id="enableGingerForImplementation"><span class="annot"><span class="annottext">enableGingerForImplementation :: Bool
 </span><a href="NITTA.Project.html#enableGingerForImplementation"><span class="hs-identifier hs-var hs-var">enableGingerForImplementation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-141"></span><span>
-</span><span id="line-142"></span><span class="hs-comment">-- |Write 'Implementation' to the file system.</span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- | Write 'Implementation' to the file system.</span><span>
 </span><span id="line-143"></span><span id="writeImplementation"><span class="annot"><span class="annottext">writeImplementation :: Project m v x -&gt; Implementation -&gt; IO ()
 </span><a href="NITTA.Project.html#writeImplementation"><span class="hs-identifier hs-var hs-var">writeImplementation</span></a></span></span><span> </span><span id="local-6989586621680160131"><span class="annot"><span class="annottext">prj :: Project m v x
 </span><a href="#local-6989586621680160131"><span class="hs-identifier hs-var">prj</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Project.Types.html#Project"><span class="hs-identifier hs-type">Project</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pTargetProjectPath :: forall m v x. Project m v x -&gt; FilePath
@@ -789,7 +789,7 @@ forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-160"></span><span>
-</span><span id="line-161"></span><span class="hs-comment">-- |Copy library files to target path.</span><span>
+</span><span id="line-161"></span><span class="hs-comment">-- | Copy library files to target path.</span><span>
 </span><span id="line-162"></span><span id="copyLibraryFiles"><span class="annot"><span class="annottext">copyLibraryFiles :: Project pu v x -&gt; IO ()
 </span><a href="NITTA.Project.html#copyLibraryFiles"><span class="hs-identifier hs-var hs-var">copyLibraryFiles</span></a></span></span><span> </span><span id="local-6989586621680160064"><span class="annot"><span class="annottext">Project pu v x
 </span><a href="#local-6989586621680160064"><span class="hs-identifier hs-var">prj</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ()) -&gt; [FilePath] -&gt; IO ()

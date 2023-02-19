@@ -369,37 +369,37 @@ span.spaces    { background: white }
 <span class="lineno">  350 </span>import Numeric.Interval.NonEmpty (inf, sup, (...))
 <span class="lineno">  351 </span>import Prettyprinter
 <span class="lineno">  352 </span>
-<span class="lineno">  353 </span>{- |It is a PU model state representation, which describes each state of
+<span class="lineno">  353 </span>{- | It is a PU model state representation, which describes each state of
 <span class="lineno">  354 </span>synthesis model for that PU.
 <span class="lineno">  355 </span>-}
 <span class="lineno">  356 </span>data Multiplier v x t = Multiplier
 <span class="lineno">  357 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">remain</span></span></span> :: [F v x]
-<span class="lineno">  358 </span>    -- ^List of the assigned but not processed functions. To execute a
-<span class="lineno">  359 </span>    -- function:
+<span class="lineno">  358 </span>    -- ^ List of the assigned but not processed functions. To execute a
+<span class="lineno">  359 </span>    --  function:
 <span class="lineno">  360 </span>    --
-<span class="lineno">  361 </span>    -- - removing the function from this list;
+<span class="lineno">  361 </span>    --  - removing the function from this list;
 <span class="lineno">  362 </span>    --
-<span class="lineno">  363 </span>    -- - transfering information from function to 'targets' and 'sources'
-<span class="lineno">  364 </span>    --   fields.
+<span class="lineno">  363 </span>    --  - transfering information from function to 'targets' and 'sources'
+<span class="lineno">  364 </span>    --    fields.
 <span class="lineno">  365 </span>    --
-<span class="lineno">  366 </span>    -- An assigned function can be executed in random order.
+<span class="lineno">  366 </span>    --  An assigned function can be executed in random order.
 <span class="lineno">  367 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">targets</span></span></span> :: [v]
-<span class="lineno">  368 </span>    -- ^List of variables, which is needed to push to the PU for current
-<span class="lineno">  369 </span>    -- function evaluation.
+<span class="lineno">  368 </span>    -- ^ List of variables, which is needed to push to the PU for current
+<span class="lineno">  369 </span>    --  function evaluation.
 <span class="lineno">  370 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sources</span></span></span> :: [v]
-<span class="lineno">  371 </span>    -- ^List of variables, which is needed to pull from PU for current
-<span class="lineno">  372 </span>    -- function evaluation. Pull order is arbitrary. All pulled variables
-<span class="lineno">  373 </span>    -- correspond to the same value (same result).
+<span class="lineno">  371 </span>    -- ^ List of variables, which is needed to pull from PU for current
+<span class="lineno">  372 </span>    --  function evaluation. Pull order is arbitrary. All pulled variables
+<span class="lineno">  373 </span>    --  correspond to the same value (same result).
 <span class="lineno">  374 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentWork</span></span></span> :: Maybe (F v x)
-<span class="lineno">  375 </span>    -- ^Current work, if some function is executed.
+<span class="lineno">  375 </span>    -- ^ Current work, if some function is executed.
 <span class="lineno">  376 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
-<span class="lineno">  377 </span>    -- ^Description of scheduled computation process
-<span class="lineno">  378 </span>    -- ('NITTA.Model.ProcessorUnits.Types').
+<span class="lineno">  377 </span>    -- ^ Description of scheduled computation process
+<span class="lineno">  378 </span>    --  ('NITTA.Model.ProcessorUnits.Types').
 <span class="lineno">  379 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isMocked</span></span></span> :: Bool
-<span class="lineno">  380 </span>    -- ^HDL implementation of PU contains a multiplier IP core from Altera.
-<span class="lineno">  381 </span>    -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
-<span class="lineno">  382 </span>    -- system will be contained non-synthesizable implementation of that
-<span class="lineno">  383 </span>    -- IP-core.
+<span class="lineno">  380 </span>    -- ^ HDL implementation of PU contains a multiplier IP core from Altera.
+<span class="lineno">  381 </span>    --  Icarus Verilog can not simulate it. If `isMocked` is set, a target
+<span class="lineno">  382 </span>    --  system will be contained non-synthesizable implementation of that
+<span class="lineno">  383 </span>    --  IP-core.
 <span class="lineno">  384 </span>    }
 <span class="lineno">  385 </span>
 <span class="lineno">  386 </span>instance (VarValTime v x t) =&gt; Pretty (Multiplier v x t) where
@@ -428,13 +428,13 @@ span.spaces    { background: white }
 <span class="lineno">  409 </span><span class="spaces">        </span><span class="istickedoff">, isMocked = mock</span>
 <span class="lineno">  410 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
 <span class="lineno">  411 </span>
-<span class="lineno">  412 </span>-- |Default initial state of multiplier PU model.
+<span class="lineno">  412 </span>-- | Default initial state of multiplier PU model.
 <span class="lineno">  413 </span>instance (Time t) =&gt; Default (Multiplier v x t) where
 <span class="lineno">  414 </span>    <span class="decl"><span class="istickedoff">def = multiplier True</span></span>
 <span class="lineno">  415 </span>
 <span class="lineno">  416 </span>instance Default x =&gt; DefaultX (Multiplier v x t) x
 <span class="lineno">  417 </span>
-<span class="lineno">  418 </span>{- |This class is allowed to extract all bound functions. It has a very simple
+<span class="lineno">  418 </span>{- | This class is allowed to extract all bound functions. It has a very simple
 <span class="lineno">  419 </span>implementation: we take process description (all planned functions), and
 <span class="lineno">  420 </span>function in progress, if it is.
 <span class="lineno">  421 </span>-}
@@ -444,7 +444,7 @@ span.spaces    { background: white }
 <span class="lineno">  425 </span><span class="spaces">            </span><span class="istickedoff">++ remain</span>
 <span class="lineno">  426 </span><span class="spaces">            </span><span class="istickedoff">++ maybeToList currentWork</span></span>
 <span class="lineno">  427 </span>
-<span class="lineno">  428 </span>{- |Tracking internal dependencies on the processed variables. It includes:
+<span class="lineno">  428 </span>{- | Tracking internal dependencies on the processed variables. It includes:
 <span class="lineno">  429 </span>
 <span class="lineno">  430 </span>- dependencies between inputs and outputs of currently evaluated function;
 <span class="lineno">  431 </span>
@@ -463,7 +463,7 @@ span.spaces    { background: white }
 <span class="lineno">  444 </span><span class="spaces">               </span><span class="istickedoff">]</span>
 <span class="lineno">  445 </span><span class="spaces">            </span><span class="istickedoff">++ concatMap locks remain</span></span>
 <span class="lineno">  446 </span>
-<span class="lineno">  447 </span>{- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
+<span class="lineno">  447 </span>{- | That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
 <span class="lineno">  448 </span>'ResolveDeadlockProblem', 'ConstantFoldingProblem') describes the possibility of PU to modify an
 <span class="lineno">  449 </span>algorithm. Empty implementation means that multiplier PU doesn't have such
 <span class="lineno">  450 </span>possibilities.
@@ -607,7 +607,7 @@ span.spaces    { background: white }
 <span class="lineno">  588 </span><span class="spaces">    </span><span class="istickedoff">-- If something went wrong.</span>
 <span class="lineno">  589 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
 <span class="lineno">  590 </span>
-<span class="lineno">  591 </span>{- |For each PU, we can specify the instruction set and microcode, which allows
+<span class="lineno">  591 </span>{- | For each PU, we can specify the instruction set and microcode, which allows
 <span class="lineno">  592 </span>us to control the PU at the hardware level.
 <span class="lineno">  593 </span>
 <span class="lineno">  594 </span>- instructions set describes a computation process from a programmer point of
@@ -643,7 +643,7 @@ span.spaces    { background: white }
 <span class="lineno">  624 </span>    <span class="decl"><span class="istickedoff">takePortTags (wr : oe : _) _ = MultiplierPorts wr oe</span>
 <span class="lineno">  625 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
 <span class="lineno">  626 </span>
-<span class="lineno">  627 </span>{- |Default microcode state should be equal to @nop@ function, which should be a
+<span class="lineno">  627 </span>{- | Default microcode state should be equal to @nop@ function, which should be a
 <span class="lineno">  628 </span>safe way to do nothing (not take a bus, not change internal PU state, etc.).
 <span class="lineno">  629 </span>-}
 <span class="lineno">  630 </span>instance Default (Microcode (Multiplier v x t)) where
@@ -653,14 +653,14 @@ span.spaces    { background: white }
 <span class="lineno">  634 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
 <span class="lineno">  635 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  636 </span>
-<span class="lineno">  637 </span>{- |Instruction and microcode should have exact matching, which allows us to
+<span class="lineno">  637 </span>{- | Instruction and microcode should have exact matching, which allows us to
 <span class="lineno">  638 </span>translate PU instructions to microcode value.
 <span class="lineno">  639 </span>-}
 <span class="lineno">  640 </span>instance UnambiguouslyDecode (Multiplier v x t) where
 <span class="lineno">  641 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Load = def{wrSignal = True}</span>
 <span class="lineno">  642 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span></span>
 <span class="lineno">  643 </span>
-<span class="lineno">  644 </span>{- |Processor unit control signal ports. In
+<span class="lineno">  644 </span>{- | Processor unit control signal ports. In
 <span class="lineno">  645 </span>'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
 <span class="lineno">  646 </span>@ControlUnit@.
 <span class="lineno">  647 </span>-}
@@ -677,7 +677,7 @@ span.spaces    { background: white }
 <span class="lineno">  658 </span>    data IOPorts (Multiplier v x t) = MultiplierIO
 <span class="lineno">  659 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
 <span class="lineno">  660 </span>
-<span class="lineno">  661 </span>{- |Usage of PU requires some artifacts of a synthesis process:
+<span class="lineno">  661 </span>{- | Usage of PU requires some artifacts of a synthesis process:
 <span class="lineno">  662 </span>
 <span class="lineno">  663 </span>- Hardware implementation, which depends from 'isMocked' value:
 <span class="lineno">  664 </span>
@@ -729,12 +729,12 @@ span.spaces    { background: white }
 <span class="lineno">  710 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
 <span class="lineno">  711 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
 <span class="lineno">  712 </span>
-<span class="lineno">  713 </span>{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
+<span class="lineno">  713 </span>{- | Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
 <span class="lineno">  714 </span>means that multiplier, as expected, doesn't have any IO.
 <span class="lineno">  715 </span>-}
 <span class="lineno">  716 </span>instance IOTestBench (Multiplier v x t) v x
 <span class="lineno">  717 </span>
-<span class="lineno">  718 </span>{- |The main purpose of this class is to generate autotests for PU. It allows to
+<span class="lineno">  718 </span>{- | The main purpose of this class is to generate autotests for PU. It allows to
 <span class="lineno">  719 </span>generate testbench for the PU according to its model and scheduled computational
 <span class="lineno">  720 </span>process. You can see tests in @test/Spec.hs@. Testbench contains:
 <span class="lineno">  721 </span>

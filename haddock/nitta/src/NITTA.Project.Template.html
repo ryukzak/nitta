@@ -129,7 +129,7 @@ forall k v. (Eq k, Hashable k) =&gt; [(k, v)] -&gt; HashMap k v
 </span><span id="line-69"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680159514"><span id="local-6989586621680159516"><span class="annot"><span class="hs-identifier hs-type">FromJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span><span>
 </span><span id="line-70"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680159505"><span id="local-6989586621680159507"><span id="local-6989586621680159509"><span id="local-6989586621680159511"><span class="annot"><span class="hs-identifier hs-type">ToJSON</span></span><span> </span><span class="annot"><a href="NITTA.Project.Template.html#TemplateConf"><span class="hs-identifier hs-type">TemplateConf</span></a></span></span></span></span></span><span>
 </span><span id="line-71"></span><span>
-</span><span id="line-72"></span><span class="hs-comment">{- |collectNittaPath - read nittaPath from all provided target templates and
+</span><span id="line-72"></span><span class="hs-comment">{- | collectNittaPath - read nittaPath from all provided target templates and
 return it if all of them are the same.
 -}</span><span>
 </span><span id="line-75"></span><span class="annot"><a href="NITTA.Project.Template.html#collectNittaPath"><span class="hs-identifier hs-type">collectNittaPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">)</span><span>
@@ -657,7 +657,7 @@ GingerContext p (Writer h) h -&gt; Template p -&gt; h
 </span><a href="#local-6989586621680159291"><span class="hs-identifier hs-var">context</span></a></span><span> </span><span class="annot"><span class="annottext">Template SourcePos
 </span><a href="#local-6989586621680159277"><span class="hs-identifier hs-var">template</span></a></span><span>
 </span><span id="line-149"></span><span>
-</span><span id="line-150"></span><span class="hs-comment">-- |List all files inside path</span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- | List all files inside path</span><span>
 </span><span id="line-151"></span><span id="findAllFiles"><span class="annot"><span class="annottext">findAllFiles :: FilePath -&gt; IO [FilePath]
 </span><a href="NITTA.Project.Template.html#findAllFiles"><span class="hs-identifier hs-var hs-var">findAllFiles</span></a></span></span><span> </span><span id="local-6989586621680159271"><span class="annot"><span class="annottext">FilePath
 </span><a href="#local-6989586621680159271"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO [FilePath]

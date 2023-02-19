@@ -1982,7 +1982,7 @@ OnBoard :: IOSynchronization
 -- | PU and some additional information required for allocation on
 --   BusNetwork
 data PUPrototype tag v x t
-[PUPrototype] :: (UnitTag tag, PUClasses pu v x t) => {pTag :: tag "Prototype tag. You can specify tag as a template by adding {x}. This will allow to allocate PU more than once by replacing {x} with index. When PU is allocated processUnitTag will look like bnName_pTag.", pProto :: pu "PU prototype", pIOPorts :: IOPorts pu "IO ports that will be used by PU"} -> PUPrototype tag v x t
+[PUPrototype] :: (UnitTag tag, PUClasses pu v x t) => {pTag :: tag " Prototype tag. You can specify tag as a template by adding {x}. This will allow to allocate PU more than once by replacing {x} with index. When PU is allocated processUnitTag will look like bnName_pTag.", pProto :: pu " PU prototype", pIOPorts :: IOPorts pu " IO ports that will be used by PU"} -> PUPrototype tag v x t
 puInputPorts :: PU v x t -> Set InputPortTag
 puOutputPorts :: PU v x t -> Set OutputPortTag
 puInOutPorts :: PU v x t -> Set InoutPortTag

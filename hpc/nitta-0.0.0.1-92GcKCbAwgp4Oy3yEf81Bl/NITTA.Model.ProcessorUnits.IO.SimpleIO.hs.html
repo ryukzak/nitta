@@ -69,11 +69,11 @@ span.spaces    { background: white }
 <span class="lineno">   50 </span>data SimpleIO i v x t = SimpleIO
 <span class="lineno">   51 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">bounceFilter</span></span></span> :: Int
 <span class="lineno">   52 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bufferSize</span></span></span> :: Maybe Int
-<span class="lineno">   53 </span>    -- ^if 'Nothing' then size should defined by algorithm
+<span class="lineno">   53 </span>    -- ^ if 'Nothing' then size should defined by algorithm
 <span class="lineno">   54 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">receiveQueue</span></span></span> :: [Q v x]
 <span class="lineno">   55 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">receiveN</span></span></span> :: Int
 <span class="lineno">   56 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">isReceiveOver</span></span></span> :: Bool
-<span class="lineno">   57 </span>    -- ^set if send buffer overlap receive buffer
+<span class="lineno">   57 </span>    -- ^ set if send buffer overlap receive buffer
 <span class="lineno">   58 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sendQueue</span></span></span> :: [Q v x]
 <span class="lineno">   59 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sendN</span></span></span> :: Int
 <span class="lineno">   60 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
@@ -176,7 +176,7 @@ span.spaces    { background: white }
 <span class="lineno">  157 </span><span class="spaces">                </span><span class="istickedoff">}</span>
 <span class="lineno">  158 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
 <span class="lineno">  159 </span>
-<span class="lineno">  160 </span>{- |Access to received data buffer was implemented like a queue. OE signal read
+<span class="lineno">  160 </span>{- | Access to received data buffer was implemented like a queue. OE signal read
 <span class="lineno">  161 </span>received value multiple times __without changing__ &quot;pointer&quot; to the next value.
 <span class="lineno">  162 </span>OE and WR signals simultaneously read received value and __increment__ &quot;pointer&quot;
 <span class="lineno">  163 </span>to the next value. We do that for the reduced number of signal lines.

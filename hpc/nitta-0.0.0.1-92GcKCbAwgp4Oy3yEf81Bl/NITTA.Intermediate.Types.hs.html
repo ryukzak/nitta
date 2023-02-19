@@ -39,12 +39,12 @@ span.spaces    { background: white }
 <span class="lineno">   20 </span>Stability   : experimental
 <span class="lineno">   21 </span>-}
 <span class="lineno">   22 </span>module NITTA.Intermediate.Types (
-<span class="lineno">   23 </span>    -- *Function interface
+<span class="lineno">   23 </span>    -- * Function interface
 <span class="lineno">   24 </span>    I (..),
 <span class="lineno">   25 </span>    O (..),
 <span class="lineno">   26 </span>    X (..),
 <span class="lineno">   27 </span>
-<span class="lineno">   28 </span>    -- *Function description
+<span class="lineno">   28 </span>    -- * Function description
 <span class="lineno">   29 </span>    F (..),
 <span class="lineno">   30 </span>    FView (..),
 <span class="lineno">   31 </span>    packF,
@@ -56,7 +56,7 @@ span.spaces    { background: white }
 <span class="lineno">   37 </span>    WithFunctions (..),
 <span class="lineno">   38 </span>    Label (..),
 <span class="lineno">   39 </span>
-<span class="lineno">   40 </span>    -- *Functional simulation
+<span class="lineno">   40 </span>    -- * Functional simulation
 <span class="lineno">   41 </span>    FunctionSimulation (..),
 <span class="lineno">   42 </span>    CycleCntx (..),
 <span class="lineno">   43 </span>    Cntx (..),
@@ -67,7 +67,7 @@ span.spaces    { background: white }
 <span class="lineno">   48 </span>    getCntx,
 <span class="lineno">   49 </span>    updateCntx,
 <span class="lineno">   50 </span>
-<span class="lineno">   51 </span>    -- *Patch
+<span class="lineno">   51 </span>    -- * Patch
 <span class="lineno">   52 </span>    Patch (..),
 <span class="lineno">   53 </span>    Changeset (..),
 <span class="lineno">   54 </span>    reverseDiff,
@@ -97,7 +97,7 @@ span.spaces    { background: white }
 <span class="lineno">   78 </span>import NITTA.Utils.Base
 <span class="lineno">   79 </span>import Text.PrettyPrint.Boxes hiding ((&lt;&gt;))
 <span class="lineno">   80 </span>
-<span class="lineno">   81 </span>-- |Input variable.
+<span class="lineno">   81 </span>-- | Input variable.
 <span class="lineno">   82 </span>newtype I v = I v
 <span class="lineno">   83 </span>    deriving (<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
 <span class="lineno">   84 </span>
@@ -111,7 +111,7 @@ span.spaces    { background: white }
 <span class="lineno">   92 </span>instance Variables (I v) v where
 <span class="lineno">   93 </span>    <span class="decl"><span class="istickedoff">variables (I v) = S.singleton v</span></span>
 <span class="lineno">   94 </span>
-<span class="lineno">   95 </span>-- |Output variable set.
+<span class="lineno">   95 </span>-- | Output variable set.
 <span class="lineno">   96 </span>newtype O v = O (S.Set v)
 <span class="lineno">   97 </span>    deriving (<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
 <span class="lineno">   98 </span>
@@ -126,13 +126,13 @@ span.spaces    { background: white }
 <span class="lineno">  107 </span>instance Variables (O v) v where
 <span class="lineno">  108 </span>    <span class="decl"><span class="istickedoff">variables (O vs) = vs</span></span>
 <span class="lineno">  109 </span>
-<span class="lineno">  110 </span>-- |Value of variable (constant or initial value).
+<span class="lineno">  110 </span>-- | Value of variable (constant or initial value).
 <span class="lineno">  111 </span>newtype X x = X x
 <span class="lineno">  112 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>)
 <span class="lineno">  113 </span>
 <span class="lineno">  114 </span>-----------------------------------------------------------
 <span class="lineno">  115 </span>
-<span class="lineno">  116 </span>{- |Casuality of variable processing sequence in term of locks.
+<span class="lineno">  116 </span>{- | Casuality of variable processing sequence in term of locks.
 <span class="lineno">  117 </span>
 <span class="lineno">  118 </span>For example:
 <span class="lineno">  119 </span>&gt; c := a + b
@@ -141,7 +141,7 @@ span.spaces    { background: white }
 <span class="lineno">  122 </span>class (Var v) =&gt; Locks x v | x -&gt; v where
 <span class="lineno">  123 </span>    locks :: x -&gt; [Lock v]
 <span class="lineno">  124 </span>
-<span class="lineno">  125 </span>-- |Variable casuality.
+<span class="lineno">  125 </span>-- | Variable casuality.
 <span class="lineno">  126 </span>data Lock v = Lock
 <span class="lineno">  127 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">locked</span></span></span> :: v
 <span class="lineno">  128 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lockBy</span></span></span> :: v
@@ -154,7 +154,7 @@ span.spaces    { background: white }
 <span class="lineno">  135 </span>
 <span class="lineno">  136 </span>instance (ToJSON v) =&gt; ToJSON (Lock v)
 <span class="lineno">  137 </span>
-<span class="lineno">  138 </span>-- |All input variables locks all output variables.
+<span class="lineno">  138 </span>-- | All input variables locks all output variables.
 <span class="lineno">  139 </span><span class="decl"><span class="istickedoff">inputsLockOutputs f =</span>
 <span class="lineno">  140 </span><span class="spaces">    </span><span class="istickedoff">[ Lock{locked = y, lockBy = x}</span>
 <span class="lineno">  141 </span><span class="spaces">    </span><span class="istickedoff">| x &lt;- S.elems $ inputs f</span>
@@ -163,23 +163,23 @@ span.spaces    { background: white }
 <span class="lineno">  144 </span>
 <span class="lineno">  145 </span>-----------------------------------------------------------
 <span class="lineno">  146 </span>
-<span class="lineno">  147 </span>-- |Type class for application algorithm functions.
+<span class="lineno">  147 </span>-- | Type class for application algorithm functions.
 <span class="lineno">  148 </span>class Function f v | f -&gt; v where
-<span class="lineno">  149 </span>    -- |Get all input variables.
+<span class="lineno">  149 </span>    -- | Get all input variables.
 <span class="lineno">  150 </span>    inputs :: f -&gt; S.Set v
 <span class="lineno">  151 </span>    <span class="decl"><span class="istickedoff">inputs _ = S.empty</span></span>
 <span class="lineno">  152 </span>
-<span class="lineno">  153 </span>    -- |Get all output variables.
+<span class="lineno">  153 </span>    -- | Get all output variables.
 <span class="lineno">  154 </span>    outputs :: f -&gt; S.Set v
 <span class="lineno">  155 </span>    <span class="decl"><span class="istickedoff">outputs _ = S.empty</span></span>
 <span class="lineno">  156 </span>
-<span class="lineno">  157 </span>    -- |Sometimes, one function can cause internal process unit lock for another function.
+<span class="lineno">  157 </span>    -- | Sometimes, one function can cause internal process unit lock for another function.
 <span class="lineno">  158 </span>
 <span class="lineno">  159 </span>    -- TODO: remove or move, because its depends from PU type
 <span class="lineno">  160 </span>    isInternalLockPossible :: f -&gt; Bool
 <span class="lineno">  161 </span>    <span class="decl"><span class="istickedoff">isInternalLockPossible _ = False</span></span>
 <span class="lineno">  162 </span>
-<span class="lineno">  163 </span>-- |Type class for making fine label for Functions.
+<span class="lineno">  163 </span>-- | Type class for making fine label for Functions.
 <span class="lineno">  164 </span>class Label a where
 <span class="lineno">  165 </span>    label :: a -&gt; String
 <span class="lineno">  166 </span>
@@ -189,12 +189,12 @@ span.spaces    { background: white }
 <span class="lineno">  170 </span>instance Label T.Text where
 <span class="lineno">  171 </span>    <span class="decl"><span class="nottickedoff">label = toString</span></span>
 <span class="lineno">  172 </span>
-<span class="lineno">  173 </span>-- |Type class of something, which is related to functions.
+<span class="lineno">  173 </span>-- | Type class of something, which is related to functions.
 <span class="lineno">  174 </span>class WithFunctions a f | a -&gt; f where
-<span class="lineno">  175 </span>    -- |Get a list of associated functions.
+<span class="lineno">  175 </span>    -- | Get a list of associated functions.
 <span class="lineno">  176 </span>    functions :: a -&gt; [f]
 <span class="lineno">  177 </span>
-<span class="lineno">  178 </span>-- |Box forall functions.
+<span class="lineno">  178 </span>-- | Box forall functions.
 <span class="lineno">  179 </span>data F v x where
 <span class="lineno">  180 </span>    F ::
 <span class="lineno">  181 </span>        ( Function f v
@@ -272,11 +272,11 @@ span.spaces    { background: white }
 <span class="lineno">  253 </span>instance (Var v) =&gt; Variables (F v x) v where
 <span class="lineno">  254 </span>    <span class="decl"><span class="istickedoff">variables F{fun} = inputs fun `S.union` outputs fun</span></span>
 <span class="lineno">  255 </span>
-<span class="lineno">  256 </span>-- |Helper for extraction function from existential container 'F'.
+<span class="lineno">  256 </span>-- | Helper for extraction function from existential container 'F'.
 <span class="lineno">  257 </span>castF :: (Typeable f, Typeable v, Typeable x) =&gt; F v x -&gt; Maybe (f v x)
 <span class="lineno">  258 </span><span class="decl"><span class="istickedoff">castF F{fun} = cast fun</span></span>
 <span class="lineno">  259 </span>
-<span class="lineno">  260 </span>-- |Helper for JSON serialization
+<span class="lineno">  260 </span>-- | Helper for JSON serialization
 <span class="lineno">  261 </span>data FView = FView
 <span class="lineno">  262 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">fvFun</span></span></span> :: T.Text
 <span class="lineno">  263 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">fvHistory</span></span></span> :: [T.Text]
@@ -294,12 +294,12 @@ span.spaces    { background: white }
 <span class="lineno">  275 </span>
 <span class="lineno">  276 </span>-----------------------------------------------------------
 <span class="lineno">  277 </span>
-<span class="lineno">  278 </span>-- |The type class for function simulation.
+<span class="lineno">  278 </span>-- | The type class for function simulation.
 <span class="lineno">  279 </span>class FunctionSimulation f v x | f -&gt; v x where
 <span class="lineno">  280 </span>    -- FIXME: CycleCntx - problem, because its prevent Receive simulation with
 <span class="lineno">  281 </span>    -- data drop (how implement that?).
 <span class="lineno">  282 </span>
-<span class="lineno">  283 </span>    -- |Receive a computational context and return changes (list of varible names and its new values).
+<span class="lineno">  283 </span>    -- | Receive a computational context and return changes (list of varible names and its new values).
 <span class="lineno">  284 </span>    simulate :: CycleCntx v x -&gt; f -&gt; [(v, x)]
 <span class="lineno">  285 </span>
 <span class="lineno">  286 </span>newtype CycleCntx v x = CycleCntx {<span class="istickedoff"><span class="decl"><span class="istickedoff">cycleCntx</span></span></span> :: HM.HashMap v x}
@@ -314,9 +314,9 @@ span.spaces    { background: white }
 <span class="lineno">  295 </span>
 <span class="lineno">  296 </span>data Cntx v x = Cntx
 <span class="lineno">  297 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">cntxProcess</span></span></span> :: [CycleCntx v x]
-<span class="lineno">  298 </span>    -- ^all variables on each process cycle
+<span class="lineno">  298 </span>    -- ^ all variables on each process cycle
 <span class="lineno">  299 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">cntxReceived</span></span></span> :: M.Map v [x]
-<span class="lineno">  300 </span>    -- ^sequences of all received values, one value per process cycle
+<span class="lineno">  300 </span>    -- ^ sequences of all received values, one value per process cycle
 <span class="lineno">  301 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">cntxCycleNumber</span></span></span> :: Int
 <span class="lineno">  302 </span>    }
 <span class="lineno">  303 </span>
@@ -387,7 +387,7 @@ span.spaces    { background: white }
 <span class="lineno">  368 </span><span class="spaces">            </span><span class="nottickedoff">, cntxCycleNumber = 5</span>
 <span class="lineno">  369 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
 <span class="lineno">  370 </span>
-<span class="lineno">  371 </span>-- |Make sequence of received values '[ Map v x ]'
+<span class="lineno">  371 </span>-- | Make sequence of received values '[ Map v x ]'
 <span class="lineno">  372 </span>cntxReceivedBySlice :: (Ord v) =&gt; Cntx v x -&gt; [M.Map v x]
 <span class="lineno">  373 </span><span class="decl"><span class="istickedoff">cntxReceivedBySlice Cntx{cntxReceived} = cntxReceivedBySlice' $ M.assocs cntxReceived</span></span>
 <span class="lineno">  374 </span>
@@ -409,23 +409,23 @@ span.spaces    { background: white }
 <span class="lineno">  390 </span>
 <span class="lineno">  391 </span>-----------------------------------------------------------
 <span class="lineno">  392 </span>
-<span class="lineno">  393 </span>-- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
+<span class="lineno">  393 </span>-- | Patch class allows replacing one variable by another. Especially for algorithm refactor.
 <span class="lineno">  394 </span>class Patch f diff where
 <span class="lineno">  395 </span>    patch :: diff -&gt; f -&gt; f
 <span class="lineno">  396 </span>
-<span class="lineno">  397 </span>{- |Change set for patch.
+<span class="lineno">  397 </span>{- | Change set for patch.
 <span class="lineno">  398 </span>
 <span class="lineno">  399 </span>&gt;&gt;&gt; Changeset (M.fromList [(&quot;a&quot;, &quot;b&quot;), (&quot;c&quot;, &quot;d&quot;)]) (M.fromList [(&quot;e&quot;, S.fromList [&quot;f&quot;, &quot;g&quot;])]) :: Changeset String
 <span class="lineno">  400 </span>Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
 <span class="lineno">  401 </span>-}
 <span class="lineno">  402 </span>data Changeset v = Changeset
 <span class="lineno">  403 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">changeI</span></span></span> :: M.Map v v
-<span class="lineno">  404 </span>    -- ^change set for input variables (one to one)
+<span class="lineno">  404 </span>    -- ^ change set for input variables (one to one)
 <span class="lineno">  405 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">changeO</span></span></span> :: M.Map v (S.Set v)
-<span class="lineno">  406 </span>    -- ^change set for output variables. Many to many relations:
+<span class="lineno">  406 </span>    -- ^ change set for output variables. Many to many relations:
 <span class="lineno">  407 </span>    --
-<span class="lineno">  408 </span>    -- &gt; fromList [(a, {x}), (b, {x})] -- several output variables to one
-<span class="lineno">  409 </span>    -- &gt; fromList [(c, {y, z})] -- one output variable to many
+<span class="lineno">  408 </span>    --  &gt; fromList [(a, {x}), (b, {x})] -- several output variables to one
+<span class="lineno">  409 </span>    --  &gt; fromList [(c, {y, z})] -- one output variable to many
 <span class="lineno">  410 </span>    }
 <span class="lineno">  411 </span>    deriving (<span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">  412 </span>
@@ -438,7 +438,7 @@ span.spaces    { background: white }
 <span class="lineno">  419 </span>instance Default (Changeset v) where
 <span class="lineno">  420 </span>    <span class="decl"><span class="istickedoff">def = Changeset def def</span></span>
 <span class="lineno">  421 </span>
-<span class="lineno">  422 </span>-- |Reverse changeset for patch a process unit options / decision.
+<span class="lineno">  422 </span>-- | Reverse changeset for patch a process unit options / decision.
 <span class="lineno">  423 </span><span class="decl"><span class="istickedoff">reverseDiff Changeset{changeI, changeO} =</span>
 <span class="lineno">  424 </span><span class="spaces">    </span><span class="istickedoff">Changeset</span>
 <span class="lineno">  425 </span><span class="spaces">        </span><span class="istickedoff">{ changeI = M.fromList $ map swap $ M.assocs changeI</span>

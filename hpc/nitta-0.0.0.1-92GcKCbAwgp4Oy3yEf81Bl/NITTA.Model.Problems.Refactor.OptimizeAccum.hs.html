@@ -51,7 +51,7 @@ span.spaces    { background: white }
 <span class="lineno">   32 </span>import NITTA.Intermediate.Functions
 <span class="lineno">   33 </span>import NITTA.Intermediate.Types
 <span class="lineno">   34 </span>
-<span class="lineno">   35 </span>{- |OptimizeAccum example:
+<span class="lineno">   35 </span>{- | OptimizeAccum example:
 <span class="lineno">   36 </span>
 <span class="lineno">   37 </span>&gt; OptimizeAccum [+a +b =&gt; tmp1; +tmp1 +c =&gt; res] [+a +b +c =&gt; d]
 <span class="lineno">   38 </span>
@@ -82,11 +82,11 @@ span.spaces    { background: white }
 <span class="lineno">   63 </span>    deriving (Generic, <span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">   64 </span>
 <span class="lineno">   65 </span>class OptimizeAccumProblem u v x | u -&gt; v x where
-<span class="lineno">   66 </span>    -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
+<span class="lineno">   66 </span>    -- | Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
 <span class="lineno">   67 </span>    optimizeAccumOptions :: u -&gt; [OptimizeAccum v x]
 <span class="lineno">   68 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumOptions _ = []</span></span>
 <span class="lineno">   69 </span>
-<span class="lineno">   70 </span>    -- |Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
+<span class="lineno">   70 </span>    -- | Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
 <span class="lineno">   71 </span>    optimizeAccumDecision :: u -&gt; OptimizeAccum v x -&gt; u
 <span class="lineno">   72 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumDecision _ _ = error &quot;not implemented&quot;</span></span>
 <span class="lineno">   73 </span>
@@ -123,7 +123,7 @@ span.spaces    { background: white }
 <span class="lineno">  104 </span><span class="spaces">    </span><span class="istickedoff">| Just Acc{} &lt;- castF f = True</span>
 <span class="lineno">  105 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
 <span class="lineno">  106 </span>
-<span class="lineno">  107 </span>-- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
+<span class="lineno">  107 </span>-- | Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
 <span class="lineno">  108 </span><span class="decl"><span class="istickedoff">containerMapCreate fs =</span>
 <span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">M.unions $</span>
 <span class="lineno">  110 </span><span class="spaces">        </span><span class="istickedoff">map</span>
@@ -137,7 +137,7 @@ span.spaces    { background: white }
 <span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">)</span>
 <span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">fs</span></span>
 <span class="lineno">  120 </span>
-<span class="lineno">  121 </span>-- |Takes container and refactor it, if it can be
+<span class="lineno">  121 </span>-- | Takes container and refactor it, if it can be
 <span class="lineno">  122 </span><span class="decl"><span class="istickedoff">optimizeCluster fs = concatMap refactored fs</span>
 <span class="lineno">  123 </span><span class="spaces">    </span><span class="istickedoff">where</span>
 <span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">containerMap = containerMapCreate fs</span>

@@ -65,24 +65,24 @@ span.spaces    { background: white }
 <span class="lineno">   46 </span>import NITTA.Model.ProcessorUnits.Types
 <span class="lineno">   47 </span>import Numeric.Interval.NonEmpty (singleton, sup)
 <span class="lineno">   48 </span>
-<span class="lineno">   49 </span>-- |Process builder state.
+<span class="lineno">   49 </span>-- | Process builder state.
 <span class="lineno">   50 </span>data Schedule pu v x t = Schedule
 <span class="lineno">   51 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">schProcess</span></span></span> :: Process t (StepInfo v x t)
-<span class="lineno">   52 </span>    -- ^Defining process.
+<span class="lineno">   52 </span>    -- ^ Defining process.
 <span class="lineno">   53 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">iProxy</span></span></span> :: Proxy (Instruction pu)
-<span class="lineno">   54 </span>    -- ^Proxy for process unit instruction, which is needed for API simplify. Without that,
-<span class="lineno">   55 </span>    -- for some function, the user needs to describe type explicitly.
+<span class="lineno">   54 </span>    -- ^ Proxy for process unit instruction, which is needed for API simplify. Without that,
+<span class="lineno">   55 </span>    --  for some function, the user needs to describe type explicitly.
 <span class="lineno">   56 </span>    }
 <span class="lineno">   57 </span>
 <span class="lineno">   58 </span>instance {-# OVERLAPS #-} NextTick (Schedule pu v x t) t where
 <span class="lineno">   59 </span>    <span class="decl"><span class="istickedoff">nextTick = nextTick . schProcess</span></span>
 <span class="lineno">   60 </span>
-<span class="lineno">   61 </span>{- |Execute process builder and return new process description. The initial process state is getting
+<span class="lineno">   61 </span>{- | Execute process builder and return new process description. The initial process state is getting
 <span class="lineno">   62 </span>from the PU by the 'process' function.
 <span class="lineno">   63 </span>-}
 <span class="lineno">   64 </span><span class="decl"><span class="istickedoff">execSchedule pu st = snd $ runSchedule pu st</span></span>
 <span class="lineno">   65 </span>
-<span class="lineno">   66 </span>{- |Execute process builder and return new process description. The initial
+<span class="lineno">   66 </span>{- | Execute process builder and return new process description. The initial
 <span class="lineno">   67 </span>process state is passed explicetly.
 <span class="lineno">   68 </span>
 <span class="lineno">   69 </span>Why can not we get a process here? In the case of Bus Network, it also fetches
@@ -90,12 +90,12 @@ span.spaces    { background: white }
 <span class="lineno">   71 </span>-}
 <span class="lineno">   72 </span><span class="decl"><span class="istickedoff">execScheduleWithProcess pu p st = snd $ runScheduleWithProcess <span class="nottickedoff">pu</span> p st</span></span>
 <span class="lineno">   73 </span>
-<span class="lineno">   74 </span>{- |Execute process builder and return list of new step UID and new process description. The initial
+<span class="lineno">   74 </span>{- | Execute process builder and return list of new step UID and new process description. The initial
 <span class="lineno">   75 </span>process state is getting from the PU by the 'process' function.
 <span class="lineno">   76 </span>-}
 <span class="lineno">   77 </span><span class="decl"><span class="istickedoff">runSchedule pu st = runScheduleWithProcess <span class="nottickedoff">pu</span> (process pu) st</span></span>
 <span class="lineno">   78 </span>
-<span class="lineno">   79 </span>{- |Execute process builder and return list of new step UID and new process description. The initial
+<span class="lineno">   79 </span>{- | Execute process builder and return list of new step UID and new process description. The initial
 <span class="lineno">   80 </span>process state is passed explicetly.
 <span class="lineno">   81 </span>-}
 <span class="lineno">   82 </span><span class="decl"><span class="istickedoff">runScheduleWithProcess pu p st =</span>
@@ -111,7 +111,7 @@ span.spaces    { background: white }
 <span class="lineno">   92 </span><span class="spaces">        </span><span class="istickedoff">ip :: pu -&gt; Proxy (Instruction pu)</span>
 <span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">ip _ = Proxy</span></span></span>
 <span class="lineno">   94 </span>
-<span class="lineno">   95 </span>-- |Add process step with passed the time and info.
+<span class="lineno">   95 </span>-- | Add process step with passed the time and info.
 <span class="lineno">   96 </span><span class="decl"><span class="istickedoff">scheduleStep placeInTime stepInfo =</span>
 <span class="lineno">   97 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep' (\uid -&gt; Step uid placeInTime stepInfo)</span></span>
 <span class="lineno">   98 </span>
@@ -127,7 +127,7 @@ span.spaces    { background: white }
 <span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">}</span>
 <span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">return [nextUid]</span></span>
 <span class="lineno">  110 </span>
-<span class="lineno">  111 </span>{- |Add to the process description information about vertical relations, which are defined by the
+<span class="lineno">  111 </span>{- | Add to the process description information about vertical relations, which are defined by the
 <span class="lineno">  112 </span>Cartesian product of high and low lists.
 <span class="lineno">  113 </span>-}
 <span class="lineno">  114 </span><span class="decl"><span class="istickedoff">establishVerticalRelations high low = do</span>
@@ -140,7 +140,7 @@ span.spaces    { background: white }
 <span class="lineno">  121 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
 <span class="lineno">  122 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  123 </span>
-<span class="lineno">  124 </span>{- |Add to the process description information about horizontal relations (inside
+<span class="lineno">  124 </span>{- | Add to the process description information about horizontal relations (inside
 <span class="lineno">  125 </span>level), which are defined by the Cartesian product of high and low lists.
 <span class="lineno">  126 </span>-}
 <span class="lineno">  127 </span><span class="decl"><span class="nottickedoff">establishHorizontalRelations high low = do</span>
@@ -165,12 +165,12 @@ span.spaces    { background: white }
 <span class="lineno">  146 </span><span class="spaces">    </span><span class="istickedoff">schedule &lt;- get</span>
 <span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">scheduleStep (singleton $ nextTick schedule) $ AllocationStep alloc</span></span>
 <span class="lineno">  148 </span>
-<span class="lineno">  149 </span>-- |Add to the process description information about function evaluation.
+<span class="lineno">  149 </span>-- | Add to the process description information about function evaluation.
 <span class="lineno">  150 </span><span class="decl"><span class="istickedoff">scheduleFunction ti f = scheduleStep ti $ IntermediateStep f</span></span>
 <span class="lineno">  151 </span>
 <span class="lineno">  152 </span><span class="decl"><span class="istickedoff">scheduleRefactoring ti ref = scheduleStep ti $ RefactorStep ref</span></span>
 <span class="lineno">  153 </span>
-<span class="lineno">  154 </span>{- |Schedule function and establish vertical relations between bind step,
+<span class="lineno">  154 </span>{- | Schedule function and establish vertical relations between bind step,
 <span class="lineno">  155 </span>function step, and all related endpoints.
 <span class="lineno">  156 </span>-}
 <span class="lineno">  157 </span><span class="decl"><span class="istickedoff">scheduleFunctionFinish bPID function at = do</span>
@@ -183,7 +183,7 @@ span.spaces    { background: white }
 <span class="lineno">  164 </span>
 <span class="lineno">  165 </span><span class="decl"><span class="istickedoff">scheduleFunctionFinish_ bPID function at = void $ scheduleFunctionFinish bPID function at</span></span>
 <span class="lineno">  166 </span>
-<span class="lineno">  167 </span>{- |Add to the process description information about endpoint behaviour, and it's low-level
+<span class="lineno">  167 </span>{- | Add to the process description information about endpoint behaviour, and it's low-level
 <span class="lineno">  168 </span>implementation (on instruction level). Vertical relations connect endpoint level and instruction
 <span class="lineno">  169 </span>level steps.
 <span class="lineno">  170 </span>-}
@@ -195,7 +195,7 @@ span.spaces    { background: white }
 <span class="lineno">  176 </span>
 <span class="lineno">  177 </span><span class="decl"><span class="istickedoff">scheduleEndpoint_ ep codeGen = void $ scheduleEndpoint ep codeGen</span></span>
 <span class="lineno">  178 </span>
-<span class="lineno">  179 </span>{- |Add to the process description information about instruction evaluation.
+<span class="lineno">  179 </span>{- | Add to the process description information about instruction evaluation.
 <span class="lineno">  180 </span>Unsafe means: without instruction collision check and nextTick consistency.
 <span class="lineno">  181 </span>-}
 <span class="lineno">  182 </span><span class="decl"><span class="istickedoff">scheduleInstructionUnsafe at instr = do</span>
@@ -216,13 +216,13 @@ span.spaces    { background: white }
 <span class="lineno">  197 </span>
 <span class="lineno">  198 </span><span class="decl"><span class="istickedoff">scheduleInstructionUnsafe_ ti instr = void $ scheduleInstructionUnsafe ti instr</span></span>
 <span class="lineno">  199 </span>
-<span class="lineno">  200 </span>-- |Add to the process description information about nested step.
+<span class="lineno">  200 </span>-- | Add to the process description information about nested step.
 <span class="lineno">  201 </span><span class="decl"><span class="istickedoff">scheduleNestedStep tag step@Step{pInterval} = do</span>
 <span class="lineno">  202 </span><span class="spaces">    </span><span class="istickedoff">pID &lt;- scheduleStep' (\uid -&gt; Step uid pInterval $ NestedStep tag step)</span>
 <span class="lineno">  203 </span><span class="spaces">    </span><span class="istickedoff">when (length pID /= 1) $ <span class="nottickedoff">error &quot;scheduleNestedStep internal error.&quot;</span></span>
 <span class="lineno">  204 </span><span class="spaces">    </span><span class="istickedoff">return $ <span class="nottickedoff">head pID</span></span></span>
 <span class="lineno">  205 </span>
-<span class="lineno">  206 </span>-- |Get a current slice of the computational process.
+<span class="lineno">  206 </span>-- | Get a current slice of the computational process.
 <span class="lineno">  207 </span>getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))
 <span class="lineno">  208 </span><span class="decl"><span class="istickedoff">getProcessSlice = do</span>
 <span class="lineno">  209 </span><span class="spaces">    </span><span class="istickedoff">Schedule{schProcess} &lt;- get</span>
@@ -236,7 +236,7 @@ span.spaces    { background: white }
 <span class="lineno">  217 </span><span class="spaces">        </span><span class="istickedoff">)</span>
 <span class="lineno">  218 </span><span class="spaces">        </span><span class="istickedoff">$ steps process_</span></span>
 <span class="lineno">  219 </span>
-<span class="lineno">  220 </span>-- |Helper for instruction extraction from a rigid type variable.
+<span class="lineno">  220 </span>-- | Helper for instruction extraction from a rigid type variable.
 <span class="lineno">  221 </span>castInstruction :: (Typeable a, Typeable pu) =&gt; pu -&gt; a -&gt; Maybe (Instruction pu)
 <span class="lineno">  222 </span><span class="decl"><span class="istickedoff">castInstruction _pu inst = cast inst</span></span>
 

@@ -69,12 +69,12 @@ span.spaces    { background: white }
 <span class="lineno">   50 </span><span class="spaces">                </span><span class="istickedoff">)</span>
 <span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
 <span class="lineno">   52 </span>
-<span class="lineno">   53 </span>-- |projectContext - used for template generation
+<span class="lineno">   53 </span>-- | projectContext - used for template generation
 <span class="lineno">   54 </span><span class="decl"><span class="istickedoff">projectContext prj = makeContextText $ \case</span>
 <span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">&quot;nitta&quot; -&gt; nittaContextDict prj</span>
 <span class="lineno">   56 </span><span class="spaces">    </span><span class="istickedoff">unknown -&gt; <span class="nottickedoff">error $ &quot;template error, variable '&quot; &lt;&gt; T.unpack unknown &lt;&gt; &quot;' not defined (see 'NITTA.Project.Template')&quot;</span></span></span>
 <span class="lineno">   57 </span>
-<span class="lineno">   58 </span>-- |projectContext - used for Implementation generation
+<span class="lineno">   58 </span>-- | projectContext - used for Implementation generation
 <span class="lineno">   59 </span><span class="decl"><span class="istickedoff">implementationContext prj nest = makeContextText $ \case</span>
 <span class="lineno">   60 </span><span class="spaces">    </span><span class="istickedoff">&quot;nitta&quot; -&gt; nittaContextDict prj</span>
 <span class="lineno">   61 </span><span class="spaces">    </span><span class="istickedoff">&quot;impl&quot; -&gt; dict [(&quot;paths&quot;, dict [(&quot;nest&quot;, toGVal nest)])]</span>

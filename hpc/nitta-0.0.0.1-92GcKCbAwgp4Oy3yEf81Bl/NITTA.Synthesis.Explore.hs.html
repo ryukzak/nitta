@@ -57,7 +57,7 @@ span.spaces    { background: white }
 <span class="lineno">   38 </span>import NITTA.Utils
 <span class="lineno">   39 </span>import System.Log.Logger
 <span class="lineno">   40 </span>
-<span class="lineno">   41 </span>-- |Make synthesis tree
+<span class="lineno">   41 </span>-- | Make synthesis tree
 <span class="lineno">   42 </span><span class="decl"><span class="istickedoff">synthesisTreeRootIO = atomically . rootSynthesisTreeSTM</span></span>
 <span class="lineno">   43 </span>
 <span class="lineno">   44 </span><span class="decl"><span class="istickedoff">rootSynthesisTreeSTM model = do</span>
@@ -70,21 +70,21 @@ span.spaces    { background: white }
 <span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">, sSubForestVar</span>
 <span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">   53 </span>
-<span class="lineno">   54 </span>-- |Get specific by @nId@ node from a synthesis tree.
+<span class="lineno">   54 </span>-- | Get specific by @nId@ node from a synthesis tree.
 <span class="lineno">   55 </span><span class="decl"><span class="nottickedoff">getTreeIO tree (Sid []) = return tree</span>
 <span class="lineno">   56 </span><span class="spaces"></span><span class="nottickedoff">getTreeIO tree (Sid (i : is)) = do</span>
 <span class="lineno">   57 </span><span class="spaces">    </span><span class="nottickedoff">subForest &lt;- subForestIO tree</span>
 <span class="lineno">   58 </span><span class="spaces">    </span><span class="nottickedoff">unless (i &lt; length subForest) $ error &quot;getTreeIO - wrong Sid&quot;</span>
 <span class="lineno">   59 </span><span class="spaces">    </span><span class="nottickedoff">getTreeIO (subForest !! i) (Sid is)</span></span>
 <span class="lineno">   60 </span>
-<span class="lineno">   61 </span>-- |Get list of all nodes from root to selected.
+<span class="lineno">   61 </span>-- | Get list of all nodes from root to selected.
 <span class="lineno">   62 </span><span class="decl"><span class="nottickedoff">getTreePathIO _ (Sid []) = return []</span>
 <span class="lineno">   63 </span><span class="spaces"></span><span class="nottickedoff">getTreePathIO tree (Sid (i : is)) = do</span>
 <span class="lineno">   64 </span><span class="spaces">    </span><span class="nottickedoff">h &lt;- getTreeIO tree $ Sid [i]</span>
 <span class="lineno">   65 </span><span class="spaces">    </span><span class="nottickedoff">t &lt;- getTreePathIO h $ Sid is</span>
 <span class="lineno">   66 </span><span class="spaces">    </span><span class="nottickedoff">return $ h : t</span></span>
 <span class="lineno">   67 </span>
-<span class="lineno">   68 </span>{- |Get all available edges for the node. Edges calculated only for the first
+<span class="lineno">   68 </span>{- | Get all available edges for the node. Edges calculated only for the first
 <span class="lineno">   69 </span>call.
 <span class="lineno">   70 </span>-}
 <span class="lineno">   71 </span><span class="decl"><span class="istickedoff">subForestIO</span>
@@ -118,7 +118,7 @@ span.spaces    { background: white }
 <span class="lineno">   99 </span><span class="spaces"></span><span class="istickedoff"></span>
 <span class="lineno">  100 </span><span class="spaces">        </span><span class="istickedoff">return subForest</span></span>
 <span class="lineno">  101 </span>
-<span class="lineno">  102 </span>{- |For synthesis method is more usefull, because throw away all useless trees in
+<span class="lineno">  102 </span>{- | For synthesis method is more usefull, because throw away all useless trees in
 <span class="lineno">  103 </span>subForest (objective function value less than zero).
 <span class="lineno">  104 </span>-}
 <span class="lineno">  105 </span><span class="decl"><span class="istickedoff">positiveSubForestIO tree = filter ((&gt; 0) . score . sDecision) &lt;$&gt; subForestIO tree</span></span>
@@ -139,7 +139,7 @@ span.spaces    { background: white }
 <span class="lineno">  120 </span><span class="spaces"></span><span class="istickedoff">isLeaf _ = <span class="nottickedoff">False</span></span></span>
 <span class="lineno">  121 </span>
 <span class="lineno">  122 </span><span class="decl"><span class="istickedoff">isComplete = isSynthesisComplete . sTarget . sState</span></span>
-<span class="lineno">  123 </span>-- *Internal
+<span class="lineno">  123 </span>-- * Internal
 <span class="lineno">  124 </span>
 <span class="lineno">  125 </span><span class="decl"><span class="istickedoff">exploreSubForestVar parent@Tree{sID, sState} =</span>
 <span class="lineno">  126 </span><span class="spaces">    </span><span class="istickedoff">let edges =</span>

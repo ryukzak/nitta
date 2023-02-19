@@ -55,20 +55,20 @@ span.spaces    { background: white }
 <span class="lineno">   36 </span>
 <span class="lineno">   37 </span>data BindMetrics = BindMetrics
 <span class="lineno">   38 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pCritical</span></span></span> :: Bool
-<span class="lineno">   39 </span>    -- ^Can this binding block another one (for example, one 'Loop' can
-<span class="lineno">   40 </span>    -- take the last free buffer)?
+<span class="lineno">   39 </span>    -- ^ Can this binding block another one (for example, one 'Loop' can
+<span class="lineno">   40 </span>    --  take the last free buffer)?
 <span class="lineno">   41 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pAlternative</span></span></span> :: Float
-<span class="lineno">   42 </span>    -- ^How many alternative binding we have?
+<span class="lineno">   42 </span>    -- ^ How many alternative binding we have?
 <span class="lineno">   43 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pRestless</span></span></span> :: Float
-<span class="lineno">   44 </span>    -- ^How many ticks requires for executing the function?
+<span class="lineno">   44 </span>    -- ^ How many ticks requires for executing the function?
 <span class="lineno">   45 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pOutputNumber</span></span></span> :: Float
 <span class="lineno">   46 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pAllowDataFlow</span></span></span> :: Float
-<span class="lineno">   47 </span>    -- ^How many transactions can be executed with this function?
+<span class="lineno">   47 </span>    -- ^ How many transactions can be executed with this function?
 <span class="lineno">   48 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pPossibleDeadlock</span></span></span> :: Bool
-<span class="lineno">   49 </span>    -- ^May this binding cause deadlock?
+<span class="lineno">   49 </span>    -- ^ May this binding cause deadlock?
 <span class="lineno">   50 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pNumberOfBindedFunctions</span></span></span> :: Float
 <span class="lineno">   51 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pPercentOfBindedInputs</span></span></span> :: Float
-<span class="lineno">   52 </span>    -- ^number of binded input variables / number of all input variables
+<span class="lineno">   52 </span>    -- ^ number of binded input variables / number of all input variables
 <span class="lineno">   53 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pWave</span></span></span> :: Maybe Float
 <span class="lineno">   54 </span>    }
 <span class="lineno">   55 </span>    deriving (Generic)

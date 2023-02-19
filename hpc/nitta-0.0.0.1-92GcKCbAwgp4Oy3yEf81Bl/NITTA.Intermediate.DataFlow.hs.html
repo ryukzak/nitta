@@ -42,7 +42,7 @@ span.spaces    { background: white }
 <span class="lineno">   23 </span>import NITTA.Model.Problems.Refactor
 <span class="lineno">   24 </span>import NITTA.Utils.Base
 <span class="lineno">   25 </span>
-<span class="lineno">   26 </span>{- |Data flow graph - intermediate representation of application algorithm.
+<span class="lineno">   26 </span>{- | Data flow graph - intermediate representation of application algorithm.
 <span class="lineno">   27 </span>Right now can be replaced by @[F v x]@, but for future features like
 <span class="lineno">   28 </span>conduction statement, we don't do that.
 <span class="lineno">   29 </span>-}
@@ -96,7 +96,7 @@ span.spaces    { background: white }
 <span class="lineno">   77 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =</span>
 <span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))</span></span>
 <span class="lineno">   79 </span>
-<span class="lineno">   80 </span>-- |Convert @[ F v x ]@ to 'DataFlowGraph'.
+<span class="lineno">   80 </span>-- | Convert @[ F v x ]@ to 'DataFlowGraph'.
 <span class="lineno">   81 </span><span class="decl"><span class="istickedoff">fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs</span></span>
 <span class="lineno">   82 </span>
 <span class="lineno">   83 </span><span class="decl"><span class="istickedoff">addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)</span>

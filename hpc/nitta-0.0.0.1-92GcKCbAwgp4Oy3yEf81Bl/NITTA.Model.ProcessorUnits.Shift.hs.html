@@ -56,21 +56,21 @@ span.spaces    { background: white }
 <span class="lineno">   37 </span>
 <span class="lineno">   38 </span>data Shift v x t = Shift
 <span class="lineno">   39 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">remain</span></span></span> :: [F v x]
-<span class="lineno">   40 </span>    -- ^list of FU, that will be binded later
+<span class="lineno">   40 </span>    -- ^ list of FU, that will be binded later
 <span class="lineno">   41 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">target</span></span></span> :: Maybe v
-<span class="lineno">   42 </span>    -- ^current input value, that we want to shift
+<span class="lineno">   42 </span>    -- ^ current input value, that we want to shift
 <span class="lineno">   43 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sources</span></span></span> :: [v]
-<span class="lineno">   44 </span>    -- ^list of output values
+<span class="lineno">   44 </span>    -- ^ list of output values
 <span class="lineno">   45 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sRight</span></span></span> :: Bool
-<span class="lineno">   46 </span>    -- ^True -&gt; shift right; False -&gt; shift left
+<span class="lineno">   46 </span>    -- ^ True -&gt; shift right; False -&gt; shift left
 <span class="lineno">   47 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">byteShiftDiv</span></span></span> :: Int
-<span class="lineno">   48 </span>    -- ^shift div 8 (is used for byte shift)
+<span class="lineno">   48 </span>    -- ^ shift div 8 (is used for byte shift)
 <span class="lineno">   49 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">byteShiftMod</span></span></span> :: Int
-<span class="lineno">   50 </span>    -- ^shift mod 8 (is used for bit shift)
+<span class="lineno">   50 </span>    -- ^ shift mod 8 (is used for bit shift)
 <span class="lineno">   51 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentWork</span></span></span> :: Maybe (F v x)
-<span class="lineno">   52 </span>    -- ^current function in PU
+<span class="lineno">   52 </span>    -- ^ current function in PU
 <span class="lineno">   53 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
-<span class="lineno">   54 </span>    -- ^description of target computation process
+<span class="lineno">   54 </span>    -- ^ description of target computation process
 <span class="lineno">   55 </span>    }
 <span class="lineno">   56 </span>
 <span class="lineno">   57 </span>instance (Var v) =&gt; Locks (Shift v x t) v where
@@ -109,7 +109,7 @@ span.spaces    { background: white }
 <span class="lineno">   90 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Left $ <span class="nottickedoff">&quot;The function is unsupported by Shift: &quot; ++ show f</span></span></span>
 <span class="lineno">   91 </span>    <span class="decl"><span class="istickedoff">process = process_</span></span>
 <span class="lineno">   92 </span>
-<span class="lineno">   93 </span>-- |This function carry out actual take functional block to work.
+<span class="lineno">   93 </span>-- | This function carry out actual take functional block to work.
 <span class="lineno">   94 </span><span class="decl"><span class="istickedoff">execution pu@Shift{target = Nothing, sources = [], remain} f</span>
 <span class="lineno">   95 </span><span class="spaces">    </span><span class="istickedoff">| Just f' &lt;- castF f =</span>
 <span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">case f' of</span>

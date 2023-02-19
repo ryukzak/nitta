@@ -63,9 +63,9 @@ span.spaces    { background: white }
 <span class="lineno">   44 </span>
 <span class="lineno">   45 </span>data Fram v x t = Fram
 <span class="lineno">   46 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">memory</span></span></span> :: A.Array Int (Cell v x t)
-<span class="lineno">   47 </span>    -- ^memory cell array
+<span class="lineno">   47 </span>    -- ^ memory cell array
 <span class="lineno">   48 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">remainBuffers</span></span></span> :: [(Buffer v x, Job v x t)]
-<span class="lineno">   49 </span>    -- ^register queue
+<span class="lineno">   49 </span>    -- ^ register queue
 <span class="lineno">   50 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
 <span class="lineno">   51 </span>    }
 <span class="lineno">   52 </span>
@@ -103,12 +103,12 @@ span.spaces    { background: white }
 <span class="lineno">   84 </span>instance (VarValTime v x t) =&gt; Variables (Fram v x t) v where
 <span class="lineno">   85 </span>    <span class="decl"><span class="istickedoff">variables fram = S.unions $ map variables $ functions fram</span></span>
 <span class="lineno">   86 </span>
-<span class="lineno">   87 </span>-- |Memory cell
+<span class="lineno">   87 </span>-- | Memory cell
 <span class="lineno">   88 </span>data Cell v x t = Cell
 <span class="lineno">   89 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">state</span></span></span> :: CellState v x t
 <span class="lineno">   90 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lastWrite</span></span></span> :: Maybe t
 <span class="lineno">   91 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">job</span></span></span> :: Maybe (Job v x t)
-<span class="lineno">   92 </span>    -- ^current job description
+<span class="lineno">   92 </span>    -- ^ current job description
 <span class="lineno">   93 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">history</span></span></span> :: [F v x]
 <span class="lineno">   94 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">initialValue</span></span></span> :: x
 <span class="lineno">   95 </span>    }
@@ -141,7 +141,7 @@ span.spaces    { background: white }
 <span class="lineno">  122 </span><span class="spaces">            </span><span class="istickedoff">, initialValue = def</span>
 <span class="lineno">  123 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  124 </span>
-<span class="lineno">  125 </span>{- |Memory cell states. Add Loop&amp;Buffer for optimisation.
+<span class="lineno">  125 </span>{- | Memory cell states. Add Loop&amp;Buffer for optimisation.
 <span class="lineno">  126 </span>@
 <span class="lineno">  127 </span>               bind                    source
 <span class="lineno">  128 </span>    NotUsed ----------&gt; DoConstant ------------+----&gt; Done
@@ -209,7 +209,7 @@ span.spaces    { background: white }
 <span class="lineno">  190 </span><span class="spaces">    </span><span class="istickedoff">| Just (LoopEnd _ (I v)) &lt;- castF function = v</span>
 <span class="lineno">  191 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">undefined</span></span></span>
 <span class="lineno">  192 </span>
-<span class="lineno">  193 </span>-- |Function for calculating width of array in Fram
+<span class="lineno">  193 </span>-- | Function for calculating width of array in Fram
 <span class="lineno">  194 </span><span class="decl"><span class="istickedoff">addrWidth Fram{memory} = log2 $ numElements memory</span>
 <span class="lineno">  195 </span><span class="spaces">    </span><span class="istickedoff">where</span>
 <span class="lineno">  196 </span><span class="spaces">        </span><span class="istickedoff">log2 = ceiling . (logBase 2 :: Double -&gt; Double) . fromIntegral</span></span>

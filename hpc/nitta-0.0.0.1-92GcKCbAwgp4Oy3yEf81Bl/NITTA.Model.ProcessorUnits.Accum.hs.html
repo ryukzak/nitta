@@ -59,7 +59,7 @@ span.spaces    { background: white }
 <span class="lineno">   40 </span>import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 <span class="lineno">   41 </span>import Prettyprinter
 <span class="lineno">   42 </span>
-<span class="lineno">   43 </span>{- |Type that contains expression:
+<span class="lineno">   43 </span>{- | Type that contains expression:
 <span class="lineno">   44 </span>
 <span class="lineno">   45 </span>@a + b = c@ is exression and it equals:
 <span class="lineno">   46 </span>    @[[(False, &quot;a&quot;), (False, &quot;b&quot;)], [(False, &quot;c&quot;)]]@
@@ -69,9 +69,9 @@ span.spaces    { background: white }
 <span class="lineno">   50 </span>-}
 <span class="lineno">   51 </span>data Job v x = Job
 <span class="lineno">   52 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">tasks</span></span></span> :: [[(Bool, v)]]
-<span class="lineno">   53 </span>    -- ^Contains future parts expression to eval (c + d = e)
+<span class="lineno">   53 </span>    -- ^ Contains future parts expression to eval (c + d = e)
 <span class="lineno">   54 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">func</span></span></span> :: F v x
-<span class="lineno">   55 </span>    -- ^Func of this expression
+<span class="lineno">   55 </span>    -- ^ Func of this expression
 <span class="lineno">   56 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">state</span></span></span> :: JobState
 <span class="lineno">   57 </span>    }
 <span class="lineno">   58 </span>
@@ -93,11 +93,11 @@ span.spaces    { background: white }
 <span class="lineno">   74 </span>
 <span class="lineno">   75 </span>data Accum v x t = Accum
 <span class="lineno">   76 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">remainJobs</span></span></span> :: [Job v x]
-<span class="lineno">   77 </span>    -- ^List of jobs (expressions)
+<span class="lineno">   77 </span>    -- ^ List of jobs (expressions)
 <span class="lineno">   78 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentJob</span></span></span> :: Maybe (Job v x)
-<span class="lineno">   79 </span>    -- ^Current job
+<span class="lineno">   79 </span>    -- ^ Current job
 <span class="lineno">   80 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
-<span class="lineno">   81 </span>    -- ^Process
+<span class="lineno">   81 </span>    -- ^ Process
 <span class="lineno">   82 </span>    }
 <span class="lineno">   83 </span>
 <span class="lineno">   84 </span>instance (VarValTime v x t) =&gt; Pretty (Accum v x t) where

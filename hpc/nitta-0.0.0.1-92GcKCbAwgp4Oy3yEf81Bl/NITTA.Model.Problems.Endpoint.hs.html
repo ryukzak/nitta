@@ -56,9 +56,9 @@ span.spaces    { background: white }
 <span class="lineno">   37 </span>
 <span class="lineno">   38 </span>data EndpointSt v tp = EndpointSt
 <span class="lineno">   39 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">epRole</span></span></span> :: EndpointRole v
-<span class="lineno">   40 </span>    -- ^use processor unit as source or target of data
+<span class="lineno">   40 </span>    -- ^ use processor unit as source or target of data
 <span class="lineno">   41 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">epAt</span></span></span> :: tp
-<span class="lineno">   42 </span>    -- ^time of operation
+<span class="lineno">   42 </span>    -- ^ time of operation
 <span class="lineno">   43 </span>    }
 <span class="lineno">   44 </span>    deriving (Generic)
 <span class="lineno">   45 </span>
@@ -89,9 +89,9 @@ span.spaces    { background: white }
 <span class="lineno">   70 </span>    endpointDecision :: u -&gt; EndpointSt v (Interval t) -&gt; u
 <span class="lineno">   71 </span>
 <span class="lineno">   72 </span>data EndpointRole v
-<span class="lineno">   73 </span>    = -- |get data from PU
+<span class="lineno">   73 </span>    = -- | get data from PU
 <span class="lineno">   74 </span>      Source (S.Set v)
-<span class="lineno">   75 </span>    | -- |put data to PU
+<span class="lineno">   75 </span>    | -- | put data to PU
 <span class="lineno">   76 </span>      Target v
 <span class="lineno">   77 </span>    deriving (<span class="decl"><span class="istickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff">Ord</span></span></span></span></span></span></span></span></span></span>, Generic)
 <span class="lineno">   78 </span>
@@ -114,7 +114,7 @@ span.spaces    { background: white }
 <span class="lineno">   95 </span><span class="spaces"></span><span class="istickedoff">isSubroleOf (Source as) (Source bs) = as `S.isSubsetOf` bs</span>
 <span class="lineno">   96 </span><span class="spaces"></span><span class="istickedoff">isSubroleOf _ _ = False</span></span>
 <span class="lineno">   97 </span>
-<span class="lineno">   98 </span>{- |The simplest way to convert an endpoint synthesis option to a endpoint
+<span class="lineno">   98 </span>{- | The simplest way to convert an endpoint synthesis option to a endpoint
 <span class="lineno">   99 </span>decision.
 <span class="lineno">  100 </span>-}
 <span class="lineno">  101 </span><span class="decl"><span class="istickedoff">endpointOptionToDecision EndpointSt{epRole, epAt} =</span>

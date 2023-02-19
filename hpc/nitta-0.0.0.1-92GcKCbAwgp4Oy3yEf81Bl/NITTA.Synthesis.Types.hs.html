@@ -77,21 +77,21 @@ span.spaces    { background: white }
 <span class="lineno">   58 </span>import NITTA.Utils.Base
 <span class="lineno">   59 </span>import Servant
 <span class="lineno">   60 </span>
-<span class="lineno">   61 </span>-- |Default synthesis tree type.
+<span class="lineno">   61 </span>-- | Default synthesis tree type.
 <span class="lineno">   62 </span>type DefTree tag v x t =
 <span class="lineno">   63 </span>    Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 <span class="lineno">   64 </span>
-<span class="lineno">   65 </span>{- |The synthesis method is a function, which manipulates a synthesis tree. It
+<span class="lineno">   65 </span>{- | The synthesis method is a function, which manipulates a synthesis tree. It
 <span class="lineno">   66 </span>receives a node and explores it deeply by IO.
 <span class="lineno">   67 </span>-}
 <span class="lineno">   68 </span>type SynthesisMethod tag v x t = DefTree tag v x t -&gt; IO (DefTree tag v x t)
 <span class="lineno">   69 </span>
-<span class="lineno">   70 </span>{- |Synthesis node ID. ID is a relative path, encoded as a sequence of an option
+<span class="lineno">   70 </span>{- | Synthesis node ID. ID is a relative path, encoded as a sequence of an option
 <span class="lineno">   71 </span>index.
 <span class="lineno">   72 </span>-}
 <span class="lineno">   73 </span>newtype Sid = Sid [Int]
 <span class="lineno">   74 </span>
-<span class="lineno">   75 </span>-- |Sid separator for @Show Sid@ and @Read Sid@.
+<span class="lineno">   75 </span>-- | Sid separator for @Show Sid@ and @Read Sid@.
 <span class="lineno">   76 </span><span class="decl"><span class="nottickedoff">sidSep = '-'</span></span>
 <span class="lineno">   77 </span>
 <span class="lineno">   78 </span>instance Show Sid where
@@ -126,13 +126,13 @@ span.spaces    { background: white }
 <span class="lineno">  107 </span>instance FromHttpApiData Sid where
 <span class="lineno">  108 </span>    <span class="decl"><span class="nottickedoff">parseUrlPiece = Right . readText</span></span>
 <span class="lineno">  109 </span>
-<span class="lineno">  110 </span>-- |Synthesis tree
+<span class="lineno">  110 </span>-- | Synthesis tree
 <span class="lineno">  111 </span>data Tree m tag v x t = Tree
 <span class="lineno">  112 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sID</span></span></span> :: Sid
 <span class="lineno">  113 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sState</span></span></span> :: SynthesisState m tag v x t
 <span class="lineno">  114 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDecision</span></span></span> :: SynthesisDecision (SynthesisState m tag v x t) m
 <span class="lineno">  115 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sSubForestVar</span></span></span> :: TMVar [Tree m tag v x t]
-<span class="lineno">  116 </span>    -- ^lazy mutable field with different synthesis options and sub nodes
+<span class="lineno">  116 </span>    -- ^ lazy mutable field with different synthesis options and sub nodes
 <span class="lineno">  117 </span>    }
 <span class="lineno">  118 </span>
 <span class="lineno">  119 </span><span class="decl"><span class="istickedoff">targetUnit = mUnit . sTarget . sState</span></span>
@@ -154,32 +154,32 @@ span.spaces    { background: white }
 <span class="lineno">  135 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sParent</span></span></span> :: Maybe (Tree m tag v x t)
 <span class="lineno">  136 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sTarget</span></span></span> :: m
 <span class="lineno">  137 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sAllocationOptions</span></span></span> :: [Allocation tag]
-<span class="lineno">  138 </span>    -- ^PU allocation options cache
+<span class="lineno">  138 </span>    -- ^ PU allocation options cache
 <span class="lineno">  139 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBindOptions</span></span></span> :: [Bind tag v x]
-<span class="lineno">  140 </span>    -- ^bind options cache
+<span class="lineno">  140 </span>    -- ^ bind options cache
 <span class="lineno">  141 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sResolveDeadlockOptions</span></span></span> :: [ResolveDeadlock v x]
 <span class="lineno">  142 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sOptimizeAccumOptions</span></span></span> :: [OptimizeAccum v x]
 <span class="lineno">  143 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sConstantFoldingOptions</span></span></span> :: [ConstantFolding v x]
 <span class="lineno">  144 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBreakLoopOptions</span></span></span> :: [BreakLoop v x]
 <span class="lineno">  145 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDataflowOptions</span></span></span> :: [DataflowSt tag v (TimeConstraint t)]
-<span class="lineno">  146 </span>    -- ^dataflow options cache
+<span class="lineno">  146 </span>    -- ^ dataflow options cache
 <span class="lineno">  147 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindingAlternative</span></span></span> :: M.Map (F v x) [tag]
-<span class="lineno">  148 </span>    -- ^a map from functions to possible processor unit tags
+<span class="lineno">  148 </span>    -- ^ a map from functions to possible processor unit tags
 <span class="lineno">  149 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">possibleDeadlockBinds</span></span></span> :: S.Set (F v x)
-<span class="lineno">  150 </span>    -- ^a function set, which binding may cause dead lock
+<span class="lineno">  150 </span>    -- ^ a function set, which binding may cause dead lock
 <span class="lineno">  151 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindWaves</span></span></span> :: M.Map v Int
-<span class="lineno">  152 </span>    -- ^if algorithm will be represented as a graph, where nodes -
-<span class="lineno">  153 </span>    -- variables of not binded functions, edges - casuality, wave is a
-<span class="lineno">  154 </span>    -- minimal number of a step from an initial node to selected
+<span class="lineno">  152 </span>    -- ^ if algorithm will be represented as a graph, where nodes -
+<span class="lineno">  153 </span>    --  variables of not binded functions, edges - casuality, wave is a
+<span class="lineno">  154 </span>    --  minimal number of a step from an initial node to selected
 <span class="lineno">  155 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">processWaves</span></span></span> :: [ProcessWave v x]
 <span class="lineno">  156 </span>    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
 <span class="lineno">  157 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfProcessWaves</span></span></span> :: Int
 <span class="lineno">  158 </span>    -- ^ Number of execution waves of the algorithm.
 <span class="lineno">  159 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfDataflowOptions</span></span></span> :: Int
-<span class="lineno">  160 </span>    -- ^number of dataflow options
+<span class="lineno">  160 </span>    -- ^ number of dataflow options
 <span class="lineno">  161 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">transferableVars</span></span></span> :: S.Set v
-<span class="lineno">  162 </span>    -- ^a variable set, which can be transferred on the current
-<span class="lineno">  163 </span>    -- synthesis step
+<span class="lineno">  162 </span>    -- ^ a variable set, which can be transferred on the current
+<span class="lineno">  163 </span>    --  synthesis step
 <span class="lineno">  164 </span>    }
 <span class="lineno">  165 </span>
 <span class="lineno">  166 </span>-- * Utils

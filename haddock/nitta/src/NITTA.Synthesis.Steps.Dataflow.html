@@ -55,11 +55,11 @@ Stability   : experimental
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pRestrictedTime"><span class="hs-identifier hs-var hs-var">pRestrictedTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-54"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="pNotTransferableInputs"><span class="annot"><span class="annottext">DataflowMetrics -&gt; [Float]
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pNotTransferableInputs"><span class="hs-identifier hs-var hs-var">pNotTransferableInputs</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">]</span><span>
-</span><span id="line-55"></span><span>    </span><span class="hs-comment">-- ^number of variables, which is not transferable for affected</span><span>
-</span><span id="line-56"></span><span>    </span><span class="hs-comment">-- functions.</span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-comment">-- ^ number of variables, which is not transferable for affected</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-comment">--  functions.</span><span>
 </span><span id="line-57"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="pFirstWaveOfTargetUse"><span class="annot"><span class="annottext">DataflowMetrics -&gt; Float
 </span><a href="NITTA.Synthesis.Steps.Dataflow.html#pFirstWaveOfTargetUse"><span class="hs-identifier hs-var hs-var">pFirstWaveOfTargetUse</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
-</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- ^number of the first wave in which one of the target variables is used</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- ^ number of the first wave in which one of the target variables is used</span><span>
 </span><span id="line-59"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-60"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. DataflowMetrics -&gt; Rep DataflowMetrics x)
 -&gt; (forall x. Rep DataflowMetrics x -&gt; DataflowMetrics)

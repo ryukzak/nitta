@@ -23,7 +23,7 @@ Stability   : experimental
 </span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.html"><span class="hs-identifier">NITTA.Model.Problems.Refactor</span></a></span><span>
 </span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Utils.Base.html"><span class="hs-identifier">NITTA.Utils.Base</span></a></span><span>
 </span><span id="line-25"></span><span>
-</span><span id="line-26"></span><span class="hs-comment">{- |Data flow graph - intermediate representation of application algorithm.
+</span><span id="line-26"></span><span class="hs-comment">{- | Data flow graph - intermediate representation of application algorithm.
 Right now can be replaced by @[F v x]@, but for future features like
 conduction statement, we don't do that.
 -}</span><span>
@@ -256,7 +256,7 @@ forall a f. WithFunctions a f =&gt; a -&gt; [f]
 </span><a href="NITTA.Intermediate.Types.html#functions"><span class="hs-identifier hs-var">functions</span></a></span><span> </span><span class="annot"><span class="annottext">DataFlowGraph v x
 </span><a href="#local-6989586621680152186"><span class="hs-identifier hs-var">dfg</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span><span>
 </span><span id="line-79"></span><span>
-</span><span id="line-80"></span><span class="hs-comment">-- |Convert @[ F v x ]@ to 'DataFlowGraph'.</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- | Convert @[ F v x ]@ to 'DataFlowGraph'.</span><span>
 </span><span id="line-81"></span><span id="fsToDataFlowGraph"><span class="annot"><span class="annottext">fsToDataFlowGraph :: [F v x] -&gt; DataFlowGraph v x
 </span><a href="NITTA.Intermediate.DataFlow.html#fsToDataFlowGraph"><span class="hs-identifier hs-var hs-var">fsToDataFlowGraph</span></a></span></span><span> </span><span id="local-6989586621680152179"><span class="annot"><span class="annottext">[F v x]
 </span><a href="#local-6989586621680152179"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[DataFlowGraph v x] -&gt; DataFlowGraph v x

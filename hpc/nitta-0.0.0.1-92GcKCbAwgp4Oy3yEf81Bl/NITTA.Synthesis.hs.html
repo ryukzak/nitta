@@ -123,32 +123,32 @@ span.spaces    { background: white }
 <span class="lineno">  104 </span>import System.FilePath
 <span class="lineno">  105 </span>import System.Log.Logger
 <span class="lineno">  106 </span>
-<span class="lineno">  107 </span>{- |Description of synthesis task. Applicable for target system synthesis and
+<span class="lineno">  107 </span>{- | Description of synthesis task. Applicable for target system synthesis and
 <span class="lineno">  108 </span>testing purpose.
 <span class="lineno">  109 </span>-}
 <span class="lineno">  110 </span>data TargetSynthesis tag v x t = TargetSynthesis
 <span class="lineno">  111 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tName</span></span></span> :: String
-<span class="lineno">  112 </span>    -- ^target name, used for top level module name and project path
+<span class="lineno">  112 </span>    -- ^ target name, used for top level module name and project path
 <span class="lineno">  113 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tMicroArch</span></span></span> :: BusNetwork tag v x t
-<span class="lineno">  114 </span>    -- ^composition of processor units, IO ports and its interconnect
+<span class="lineno">  114 </span>    -- ^ composition of processor units, IO ports and its interconnect
 <span class="lineno">  115 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSourceCode</span></span></span> :: Maybe Text
-<span class="lineno">  116 </span>    -- ^optional application source code (lua)
+<span class="lineno">  116 </span>    -- ^ optional application source code (lua)
 <span class="lineno">  117 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tDFG</span></span></span> :: DataFlowGraph v x
-<span class="lineno">  118 </span>    -- ^algorithm in intermediate data flow graph representation (if
-<span class="lineno">  119 </span>    -- tSourceCode present will be overwritten)
+<span class="lineno">  118 </span>    -- ^ algorithm in intermediate data flow graph representation (if
+<span class="lineno">  119 </span>    --  tSourceCode present will be overwritten)
 <span class="lineno">  120 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tReceivedValues</span></span></span> :: [(v, [x])]
-<span class="lineno">  121 </span>    -- ^values from input interface for testing purpose
+<span class="lineno">  121 </span>    -- ^ values from input interface for testing purpose
 <span class="lineno">  122 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSynthesisMethod</span></span></span> :: SynthesisMethod tag v x t
-<span class="lineno">  123 </span>    -- ^synthesis method
+<span class="lineno">  123 </span>    -- ^ synthesis method
 <span class="lineno">  124 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tLibPath</span></span></span> :: String
-<span class="lineno">  125 </span>    -- ^IP-core library directory
+<span class="lineno">  125 </span>    -- ^ IP-core library directory
 <span class="lineno">  126 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tPath</span></span></span> :: String
-<span class="lineno">  127 </span>    -- ^output directory, where CAD create project directory with 'tName' name
+<span class="lineno">  127 </span>    -- ^ output directory, where CAD create project directory with 'tName' name
 <span class="lineno">  128 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tTemplates</span></span></span> :: [FilePath]
 <span class="lineno">  129 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSimulationCycleN</span></span></span> :: Int
-<span class="lineno">  130 </span>    -- ^number of simulation and testbench cycles
+<span class="lineno">  130 </span>    -- ^ number of simulation and testbench cycles
 <span class="lineno">  131 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">tSourceCodeType</span></span></span> :: FrontendType
-<span class="lineno">  132 </span>    -- ^source code format type
+<span class="lineno">  132 </span>    -- ^ source code format type
 <span class="lineno">  133 </span>    }
 <span class="lineno">  134 </span>
 <span class="lineno">  135 </span>instance (UnitTag tag, VarValTime v x t) =&gt; Default (TargetSynthesis tag v x t) where
@@ -246,7 +246,7 @@ span.spaces    { background: white }
 <span class="lineno">  227 </span><span class="spaces">                </span><span class="istickedoff">writeProject prj</span>
 <span class="lineno">  228 </span><span class="spaces">                </span><span class="istickedoff">return prj</span></span>
 <span class="lineno">  229 </span>
-<span class="lineno">  230 </span>{- |Make a model of NITTA process with one network and a specific algorithm. All
+<span class="lineno">  230 </span>{- | Make a model of NITTA process with one network and a specific algorithm. All
 <span class="lineno">  231 </span>functions are already bound to the network.
 <span class="lineno">  232 </span>-}
 <span class="lineno">  233 </span><span class="decl"><span class="istickedoff">mkModelWithOneNetwork arch dfg =</span>

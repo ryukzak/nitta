@@ -88,7 +88,7 @@ span.spaces    { background: white }
 <span class="lineno">   69 </span>instance FromJSON TemplateConf
 <span class="lineno">   70 </span>instance ToJSON TemplateConf
 <span class="lineno">   71 </span>
-<span class="lineno">   72 </span>{- |collectNittaPath - read nittaPath from all provided target templates and
+<span class="lineno">   72 </span>{- | collectNittaPath - read nittaPath from all provided target templates and
 <span class="lineno">   73 </span>return it if all of them are the same.
 <span class="lineno">   74 </span>-}
 <span class="lineno">   75 </span>collectNittaPath :: [FilePath] -&gt; IO (Either T.Text FilePath)
@@ -166,7 +166,7 @@ span.spaces    { background: white }
 <span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">createDirectoryIfMissing True $ opath &lt;/&gt; takeDirectory tFile</span>
 <span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">T.writeFile (opath &lt;/&gt; tFile) $ runGinger context template</span></span>
 <span class="lineno">  149 </span>
-<span class="lineno">  150 </span>-- |List all files inside path
+<span class="lineno">  150 </span>-- | List all files inside path
 <span class="lineno">  151 </span><span class="decl"><span class="istickedoff">findAllFiles root = findAllFiles' &quot;&quot;</span>
 <span class="lineno">  152 </span><span class="spaces">    </span><span class="istickedoff">where</span>
 <span class="lineno">  153 </span><span class="spaces">        </span><span class="istickedoff">findAllFiles' path = do</span>

@@ -53,12 +53,12 @@ span.spaces    { background: white }
 <span class="lineno">   34 </span>import Safe
 <span class="lineno">   35 </span>import System.Log.Logger
 <span class="lineno">   36 </span>
-<span class="lineno">   37 </span>{- |The constant, which restricts the maximum number of synthesis steps. Avoids
+<span class="lineno">   37 </span>{- | The constant, which restricts the maximum number of synthesis steps. Avoids
 <span class="lineno">   38 </span>the endless synthesis process.
 <span class="lineno">   39 </span>-}
 <span class="lineno">   40 </span><span class="decl"><span class="istickedoff">stepLimit = 750 :: Int</span></span>
 <span class="lineno">   41 </span>
-<span class="lineno">   42 </span>-- |The most complex synthesis method, which embedded all another. That all.
+<span class="lineno">   42 </span>-- | The most complex synthesis method, which embedded all another. That all.
 <span class="lineno">   43 </span>stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   44 </span><span class="decl"><span class="istickedoff">stateOfTheArtSynthesisIO tree = do</span>
 <span class="lineno">   45 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;stateOfTheArtSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
@@ -68,7 +68,7 @@ span.spaces    { background: white }
 <span class="lineno">   49 </span><span class="spaces">    </span><span class="istickedoff">l4 &lt;- bestThreadIO stepLimit =&lt;&lt; allBindsAndRefsIO tree</span>
 <span class="lineno">   50 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf <span class="nottickedoff">tree</span> [l1, l2, l3, l4]</span></span>
 <span class="lineno">   51 </span>
-<span class="lineno">   52 </span>-- |Schedule process by simple synthesis.
+<span class="lineno">   52 </span>-- | Schedule process by simple synthesis.
 <span class="lineno">   53 </span>simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   54 </span><span class="decl"><span class="istickedoff">simpleSynthesisIO root = do</span>
 <span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;simpleSynthesisIO: &quot; &lt;&gt; show (sID root)</span></span>
