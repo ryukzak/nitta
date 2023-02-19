@@ -52,7 +52,7 @@ import System.Log.Logger
 import Text.Read
 import Text.Regex
 
--- |Command line interface.
+-- | Command line interface.
 data Nitta = Nitta
     { filename :: FilePath
     , uarch :: Maybe FilePath
@@ -271,14 +271,14 @@ readSourceCode filename = do
     infoM "NITTA" $ "read source code from: " <> show filename <> "...ok"
     return src
 
--- |Simulation on intermediate level (data-flow graph)
+-- | Simulation on intermediate level (data-flow graph)
 functionalSimulation n received format FrontendResult{frDataFlow, frPrettyLog} = do
     let cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
     putLog format $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
     infoM "NITTA" "run functional simulation...ok"
 
--- |Simulation on RTL level by a Verilog simulator.
+-- | Simulation on RTL level by a Verilog simulator.
 logicalSimulation format prettyLog_ prj = do
     TestbenchReport{tbLogicalSimulationLog} <- runTestbench prj
     putLog format $ prettyLog_ tbLogicalSimulationLog

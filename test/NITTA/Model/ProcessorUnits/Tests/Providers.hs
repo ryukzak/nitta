@@ -48,9 +48,9 @@ import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
 import Test.Tasty.QuickCheck (testProperty)
 
--- *Test cases
+-- * Test cases
 
--- |Execute co-simulation test for the specific process unit
+-- | Execute co-simulation test for the specific process unit
 puCoSimTestCase ::
     ( HasCallStack
     , PUClasses (pu v x Int) v x Int
@@ -72,9 +72,9 @@ puCoSimTestCase name u cntxCycle alg =
         assertSynthesisDone
         assertPUCoSimulation
 
--- *Properties
+-- * Properties
 
--- |Is unit synthesis process complete (by function and variables).
+-- | Is unit synthesis process complete (by function and variables).
 finitePUSynthesisProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
@@ -85,7 +85,7 @@ finitePUSynthesisProp name pu0 fsGen =
                     isProcessComplete pu fs
                         && null (endpointOptions pu)
 
-{- |A computational process of functional (Haskell) and logical (Verilog)
+{- | A computational process of functional (Haskell) and logical (Verilog)
 simulation should be identical for any correct algorithm.
 -}
 puCoSimProp name pu0 fsGen =

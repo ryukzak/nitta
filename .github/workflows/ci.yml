@@ -29,16 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Cache haskell-stack
-        uses: actions/cache@v2.1.3
+        uses: actions/cache@v3.2.5
         with:
           path: ~/.stack
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v1.2
+        uses: haskell/actions/setup@v2.3.3
         with:
           enable-stack: true
           stack-no-global: true
@@ -67,7 +67,7 @@ jobs:
         run: stack exec nitta-api-gen -- -v
 
       - name: Cache node_modules
-        uses: actions/cache@v2.1.3
+        uses: actions/cache@v3.2.5
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -99,7 +99,7 @@ jobs:
 
       - name: Publish generated content to GitHub Pages
         if: ${{ github.ref == 'refs/heads/master'}}
-        uses: JamesIves/github-pages-deploy-action@4.1.1
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           folder: ${{ env.GH_PAGES_DIR }}
           branch: gh-pages
@@ -112,7 +112,7 @@ jobs:
       run:
         shell: sh
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: |
           make -C hdl > make_hdl.log
           cat make_hdl.log
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: nitta
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: 'Set up HLint'
       uses: haskell/actions/hlint-setup@v2.3.3
@@ -139,22 +139,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: nitta
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Cache haskell-stack and fourmolu
-        uses: actions/cache@v2.1.3
+        uses: actions/cache@v3.2.5
         with:
           path: ~/.stack
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
-        uses: fourmolu/fourmolu-action@v2
+        uses: fourmolu/fourmolu-action@v6
 
   typescript-formatting:
     runs-on: ubuntu-latest
     needs: nitta
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check ts and tsx code style by prettier
         working-directory: ./web
         run: |

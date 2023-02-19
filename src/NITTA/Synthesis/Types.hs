@@ -58,21 +58,21 @@ import NITTA.UIBackend.ViewHelperCls
 import NITTA.Utils.Base
 import Servant
 
--- |Default synthesis tree type.
+-- | Default synthesis tree type.
 type DefTree tag v x t =
     Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 
-{- |The synthesis method is a function, which manipulates a synthesis tree. It
+{- | The synthesis method is a function, which manipulates a synthesis tree. It
 receives a node and explores it deeply by IO.
 -}
 type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
 
-{- |Synthesis node ID. ID is a relative path, encoded as a sequence of an option
+{- | Synthesis node ID. ID is a relative path, encoded as a sequence of an option
 index.
 -}
 newtype Sid = Sid [Int]
 
--- |Sid separator for @Show Sid@ and @Read Sid@.
+-- | Sid separator for @Show Sid@ and @Read Sid@.
 sidSep = '-'
 
 instance Show Sid where
@@ -107,13 +107,13 @@ instance ToJSON Sid where
 instance FromHttpApiData Sid where
     parseUrlPiece = Right . readText
 
--- |Synthesis tree
+-- | Synthesis tree
 data Tree m tag v x t = Tree
     { sID :: Sid
     , sState :: SynthesisState m tag v x t
     , sDecision :: SynthesisDecision (SynthesisState m tag v x t) m
     , sSubForestVar :: TMVar [Tree m tag v x t]
-    -- ^lazy mutable field with different synthesis options and sub nodes
+    -- ^ lazy mutable field with different synthesis options and sub nodes
     }
 
 targetUnit = mUnit . sTarget . sState
@@ -135,32 +135,32 @@ data SynthesisState m tag v x t = SynthesisState
     { sParent :: Maybe (Tree m tag v x t)
     , sTarget :: m
     , sAllocationOptions :: [Allocation tag]
-    -- ^PU allocation options cache
+    -- ^ PU allocation options cache
     , sBindOptions :: [Bind tag v x]
-    -- ^bind options cache
+    -- ^ bind options cache
     , sResolveDeadlockOptions :: [ResolveDeadlock v x]
     , sOptimizeAccumOptions :: [OptimizeAccum v x]
     , sConstantFoldingOptions :: [ConstantFolding v x]
     , sBreakLoopOptions :: [BreakLoop v x]
     , sDataflowOptions :: [DataflowSt tag v (TimeConstraint t)]
-    -- ^dataflow options cache
+    -- ^ dataflow options cache
     , bindingAlternative :: M.Map (F v x) [tag]
-    -- ^a map from functions to possible processor unit tags
+    -- ^ a map from functions to possible processor unit tags
     , possibleDeadlockBinds :: S.Set (F v x)
-    -- ^a function set, which binding may cause dead lock
+    -- ^ a function set, which binding may cause dead lock
     , bindWaves :: M.Map v Int
-    -- ^if algorithm will be represented as a graph, where nodes -
-    -- variables of not binded functions, edges - casuality, wave is a
-    -- minimal number of a step from an initial node to selected
+    -- ^ if algorithm will be represented as a graph, where nodes -
+    --  variables of not binded functions, edges - casuality, wave is a
+    --  minimal number of a step from an initial node to selected
     , processWaves :: [ProcessWave v x]
     -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
     , numberOfProcessWaves :: Int
     -- ^ Number of execution waves of the algorithm.
     , numberOfDataflowOptions :: Int
-    -- ^number of dataflow options
+    -- ^ number of dataflow options
     , transferableVars :: S.Set v
-    -- ^a variable set, which can be transferred on the current
-    -- synthesis step
+    -- ^ a variable set, which can be transferred on the current
+    --  synthesis step
     }
 
 -- * Utils

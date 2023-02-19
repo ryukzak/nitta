@@ -50,12 +50,12 @@ nittaContextDict
                 )
             ]
 
--- |projectContext - used for template generation
+-- | projectContext - used for template generation
 projectContext prj = makeContextText $ \case
     "nitta" -> nittaContextDict prj
     unknown -> error $ "template error, variable '" <> T.unpack unknown <> "' not defined (see 'NITTA.Project.Template')"
 
--- |projectContext - used for Implementation generation
+-- | projectContext - used for Implementation generation
 implementationContext prj nest = makeContextText $ \case
     "nitta" -> nittaContextDict prj
     "impl" -> dict [("paths", dict [("nest", toGVal nest)])]

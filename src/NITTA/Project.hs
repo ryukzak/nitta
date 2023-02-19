@@ -46,7 +46,7 @@ import System.Process.Text
 import Text.Ginger hiding (length)
 import Text.Regex
 
--- |Write project with all available parts.
+-- | Write project with all available parts.
 writeProject prj@Project{pTargetProjectPath} = do
     infoM "NITTA" $ "write target project to: \"" <> pTargetProjectPath <> "\"..."
     writeTargetSystem prj
@@ -136,10 +136,10 @@ log2hms lst0 = cntxProcess
                  in cycleCntx : inner (n + 1) ys
             | otherwise = []
 
--- |Ginger is powerfull but slow down testing two times.
+-- | Ginger is powerfull but slow down testing two times.
 enableGingerForImplementation = True
 
--- |Write 'Implementation' to the file system.
+-- | Write 'Implementation' to the file system.
 writeImplementation prj@Project{pTargetProjectPath = prjPath, pInProjectNittaPath = nittaPath} impl = writeImpl nittaPath impl
     where
         writeImpl p (Immediate fn src0) | enableGingerForImplementation = do
@@ -158,7 +158,7 @@ writeImplementation prj@Project{pTargetProjectPath = prjPath, pInProjectNittaPat
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
 
--- |Copy library files to target path.
+-- | Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
         copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do

@@ -25,16 +25,16 @@ import NITTA.Model.Time
 import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 
-{- |Dataflow option (@tp ~ TimeConstraint t@) or decision (@tp Z Interval t@)
+{- | Dataflow option (@tp ~ TimeConstraint t@) or decision (@tp Z Interval t@)
 statement. Describe sending data between processor units over a network. Any
 'DataflowSt' has implicently linked "NITTA.Model.Problems.Endpoint".
 -}
 data DataflowSt tag v tp = DataflowSt
     { dfSource :: (tag, EndpointSt v tp)
-    -- ^A source processor unit of data flow transaction, and it's time
-    -- constrains which defines when data can be sended.
+    -- ^ A source processor unit of data flow transaction, and it's time
+    --  constrains which defines when data can be sended.
     , dfTargets :: [(tag, EndpointSt v tp)]
-    -- ^All possible targets of dataflow transaction.
+    -- ^ All possible targets of dataflow transaction.
     }
     deriving (Generic)
 
@@ -47,14 +47,14 @@ instance (ToString tag, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) wh
 instance (Ord v) => Variables (DataflowSt tag v tp) v where
     variables DataflowSt{dfTargets} = unionsMap (variables . snd) dfTargets
 
-{- |Implemented for any things, which can send data between processor units over
+{- | Implemented for any things, which can send data between processor units over
 the network.
 -}
 class DataflowProblem u tag v t | u -> tag v t where
     dataflowOptions :: u -> [DataflowSt tag v (TimeConstraint t)]
     dataflowDecision :: u -> DataflowSt tag v (Interval t) -> u
 
--- |Convert dataflow option to decision.
+-- | Convert dataflow option to decision.
 dataflowOption2decision :: (Time t) => DataflowSt tag v (TimeConstraint t) -> DataflowSt tag v (Interval t)
 dataflowOption2decision (DataflowSt (srcTag, srcEp) trgs) =
     let targetsAt = map (epAt . snd) trgs

@@ -15,13 +15,13 @@ module NITTA.Utils (
     shiftI,
     modify'_,
 
-    -- *HDL generation
+    -- * HDL generation
     bool2verilog,
     values2dump,
     hdlValDump,
     toModuleName,
 
-    -- *Process inspection
+    -- * Process inspection
     endpointAt,
     getEndpoint,
     getInstruction,
@@ -38,7 +38,7 @@ module NITTA.Utils (
     isInstruction,
     module NITTA.Utils.Base,
 
-    -- *Toml
+    -- * Toml
     getToml,
     getFromToml,
     getFromTomlSection,

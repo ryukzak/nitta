@@ -52,7 +52,7 @@ type PUClasses pu v x t =
     , Locks pu v
     )
 
--- |Existential container for a processor unit .
+-- | Existential container for a processor unit .
 data PU v x t where
     PU ::
         (PUClasses pu v x t) =>
@@ -156,11 +156,11 @@ instance IOTestBench (PU v x t) v x where
     testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs
 
 data IOSynchronization
-    = -- |IO cycle synchronously to process cycle
+    = -- | IO cycle synchronously to process cycle
       Sync
-    | -- |if IO cycle lag behiend - ignore them
+    | -- | if IO cycle lag behiend - ignore them
       ASync
-    | -- |defined by onboard signal (sync - false, async - true)
+    | -- | defined by onboard signal (sync - false, async - true)
       OnBoard
     deriving (Show, Read, Typeable, Generic)
 
@@ -171,17 +171,17 @@ puInputPorts PU{uEnv} = envInputPorts uEnv
 puOutputPorts PU{uEnv} = envOutputPorts uEnv
 puInOutPorts PU{uEnv} = envInOutPorts uEnv
 
--- |PU and some additional information required for allocation on BusNetwork
+-- | PU and some additional information required for allocation on BusNetwork
 data PUPrototype tag v x t where
     PUPrototype ::
         (UnitTag tag, PUClasses pu v x t) =>
         { pTag :: tag
-        -- ^Prototype tag. You can specify tag as a template by adding {x}.
-        -- This will allow to allocate PU more than once by replacing {x} with index.
-        -- When PU is allocated processUnitTag will look like bnName_pTag.
+        -- ^ Prototype tag. You can specify tag as a template by adding {x}.
+        --  This will allow to allocate PU more than once by replacing {x} with index.
+        --  When PU is allocated processUnitTag will look like bnName_pTag.
         , pProto :: pu
-        -- ^PU prototype
+        -- ^ PU prototype
         , pIOPorts :: IOPorts pu
-        -- ^IO ports that will be used by PU
+        -- ^ IO ports that will be used by PU
         } ->
         PUPrototype tag v x t

@@ -104,32 +104,32 @@ import System.Directory
 import System.FilePath
 import System.Log.Logger
 
-{- |Description of synthesis task. Applicable for target system synthesis and
+{- | Description of synthesis task. Applicable for target system synthesis and
 testing purpose.
 -}
 data TargetSynthesis tag v x t = TargetSynthesis
     { tName :: String
-    -- ^target name, used for top level module name and project path
+    -- ^ target name, used for top level module name and project path
     , tMicroArch :: BusNetwork tag v x t
-    -- ^composition of processor units, IO ports and its interconnect
+    -- ^ composition of processor units, IO ports and its interconnect
     , tSourceCode :: Maybe Text
-    -- ^optional application source code (lua)
+    -- ^ optional application source code (lua)
     , tDFG :: DataFlowGraph v x
-    -- ^algorithm in intermediate data flow graph representation (if
-    -- tSourceCode present will be overwritten)
+    -- ^ algorithm in intermediate data flow graph representation (if
+    --  tSourceCode present will be overwritten)
     , tReceivedValues :: [(v, [x])]
-    -- ^values from input interface for testing purpose
+    -- ^ values from input interface for testing purpose
     , tSynthesisMethod :: SynthesisMethod tag v x t
-    -- ^synthesis method
+    -- ^ synthesis method
     , tLibPath :: String
-    -- ^IP-core library directory
+    -- ^ IP-core library directory
     , tPath :: String
-    -- ^output directory, where CAD create project directory with 'tName' name
+    -- ^ output directory, where CAD create project directory with 'tName' name
     , tTemplates :: [FilePath]
     , tSimulationCycleN :: Int
-    -- ^number of simulation and testbench cycles
+    -- ^ number of simulation and testbench cycles
     , tSourceCodeType :: FrontendType
-    -- ^source code format type
+    -- ^ source code format type
     }
 
 instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
@@ -227,7 +227,7 @@ synthesizeTargetSystem
                 writeProject prj
                 return prj
 
-{- |Make a model of NITTA process with one network and a specific algorithm. All
+{- | Make a model of NITTA process with one network and a specific algorithm. All
 functions are already bound to the network.
 -}
 mkModelWithOneNetwork arch dfg =

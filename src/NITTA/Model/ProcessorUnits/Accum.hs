@@ -40,7 +40,7 @@ import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
 
-{- |Type that contains expression:
+{- | Type that contains expression:
 
 @a + b = c@ is exression and it equals:
     @[[(False, "a"), (False, "b")], [(False, "c")]]@
@@ -50,9 +50,9 @@ import Prettyprinter
 -}
 data Job v x = Job
     { tasks :: [[(Bool, v)]]
-    -- ^Contains future parts expression to eval (c + d = e)
+    -- ^ Contains future parts expression to eval (c + d = e)
     , func :: F v x
-    -- ^Func of this expression
+    -- ^ Func of this expression
     , state :: JobState
     }
 
@@ -74,11 +74,11 @@ instance (Var v) => Show (Job v x) where
 
 data Accum v x t = Accum
     { remainJobs :: [Job v x]
-    -- ^List of jobs (expressions)
+    -- ^ List of jobs (expressions)
     , currentJob :: Maybe (Job v x)
-    -- ^Current job
+    -- ^ Current job
     , process_ :: Process t (StepInfo v x t)
-    -- ^Process
+    -- ^ Process
     }
 
 instance (VarValTime v x t) => Pretty (Accum v x t) where

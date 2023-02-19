@@ -33,7 +33,7 @@ import NITTA.Synthesis
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
--- |Execute co-simulation test for the specific microarchitecture and algorithm
+-- | Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
     ( HasCallStack
     , Val x

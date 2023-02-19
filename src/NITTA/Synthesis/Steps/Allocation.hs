@@ -40,15 +40,15 @@ import NITTA.Synthesis.Types (
 
 data AllocationMetrics = AllocationMetrics
     { mParallelism :: ParallelismType
-    -- ^PU prototype parallelism type
+    -- ^ PU prototype parallelism type
     , mRelatedRemains :: Float
-    -- ^The number of remaining functions that can be bound to pu
+    -- ^ The number of remaining functions that can be bound to pu
     , mMinPusForRemains :: Float
-    -- ^The minimum number of PUs for each of the remaining functions that can process it
+    -- ^ The minimum number of PUs for each of the remaining functions that can process it
     , mMaxParallels :: Float
-    -- ^The maximum number of functions that could be processed in parallel
+    -- ^ The maximum number of functions that could be processed in parallel
     , mAvgParallels :: Float
-    -- ^The number of functions that can be processed in parallel on average
+    -- ^ The number of functions that can be processed in parallel on average
     }
     deriving (Generic)
 
