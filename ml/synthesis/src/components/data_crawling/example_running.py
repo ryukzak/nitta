@@ -38,17 +38,24 @@ async def run_nitta(example: Path,
     print(f"Processing example {example!r}.")
     cmd = f"{nitta_exe_path} -p={port} {example}"
 
+    proc = None
     try:
-        proc = await asyncio.create_subprocess_shell(cmd, cwd=str(ROOT_DIR), stdout=sys.stdout, stderr=sys.stderr, shell=True)
+        preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
+        proc = await asyncio.create_subprocess_shell(
+            cmd, cwd=str(ROOT_DIR), stdout=sys.stdout, stderr=sys.stderr, shell=True,
+            preexec_fn=preexec_fn,
+        )
 
         print(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
         await sleep(_NITTA_START_WAIT_DELAY_S)
 
-        yield (proc, nitta_baseurl)
+        yield proc, nitta_baseurl
     finally:
-        if proc.returncode is None:
-            # kill shell and nitta under it
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        if proc is not None and proc.returncode is None:
+            pid = proc.pid
+            pgid = os.getpgid(pid)
+            print(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
+            os.killpg(pgid, signal.SIGTERM)
             await proc.wait()
 
 
