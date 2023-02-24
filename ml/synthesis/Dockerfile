@@ -120,7 +120,7 @@ RUN apt-get install -yq software-properties-common \
 
 USER devuser
 
-RUN echo "export PYTOHNPATH=/app/ml/synthesiss/src:$PYTHONPATH" >> "/home/devuser/.profile" \
+RUN echo "export PYTOHNPATH=/app/ml/synthesis/src:$PYTHONPATH" >> "/home/devuser/.profile" \
 	&& echo "alias python=python3" >> "/home/devuser/.profile" \
 	&& echo "alias pip=pip3" >> "/home/devuser/.profile" \
 	&& echo "PATH=$PATH:/home/devuser/.local/bin" >> "/home/devuser/.profile" 
