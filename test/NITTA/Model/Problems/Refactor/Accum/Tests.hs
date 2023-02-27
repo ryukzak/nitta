@@ -18,7 +18,6 @@ import Data.Set qualified as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
@@ -33,7 +32,7 @@ simpleRefactor dfg =
 tests =
     testGroup
         "Refactor problem (Optimize Accum)"
-        [ testCaseM "Add refactor test" $
+        [ testCase "Add refactor test" $
             let -- Start algorithm:
                 -- tmp1 = a - b
                 -- res = c - tmp1
@@ -44,7 +43,7 @@ tests =
                 func2 = sub "c" "tmp1" ["res"]
                 funcRes = acc [Push Plus (I "c"), Push Minus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["res"])]
              in [func1, func2] `refactorTo` [funcRes]
-        , testCaseM "Acc and Add refactor test" $
+        , testCase "Acc and Add refactor test" $
             let -- Start algorithm:
                 -- tmp1 = Acc [a, b] => tmp1
                 -- res = c + tmp1
@@ -55,7 +54,7 @@ tests =
                 func2 = add "c" "tmp1" ["res"]
                 funcRes = acc [Push Plus (I "c"), Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["res"])]
              in [func1, func2] `refactorTo` [funcRes]
-        , testCaseM "simple 1 tmp variable sum refactor" $
+        , testCase "simple 1 tmp variable sum refactor" $
             let -- Start algorithm:
                 -- tmp1 = a + b
                 -- res = tmp1 + c
@@ -66,7 +65,7 @@ tests =
                 func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
                 funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
              in [func1, func2] `refactorTo` [funcRes]
-        , testCaseM "not refactor this" $
+        , testCase "not refactor this" $
             let -- Start algorithm:
                 -- tmp1, tmp2 = a + b
                 -- res = tmp1 + c
@@ -77,7 +76,7 @@ tests =
                 func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1", "tmp2"])]
                 func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
              in [func1, func2] `refactorTo` [func1, func2]
-        , testCaseM "simple 4 items sum refactor" $
+        , testCase "simple 4 items sum refactor" $
             let -- Start algorithm:
                 -- tmp1 = a + b
                 -- tmp2 = tmp1 + c
@@ -90,7 +89,7 @@ tests =
                 func3 = acc [Push Plus (I "tmp2"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
                 funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
              in [func1, func2, func3] `refactorTo` [funcRes]
-        , testCaseM "4 items sum refactor, two tmp vals in one expression" $
+        , testCase "4 items sum refactor, two tmp vals in one expression" $
             let -- Start algorithm:
                 -- tmp1 = a + b
                 -- tmp2 = c + d
@@ -104,7 +103,7 @@ tests =
                 funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Minus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
              in [func1, func2, func3] `refactorTo` [funcRes]
             -- issue: https://nitta.io/nitta-corp/nitta/-/issues/75
-            -- , testCaseM "Complex items sum refactor" $ let
+            -- , testCase "Complex items sum refactor" $ let
             --         -- Start algorithm:
             --         -- tmp1, tmp2 = a + b
             --         -- tmp3, tmp4 = c + d

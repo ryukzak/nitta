@@ -22,14 +22,13 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.TargetSystem ()
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 
 simulationTests =
     testGroup
         "functional simulation"
-        [ testCaseM "reorder algorithm" $ do
+        [ testCase "reorder algorithm" $ do
             let action = reorderAlgorithm :: [F String Int] -> [F String Int]
                 l1 = loop 0 "b2" ["a1"]
                 l2 = loop 1 "c" ["b1", "b2"]
@@ -37,13 +36,13 @@ simulationTests =
             mapM_ ([l1, l2, a] @=?) $ map action [[l1, l2, a], [l1, a, l2], [a, l1, l2]]
         , testGroup
             "estimate waves"
-            [ testCaseM "function sequence" $ do
+            [ testCase "function sequence" $ do
                 let action = estimateVarWaves ["a", "b"] :: [F String Int] -> M.Map String Int
                     a1 = add "a" "b" ["c"]
                     a2 = add "c" "b" ["d"]
                     a3 = add "d" "a" ["e"]
                 mapM_ (M.fromList [("c", 0), ("d", 1), ("e", 2)] @=?) $ map action $ permutations [a1, a2, a3]
-            , testCaseM "loop output vars have zero wave" $ do
+            , testCase "loop output vars have zero wave" $ do
                 let action = estimateVarWaves [] :: [F String Int] -> M.Map String Int
                     l1 = loop 1 "b2" ["a1"]
                     l2 = loop 1 "c" ["b1", "b2"]
@@ -87,7 +86,7 @@ simulationTestCase ::
     (String, [Int]) ->
     TestTree
 simulationTestCase name n received alg (v, expect) =
-    testCaseM name $
+    testCase name $
         let dfg = fsToDataFlowGraph alg
             Cntx{cntxProcess} = simulateDataFlowGraph n def received dfg
             actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (HM.lookup v c)) cntxProcess

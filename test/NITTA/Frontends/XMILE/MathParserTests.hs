@@ -14,7 +14,6 @@ module NITTA.Frontends.XMILE.MathParserTests (
 
 import Data.HashMap.Strict qualified as HM
 import NITTA.Frontends.XMILE.MathParser
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
@@ -22,36 +21,36 @@ import Test.Tasty.HUnit
 tests =
     testGroup
         "NITTA.Frontends.XMILE.MathParserTests"
-        [ testCaseM "xmileMathParserAdditionTest" $
+        [ testCase "xmileMathParserAdditionTest" $
             parseXmileEquation "A + B"
                 @?= Duo Add (Var "A") (Var "B")
-        , testCaseM "xmileMathParserSubtractionTest" $
+        , testCase "xmileMathParserSubtractionTest" $
             parseXmileEquation "A - B"
                 @?= Duo Sub (Var "A") (Var "B")
-        , testCaseM "xmileMathParserMultiplicationTest" $
+        , testCase "xmileMathParserMultiplicationTest" $
             parseXmileEquation "A * B"
                 @?= Duo Mul (Var "A") (Var "B")
-        , testCaseM "xmileMathParserDivisionTest" $
+        , testCase "xmileMathParserDivisionTest" $
             parseXmileEquation "A / B"
                 @?= Duo Div (Var "A") (Var "B")
-        , testCaseM "xmileMathParserMultiplicationPriorityTest" $
+        , testCase "xmileMathParserMultiplicationPriorityTest" $
             parseXmileEquation "A + B * C"
                 @?= Duo Add (Var "A") (Duo Mul (Var "B") (Var "C"))
-        , testCaseM "xmileMathParserDivisionPriorityTest" $
+        , testCase "xmileMathParserDivisionPriorityTest" $
             parseXmileEquation "A + B / C"
                 @?= Duo Add (Var "A") (Duo Div (Var "B") (Var "C"))
-        , testCaseM "xmileMathParserBracketsTest" $
+        , testCase "xmileMathParserBracketsTest" $
             parseXmileEquation "A + B / C"
                 @?= Duo Add (Var "A") (Duo Div (Var "B") (Var "C"))
-        , testCaseM "xmileMathParserCalculateAddition" $
+        , testCase "xmileMathParserCalculateAddition" $
             calculateDefaultValue HM.empty (Duo Add (Val 5) (Val 6)) @?= 11
-        , testCaseM "xmileMathParserCalculateSubtraction" $
+        , testCase "xmileMathParserCalculateSubtraction" $
             calculateDefaultValue HM.empty (Duo Sub (Val 5) (Val 6)) @?= -1
-        , testCaseM "xmileMathParserCalculateMultiplication" $
+        , testCase "xmileMathParserCalculateMultiplication" $
             calculateDefaultValue HM.empty (Duo Mul (Val 5) (Val 6)) @?= 30
-        , testCaseM "xmileMathParserCalculateDivision" $
+        , testCase "xmileMathParserCalculateDivision" $
             calculateDefaultValue HM.empty (Duo Div (Val 6) (Val 2)) @?= 3
         , expectFail $
-            testCaseM "xmileMathParserDivisionToZero" $
+            testCase "xmileMathParserDivisionToZero" $
                 calculateDefaultValue HM.empty (Duo Div (Val 6) (Val 0)) @?= 1 / 0
         ]

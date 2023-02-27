@@ -30,9 +30,8 @@ import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import NITTA.Synthesis
 import NITTA.Utils
-import NITTA.Utils.Tests
 import Test.Tasty (TestTree)
-import Test.Tasty.HUnit (assertBool, assertFailure)
+import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 -- |Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
@@ -45,7 +44,7 @@ nittaCoSimTestCase ::
     [F T.Text x] ->
     TestTree
 nittaCoSimTestCase n tMicroArch alg =
-    testCaseM n $ do
+    testCase n $ do
         reportE <-
             runTargetSynthesisWithUniqName
                 def

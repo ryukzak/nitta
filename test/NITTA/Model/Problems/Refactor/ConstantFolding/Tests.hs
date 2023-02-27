@@ -21,7 +21,6 @@ import NITTA.Frontends.Lua.Tests.Providers
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
@@ -36,7 +35,7 @@ simpleRefactor dfg =
 tests =
     testGroup
         "Refactor problem (Constant folding)"
-        [ testCaseM "simple sum 2 numbers" $
+        [ testCase "simple sum 2 numbers" $
             let -- Start algorithm:
                 -- a = 1
                 -- b = 2
@@ -53,7 +52,7 @@ tests =
                 loopRes = loop 1 "e" ["res"]
                 resRes = constant 3 ["res"]
              in [a, b, tmp1, res, loopRes] `refactorTo` [loopRes, resRes]
-        , testCaseM "sum 4 numbers" $
+        , testCase "sum 4 numbers" $
             let -- Start algorithm:
                 -- a = 1
                 -- b = 2

@@ -20,14 +20,13 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
 tests =
     testGroup
         "Refactor problem"
-        [ testCaseM "self sending 1" $
+        [ testCase "self sending 1" $
             let df = fsToDataFlowGraph ([buffer "a" ["b"], buffer "b" ["c"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b"])
              in df'
@@ -36,7 +35,7 @@ tests =
                         , DFLeaf $ buffer "b@buf" ["b"]
                         , DFLeaf $ buffer "b" ["c"]
                         ]
-        , testCaseM "self sending 2" $
+        , testCase "self sending 2" $
             let df = fsToDataFlowGraph ([buffer "a" ["b1", "b2"], buffer "b1" ["c1"], buffer "b2" ["c2"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1"])
              in df'
@@ -46,7 +45,7 @@ tests =
                         , DFLeaf $ buffer "b1" ["c1"]
                         , DFLeaf $ buffer "b2" ["c2"]
                         ]
-        , testCaseM "self sending 3" $
+        , testCase "self sending 3" $
             let df = fsToDataFlowGraph ([buffer "a" ["b1", "b2"], buffer "b1" ["c1"], buffer "b2" ["c2"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1", "b2"])
              in df'
@@ -56,12 +55,12 @@ tests =
                         , DFLeaf $ buffer "b1" ["c1"]
                         , DFLeaf $ buffer "b2" ["c2"]
                         ]
-        , testCaseM "patch source" $ do
+        , testCase "patch source" $ do
             patch Changeset{changeO = M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI = M.empty} (Source $ S.fromList ["a1@buf"])
                 @?= Source (S.fromList ["a1", "a2"])
             patch Changeset{changeO = M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], changeI = M.empty} (Source $ S.fromList ["a1", "a2"])
                 @?= Source (S.fromList ["a1@buf"])
-        , testCaseM "reverse diff" $ do
+        , testCase "reverse diff" $ do
             reverseDiff Changeset{changeI = M.fromList [("a", "b")], changeO = M.fromList [("c", S.fromList ["e", "f"])]}
                 @?= Changeset{changeI = M.fromList [("b", "a")], changeO = M.fromList [("e", S.fromList ["c"]), ("f", S.fromList ["c"])]}
             reverseDiff Changeset{changeI = M.fromList [("a", "b")], changeO = M.fromList [("c", S.fromList ["e"]), ("d", S.fromList ["e"])]}

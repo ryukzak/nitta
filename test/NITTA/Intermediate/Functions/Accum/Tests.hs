@@ -17,14 +17,13 @@ import Data.Set (fromList)
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
-import NITTA.Utils.Tests (testCaseM)
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
 tests =
     testGroup
         "Accum function"
-        [ testCaseM "locks for: +a + b = c" $
+        [ testCase "locks for: +a + b = c" $
             let b = locksSet "+a + b = c;"
                 a =
                     fromList
@@ -32,7 +31,7 @@ tests =
                         , Lock{locked = "c", lockBy = "b"}
                         ]
              in b @?= a
-        , testCaseM "locks for: +a + b = c = e;" $
+        , testCase "locks for: +a + b = c = e;" $
             let b = locksSet " +a + b = c = e;"
                 a =
                     fromList
@@ -42,7 +41,7 @@ tests =
                         , Lock{locked = "e", lockBy = "b"}
                         ]
              in b @?= a
-        , testCaseM "locks for: +a - b = c" $
+        , testCase "locks for: +a - b = c" $
             let b = locksSet "+a - b = c;"
                 a =
                     fromList
@@ -50,7 +49,7 @@ tests =
                         , Lock{locked = "c", lockBy = "b"}
                         ]
              in b @?= a
-        , testCaseM "locks for: +a + b = c = e; +d + f = k" $
+        , testCase "locks for: +a + b = c = e; +d + f = k" $
             let b = locksSet "+a + b = c = e; +d + f = k "
                 a =
                     fromList
