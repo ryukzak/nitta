@@ -101,10 +101,10 @@ span.spaces    { background: white }
 <span class="lineno">   82 </span>    -- | construct a value from raw data and attributes
 <span class="lineno">   83 </span>    fromRaw :: Integer -&gt; Integer -&gt; x
 <span class="lineno">   84 </span>
-<span class="lineno">   85 </span>    -- | сonvert a value to Verilog literal with data
+<span class="lineno">   85 </span>    -- | convert a value to Verilog literal with data
 <span class="lineno">   86 </span>    dataLiteral :: x -&gt; T.Text
 <span class="lineno">   87 </span>
-<span class="lineno">   88 </span>    -- | сonvert a value to Verilog literal with attributes
+<span class="lineno">   88 </span>    -- | convert a value to Verilog literal with attributes
 <span class="lineno">   89 </span>    attrLiteral :: x -&gt; T.Text
 <span class="lineno">   90 </span>    <span class="decl"><span class="istickedoff">attrLiteral x = showText (attrWidth <span class="nottickedoff">x</span>) &lt;&gt; &quot;'d0000&quot;</span></span>
 <span class="lineno">   91 </span>

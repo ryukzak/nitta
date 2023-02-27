@@ -190,10 +190,10 @@ rawAttr :: Val x => x -> Integer
 -- | construct a value from raw data and attributes
 fromRaw :: Val x => Integer -> Integer -> x
 
--- | сonvert a value to Verilog literal with data
+-- | convert a value to Verilog literal with data
 dataLiteral :: Val x => x -> Text
 
--- | сonvert a value to Verilog literal with attributes
+-- | convert a value to Verilog literal with attributes
 attrLiteral :: Val x => x -> Text
 
 -- | helper functions to work with values in Verilog (trace and assert)
