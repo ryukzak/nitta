@@ -210,7 +210,7 @@ Multiplier:
         nextTick: 0
         nextUid: 0
 >>> endpointOptions st1
-[?Target a@(0..∞ /P 1..∞),?Target b@(0..∞ /P 1..∞)]
+[?Target a@(0..INF /P 1..INF),?Target b@(0..INF /P 1..INF)]
 
 As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: @a@ or
@@ -236,7 +236,7 @@ Multiplier:
         nextTick: 3
         nextUid: 2
 >>> mapM_ print $ endpointOptions st2
-?Target b@(3..∞ /P 1..∞)
+?Target b@(3..INF /P 1..INF)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> putDoc $ pretty st3
 Multiplier:
@@ -257,7 +257,7 @@ Multiplier:
         nextTick: 4
         nextUid: 4
 >>> mapM_ print $ endpointOptions st3
-?Source c,d@(6..∞ /P 1..∞)
+?Source c,d@(6..INF /P 1..INF)
 
 After loading both arguments, we can see that the next option is unloading
 @c@ and @d@ variables. Note, these variables can be unloaded either
@@ -287,7 +287,7 @@ Multiplier:
         nextTick: 7
         nextUid: 6
 >>> mapM_ print $ endpointOptions st4
-?Source d@(7..∞ /P 1..∞)
+?Source d@(7..INF /P 1..INF)
 >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ S.fromList ["d"]) (7...7)
 >>> putDoc $ pretty st5
 Multiplier:
