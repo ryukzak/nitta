@@ -49,7 +49,7 @@ data Fram v x t = Fram
     , remainBuffers :: [(Buffer v x, Job v x t)]
     -- ^register queue
     , process_ :: Process t (StepInfo v x t)
-    }
+    } deriving (Show)
 
 framWithSize size =
     Fram
@@ -93,7 +93,8 @@ data Cell v x t = Cell
     -- ^current job description
     , history :: [F v x]
     , initialValue :: x
-    }
+    } 
+    deriving (Show)
 
 data Job v x t = Job
     { function :: F v x
@@ -157,7 +158,7 @@ data CellState v x t
     | NotBrokenLoop
     | DoLoopSource [v] (Job v x t)
     | DoLoopTarget v
-    deriving (Eq)
+    deriving (Show, Eq)
 
 instance (VarValTime v x t) => Pretty (CellState v x t) where
     pretty NotUsed = "NotUsed"
@@ -201,8 +202,14 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
         | not $ null (variables f `S.intersection` variables fram) =
             res        
             where
-                tp = typeOf fram
-                res = seq tp Left "can not bind (self transaction)"
+                funV = variables f
+                frmV = variables fram
+                intrsc = funV `S.intersection` frmV
+                res = Left $ "can not bind (self transaction) " 
+                    <> [i| #{ pretty fram }|] 
+                    <> [i| Function: #{ show funV }|] 
+                    <> [i| Fram: #{ show frmV }|]
+                    <> [i| Intersection: #{ show $ not $ null intrsc }|]
     tryBind f fram@Fram{memory, remainBuffers}
         | Just (Constant (X x) (O vs)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram =

@@ -58,7 +58,7 @@ data SimpleIO i v x t = SimpleIO
     , sendQueue :: [Q v x]
     , sendN :: Int
     , process_ :: Process t (StepInfo v x t)
-    }
+    } deriving (Show)
 
 instance (VarValTime v x t, SimpleIOInterface i) => Pretty (SimpleIO i v x t) where
     pretty io =

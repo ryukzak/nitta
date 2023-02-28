@@ -37,7 +37,7 @@ import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
 import NITTA.Utils
 import System.Log.Logger
-import Debug.Trace
+-- import Debug.Trace
 
 -- |Make synthesis tree
 synthesisTreeRootIO = atomically . rootSynthesisTreeSTM
@@ -152,11 +152,14 @@ decisionAndContext parent@Tree{sState = ctx} o =
     ]
 
 nodeCtx parent nModel =
-    let sBindOptions = trace ("Bind options: " <> (show $ bindOptions nModel)) (bindOptions nModel)
-        sBindOptionsB = filter (\case (Bind _ _) -> True; (GroupBinding _ _) -> False) $ bindOptions nModel
+    let bindOptionsValue = bindOptions nModel
+        sBindOptions = bindOptionsValue
+        -- sBindOptions = trace ("BIND OPTIONS: " <> (show bindOptionsValue)) bindOptionsValue
+        sBindOptionsB = filter (\case (Bind _ _) -> True; (GroupBinding _ _) -> False) bindOptionsValue 
         -- sBindOptionsGB = filter (\case (Bind _ _) -> False; (GroupBinding _ _) -> True) $ bindOptions nModel
         -- gbToB lst = concatMap (\(GroupBinding _ x) -> x) lst
         -- sBindOptionsL = sBindOptionsB ++ gbToB sBindOptionsGB
+
         sDataflowOptions = dataflowOptions nModel
         bindFunction st (Bind f tag) = M.alter (return . maybe [tag] (tag :)) f st
         bindFunction st (GroupBinding _ lst) =  foldl bindFunction st lst

@@ -382,7 +382,7 @@ data Multiplier v x t = Multiplier
     -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
     -- system will be contained non-synthesizable implementation of that
     -- IP-core.
-    }
+    } deriving (Show)
 
 instance (VarValTime v x t) => Pretty (Multiplier v x t) where
     pretty Multiplier{remain, targets, sources, currentWork, process_, isMocked} =

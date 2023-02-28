@@ -24,6 +24,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Utils
+-- import Debug.Trace
 
 {- |Model of target unit, which is a main subject of synthesis process and
 synthesis graph.
@@ -65,7 +66,9 @@ instance
 instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
 
-    bindDecision ts@TargetSystem{mUnit} d = ts{mUnit = bindDecision mUnit d}
+    bindDecision ts@TargetSystem{mUnit} d = ts{mUnit = des}
+        where
+            des = bindDecision mUnit d
 
 instance (DataflowProblem u tag v t) => DataflowProblem (TargetSystem u tag v x t) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit

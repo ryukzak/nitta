@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GADTs #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
@@ -109,6 +111,8 @@ data UnitEnv m = UnitEnv
     , ioPorts :: Maybe (IOPorts m)
     , valueIn, valueOut :: Maybe (T.Text, T.Text)
     }
+
+deriving instance (Show (Ports m), Show (IOPorts m)) => Show (UnitEnv m)
 
 instance Default (UnitEnv m) where
     def =

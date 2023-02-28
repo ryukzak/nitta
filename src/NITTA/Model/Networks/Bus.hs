@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
-
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {- |
 Module      : NITTA.Model.Networks.Bus
 Description : Simple process unit network - pseudo bus.
@@ -44,7 +44,6 @@ import Data.String.Interpolate
 import Data.String.ToString
 import Data.Text qualified as T
 import Data.Typeable
-import Debug.Trace
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
@@ -60,7 +59,6 @@ import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 import Text.Regex
--- import Debug.Trace
 
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
@@ -78,7 +76,7 @@ data BusNetwork tag v x t = BusNetwork
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
     , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
     -- ^Set of the PUs that could be added to the network during synthesis process
-    }
+    } deriving (Show)
 
 busNetwork name iosync =
     BusNetwork
@@ -302,18 +300,23 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 ----------------------------------------------------------------------
 
 instance
-    (UnitTag tag, VarValTime v x t,  Show tag) =>
+    (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = if not $ null singleOptionsList then groupBinding singleOptionsList ++ concat singleOptionsList else []
+    -- (UnitTag tag, VarValTime v x t,  Show tag) =>
+    -- BindProblem (BusNetwork tag v x t) tag v x
+    -- where
+    bindOptions BusNetwork{bnRemains, bnPus} = result
         where
+            result = if not $ null singleOptionsList then groupBinding singleOptionsList ++ concat singleOptionsList else []
             optionsFor f =
                 [ Bind f puTitle
                 | (puTitle, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
 
-            singleOptionsList = trace ("singleOptionsList :" <> show res) res
+            singleOptionsList = res
+            -- singleOptionsList = trace ("singleOptionsList :" <> show res) res
                 where
                     res = map optionsFor bnRemains
 
@@ -344,10 +347,10 @@ instance
             afterFiltering = map (\(k, v) -> map (uncurry Bind ) $ zip v $ fromCountDict k )$ M.toList $ createDataMap listsOfValues
 
             groupBinding options
-                | not $ any (\x -> length x > 1) options = trace (show $ M.elems puFunctionDict) $ map (GroupBinding AllBinds) $ afterFiltering
-                | otherwise = [GroupBinding NonAlternativeBinds $ trace ("KEK " <> show options ) res]
+                | not $ any (\x -> length x > 1) options = map (GroupBinding AllBinds) $ afterFiltering
+                | otherwise = map (\x -> GroupBinding NonAlternativeBinds x) res
                 where
-                  res = concat options
+                  res = sequence options
 
     bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
         bn
@@ -358,28 +361,29 @@ instance
             }
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding NonAlternativeBinds binds) =
         n
-            { -- { bnPus = bnPus'
-              -- , bnBinded = bnBinded'
-              bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            { bnPus = bnPus'
             , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
             , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
-            , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) (trace ("GROUP BINDING DECISION: " <> show binds) binds)
+            , bnRemains = bnRemainsLocal
             }
+            where
+                bnPus' = L.foldl' (\m (Bind f tag) -> case m M.!? tag of
+                    Nothing -> m
+                    Just u -> case tryBind f u of
+                        Right _ -> M.adjust (bind f) tag m
+                        _ -> m
+                    ) bnPus binds
+                bnRemainsLocal = bnRemains L.\\ map (\(Bind f _) -> f) binds
+
 
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding AllBinds binds) =
         n
-            { -- { bnPus = bnPus'
-              -- , bnBinded = bnBinded'
-              bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            { bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
             , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
             , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
             , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
             }
     bindDecision BusNetwork{} (GroupBinding FirstWaveBinds _) = error "incompletedl yet"
-
--- where
---   bnPus' = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag) bnPus binds
---   bnBinded' = L.foldl' (\m (Bind f tag) -> registerBinding tag f) bnBinded binds
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus

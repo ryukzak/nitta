@@ -27,7 +27,7 @@ import Data.Text qualified as T
 import Data.Typeable
 
 -- |Variable identifier. Used for simplify type description.
-type Var v = (Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v)
+type Var v = (Show v, Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v)
 
 -- |Type class of something, which is related to variables.
 class Variables a v | a -> v where

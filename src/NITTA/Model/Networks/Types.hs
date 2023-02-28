@@ -32,7 +32,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Time
 import NITTA.Project.TestBench
 import NITTA.Project.Types
-import Debug.Trace
+-- import Debug.Trace
 
 type PUClasses pu v x t =
     ( ByTime pu t
@@ -51,6 +51,12 @@ type PUClasses pu v x t =
     , Controllable pu
     , IOTestBench pu v x
     , Locks pu v
+    , Show (Ports pu) 
+    , Show (IOPorts pu) 
+    , Show pu
+    , Show v
+    , Show x
+    , Show t
     )
 
 -- |Existential container for a processor unit .
@@ -62,6 +68,8 @@ data PU v x t where
         , uEnv :: UnitEnv pu
         } ->
         PU v x t
+instance (Show (PU v x t)) where
+    show PU{unit, diff, uEnv} = "PU " <> show unit <> " " <> show diff <> " " <> show uEnv
 
 instance (Ord v) => EndpointProblem (PU v x t) v t where
     endpointOptions PU{diff, unit} =
@@ -93,10 +101,11 @@ instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{diff, unit, uEnv} =
         case tryBind fb unit of
             Right unit' -> Right PU{unit = unit', diff, uEnv}
-            Left err -> let 
-                    tag = show $ unitType unit
-                in
-                    trace tag (Left err)
+            Left err -> Left err
+            -- Left err -> let 
+            --         tag = show $ unitType unit
+            --     in
+            --         trace tag (Left err)
     process PU{unit, diff} =
         let p = process unit
          in p{steps = map (patch diff) $ steps p}
@@ -180,7 +189,7 @@ puInOutPorts PU{uEnv} = envInOutPorts uEnv
 -- |PU and some additional information required for allocation on BusNetwork
 data PUPrototype tag v x t where
     PUPrototype ::
-        (UnitTag tag, PUClasses pu v x t) =>
+        (UnitTag tag, PUClasses pu v x t, Show pu, Show v, Show x, Show t) =>
         { pTag :: tag
         -- ^Prototype tag. You can specify tag as a template by adding {x}.
         -- This will allow to allocate PU more than once by replacing {x} with index.
@@ -191,3 +200,6 @@ data PUPrototype tag v x t where
         -- ^IO ports that will be used by PU
         } ->
         PUPrototype tag v x t
+
+instance Show (PUPrototype tag v x t) where
+    show PUPrototype{pTag, pProto} = "PUPrototype " <> show pTag <> " " <> show pProto <> " pIOPorts show not implemented"

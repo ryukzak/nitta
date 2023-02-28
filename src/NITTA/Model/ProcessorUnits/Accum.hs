@@ -75,11 +75,11 @@ instance (Var v) => Show (Job v x) where
 
 data Accum v x t = Accum
     { remainJobs :: [Job v x]
-    -- ^List of jobs (expressions)
+    -- ^List of jobs (expressions
     , currentJob :: Maybe (Job v x)
     -- ^Current job
     , process_ :: Process t (StepInfo v x t)
-    -- ^Process
+    -- ^Process deriving (Show)
     }
 
 instance (VarValTime v x t) => Pretty (Accum v x t) where

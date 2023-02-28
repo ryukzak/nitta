@@ -53,7 +53,7 @@ data Shift v x t = Shift
     -- ^current function in PU
     , process_ :: Process t (StepInfo v x t)
     -- ^description of target computation process
-    }
+    } deriving (Show)
 
 instance (Var v) => Locks (Shift v x t) v where
     locks Shift{sources, target = Just t} =
@@ -264,7 +264,7 @@ instance Connected (Shift v x t) where
         deriving (Show)
 
 instance IOConnected (Shift v x t) where
-    data IOPorts (Shift v x t) = ShiftIO
+    data IOPorts (Shift v x t) = ShiftIO deriving (Show)
 
 instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"

@@ -37,6 +37,7 @@ import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (sup, (...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
+import Prettyprinter.Render.String 
 import Data.Typeable
 
 data Broken v x t = Broken
@@ -348,3 +349,7 @@ instance (VarValTime v x t) => Testable (Broken v x t) v x where
                     , tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
                         [i|oe <= #{ bool2verilog oeSignal }; wr <= #{ bool2verilog wrSignal };|]
                     }
+
+
+instance (VarValTime v x t) => Show (Broken v x t) where
+    showsPrec _ = renderShowS . layoutPretty defaultLayoutOptions . pretty

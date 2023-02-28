@@ -4,7 +4,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE LiberalTypeSynonyms #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
 Description : Set of types for process unit description
@@ -73,6 +80,8 @@ import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
+-- import Data.Kind qualified as K
+-- import GHC.Exts
 --import Data.Typeable
 
 -- |Typeclass alias for processor unit tag or "name."
@@ -167,7 +176,7 @@ data Process t i = Process
     , nextUid :: ProcessStepID
     -- ^Next process step ID
     }
-    deriving (Generic)
+    deriving (Show, Generic)
 
 instance (Time t, Show i) => Pretty (Process t i) where
     pretty p =
@@ -364,8 +373,23 @@ instance Show SignalTag where
 
 -- |Type class of processor units with control ports.
 class Connected pu where
-    -- |A processor unit control ports (signals, flags).
+    -- |A processor unit control ports (signals, flags){}.
     data Ports pu :: Type
+
+    -- deriving instance Show Type
+    -- deriving instance Show (Ports pu)
+    -- data Ports pu :: Show a => Type :- a
+    -- instance c ~ Show => Show (Some c) 
+    -- data Ports pu where
+    --     Ports pu :: Show a => Typea
+    -- instance deriving (Show pu) => (Show (Ports pu))
+
+-- instance Show (Ports pu :: Type) where
+--     -- show (Ports pu) = "Ports PU:(" <> show pu <> ")"
+--     show v = show v 
+
+-- instance (Connected pu) => Show (Ports pu) where
+--     show (Ports pu) = "Ports PU:(" <> show pu <> ")"
 
 {- |Decoding microcode from a simple instruction (microcode don't change over
 time).
@@ -415,6 +439,9 @@ class IOConnected pu where
     -- |External output ports, which go outside of NITTA mUnit.
     inoutPorts :: IOPorts pu -> S.Set InoutPortTag
     inoutPorts _ = S.empty
+
+-- instance Show (IOPorts pu :: Type) where
+--     show v = show v 
 
 newtype InputPortTag = InputPortTag {inputPortTag :: T.Text} deriving (Eq, Ord)
 instance Show InputPortTag where show = toString . inputPortTag
