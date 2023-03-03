@@ -49,7 +49,7 @@ instance (Show t, Eq t, Bounded t) => Show (TimeConstraint t) where
                 let a = inf i
                     b = sup i
                  in if b == maxBound
-                        then show a ++ "..∞"
+                        then show a ++ "..INF"
                         else show a ++ ".." ++ show b
 
 instance (ToJSON tp) => ToJSON (TimeConstraint tp)

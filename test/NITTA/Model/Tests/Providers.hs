@@ -20,7 +20,6 @@ module NITTA.Model.Tests.Providers (
 
 import Data.CallStack
 import Data.Default
-import Data.String.Utils qualified as S
 import Data.Text as T
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
@@ -30,6 +29,7 @@ import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import NITTA.Synthesis
+import NITTA.Utils
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
@@ -48,7 +48,7 @@ nittaCoSimTestCase n tMicroArch alg =
         reportE <-
             runTargetSynthesisWithUniqName
                 def
-                    { tName = S.replace " " "_" n
+                    { tName = toModuleName n
                     , tMicroArch
                     , tDFG = fsToDataFlowGraph alg
                     }

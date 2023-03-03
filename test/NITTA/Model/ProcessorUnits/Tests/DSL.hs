@@ -188,7 +188,7 @@ unitTestCase ::
     StateT (UnitTestState u v x) IO () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
-    void $ evalUnitTestState name pu alg
+    void $ evalUnitTestState (toModuleName name) pu alg
 
 evalUnitTestState name st alg =
     evalStateT

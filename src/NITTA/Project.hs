@@ -162,10 +162,12 @@ writeImplementation prj@Project{pTargetProjectPath = prjPath, pInProjectNittaPat
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
         copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do
-            let fullNittaPath = pTargetProjectPath </> pInProjectNittaPath
-            source <- makeAbsolute $ joinPath [pLibPath, file]
-            target <- makeAbsolute $ joinPath [fullNittaPath, "lib", file]
-            createDirectoryIfMissing True $ takeDirectory target
+            let fullNittaPath = joinPath [pTargetProjectPath, pInProjectNittaPath]
+            source <- makeAbsolute $ normalise $ joinPath [pLibPath, file]
+            target <- makeAbsolute $ normalise $ joinPath [fullNittaPath, "lib", file]
+            directory <- makeAbsolute $ normalise $ joinPath [fullNittaPath, "lib", takeDirectory file]
+
+            createDirectoryIfMissing True directory
             copyFile source target
 
         libraryFiles Project{pName, pUnit} =
