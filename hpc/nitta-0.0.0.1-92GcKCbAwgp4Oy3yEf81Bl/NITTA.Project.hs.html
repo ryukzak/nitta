@@ -181,19 +181,21 @@ span.spaces    { background: white }
 <span class="lineno">  162 </span><span class="decl"><span class="istickedoff">copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj</span>
 <span class="lineno">  163 </span><span class="spaces">    </span><span class="istickedoff">where</span>
 <span class="lineno">  164 </span><span class="spaces">        </span><span class="istickedoff">copyLibraryFile Project{pTargetProjectPath, pInProjectNittaPath, pLibPath} file = do</span>
-<span class="lineno">  165 </span><span class="spaces">            </span><span class="istickedoff">let fullNittaPath = pTargetProjectPath &lt;/&gt; pInProjectNittaPath</span>
-<span class="lineno">  166 </span><span class="spaces">            </span><span class="istickedoff">source &lt;- makeAbsolute $ joinPath [pLibPath, file]</span>
-<span class="lineno">  167 </span><span class="spaces">            </span><span class="istickedoff">target &lt;- makeAbsolute $ joinPath [fullNittaPath, &quot;lib&quot;, file]</span>
-<span class="lineno">  168 </span><span class="spaces">            </span><span class="istickedoff">createDirectoryIfMissing True $ takeDirectory target</span>
-<span class="lineno">  169 </span><span class="spaces">            </span><span class="istickedoff">copyFile source target</span>
-<span class="lineno">  170 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  171 </span><span class="spaces">        </span><span class="istickedoff">libraryFiles Project{pName, pUnit} =</span>
-<span class="lineno">  172 </span><span class="spaces">            </span><span class="istickedoff">L.nub $ concatMap (args <span class="nottickedoff">&quot;&quot;</span>) [hardware <span class="nottickedoff">pName</span> pUnit]</span>
-<span class="lineno">  173 </span><span class="spaces">            </span><span class="istickedoff">where</span>
-<span class="lineno">  174 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate (Just p') subInstances) = concatMap (args $ <span class="nottickedoff">joinPath [p, p']</span>) subInstances</span>
-<span class="lineno">  175 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate Nothing subInstances) = concatMap (args <span class="nottickedoff">p</span>) subInstances</span>
-<span class="lineno">  176 </span><span class="spaces">                </span><span class="istickedoff">args _ (FromLibrary fn) = [fn]</span>
-<span class="lineno">  177 </span><span class="spaces">                </span><span class="istickedoff">args _ _ = []</span></span>
+<span class="lineno">  165 </span><span class="spaces">            </span><span class="istickedoff">let fullNittaPath = joinPath [pTargetProjectPath, pInProjectNittaPath]</span>
+<span class="lineno">  166 </span><span class="spaces">            </span><span class="istickedoff">source &lt;- makeAbsolute $ normalise $ joinPath [pLibPath, file]</span>
+<span class="lineno">  167 </span><span class="spaces">            </span><span class="istickedoff">target &lt;- makeAbsolute $ normalise $ joinPath [fullNittaPath, &quot;lib&quot;, file]</span>
+<span class="lineno">  168 </span><span class="spaces">            </span><span class="istickedoff">directory &lt;- makeAbsolute $ normalise $ joinPath [fullNittaPath, &quot;lib&quot;, takeDirectory file]</span>
+<span class="lineno">  169 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  170 </span><span class="spaces">            </span><span class="istickedoff">createDirectoryIfMissing True directory</span>
+<span class="lineno">  171 </span><span class="spaces">            </span><span class="istickedoff">copyFile source target</span>
+<span class="lineno">  172 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  173 </span><span class="spaces">        </span><span class="istickedoff">libraryFiles Project{pName, pUnit} =</span>
+<span class="lineno">  174 </span><span class="spaces">            </span><span class="istickedoff">L.nub $ concatMap (args <span class="nottickedoff">&quot;&quot;</span>) [hardware <span class="nottickedoff">pName</span> pUnit]</span>
+<span class="lineno">  175 </span><span class="spaces">            </span><span class="istickedoff">where</span>
+<span class="lineno">  176 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate (Just p') subInstances) = concatMap (args $ <span class="nottickedoff">joinPath [p, p']</span>) subInstances</span>
+<span class="lineno">  177 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate Nothing subInstances) = concatMap (args <span class="nottickedoff">p</span>) subInstances</span>
+<span class="lineno">  178 </span><span class="spaces">                </span><span class="istickedoff">args _ (FromLibrary fn) = [fn]</span>
+<span class="lineno">  179 </span><span class="spaces">                </span><span class="istickedoff">args _ _ = []</span></span>
 
 </pre>
 </body>

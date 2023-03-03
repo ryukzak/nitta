@@ -94,7 +94,7 @@ there should be enough to finish schedule, even it is inefficient.</p><pre class
         nextTick: 0
         nextUid: 0
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>endpointOptions st1
-</code></strong>[?Target a@(0..&#8734; /P 1..&#8734;),?Target b@(0..&#8734; /P 1..&#8734;)]
+</code></strong>[?Target a@(0..INF /P 1..INF),?Target b@(0..INF /P 1..INF)]
 </pre><p>As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: <code>a</code> or
 <code>b</code>. We can see that they are similar from an execution sequence point of
@@ -117,7 +117,7 @@ arbitrary time. Choose the variant.</p><pre class="screen"><code class="prompt">
         nextTick: 3
         nextUid: 2
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>mapM_ print $ endpointOptions st2
-</code></strong>?Target b@(3..&#8734; /P 1..&#8734;)
+</code></strong>?Target b@(3..INF /P 1..INF)
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>let st3 = endpointDecision st2 $ EndpointSt (Target &quot;b&quot;) (3...3)
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>putDoc $ pretty st3
 </code></strong>Multiplier:
@@ -138,7 +138,7 @@ arbitrary time. Choose the variant.</p><pre class="screen"><code class="prompt">
         nextTick: 4
         nextUid: 4
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>mapM_ print $ endpointOptions st3
-</code></strong>?Source c,d@(6..&#8734; /P 1..&#8734;)
+</code></strong>?Source c,d@(6..INF /P 1..INF)
 </pre><p>After loading both arguments, we can see that the next option is unloading
 <code>c</code> and <code>d</code> variables. Note, these variables can be unloaded either
 concurrently or sequentially (for details, see how the multiplier works
@@ -165,7 +165,7 @@ inside). Consider the second option:</p><pre class="screen"><code class="prompt"
         nextTick: 7
         nextUid: 6
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>mapM_ print $ endpointOptions st4
-</code></strong>?Source d@(7..&#8734; /P 1..&#8734;)
+</code></strong>?Source d@(7..INF /P 1..INF)
 <code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>let st5 = endpointDecision st4 $ EndpointSt (Source $ S.fromList [&quot;d&quot;]) (7...7)
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>putDoc $ pretty st5
 </code></strong>Multiplier:
