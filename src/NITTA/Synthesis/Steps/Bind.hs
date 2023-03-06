@@ -97,20 +97,56 @@ instance
                     _ -> Nothing
                 }
     parameters
-        SynthesisState {}
-        (GroupBinding t binds)
+        SynthesisState 
+            { bindingAlternative
+            -- , possibleDeadlockBinds
+            }
+        -- (GroupBinding t binds)
+        (GroupBinding _ binds)
         _ =
             BindMetrics
-                { pCritical = False
-                , pAlternative = if t == NonAlternativeBinds then 0 else 2
+                { pCritical = any (\(Bind f _) -> isInternalLockPossible f) binds
+                -- , pAlternative = if t == NonAlternativeBinds then 0 else 2
+                , pAlternative = bAlternatives
                 , pAllowDataFlow = toEnum $ length binds
-                , pRestless = 10
+                , pRestless = 0
                 , pOutputNumber = 2
-                , pPossibleDeadlock = False
+                , pPossibleDeadlock = any (\(_, v) -> checkDeadlock v) (M.toList pu_f_dict)
+                -- , pPossibleDeadlock = any (\f -> f `S.member` possibleDeadlockBinds) fs
                 , pNumberOfBindedFunctions = toEnum $ length binds
                 , pPercentOfBindedInputs = 50
                 , pWave = Nothing
                 }
+            where
+                fs = map (\(Bind f _) -> f) binds
+                -- tags = map (\(Bind _ tag) -> tag)  bind
+                pu_f_list = map (\(Bind f tag) -> (tag, f)) binds
+                pu_f_dict = foldl (\m (tag, f) -> M.insertWith (++) tag [f] m ) M.empty pu_f_list
+                -- deadlock = 
+                --     [ (tag, f)
+                --     | (Bind f tag) <- binds
+                --     , Lock{lockBy} <- locks f
+                --     , lockBy `S.member` unionsMap variables fs 
+                --     ]
+
+                -- deadlocksAll =
+                --     [ f 
+                --     | f <- fs
+                --     , Lock{lockBy} <- locks f
+                --     , lockBy `S.member` unionsMap variables (filter (\f_ -> f_ /= f) fs)
+                --     ]
+
+                checkDeadlock fs_ = not $ null deadlocks 
+                    where 
+                        deadlocks =
+                            [ f 
+                            | f <- fs_
+                            , Lock{lockBy} <- locks f
+                            , lockBy `S.member` unionsMap variables (filter (\f_ -> f_ /= f) fs_)
+                            ]
+                -- isDeadlock = any checkDeadlock (M.elems pu_f_dict)
+                
+                bAlternatives = sum $ map (\f -> fromIntegral $ length (bindingAlternative M.! f)) fs
 
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
     estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
