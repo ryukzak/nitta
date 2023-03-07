@@ -51,6 +51,11 @@ data BindMetrics = BindMetrics
     , pPercentOfBindedInputs :: Float
     -- ^number of binded input variables / number of all input variables
     , pWave :: Maybe Float
+    , isGroupBinding :: Bool
+    -- ^number of unique PU when group binding
+    , uniquePUs :: Maybe Float
+    -- ^correction if we can not bind function to PU next tryBind has less points for this function
+    , correction :: Float
     }
     deriving (Generic)
 
@@ -74,7 +79,7 @@ instance
             , possibleDeadlockBinds
             , bindWaves
             }
-        (Bind f tag)
+        b@(Bind f tag)
         _ =
             BindMetrics
                 { pCritical = isInternalLockPossible f
@@ -95,46 +100,37 @@ instance
                     [] -> Just 0
                     waves | all isJust waves -> Just $ maximum $ catMaybes waves
                     _ -> Nothing
+                , isGroupBinding = False
+                , uniquePUs = Nothing
+                , correction = case (correctionTable mUnit) M.!? b of
+                    Just v -> fromIntegral v
+                    _ -> 0
                 }
     parameters
         SynthesisState 
             { bindingAlternative
-            -- , possibleDeadlockBinds
             }
-        -- (GroupBinding t binds)
         (GroupBinding _ binds)
         _ =
             BindMetrics
                 { pCritical = any (\(Bind f _) -> isInternalLockPossible f) binds
-                -- , pAlternative = if t == NonAlternativeBinds then 0 else 2
                 , pAlternative = bAlternatives
                 , pAllowDataFlow = toEnum $ length binds
                 , pRestless = 0
-                , pOutputNumber = 2
+                , pOutputNumber = 0
                 , pPossibleDeadlock = any (\(_, v) -> checkDeadlock v) (M.toList pu_f_dict)
-                -- , pPossibleDeadlock = any (\f -> f `S.member` possibleDeadlockBinds) fs
                 , pNumberOfBindedFunctions = toEnum $ length binds
-                , pPercentOfBindedInputs = 50
+                , pPercentOfBindedInputs = 10
                 , pWave = Nothing
+                , isGroupBinding = True
+                , uniquePUs = Just $ fromIntegral $ length $ L.nub tags
+                , correction = 0
                 }
             where
                 fs = map (\(Bind f _) -> f) binds
-                -- tags = map (\(Bind _ tag) -> tag)  bind
+                tags = map (\(Bind _ tag) -> tag) binds
                 pu_f_list = map (\(Bind f tag) -> (tag, f)) binds
                 pu_f_dict = foldl (\m (tag, f) -> M.insertWith (++) tag [f] m ) M.empty pu_f_list
-                -- deadlock = 
-                --     [ (tag, f)
-                --     | (Bind f tag) <- binds
-                --     , Lock{lockBy} <- locks f
-                --     , lockBy `S.member` unionsMap variables fs 
-                --     ]
-
-                -- deadlocksAll =
-                --     [ f 
-                --     | f <- fs
-                --     , Lock{lockBy} <- locks f
-                --     , lockBy `S.member` unionsMap variables (filter (\f_ -> f_ /= f) fs)
-                --     ]
 
                 checkDeadlock fs_ = not $ null deadlocks 
                     where 
@@ -144,12 +140,13 @@ instance
                             , Lock{lockBy} <- locks f
                             , lockBy `S.member` unionsMap variables (filter (\f_ -> f_ /= f) fs_)
                             ]
-                -- isDeadlock = any checkDeadlock (M.elems pu_f_dict)
                 
                 bAlternatives = sum $ map (\f -> fromIntegral $ length (bindingAlternative M.! f)) fs
 
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
-    estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
+    estimate _ctx _o _d BindMetrics{isGroupBinding = True, pNumberOfBindedFunctions = 1} = 0
+    estimate _ctx _o _d BindMetrics{isGroupBinding = True, pCritical = True} = 600
+    estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber, correction, uniquePUs} =
         3000
             + pCritical
             <?> 1000
@@ -167,6 +164,9 @@ instance
             * 4
             + pOutputNumber
             * 2
+            - correction
+            + fromMaybe (0) uniquePUs
+            * 50
 
 waitingTimeOfVariables net =
     [ (variable, inf $ tcAvailable constrain)

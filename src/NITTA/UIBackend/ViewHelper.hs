@@ -228,6 +228,9 @@ instance ToSample (NodeView tag v x t) where
                             , pNumberOfBindedFunctions = 1
                             , pPercentOfBindedInputs = 0.2
                             , pWave = Just 2
+                            , isGroupBinding = False
+                            , uniquePUs = Nothing
+                            , correction = 0
                             }
                 , decision = BindDecisionView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032

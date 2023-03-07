@@ -76,6 +76,7 @@ data BusNetwork tag v x t = BusNetwork
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
     , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
     -- ^Set of the PUs that could be added to the network during synthesis process
+    , correctionTable :: M.Map (Bind tag v x) Int
     } deriving (Show)
 
 busNetwork name iosync =
@@ -89,6 +90,7 @@ busNetwork name iosync =
         , ioSync = iosync
         , bnEnv = def
         , bnPUPrototypes = def
+        , correctionTable = M.empty
         }
 
 instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
@@ -352,13 +354,31 @@ instance
                 where
                   res = sequence options
 
-    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
-        bn
-            { bnPus = M.adjust (bind f) tag bnPus
-            , bnBinded = registerBinding tag f bnBinded
-            , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
-            , bnRemains = filter (/= f) bnRemains
-            }
+    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains, correctionTable} b@(Bind f tag) = res
+        where 
+            delta = 50
+            bnPus' = case bnPus M.!? tag of
+                Nothing -> (False, bnPus)
+                Just u -> case tryBind f u of
+                    Right _ -> (True, M.adjust (bind f) tag bnPus)
+                    _ -> (False, bnPus)
+            res = case bnPus' of
+                (True, bnPus_) -> 
+                    bn 
+                        { bnPus = bnPus_
+                        , bnBinded = registerBinding tag f bnBinded
+                        , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
+                        , bnRemains = filter (/= f) bnRemains
+                        }
+                (False, bnPus_) -> 
+                    bn
+                        { bnPus = bnPus_
+                        , correctionTable = M.insertWith (+) b delta correctionTable
+                        }
+                
+
+
+
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding NonAlternativeBinds binds) =
         n
             { bnPus = bnPus'
@@ -378,11 +398,20 @@ instance
 
     bindDecision n@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} gp@(GroupBinding AllBinds binds) =
         n
-            { bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            -- { bnPus = L.foldl' (\m (Bind f tag) -> M.adjust (bind f) tag m) bnPus binds
+            { bnPus = bnPus'
             , bnBinded = L.foldl' (\m (Bind f tag) -> registerBinding tag f m) bnBinded binds
             , bnProcess = execScheduleWithProcess n bnProcess $ scheduleGroupBinding gp
             , bnRemains = bnRemains L.\\ map (\(Bind f _) -> f) binds
             }
+            where
+                bnPus' = L.foldl' (\m (Bind f tag) -> case m M.!? tag of
+                    Nothing -> m
+                    Just u -> case tryBind f u of
+                        Right _ -> M.adjust (bind f) tag m
+                        _ -> m
+                    ) bnPus binds
+ 
     bindDecision BusNetwork{} (GroupBinding FirstWaveBinds _) = error "incompletedl yet"
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
