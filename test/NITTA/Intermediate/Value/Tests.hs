@@ -93,7 +93,7 @@ prop_fx_mul_commutative = commutative ((*) @(FX 4 8))
 
 prop_fx_fromInteger_1_muliplicative_identity = forAllValid (\(x :: FX 4 8) -> x * 1 == x)
 
-{- |prop_fx_distributivity, corner case:
+{- | prop_fx_distributivity, corner case:
 
 - `7 * (7 + 7) -> 98` require 8 bits for result
 
@@ -141,7 +141,7 @@ case_fx_Integral = do
     (read "1.0", read "0.25" :: FX 30 32) @?= read "0.75" `quotRem` read "0.5"
     (read "0.0", read "0.25" :: FX 25 32) @?= read "0.25" `quotRem` read "0.75"
 
--- *Utils
+-- * Utils
 
 instance (KnownNat b, KnownNat m) => GenValid (FX m b) where
     genValid = FX <$> choose (minMaxRaw (def :: FX m b))

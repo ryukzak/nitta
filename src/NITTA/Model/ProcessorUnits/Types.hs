@@ -21,7 +21,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Types (
-    -- *Processor unit
+    -- * Processor unit
     UnitTag (..),
     ProcessorUnit (..),
     bind,
@@ -29,7 +29,7 @@ module NITTA.Model.ProcessorUnits.Types (
     NextTick (..),
     ParallelismType (..),
 
-    -- *Process description
+    -- * Process description
     Process (..),
     ProcessStepID,
     Step (..),
@@ -44,7 +44,7 @@ module NITTA.Model.ProcessorUnits.Types (
     isRefactorStep,
     isAllocationStep,
 
-    -- *Control
+    -- * Control
     Controllable (..),
     SignalTag (..),
     UnambiguouslyDecode (..),
@@ -53,7 +53,7 @@ module NITTA.Model.ProcessorUnits.Types (
     SignalValue (..),
     (+++),
 
-    -- *IO
+    -- * IO
     IOConnected (..),
     InputPortTag (..),
     OutputPortTag (..),
@@ -80,19 +80,13 @@ import NITTA.Model.Time
 import Numeric.Interval.NonEmpty
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
--- import Data.Kind qualified as K
--- import GHC.Exts
---import Data.Typeable
-
--- |Typeclass alias for processor unit tag or "name."
--- type UnitTag tag = (Typeable tag, Ord tag, ToString tag, IsString tag, Show tag)
 
 -- |Class for processor unit tag or "name"
 class (Typeable tag, Ord tag, ToString tag, IsString tag, Semigroup tag, Show tag) => UnitTag tag where
-    -- |Whether the value can be used as a template or not
+    -- | Whether the value can be used as a template or not
     isTemplate :: tag -> Bool
 
-    -- |Create tag from the template and index
+    -- | Create tag from the template and index
     fromTemplate :: tag -> String -> tag
 
 instance UnitTag T.Text where
@@ -103,19 +97,19 @@ instance UnitTag String where
     isTemplate tag = "{x}" `L.isInfixOf` tag
     fromTemplate tag index = replace "{x}" index tag
 
--- |Processor unit parallelism type
+-- | Processor unit parallelism type
 data ParallelismType
-    = -- |All operations can be performed in parallel mode
+    = -- | All operations can be performed in parallel mode
       Full
-    | -- |All operations can be performed in pipeline mode
+    | -- | All operations can be performed in pipeline mode
       Pipeline
-    | -- |Other processor units
+    | -- | Other processor units
       None
     deriving (Show, Generic, Eq)
 
 instance ToJSON ParallelismType
 
-{- |Process unit - part of NITTA process with can execute a function from
+{- | Process unit - part of NITTA process with can execute a function from
 intermediate representation:
 
 1. get function for execution ('tryBind');
@@ -145,7 +139,7 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     parallelismType :: u -> ParallelismType
     parallelismType _ = None
 
-    -- |Provide the processor unit size. At the moment it's just the number of subprocessors
+    -- | Provide the processor unit size. At the moment it's just the number of subprocessors
     puSize :: u -> Float
     puSize _ = 1
 
@@ -163,18 +157,18 @@ instance (ProcessorUnit u v x t) => NextTick u t where
 
 ---------------------------------------------------------------------
 
-{- |Computational process description. It was designed in ISO 15926 style, with
+{- | Computational process description. It was designed in ISO 15926 style, with
 separated data and relations storage.
 -}
 data Process t i = Process
     { steps :: [Step t i]
-    -- ^All process steps desctiption.
+    -- ^ All process steps desctiption.
     , relations :: [Relation]
-    -- ^List of relationships between process steps (see 'Relation').
+    -- ^ List of relationships between process steps (see 'Relation').
     , nextTick_ :: t
-    -- ^Next tick for instruction. Note: instruction /= endpoint.
+    -- ^ Next tick for instruction. Note: instruction /= endpoint.
     , nextUid :: ProcessStepID
-    -- ^Next process step ID
+    -- ^ Next process step ID
     }
     deriving (Show, Generic)
 
@@ -209,17 +203,17 @@ instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
             get Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
             get _ = Nothing
 
--- |Unique ID of a process step. Uniquity presented only inside PU.
+-- | Unique ID of a process step. Uniquity presented only inside PU.
 type ProcessStepID = Int
 
--- |Process step representation
+-- | Process step representation
 data Step t i = Step
     { pID :: ProcessStepID
-    -- ^uniq (inside single the process unit) step ID
+    -- ^ uniq (inside single the process unit) step ID
     , pInterval :: Interval t
-    -- ^step time
+    -- ^ step time
     , pDesc :: i
-    -- ^step description
+    -- ^ step description
     }
     deriving (Show, Generic)
 
@@ -228,24 +222,24 @@ instance (ToJSON t, ToJSON i) => ToJSON (Step t i)
 instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
     patch diff step@Step{pDesc} = step{pDesc = patch diff pDesc}
 
--- |Informative process step description at a specific process level.
+-- | Informative process step description at a specific process level.
 data StepInfo v x t where
-    -- |CAD level step
+    -- | CAD level step
     CADStep :: String -> StepInfo v x t
-    -- |Apply refactoring
+    -- | Apply refactoring
     RefactorStep :: (Typeable ref, Show ref, Eq ref) => ref -> StepInfo v x t
-    -- |intermidiate level step (function execution)
+    -- | intermidiate level step (function execution)
     IntermediateStep :: F v x -> StepInfo v x t
-    -- |endpoint level step (source or target)
+    -- | endpoint level step (source or target)
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
-    -- |process unit instruction (depends on process unit type)
+    -- | process unit instruction (depends on process unit type)
     InstructionStep ::
         (Show (Instruction pu), Typeable (Instruction pu)) =>
         Instruction pu ->
         StepInfo v x t
-    -- |wrapper for nested process unit step (used for networks)
+    -- | wrapper for nested process unit step (used for networks)
     NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
-    -- |Process unit allocation step
+    -- | Process unit allocation step
     AllocationStep :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
 
 descent (NestedStep _ step) = descent $ pDesc step
@@ -272,15 +266,15 @@ instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _ instr = instr
 
--- |Relations between process steps.
+-- | Relations between process steps.
 data Relation
-    = -- |Vertical relationships (up and down). For example, the intermediate
-      -- step (function execution) can be translated to a sequence of endpoint
-      -- steps (receiving and sending variable), and process unit instructions.
+    = -- | Vertical relationships (up and down). For example, the intermediate
+      --  step (function execution) can be translated to a sequence of endpoint
+      --  steps (receiving and sending variable), and process unit instructions.
       Vertical {vUp, vDown :: ProcessStepID}
-    | -- |Horizontal relationships (on one level). For example, we bind the
-      -- function and apply the refactoring. The binding step should be
-      -- connected to refactoring steps, including new binding steps.
+    | -- | Horizontal relationships (on one level). For example, we bind the
+      --  function and apply the refactoring. The binding step should be
+      --  connected to refactoring steps, including new binding steps.
       Horizontal {hPrev, hNext :: ProcessStepID}
     deriving (Show, Generic, Ord, Eq)
 
@@ -302,7 +296,7 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
 
-{- |Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
+{- | Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
 processor unit has buffered output, so we should provide @oe@ signal for one
 tick before data actually send to the bus. That raises the following cases:
 
@@ -327,7 +321,7 @@ tick `withShift` offset = tick + offset
 
 ---------------------------------------------------------------------
 
-{- |Type class for controllable units. Defines two level of a unit behaviour
+{- | Type class for controllable units. Defines two level of a unit behaviour
 representation (see ahead).
 -}
 class Controllable pu where
@@ -335,19 +329,19 @@ class Controllable pu where
     -- not defined for some cycles - it should be interpreted as NOP.
     data Instruction pu :: Type
 
-    -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
+    -- | Microcode desctibe controll signals on each mUnit cycle (without exclusion).
     data Microcode pu :: Type
 
-    -- |Zip port signal tags and value.
+    -- | Zip port signal tags and value.
     zipSignalTagsAndValues :: Ports pu -> Microcode pu -> [(SignalTag, SignalValue)]
 
-    -- |Get list of used control signal tags.
+    -- | Get list of used control signal tags.
     usedPortTags :: Ports pu -> [SignalTag]
 
-    -- |Take signal tags from inifinite list of tags.
+    -- | Take signal tags from inifinite list of tags.
     takePortTags :: [SignalTag] -> pu -> Ports pu
 
--- |Getting microcode value at a specific time.
+-- | Getting microcode value at a specific time.
 class ByTime pu t | pu -> t where
     microcodeAt :: pu -> t -> Microcode pu
 
@@ -371,27 +365,12 @@ newtype SignalTag = SignalTag {signalTag :: T.Text} deriving (Eq, Ord)
 instance Show SignalTag where
     show = toString . signalTag
 
--- |Type class of processor units with control ports.
+-- | Type class of processor units with control ports.
 class Connected pu where
-    -- |A processor unit control ports (signals, flags){}.
+    -- | A processor unit control ports (signals, flags).
     data Ports pu :: Type
 
-    -- deriving instance Show Type
-    -- deriving instance Show (Ports pu)
-    -- data Ports pu :: Show a => Type :- a
-    -- instance c ~ Show => Show (Some c) 
-    -- data Ports pu where
-    --     Ports pu :: Show a => Typea
-    -- instance deriving (Show pu) => (Show (Ports pu))
-
--- instance Show (Ports pu :: Type) where
---     -- show (Ports pu) = "Ports PU:(" <> show pu <> ")"
---     show v = show v 
-
--- instance (Connected pu) => Show (Ports pu) where
---     show (Ports pu) = "Ports PU:(" <> show pu <> ")"
-
-{- |Decoding microcode from a simple instruction (microcode don't change over
+{- | Decoding microcode from a simple instruction (microcode don't change over
 time).
 
 TODO: Generalize that class for all process units, including networks.
@@ -399,13 +378,13 @@ TODO: Generalize that class for all process units, including networks.
 class UnambiguouslyDecode pu where
     decodeInstruction :: Instruction pu -> Microcode pu
 
--- |Control line value.
+-- | Control line value.
 data SignalValue
-    = -- |undefined by design (`x`)
+    = -- | undefined by design (`x`)
       Undef
-    | -- |boolean (`0` or `1`)
+    | -- | boolean (`0` or `1`)
       Bool Bool
-    | -- |broken value (`x`) by data colision
+    | -- | broken value (`x`) by data colision
       BrokenSignal
     deriving (Eq)
 
@@ -424,19 +403,19 @@ _ +++ _ = BrokenSignal
 
 ------------------------------------------------------------
 
--- |Type class of processor units with IO ports.
+-- | Type class of processor units with IO ports.
 class IOConnected pu where
     data IOPorts pu :: Type
 
-    -- |External input ports, which go outside of NITTA mUnit.
+    -- | External input ports, which go outside of NITTA mUnit.
     inputPorts :: IOPorts pu -> S.Set InputPortTag
     inputPorts _ = S.empty
 
-    -- |External output ports, which go outside of NITTA mUnit.
+    -- | External output ports, which go outside of NITTA mUnit.
     outputPorts :: IOPorts pu -> S.Set OutputPortTag
     outputPorts _ = S.empty
 
-    -- |External output ports, which go outside of NITTA mUnit.
+    -- | External output ports, which go outside of NITTA mUnit.
     inoutPorts :: IOPorts pu -> S.Set InoutPortTag
     inoutPorts _ = S.empty
 

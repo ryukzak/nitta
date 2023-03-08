@@ -63,15 +63,15 @@ import Text.Regex
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
     , bnRemains :: [F v x]
-    -- ^List of functions binded to network, but not binded to any process unit.
+    -- ^ List of functions binded to network, but not binded to any process unit.
     , bnBinded :: M.Map tag [F v x]
-    -- ^Map process unit name to list of binded functions.
+    -- ^ Map process unit name to list of binded functions.
     , bnProcess :: Process t (StepInfo v x t)
-    -- ^Network process (bindings and transport instructions)
+    -- ^ Network process (bindings and transport instructions)
     , bnPus :: M.Map tag (PU v x t)
-    -- ^Map of process units.
+    -- ^ Map of process units.
     , bnSignalBusWidth :: Int
-    -- ^Controll bus width.
+    -- ^ Controll bus width.
     , ioSync :: IOSynchronization
     , bnEnv :: UnitEnv (BusNetwork tag v x t)
     , bnPUPrototypes :: M.Map tag (PUPrototype tag v x t)
@@ -221,7 +221,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                             ( \Step{pID, pDesc} ->
                                 case pDesc of
                                     NestedStep{nStep = Step{pDesc = EndpointRoleStep role}} ->
-                                        zip (repeat pID) $ S.elems $ variables role
+                                        map (pID,) $ S.elems $ variables role
                                     _ -> []
                             )
                             steps
@@ -546,7 +546,7 @@ instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
 
 controlSignalLiteral ix = [i|control_bus[#{ ix }]|]
 
--- |Add binding to Map tag [F v x] dict
+-- | Add binding to Map tag [F v x] dict
 registerBinding tag f dict =
     M.alter (maybe (Just [f]) (Just . (f :))) tag dict
 
@@ -956,7 +956,7 @@ addCustom tag pu ioPorts = do
             , pus = M.insertWith (\_ _ -> error "every PU must has uniq tag") tag pu' pus
             }
 
--- |Add PU with the default initial state. Type specify by IOPorts.
+-- | Add PU with the default initial state. Type specify by IOPorts.
 add ::
     (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
     tag ->
@@ -986,7 +986,7 @@ addCustomPrototype tag pu ioports
                         prototypes
                 }
 
--- |Add PU to prototypes with the default initial state. Type specify by IOPorts.
+-- | Add PU to prototypes with the default initial state. Type specify by IOPorts.
 addPrototype ::
     (MonadState (BuilderSt tag v x t) m, PUClasses pu v x t, Default pu, UnitTag tag) =>
     tag ->

@@ -38,19 +38,19 @@ import Data.Typeable
 
 data Shift v x t = Shift
     { remain :: [F v x]
-    -- ^list of FU, that will be binded later
+    -- ^ list of FU, that will be binded later
     , target :: Maybe v
-    -- ^current input value, that we want to shift
+    -- ^ current input value, that we want to shift
     , sources :: [v]
-    -- ^list of output values
+    -- ^ list of output values
     , sRight :: Bool
-    -- ^True -> shift right; False -> shift left
+    -- ^ True -> shift right; False -> shift left
     , byteShiftDiv :: Int
-    -- ^shift div 8 (is used for byte shift)
+    -- ^ shift div 8 (is used for byte shift)
     , byteShiftMod :: Int
-    -- ^shift mod 8 (is used for bit shift)
+    -- ^ shift mod 8 (is used for bit shift)
     , currentWork :: Maybe (F v x)
-    -- ^current function in PU
+    -- ^ current function in PU
     , process_ :: Process t (StepInfo v x t)
     -- ^description of target computation process
     } deriving (Show)
@@ -92,7 +92,7 @@ instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
     process = process_
     unitType pu = typeOf pu
 
--- |This function carry out actual take functional block to work.
+-- | This function carry out actual take functional block to work.
 execution pu@Shift{target = Nothing, sources = [], remain} f
     | Just f' <- castF f =
         case f' of

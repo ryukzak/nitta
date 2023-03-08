@@ -22,7 +22,7 @@ import NITTA.Intermediate.Analysis (reorderAlgorithm)
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 
--- |Functional algorithm simulation
+-- | Functional algorithm simulation
 simulateDataFlowGraph ::
     (Var v, Val x, WithFunctions g (F v x)) =>
     Int ->

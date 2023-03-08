@@ -18,7 +18,7 @@ import NITTA.Model.TargetSystem (processDuration)
 import NITTA.Synthesis.Explore (isComplete, isLeaf)
 import NITTA.Synthesis.Types
 
--- |Metrics of synthesis tree process
+-- | Metrics of synthesis tree process
 data TreeInfo = TreeInfo
     { nodes :: Int
     , success :: Int

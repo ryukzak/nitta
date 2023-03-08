@@ -41,7 +41,7 @@ import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prettyprinter
 import Data.Typeable
 
-{- |Type that contains expression:
+{- | Type that contains expression:
 
 @a + b = c@ is exression and it equals:
     @[[(False, "a"), (False, "b")], [(False, "c")]]@
@@ -51,9 +51,9 @@ import Data.Typeable
 -}
 data Job v x = Job
     { tasks :: [[(Bool, v)]]
-    -- ^Contains future parts expression to eval (c + d = e)
+    -- ^ Contains future parts expression to eval (c + d = e)
     , func :: F v x
-    -- ^Func of this expression
+    -- ^ Func of this expression
     , state :: JobState
     }
 
@@ -79,8 +79,9 @@ data Accum v x t = Accum
     , currentJob :: Maybe (Job v x)
     -- ^Current job
     , process_ :: Process t (StepInfo v x t)
-    -- ^Process deriving (Show)
+    -- ^Process
     }
+    
 
 instance (VarValTime v x t) => Pretty (Accum v x t) where
     pretty a =

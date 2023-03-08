@@ -210,7 +210,7 @@ Multiplier:
         nextTick: 0
         nextUid: 0
 >>> endpointOptions st1
-[?Target a@(0..∞ /P 1..∞),?Target b@(0..∞ /P 1..∞)]
+[?Target a@(0..INF /P 1..INF),?Target b@(0..INF /P 1..INF)]
 
 As we can see, after binding, we have two different options of computational
 process scheduling that match different argument loading sequences: @a@ or
@@ -236,7 +236,7 @@ Multiplier:
         nextTick: 3
         nextUid: 2
 >>> mapM_ print $ endpointOptions st2
-?Target b@(3..∞ /P 1..∞)
+?Target b@(3..INF /P 1..INF)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> putDoc $ pretty st3
 Multiplier:
@@ -257,7 +257,7 @@ Multiplier:
         nextTick: 4
         nextUid: 4
 >>> mapM_ print $ endpointOptions st3
-?Source c,d@(6..∞ /P 1..∞)
+?Source c,d@(6..INF /P 1..INF)
 
 After loading both arguments, we can see that the next option is unloading
 @c@ and @d@ variables. Note, these variables can be unloaded either
@@ -287,7 +287,7 @@ Multiplier:
         nextTick: 7
         nextUid: 6
 >>> mapM_ print $ endpointOptions st4
-?Source d@(7..∞ /P 1..∞)
+?Source d@(7..INF /P 1..INF)
 >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ S.fromList ["d"]) (7...7)
 >>> putDoc $ pretty st5
 Multiplier:
@@ -351,32 +351,32 @@ import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Prettyprinter
 import Data.Typeable
 
-{- |It is a PU model state representation, which describes each state of
+{- | It is a PU model state representation, which describes each state of
 synthesis model for that PU.
 -}
 data Multiplier v x t = Multiplier
     { remain :: [F v x]
-    -- ^List of the assigned but not processed functions. To execute a
-    -- function:
+    -- ^ List of the assigned but not processed functions. To execute a
+    --  function:
     --
-    -- - removing the function from this list;
+    --  - removing the function from this list;
     --
-    -- - transfering information from function to 'targets' and 'sources'
-    --   fields.
+    --  - transfering information from function to 'targets' and 'sources'
+    --    fields.
     --
-    -- An assigned function can be executed in random order.
+    --  An assigned function can be executed in random order.
     , targets :: [v]
-    -- ^List of variables, which is needed to push to the PU for current
-    -- function evaluation.
+    -- ^ List of variables, which is needed to push to the PU for current
+    --  function evaluation.
     , sources :: [v]
-    -- ^List of variables, which is needed to pull from PU for current
-    -- function evaluation. Pull order is arbitrary. All pulled variables
-    -- correspond to the same value (same result).
+    -- ^ List of variables, which is needed to pull from PU for current
+    --  function evaluation. Pull order is arbitrary. All pulled variables
+    --  correspond to the same value (same result).
     , currentWork :: Maybe (F v x)
-    -- ^Current work, if some function is executed.
+    -- ^ Current work, if some function is executed.
     , process_ :: Process t (StepInfo v x t)
-    -- ^Description of scheduled computation process
-    -- ('NITTA.Model.ProcessorUnits.Types').
+    -- ^ Description of scheduled computation process
+    --  ('NITTA.Model.ProcessorUnits.Types').
     , isMocked :: Bool
     -- ^HDL implementation of PU contains a multiplier IP core from Altera.
     -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
@@ -410,13 +410,13 @@ multiplier mock =
         , isMocked = mock
         }
 
--- |Default initial state of multiplier PU model.
+-- | Default initial state of multiplier PU model.
 instance (Time t) => Default (Multiplier v x t) where
     def = multiplier True
 
 instance Default x => DefaultX (Multiplier v x t) x
 
-{- |This class is allowed to extract all bound functions. It has a very simple
+{- | This class is allowed to extract all bound functions. It has a very simple
 implementation: we take process description (all planned functions), and
 function in progress, if it is.
 -}
@@ -426,7 +426,7 @@ instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
             ++ remain
             ++ maybeToList currentWork
 
-{- |Tracking internal dependencies on the processed variables. It includes:
+{- | Tracking internal dependencies on the processed variables. It includes:
 
 - dependencies between inputs and outputs of currently evaluated function;
 
@@ -445,7 +445,7 @@ instance (Var v) => Locks (Multiplier v x t) v where
                ]
             ++ concatMap locks remain
 
-{- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
+{- | That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
 'ResolveDeadlockProblem', 'ConstantFoldingProblem') describes the possibility of PU to modify an
 algorithm. Empty implementation means that multiplier PU doesn't have such
 possibilities.
@@ -590,7 +590,7 @@ instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     -- If something went wrong.
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
-{- |For each PU, we can specify the instruction set and microcode, which allows
+{- | For each PU, we can specify the instruction set and microcode, which allows
 us to control the PU at the hardware level.
 
 - instructions set describes a computation process from a programmer point of
@@ -626,7 +626,7 @@ instance Controllable (Multiplier v x t) where
     takePortTags (wr : oe : _) _ = MultiplierPorts wr oe
     takePortTags _ _ = error "can not take port tags, tags are over"
 
-{- |Default microcode state should be equal to @nop@ function, which should be a
+{- | Default microcode state should be equal to @nop@ function, which should be a
 safe way to do nothing (not take a bus, not change internal PU state, etc.).
 -}
 instance Default (Microcode (Multiplier v x t)) where
@@ -636,14 +636,14 @@ instance Default (Microcode (Multiplier v x t)) where
             , oeSignal = False
             }
 
-{- |Instruction and microcode should have exact matching, which allows us to
+{- | Instruction and microcode should have exact matching, which allows us to
 translate PU instructions to microcode value.
 -}
 instance UnambiguouslyDecode (Multiplier v x t) where
     decodeInstruction Load = def{wrSignal = True}
     decodeInstruction Out = def{oeSignal = True}
 
-{- |Processor unit control signal ports. In
+{- | Processor unit control signal ports. In
 'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
 @ControlUnit@.
 -}
@@ -660,7 +660,7 @@ instance IOConnected (Multiplier v x t) where
     data IOPorts (Multiplier v x t) = MultiplierIO
         deriving (Show)
 
-{- |Usage of PU requires some artifacts of a synthesis process:
+{- | Usage of PU requires some artifacts of a synthesis process:
 
 - Hardware implementation, which depends from 'isMocked' value:
 
@@ -712,12 +712,12 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-{- |Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
+{- | Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
 means that multiplier, as expected, doesn't have any IO.
 -}
 instance IOTestBench (Multiplier v x t) v x
 
-{- |The main purpose of this class is to generate autotests for PU. It allows to
+{- | The main purpose of this class is to generate autotests for PU. It allows to
 generate testbench for the PU according to its model and scheduled computational
 process. You can see tests in @test/Spec.hs@. Testbench contains:
 

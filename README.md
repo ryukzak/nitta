@@ -25,9 +25,7 @@ Our future users can resolve the following tasks:
 
 ## Links
 
-Project page: <https://ryukzak.github.io/projects/nitta/>
-
-Publications: <https://ryukzak.github.io/publications/> (with NITTA tag)
+Project page & Publications: <https://ryukzak.github.io/projects/nitta/>
 
 Maintainer: Aleksandr Penskoi <aleksandr.penskoi@gmail.com>
 

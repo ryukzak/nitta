@@ -39,7 +39,7 @@ import NITTA.Utils
 import System.Log.Logger
 -- import Debug.Trace
 
--- |Make synthesis tree
+-- | Make synthesis tree
 synthesisTreeRootIO = atomically . rootSynthesisTreeSTM
 
 rootSynthesisTreeSTM model = do
@@ -52,21 +52,21 @@ rootSynthesisTreeSTM model = do
             , sSubForestVar
             }
 
--- |Get specific by @nId@ node from a synthesis tree.
+-- | Get specific by @nId@ node from a synthesis tree.
 getTreeIO tree (Sid []) = return tree
 getTreeIO tree (Sid (i : is)) = do
     subForest <- subForestIO tree
     unless (i < length subForest) $ error "getTreeIO - wrong Sid"
     getTreeIO (subForest !! i) (Sid is)
 
--- |Get list of all nodes from root to selected.
+-- | Get list of all nodes from root to selected.
 getTreePathIO _ (Sid []) = return []
 getTreePathIO tree (Sid (i : is)) = do
     h <- getTreeIO tree $ Sid [i]
     t <- getTreePathIO h $ Sid is
     return $ h : t
 
-{- |Get all available edges for the node. Edges calculated only for the first
+{- | Get all available edges for the node. Edges calculated only for the first
 call.
 -}
 subForestIO
@@ -100,7 +100,7 @@ subForestIO
 
         return subForest
 
-{- |For synthesis method is more usefull, because throw away all useless trees in
+{- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
 positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
@@ -121,7 +121,7 @@ isLeaf
 isLeaf _ = False
 
 isComplete = isSynthesisComplete . sTarget . sState
--- *Internal
+-- * Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =
     let edges =

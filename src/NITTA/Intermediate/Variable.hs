@@ -29,17 +29,17 @@ import Data.Typeable
 -- |Variable identifier. Used for simplify type description.
 type Var v = (Show v, Typeable v, Ord v, IsString v, ToString v, Suffix v, Hashable v)
 
--- |Type class of something, which is related to variables.
+-- | Type class of something, which is related to variables.
 class Variables a v | a -> v where
-    -- |Get all related variables.
+    -- | Get all related variables.
     variables :: a -> S.Set v
 
--- |The type class for variable identifier modifications.
+-- | The type class for variable identifier modifications.
 class Suffix v where
-    -- |Make a buffered version of the variable. For example: @"v" -> "v@buf"@
+    -- | Make a buffered version of the variable. For example: @"v" -> "v@buf"@
     bufferSuffix :: v -> v
 
-    -- |Buffer sequence length of a variable (@"v" -> 0; "v@buf" -> 1; "b@buf@buf" -> 2@)
+    -- | Buffer sequence length of a variable (@"v" -> 0; "v@buf" -> 1; "b@buf@buf" -> 2@)
     countSuffix :: v -> Int
 
 -- FIXME: unsafe, because can create duplicate variable. Solution options:

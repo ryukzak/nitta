@@ -26,14 +26,14 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Utils
 -- import Debug.Trace
 
-{- |Model of target unit, which is a main subject of synthesis process and
+{- | Model of target unit, which is a main subject of synthesis process and
 synthesis graph.
 -}
 data TargetSystem u tag v x t = TargetSystem
     { mUnit :: u
-    -- ^model of target unit
+    -- ^ model of target unit
     , mDataFlowGraph :: DataFlowGraph v x
-    -- ^whole application algorithm
+    -- ^ whole application algorithm
     }
     deriving (Generic)
 

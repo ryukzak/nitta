@@ -41,11 +41,11 @@ import NITTA.Intermediate.Types
 
 data BreakLoop v x = BreakLoop
     { loopX :: x
-    -- ^initial looped value
+    -- ^ initial looped value
     , loopO :: S.Set v
-    -- ^output variables
+    -- ^ output variables
     , loopI :: v
-    -- ^input variable
+    -- ^ input variable
     }
     deriving (Generic, Eq)
 

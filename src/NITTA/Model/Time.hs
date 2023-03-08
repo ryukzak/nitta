@@ -25,20 +25,20 @@ import GHC.Generics
 import NITTA.Intermediate.Types
 import Numeric.Interval.NonEmpty
 
--- |Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
+-- | Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
 type VarValTime v x t = (Var v, Val x, Time t)
 
--- |Shortcut for time type constrain.
+-- | Shortcut for time type constrain.
 type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t)
 
 instance (ToJSON t) => ToJSON (Interval t)
 
--- |Time constrain for processor activity.
+-- | Time constrain for processor activity.
 data TimeConstraint t = TimeConstraint
     { tcAvailable :: Interval t
-    -- ^Inclusive interval, when value available to transfer.
+    -- ^ Inclusive interval, when value available to transfer.
     , tcDuration :: Interval t
-    -- ^Inclusive interval, possible for value transfers.
+    -- ^ Inclusive interval, possible for value transfers.
     }
     deriving (Eq, Generic)
 
@@ -49,12 +49,12 @@ instance (Show t, Eq t, Bounded t) => Show (TimeConstraint t) where
                 let a = inf i
                     b = sup i
                  in if b == maxBound
-                        then show a ++ "..∞"
+                        then show a ++ "..INF"
                         else show a ++ ".." ++ show b
 
 instance (ToJSON tp) => ToJSON (TimeConstraint tp)
 
--- |Forgoten implementation of tagged time for speculative if statement. Current - dead code.
+-- | Forgoten implementation of tagged time for speculative if statement. Current - dead code.
 data TaggedTime tag t = TaggedTime
     { tTag :: Maybe tag
     , tClock :: t

@@ -28,7 +28,7 @@ import NITTA.Model.Tests.Internals
 import NITTA.Model.Tests.Providers
 import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit
+import Test.Tasty.HUnit (testCase)
 import Test.Tasty.TH
 
 -- TODO:  https://github.com/ryukzak/nitta/issues/122

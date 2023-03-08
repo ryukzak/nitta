@@ -69,7 +69,7 @@ instance (Eq k, Hashable k) => Default (M.HashMap k v) where
 instance FromJSON TemplateConf
 instance ToJSON TemplateConf
 
-{- |collectNittaPath - read nittaPath from all provided target templates and
+{- | collectNittaPath - read nittaPath from all provided target templates and
 return it if all of them are the same.
 -}
 collectNittaPath :: [FilePath] -> IO (Either T.Text FilePath)
@@ -147,7 +147,7 @@ writeRendedTemplate' context opath tPath tFile src = do
     createDirectoryIfMissing True $ opath </> takeDirectory tFile
     T.writeFile (opath </> tFile) $ runGinger context template
 
--- |List all files inside path
+-- | List all files inside path
 findAllFiles root = findAllFiles' ""
     where
         findAllFiles' path = do

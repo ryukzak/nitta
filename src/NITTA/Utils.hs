@@ -15,13 +15,13 @@ module NITTA.Utils (
     shiftI,
     modify'_,
 
-    -- *HDL generation
+    -- * HDL generation
     bool2verilog,
     values2dump,
     hdlValDump,
     toModuleName,
 
-    -- *Process inspection
+    -- * Process inspection
     endpointAt,
     getEndpoint,
     getInstruction,
@@ -38,7 +38,7 @@ module NITTA.Utils (
     isInstruction,
     module NITTA.Utils.Base,
 
-    -- *Toml
+    -- * Toml
     getToml,
     getFromToml,
     getFromTomlSection,
@@ -105,7 +105,7 @@ hdlValDump x =
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
 
-toModuleName = S.replace " " "_"
+toModuleName name = S.replace " " "_" $ S.replace ":" "" name
 
 endpointAt t p =
     case mapMaybe getEndpoint $ whatsHappen t p of

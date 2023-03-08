@@ -32,7 +32,7 @@ import NITTA.Intermediate.Value ()
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils
 
-{- |Target project for different purpose (testing, target system, etc). Should
+{- | Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
 -}
 
@@ -40,24 +40,24 @@ be writable to disk.
 -- pName or pTargetProjectPath should be maybe? Or both?
 data Project m v x = Project
     { pName :: T.Text
-    -- ^target project name
+    -- ^ target project name
     , pLibPath :: FilePath
-    -- ^IP-core library path
+    -- ^ IP-core library path
     , pTargetProjectPath :: FilePath
-    -- ^output path for target project
+    -- ^ output path for target project
     , pAbsTargetProjectPath :: FilePath
-    -- ^absolute output path for target project
+    -- ^ absolute output path for target project
     , pInProjectNittaPath :: FilePath
-    -- ^relative to the project path output path for NITTA processor inside target project
+    -- ^ relative to the project path output path for NITTA processor inside target project
     , pAbsNittaPath :: FilePath
-    -- ^absolute output path for NITTA processor inside target project
+    -- ^ absolute output path for NITTA processor inside target project
     , pUnit :: m
-    -- ^'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
+    -- ^ 'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
     , pUnitEnv :: UnitEnv m
     , pTestCntx :: Cntx v x
-    -- ^testbench context with input values
+    -- ^ testbench context with input values
     , pTemplates :: [FilePath]
-    -- ^Target platform templates
+    -- ^ Target platform templates
     }
 
 defProjectTemplates :: [FilePath]
@@ -68,45 +68,45 @@ defProjectTemplates =
 
 instance (Default x) => DefaultX (Project m v x) x
 
--- |Type class for target components. Target -- a target system project or a testbench.
+-- | Type class for target components. Target -- a target system project or a testbench.
 class TargetSystemComponent pu where
-    -- |Name of the structural hardware module or Verilog module name (network or process unit)
+    -- | Name of the structural hardware module or Verilog module name (network or process unit)
     moduleName :: T.Text -> pu -> T.Text
 
-    -- |Software and other specification which depends on application algorithm
+    -- | Software and other specification which depends on application algorithm
     software :: T.Text -> pu -> Implementation
 
-    -- |Hardware which depends on microarchitecture description and requires synthesis.
+    -- | Hardware which depends on microarchitecture description and requires synthesis.
     hardware :: T.Text -> pu -> Implementation
 
-    -- |Generate code for making an instance of the hardware module
+    -- | Generate code for making an instance of the hardware module
     hardwareInstance :: T.Text -> pu -> UnitEnv pu -> Verilog
 
--- |Element of target system implementation
+-- | Element of target system implementation
 data Implementation
-    = -- |Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')
+    = -- | Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')
       Immediate {impFileName :: FilePath, impText :: T.Text}
-    | -- |Fetch implementation from library
+    | -- | Fetch implementation from library
       FromLibrary {impFileName :: FilePath}
-    | -- |Aggregation of many implementation parts in separate paths
+    | -- | Aggregation of many implementation parts in separate paths
       Aggregate {impPath :: Maybe FilePath, subComponents :: [Implementation]}
-    | -- |Nothing
+    | -- | Nothing
       Empty
 
-{- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
+{- | Resolve uEnv element to verilog source code. E.g. `dataIn` into
 `data_bus`, `dataOut` into `accum_data_out`.
 -}
 data UnitEnv m = UnitEnv
     { sigClk :: T.Text
-    -- ^clock signal
+    -- ^ clock signal
     , sigRst :: T.Text
-    -- ^reset signal
+    -- ^ reset signal
     , sigCycleBegin :: T.Text
-    -- ^posedge on computation cycle begin
+    -- ^ posedge on computation cycle begin
     , sigInCycle :: T.Text
-    -- ^positive on computation cycle
+    -- ^ positive on computation cycle
     , sigCycleEnd :: T.Text
-    -- ^posedge on computation cycle end
+    -- ^ posedge on computation cycle end
     , ctrlPorts :: Maybe (Ports m)
     , ioPorts :: Maybe (IOPorts m)
     , valueIn, valueOut :: Maybe (T.Text, T.Text)

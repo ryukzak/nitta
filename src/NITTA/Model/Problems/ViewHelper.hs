@@ -25,7 +25,7 @@ newtype IntervalView = IntervalView T.Text
     deriving (Generic)
 
 instance (Time t) => Viewable (Interval t) IntervalView where
-    view = IntervalView . T.replace (showText (maxBound :: t)) "∞" . showText
+    view = IntervalView . T.replace (showText (maxBound :: t)) "INF" . showText
 
 instance ToJSON IntervalView
 
