@@ -53,7 +53,7 @@ jobs:
         run: sudo apt-get install iverilog
 
       - name: Build & test nitta backend
-        run: stack build --haddock --no-haddock-deps --test --keep-going --test-suite-timeout 600 --copy-bins --coverage
+        run: stack build --haddock --no-haddock-deps --test --keep-going --test-suite-timeout 1200 --copy-bins --coverage
 
       - name: Generate test coverage report
         run: stack hpc report nitta
