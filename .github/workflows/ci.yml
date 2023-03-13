@@ -25,9 +25,34 @@ jobs:
             Info:  ${{ github.event.pull_request.title }}
             ${{ github.event.pull_request.html_url }}
 
+  nitta-haskell-deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache haskell-stack
+        uses: actions/cache@v3.2.5
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
+
+      - name: Install haskell-stack
+        uses: haskell/actions/setup@v2.3.3
+        with:
+          enable-stack: true
+          stack-no-global: true
+          stack-version: 'latest'
+
+      - name: Build nitta backend dependencies and doctest
+        run: |
+          stack build --haddock --test --only-dependencies
+          stack install doctest
+
   nitta:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    needs: nitta-haskell-deps
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
 
