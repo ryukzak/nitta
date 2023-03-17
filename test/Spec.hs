@@ -40,7 +40,7 @@ import Test.Tasty.Ingredients.Rerun
 main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
-    ci <- fromMaybe "" <$> lookupEnv "CI"
+    long <- fromMaybe "" <$> lookupEnv "LONG_TESTS"
     defaultMainWithRerun
         $ testGroup
             "NITTA"
@@ -64,11 +64,11 @@ main = do
           , NITTA.Tests.tests
           , NITTA.Utils.Tests.tests
           ]
-            <> if ci == "true" then [ciOnlyTestGroup] else []
+            <> if long == "true" then [longTestGroup] else []
 
-ciOnlyTestGroup =
+longTestGroup =
     testGroup
-        "CI only"
+        "Long tests"
         [ typedLuaTestCase
             (microarch Sync SlaveSPI)
             pFX48_64
