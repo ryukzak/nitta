@@ -42,7 +42,7 @@ import System.Directory
 import System.FilePath.Posix
 import Test.QuickCheck
 
-{- |Execute co-simulation test for the specific process unit
+{- | Execute co-simulation test for the specific process unit
 with or without "naive synthesis".
 -}
 puCoSim ::
@@ -83,7 +83,7 @@ puCoSim name u cntxCycle alg needBind = do
     writeProject prj
     runTestbench prj
 
-{- |Bind all functions to processor unit and synthesis process with endpoint
+{- | Bind all functions to processor unit and synthesis process with endpoint
 decisions.
 -}
 naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
@@ -126,7 +126,7 @@ initialCycleCntxGen fs = do
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
 
-{- |Automatic synthesis evaluation process with random decisions. If we can't bind
+{- | Automatic synthesis evaluation process with random decisions. If we can't bind
 function to PU then we skip it.
 -}
 processAlgOnEndpointGen pu0 algGen' = do

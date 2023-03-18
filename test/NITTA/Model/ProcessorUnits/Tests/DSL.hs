@@ -151,22 +151,22 @@ import System.FilePath
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
-{- |Unit test state. Be aware internal implementation is not fully consistent
+{- | Unit test state. Be aware internal implementation is not fully consistent
  and can be replaced by a type family with PU and target system instances.
 -}
 data UnitTestState u v x = UnitTestState
     { testName :: String
     , unit :: u
-    -- ^Unit model, should be a process unit or target system.
+    -- ^ Unit model, should be a process unit or target system.
     , functs :: [F v x]
-    -- ^Contains functions assigned to PU.
+    -- ^ Contains functions assigned to PU.
     , cntxCycle :: [(v, x)]
-    -- ^Initial values for coSimulation
+    -- ^ Initial values for coSimulation
     , receivedValues :: [(v, [x])]
-    -- ^Values for IO immitation
+    -- ^ Values for IO immitation
     , busType :: Maybe (Proxy x)
     , report :: Either String (TestbenchReport v x)
-    -- ^Report on process unit test bench.
+    -- ^ Report on process unit test bench.
     }
     deriving (Show)
 
@@ -188,7 +188,7 @@ unitTestCase ::
     StateT (UnitTestState u v x) IO () ->
     TestTree
 unitTestCase name pu alg = testCase name $ do
-    void $ evalUnitTestState name pu alg
+    void $ evalUnitTestState (toModuleName name) pu alg
 
 evalUnitTestState name st alg =
     evalStateT
@@ -258,7 +258,7 @@ doDecision unsafe endpSt = do
         then put st{unit = endpointDecision unit endpSt}
         else lift $ assertFailure $ "doDecision: such option isn't available: " <> show endpSt <> " from " <> show (endpointOptions unit)
 
--- |Bind all functions to processor unit and decide till decisions left.
+-- | Bind all functions to processor unit and decide till decisions left.
 decideNaiveSynthesis :: PUStatement pu v x t ()
 decideNaiveSynthesis = do
     st@UnitTestState{unit, functs} <- get
@@ -548,7 +548,7 @@ assertAllocation number alloc = do
                     #{ showArray allocations }
                     |]
 
--- |Asserts that allocation options that provides target system are equals to specified options
+-- | Asserts that allocation options that provides target system are equals to specified options
 assertAllocationOptions :: [Allocation T.Text] -> TSStatement x ()
 assertAllocationOptions options = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get

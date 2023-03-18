@@ -73,11 +73,11 @@ data ConstantFolding v x = ConstantFolding
     deriving (Generic, Show, Eq)
 
 class ConstantFoldingProblem u v x | u -> v x where
-    -- |Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done
+    -- | Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done
     constantFoldingOptions :: u -> [ConstantFolding v x]
     constantFoldingOptions _ = []
 
-    -- |Function takes 'ConstantFolding' and modify 'DataFlowGraph'
+    -- | Function takes 'ConstantFolding' and modify 'DataFlowGraph'
     constantFoldingDecision :: u -> ConstantFolding v x -> u
     constantFoldingDecision _ _ = error "not implemented"
 

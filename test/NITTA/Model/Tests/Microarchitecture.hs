@@ -74,7 +74,7 @@ basic _proxy = defineNetwork "net1" ASync $ do
 
 march = basic pInt
 
--- |Simple microarchitecture with broken PU for negative tests
+-- | Simple microarchitecture with broken PU for negative tests
 maBroken :: (Integral x, Val x) => Broken T.Text x Int -> BusNetwork T.Text T.Text x Int
 maBroken brokenPU = defineNetwork "net1" ASync $ do
     add "fram1" FramIO

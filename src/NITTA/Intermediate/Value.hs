@@ -82,10 +82,10 @@ class
     -- | construct a value from raw data and attributes
     fromRaw :: Integer -> Integer -> x
 
-    -- | сonvert a value to Verilog literal with data
+    -- | convert a value to Verilog literal with data
     dataLiteral :: x -> T.Text
 
-    -- | сonvert a value to Verilog literal with attributes
+    -- | convert a value to Verilog literal with attributes
     attrLiteral :: x -> T.Text
     attrLiteral x = showText (attrWidth x) <> "'d0000"
 

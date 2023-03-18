@@ -66,21 +66,21 @@ import NITTA.Utils.Base
 
 data ProcessWave v x = ProcessWave
     { pwFs :: [F v x]
-    -- ^Functions that can be executed at this wave
+    -- ^ Functions that can be executed at this wave
     , pwOut :: S.Set v
-    -- ^Set of output variables related to the functions from this step
+    -- ^ Set of output variables related to the functions from this step
     }
     deriving (Show, Generic)
 
 data Builder v x = Builder
     { pwRemains :: S.Set (F v x)
-    -- ^Functions that can be calculated due to lack of ready input values
+    -- ^ Functions that can be calculated due to lack of ready input values
     , pwIn :: S.Set v
-    -- ^Variables that defined at the beginning of the process
+    -- ^ Variables that defined at the beginning of the process
     , pwReadyIn :: S.Set v
-    -- ^Variables that is ready to be used us inputs
+    -- ^ Variables that is ready to be used us inputs
     , pwGraph :: [ProcessWave v x]
-    -- ^Resulting process flow
+    -- ^ Resulting process flow
     }
     deriving (Show, Generic)
 
@@ -101,7 +101,7 @@ estimateVarWaves alreadyVars fs = M.fromList $ go 0 $ buildProcessWaves alreadyV
         go n (ProcessWave{pwFs} : pss) = go (n + 1) pss <> [(out, n) | out <- S.toList $ unionsMap outputs pwFs]
         go _ [] = []
 
--- |Divide function into execution waves.
+-- | Divide function into execution waves.
 buildProcessWaves :: (Var v, Val x) => [v] -> [F v x] -> [ProcessWave v x]
 buildProcessWaves vars fs =
     let pwIn = S.fromList vars

@@ -20,12 +20,12 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Intermediate.Types (
-    -- *Function interface
+    -- * Function interface
     I (..),
     O (..),
     X (..),
 
-    -- *Function description
+    -- * Function description
     F (..),
     FView (..),
     packF,
@@ -37,7 +37,7 @@ module NITTA.Intermediate.Types (
     WithFunctions (..),
     Label (..),
 
-    -- *Functional simulation
+    -- * Functional simulation
     FunctionSimulation (..),
     CycleCntx (..),
     Cntx (..),
@@ -48,7 +48,7 @@ module NITTA.Intermediate.Types (
     getCntx,
     updateCntx,
 
-    -- *Patch
+    -- * Patch
     Patch (..),
     Changeset (..),
     reverseDiff,
@@ -78,7 +78,7 @@ import NITTA.UIBackend.ViewHelperCls
 import NITTA.Utils.Base
 import Text.PrettyPrint.Boxes hiding ((<>))
 
--- |Input variable.
+-- | Input variable.
 newtype I v = I v
     deriving (Eq, Ord)
 
@@ -92,7 +92,7 @@ instance (Eq v) => Patch (I v) (v, v) where
 instance Variables (I v) v where
     variables (I v) = S.singleton v
 
--- |Output variable set.
+-- | Output variable set.
 newtype O v = O (S.Set v)
     deriving (Eq, Ord)
 
@@ -107,13 +107,13 @@ instance (ToString v) => Show (O v) where
 instance Variables (O v) v where
     variables (O vs) = vs
 
--- |Value of variable (constant or initial value).
+-- | Value of variable (constant or initial value).
 newtype X x = X x
     deriving (Show, Eq)
 
 -----------------------------------------------------------
 
-{- |Casuality of variable processing sequence in term of locks.
+{- | Casuality of variable processing sequence in term of locks.
 
 For example:
 > c := a + b
@@ -122,7 +122,7 @@ For example:
 class (Var v) => Locks x v | x -> v where
     locks :: x -> [Lock v]
 
--- |Variable casuality.
+-- | Variable casuality.
 data Lock v = Lock
     { locked :: v
     , lockBy :: v
@@ -135,7 +135,7 @@ instance (ToString v) => Show (Lock v) where
 
 instance (ToJSON v) => ToJSON (Lock v)
 
--- |All input variables locks all output variables.
+-- | All input variables locks all output variables.
 inputsLockOutputs f =
     [ Lock{locked = y, lockBy = x}
     | x <- S.elems $ inputs f
@@ -144,23 +144,23 @@ inputsLockOutputs f =
 
 -----------------------------------------------------------
 
--- |Type class for application algorithm functions.
+-- | Type class for application algorithm functions.
 class Function f v | f -> v where
-    -- |Get all input variables.
+    -- | Get all input variables.
     inputs :: f -> S.Set v
     inputs _ = S.empty
 
-    -- |Get all output variables.
+    -- | Get all output variables.
     outputs :: f -> S.Set v
     outputs _ = S.empty
 
-    -- |Sometimes, one function can cause internal process unit lock for another function.
+    -- | Sometimes, one function can cause internal process unit lock for another function.
 
     -- TODO: remove or move, because its depends from PU type
     isInternalLockPossible :: f -> Bool
     isInternalLockPossible _ = False
 
--- |Type class for making fine label for Functions.
+-- | Type class for making fine label for Functions.
 class Label a where
     label :: a -> String
 
@@ -170,12 +170,12 @@ instance Label String where
 instance Label T.Text where
     label = toString
 
--- |Type class of something, which is related to functions.
+-- | Type class of something, which is related to functions.
 class WithFunctions a f | a -> f where
-    -- |Get a list of associated functions.
+    -- | Get a list of associated functions.
     functions :: a -> [f]
 
--- |Box forall functions.
+-- | Box forall functions.
 data F v x where
     F ::
         ( Function f v
@@ -253,11 +253,11 @@ instance Show (F v x) where
 instance (Var v) => Variables (F v x) v where
     variables F{fun} = inputs fun `S.union` outputs fun
 
--- |Helper for extraction function from existential container 'F'.
+-- | Helper for extraction function from existential container 'F'.
 castF :: (Typeable f, Typeable v, Typeable x) => F v x -> Maybe (f v x)
 castF F{fun} = cast fun
 
--- |Helper for JSON serialization
+-- | Helper for JSON serialization
 data FView = FView
     { fvFun :: T.Text
     , fvHistory :: [T.Text]
@@ -275,12 +275,12 @@ instance ToJSON FView
 
 -----------------------------------------------------------
 
--- |The type class for function simulation.
+-- | The type class for function simulation.
 class FunctionSimulation f v x | f -> v x where
     -- FIXME: CycleCntx - problem, because its prevent Receive simulation with
     -- data drop (how implement that?).
 
-    -- |Receive a computational context and return changes (list of varible names and its new values).
+    -- | Receive a computational context and return changes (list of varible names and its new values).
     simulate :: CycleCntx v x -> f -> [(v, x)]
 
 newtype CycleCntx v x = CycleCntx {cycleCntx :: HM.HashMap v x}
@@ -295,9 +295,9 @@ instance Default (CycleCntx v x) where
 
 data Cntx v x = Cntx
     { cntxProcess :: [CycleCntx v x]
-    -- ^all variables on each process cycle
+    -- ^ all variables on each process cycle
     , cntxReceived :: M.Map v [x]
-    -- ^sequences of all received values, one value per process cycle
+    -- ^ sequences of all received values, one value per process cycle
     , cntxCycleNumber :: Int
     }
 
@@ -368,7 +368,7 @@ instance Default (Cntx v x) where
             , cntxCycleNumber = 5
             }
 
--- |Make sequence of received values '[ Map v x ]'
+-- | Make sequence of received values '[ Map v x ]'
 cntxReceivedBySlice :: (Ord v) => Cntx v x -> [M.Map v x]
 cntxReceivedBySlice Cntx{cntxReceived} = cntxReceivedBySlice' $ M.assocs cntxReceived
 
@@ -390,23 +390,23 @@ updateCntx (CycleCntx cntx) ((v, x) : vxs)
 
 -----------------------------------------------------------
 
--- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
+-- | Patch class allows replacing one variable by another. Especially for algorithm refactor.
 class Patch f diff where
     patch :: diff -> f -> f
 
-{- |Change set for patch.
+{- | Change set for patch.
 
 >>> Changeset (M.fromList [("a", "b"), ("c", "d")]) (M.fromList [("e", S.fromList ["f", "g"])]) :: Changeset String
 Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
 -}
 data Changeset v = Changeset
     { changeI :: M.Map v v
-    -- ^change set for input variables (one to one)
+    -- ^ change set for input variables (one to one)
     , changeO :: M.Map v (S.Set v)
-    -- ^change set for output variables. Many to many relations:
+    -- ^ change set for output variables. Many to many relations:
     --
-    -- > fromList [(a, {x}), (b, {x})] -- several output variables to one
-    -- > fromList [(c, {y, z})] -- one output variable to many
+    --  > fromList [(a, {x}), (b, {x})] -- several output variables to one
+    --  > fromList [(c, {y, z})] -- one output variable to many
     }
     deriving (Eq)
 
@@ -419,7 +419,7 @@ instance (Var v) => Show (Changeset v) where
 instance Default (Changeset v) where
     def = Changeset def def
 
--- |Reverse changeset for patch a process unit options / decision.
+-- | Reverse changeset for patch a process unit options / decision.
 reverseDiff Changeset{changeI, changeO} =
     Changeset
         { changeI = M.fromList $ map swap $ M.assocs changeI

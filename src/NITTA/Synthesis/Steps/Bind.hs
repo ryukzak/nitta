@@ -36,20 +36,20 @@ import Numeric.Interval.NonEmpty (inf)
 
 data BindMetrics = BindMetrics
     { pCritical :: Bool
-    -- ^Can this binding block another one (for example, one 'Loop' can
-    -- take the last free buffer)?
+    -- ^ Can this binding block another one (for example, one 'Loop' can
+    --  take the last free buffer)?
     , pAlternative :: Float
-    -- ^How many alternative binding we have?
+    -- ^ How many alternative binding we have?
     , pRestless :: Float
-    -- ^How many ticks requires for executing the function?
+    -- ^ How many ticks requires for executing the function?
     , pOutputNumber :: Float
     , pAllowDataFlow :: Float
-    -- ^How many transactions can be executed with this function?
+    -- ^ How many transactions can be executed with this function?
     , pPossibleDeadlock :: Bool
-    -- ^May this binding cause deadlock?
+    -- ^ May this binding cause deadlock?
     , pNumberOfBindedFunctions :: Float
     , pPercentOfBindedInputs :: Float
-    -- ^number of binded input variables / number of all input variables
+    -- ^ number of binded input variables / number of all input variables
     , pWave :: Maybe Float
     }
     deriving (Generic)

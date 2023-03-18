@@ -52,9 +52,9 @@ import System.FilePath
 
 data BackendCtx tag v x t = BackendCtx
     { root :: DefTree tag v x t
-    -- ^root synthesis node
+    -- ^ root synthesis node
     , receivedValues :: [(v, [x])]
-    -- ^lists of received by IO values
+    -- ^ lists of received by IO values
     , outputPath :: String
     }
 
@@ -248,7 +248,7 @@ instance ToSample (UnitEndpoints String String Int) where
 
 -- Debug
 
--- |Type for CAD debugging. Used for extracting internal information.
+-- | Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
     { dbgEndpointOptions :: [UnitEndpoints tag v t]
     , dbgFunctionLocks :: [(T.Text, [Lock v])]

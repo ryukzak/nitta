@@ -32,7 +32,7 @@ import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 
-{- |OptimizeAccum example:
+{- | OptimizeAccum example:
 
 > OptimizeAccum [+a +b => tmp1; +tmp1 +c => res] [+a +b +c => d]
 
@@ -63,11 +63,11 @@ data OptimizeAccum v x = OptimizeAccum
     deriving (Generic, Show, Eq)
 
 class OptimizeAccumProblem u v x | u -> v x where
-    -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
+    -- | Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
     optimizeAccumOptions :: u -> [OptimizeAccum v x]
     optimizeAccumOptions _ = []
 
-    -- |Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
+    -- | Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
     optimizeAccumDecision :: u -> OptimizeAccum v x -> u
     optimizeAccumDecision _ _ = error "not implemented"
 
@@ -104,7 +104,7 @@ isSupportByAccum f
     | Just Acc{} <- castF f = True
     | otherwise = False
 
--- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
+-- | Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
 containerMapCreate fs =
     M.unions $
         map
@@ -118,7 +118,7 @@ containerMapCreate fs =
             )
             fs
 
--- |Takes container and refactor it, if it can be
+-- | Takes container and refactor it, if it can be
 optimizeCluster fs = concatMap refactored fs
     where
         containerMap = containerMapCreate fs

@@ -40,11 +40,11 @@ import NITTA.Utils
 import Prettyprinter
 import System.FilePath.Posix (joinPath, (</>))
 
--- |Type class for all testable parts of a target system.
+-- | Type class for all testable parts of a target system.
 class Testable m v x | m -> v x where
     testBenchImplementation :: Project m v x -> Implementation
 
-{- |Processor units with input/output ports should be tested by generation
+{- | Processor units with input/output ports should be tested by generation
 external input ports signals and checking output port signals.
 -}
 class IOTestBench pu v x | pu -> v x where
@@ -54,12 +54,12 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironment :: T.Text -> pu -> UnitEnv pu -> TestEnvironment v x -> Maybe Verilog
     testEnvironment _title _pu _env _tEnv = Nothing
 
--- |Information required for testbench generation.
+-- | Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
     { teCntx :: Cntx v x
-    -- ^expected data
+    -- ^ expected data
     , teComputationDuration :: Int
-    -- ^duration of computational process
+    -- ^ duration of computational process
     }
 
 data TestbenchReport v x = TestbenchReport
@@ -100,12 +100,12 @@ instance (ToString v, Show x) => Show (TestbenchReport v x) where
                         #{ nest 4 $ pretty tbSimulationDump }
                 |]
 
--- |Get name of testbench top module.
+-- | Get name of testbench top module.
 testBenchTopModuleName ::
     (TargetSystemComponent m, Testable m v x) => Project m v x -> FilePath
 testBenchTopModuleName prj = S.replace ".v" "" $ last $ verilogProjectFiles prj
 
--- |Generate list of project verilog files (including testbench).
+-- | Generate list of project verilog files (including testbench).
 verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
     map
         (pInProjectNittaPath </>)
@@ -121,14 +121,14 @@ verilogProjectFiles prj@Project{pName, pUnit, pInProjectNittaPath} =
         addPath _ (FromLibrary fn) = [joinPath ["lib", fn]]
         addPath _ Empty = []
 
--- |Data Type for SnippetTestBench function
+-- | Data Type for SnippetTestBench function
 data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [T.Text]
     , tbcPorts :: Ports m
     , tbcMC2verilogLiteral :: Microcode m -> T.Text
     }
 
--- |Function for testBench PU test
+-- | Function for testBench PU test
 snippetTestBench ::
     forall m v x t.
     ( VarValTime v x t

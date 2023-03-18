@@ -42,7 +42,7 @@ spi_master_driver
   , .sclk( sclk )
   , .cs( cs )
   );
-initial master.inner.shiftreg <= 0; // для ясности
+initial master.inner.shiftreg <= 0;
 
 pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
               , .BUF_SIZE( BUF_SIZE )
