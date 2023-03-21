@@ -4,13 +4,17 @@ from pathlib import Path
 from time import perf_counter
 
 from components.data_crawling.example_running import run_example_and_retrieve_tree_data
+from components.common.logging import get_logger, configure_logging
 
 if __name__ == '__main__':
-    example = Path(r"examples/sum.lua")
+    logger = get_logger(__name__)
+    configure_logging()
+
+    example = Path(r"examples/fibonacci.lua")
     if len(sys.argv) == 2:
         example = Path(sys.argv[1])
     else:
-        print("Default algorithm:", example)
+        logger.info(f"Default algorithm: {example}")
     start_time = perf_counter()
     asyncio.run(run_example_and_retrieve_tree_data(example))
-    print(f"Finished in {perf_counter() - start_time:.2f} s")
+    logger.info(f"Finished in {perf_counter() - start_time:.2f} s")

@@ -3,6 +3,10 @@ from typing import Tuple
 from sklearn.model_selection import train_test_split
 from tensorflow.python.data import Dataset
 
+from components.common.logging import get_logger
+
+logger = get_logger(__name__)
+
 TARGET_COLUMNS = ["label"]
 
 
@@ -14,7 +18,7 @@ def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False, print_cols=Fal
     df.drop(TARGET_COLUMNS, axis=1, inplace=True)
     features = df
     if print_cols:
-        print(f"Feature columns: {features.columns.values.tolist()}")
+        logger.info(f"Feature columns: {features.columns.values.tolist()}")
 
     ds = Dataset.from_tensor_slices((features.values, targets.values))
     ds = ds.shuffle(buffer_size=10000) if shuffle else ds
@@ -28,9 +32,9 @@ def create_datasets(df) -> Tuple[Dataset, Dataset]:
     train_df, test_df = train_test_split(df.sample(frac=1), test_size=0.2)
 
     n = len(df)
-    print(f"N:\t{n}")
-    print(f"Train:\t{len(train_df)}, {len(train_df) / n * 100:.0f}%")
-    print(f"Test:\t{len(test_df)}, {len(test_df) / n * 100:.0f}%")
+    logger.info(f"N:\t{n}")
+    logger.info(f"Train:\t{len(train_df)}, {len(train_df) / n * 100:.0f}%")
+    logger.info(f"Test:\t{len(test_df)}, {len(test_df) / n * 100:.0f}%")
 
     train_ds = _df_to_dataset(train_df, batch_size=16, repeat=True, print_cols=True)
     test_ds = _df_to_dataset(test_df)

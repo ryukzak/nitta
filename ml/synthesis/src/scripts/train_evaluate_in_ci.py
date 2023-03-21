@@ -1,7 +1,8 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from components.common.data_loading import load_all_existing_training_data
+from components.common.logging import get_logger, configure_logging
 from components.common.model_loading import load_model
 from components.data_crawling.example_running import get_data_for_many_examples_parallel
 from components.data_processing.dataset_creation import create_datasets
@@ -10,6 +11,9 @@ from components.model_generation.training import train_and_save_baseline_model
 from consts import MODELS_DIR
 
 if __name__ == '__main__':
+    logger = get_logger(__name__)
+    configure_logging()
+
     model_dir = MODELS_DIR / "production"
 
     examples = [
@@ -23,16 +27,16 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         examples = sys.argv[1:]
     else:
-        print("Used default examples: ", examples)
+        logger.info(f"Used default examples {examples}")
 
-    get_data_for_many_examples_parallel([ Path(fn) for fn in examples ])
+    get_data_for_many_examples_parallel([Path(fn) for fn in examples])
 
     try:
         model, meta = load_model(model_dir)
-        print("Using manually built model")
+        logger.info("Using manually built model")
         is_manual = True
     except FileNotFoundError:
-        print("Training model from scratch")
+        logger.info("Training model from scratch")
         is_manual = False
 
         training_data = load_all_existing_training_data()

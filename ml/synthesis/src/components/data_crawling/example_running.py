@@ -13,12 +13,14 @@ from typing import Tuple, List
 import pandas as pd
 from joblib import Parallel, delayed
 
-from components.common.utils import is_port_in_use
+from components.common.logging import get_logger
+from components.common.port_management import is_port_in_use, find_random_free_port
 from components.data_crawling.tree_processing import assemble_tree_dataframe
 from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
 from consts import DATA_DIR, ROOT_DIR
 
-_NITTA_PORT_RANGE: Tuple[int, int] = (33000, 53000)
+logger = get_logger(__name__)
+
 _NITTA_START_WAIT_DELAY_S: int = 2
 
 
@@ -28,14 +30,11 @@ async def run_nitta(example: Path,
                     port: int = None
                     ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
     if port is None:
-        port = random.randint(*_NITTA_PORT_RANGE)
-        while is_port_in_use(port):
-            print(f"Port {port} is already in use, trying {port + 1}")
-            port += 1
+        port = find_random_free_port()
 
     nitta_baseurl = f"http://localhost:{port}"
 
-    print(f"Processing example {example!r}.")
+    logger.info(f"Processing example {example!r}.")
     cmd = f"{nitta_exe_path} -p={port} {example}"
 
     proc = None
@@ -46,7 +45,7 @@ async def run_nitta(example: Path,
             preexec_fn=preexec_fn,
         )
 
-        print(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
+        logger.info(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
         await sleep(_NITTA_START_WAIT_DELAY_S)
 
         yield proc, nitta_baseurl
@@ -54,7 +53,7 @@ async def run_nitta(example: Path,
         if proc is not None and proc.returncode is None:
             pid = proc.pid
             pgid = os.getpgid(pid)
-            print(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
+            logger.info(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
             os.killpg(pgid, signal.SIGTERM)
             await proc.wait()
 
@@ -64,25 +63,25 @@ async def run_example_and_retrieve_tree_data(example: Path,
                                              nitta_exe_path: str = "stack exec nitta -- ") -> pd.DataFrame:
     example_name = os.path.basename(example)
     async with run_nitta(example, nitta_exe_path) as (proc, nitta_baseurl):
-        print(f"Retrieving tree.")
+        logger.info(f"Retrieving tree.")
         tree = await retrieve_whole_nitta_tree(nitta_baseurl)
         data_dir.mkdir(exist_ok=True)
 
         tree_dump_fn = data_dir / f"{example_name}.pickle"
-        print(f"Dumping tree to {tree_dump_fn}.")
+        logger.info(f"Dumping tree to {tree_dump_fn}.")
         with tree_dump_fn.open("wb") as f:
             pickle.dump(tree, f)
 
-        print(f"Nodes: {tree.subtree_size}. Building dataframe.")
+        logger.info(f"Nodes: {tree.subtree_size}. Building dataframe.")
         df = assemble_tree_dataframe(example_name, tree).reset_index(drop=True)
 
-        print(f"Data's ready, {len(df)} rows")
+        logger.info(f"Data's ready, {len(df)} rows")
 
         target_filepath = data_dir / f"{example_name}.csv"
-        print(f"Saving to {target_filepath}")
+        logger.info(f"Saving to {target_filepath}")
         df.to_csv(target_filepath, index=False)
 
-    print("DONE")
+    logger.info("DONE")
     return df
 
 
