@@ -16,8 +16,11 @@ module NITTA.Utils.Base (
     showText,
     readText,
     vsToStringList,
+    catchToMaybeIO,
 ) where
 
+import Control.Exception
+import Data.Functor
 import Data.List (maximumBy, minimumBy)
 import Data.Set (elems, unions)
 import Data.String
@@ -41,3 +44,5 @@ readText t = read $ T.unpack t
 showText v = T.pack $ show v
 
 vsToStringList vs = map toString $ elems vs
+
+catchToMaybeIO action = catch (action <&> Just) (\(_ :: IOException) -> return Nothing)

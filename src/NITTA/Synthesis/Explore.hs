@@ -16,8 +16,6 @@ module NITTA.Synthesis.Explore (
     getTreePathIO,
     subForestIO,
     positiveSubForestIO,
-    isComplete,
-    isLeaf,
 ) where
 
 import Control.Concurrent.STM
@@ -25,6 +23,7 @@ import Control.Monad (forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
+import Data.Text qualified as T
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -33,8 +32,10 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
+import NITTA.Synthesis.MlBackend.Api
 import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
+import NITTA.UIBackend.ViewHelper
 import NITTA.Utils
 import System.Log.Logger
 
@@ -97,29 +98,27 @@ subForestIO
                             _ -> "-"
                        )
 
-        return subForest
+        if null subForest
+            then return subForest
+            else do
+                -- mlBackend <- mlBackendGetter
+                -- let mlBackendBaseUrl = baseUrl mlBackend
+                let mlBackendBaseUrl = Just (T.pack "http://localhost:8080")
+                let modelName = T.pack "production"
+                case mlBackendBaseUrl of
+                    Nothing -> return subForest
+                    Just onlineUrl -> mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
+
+mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
+    let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
+    scores <- predictScoresIO modelName mlBackendBaseUrl [input]
+    return $ map (\(node@Tree{sDecision = sDes}, score) -> node{sDecision = sDes{score}}) (zip subForest scores)
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
 positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
 
-isLeaf
-    Tree
-        { sState =
-            SynthesisState
-                { sAllocationOptions = []
-                , sBindOptions = []
-                , sDataflowOptions = []
-                , sBreakLoopOptions = []
-                , sResolveDeadlockOptions = []
-                , sOptimizeAccumOptions = []
-                , sConstantFoldingOptions = []
-                }
-        } = True
-isLeaf _ = False
-
-isComplete = isSynthesisComplete . sTarget . sState
 -- * Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =

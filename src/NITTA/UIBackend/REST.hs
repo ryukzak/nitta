@@ -40,6 +40,7 @@ import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTe
 import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
+import NITTA.Synthesis.MlBackend.ServerInstance (MlBackendServer)
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
@@ -56,6 +57,7 @@ data BackendCtx tag v x t = BackendCtx
     , receivedValues :: [(v, [x])]
     -- ^ lists of received by IO values
     , outputPath :: String
+    , mlBackendGetter :: IO MlBackendServer
     }
 
 type SynthesisAPI tag v x t =

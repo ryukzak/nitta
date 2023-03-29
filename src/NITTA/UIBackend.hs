@@ -28,6 +28,7 @@ import Data.Maybe (fromJust)
 import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.Synthesis
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static
@@ -80,7 +81,7 @@ fileOrIndex pieces = do
             ssLookupFile frontendAppSettings $ fromJust $ toPieces ["index.html"]
         _ -> return res
 
-application receivedValues model outputPath = do
+application receivedValues model outputPath mlBackendGetter = do
     root <- synthesisTreeRootIO model
     return $
         serve
@@ -91,7 +92,7 @@ application receivedValues model outputPath = do
                         :<|> Raw
                     )
             )
-            ( synthesisServer BackendCtx{root, receivedValues, outputPath}
+            ( synthesisServer BackendCtx{root, receivedValues, outputPath, mlBackendGetter}
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
                 :<|> serveDirectoryWith frontendAppSettings{ssLookupFile = fileOrIndex}
             )
@@ -106,6 +107,7 @@ backendServer port receivedValues outputPath modelState = do
     -- see: https://nitta.io/nitta-corp/nitta/issues/9
     isFree <- isLocalPortFree port
     unless isFree $ error "resource busy (Port already in use)"
-    app <- application receivedValues modelState outputPath
-    setLocaleEncoding utf8
-    run port $ simpleCors app
+    withLazyMlBackendServer $ \serverGetter -> do
+        app <- application receivedValues modelState outputPath serverGetter
+        setLocaleEncoding utf8
+        run port $ simpleCors app

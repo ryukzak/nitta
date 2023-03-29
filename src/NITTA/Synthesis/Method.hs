@@ -20,16 +20,20 @@ module NITTA.Synthesis.Method (
     stateOfTheArtSynthesisIO,
     allBindsAndRefsIO,
     bestStepIO,
+    SynthesisMethodConstraints,
 ) where
 
+import Data.Aeson (ToJSON)
 import Data.List qualified as L
 import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
+import NITTA.Synthesis.Analysis
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
+import NITTA.UIBackend.ViewHelper
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 import System.Log.Logger
@@ -40,7 +44,7 @@ the endless synthesis process.
 stepLimit = 750 :: Int
 
 -- | The most complex synthesis method, which embedded all another. That all.
-stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+stateOfTheArtSynthesisIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 stateOfTheArtSynthesisIO tree = do
     infoM "NITTA.Synthesis" $ "stateOfTheArtSynthesisIO: " <> show (sID tree)
     l1 <- simpleSynthesisIO tree
@@ -50,19 +54,19 @@ stateOfTheArtSynthesisIO tree = do
     return $ bestLeaf tree [l1, l2, l3, l4]
 
 -- | Schedule process by simple synthesis.
-simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+simpleSynthesisIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
     infoM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
     lastObliviousNode <- obviousBindThreadIO root
     allBestThreadIO 1 lastObliviousNode
 
-smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+smartBindSynthesisIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 smartBindSynthesisIO tree = do
     infoM "NITTA.Synthesis" $ "smartBindSynthesisIO: " <> show (sID tree)
     tree' <- smartBindThreadIO tree
     allBestThreadIO 1 tree'
 
-bestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
+bestThreadIO :: (SynthesisMethodConstraints tag v x t) => Int -> SynthesisMethod tag v x t
 bestThreadIO 0 node = return $ trace "bestThreadIO reach step limit!" node
 bestThreadIO limit tree = do
     subForest <- positiveSubForestIO tree
@@ -70,14 +74,14 @@ bestThreadIO limit tree = do
         [] -> return tree
         _ -> bestThreadIO (limit - 1) $ maximumOn (score . sDecision) subForest
 
-bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+bestStepIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 bestStepIO tree = do
     subForest <- positiveSubForestIO tree
     case subForest of
         [] -> error "all step is over"
         _ -> return $ maximumOn (score . sDecision) subForest
 
-obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+obviousBindThreadIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 obviousBindThreadIO tree = do
     subForest <- positiveSubForestIO tree
     maybe (return tree) obviousBindThreadIO $
@@ -92,7 +96,7 @@ obviousBindThreadIO tree = do
             )
             subForest
 
-allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+allBindsAndRefsIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 allBindsAndRefsIO tree = do
     subForest <-
         filter ((\d -> isBind d || isRefactor d) . sDecision)
@@ -106,7 +110,7 @@ refactorThreadIO tree = do
     maybe (return tree) refactorThreadIO $
         L.find (isRefactor . sDecision) subForest
 
-smartBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+smartBindThreadIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t
 smartBindThreadIO tree = do
     subForest <-
         filter ((\d -> isBind d || isRefactor d) . sDecision)
@@ -115,14 +119,14 @@ smartBindThreadIO tree = do
         [] -> return tree
         _ -> smartBindThreadIO $ maximumOn (score . sDecision) subForest
 
-allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
+allBestThreadIO :: (SynthesisMethodConstraints tag v x t) => Int -> SynthesisMethod tag v x t
 allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree
 allBestThreadIO n tree = do
     subForest <- positiveSubForestIO tree
     leafs <- mapM (allBestThreadIO (n - 1)) subForest
     return $ bestLeaf tree leafs
 
-bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
+bestLeaf :: (SynthesisMethodConstraints tag v x t) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
 bestLeaf tree leafs =
     let successLeafs = filter (\node -> isComplete node && isLeaf node) leafs
      in case successLeafs of
@@ -131,3 +135,28 @@ bestLeaf tree leafs =
                 minimumOn
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
+
+{- | Shortcut for constraints in signatures of synthesis method functions.
+This used to be (VarValTime v x t, UnitTag tag). See below for more info.
+-}
+type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
+
+-- FIXME: Validate the type above, its usages and meaning in the context of changes described below.
+--
+--      Ilya Burakov is not sure why signatures of synthesis method functions were explicitly defined
+--      (not inferred) and why they are what they are, but introduction of JSON body formatting
+--      for ML backend node scoring requests in NITTA.Synthesis.Explore module forced to add JSON-related
+--      constraints to them.
+--
+--      Also, it has spilled to Default interface in NITTA.Synthesis. See usages of
+--      SynthesisMethodConstraints for all related changes.
+--
+--      Effectvely, those constraints were added:
+--          - ToJSONKey v, ToJSON v, ToJSON x, ToJSON t (via ValValTime -> ValValTimeJSON)
+--          - ToJSON tag (explicitly)
+--
+--      Related chain of dependencies:
+--      stateOfTheArtSynthesisIO -> bestThreadIO (or others) -> positiveSubForestIO -> subForestIO ->
+--      predictScoresIO -> ScoringInput -> NodeView
+--
+--      Not sure if it's the right way to do it, but it works for now. Please, validate and fix if needed.

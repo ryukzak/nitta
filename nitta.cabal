@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -90,6 +90,9 @@ library
       NITTA.Synthesis.Analysis
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
+      NITTA.Synthesis.MlBackend.Api
+      NITTA.Synthesis.MlBackend.FixedCache
+      NITTA.Synthesis.MlBackend.ServerInstance
       NITTA.Synthesis.Steps
       NITTA.Synthesis.Steps.Allocation
       NITTA.Synthesis.Steps.Bind
@@ -107,6 +110,7 @@ library
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base
+      NITTA.Utils.Exceptions
       NITTA.Utils.ProcessDescription
   other-modules:
       Paths_nitta
@@ -145,6 +149,7 @@ library
     , hslogger
     , htoml
     , http-api-data
+    , http-conduit
     , hxt
     , intervals
     , language-lua

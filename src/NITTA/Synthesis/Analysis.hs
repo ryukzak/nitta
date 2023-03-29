@@ -9,13 +9,14 @@ Stability   : experimental
 module NITTA.Synthesis.Analysis (
     getTreeInfo,
     TreeInfo (..),
+    isLeaf,
+    isComplete,
 ) where
 
 import Control.Concurrent.STM
 import Data.HashMap.Strict qualified as HM
 import GHC.Generics
-import NITTA.Model.TargetSystem (processDuration)
-import NITTA.Synthesis.Explore (isComplete, isLeaf)
+import NITTA.Model.TargetSystem (isSynthesisComplete, processDuration)
 import NITTA.Synthesis.Types
 
 -- | Metrics of synthesis tree process
@@ -73,3 +74,20 @@ getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do
             , durationSuccess = successDepends duration durationSuccess
             , stepsSuccess = successDepends (length sid) stepsSuccess
             }
+
+isLeaf
+    Tree
+        { sState =
+            SynthesisState
+                { sAllocationOptions = []
+                , sBindOptions = []
+                , sDataflowOptions = []
+                , sBreakLoopOptions = []
+                , sResolveDeadlockOptions = []
+                , sOptimizeAccumOptions = []
+                , sConstantFoldingOptions = []
+                }
+        } = True
+isLeaf _ = False
+
+isComplete tree = (isSynthesisComplete . sTarget . sState) tree

@@ -22,3 +22,7 @@ hie.yaml
 .idea/
 *.iml
 **/build
+**/*.spec
+**/.ml_backend_base_url
+nitta-mlbackend
+
