@@ -5,9 +5,12 @@ from typing import Tuple
 from tensorflow.python.data import Dataset
 from tensorflow.python.keras.models import Model
 
+from components.common.logging import get_logger
 from components.model_generation.model_metainfo import ModelMetainfo
 from components.model_generation.models import create_baseline_model
 from consts import MODELS_DIR
+
+logger = get_logger(__name__)
 
 
 def train_and_save_baseline_model(train_ds: Dataset, val_ds: Dataset, fitting_kwargs: dict = None,
@@ -15,7 +18,10 @@ def train_and_save_baseline_model(train_ds: Dataset, val_ds: Dataset, fitting_kw
         -> Tuple[Model, ModelMetainfo]:
     models_dir.mkdir(exist_ok=True)
 
-    model = create_baseline_model()
+    sample = next(iter(val_ds))[0][0]
+    logger.info(f"Sample input shape: {sample.shape}")
+
+    model = create_baseline_model(input_shape=sample.shape)
     effective_fitting_kwargs = dict(
         epochs=20,
         steps_per_epoch=2250,

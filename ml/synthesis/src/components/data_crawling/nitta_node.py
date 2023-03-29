@@ -29,6 +29,7 @@ class NittaNodeDecision:
     tag: str
 
 
+# TODO: refactor: migrate to Pydantic (see mlbackend), split responsibilities
 @dataclass_json(**nitta_dataclass_params)
 @dataclass
 class NittaNode:
@@ -42,6 +43,9 @@ class NittaNode:
 
     children: Optional[List['NittaNode']] = field(default=None, repr=False)
     parent: Optional['NittaNode'] = field(default=None, repr=False)
+
+    def __hash__(self):
+        return hash(self.sid)
 
     @property
     def is_leaf(self):
@@ -94,22 +98,3 @@ class NittaNode:
 
         subtree_labels = np.array(self.get_subtree_leafs_labels(metrics_distrib))
         return _LAMBDA * subtree_labels.max() + (1 - _LAMBDA) * subtree_labels.mean()
-
-    @cached_property
-    def alternative_siblings(self) -> dict:
-        bindings, refactorings, dataflows = 0, 0, 0
-
-        if self.parent:
-            for sibling in self.parent.children:
-                if sibling.sid == self.sid:
-                    continue
-                if sibling.decision.tag == "BindDecisionView":
-                    bindings += 1
-                elif sibling.decision.tag == "DataflowDecisionView":
-                    dataflows += 1
-                else:
-                    refactorings += 1
-
-        return dict(alt_bindings=bindings,
-                    alt_refactorings=refactorings,
-                    alt_dataflows=dataflows)

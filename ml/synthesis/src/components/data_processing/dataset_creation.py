@@ -10,14 +10,14 @@ logger = get_logger(__name__)
 TARGET_COLUMNS = ["label"]
 
 
-def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False, print_cols=False):
+def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False, log_columns=False):
     df = df.copy()
 
     # split df into features and labels
     targets = df[TARGET_COLUMNS].copy()
     df.drop(TARGET_COLUMNS, axis=1, inplace=True)
     features = df
-    if print_cols:
+    if log_columns:
         logger.info(f"Feature columns: {features.columns.values.tolist()}")
 
     ds = Dataset.from_tensor_slices((features.values, targets.values))
@@ -36,7 +36,7 @@ def create_datasets(df) -> Tuple[Dataset, Dataset]:
     logger.info(f"Train:\t{len(train_df)}, {len(train_df) / n * 100:.0f}%")
     logger.info(f"Test:\t{len(test_df)}, {len(test_df) / n * 100:.0f}%")
 
-    train_ds = _df_to_dataset(train_df, batch_size=16, repeat=True, print_cols=True)
+    train_ds = _df_to_dataset(train_df, batch_size=16, repeat=True, log_columns=True)
     test_ds = _df_to_dataset(test_df)
 
     return train_ds, test_ds
