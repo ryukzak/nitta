@@ -33,8 +33,9 @@ import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
 import NITTA.Synthesis.MlBackend.Api
-import NITTA.Synthesis.Steps ()
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
+import NITTA.UIBackend.Types
 import NITTA.UIBackend.ViewHelper
 import NITTA.Utils
 import System.Log.Logger
@@ -53,61 +54,63 @@ rootSynthesisTreeSTM model = do
             }
 
 -- | Get specific by @nId@ node from a synthesis tree.
-getTreeIO tree (Sid []) = return tree
-getTreeIO tree (Sid (i : is)) = do
-    subForest <- subForestIO tree
+getTreeIO _ tree (Sid []) = return tree
+getTreeIO ctx tree (Sid (i : is)) = do
+    subForest <- subForestIO ctx tree
     unless (i < length subForest) $ error "getTreeIO - wrong Sid"
-    getTreeIO (subForest !! i) (Sid is)
+    getTreeIO ctx (subForest !! i) (Sid is)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO _ (Sid []) = return []
-getTreePathIO tree (Sid (i : is)) = do
-    h <- getTreeIO tree $ Sid [i]
-    t <- getTreePathIO h $ Sid is
+getTreePathIO _ _ (Sid []) = return []
+getTreePathIO ctx tree (Sid (i : is)) = do
+    h <- getTreeIO ctx tree $ Sid [i]
+    t <- getTreePathIO ctx h $ Sid is
     return $ h : t
 
 {- | Get all available edges for the node. Edges calculated only for the first
 call.
 -}
 subForestIO
+    ctx
     tree@Tree
         { sSubForestVar
         , sID
         , sDecision
-        } = do
-        (firstTime, subForest) <-
-            atomically $
-                tryReadTMVar sSubForestVar >>= \case
-                    Just subForest -> return (False, subForest)
-                    Nothing -> do
-                        subForest <- exploreSubForestVar tree
-                        putTMVar sSubForestVar subForest
-                        return (True, subForest)
-        when firstTime $ do
-            debugM "NITTA.Synthesis" $
-                "explore: "
-                    <> show sID
-                    <> " score: "
-                    <> ( case sDecision of
-                            SynthesisDecision{score} -> show score
-                            _ -> "-"
-                       )
-                    <> " decision: "
-                    <> ( case sDecision of
-                            SynthesisDecision{decision} -> show decision
-                            _ -> "-"
-                       )
+        } =
+        do
+            (firstTime, subForest) <-
+                atomically $
+                    tryReadTMVar sSubForestVar >>= \case
+                        Just subForest -> return (False, subForest)
+                        Nothing -> do
+                            subForest <- exploreSubForestVar tree
+                            putTMVar sSubForestVar subForest
+                            return (True, subForest)
+            when firstTime $ do
+                debugM "NITTA.Synthesis" $
+                    "explore: "
+                        <> show sID
+                        <> " score: "
+                        <> ( case sDecision of
+                                SynthesisDecision{score} -> show score
+                                _ -> "-"
+                           )
+                        <> " decision: "
+                        <> ( case sDecision of
+                                SynthesisDecision{decision} -> show decision
+                                _ -> "-"
+                           )
 
-        if null subForest
-            then return subForest
-            else do
-                -- mlBackend <- mlBackendGetter
-                -- let mlBackendBaseUrl = baseUrl mlBackend
-                let mlBackendBaseUrl = Just (T.pack "http://localhost:8080")
-                let modelName = T.pack "production"
-                case mlBackendBaseUrl of
-                    Nothing -> return subForest
-                    Just onlineUrl -> mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
+            if null subForest
+                then return subForest
+                else do
+                    mlBackend <- mlBackendGetter ctx
+                    let mlBackendBaseUrl = baseUrl mlBackend
+                    debugM "NITTA.Synthesis" $ "mlBackendBaseUrl: " <> show mlBackendBaseUrl
+                    let modelName = T.pack "production"
+                    case mlBackendBaseUrl of
+                        Nothing -> return subForest
+                        Just onlineUrl -> mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
 
 mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
     let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
@@ -117,7 +120,7 @@ mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
-positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
+positiveSubForestIO ctx tree = filter ((> 0) . score . sDecision) <$> subForestIO ctx tree
 
 -- * Internal
 

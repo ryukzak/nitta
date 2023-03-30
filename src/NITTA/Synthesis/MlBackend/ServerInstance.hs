@@ -14,6 +14,7 @@ module NITTA.Synthesis.MlBackend.ServerInstance (
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Data.Default
 import Data.Maybe
 import Data.Text qualified as T
 import GHC.IO.Handle
@@ -29,6 +30,9 @@ data MlBackendServer = MlBackendServer
     { baseUrl :: Maybe T.Text
     , handles :: Maybe (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
     }
+
+instance Default MlBackendServer where
+    def = MlBackendServer Nothing Nothing
 
 -- | Reads ML backend server base URL from file (non-blocking).
 readMlBackendBaseUrlFileIO :: IO (Maybe T.Text)

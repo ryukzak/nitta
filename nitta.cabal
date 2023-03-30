@@ -105,12 +105,12 @@ library
       NITTA.UIBackend
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
+      NITTA.UIBackend.Types
       NITTA.UIBackend.ViewHelper
       NITTA.UIBackend.ViewHelperCls
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base
-      NITTA.Utils.Exceptions
       NITTA.Utils.ProcessDescription
   other-modules:
       Paths_nitta
