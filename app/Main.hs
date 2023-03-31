@@ -33,6 +33,7 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
+import NITTA.Synthesis.Method
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
@@ -209,12 +210,13 @@ main = do
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
                 ioSync = fromJust $ io_sync <|> fromConf "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
+                ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
                     | auto_uarch && isJust confMa =
                         error $
                             "auto_uarch flag means that an empty uarch with default prototypes will be used. "
                                 <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
+                    | auto_uarch = microarchWithProtos ioSync
                     | isJust confMa = fromJust confMa
                     | otherwise = defMicroarch ioSync
 
@@ -235,13 +237,14 @@ main = do
 
             prj <-
                 synthesizeTargetSystem
-                    def
+                    (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
                         { tName = "main"
                         , tPath = output_path
                         , tMicroArch = ma
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
+                        , tSynthesisMethod = stateOfTheArtSynthesisIO ()
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

@@ -96,7 +96,6 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
-import NITTA.Synthesis.Analysis
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Steps
@@ -133,7 +132,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
     -- ^ source code format type
     }
 
-instance (SynthesisMethodConstraints tag v x t) => Default (TargetSynthesis tag v x t) where
+instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
     def =
         TargetSynthesis
             { tName = undefined
@@ -141,7 +140,7 @@ instance (SynthesisMethodConstraints tag v x t) => Default (TargetSynthesis tag 
             , tSourceCode = Nothing
             , tDFG = undefined
             , tReceivedValues = def
-            , tSynthesisMethod = stateOfTheArtSynthesisIO def
+            , tSynthesisMethod = stateOfTheArtSynthesisIO ()
             , tLibPath = "hdl"
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]

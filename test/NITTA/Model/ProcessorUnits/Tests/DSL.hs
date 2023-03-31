@@ -620,7 +620,7 @@ assertSuccessReport report@TestbenchReport{tbStatus} =
 
 synthesizeAndCoSim :: TSStatement x ()
 synthesizeAndCoSim = do
-    synthesis $ stateOfTheArtSynthesisIO def
+    synthesis $ stateOfTheArtSynthesisIO ()
     assertSynthesisComplete
     assertTargetSystemCoSimulation
 
