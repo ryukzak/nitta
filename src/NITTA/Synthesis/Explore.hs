@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -16,15 +17,15 @@ module NITTA.Synthesis.Explore (
     getTreePathIO,
     subForestIO,
     positiveSubForestIO,
+    isComplete,
+    isLeaf,
 ) where
 
 import Control.Concurrent.STM
-import Control.Exception
 import Control.Monad (forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
-import Data.Text qualified as T
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -33,13 +34,9 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.MlBackend.Api
-import NITTA.Synthesis.MlBackend.ServerInstance
+import NITTA.Synthesis.Steps ()
 import NITTA.Synthesis.Types
-import NITTA.UIBackend.Types
-import NITTA.UIBackend.ViewHelper
 import NITTA.Utils
-import Network.HTTP.Simple
 import System.Log.Logger
 
 -- | Make synthesis tree
@@ -56,87 +53,74 @@ rootSynthesisTreeSTM model = do
             }
 
 -- | Get specific by @nId@ node from a synthesis tree.
-getTreeIO _ tree (Sid []) = return tree
-getTreeIO ctx tree (Sid (i : is)) = do
-    subForest <- subForestIO ctx tree
+getTreeIO tree (Sid []) = return tree
+getTreeIO tree (Sid (i : is)) = do
+    subForest <- subForestIO tree
     unless (i < length subForest) $ error "getTreeIO - wrong Sid"
-    getTreeIO ctx (subForest !! i) (Sid is)
+    getTreeIO (subForest !! i) (Sid is)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO _ _ (Sid []) = return []
-getTreePathIO ctx tree (Sid (i : is)) = do
-    h <- getTreeIO ctx tree $ Sid [i]
-    t <- getTreePathIO ctx h $ Sid is
+getTreePathIO _ (Sid []) = return []
+getTreePathIO tree (Sid (i : is)) = do
+    h <- getTreeIO tree $ Sid [i]
+    t <- getTreePathIO h $ Sid is
     return $ h : t
 
 {- | Get all available edges for the node. Edges calculated only for the first
 call.
 -}
 subForestIO
-    ctx
     tree@Tree
         { sSubForestVar
         , sID
         , sDecision
-        } =
-        do
-            (firstTime, subForest) <-
-                atomically $
-                    tryReadTMVar sSubForestVar >>= \case
-                        Just subForest -> return (False, subForest)
-                        Nothing -> do
-                            subForest <- exploreSubForestVar tree
-                            putTMVar sSubForestVar subForest
-                            return (True, subForest)
-            when firstTime $ do
-                debugM "NITTA.Synthesis" $
-                    "explore: "
-                        <> show sID
-                        <> " score: "
-                        <> ( case sDecision of
-                                SynthesisDecision{score} -> show score
-                                _ -> "-"
-                           )
-                        <> " decision: "
-                        <> ( case sDecision of
-                                SynthesisDecision{decision} -> show decision
-                                _ -> "-"
-                           )
+        } = do
+        (firstTime, subForest) <-
+            atomically $
+                tryReadTMVar sSubForestVar >>= \case
+                    Just subForest -> return (False, subForest)
+                    Nothing -> do
+                        subForest <- exploreSubForestVar tree
+                        putTMVar sSubForestVar subForest
+                        return (True, subForest)
+        when firstTime $ do
+            debugM "NITTA.Synthesis" $
+                "explore: "
+                    <> show sID
+                    <> " score: "
+                    <> ( case sDecision of
+                            SynthesisDecision{scores} -> show scores
+                            _ -> "-"
+                       )
+                    <> " decision: "
+                    <> ( case sDecision of
+                            SynthesisDecision{decision} -> show decision
+                            _ -> "-"
+                       )
 
-            if null subForest
-                then return subForest
-                else
-                    ( case mlScoringModel ctx of
-                        Nothing -> return subForest
-                        Just modelNameStr -> do
-                            mlBackend <- mlBackendGetter ctx
-                            let mlBackendBaseUrl = baseUrl mlBackend
-                            case mlBackendBaseUrl of
-                                Nothing -> return subForest
-                                Just onlineUrl -> do
-                                    let modelName = T.pack modelNameStr
-                                    mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
-                                        `catch` \e -> do
-                                            errorM "NITTA.Synthesis" $
-                                                "ML backend error: "
-                                                    <> ( case e of
-                                                            JSONConversionException _ resp _ -> show resp
-                                                            _ -> show e
-                                                       )
-                                            return subForest
-                    )
-
-mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
-    let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
-    allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
-    let scores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
-    return $ map (\(node@Tree{sDecision = sDes}, score) -> node{sDecision = sDes{score}}) (zip subForest scores)
+        return subForest
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
-positiveSubForestIO ctx tree = filter ((> 0) . score . sDecision) <$> subForestIO ctx tree
+positiveSubForestIO tree = filter ((> 0) . defScore . sDecision) <$> subForestIO tree
 
+isLeaf
+    Tree
+        { sState =
+            SynthesisState
+                { sAllocationOptions = []
+                , sBindOptions = []
+                , sDataflowOptions = []
+                , sBreakLoopOptions = []
+                , sResolveDeadlockOptions = []
+                , sOptimizeAccumOptions = []
+                , sConstantFoldingOptions = []
+                }
+        } = True
+isLeaf _ = False
+
+isComplete = isSynthesisComplete . sTarget . sState
 -- * Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =
@@ -164,7 +148,7 @@ decisionAndContext parent@Tree{sState = ctx} o =
     [ (SynthesisDecision o d p e, nodeCtx (Just parent) model)
     | (d, model) <- decisions ctx o
     , let p = parameters ctx o d
-          e = estimate ctx o d p
+          e = M.singleton "default" $ estimate ctx o d p
     ]
 
 nodeCtx parent nModel =
