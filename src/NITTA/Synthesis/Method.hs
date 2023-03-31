@@ -40,8 +40,8 @@ the endless synthesis process.
 stepLimit = 750 :: Int
 
 -- | The most complex synthesis method, which embedded all another. That all.
-stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-stateOfTheArtSynthesisIO tree = do
+stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t
+stateOfTheArtSynthesisIO () tree = do
     infoM "NITTA.Synthesis" $ "stateOfTheArtSynthesisIO: " <> show (sID tree)
     l1 <- simpleSynthesisIO tree
     l2 <- smartBindSynthesisIO tree
