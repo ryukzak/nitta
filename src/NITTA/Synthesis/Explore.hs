@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -88,7 +89,7 @@ subForestIO
                     <> show sID
                     <> " score: "
                     <> ( case sDecision of
-                            SynthesisDecision{score} -> show score
+                            SynthesisDecision{scores} -> show scores
                             _ -> "-"
                        )
                     <> " decision: "
@@ -102,7 +103,7 @@ subForestIO
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
-positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
+positiveSubForestIO tree = filter ((> 0) . defScore . sDecision) <$> subForestIO tree
 
 isLeaf
     Tree
@@ -147,7 +148,7 @@ decisionAndContext parent@Tree{sState = ctx} o =
     [ (SynthesisDecision o d p e, nodeCtx (Just parent) model)
     | (d, model) <- decisions ctx o
     , let p = parameters ctx o d
-          e = estimate ctx o d p
+          e = M.singleton "default" $ estimate ctx o d p
     ]
 
 nodeCtx parent nModel =

@@ -68,14 +68,14 @@ bestThreadIO limit tree = do
     subForest <- positiveSubForestIO tree
     case subForest of
         [] -> return tree
-        _ -> bestThreadIO (limit - 1) $ maximumOn (score . sDecision) subForest
+        _ -> bestThreadIO (limit - 1) $ maximumOn (defScore . sDecision) subForest
 
 bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 bestStepIO tree = do
     subForest <- positiveSubForestIO tree
     case subForest of
         [] -> error "all step is over"
-        _ -> return $ maximumOn (score . sDecision) subForest
+        _ -> return $ maximumOn (defScore . sDecision) subForest
 
 obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 obviousBindThreadIO tree = do
@@ -99,7 +99,7 @@ allBindsAndRefsIO tree = do
             <$> positiveSubForestIO tree
     case subForest of
         [] -> return tree
-        _ -> allBindsAndRefsIO $ minimumOn (score . sDecision) subForest
+        _ -> allBindsAndRefsIO $ minimumOn (defScore . sDecision) subForest
 
 refactorThreadIO tree = do
     subForest <- positiveSubForestIO tree
@@ -113,7 +113,7 @@ smartBindThreadIO tree = do
             <$> (positiveSubForestIO =<< refactorThreadIO tree)
     case subForest of
         [] -> return tree
-        _ -> smartBindThreadIO $ maximumOn (score . sDecision) subForest
+        _ -> smartBindThreadIO $ maximumOn (defScore . sDecision) subForest
 
 allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
 allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree
