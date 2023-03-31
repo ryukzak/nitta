@@ -248,9 +248,7 @@ main = do
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }
-                    >>= \case
-                        Left msg -> error msg
-                        Right p -> return p
+                    >>= either error return
 
             when lsim $ logicalSimulation format frPrettyLog prj
         )
