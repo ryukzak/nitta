@@ -29,7 +29,7 @@ class ModelsStore:
             try:
                 self.models[name] = load_model(self.model_dir / name)
             except FileNotFoundError as e:
-                raise ModelNotFoundError(f"Model {name} not found") from e
+                raise ModelNotFoundError(f"Model {name} not found in root {MODELS_DIR.absolute()}") from e
 
         return self.models[name]
 

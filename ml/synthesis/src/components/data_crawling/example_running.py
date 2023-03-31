@@ -27,6 +27,8 @@ _NITTA_START_WAIT_DELAY_S: int = 2
 @asynccontextmanager
 async def run_nitta(example: Path,
                     nitta_exe_path: str = "stack exec nitta -- ",
+                    nitta_args: str = "",
+                    nitta_env: dict = None,
                     port: int = None
                     ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
     if port is None:
@@ -35,14 +37,17 @@ async def run_nitta(example: Path,
     nitta_baseurl = f"http://localhost:{port}"
 
     logger.info(f"Processing example {example!r}.")
-    cmd = f"{nitta_exe_path} -p={port} {example}"
+    cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
+
+    env = os.environ.copy()
+    env.update(nitta_env or {})
 
     proc = None
     try:
         preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
         proc = await asyncio.create_subprocess_shell(
             cmd, cwd=str(ROOT_DIR), stdout=sys.stdout, stderr=sys.stderr, shell=True,
-            preexec_fn=preexec_fn,
+            preexec_fn=preexec_fn, env=env
         )
 
         logger.info(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
