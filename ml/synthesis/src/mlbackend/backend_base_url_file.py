@@ -47,7 +47,7 @@ class BackendBaseUrlFile(AbstractContextManager):
                 f"Will overwrite the old base URL ({old_base_url}) in file ({self.filepath.absolute()}). "
             )
 
-        self.port = 8000  # find_random_free_port()
+        self.port = find_random_free_port()
 
         base_url = self._base_url_fmt.format(port=self.port)
         logger.info(f"Writing base URL ({base_url}) to file ({self.filepath.absolute()}).")

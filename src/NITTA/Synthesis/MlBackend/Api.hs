@@ -77,4 +77,4 @@ getScoreRequestIO baseUrl modelName scoringInputs =
 predictScoresIO modelName baseUrl inputs = do
     request <- getScoreRequestIO baseUrl modelName inputs
     response <- httpJSON request
-    return $ head $ scores $ responseData $ getResponseBody response
+    return $ scores $ responseData $ getResponseBody response

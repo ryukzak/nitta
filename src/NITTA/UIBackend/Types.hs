@@ -21,7 +21,8 @@ data BackendCtx tag v x t = BackendCtx
     -- ^ lists of received by IO values
     , outputPath :: String
     , mlBackendGetter :: IO MlBackendServer
+    , mlScoringModel :: Maybe String
     }
 
 instance Default (BackendCtx tag v x t) where
-    def = BackendCtx (error "root of a default (missing) BackendCtx was accessed") def def def
+    def = BackendCtx (error "root of a default (missing) BackendCtx was accessed") def def def def

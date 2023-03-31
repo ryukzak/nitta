@@ -19,6 +19,7 @@ module NITTA.Synthesis.Explore (
 ) where
 
 import Control.Concurrent.STM
+import Control.Exception
 import Control.Monad (forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
@@ -38,6 +39,7 @@ import NITTA.Synthesis.Types
 import NITTA.UIBackend.Types
 import NITTA.UIBackend.ViewHelper
 import NITTA.Utils
+import Network.HTTP.Simple
 import System.Log.Logger
 
 -- | Make synthesis tree
@@ -103,18 +105,31 @@ subForestIO
 
             if null subForest
                 then return subForest
-                else do
-                    mlBackend <- mlBackendGetter ctx
-                    let mlBackendBaseUrl = baseUrl mlBackend
-                    debugM "NITTA.Synthesis" $ "mlBackendBaseUrl: " <> show mlBackendBaseUrl
-                    let modelName = T.pack "production"
-                    case mlBackendBaseUrl of
+                else
+                    ( case mlScoringModel ctx of
                         Nothing -> return subForest
-                        Just onlineUrl -> mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
+                        Just modelNameStr -> do
+                            mlBackend <- mlBackendGetter ctx
+                            let mlBackendBaseUrl = baseUrl mlBackend
+                            case mlBackendBaseUrl of
+                                Nothing -> return subForest
+                                Just onlineUrl -> do
+                                    let modelName = T.pack modelNameStr
+                                    mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
+                                        `catch` \e -> do
+                                            errorM "NITTA.Synthesis" $
+                                                "ML backend error: "
+                                                    <> ( case e of
+                                                            JSONConversionException _ resp _ -> show resp
+                                                            _ -> show e
+                                                       )
+                                            return subForest
+                    )
 
 mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
     let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
-    scores <- predictScoresIO modelName mlBackendBaseUrl [input]
+    allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
+    let scores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
     return $ map (\(node@Tree{sDecision = sDes}, score) -> node{sDecision = sDes{score}}) (zip subForest scores)
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
