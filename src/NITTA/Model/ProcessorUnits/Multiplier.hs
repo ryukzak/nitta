@@ -413,7 +413,7 @@ multiplier mock =
 instance (Time t) => Default (Multiplier v x t) where
     def = multiplier True
 
-instance Default x => DefaultX (Multiplier v x t) x
+instance (Default x) => DefaultX (Multiplier v x t) x
 
 {- | This class is allowed to extract all bound functions. It has a very simple
 implementation: we take process description (all planned functions), and

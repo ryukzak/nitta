@@ -33,11 +33,11 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
-import NITTA.Synthesis.Method
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis
+import NITTA.Synthesis.Method
 import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta

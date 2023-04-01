@@ -24,7 +24,7 @@ import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
-refactorTo :: HasCallStack => [F String Int] -> [F String Int] -> Assertion
+refactorTo :: (HasCallStack) => [F String Int] -> [F String Int] -> Assertion
 refactorTo startFs resultFs = S.fromList (simpleRefactor startFs) @?= S.fromList resultFs
 
 simpleRefactor dfg =

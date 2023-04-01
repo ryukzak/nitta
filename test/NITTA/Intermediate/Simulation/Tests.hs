@@ -78,7 +78,7 @@ tests =
         ]
 
 simulationTestCase ::
-    HasCallStack =>
+    (HasCallStack) =>
     String ->
     Int ->
     [(String, [Int])] ->
