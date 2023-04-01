@@ -34,7 +34,9 @@ jobs:
       - name: Cache haskell-stack
         uses: actions/cache@v3.2.5
         with:
-          path: ~/.stack
+          path: |
+            ~/.stack
+            .stack-work
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
@@ -59,7 +61,9 @@ jobs:
       - name: Cache haskell-stack
         uses: actions/cache@v3.2.5
         with:
-          path: ~/.stack
+          path: |
+            ~/.stack
+            .stack-work
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
