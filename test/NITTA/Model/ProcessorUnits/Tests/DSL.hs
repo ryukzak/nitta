@@ -170,7 +170,7 @@ data UnitTestState u v x = UnitTestState
     }
     deriving (Show)
 
-type Statement u v x r = HasCallStack => StateT (UnitTestState u v x) IO r
+type Statement u v x r = (HasCallStack) => StateT (UnitTestState u v x) IO r
 
 type PUStatement pu v x t r =
     (HasCallStack, ProcessorUnit pu v x t, ProcessIntegrity pu, BreakLoopProblem pu v x, EndpointProblem pu v t) =>
@@ -182,7 +182,7 @@ type TSStatement x r =
     Statement (TargetSystem (BusNetwork tag v x t) tag v x t) v x r
 
 unitTestCase ::
-    HasCallStack =>
+    (HasCallStack) =>
     String ->
     u ->
     StateT (UnitTestState u v x) IO () ->
@@ -624,7 +624,7 @@ synthesizeAndCoSim = do
     assertSynthesisComplete
     assertTargetSystemCoSimulation
 
-tracePU :: Show pu => PUStatement pu v x t ()
+tracePU :: (Show pu) => PUStatement pu v x t ()
 tracePU = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "PU: " <> show unit

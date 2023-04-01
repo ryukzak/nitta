@@ -101,7 +101,7 @@ instance (VarValTime v x t) => Default (Accum v x t) where
             , process_ = def
             }
 
-instance Default x => DefaultX (Accum v x t) x
+instance (Default x) => DefaultX (Accum v x t) x
 
 registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
     pu
