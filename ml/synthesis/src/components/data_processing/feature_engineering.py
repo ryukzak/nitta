@@ -47,3 +47,41 @@ def df_to_model_columns(df: DataFrame, model_columns: list[str] = None) -> DataF
     df = pd.concat([pd.DataFrame(columns=model_columns), df])[model_columns]  # reset columns, fill data if possible
     df = df.fillna(0)  # fill NaNs in columns (mostly OHE flags) with 0
     return df
+
+def _extract_params_dict(node: NittaNode) -> dict:
+    if node.decision.tag in ["BindDecisionView", "DataflowDecisionView"]:
+        result = node.parameters.copy()
+        if node.decision.tag == "DataflowDecisionView":
+            result["pNotTransferableInputs"] = sum(result["pNotTransferableInputs"])
+        return result
+    elif node.decision.tag == "RootView":
+        return {}
+    else:
+        # refactorings
+        return {"pRefactoringType": node.decision.tag}
+
+def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None, include_label=True,
+                            levels_left=None) -> pd.DataFrame:
+    if include_label and metrics_distrib is None:
+        metrics_distrib = node.subtree_leafs_metrics
+
+    self_df = pd.DataFrame(dict(
+        example=example,
+        sid=node.sid,
+        tag=node.decision.tag,
+        old_score=node.score,
+        is_leaf=node.is_leaf,
+        **_extract_params_dict(node),
+    ), index=[0])
+    if include_label:
+        self_df["label"] = node.compute_label(metrics_distrib)
+
+    levels_left_for_child = None if levels_left is None else levels_left - 1
+    if node.is_leaf or levels_left == -1:
+        return self_df
+    else:
+        result = [assemble_tree_dataframe(example, child, metrics_distrib, include_label, levels_left_for_child)
+                  for child in node.children]
+        if node.sid != "-":
+            result.insert(0, self_df)
+        return pd.concat(result)
