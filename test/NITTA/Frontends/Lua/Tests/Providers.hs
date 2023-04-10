@@ -49,7 +49,7 @@ traceLuaSimulationTestCase _ name src expect =
             actual = log2md $ frPrettyLog $ map cycleCntx $ cntxProcess cntx
          in expect @=? actual
 
-luaTestCase :: (HasCallStack) => String -> T.Text -> TestTree
+luaTestCase :: HasCallStack => String -> T.Text -> TestTree
 luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pAttrIntX32 name def
 
 typedLuaTestCase ::
