@@ -40,7 +40,8 @@ screen -ls | sed '1d;$d'
 # remove the sudo tutorial on startup
 touch ~/.sudo_as_admin_successful
 
-source ~/.profile
+# FIXME: move stuff to bashrc, including non-interactive non-login shell initializations for vscode server
+[ -f ~/.profile ] && source ~/.profile
 
 # fallback to shell for interactivity
 TERM=xterm-256color /bin/bash
