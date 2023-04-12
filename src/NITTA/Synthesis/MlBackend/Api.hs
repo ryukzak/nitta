@@ -18,7 +18,7 @@ module NITTA.Synthesis.MlBackend.Api (
 ) where
 
 import Data.Aeson
-import Data.Text qualified as T
+import Data.String.ToString
 import Data.Text.Encoding qualified as T
 import GHC.Generics
 import NITTA.Synthesis.Types
@@ -63,7 +63,7 @@ newtype PostScoreResponseData = PostScoreResponseData
     deriving (Show, Generic, ToJSON, FromJSON)
 
 getDefaultRequestIO baseUrl = do
-    parseRequest (T.unpack baseUrl)
+    parseRequest (toString baseUrl)
 
 getScoreRequestIO baseUrl modelName scoringInputs =
     let path = T.encodeUtf8 $ "/models/" <> modelName <> "/score"

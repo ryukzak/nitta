@@ -16,6 +16,8 @@ import Control.Exception
 import Control.Monad
 import Data.Default
 import Data.Maybe
+import Data.String
+import Data.String.ToString
 import Data.Text qualified as T
 import GHC.IO.Handle
 import NITTA.Synthesis.MlBackend.FixedCache
@@ -45,7 +47,7 @@ readMlBackendBaseUrlFileIO =
             ReadMode
             ( \file -> do
                 baseUrl <- hGetLine file
-                return $ Just $ T.pack baseUrl
+                return $ Just $ fromString baseUrl
             )
         `catch` \(_ :: IOException) -> do
             debugM "NITTA.Synthesis.MlBackend" "failed to read ML backend base URL from file"
@@ -116,7 +118,7 @@ withLazyMlBackendServer action =
                         debugM
                             "NITTA.Synthesis.MlBackend"
                             ( "ML backend server base URL was found ("
-                                <> T.unpack existingBaseUrl
+                                <> toString existingBaseUrl
                                 <> "), skipping server startup"
                             )
                         return MlBackendServer{baseUrl = Just existingBaseUrl, handles = Nothing}

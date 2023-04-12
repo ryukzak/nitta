@@ -24,7 +24,7 @@ import Control.Monad (forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
-import Data.Text qualified as T
+import Data.String
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -114,7 +114,7 @@ subForestIO
                             case mlBackendBaseUrl of
                                 Nothing -> return subForest
                                 Just onlineUrl -> do
-                                    let modelName = T.pack modelNameStr
+                                    let modelName = fromString modelNameStr
                                     mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
                                         `catch` \e -> do
                                             errorM "NITTA.Synthesis" $
