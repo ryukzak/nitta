@@ -73,7 +73,7 @@ shift sRight =
         , process_ = def
         }
 
-instance Default t => Default (Shift v x t) where
+instance (Default t) => Default (Shift v x t) where
     def = shift True
 
 instance BreakLoopProblem (Shift v x t) v x

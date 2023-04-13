@@ -153,7 +153,7 @@ crop x
     | abs x == x = x .&. valueMask x
     | otherwise = x .|. complement (valueMask x)
 
-valueMask :: Val x => x -> x
+valueMask :: (Val x) => x -> x
 valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth x - 1) - 1) 0
 
 -- TODO: try to avoid this class

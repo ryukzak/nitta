@@ -167,7 +167,7 @@ type SynthesisMethodsAPI tag v x t =
            )
 
 synthesisMethods BackendCtx{root} sid =
-    liftIO (sID <$> (stateOfTheArtSynthesisIO =<< getTreeIO root sid))
+    liftIO (sID <$> (stateOfTheArtSynthesisIO () =<< getTreeIO root sid))
         :<|> liftIO (sID <$> (simpleSynthesisIO =<< getTreeIO root sid))
         :<|> liftIO (sID <$> (smartBindSynthesisIO =<< getTreeIO root sid))
 

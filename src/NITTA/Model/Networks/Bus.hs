@@ -830,7 +830,7 @@ modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} bui
             , bnPUPrototypes = prototypes
             }
 
-defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+defineNetwork :: (Default t) => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
 
 addCustom ::

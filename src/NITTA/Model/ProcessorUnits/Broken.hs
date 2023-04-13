@@ -267,7 +267,7 @@ instance (Time t) => Default (Broken v x t) where
             , unknownDataOut = False
             }
 
-instance Default x => DefaultX (Broken v x t) x
+instance (Default x) => DefaultX (Broken v x t) x
 
 instance UnambiguouslyDecode (Broken v x t) where
     decodeInstruction Load = def{wrSignal = True}
