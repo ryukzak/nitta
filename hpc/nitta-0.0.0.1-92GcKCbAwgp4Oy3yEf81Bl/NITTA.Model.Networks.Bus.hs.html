@@ -849,7 +849,7 @@ span.spaces    { background: white }
 <span class="lineno">  830 </span><span class="spaces">            </span><span class="istickedoff">, bnPUPrototypes = prototypes</span>
 <span class="lineno">  831 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  832 </span>
-<span class="lineno">  833 </span>defineNetwork :: Default t =&gt; k -&gt; IOSynchronization -&gt; State (BuilderSt k v x t) a -&gt; BusNetwork k v x t
+<span class="lineno">  833 </span>defineNetwork :: (Default t) =&gt; k -&gt; IOSynchronization -&gt; State (BuilderSt k v x t) a -&gt; BusNetwork k v x t
 <span class="lineno">  834 </span><span class="decl"><span class="istickedoff">defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder</span></span>
 <span class="lineno">  835 </span>
 <span class="lineno">  836 </span>addCustom ::

@@ -3017,7 +3017,7 @@ Tree :: Sid -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m
 [sSubForestVar] :: Tree m tag v x t -> TMVar [Tree m tag v x t]
 data SynthesisDecision ctx m
 [Root] :: SynthesisDecision ctx m
-[SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => {option :: o, decision :: d, metrics :: p, score :: Float} -> SynthesisDecision ctx m
+[SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} -> SynthesisDecision ctx m
 data SynthesisState m tag v x t
 SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> [ProcessWave v x] -> Int -> Int -> Set v -> SynthesisState m tag v x t
 [sParent] :: SynthesisState m tag v x t -> Maybe (Tree m tag v x t)
@@ -3074,6 +3074,7 @@ type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
 (<?>) :: Num p => Bool -> p -> p
 targetUnit :: Tree (TargetSystem c tag v x t) tag v x t -> c
 targetDFG :: Tree (TargetSystem u tag v x t) tag v x t -> DataFlowGraph v x
+defScore :: SynthesisDecision ctx m -> Float
 instance GHC.Show.Show NITTA.Synthesis.Types.Sid
 instance GHC.Read.Read NITTA.Synthesis.Types.Sid
 instance Data.Default.Class.Default NITTA.Synthesis.Types.Sid
@@ -3232,7 +3233,7 @@ allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag
 
 -- | The most complex synthesis method, which embedded all another. That
 --   all.
-stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t
 allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 

@@ -432,7 +432,7 @@ span.spaces    { background: white }
 <span class="lineno">  413 </span>instance (Time t) =&gt; Default (Multiplier v x t) where
 <span class="lineno">  414 </span>    <span class="decl"><span class="istickedoff">def = multiplier True</span></span>
 <span class="lineno">  415 </span>
-<span class="lineno">  416 </span>instance Default x =&gt; DefaultX (Multiplier v x t) x
+<span class="lineno">  416 </span>instance (Default x) =&gt; DefaultX (Multiplier v x t) x
 <span class="lineno">  417 </span>
 <span class="lineno">  418 </span>{- | This class is allowed to extract all bound functions. It has a very simple
 <span class="lineno">  419 </span>implementation: we take process description (all planned functions), and

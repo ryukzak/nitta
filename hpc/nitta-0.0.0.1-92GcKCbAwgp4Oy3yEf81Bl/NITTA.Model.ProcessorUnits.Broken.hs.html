@@ -286,7 +286,7 @@ span.spaces    { background: white }
 <span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">, unknownDataOut = False</span>
 <span class="lineno">  268 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  269 </span>
-<span class="lineno">  270 </span>instance Default x =&gt; DefaultX (Broken v x t) x
+<span class="lineno">  270 </span>instance (Default x) =&gt; DefaultX (Broken v x t) x
 <span class="lineno">  271 </span>
 <span class="lineno">  272 </span>instance UnambiguouslyDecode (Broken v x t) where
 <span class="lineno">  273 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Load = def{wrSignal = True}</span>

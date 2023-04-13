@@ -59,8 +59,8 @@ span.spaces    { background: white }
 <span class="lineno">   40 </span><span class="decl"><span class="istickedoff">stepLimit = 750 :: Int</span></span>
 <span class="lineno">   41 </span>
 <span class="lineno">   42 </span>-- | The most complex synthesis method, which embedded all another. That all.
-<span class="lineno">   43 </span>stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
-<span class="lineno">   44 </span><span class="decl"><span class="istickedoff">stateOfTheArtSynthesisIO tree = do</span>
+<span class="lineno">   43 </span>stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; () -&gt; SynthesisMethod tag v x t
+<span class="lineno">   44 </span><span class="decl"><span class="istickedoff">stateOfTheArtSynthesisIO () tree = do</span>
 <span class="lineno">   45 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;stateOfTheArtSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
 <span class="lineno">   46 </span><span class="spaces">    </span><span class="istickedoff">l1 &lt;- simpleSynthesisIO tree</span>
 <span class="lineno">   47 </span><span class="spaces">    </span><span class="istickedoff">l2 &lt;- smartBindSynthesisIO tree</span>
@@ -87,14 +87,14 @@ span.spaces    { background: white }
 <span class="lineno">   68 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
 <span class="lineno">   69 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
 <span class="lineno">   70 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
-<span class="lineno">   71 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; bestThreadIO (limit - 1) $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">   71 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; bestThreadIO (limit - 1) $ maximumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">   72 </span>
 <span class="lineno">   73 </span>bestStepIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   74 </span><span class="decl"><span class="nottickedoff">bestStepIO tree = do</span>
 <span class="lineno">   75 </span><span class="spaces">    </span><span class="nottickedoff">subForest &lt;- positiveSubForestIO tree</span>
 <span class="lineno">   76 </span><span class="spaces">    </span><span class="nottickedoff">case subForest of</span>
 <span class="lineno">   77 </span><span class="spaces">        </span><span class="nottickedoff">[] -&gt; error &quot;all step is over&quot;</span>
-<span class="lineno">   78 </span><span class="spaces">        </span><span class="nottickedoff">_ -&gt; return $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="nottickedoff">_ -&gt; return $ maximumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">   79 </span>
 <span class="lineno">   80 </span>obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   81 </span><span class="decl"><span class="istickedoff">obviousBindThreadIO tree = do</span>
@@ -118,7 +118,7 @@ span.spaces    { background: white }
 <span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; positiveSubForestIO tree</span>
 <span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
 <span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
-<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO $ minimumOn (score . sDecision) subForest</span></span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO $ minimumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">  103 </span>
 <span class="lineno">  104 </span><span class="decl"><span class="istickedoff">refactorThreadIO tree = do</span>
 <span class="lineno">  105 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
@@ -132,7 +132,7 @@ span.spaces    { background: white }
 <span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; (positiveSubForestIO =&lt;&lt; refactorThreadIO tree)</span>
 <span class="lineno">  114 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
 <span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
-<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; smartBindThreadIO $ maximumOn (score . sDecision) subForest</span></span>
+<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; smartBindThreadIO $ maximumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">  117 </span>
 <span class="lineno">  118 </span>allBestThreadIO :: (VarValTime v x t, UnitTag tag) =&gt; Int -&gt; SynthesisMethod tag v x t
 <span class="lineno">  119 </span><span class="decl"><span class="istickedoff">allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree</span>

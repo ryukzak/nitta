@@ -92,7 +92,7 @@ span.spaces    { background: white }
 <span class="lineno">   73 </span><span class="spaces">        </span><span class="istickedoff">, process_ = def</span>
 <span class="lineno">   74 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
 <span class="lineno">   75 </span>
-<span class="lineno">   76 </span>instance Default t =&gt; Default (Shift v x t) where
+<span class="lineno">   76 </span>instance (Default t) =&gt; Default (Shift v x t) where
 <span class="lineno">   77 </span>    <span class="decl"><span class="istickedoff">def = shift <span class="nottickedoff">True</span></span></span>
 <span class="lineno">   78 </span>
 <span class="lineno">   79 </span>instance BreakLoopProblem (Shift v x t) v x

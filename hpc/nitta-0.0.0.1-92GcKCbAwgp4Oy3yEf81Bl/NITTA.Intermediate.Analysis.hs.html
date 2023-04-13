@@ -142,13 +142,13 @@ span.spaces    { background: white }
 <span class="lineno">  123 </span><span class="spaces">                </span><span class="istickedoff">}</span>
 <span class="lineno">  124 </span><span class="spaces">     </span><span class="istickedoff">in pwGraph $ execBuilder builder 0</span></span>
 <span class="lineno">  125 </span>
-<span class="lineno">  126 </span>execBuilder :: Ord v =&gt; Builder v x -&gt; Int -&gt; Builder v x
+<span class="lineno">  126 </span>execBuilder :: (Ord v) =&gt; Builder v x -&gt; Int -&gt; Builder v x
 <span class="lineno">  127 </span><span class="decl"><span class="istickedoff">execBuilder builder@Builder{pwRemains} prev</span>
 <span class="lineno">  128 </span><span class="spaces">    </span><span class="istickedoff">| S.null pwRemains = builder</span>
 <span class="lineno">  129 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">S.size pwRemains == prev</span> = <span class="nottickedoff">error &quot;Process waves construction stuck in a loop&quot;</span></span>
 <span class="lineno">  130 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = execBuilder (foldl applyRemaining builder pwRemains) $ S.size pwRemains</span></span>
 <span class="lineno">  131 </span>
-<span class="lineno">  132 </span>applyRemaining :: Ord v =&gt; Builder v x -&gt; F v x -&gt; Builder v x
+<span class="lineno">  132 </span>applyRemaining :: (Ord v) =&gt; Builder v x -&gt; F v x -&gt; Builder v x
 <span class="lineno">  133 </span><span class="decl"><span class="istickedoff">applyRemaining builder@Builder{pwRemains, pwGraph, pwIn, pwReadyIn} func =</span>
 <span class="lineno">  134 </span><span class="spaces">    </span><span class="istickedoff">let fIn = inputs func</span>
 <span class="lineno">  135 </span><span class="spaces">        </span><span class="istickedoff">fOut = outputs func</span>
@@ -162,7 +162,7 @@ span.spaces    { background: white }
 <span class="lineno">  143 </span><span class="spaces">                    </span><span class="istickedoff">, pwRemains = S.delete func pwRemains</span>
 <span class="lineno">  144 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
 <span class="lineno">  145 </span>
-<span class="lineno">  146 </span>insertF :: Ord v =&gt; F v x -&gt; S.Set v -&gt; S.Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+<span class="lineno">  146 </span>insertF :: (Ord v) =&gt; F v x -&gt; S.Set v -&gt; S.Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
 <span class="lineno">  147 </span><span class="decl"><span class="istickedoff">insertF f fIn fOut []</span>
 <span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">null fIn</span> = [ProcessWave{pwFs = [f], pwOut = fOut}]</span>
 <span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error &quot;Cannot calculate process wave for the function&quot;</span></span>

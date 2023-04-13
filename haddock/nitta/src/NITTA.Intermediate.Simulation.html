@@ -23,29 +23,29 @@ Stability   : experimental
 </span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
 </span><span id="line-24"></span><span>
 </span><span id="line-25"></span><span class="hs-comment">-- | Functional algorithm simulation</span><span>
-</span><span id="line-26"></span><span id="local-6989586621680153645"><span id="local-6989586621680153647"><span id="local-6989586621680153649"><span class="annot"><a href="NITTA.Intermediate.Simulation.html#simulateDataFlowGraph"><span class="hs-identifier hs-type">simulateDataFlowGraph</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-27"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153649"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153647"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#WithFunctions"><span class="hs-identifier hs-type">WithFunctions</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153645"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153649"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153647"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-26"></span><span id="local-6989586621680154010"><span id="local-6989586621680154012"><span id="local-6989586621680154014"><span class="annot"><a href="NITTA.Intermediate.Simulation.html#simulateDataFlowGraph"><span class="hs-identifier hs-type">simulateDataFlowGraph</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-27"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154014"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154012"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#WithFunctions"><span class="hs-identifier hs-type">WithFunctions</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154010"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154014"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154012"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
 </span><span id="line-28"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-29"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153649"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153647"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-30"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680153649"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680153647"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-31"></span><span>    </span><span class="annot"><a href="#local-6989586621680153645"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-32"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153649"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153647"><span class="hs-identifier hs-type">x</span></a></span></span></span></span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154014"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154012"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680154014"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680154012"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="#local-6989586621680154010"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154014"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154012"><span class="hs-identifier hs-type">x</span></a></span></span></span></span><span>
 </span><span id="line-33"></span><span id="simulateDataFlowGraph"><span class="annot"><span class="annottext">simulateDataFlowGraph :: forall v x g.
 (Var v, Val x, WithFunctions g (F v x)) =&gt;
 Int -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; g -&gt; Cntx v x
-</span><a href="NITTA.Intermediate.Simulation.html#simulateDataFlowGraph"><span class="hs-identifier hs-var hs-var">simulateDataFlowGraph</span></a></span></span><span> </span><span id="local-6989586621680153523"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680153523"><span class="hs-identifier hs-var">cycleN</span></a></span></span><span> </span><span id="local-6989586621680153522"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153522"><span class="hs-identifier hs-var">cycle0</span></a></span></span><span> </span><span id="local-6989586621680153521"><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153521"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153520"><span class="annot"><span class="annottext">g
-</span><a href="#local-6989586621680153520"><span class="hs-identifier hs-var">dfg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Intermediate.Simulation.html#simulateDataFlowGraph"><span class="hs-identifier hs-var hs-var">simulateDataFlowGraph</span></a></span></span><span> </span><span id="local-6989586621680153888"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680153888"><span class="hs-identifier hs-var">cycleN</span></a></span></span><span> </span><span id="local-6989586621680153887"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153887"><span class="hs-identifier hs-var">cycle0</span></a></span></span><span> </span><span id="local-6989586621680153886"><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153886"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153885"><span class="annot"><span class="annottext">g
+</span><a href="#local-6989586621680153885"><span class="hs-identifier hs-var">dfg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-34"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; [F v x] -&gt; Cntx v x
 forall v x.
 (Var v, Val x) =&gt;
 Int -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; [F v x] -&gt; Cntx v x
 </span><a href="NITTA.Intermediate.Simulation.html#simulateAlg"><span class="hs-identifier hs-var">simulateAlg</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680153523"><span class="hs-identifier hs-var">cycleN</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153522"><span class="hs-identifier hs-var">cycle0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153521"><span class="hs-identifier hs-var">transmission</span></a></span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; Cntx v x) -&gt; [F v x] -&gt; Cntx v x
+</span><a href="#local-6989586621680153888"><span class="hs-identifier hs-var">cycleN</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153887"><span class="hs-identifier hs-var">cycle0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153886"><span class="hs-identifier hs-var">transmission</span></a></span><span> </span><span class="annot"><span class="annottext">([F v x] -&gt; Cntx v x) -&gt; [F v x] -&gt; Cntx v x
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [F v x]
 forall v x. (Var v, Val x) =&gt; [F v x] -&gt; [F v x]
@@ -54,87 +54,87 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">g -&gt; [F v x]
 forall a f. WithFunctions a f =&gt; a -&gt; [f]
 </span><a href="NITTA.Intermediate.Types.html#functions"><span class="hs-identifier hs-var">functions</span></a></span><span> </span><span class="annot"><span class="annottext">g
-</span><a href="#local-6989586621680153520"><span class="hs-identifier hs-var">dfg</span></a></span><span>
+</span><a href="#local-6989586621680153885"><span class="hs-identifier hs-var">dfg</span></a></span><span>
 </span><span id="line-35"></span><span>
-</span><span id="line-36"></span><span id="local-6989586621680153636"><span id="local-6989586621680153637"><span class="annot"><a href="NITTA.Intermediate.Simulation.html#simulateAlg"><span class="hs-identifier hs-type">simulateAlg</span></a></span><span> </span><span class="hs-glyph">::</span><span>
-</span><span id="line-37"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153637"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153636"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-36"></span><span id="local-6989586621680154001"><span id="local-6989586621680154002"><span class="annot"><a href="NITTA.Intermediate.Simulation.html#simulateAlg"><span class="hs-identifier hs-type">simulateAlg</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154002"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154001"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
 </span><span id="line-38"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-39"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153637"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153636"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-40"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680153637"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680153636"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-41"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153637"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153636"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-42"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153637"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680153636"><span class="hs-identifier hs-type">x</span></a></span></span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154002"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154001"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680154002"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680154001"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154002"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154001"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154002"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680154001"><span class="hs-identifier hs-type">x</span></a></span></span></span><span>
 </span><span id="line-43"></span><span id="simulateAlg"><span class="annot"><span class="annottext">simulateAlg :: forall v x.
 (Var v, Val x) =&gt;
 Int -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; [F v x] -&gt; Cntx v x
-</span><a href="NITTA.Intermediate.Simulation.html#simulateAlg"><span class="hs-identifier hs-var hs-var">simulateAlg</span></a></span></span><span> </span><span id="local-6989586621680153481"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680153481"><span class="hs-identifier hs-var">cycleN</span></a></span></span><span> </span><span id="local-6989586621680153480"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153480"><span class="hs-identifier hs-var">cycle0</span></a></span></span><span> </span><span id="local-6989586621680153479"><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153479"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153478"><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680153478"><span class="hs-identifier hs-var">alg</span></a></span></span><span>
-</span><span id="line-44"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680153469"><span class="annot"><span class="annottext">cycleConnections :: [F a x] -&gt; [(a, [a])]
-</span><a href="#local-6989586621680153469"><span class="hs-identifier hs-var hs-var">cycleConnections</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-45"></span><span>          </span><span class="annot"><a href="#local-6989586621680153469"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153468"><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680153468"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680153467"><span class="annot"><span class="annottext">[F a x]
-</span><a href="#local-6989586621680153467"><span class="hs-identifier hs-var">fs</span></a></span></span><span class="hs-special">)</span><span>
+</span><a href="NITTA.Intermediate.Simulation.html#simulateAlg"><span class="hs-identifier hs-var hs-var">simulateAlg</span></a></span></span><span> </span><span id="local-6989586621680153846"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680153846"><span class="hs-identifier hs-var">cycleN</span></a></span></span><span> </span><span id="local-6989586621680153845"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153845"><span class="hs-identifier hs-var">cycle0</span></a></span></span><span> </span><span id="local-6989586621680153844"><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153844"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153843"><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680153843"><span class="hs-identifier hs-var">alg</span></a></span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680153834"><span class="annot"><span class="annottext">cycleConnections :: [F a x] -&gt; [(a, [a])]
+</span><a href="#local-6989586621680153834"><span class="hs-identifier hs-var hs-var">cycleConnections</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-45"></span><span>          </span><span class="annot"><a href="#local-6989586621680153834"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153833"><span class="annot"><span class="annottext">F a x
+</span><a href="#local-6989586621680153833"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621680153832"><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680153832"><span class="hs-identifier hs-var">fs</span></a></span></span><span class="hs-special">)</span><span>
 </span><span id="line-46"></span><span>            </span><span class="hs-comment">-- without refactoring</span><span>
 </span><span id="line-47"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-type">Loop</span></a></span><span> </span><span class="annot"><span class="annottext">X x
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680153464"><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680153464"><span class="hs-identifier hs-var">ov</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680153462"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153462"><span class="hs-identifier hs-var">iv</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Loop a x)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680153829"><span class="annot"><span class="annottext">Set a
+</span><a href="#local-6989586621680153829"><span class="hs-identifier hs-var">ov</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680153827"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153827"><span class="hs-identifier hs-var">iv</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (Loop a x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680153468"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153462"><span class="hs-identifier hs-var">iv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
+</span><a href="#local-6989586621680153833"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153827"><span class="hs-identifier hs-var">iv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">elems</span></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680153464"><span class="hs-identifier hs-var">ov</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a, [a]) -&gt; [(a, [a])] -&gt; [(a, [a])]
+</span><a href="#local-6989586621680153829"><span class="hs-identifier hs-var">ov</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a, [a]) -&gt; [(a, [a])] -&gt; [(a, [a])]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[F a x] -&gt; [(a, [a])]
-</span><a href="#local-6989586621680153469"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
-</span><a href="#local-6989586621680153467"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680153834"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680153832"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-48"></span><span>            </span><span class="hs-comment">-- after refactoring (BreakLoopD)</span><span>
 </span><span id="line-49"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#LoopBegin"><span class="hs-identifier hs-type">LoopBegin</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-type">Loop</span></a></span><span> </span><span class="annot"><span class="annottext">X x
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680153459"><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680153459"><span class="hs-identifier hs-var">ov</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680153458"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153458"><span class="hs-identifier hs-var">iv</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">O a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-type">O</span></a></span><span> </span><span id="local-6989586621680153824"><span class="annot"><span class="annottext">Set a
+</span><a href="#local-6989586621680153824"><span class="hs-identifier hs-var">ov</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-type">I</span></a></span><span> </span><span id="local-6989586621680153823"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153823"><span class="hs-identifier hs-var">iv</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">O a
 </span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">F a x -&gt; Maybe (LoopBegin a x)
 forall (f :: * -&gt; * -&gt; *) v x.
 (Typeable f, Typeable v, Typeable x) =&gt;
 F v x -&gt; Maybe (f v x)
 </span><a href="NITTA.Intermediate.Types.html#castF"><span class="hs-identifier hs-var">castF</span></a></span><span> </span><span class="annot"><span class="annottext">F a x
-</span><a href="#local-6989586621680153468"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153458"><span class="hs-identifier hs-var">iv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
+</span><a href="#local-6989586621680153833"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153823"><span class="hs-identifier hs-var">iv</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set a -&gt; [a]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">elems</span></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680153459"><span class="hs-identifier hs-var">ov</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a, [a]) -&gt; [(a, [a])] -&gt; [(a, [a])]
+</span><a href="#local-6989586621680153824"><span class="hs-identifier hs-var">ov</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a, [a]) -&gt; [(a, [a])] -&gt; [(a, [a])]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[F a x] -&gt; [(a, [a])]
-</span><a href="#local-6989586621680153469"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
-</span><a href="#local-6989586621680153467"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680153834"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680153832"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-50"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F a x] -&gt; [(a, [a])]
-</span><a href="#local-6989586621680153469"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
-</span><a href="#local-6989586621680153467"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680153834"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F a x]
+</span><a href="#local-6989586621680153832"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-51"></span><span>
-</span><span id="line-52"></span><span>          </span><span id="local-6989586621680153457"><span class="annot"><span class="annottext">fromPrevCycle :: [(v, [v])]
-</span><a href="#local-6989586621680153457"><span class="hs-identifier hs-var hs-var">fromPrevCycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [(v, [v])]
+</span><span id="line-52"></span><span>          </span><span id="local-6989586621680153822"><span class="annot"><span class="annottext">fromPrevCycle :: [(v, [v])]
+</span><a href="#local-6989586621680153822"><span class="hs-identifier hs-var hs-var">fromPrevCycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x] -&gt; [(v, [v])]
 forall {a} {x}. (Typeable a, Typeable x) =&gt; [F a x] -&gt; [(a, [a])]
-</span><a href="#local-6989586621680153469"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680153478"><span class="hs-identifier hs-var">alg</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680153834"><span class="hs-identifier hs-var">cycleConnections</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680153843"><span class="hs-identifier hs-var">alg</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-53"></span><span>        </span><span class="annot"><span class="annottext">Cntx :: forall v x. [CycleCntx v x] -&gt; Map v [x] -&gt; Int -&gt; Cntx v x
 </span><a href="NITTA.Intermediate.Types.html#Cntx"><span class="hs-identifier hs-type">Cntx</span></a></span><span>
 </span><span id="line-54"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">cntxReceived :: Map v [x]
 </span><a href="NITTA.Intermediate.Types.html#cntxReceived"><span class="hs-identifier hs-var">cntxReceived</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(v, [x])] -&gt; Map v [x]
 forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153479"><span class="hs-identifier hs-var">transmission</span></a></span><span>
+</span><a href="#local-6989586621680153844"><span class="hs-identifier hs-var">transmission</span></a></span><span>
 </span><span id="line-55"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">cntxProcess :: [CycleCntx v x]
 </span><a href="NITTA.Intermediate.Types.html#cntxProcess"><span class="hs-identifier hs-var">cntxProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; [CycleCntx v x] -&gt; [CycleCntx v x]
 forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680153481"><span class="hs-identifier hs-var">cycleN</span></a></span><span> </span><span class="annot"><span class="annottext">([CycleCntx v x] -&gt; [CycleCntx v x])
+</span><a href="#local-6989586621680153846"><span class="hs-identifier hs-var">cycleN</span></a></span><span> </span><span class="annot"><span class="annottext">([CycleCntx v x] -&gt; [CycleCntx v x])
 -&gt; [CycleCntx v x] -&gt; [CycleCntx v x]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[(v, [v])]
@@ -146,60 +146,60 @@ forall {v} {t :: * -&gt; *} {t :: * -&gt; *} {src} {x}.
 t (v, [v])
 -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; t src -&gt; [CycleCntx v x]
 </span><a href="NITTA.Intermediate.Simulation.html#simulateAlg%27"><span class="hs-identifier hs-var">simulateAlg'</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [v])]
-</span><a href="#local-6989586621680153457"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153480"><span class="hs-identifier hs-var">cycle0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153479"><span class="hs-identifier hs-var">transmission</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680153478"><span class="hs-identifier hs-var">alg</span></a></span><span>
+</span><a href="#local-6989586621680153822"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153845"><span class="hs-identifier hs-var">cycle0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153844"><span class="hs-identifier hs-var">transmission</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
+</span><a href="#local-6989586621680153843"><span class="hs-identifier hs-var">alg</span></a></span><span>
 </span><span id="line-56"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">cntxCycleNumber :: Int
 </span><a href="NITTA.Intermediate.Types.html#cntxCycleNumber"><span class="hs-identifier hs-var">cntxCycleNumber</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680153481"><span class="hs-identifier hs-var">cycleN</span></a></span><span>
+</span><a href="#local-6989586621680153846"><span class="hs-identifier hs-var">cycleN</span></a></span><span>
 </span><span id="line-57"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-58"></span><span>
 </span><span id="line-59"></span><span id="simulateAlg%27"><span class="annot"><span class="annottext">simulateAlg' :: t (v, [v])
 -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; t src -&gt; [CycleCntx v x]
-</span><a href="NITTA.Intermediate.Simulation.html#simulateAlg%27"><span class="hs-identifier hs-var hs-var">simulateAlg'</span></a></span></span><span> </span><span id="local-6989586621680153425"><span class="annot"><span class="annottext">t (v, [v])
-</span><a href="#local-6989586621680153425"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span></span><span> </span><span id="local-6989586621680153424"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153424"><span class="hs-identifier hs-var">cycleCntx0</span></a></span></span><span> </span><span id="local-6989586621680153423"><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153423"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153422"><span class="annot"><span class="annottext">t src
-</span><a href="#local-6989586621680153422"><span class="hs-identifier hs-var">alg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-60"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153421"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153421"><span class="hs-identifier hs-var">cycleCntx0'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153420"><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153420"><span class="hs-identifier hs-var">transmission'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; [(v, [x])] -&gt; (CycleCntx v x, [(v, [x])])
+</span><a href="NITTA.Intermediate.Simulation.html#simulateAlg%27"><span class="hs-identifier hs-var hs-var">simulateAlg'</span></a></span></span><span> </span><span id="local-6989586621680153790"><span class="annot"><span class="annottext">t (v, [v])
+</span><a href="#local-6989586621680153790"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span></span><span> </span><span id="local-6989586621680153789"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153789"><span class="hs-identifier hs-var">cycleCntx0</span></a></span></span><span> </span><span id="local-6989586621680153788"><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153788"><span class="hs-identifier hs-var">transmission</span></a></span></span><span> </span><span id="local-6989586621680153787"><span class="annot"><span class="annottext">t src
+</span><a href="#local-6989586621680153787"><span class="hs-identifier hs-var">alg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153786"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153786"><span class="hs-identifier hs-var">cycleCntx0'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153785"><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153785"><span class="hs-identifier hs-var">transmission'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; [(v, [x])] -&gt; (CycleCntx v x, [(v, [x])])
 forall {a} {a}.
 (Eq a, Hashable a) =&gt;
 CycleCntx a a -&gt; [(a, [a])] -&gt; (CycleCntx a a, [(a, [a])])
-</span><a href="#local-6989586621680153419"><span class="hs-identifier hs-var">receive'</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153424"><span class="hs-identifier hs-var">cycleCntx0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153423"><span class="hs-identifier hs-var">transmission</span></a></span><span>
-</span><span id="line-61"></span><span>        </span><span id="local-6989586621680153418"><span class="annot"><span class="annottext">cycleCntx :: CycleCntx v x
-</span><a href="#local-6989586621680153418"><span class="hs-identifier hs-var hs-var">cycleCntx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; t src -&gt; CycleCntx v x
+</span><a href="#local-6989586621680153784"><span class="hs-identifier hs-var">receive'</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153789"><span class="hs-identifier hs-var">cycleCntx0</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153788"><span class="hs-identifier hs-var">transmission</span></a></span><span>
+</span><span id="line-61"></span><span>        </span><span id="local-6989586621680153783"><span class="annot"><span class="annottext">cycleCntx :: CycleCntx v x
+</span><a href="#local-6989586621680153783"><span class="hs-identifier hs-var hs-var">cycleCntx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; t src -&gt; CycleCntx v x
 forall {t :: * -&gt; *} {v} {src} {x}.
 (Foldable t, Eq v, Hashable v, ToString v,
  FunctionSimulation src v x, Interpolatable 'False src [Char],
  Show x) =&gt;
 CycleCntx v x -&gt; t src -&gt; CycleCntx v x
-</span><a href="#local-6989586621680153417"><span class="hs-identifier hs-var">simulateCycle</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153421"><span class="hs-identifier hs-var">cycleCntx0'</span></a></span><span> </span><span class="annot"><span class="annottext">t src
-</span><a href="#local-6989586621680153422"><span class="hs-identifier hs-var">alg</span></a></span><span>
+</span><a href="#local-6989586621680153782"><span class="hs-identifier hs-var">simulateCycle</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153786"><span class="hs-identifier hs-var">cycleCntx0'</span></a></span><span> </span><span class="annot"><span class="annottext">t src
+</span><a href="#local-6989586621680153787"><span class="hs-identifier hs-var">alg</span></a></span><span>
 </span><span id="line-62"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153418"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; [CycleCntx v x] -&gt; [CycleCntx v x]
+</span><a href="#local-6989586621680153783"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; [CycleCntx v x] -&gt; [CycleCntx v x]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">t (v, [v])
 -&gt; CycleCntx v x -&gt; [(v, [x])] -&gt; t src -&gt; [CycleCntx v x]
 </span><a href="NITTA.Intermediate.Simulation.html#simulateAlg%27"><span class="hs-identifier hs-var">simulateAlg'</span></a></span><span> </span><span class="annot"><span class="annottext">t (v, [v])
-</span><a href="#local-6989586621680153425"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CycleCntx v x -&gt; CycleCntx v x
-</span><a href="#local-6989586621680153416"><span class="hs-identifier hs-var">throwLoop</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153418"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
-</span><a href="#local-6989586621680153420"><span class="hs-identifier hs-var">transmission'</span></a></span><span> </span><span class="annot"><span class="annottext">t src
-</span><a href="#local-6989586621680153422"><span class="hs-identifier hs-var">alg</span></a></span><span>
+</span><a href="#local-6989586621680153790"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CycleCntx v x -&gt; CycleCntx v x
+</span><a href="#local-6989586621680153781"><span class="hs-identifier hs-var">throwLoop</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153783"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(v, [x])]
+</span><a href="#local-6989586621680153785"><span class="hs-identifier hs-var">transmission'</span></a></span><span> </span><span class="annot"><span class="annottext">t src
+</span><a href="#local-6989586621680153787"><span class="hs-identifier hs-var">alg</span></a></span><span>
 </span><span id="line-63"></span><span>    </span><span class="hs-keyword">where</span><span>
 </span><span id="line-64"></span><span>        </span><span class="hs-comment">-- TODO: receive data for several IO processor unit.</span><span>
-</span><span id="line-65"></span><span>        </span><span id="local-6989586621680153419"><span class="annot"><span class="annottext">receive' :: CycleCntx a a -&gt; [(a, [a])] -&gt; (CycleCntx a a, [(a, [a])])
-</span><a href="#local-6989586621680153419"><span class="hs-identifier hs-var hs-var">receive'</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span class="hs-special">{</span><span id="local-6989586621680153409"><span class="annot"><span class="annottext">HashMap a a
+</span><span id="line-65"></span><span>        </span><span id="local-6989586621680153784"><span class="annot"><span class="annottext">receive' :: CycleCntx a a -&gt; [(a, [a])] -&gt; (CycleCntx a a, [(a, [a])])
+</span><a href="#local-6989586621680153784"><span class="hs-identifier hs-var hs-var">receive'</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span class="hs-special">{</span><span id="local-6989586621680153774"><span class="annot"><span class="annottext">HashMap a a
 cycleCntx :: forall v x. CycleCntx v x -&gt; HashMap v x
 cycleCntx :: HashMap a a
-</span><a href="NITTA.Intermediate.Types.html#cycleCntx"><span class="hs-identifier hs-var hs-var">cycleCntx</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680153407"><span class="annot"><span class="annottext">[(a, [a])]
-</span><a href="#local-6989586621680153407"><span class="hs-identifier hs-var">trans</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Intermediate.Types.html#cycleCntx"><span class="hs-identifier hs-var hs-var">cycleCntx</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680153772"><span class="annot"><span class="annottext">[(a, [a])]
+</span><a href="#local-6989586621680153772"><span class="hs-identifier hs-var">trans</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-66"></span><span>            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">HashMap a a -&gt; CycleCntx a a
 forall v x. HashMap v x -&gt; CycleCntx v x
 </span><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-var">CycleCntx</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap a a -&gt; CycleCntx a a) -&gt; HashMap a a -&gt; CycleCntx a a
@@ -211,55 +211,55 @@ forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-68"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153405"><span class="annot"><span class="annottext">HashMap a a
-</span><a href="#local-6989586621680153405"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153404"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153404"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153403"><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153403"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>                    </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153770"><span class="annot"><span class="annottext">HashMap a a
+</span><a href="#local-6989586621680153770"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153769"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153769"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153768"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680153768"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-69"></span><span>                        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153403"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-70"></span><span>                            </span><span id="local-6989586621680153402"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153402"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680153768"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-70"></span><span>                            </span><span id="local-6989586621680153767"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153767"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[a]
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; HashMap a a -&gt; HashMap a a
 forall k v.
 (Eq k, Hashable k) =&gt;
 k -&gt; v -&gt; HashMap k v -&gt; HashMap k v
 </span><span class="hs-identifier hs-var">HM.insert</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153404"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153402"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap a a
-</span><a href="#local-6989586621680153405"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><a href="#local-6989586621680153769"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153767"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap a a
+</span><a href="#local-6989586621680153770"><span class="hs-identifier hs-var">c</span></a></span><span>
 </span><span id="line-71"></span><span>                            </span><span class="annot"><span class="annottext">[a]
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">HashMap a a
-</span><a href="#local-6989586621680153405"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><a href="#local-6989586621680153770"><span class="hs-identifier hs-var">c</span></a></span><span>
 </span><span id="line-72"></span><span>                    </span><span class="hs-special">)</span><span>
 </span><span id="line-73"></span><span>                    </span><span class="annot"><span class="annottext">HashMap a a
-</span><a href="#local-6989586621680153409"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span>
+</span><a href="#local-6989586621680153774"><span class="hs-identifier hs-var">cycleCntx</span></a></span><span>
 </span><span id="line-74"></span><span>                    </span><span class="annot"><span class="annottext">[(a, [a])]
-</span><a href="#local-6989586621680153407"><span class="hs-identifier hs-var">trans</span></a></span><span>
+</span><a href="#local-6989586621680153772"><span class="hs-identifier hs-var">trans</span></a></span><span>
 </span><span id="line-75"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">((a, [a]) -&gt; (a, [a])) -&gt; [(a, [a])] -&gt; [(a, [a])]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span>
-</span><span id="line-76"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680153400"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153400"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153399"><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153399"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-76"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680153765"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680153765"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153764"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680153764"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-77"></span><span>                    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153399"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621680153764"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-78"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[a]
 </span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153400"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [a]
+</span><a href="#local-6989586621680153765"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [a]
 forall a. [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">tail</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153399"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680153764"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-79"></span><span>                        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680153400"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680153399"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680153765"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680153764"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-80"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-81"></span><span>                </span><span class="annot"><span class="annottext">[(a, [a])]
-</span><a href="#local-6989586621680153407"><span class="hs-identifier hs-var">trans</span></a></span><span>
+</span><a href="#local-6989586621680153772"><span class="hs-identifier hs-var">trans</span></a></span><span>
 </span><span id="line-82"></span><span>            </span><span class="hs-special">)</span><span>
-</span><span id="line-83"></span><span>        </span><span id="local-6989586621680153416"><span class="annot"><span class="annottext">throwLoop :: CycleCntx v x -&gt; CycleCntx v x
-</span><a href="#local-6989586621680153416"><span class="hs-identifier hs-var hs-var">throwLoop</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span id="local-6989586621680153397"><span class="annot"><span class="annottext">HashMap v x
-</span><a href="#local-6989586621680153397"><span class="hs-identifier hs-var">cntx</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>        </span><span id="local-6989586621680153781"><span class="annot"><span class="annottext">throwLoop :: CycleCntx v x -&gt; CycleCntx v x
+</span><a href="#local-6989586621680153781"><span class="hs-identifier hs-var hs-var">throwLoop</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-type">CycleCntx</span></a></span><span> </span><span id="local-6989586621680153762"><span class="annot"><span class="annottext">HashMap v x
+</span><a href="#local-6989586621680153762"><span class="hs-identifier hs-var">cntx</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-84"></span><span>            </span><span class="annot"><span class="annottext">HashMap v x -&gt; CycleCntx v x
 forall v x. HashMap v x -&gt; CycleCntx v x
 </span><a href="NITTA.Intermediate.Types.html#CycleCntx"><span class="hs-identifier hs-var">CycleCntx</span></a></span><span> </span><span class="annot"><span class="annottext">(HashMap v x -&gt; CycleCntx v x) -&gt; HashMap v x -&gt; CycleCntx v x
@@ -276,47 +276,47 @@ forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-87"></span><span>                        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153395"><span class="annot"><span class="annottext">[(v, x)]
-</span><a href="#local-6989586621680153395"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153394"><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680153394"><span class="hs-identifier hs-var">thrown</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153393"><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680153393"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(v -&gt; (v, x)) -&gt; [v] -&gt; [(v, x)]
+</span><span id="line-87"></span><span>                        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153760"><span class="annot"><span class="annottext">[(v, x)]
+</span><a href="#local-6989586621680153760"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680153759"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680153759"><span class="hs-identifier hs-var">thrown</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680153758"><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680153758"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(v -&gt; (v, x)) -&gt; [v] -&gt; [(v, x)]
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680153392"><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680153392"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680153392"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">HashMap v x
-</span><a href="#local-6989586621680153397"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap v x -&gt; v -&gt; x
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680153757"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680153757"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680153757"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">HashMap v x
+</span><a href="#local-6989586621680153762"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap v x -&gt; v -&gt; x
 forall k v.
 (Eq k, Hashable k, HasCallStack) =&gt;
 HashMap k v -&gt; k -&gt; v
 </span><span class="hs-operator hs-var">HM.!</span></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680153394"><span class="hs-identifier hs-var">thrown</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[v]
-</span><a href="#local-6989586621680153393"><span class="hs-identifier hs-var">vs</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, x)] -&gt; [(v, x)] -&gt; [(v, x)]
+</span><a href="#local-6989586621680153759"><span class="hs-identifier hs-var">thrown</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[v]
+</span><a href="#local-6989586621680153758"><span class="hs-identifier hs-var">vs</span></a></span><span> </span><span class="annot"><span class="annottext">[(v, x)] -&gt; [(v, x)] -&gt; [(v, x)]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[(v, x)]
-</span><a href="#local-6989586621680153395"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680153760"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-88"></span><span>                        </span><span class="hs-special">)</span><span>
 </span><span id="line-89"></span><span>                        </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-90"></span><span>                        </span><span class="annot"><span class="annottext">t (v, [v])
-</span><a href="#local-6989586621680153425"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span>
-</span><span id="line-91"></span><span>        </span><span id="local-6989586621680153417"><span class="annot"><span class="annottext">simulateCycle :: CycleCntx v x -&gt; t src -&gt; CycleCntx v x
-</span><a href="#local-6989586621680153417"><span class="hs-identifier hs-var hs-var">simulateCycle</span></a></span></span><span> </span><span id="local-6989586621680153349"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153349"><span class="hs-identifier hs-var">cntx00</span></a></span></span><span> </span><span id="local-6989586621680153348"><span class="annot"><span class="annottext">t src
-</span><a href="#local-6989586621680153348"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621680153790"><span class="hs-identifier hs-var">fromPrevCycle</span></a></span><span>
+</span><span id="line-91"></span><span>        </span><span id="local-6989586621680153782"><span class="annot"><span class="annottext">simulateCycle :: CycleCntx v x -&gt; t src -&gt; CycleCntx v x
+</span><a href="#local-6989586621680153782"><span class="hs-identifier hs-var hs-var">simulateCycle</span></a></span></span><span> </span><span id="local-6989586621680153714"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153714"><span class="hs-identifier hs-var">cntx00</span></a></span></span><span> </span><span id="local-6989586621680153713"><span class="annot"><span class="annottext">t src
+</span><a href="#local-6989586621680153713"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-92"></span><span>            </span><span class="annot"><span class="annottext">(CycleCntx v x -&gt; src -&gt; CycleCntx v x)
 -&gt; CycleCntx v x -&gt; t src -&gt; CycleCntx v x
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-93"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153347"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153347"><span class="hs-identifier hs-var">cntx</span></a></span></span><span> </span><span id="local-6989586621680153346"><span class="annot"><span class="annottext">src
-</span><a href="#local-6989586621680153346"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-93"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680153712"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153712"><span class="hs-identifier hs-var">cntx</span></a></span></span><span> </span><span id="local-6989586621680153711"><span class="annot"><span class="annottext">src
+</span><a href="#local-6989586621680153711"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-94"></span><span>                    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; [(v, x)] -&gt; Either [Char] (CycleCntx v x)
 forall {v} {x}.
 (Eq v, Hashable v, ToString v) =&gt;
 CycleCntx v x -&gt; [(v, x)] -&gt; Either [Char] (CycleCntx v x)
 </span><a href="NITTA.Intermediate.Types.html#updateCntx"><span class="hs-identifier hs-var">updateCntx</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153347"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">([(v, x)] -&gt; Either [Char] (CycleCntx v x))
+</span><a href="#local-6989586621680153712"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">([(v, x)] -&gt; Either [Char] (CycleCntx v x))
 -&gt; [(v, x)] -&gt; Either [Char] (CycleCntx v x)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x -&gt; src -&gt; [(v, x)]
@@ -324,18 +324,18 @@ forall f v x.
 FunctionSimulation f v x =&gt;
 CycleCntx v x -&gt; f -&gt; [(v, x)]
 </span><a href="NITTA.Intermediate.Types.html#simulate"><span class="hs-identifier hs-var">simulate</span></a></span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153347"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">src
-</span><a href="#local-6989586621680153346"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-95"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621680153343"><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153343"><span class="hs-identifier hs-var">cntx'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153343"><span class="hs-identifier hs-var">cntx'</span></a></span><span>
-</span><span id="line-96"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621680153342"><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680153342"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; CycleCntx v x
+</span><a href="#local-6989586621680153712"><span class="hs-identifier hs-var">cntx</span></a></span><span> </span><span class="annot"><span class="annottext">src
+</span><a href="#local-6989586621680153711"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-95"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621680153708"><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153708"><span class="hs-identifier hs-var">cntx'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CycleCntx v x
+</span><a href="#local-6989586621680153708"><span class="hs-identifier hs-var">cntx'</span></a></span><span>
+</span><span id="line-96"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621680153707"><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680153707"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; CycleCntx v x
 forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="">[i|can't simulate #{f} in context #{cntx}: #{e}|]</span></span><span>
 </span><span id="line-97"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-98"></span><span>                </span><span class="annot"><span class="annottext">CycleCntx v x
-</span><a href="#local-6989586621680153349"><span class="hs-identifier hs-var">cntx00</span></a></span><span>
+</span><a href="#local-6989586621680153714"><span class="hs-identifier hs-var">cntx00</span></a></span><span>
 </span><span id="line-99"></span><span>                </span><span class="annot"><span class="annottext">t src
-</span><a href="#local-6989586621680153348"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621680153713"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-100"></span></pre></body></html>

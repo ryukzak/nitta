@@ -172,7 +172,7 @@ span.spaces    { background: white }
 <span class="lineno">  153 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">abs x == x</span> = x .&amp;. valueMask <span class="nottickedoff">x</span></span>
 <span class="lineno">  154 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">x .|. complement (valueMask x)</span></span></span>
 <span class="lineno">  155 </span>
-<span class="lineno">  156 </span>valueMask :: Val x =&gt; x -&gt; x
+<span class="lineno">  156 </span>valueMask :: (Val x) =&gt; x -&gt; x
 <span class="lineno">  157 </span><span class="decl"><span class="istickedoff">valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth <span class="nottickedoff">x</span> - 1) - 1) <span class="nottickedoff">0</span></span></span>
 <span class="lineno">  158 </span>
 <span class="lineno">  159 </span>-- TODO: try to avoid this class

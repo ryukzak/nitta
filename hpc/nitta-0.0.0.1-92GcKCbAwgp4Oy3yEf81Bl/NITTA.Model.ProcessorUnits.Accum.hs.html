@@ -120,7 +120,7 @@ span.spaces    { background: white }
 <span class="lineno">  101 </span><span class="spaces">            </span><span class="istickedoff">, process_ = def</span>
 <span class="lineno">  102 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  103 </span>
-<span class="lineno">  104 </span>instance Default x =&gt; DefaultX (Accum v x t) x
+<span class="lineno">  104 </span>instance (Default x) =&gt; DefaultX (Accum v x t) x
 <span class="lineno">  105 </span>
 <span class="lineno">  106 </span><span class="decl"><span class="istickedoff">registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =</span>
 <span class="lineno">  107 </span><span class="spaces">    </span><span class="istickedoff">pu</span>

@@ -89,7 +89,7 @@ span.spaces    { background: white }
 <span class="lineno">   70 </span>instance (Time t) =&gt; Default (Divider v x t) where
 <span class="lineno">   71 </span>    <span class="decl"><span class="istickedoff">def = divider 4 True</span></span>
 <span class="lineno">   72 </span>
-<span class="lineno">   73 </span>instance Default x =&gt; DefaultX (Divider v x t) x
+<span class="lineno">   73 </span>instance (Default x) =&gt; DefaultX (Divider v x t) x
 <span class="lineno">   74 </span>
 <span class="lineno">   75 </span>instance (Ord t) =&gt; WithFunctions (Divider v x t) (F v x) where
 <span class="lineno">   76 </span>    <span class="decl"><span class="istickedoff">functions Divider{process_, remains, jobs} =</span>

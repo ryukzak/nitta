@@ -94,7 +94,7 @@ span.spaces    { background: white }
 <span class="lineno">   75 </span><span class="spaces">        </span><span class="istickedoff">where</span>
 <span class="lineno">   76 </span><span class="spaces">            </span><span class="istickedoff">defaultSize = 16</span></span>
 <span class="lineno">   77 </span>
-<span class="lineno">   78 </span>instance Default x =&gt; DefaultX (Fram v x t) x
+<span class="lineno">   78 </span>instance (Default x) =&gt; DefaultX (Fram v x t) x
 <span class="lineno">   79 </span>
 <span class="lineno">   80 </span>instance (VarValTime v x t) =&gt; WithFunctions (Fram v x t) (F v x) where
 <span class="lineno">   81 </span>    <span class="decl"><span class="istickedoff">functions Fram{remainBuffers, memory} =</span>
