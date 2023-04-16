@@ -37,6 +37,7 @@ module NITTA.Synthesis.Types (
     targetUnit,
     targetDFG,
     defScore,
+    mlScoreKeyPrefix,
 ) where
 
 import Control.Concurrent.STM (TMVar)
@@ -130,9 +131,11 @@ data SynthesisDecision ctx m where
         {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} ->
         SynthesisDecision ctx m
 
+mlScoreKeyPrefix = "ml_"
+
 defScore sDecision =
     let allScores = scores sDecision
-        mlScores = M.filterWithKey (\k _ -> "ml-" `isPrefixOf` k) allScores
+        mlScores = M.filterWithKey (\k _ -> mlScoreKeyPrefix `isPrefixOf` k) allScores
      in if not (M.null mlScores)
             then head (M.elems mlScores)
             else allScores M.! "default"

@@ -130,7 +130,7 @@ mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
     let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
     allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
     let mlScores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
-    let scoreKey = "ml-" <> modelName
+    let scoreKey = mlScoreKeyPrefix <> modelName
     return $
         map
             ( \(node@Tree{sDecision = sDes@SynthesisDecision{scores = origScores}}, mlScore) ->
