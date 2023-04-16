@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
@@ -35,14 +36,17 @@ module NITTA.Synthesis.Types (
     (<?>),
     targetUnit,
     targetDFG,
+    defScore,
 ) where
 
 import Control.Concurrent.STM (TMVar)
 import Data.Aeson (ToJSON, toJSON)
 import Data.Default
 import Data.List.Split
+import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
+import Data.Text (Text)
 import Data.Typeable
 import NITTA.Intermediate.Analysis (ProcessWave)
 import NITTA.Intermediate.Types
@@ -123,8 +127,10 @@ data SynthesisDecision ctx m where
     Root :: SynthesisDecision ctx m
     SynthesisDecision ::
         (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) =>
-        {option :: o, decision :: d, metrics :: p, score :: Float} ->
+        {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} ->
         SynthesisDecision ctx m
+
+defScore = (M.! "default") . scores
 
 class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
     decisions :: ctx -> o -> [(d, m)]

@@ -73,14 +73,14 @@ bestThreadIO ctx limit tree = do
     subForest <- positiveSubForestIO ctx tree
     case subForest of
         [] -> return tree
-        _ -> bestThreadIO ctx (limit - 1) $ maximumOn (score . sDecision) subForest
+        _ -> bestThreadIO ctx (limit - 1) $ maximumOn (defScore . sDecision) subForest
 
 bestStepIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 bestStepIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     case subForest of
         [] -> error "all step is over"
-        _ -> return $ maximumOn (score . sDecision) subForest
+        _ -> return $ maximumOn (defScore . sDecision) subForest
 
 obviousBindThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 obviousBindThreadIO ctx tree = do
@@ -104,7 +104,7 @@ allBindsAndRefsIO ctx tree = do
             <$> positiveSubForestIO ctx tree
     case subForest of
         [] -> return tree
-        _ -> allBindsAndRefsIO ctx $ minimumOn (score . sDecision) subForest
+        _ -> allBindsAndRefsIO ctx $ minimumOn (defScore . sDecision) subForest
 
 refactorThreadIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
@@ -118,7 +118,7 @@ smartBindThreadIO ctx tree = do
             <$> (positiveSubForestIO ctx =<< refactorThreadIO ctx tree)
     case subForest of
         [] -> return tree
-        _ -> smartBindThreadIO ctx $ maximumOn (score . sDecision) subForest
+        _ -> smartBindThreadIO ctx $ maximumOn (defScore . sDecision) subForest
 
 allBestThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
 allBestThreadIO ctx (0 :: Int) tree = bestThreadIO ctx stepLimit tree

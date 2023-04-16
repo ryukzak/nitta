@@ -624,7 +624,7 @@ synthesizeAndCoSim = do
     assertSynthesisComplete
     assertTargetSystemCoSimulation
 
-tracePU :: Show pu => PUStatement pu v x t ()
+tracePU :: (Show pu) => PUStatement pu v x t ()
 tracePU = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "PU: " <> show unit

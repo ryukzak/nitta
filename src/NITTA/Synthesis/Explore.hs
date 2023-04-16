@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -78,64 +79,69 @@ subForestIO
         { sSubForestVar
         , sID
         , sDecision
-        } =
-        do
-            (firstTime, subForest) <-
-                atomically $
-                    tryReadTMVar sSubForestVar >>= \case
-                        Just subForest -> return (False, subForest)
-                        Nothing -> do
-                            subForest <- exploreSubForestVar tree
-                            putTMVar sSubForestVar subForest
-                            return (True, subForest)
-            when firstTime $ do
-                debugM "NITTA.Synthesis" $
-                    "explore: "
-                        <> show sID
-                        <> " score: "
-                        <> ( case sDecision of
-                                SynthesisDecision{score} -> show score
-                                _ -> "-"
-                           )
-                        <> " decision: "
-                        <> ( case sDecision of
-                                SynthesisDecision{decision} -> show decision
-                                _ -> "-"
-                           )
+        } = do
+        (firstTime, subForest) <-
+            atomically $
+                tryReadTMVar sSubForestVar >>= \case
+                    Just subForest -> return (False, subForest)
+                    Nothing -> do
+                        subForest <- exploreSubForestVar tree
+                        putTMVar sSubForestVar subForest
+                        return (True, subForest)
+        when firstTime $ do
+            debugM "NITTA.Synthesis" $
+                "explore: "
+                    <> show sID
+                    <> " score: "
+                    <> ( case sDecision of
+                            SynthesisDecision{scores} -> show scores
+                            _ -> "-"
+                       )
+                    <> " decision: "
+                    <> ( case sDecision of
+                            SynthesisDecision{decision} -> show decision
+                            _ -> "-"
+                       )
 
-            if null subForest
-                then return subForest
-                else
-                    ( case mlScoringModel ctx of
-                        Nothing -> return subForest
-                        Just modelNameStr -> do
-                            mlBackend <- mlBackendGetter ctx
-                            let mlBackendBaseUrl = baseUrl mlBackend
-                            case mlBackendBaseUrl of
-                                Nothing -> return subForest
-                                Just onlineUrl -> do
-                                    let modelName = fromString modelNameStr
-                                    mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
-                                        `catch` \e -> do
-                                            errorM "NITTA.Synthesis" $
-                                                "ML backend error: "
-                                                    <> ( case e of
-                                                            JSONConversionException _ resp _ -> show resp
-                                                            _ -> show e
-                                                       )
-                                            return subForest
-                    )
+        if null subForest
+            then return subForest
+            else
+                ( case mlScoringModel ctx of
+                    Nothing -> return subForest
+                    Just modelNameStr -> do
+                        mlBackend <- mlBackendGetter ctx
+                        let mlBackendBaseUrl = baseUrl mlBackend
+                        case mlBackendBaseUrl of
+                            Nothing -> return subForest
+                            Just onlineUrl -> do
+                                let modelName = fromString modelNameStr
+                                mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
+                                    `catch` \e -> do
+                                        errorM "NITTA.Synthesis" $
+                                            "ML backend error: "
+                                                <> ( case e of
+                                                        JSONConversionException _ resp _ -> show resp
+                                                        _ -> show e
+                                                   )
+                                        return subForest
+                )
 
 mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
     let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
     allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
-    let scores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
-    return $ map (\(node@Tree{sDecision = sDes}, score) -> node{sDecision = sDes{score}}) (zip subForest scores)
+    let mlScores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
+    let scoreKey = "ml-" <> modelName
+    return $
+        map
+            ( \(node@Tree{sDecision = sDes@SynthesisDecision{scores = origScores}}, mlScore) ->
+                node{sDecision = sDes{scores = M.insert scoreKey mlScore origScores}}
+            )
+            (zip subForest mlScores)
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
-positiveSubForestIO ctx tree = filter ((> 0) . score . sDecision) <$> subForestIO ctx tree
+positiveSubForestIO ctx tree = filter ((> 0) . defScore . sDecision) <$> subForestIO ctx tree
 
 -- * Internal
 
@@ -164,7 +170,7 @@ decisionAndContext parent@Tree{sState = ctx} o =
     [ (SynthesisDecision o d p e, nodeCtx (Just parent) model)
     | (d, model) <- decisions ctx o
     , let p = parameters ctx o d
-          e = estimate ctx o d p
+          e = M.singleton "default" $ estimate ctx o d p
     ]
 
 nodeCtx parent nModel =

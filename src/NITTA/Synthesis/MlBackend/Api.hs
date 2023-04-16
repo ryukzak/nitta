@@ -11,7 +11,6 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Synthesis.MlBackend.Api (
-    PostScoreResponseData (..),
     ScoringInput (..),
     ScoringTarget (..),
     predictScoresIO,
@@ -21,7 +20,7 @@ import Data.Aeson
 import Data.String.ToString
 import Data.Text.Encoding qualified as T
 import GHC.Generics
-import NITTA.Synthesis.Types
+import NITTA.Synthesis.Types hiding (scores)
 import NITTA.UIBackend.ViewHelper (NodeView)
 import Network.HTTP.Client.Conduit
 import Network.HTTP.Simple

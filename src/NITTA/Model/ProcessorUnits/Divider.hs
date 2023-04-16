@@ -70,7 +70,7 @@ divider pipeline mock =
 instance (Time t) => Default (Divider v x t) where
     def = divider 4 True
 
-instance Default x => DefaultX (Divider v x t) x
+instance (Default x) => DefaultX (Divider v x t) x
 
 instance (Ord t) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{process_, remains, jobs} =

@@ -202,7 +202,8 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
                     sDecision
             , score =
                 ( \case
-                    SynthesisDecision{score} -> score
+                    -- TODO: show all avaialable scores
+                    sd@SynthesisDecision{} -> defScore sd
                     _ -> 0
                 )
                     sDecision
