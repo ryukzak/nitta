@@ -46,7 +46,7 @@ import Data.List.Split
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Set qualified as S
-import Data.Text (Text)
+import Data.Text (Text, isPrefixOf)
 import Data.Typeable
 import NITTA.Intermediate.Analysis (ProcessWave)
 import NITTA.Intermediate.Types
@@ -130,7 +130,12 @@ data SynthesisDecision ctx m where
         {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} ->
         SynthesisDecision ctx m
 
-defScore = (M.! "default") . scores
+defScore sDecision =
+    let allScores = scores sDecision
+        mlScores = M.filterWithKey (\k _ -> "ml-" `isPrefixOf` k) allScores
+     in if not (M.null mlScores)
+            then head (M.elems mlScores)
+            else allScores M.! "default"
 
 class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
     decisions :: ctx -> o -> [(d, m)]
