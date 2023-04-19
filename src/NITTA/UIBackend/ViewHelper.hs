@@ -35,6 +35,8 @@ module NITTA.UIBackend.ViewHelper (
 import Control.Concurrent.STM
 import Data.Aeson
 import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as M
 import Data.Maybe
 import Data.Set qualified as S
 import Data.Text qualified as T
@@ -178,6 +180,7 @@ data NodeView tag v x t = NodeView
     , parameters :: Value
     , decision :: DecisionView
     , score :: Float
+    , scores :: Map T.Text Float
     }
     deriving (Generic)
 
@@ -202,9 +205,15 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
                     sDecision
             , score =
                 ( \case
-                    -- TODO: show all avaialable scores
+                    -- TODO: add support for "scores" field in UI, remove that field (or rename to default_score/effective_score?)
                     sd@SynthesisDecision{} -> defScore sd
                     _ -> 0
+                )
+                    sDecision
+            , scores =
+                ( \case
+                    SynthesisDecision{scores} -> scores
+                    _ -> M.singleton "default" 0
                 )
                     sDecision
             }
@@ -234,6 +243,7 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision = BindDecisionView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032
+                , scores = M.singleton "default" 1032
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -255,6 +265,7 @@ instance ToSample (NodeView tag v x t) where
                             [("PU2", EndpointSt{epRole = Target "a2", epAt = 1 ... 1})]
                         }
                 , score = 1999
+                , scores = M.singleton "default" 1999
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 6]
@@ -264,6 +275,7 @@ instance ToSample (NodeView tag v x t) where
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , score = 5000
+                , scores = M.singleton "default" 5000
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -277,6 +289,7 @@ instance ToSample (NodeView tag v x t) where
                         , new = [FView "a + b + d = e" []]
                         }
                 , score = 1999
+                , scores = M.singleton "default" 1999
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -290,6 +303,7 @@ instance ToSample (NodeView tag v x t) where
                         , cRefNew = [FView "r = 3" []]
                         }
                 , score = 1999
+                , scores = M.singleton "default" 1999
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -309,6 +323,7 @@ instance ToSample (NodeView tag v x t) where
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
                 , score = 1999
+                , scores = M.singleton "default" 1999
                 }
             ]
 
