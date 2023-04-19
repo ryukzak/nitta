@@ -69,7 +69,7 @@ data Nitta = Nitta
     , output_path :: FilePath
     , format :: String
     , frontend_language :: Maybe FrontendType
-    , ml_scoring_model :: Maybe String
+    , score :: [T.Text]
     }
     deriving (Show, Data, Typeable)
 
@@ -149,12 +149,11 @@ nittaArgs =
                 &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
-        , ml_scoring_model =
-            Nothing
-                &= help "Name of ML model used to score the nodes during synthesis (default: no ML scoring)"
+        , score =
+            []
+                &= name "s"
                 &= typ "NAME"
-                &= explicit
-                &= name "ml-scoring-model"
+                &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
                 &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
@@ -188,9 +187,11 @@ main = do
             output_path
             format
             frontend_language
-            ml_scoring_model
+            score
         ) <-
         getNittaArgs
+    let nodeScores = score
+
     setupLogger verbose extra_verbose
 
     toml <- case uarch of
@@ -229,7 +230,7 @@ main = do
                             Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
                         Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
                 warningIfUnexpectedPort expect port
-                backendServer port received output_path ml_scoring_model $ mkModelWithOneNetwork ma frDataFlow
+                backendServer port received output_path nodeScores $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
             when fsim $ functionalSimulation n received format frontendResult

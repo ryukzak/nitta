@@ -11,6 +11,7 @@ module NITTA.UIBackend.Types (
 ) where
 
 import Data.Default
+import Data.Text qualified as T
 import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
 
@@ -21,7 +22,7 @@ data BackendCtx tag v x t = BackendCtx
     -- ^ lists of received by IO values
     , outputPath :: String
     , mlBackendGetter :: IO MlBackendServer
-    , mlScoringModel :: Maybe String
+    , nodeScores :: [T.Text]
     }
 
 instance Default (BackendCtx tag v x t) where

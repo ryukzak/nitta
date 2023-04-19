@@ -21,11 +21,12 @@ module NITTA.Synthesis.Explore (
 
 import Control.Concurrent.STM
 import Control.Exception
-import Control.Monad (forM, unless, when)
+import Control.Monad (foldM, forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
+import Data.Maybe
 import Data.Set qualified as S
-import Data.String
+import Data.Text qualified as T
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -103,33 +104,46 @@ subForestIO
                             _ -> "-"
                        )
 
+        -- FIXME: ML scores are evaluated here every time subForestIO is called. how to cache it like the default score? IO in STM isn't possible.
+        -- also it looks inelegant, is there a way to refactor it?
         if null subForest
             then return subForest
             else
-                ( case mlScoringModel ctx of
-                    Nothing -> return subForest
-                    Just modelNameStr -> do
-                        mlBackend <- mlBackendGetter ctx
-                        let mlBackendBaseUrl = baseUrl mlBackend
-                        case mlBackendBaseUrl of
-                            Nothing -> return subForest
-                            Just onlineUrl -> do
-                                let modelName = fromString modelNameStr
-                                mapSubforestScoreViaMlBackendIO subForest onlineUrl modelName
-                                    `catch` \e -> do
-                                        errorM "NITTA.Synthesis" $
-                                            "ML backend error: "
-                                                <> ( case e of
-                                                        JSONConversionException _ resp _ -> show resp
-                                                        _ -> show e
-                                                   )
-                                        return subForest
+                ( let nodeScores' = nodeScores ctx
+                   in if null nodeScores'
+                        then return subForest
+                        else do
+                            let mlScoreKeys = filter (\name -> mlScoreKeyPrefix `T.isPrefixOf` name) nodeScores'
+                            let modelNames = map (fromJust . T.stripPrefix mlScoreKeyPrefix) mlScoreKeys
+                            if null modelNames
+                                then return subForest
+                                else do
+                                    mlBackend <- mlBackendGetter ctx
+                                    let mlBackendBaseUrl = baseUrl mlBackend
+                                    case mlBackendBaseUrl of
+                                        Nothing -> return subForest
+                                        Just onlineUrl -> do
+                                            -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
+                                            foldM (addMlScoreToSubforestSkipErrorsIO onlineUrl) subForest modelNames
                 )
 
-mapSubforestScoreViaMlBackendIO subForest mlBackendBaseUrl modelName = do
+addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl subForest modelName = do
+    addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName
+        `catch` \e -> do
+            errorM "NITTA.Synthesis" $
+                "ML backend error: "
+                    <> ( case e of
+                            JSONConversionException _ resp _ -> show resp
+                            _ -> show e
+                       )
+            return subForest
+
+addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName = do
     let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
     allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
-    let mlScores = map (+ 20) $ head allInputsScores -- +20 shifts "useless node" threshold, since model outputs negative values much more often
+    -- +20 shifts "useless node" threshold, since model outputs negative values much more often
+    -- FIXME: make models' output consist of mostly >0 values and treat 0 as a "useless node" threshold? training data changes required
+    let mlScores = map (+ 20) $ head allInputsScores
     let scoreKey = mlScoreKeyPrefix <> modelName
     return $
         map
