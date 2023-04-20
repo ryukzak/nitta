@@ -14,7 +14,7 @@ A proof of concept has been implemented. Key features:
 
 ## Tech stack
 
-- Python 3.7
+- Python 3
 - Pandas for data processing
 - Tensorflow for ML.
 
@@ -37,6 +37,7 @@ Make sure you have [Docker](https://docs.docker.com/get-docker/) installed. Clon
 `cd` into the repo root and run:
 
 ```bash
+# Windows-WSL2 / Linux
 docker build \
 	--target development \
 	-f ml/synthesis/Dockerfile \
@@ -44,10 +45,17 @@ docker build \
 	--build-arg HOST_GID=$(id -g) \
 	-t nitta-dev \
 	.
+
+# MacOS (no HOST_UID/HOST_GID arguments, osxfs handles bind mount permissions)
+docker build \
+	--target development \
+	-f ml/synthesis/Dockerfile \
+	-t nitta-dev \
+	.
 ```
 
 This will build a development Docker image. What's in the box:
-- Stack with GHC, iverilog, hlint, fourmolu, etc.
+- GHCup with Stack, GHC, HLS, iverilog, hlint, fourmolu, etc.
 - Node, NPM, Yarn for web UI development
 - Python, a Jupyter Notebook server and dependencies for ML development
 - Compiled NITTA Haskell dependencies
@@ -57,11 +65,12 @@ That was good news. Bad news – it takes considerable time and space to downloa
 
 | Target | Build time | Image size |
 | --- | --- | --- |
-| `development` | ~30 min | ~8 GB |
-| `development-gpu`* | ~45 min | ~17 GB |
+| `development` | ~35 min | ~15 GB |
+| `development-gpu`* | ~50 min | ~24 GB |
+
 \* more about GPU support [later](#gpu-support-for-ml-models-training-linuxwindows-with-nvidia-gpus-only)
 
-When the building is finished, you can run the container:
+When the building is finished, you can run the container (give it a couple of minutes if it seems stuck the first time you do that):
 
 ```bash
 docker run \
@@ -74,20 +83,34 @@ docker run \
 	nitta-dev
 ```
 
-This will run the container in interactive mode with a bash shell at your disposal. The repo root is bind-mounted into the container, so you can `ls -lah` and see the files from your host system. Changes made to those will be instantly reflected in your host and vice versa. Jupyter Notebook server and SSH server ports are forwarded so you can access those services. 
+This will run the container in interactive mode with a bash shell at your disposal. What's going on:
+- `--name=nitta-dev-container`: the container is named for convenience, so you can refer to it later
+- `-p 8888:8888`: Jupyter Notebook server port is forwarded to your host system
+- `-p 2222:22`: SSH server port is forwarded to your host system
+- `-v="$(pwd):/app"`: the repo root is bind-mounted into the container (more info below)
+- `-v="nitta-devuser-home:/home/devuser"`: the `devsuser` home directory is preserved as a named volume (more info below)
+- `-it`: runs the container in interactive mode with current terminal attached, so you can easily see the output and play with it for a while (it's suggested to run it in a detached state later)
+- `nitta-dev`: name of the image to run (set in the `docker build` command above)
 
-You can stop the container with `exit` and start it again with `docker start -ai nitta-dev-container`. Start the container in the beginning of each development session.
+Thanks to the bind mount, you can `ll` in the `/app` workdir inside the container and see all the files from your host system. Changes made to those will be instantly reflected in the container and vice versa.
 
-Examine the startup output in the console. Try interacting with the environment you've just created:
+The user everything is running under is called `devuser`. On Windows-WSL2/Linux its UID/GID is matching your host user to avoid file permission issues when bind-mounting the repo root into the container.
+
+User's home directory is also persisted in a Docker named volume `nitta-devuser-home`. This allows to keep the important part of container's state between container recreations (e.g. IDE settings, stack cache, etc.). Be aware, this can break stuff.
+
+Examine the container startup output in the console. Try interacting with the environment you've just created:
 - run some commands (for example, `htop`, `stack test --fast`)
 - open Jupyter Notebook in your host system's browser (see the startup output for the URL, restart the container if you can't find it)
 - ssh into the container from another shell session (see the startup output for the command to run)
-- try using NITTA built in the container:
-    - build the web UI: `stack exec nitta-api-gen && cd web && yarn install && yarn build && cd ..`
-    - run the web UI: `stack exec nitta -- -p=8080 examples/counter.lua`
+- try using NITTA in the container:
+	- build it: `stack build`
+    - build the web UI: `stack run nitta-api-gen && cd web && yarn install && yarn build && cd ..`
+    - run the web UI: `stack run nitta -- -p=8080 examples/counter.lua`
     - forward the port to your host system with additional `-fNL 8080:localhost:8080` flags to ssh
     - open the web UI in your host system's browser
 - see what's next in the Usage section below
+
+You can stop the container with `exit` and start it again in a detached state with `docker start nitta-dev-container`. Start the container in the beginning of each development session. If you need to attach the terminal, use `docker attach` or `docker start -ai nitta-dev-container`.
 
 ### Usage
 
@@ -96,21 +119,18 @@ The container is expected to be:
     - it's suggested to start/stop the container instead of recreating
     - attach/ssh into it to change its state interactively like you would do with a VM
     - state is preserved between container restarts
-    - state in some important directories (`~` and `/app`) is preserved between container recreations (be careful, can break stuff!)
+    - state in some important directories (`~` and `/app`) is preserved even between container recreations to speed things up (shouldn't be necessary in most cases)
 - always running when you're working on NITTA:
     - use remote development over SSH for a normal development flow
     - run container in background if you wish:
-        - replace `-it` with `-itd` in the `docker run`
+        - replace `-it` with `-itd` in the `docker run` to run the container in detached state
         - `docker start` the container without `-ai` if it's already created
 
-The user everything is running under is called `devuser`. Its UID/GID is matching your host user to avoid file permission issues when bind-mounting the repo root into the container. You can work directly on the repo files and changes will be instantly reflected in the container.
-
-User's home directory is also persisted in a Docker named volume `nitta-devuser-home`. This allows to keep the important part of container's state between container recreations (e.g. IDE settings, stack cache, etc.)
 
 #### Remote development over SSH
 
 SSH server running in the container allows to use:
-- VS Code with [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) extension (Recommended)
+- VS Code with [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) and [Haskell](https://marketplace.visualstudio.com/items?itemName=haskell.haskell) extensions (recommended, battle-tested way)
 - [JetBrains Gateway](https://www.jetbrains.com/remote-development/gateway/) for full-fledged remote development in JetBrains IDEs
 - Jupyter Notebook server as an interactive Python REPL for ML development
 - text editors like Vim, Emacs, etc.

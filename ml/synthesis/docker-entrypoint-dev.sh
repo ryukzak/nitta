@@ -10,7 +10,7 @@ if [ ! -f "$ssh_key_location" ]; then
     echo "New key can be found at <repo_root>/$ssh_key_location, it will be automatically authorized in the container on every launch."
 fi
 mkdir -p "$HOME/.ssh"
-cat "$ssh_key_location.pub" >> "/home/$(whoami)/.ssh/authorized_keys"  # $HOME is not set in this script
+cat "$ssh_key_location.pub" >> ~/.ssh/authorized_keys
 
 jupyter_port=${JUPYTER_PORT:-8888} 
 jupyter_token_filepath=ml/synthesis/.dev/jupyter_token
@@ -20,6 +20,9 @@ if [ ! -f "$jupyter_token_filepath" ]; then
 else
     jupyter_token=$(cat "$jupyter_token_filepath")
 fi
+
+# make profile settings available in this script
+[ -f ~/.profile ] && . ~/.profile
 
 # start a ssh server as a screen daemon
 screen -dmS sshd sudo -s /usr/sbin/sshd -D

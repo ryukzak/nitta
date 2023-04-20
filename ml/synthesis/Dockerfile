@@ -56,6 +56,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # -- common --
 RUN apt-get update -yq \
+    # do we really need an upgrade here?
     && apt-get upgrade -y \
     && apt-get install apt-utils curl -yq
 
