@@ -6,7 +6,7 @@ if [ ! -f "$ssh_key_location" ]; then
     echo "Generating a new SSH key for remote access to this container..."
     mkdir -p "$(dirname "$ssh_key_location")"
     ssh-keygen -q -t ed25519 -f "$ssh_key_location" -N ""
-    chmod 600 "$ssh_key_location"
+    chmod 600 "$ssh_key_location"   
     echo "New key can be found at <repo_root>/$ssh_key_location, it will be automatically authorized in the container on every launch."
 fi
 mkdir -p "$HOME/.ssh"
@@ -39,9 +39,6 @@ screen -ls | sed '1d;$d'
 
 # remove the sudo tutorial on startup
 touch ~/.sudo_as_admin_successful
-
-# FIXME: move stuff to bashrc, including non-interactive non-login shell initializations for vscode server
-[ -f ~/.profile ] && source ~/.profile
 
 # fallback to shell for interactivity
 TERM=xterm-256color /bin/bash
