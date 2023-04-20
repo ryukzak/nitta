@@ -126,7 +126,6 @@ The container is expected to be:
         - replace `-it` with `-itd` in the `docker run` to run the container in detached state
         - `docker start` the container without `-ai` if it's already created
 
-
 #### Remote development over SSH
 
 SSH server running in the container allows to use:
@@ -137,6 +136,17 @@ SSH server running in the container allows to use:
 - any other IDE that supports remote development over SSH 
 
 The key to access the SSH server is generated during the first container startup and is stored in your host filesystem in the repo (via bind mount). See the container startup output for the path to the key file and more details.
+
+#### Git configuration, GPG commit signing
+
+You'll likely need to configure git inside the container to use it:
+
+```bash
+git config --global user.name "Mona Lisa"
+git config --global user.email "lisa@example.com"
+```
+
+If you use GPG commit signing, you'll likely need to create/import and register a new GPG key. There's another problem: at the time of writing IDEs don't support accepting a GPG key passphrase over SSH (or @iburakov couldn't make it work), so a workaround has been implemented: a `pass` bash alias for a helper script. Run it in any terminal to enter your passphrase there, so `gpg-agent` will cache it for 3 hours (default for this container, configurable). After running `pass` in terminal and entering a passphrase you can commit your stuff in IDE without problems.
 
 ### GPU support for ML models training (Linux/Windows with NVIDIA GPUs only)
 
