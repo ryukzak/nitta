@@ -224,8 +224,7 @@ RUN stack clean
 # adding PYTHONPATH to .bashrc, including non-interactive ssh shells (like one spawned by vscode)
 RUN sed -i '/# ---- custom non-interactive section end ----/i export PYTHONPATH=/app/ml/synthesis/src:$PYTHONPATH\n' ~/.bashrc
 
-RUN echo "export PYTHONPATH=/app/ml/synthesis/src:$PYTHONPATH" >> ~/.profile \
-    && echo "alias python=python3" >> ~/.bash_aliases \
+RUN echo "alias python=python3" >> ~/.bash_aliases \
     && echo "alias pip=pip3" >> ~/.bash_aliases \
     && echo "alias pass=~/passphr.sh" >> ~/.bash_aliases \
     && echo "PATH=$PATH:/home/devuser/.local/bin" >> ~/.profile 
