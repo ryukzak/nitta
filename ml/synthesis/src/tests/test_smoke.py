@@ -51,13 +51,13 @@ async def test_smoke():
                 non_ml_scores = await _get_scores(nitta_baseurl)
 
             async with run_nitta(EXAMPLES_DIR / "fibonacci.lua",
-                                 nitta_args=f"--ml-scoring-model=does_not_exist") \
+                                 nitta_args=f"--score=does_not_exist") \
                     as (_, nitta_baseurl):
                 fallback_non_ml_scores = await _get_scores(nitta_baseurl)
                 assert non_ml_scores == fallback_non_ml_scores
 
             async with run_nitta(EXAMPLES_DIR / "fibonacci.lua",
-                                 nitta_args=f"--ml-scoring-model=\"{model_name}\"",
+                                 nitta_args=f"--score=\"ml_{model_name}\"",
                                  nitta_env={EnvVarNames.MODELS_DIR: tmp_model_dir_name}) \
                     as (_, nitta_baseurl):
                 ml_scores = await _get_scores(nitta_baseurl)
