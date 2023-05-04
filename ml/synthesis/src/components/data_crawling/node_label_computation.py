@@ -3,7 +3,7 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
-from components.data_crawling.nitta_node import NittaNode
+from components.common.nitta_node import NittaNodeInTree
 from components.utils.cache import cached
 
 _METRICS_WEIGHTS = pd.Series(dict(duration=-1, depth=-0.1))
@@ -22,7 +22,7 @@ _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT = 10
 
 
 @cached()
-def get_subtree_leafs_labels(node: NittaNode, metrics_distrib: np.ndarray) -> deque:
+def get_subtree_leafs_labels(node: NittaNodeInTree, metrics_distrib: np.ndarray) -> deque:
     if node.is_terminal:
         return deque((compute_node_label(node, metrics_distrib),))
     else:
@@ -30,7 +30,7 @@ def get_subtree_leafs_labels(node: NittaNode, metrics_distrib: np.ndarray) -> de
 
 
 @cached()
-def compute_node_label(node: NittaNode, metrics_distrib: np.ndarray) -> float:
+def compute_node_label(node: NittaNodeInTree, metrics_distrib: np.ndarray) -> float:
     if node.is_terminal:
         if not node.is_finish:
             return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL

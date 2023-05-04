@@ -5,13 +5,13 @@ from aiohttp import ClientSession
 
 from components.common.logging import get_logger
 from components.common.utils import debounce
-from components.data_crawling.nitta_node import NittaNode
+from components.common.nitta_node import NittaNodeInTree
 
 logger = get_logger(__name__)
 logger_debug_debounced = debounce(1)(logger.debug)
 
 
-async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_baseurl: str, levels_left=None):
+async def retrieve_subforest(node: NittaNodeInTree, session: ClientSession, nitta_baseurl: str, levels_left=None):
     node.children = []
     if node.is_terminal or levels_left == -1:
         return
@@ -22,7 +22,7 @@ async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_base
     logger_debug_debounced(f"{len(children_raw)} children from {node.sid}")
 
     for child_raw in children_raw:
-        child = NittaNode.from_dict(child_raw)
+        child = NittaNodeInTree.from_dict(child_raw)
         child.parent = node
         node.children.append(child)
 
@@ -32,12 +32,12 @@ async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_base
     )
 
 
-async def retrieve_whole_nitta_tree(nitta_baseurl: str, max_depth=None) -> NittaNode:
+async def retrieve_whole_nitta_tree(nitta_baseurl: str, max_depth=None) -> NittaNodeInTree:
     start_time = time.perf_counter()
     async with ClientSession() as session:
         async with session.get(nitta_baseurl + f"/node/-") as resp:
             root_raw = await resp.json()
-        root = NittaNode.from_dict(root_raw)
+        root = NittaNodeInTree.from_dict(root_raw)
         await retrieve_subforest(root, session, nitta_baseurl, max_depth)
 
     logger.info(f"Finished tree retrieval in {time.perf_counter() - start_time:.2f} s")

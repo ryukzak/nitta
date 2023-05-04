@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from collections import deque
 from typing import Deque, Optional
 
@@ -6,17 +7,17 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from components.data_crawling.nitta_node import NittaNode
+from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.node_label_computation import compute_node_label
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 
 
-def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None, include_label=True,
+def assemble_tree_dataframe(example: str, node: NittaNodeInTree, metrics_distrib=None, include_label=True,
                             levels_left=None, n_workers: int = 1) -> pd.DataFrame:
     if include_label and metrics_distrib is None:
         metrics_distrib = np.array(node.subtree_leafs_metrics)
 
-    def child_process_job(node: NittaNode):
+    def child_process_job(node: NittaNodeInTree):
         accum = deque()
         _assemble_tree_dataframe_recursion(accum, example, node, metrics_distrib, include_label, levels_left)
         return accum
@@ -29,7 +30,7 @@ def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None,
     return pd.DataFrame(sum(deques, deque()))
 
 
-def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: NittaNode, metrics_distrib: np.ndarray,
+def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: NittaNodeInTree, metrics_distrib: np.ndarray,
                                        include_label: bool, levels_left: Optional[int]):
     siblings = (node.parent.children or []) if node.parent else []
     self_dict = nitta_node_to_df_dict(node, tuple(siblings), example)

@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-from collections import deque
-from typing import Optional, Deque, Tuple
-
-from components.data_crawling.nitta_node import NittaNode
+from components.common.nitta_node import NittaNodeInTree, NittaNode
 from components.utils.cache import cached
 
 
 def _extract_params_dict(node: NittaNode) -> dict:
-    if node.decision.tag in ["BindDecisionView", "DataflowDecisionView"]:
+    if node.decision_tag in ["BindDecisionView", "DataflowDecisionView"]:
         result = node.parameters.copy()
-        if node.decision.tag == "DataflowDecisionView":
+        if node.decision_tag == "DataflowDecisionView":
             result["pNotTransferableInputs"] = sum(result["pNotTransferableInputs"])
         return result
-    elif node.decision.tag == "RootView":
+    elif node.decision_tag == "RootView":
         return {}
     else:
         # refactorings, which have arbitrary decision tags
-        return {"pRefactoringType": node.decision.tag}
+        return {"pRefactoringType": node.decision_tag}
 
 
 def _extract_alternative_siblings_dict(node: NittaNode, siblings: tuple[NittaNode]) -> dict:
@@ -26,9 +23,9 @@ def _extract_alternative_siblings_dict(node: NittaNode, siblings: tuple[NittaNod
     for sibling in siblings:
         if sibling.sid == node.sid:
             continue
-        if sibling.decision.tag == "BindDecisionView":
+        if sibling.decision_tag == "BindDecisionView":
             bindings += 1
-        elif sibling.decision.tag == "DataflowDecisionView":
+        elif sibling.decision_tag == "DataflowDecisionView":
             dataflows += 1
         else:
             # refactorings have arbitrary decision tags
@@ -43,7 +40,7 @@ def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: 
     return dict(
         example=example,
         sid=node.sid,
-        tag=node.decision.tag,
+        tag=node.decision_tag,
         old_score=node.score,
         is_terminal=node.is_terminal,
         **_extract_alternative_siblings_dict(node, siblings),
@@ -56,7 +53,7 @@ class UnknownSubtreeSize(RuntimeError):
 
 
 @cached()
-def get_subtree_size(node: NittaNode) -> int:
+def get_subtree_size(node: NittaNodeInTree) -> int:
     if node.children is None:
         raise UnknownSubtreeSize()
 
@@ -72,7 +69,7 @@ def get_subtree_size(node: NittaNode) -> int:
 
 
 @cached()
-def get_depth(node: NittaNode) -> int:
+def get_depth(node: NittaNodeInTree) -> int:
     return node.sid.count('-') if node.sid != '-' else 0
 
 # def subtree_leafs_metrics(node: NittaNode) -> Optional[Deque[Tuple[int, int]]]:

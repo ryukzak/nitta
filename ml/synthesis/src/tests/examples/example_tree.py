@@ -1,28 +1,26 @@
 import pytest
 
-from components.data_crawling.nitta_node import NittaNode, NittaNodeDecision
+from components.common.nitta_node import NittaNodeInTree
 
-
-# TODO: fix parent issue
 
 @pytest.fixture()
-def test_tree():
-    return NittaNode(
+def test_root():
+    return NittaNodeInTree(
         score=1010,
         is_terminal=False,
         is_finish=False,
         parameters={"a": 1, "b": 2},
-        decision=NittaNodeDecision(tag="RootView"),
+        decision=dict(tag="RootView"),
         duration=None,
         sid="-",
         parent=None,
         children=[
-            NittaNode(
+            NittaNodeInTree(
                 score=1020,
                 is_terminal=True,
                 is_finish=True,
                 parameters={"a": 1, "b": 2},
-                decision=NittaNodeDecision(tag="BindDecisionView"),
+                decision=dict(tag="BindDecisionView"),
                 duration=None,
                 sid="-0",
                 children=[],
@@ -32,7 +30,7 @@ def test_tree():
 
 
 @pytest.fixture()
-def test_tree_dict():
+def test_root_dict():
     return {
         "score": 1010,
         "isTerminal": False,
@@ -41,18 +39,4 @@ def test_tree_dict():
         "decision": {"tag": "RootView"},
         "duration": None,
         "sid": "-",
-        "parent": None,
-        "children": [
-            {
-                "score": 1020,
-                "isTerminal": True,
-                "isFinish": True,
-                "parameters": {"a": 1, "b": 2},
-                "decision": {"tag": "BindDecisionView"},
-                "duration": None,
-                "sid": "-0",
-                "parent": None,
-                "children": [],
-            },
-        ],
     }
