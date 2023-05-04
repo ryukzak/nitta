@@ -15,6 +15,7 @@ from joblib import Parallel, delayed
 
 from components.common.logging import get_logger
 from components.common.port_management import is_port_in_use, find_random_free_port
+from components.data_crawling.node_processing import get_subtree_size
 from components.data_crawling.tree_processing import assemble_tree_dataframe
 from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
 from consts import DATA_DIR, ROOT_DIR
@@ -77,7 +78,7 @@ async def run_example_and_retrieve_tree_data(example: Path,
         with tree_dump_fn.open("wb") as f:
             pickle.dump(tree, f)
 
-        logger.info(f"Nodes: {tree.subtree_size}. Building dataframe.")
+        logger.info(f"Nodes: {get_subtree_size(tree)}. Building dataframe.")
         df = assemble_tree_dataframe(example_name, tree).reset_index(drop=True)
 
         logger.info(f"Data's ready, {len(df)} rows")

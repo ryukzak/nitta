@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from cachetools import cached, Cache
+from collections import deque
+from typing import Optional, Deque, Tuple
 
 from components.data_crawling.nitta_node import NittaNode
+from components.utils.cache import cached
 
 
 def _extract_params_dict(node: NittaNode) -> dict:
@@ -37,7 +39,6 @@ def _extract_alternative_siblings_dict(node: NittaNode, siblings: tuple[NittaNod
                 alt_dataflows=dataflows)
 
 
-@cached(cache=Cache(10000))
 def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: str = None, ) -> dict:
     return dict(
         example=example,
@@ -48,3 +49,39 @@ def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: 
         **_extract_alternative_siblings_dict(node, siblings),
         **_extract_params_dict(node),
     )
+
+
+class UnknownSubtreeSize(RuntimeError):
+    pass
+
+
+@cached()
+def get_subtree_size(node: NittaNode) -> int:
+    if node.children is None:
+        raise UnknownSubtreeSize()
+
+    result = 0
+
+    for child in node.children:
+        child_size = get_subtree_size(child)
+        if child_size is None:
+            raise UnknownSubtreeSize()
+        result += child_size
+
+    return result + 1
+
+
+@cached()
+def get_depth(node: NittaNode) -> int:
+    return node.sid.count('-') if node.sid != '-' else 0
+
+# def subtree_leafs_metrics(node: NittaNode) -> Optional[Deque[Tuple[int, int]]]:
+#     """ :returns: deque(tuple(duration, depth)) or None if node is a failed leaf """
+#     if node.is_terminal:
+#         if not node.is_finish:
+#             return None
+#         return deque(((node.duration, get_depth(node)),))
+#     else:
+#         children_metrics = \
+#             (child.subtree_leafs_metrics for child in node.children if child.subtree_leafs_metrics is not None)
+#         return sum(children_metrics, deque())

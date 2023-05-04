@@ -7,6 +7,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from components.data_crawling.nitta_node import NittaNode
+from components.data_crawling.node_label_computation import compute_node_label
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 
 
@@ -34,7 +35,7 @@ def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: N
     self_dict = nitta_node_to_df_dict(node, tuple(siblings), example)
 
     if include_label:
-        self_dict["label"] = node.compute_label(metrics_distrib)
+        self_dict["label"] = compute_node_label(node, metrics_distrib)
 
     if node.is_terminal or levels_left == -1:
         accum.append(self_dict)
