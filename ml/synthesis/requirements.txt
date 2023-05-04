@@ -1,7 +1,6 @@
 aiohttp~=3.7.4.post0
 cached-property~=1.5.2
 cachetools~=4.2.2
-dataclasses-json~=0.5.3
 ipython~=7.25.0
 jupyter~=1.0.0
 matplotlib~=3.4.2

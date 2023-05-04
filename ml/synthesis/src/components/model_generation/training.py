@@ -39,6 +39,6 @@ def train_and_save_baseline_model(train_ds: Dataset, val_ds: Dataset, fitting_kw
     out_dir = models_dir / output_model_name
     model.save(out_dir)
     with (out_dir / "metainfo.json").open("w") as f:
-        f.write(metainfo.to_json())
+        f.write(metainfo.json())
 
     return model, metainfo
