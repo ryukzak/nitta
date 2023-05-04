@@ -3,7 +3,9 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
-from components.common.nitta_node import NittaNodeInTree
+from components.common.nitta_node import NittaNodeInTree, NittaNode
+from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
+from components.data_crawling.node_processing import get_depth, get_leaf_metrics
 from components.utils.cache import cached
 
 _METRICS_WEIGHTS = pd.Series(dict(duration=-1, depth=-0.1))
@@ -30,20 +32,21 @@ def get_subtree_leafs_labels(node: NittaNodeInTree, metrics_distrib: np.ndarray)
 
 
 @cached()
-def compute_node_label(node: NittaNodeInTree, metrics_distrib: np.ndarray) -> float:
+def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsCollector) -> float:
     if node.is_terminal:
         if not node.is_finish:
             return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
 
         # (duration, depth)
-        metrics = np.array(node.subtree_leafs_metrics[0])
+        metrics = np.array(get_leaf_metrics(node))
+        metrics_means, metrics_stddevs = metrics_collector.get_distributions()
 
         # if std is 0, then we have a single value getting normalized. the nominator is also zero.
         # let's define normalized_metrics for this edge case as all-zeros, so they don't break anything.
         # adding an epsilon to avoid division by zero.
-        normalized_metrics = (metrics - metrics_distrib.mean(axis=0)) / (metrics_distrib.std(axis=0) + 1e-5)
+        normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
 
         return normalized_metrics.dot(_METRICS_WEIGHTS) + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
 
-    subtree_labels = np.array(node.get_subtree_leafs_labels(metrics_distrib))
+    subtree_labels = np.array(get_subtree_leafs_labels(node, metrics_distrib))
     return _LAMBDA * subtree_labels.max() + (1 - _LAMBDA) * subtree_labels.mean()

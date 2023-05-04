@@ -68,9 +68,14 @@ def get_subtree_size(node: NittaNodeInTree) -> int:
     return result + 1
 
 
+def get_leaf_metrics(node: NittaNode):
+    return node.duration, get_depth(node)
+
+
 @cached()
-def get_depth(node: NittaNodeInTree) -> int:
+def get_depth(node: NittaNode) -> int:
     return node.sid.count('-') if node.sid != '-' else 0
+
 
 # def subtree_leafs_metrics(node: NittaNode) -> Optional[Deque[Tuple[int, int]]]:
 #     """ :returns: deque(tuple(duration, depth)) or None if node is a failed leaf """
