@@ -47,10 +47,6 @@ class NittaNode:
     def __hash__(self):
         return hash(self.sid)
 
-    @property
-    def is_leaf(self):
-        return self.is_terminal
-
     @cached_property
     def subtree_size(self):
         assert self.children is not None
@@ -63,7 +59,7 @@ class NittaNode:
     @cached_property
     def subtree_leafs_metrics(self) -> Optional[Deque[Tuple[int, int]]]:
         """ :returns: deque(tuple(duration, depth)) or None if node is a failed leaf """
-        if self.is_leaf:
+        if self.is_terminal:
             if not self.is_finish:
                 return None
             return deque(((self.duration, self.depth),))
@@ -74,14 +70,14 @@ class NittaNode:
 
     @cached_node_method
     def get_subtree_leafs_labels(self, metrics_distrib: np.ndarray) -> deque:
-        if self.is_leaf:
+        if self.is_terminal:
             return deque((self.compute_label(metrics_distrib),))
         else:
             return sum((child.get_subtree_leafs_labels(metrics_distrib) for child in self.children), deque())
 
     @cached_node_method
     def compute_label(self, metrics_distrib: np.ndarray) -> float:
-        if self.is_leaf:
+        if self.is_terminal:
             if not self.is_finish:
                 # unsuccessful synthesis, very low artificial label
                 return -3

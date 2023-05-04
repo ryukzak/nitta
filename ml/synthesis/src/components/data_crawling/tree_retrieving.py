@@ -13,7 +13,7 @@ logger_debug_debounced = debounce(1)(logger.debug)
 
 async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_baseurl: str, levels_left=None):
     node.children = []
-    if node.is_leaf or levels_left == -1:
+    if node.is_terminal or levels_left == -1:
         return
 
     async with session.get(f"{nitta_baseurl}/node/{node.sid}/subForest") as resp:

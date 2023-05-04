@@ -19,14 +19,14 @@ def _map_categorical(df, c):
 def preprocess_df(df: DataFrame) -> DataFrame:
     df: DataFrame = df.copy()
 
-    for bool_column in ["is_leaf", "pCritical", "pPossibleDeadlock", "pRestrictedTime"]:
+    for bool_column in ["is_terminal", "pCritical", "pPossibleDeadlock", "pRestrictedTime"]:
         if bool_column in df.columns:
             df[bool_column] = _map_bool(df[bool_column])
         else:
             logger.warning(f"Column/parameter {bool_column} not found in provided node info.")
 
     df = _map_categorical(df, df.tag)
-    df = df.drop(["pWave", "example", "sid", "old_score", "is_leaf", "pRefactoringType"], axis="columns", errors="ignore")
+    df = df.drop(["pWave", "example", "sid", "old_score", "is_terminal", "pRefactoringType"], axis="columns", errors="ignore")
     df = df.fillna(0)
     return df
 

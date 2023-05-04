@@ -48,7 +48,7 @@ def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: 
         sid=node.sid,
         tag=node.decision.tag,
         old_score=node.score,
-        is_leaf=node.is_leaf,
+        is_terminal=node.is_terminal,
         **_extract_alternative_siblings_dict(node, siblings),
         **_extract_params_dict(node),
     )
@@ -80,7 +80,7 @@ def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: N
     if include_label:
         self_dict["label"] = node.compute_label(metrics_distrib)
 
-    if node.is_leaf or levels_left == -1:
+    if node.is_terminal or levels_left == -1:
         accum.append(self_dict)
     else:
         levels_left_for_child = None if levels_left is None else levels_left - 1
