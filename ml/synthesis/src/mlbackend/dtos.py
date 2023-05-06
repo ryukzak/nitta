@@ -45,14 +45,15 @@ class ScoringInput(CustomizedBaseModel):
     to ignore that for now since optimizations will definitely be possible when they become needed. For example, we can
     always add mentioned data gathering branching based on currently used model at the cost of reduced flexibility.
     """
+
     scoring_target: str = Field(
         description="SID of a node which we need to predict the score for. This node must be in `nodes` list. "
-                    "You can also pass the value `all` to get scores for all nodes in the `nodes` list.",
+        "You can also pass the value `all` to get scores for all nodes in the `nodes` list.",
         example="-0-4-7-3-4-1-1-0",
     )
     nodes: List[NittaNode] = Field(
         description="`NodeView`s of scoring target node and all its siblings (all possible synthesis tree choices "
-                    "from current parent node).",
+        "from current parent node).",
     )
     # parents?
     # decision history? (can differ from parents!)

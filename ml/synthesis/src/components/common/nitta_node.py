@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional, Union
 
 from pydantic import Field
 
@@ -8,13 +8,15 @@ from components.common.customized_pydantic_model import CustomizedBaseModel
 # related to corresponding NITTA REST API DTO
 # TODO: link those types to NITTA Haskell source code via code generation like it's done with with TypeScript?
 class NittaNode(CustomizedBaseModel):
-    """ `NodeView` from NITTA Haskell sources. """
+    """`NodeView` from NITTA Haskell sources."""
+
     sid: str = Field(example="-0-4-7-3-4-1-1-0")
     score: Optional[int]
     is_terminal: bool
     is_finish: bool
     duration: Optional[int]
-    parameters: dict = Field(
+    # union with str because {parameters: "root"} is currently possible
+    parameters: Union[dict, str] = Field(
         description="SynthesisDecision.metrics from NITTA Haskell sources.",
         example={
             "pAllowDataFlow": 0,
@@ -25,19 +27,16 @@ class NittaNode(CustomizedBaseModel):
             "pWave": 4,
             "pOutputNumber": 1,
             "pAlternative": 2,
-            "pCritical": False
+            "pCritical": False,
         },
     )
     decision: dict = Field(
         description="`SynthesisDecision.decision` from NITTA Haskell sources.",
         example={
             "tag": "BindDecisionView",
-            "function": {
-                "fvFun": "loop(0.000000, res^0#0) = i^0#0",
-                "fvHistory": []
-            },
-            "pu": "fram1"
-        }
+            "function": {"fvFun": "loop(0.000000, res^0#0) = i^0#0", "fvHistory": []},
+            "pu": "fram1",
+        },
     )
 
     @property
@@ -49,8 +48,8 @@ class NittaNode(CustomizedBaseModel):
 
 
 class NittaNodeInTree(NittaNode):
-    children: Optional[List['NittaNodeInTree']] = Field(default=None, repr=False, exclude=True)
-    parent: Optional['NittaNodeInTree'] = Field(default=None, repr=False, exclude=True)
+    children: Optional[List["NittaNodeInTree"]] = Field(default=None, repr=False)
+    parent: Optional["NittaNodeInTree"] = Field(default=None, repr=False)
 
     @property
     def is_loaded(self) -> bool:

@@ -3,9 +3,9 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
-from components.common.nitta_node import NittaNodeInTree, NittaNode
+from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
-from components.data_crawling.node_processing import get_depth, get_leaf_metrics
+from components.data_crawling.node_processing import get_leaf_metrics
 from components.utils.cache import cached
 
 _METRICS_WEIGHTS = pd.Series(dict(duration=-1, depth=-0.1))
@@ -24,15 +24,26 @@ _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT = 10
 
 
 @cached()
-def get_subtree_leafs_labels(node: NittaNodeInTree, metrics_distrib: np.ndarray) -> deque:
+def get_subtree_leafs_labels(
+    node: NittaNodeInTree, metrics_collector: LeafMetricsCollector
+) -> deque:
     if node.is_terminal:
-        return deque((compute_node_label(node, metrics_distrib),))
+        return deque((compute_node_label(node, metrics_collector),))
     else:
-        return sum((get_subtree_leafs_labels(child, metrics_distrib) for child in node.children), deque())
+        assert node.children is not None, f"node should've had children loaded: {node}"
+        return sum(
+            (
+                get_subtree_leafs_labels(child, metrics_collector)
+                for child in node.children
+            ),
+            deque(),
+        )
 
 
 @cached()
-def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsCollector) -> float:
+def compute_node_label(
+    node: NittaNodeInTree, metrics_collector: LeafMetricsCollector
+) -> float:
     if node.is_terminal:
         if not node.is_finish:
             return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
@@ -46,7 +57,10 @@ def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsColl
         # adding an epsilon to avoid division by zero.
         normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
 
-        return normalized_metrics.dot(_METRICS_WEIGHTS) + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
+        return (
+            normalized_metrics.dot(_METRICS_WEIGHTS)
+            + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
+        )
 
-    subtree_labels = np.array(get_subtree_leafs_labels(node, metrics_distrib))
+    subtree_labels = np.array(get_subtree_leafs_labels(node, metrics_collector))
     return _LAMBDA * subtree_labels.max() + (1 - _LAMBDA) * subtree_labels.mean()

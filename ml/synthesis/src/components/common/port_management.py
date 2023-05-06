@@ -12,7 +12,7 @@ _RANDOM_PORT_RANGE = (32768, 60999)
 def is_port_in_use(port):
     logger.debug(f"Finding out if port {port} is in use...")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        result = s.connect_ex(('localhost', port)) == 0
+        result = s.connect_ex(("localhost", port)) == 0
         logger.debug(f"Port {port} {'is in use' if result else 'is free'}")
         return result
 
