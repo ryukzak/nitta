@@ -2,6 +2,7 @@ import asyncio
 import time
 from random import choice
 
+import orjson
 from aiohttp import ClientSession
 
 from components.common.logging import get_logger
@@ -24,7 +25,7 @@ async def retrieve_children(
         return
 
     async with session.get(f"{nitta_baseurl}/node/{node.sid}/subForest") as resp:
-        children_raw = await resp.json()
+        children_raw = await resp.json(loads=orjson.loads)
 
     logger_debug_debounced(f"{len(children_raw)} children from {node.sid}")
 
@@ -62,7 +63,7 @@ async def retrieve_tree_root(
     nitta_baseurl: str, session: ClientSession
 ) -> NittaNodeInTree:
     async with session.get(nitta_baseurl + "/node/-") as resp:
-        root_raw = await resp.json()
+        root_raw = await resp.json(loads=orjson.loads)
     return NittaNodeInTree.parse_obj(root_raw)
 
 

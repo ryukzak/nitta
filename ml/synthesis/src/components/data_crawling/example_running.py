@@ -4,9 +4,9 @@ import os
 import pickle
 import signal
 import sys
-from asyncio import sleep
+from asyncio import gather, sleep
 from collections import deque
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, ExitStack, asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator, Deque, List, Optional, Tuple
 
@@ -14,7 +14,7 @@ import pandas as pd
 from aiohttp import ClientSession
 from joblib import Parallel, delayed
 from tqdm.auto import tqdm
-from tqdm_joblib import tqdm_joblib
+from tqdm.std import tqdm as tqdm_instance
 
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
@@ -26,6 +26,7 @@ from components.data_crawling.tree_retrieving import (
     retrieve_tree_root,
     retrieve_whole_nitta_tree,
 )
+from components.utils.tqdm_joblib import tqdm_joblib
 from consts import DATA_DIR, ROOT_DIR
 
 logger = get_logger(__name__)
@@ -118,10 +119,14 @@ def get_data_for_many_examples_parallel(examples: List[Path], **runner_kwargs):
     Parallel(n_jobs=3)(delayed(job)(example) for example in examples)
 
 
+_DEFAULT_SAMPLES_PER_BATCH = 150  # was empirically found to yield maximum it/s
+
+
 async def run_example_and_sample_tree_parallel(
     example: Path,
     n_samples: int,
-    n_workers: int = 4,
+    n_workers: int = 1,
+    n_nittas: int = 1,
     data_dir: Path = DATA_DIR,
     nitta_exe_path: str = "stack exec nitta -- ",
 ):
@@ -137,52 +142,86 @@ async def run_example_and_sample_tree_parallel(
 
     We sacrifice accuracy, but it seems to be a reasonable trade-off.
 
-    # TODO: for now, we start one NITTA per all workers (not per worker). This already gives 100% CPU, but we might want to test it  and change it later.
+    About n_nittas: for Intel Core i5-12400F (6 cores, 12 threads)
+    - 1 NITTA is enough to give 80%-100% load on all cores, seems optimal
+    - 2+ NITTAs lead to huge performance drop (context switching, perhaps)
+    So, n_nittas=1 seems the best choice for now.
+
+    About n_workers: we can parallelize on IO waits thanks to asyncio. It seems enough, because multiprocessing
+    doesn't give any performance boost (perhaps, even the opposite due to the overhead). So, n_workers=1 fits best too.
     """
     example_name = os.path.basename(example)
-    async with run_nitta(example, nitta_exe_path) as (_, nitta_baseurl):
-        async with ClientSession() as session:
-            logger.info(f"Retrieving tree root...")
-            root = await retrieve_tree_root(nitta_baseurl, session)
+    async with AsyncExitStack() as stack:
+        nittas = await gather(
+            *[
+                stack.enter_async_context(run_nitta(example, nitta_exe_path))
+                for _ in range(n_nittas)
+            ]
+        )
+        nitta_baseurls = [nitta_baseurl for (_, nitta_baseurl) in nittas]
+        session = await stack.enter_async_context(ClientSession())
 
-            logger.info(f"Sampling tree ({n_samples} samples, {n_workers} workers)...")
+        logger.info(f"Retrieving tree root...")
+        root = await retrieve_tree_root(nitta_baseurls[0], session)
 
-            if n_workers > 1:
+        samples_per_batch = 150
+        n_batches = n_samples // samples_per_batch + 1
 
-                def job(*args):
-                    return asyncio.run(_retrieve_and_process_tree_sample_remote(*args))
+        logger.info(
+            f"Sampling tree ({n_batches} batches * {samples_per_batch} = {n_samples} samples >> {n_workers} workers)..."
+        )
 
-                with tqdm_joblib(desc=f"Tree sampling", total=n_samples):
-                    results = Parallel(n_jobs=n_workers)(
-                        delayed(job)(nitta_baseurl, root) for i in range(n_samples)
+        tqdm_args = dict(total=n_samples, desc=f"Tree sampling", unit="samples")
+
+        if n_workers > 1:
+
+            def job(**kwargs):
+                return asyncio.run(_retrieve_and_process_tree_with_sampling(**kwargs))
+
+            with tqdm_joblib(samples_per_batch, **tqdm_args):
+                results = Parallel(n_jobs=n_workers)(
+                    delayed(job)(
+                        nitta_baseurl=nitta_baseurls[i % len(nitta_baseurls)],
+                        root=root,
+                        n_samples=samples_per_batch,
+                        samples_per_batch=samples_per_batch,
                     )
-            else:
-                logging.getLogger().setLevel(logging.INFO)
-                results = await _retrieve_and_process_tree_sample(
-                    nitta_baseurl, root, session, n_samples
+                    for i in range(n_batches)
                 )
-                logging.getLogger().setLevel(logging.DEBUG)
+        else:
+            logging.getLogger().setLevel(logging.INFO)
+            with tqdm(**tqdm_args) as pbar:
+                results = await _retrieve_and_process_tree_with_sampling(
+                    nitta_baseurls[0],
+                    root,
+                    n_samples,
+                    samples_per_batch=samples_per_batch,
+                    existing_session=session,
+                    pbar=pbar,
+                )
+            logging.getLogger().setLevel(logging.DEBUG)
 
     logger.info(f"DONE: {len(results)} results, {len(set(results))} unique")
     return results
 
 
-async def _retrieve_and_process_tree_sample(
+async def _retrieve_and_process_tree_with_sampling(
     nitta_baseurl: str,
     root: NittaNodeInTree,
-    session: ClientSession,
     n_samples: int,
-    samples_per_batch: int = 150,
+    samples_per_batch: int = _DEFAULT_SAMPLES_PER_BATCH,
+    existing_session: Optional[ClientSession] = None,
+    pbar: Optional[tqdm_instance] = None,
 ):
     """
-    A local worker version of _retrieve_and_process_tree_sample.
-    It batches the coroutines and uses `asyncio.gather` to parallelize sampling.
+    A job for local or remote worker that implements sampling-based tree gathering and processing into training data.
 
-    samples_per_batch's default was empirically found to be giving maximum it/s
+    Forks the sampling into N coroutines-batches and uses `asyncio.gather` to parallelize their IO waits.
     """
-    results: Deque[str] = deque()
+    session = existing_session or ClientSession()
+    try:
+        results: Deque[str] = deque()
 
-    with tqdm(total=n_samples, desc=f"Tree sampling") as pbar:
         for batch_n in range(n_samples // samples_per_batch + 1):
             samples_left = (
                 samples_per_batch
@@ -192,40 +231,31 @@ async def _retrieve_and_process_tree_sample(
             results.append(
                 await asyncio.gather(
                     *[
-                        _retrieve_and_process_tree_sample_remote(
+                        _retrieve_and_process_single_tree_sample(
                             nitta_baseurl,
                             root,
-                            keep_tree=True,
-                            existing_session=session,
+                            session,
                         )
                         for _ in range(samples_left)
                     ]
                 )
             )
-            pbar.update(samples_left)
+            if pbar is not None:
+                pbar.update(samples_left)
 
-    return sum(results, [])
-
-
-async def _retrieve_and_process_tree_sample_remote(
-    nitta_baseurl: str,
-    root: NittaNodeInTree,
-    keep_tree: bool = False,
-    existing_session: Optional[ClientSession] = None,
-):
-    """This can be used as a remote worker job, but is handy for local run as well."""
-    session = existing_session or ClientSession()
-    try:
-        if not keep_tree:
-            root = (
-                root.copy()
-            )  # we'll be modifying the tree and we should free related RAM when we're done, so copying
-
-        leaf = await retrieve_random_descending_thread(
-            root, nitta_baseurl, session, ignore_dirty_tree=keep_tree
-        )
-
-        return leaf.sid
+        return sum(results, [])
     finally:
         if not existing_session:
             await session.close()
+
+
+async def _retrieve_and_process_single_tree_sample(
+    nitta_baseurl: str,
+    root: NittaNodeInTree,
+    session: ClientSession,
+):
+    leaf = await retrieve_random_descending_thread(
+        root, nitta_baseurl, session, ignore_dirty_tree=True
+    )
+
+    return leaf.sid

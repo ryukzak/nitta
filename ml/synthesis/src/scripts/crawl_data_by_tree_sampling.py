@@ -28,6 +28,6 @@ if __name__ == "__main__":
 
     asyncio.run(
         run_example_and_sample_tree_parallel(
-            Path(examples[0]), n_samples=50000, n_workers=1
+            Path(examples[0]), n_samples=50000, n_workers=2, n_nittas=1
         )
     )
