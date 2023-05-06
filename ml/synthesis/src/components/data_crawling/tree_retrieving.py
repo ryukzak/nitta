@@ -23,12 +23,12 @@ async def retrieve_children(
             raise ValueError(f"Attempted to load children of a node twice: {node}")
         return
 
-    node.children = []
-
     async with session.get(f"{nitta_baseurl}/node/{node.sid}/subForest") as resp:
         children_raw = await resp.json()
 
     logger_debug_debounced(f"{len(children_raw)} children from {node.sid}")
+
+    node.children = []
 
     for child_raw in children_raw:
         child = NittaNodeInTree.parse_obj(child_raw)
@@ -99,7 +99,9 @@ async def retrieve_random_descending_thread(
         assert node.children is not None, "children should be loaded by now"
 
         if len(node.children) == 0:
-            logger.warning(f"Node {node.sid} has no children, stopping descent")
+            logger.warning(
+                f"Non-terminal node {node.sid} has no children, stopping descent"
+            )
             break
 
         node = choice(node.children)
