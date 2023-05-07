@@ -83,7 +83,6 @@ def get_leaf_metrics(node: NittaNode):
     return node.duration, get_depth(node)
 
 
-@cached()
 def get_depth(node: NittaNode) -> int:
     return node.sid.count("-") if node.sid != "-" else 0
 

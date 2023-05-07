@@ -1,5 +1,3 @@
-from collections import deque
-
 import numpy as np
 import pandas as pd
 
@@ -23,44 +21,31 @@ _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL = -3
 _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT = 10
 
 
-@cached()
-def get_subtree_leafs_labels(
-    node: NittaNodeInTree, metrics_collector: LeafMetricsCollector
-) -> deque:
-    if node.is_terminal:
-        return deque((compute_node_label(node, metrics_collector),))
-    else:
-        assert node.children is not None, f"node should've had children loaded: {node}"
-        return sum(
-            (
-                get_subtree_leafs_labels(child, metrics_collector)
-                for child in node.children
-            ),
-            deque(),
-        )
+def aggregate_node_labels(labels: pd.Series) -> float:
+    return _LAMBDA * labels.max() + (1 - _LAMBDA) * labels.mean()
 
 
-@cached()
+# @cached()  # maximum recursion depth exceeded?! pydantic imcompatibility?
 def compute_node_label(
     node: NittaNodeInTree, metrics_collector: LeafMetricsCollector
 ) -> float:
-    if node.is_terminal:
-        if not node.is_finish:
-            return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
+    assert (
+        node.is_terminal
+    ), "labels for non-terminal nodes for this function should not be calculated anymore"
 
-        # (duration, depth)
-        metrics = np.array(get_leaf_metrics(node))
-        metrics_means, metrics_stddevs = metrics_collector.get_distributions()
+    if not node.is_finish:
+        return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
 
-        # if std is 0, then we have a single value getting normalized. the nominator is also zero.
-        # let's define normalized_metrics for this edge case as all-zeros, so they don't break anything.
-        # adding an epsilon to avoid division by zero.
-        normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
+    # (duration, depth)
+    metrics = np.array(get_leaf_metrics(node))
+    metrics_means, metrics_stddevs = metrics_collector.get_distributions()
 
-        return (
-            normalized_metrics.dot(_METRICS_WEIGHTS)
-            + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
-        )
+    # if std is 0, then we have a single value getting normalized. the nominator is also zero.
+    # let's define normalized_metrics for this edge case as all-zeros, so they don't break anything.
+    # adding an epsilon to avoid division by zero.
+    normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
 
-    subtree_labels = np.array(get_subtree_leafs_labels(node, metrics_collector))
-    return _LAMBDA * subtree_labels.max() + (1 - _LAMBDA) * subtree_labels.mean()
+    return (
+        normalized_metrics.dot(_METRICS_WEIGHTS)
+        + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
+    )
