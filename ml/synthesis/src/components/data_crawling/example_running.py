@@ -5,10 +5,10 @@ import pickle
 import signal
 import sys
 from asyncio import gather, sleep
-from collections import deque
-from contextlib import AsyncExitStack, ExitStack, asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
+from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator, Deque, List, Optional, Tuple
+from typing import AsyncGenerator, List, Optional, Tuple
 
 import pandas as pd
 from aiohttp import ClientSession
@@ -19,8 +19,12 @@ from tqdm.std import tqdm as tqdm_instance
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.common.port_management import find_random_free_port
+from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
 from components.data_crawling.node_processing import get_subtree_size
-from components.data_crawling.tree_processing import assemble_tree_dataframe
+from components.data_crawling.tree_processing import (
+    assemble_training_data_via_backpropagation_from_leaf,
+    assemble_tree_dataframe,
+)
 from components.data_crawling.tree_retrieving import (
     retrieve_random_descending_thread,
     retrieve_tree_root,
@@ -131,24 +135,24 @@ async def run_example_and_sample_tree_parallel(
     nitta_exe_path: str = "stack exec nitta -- ",
 ):
     """
-    Instead of copying the whole tree to Python and only then processing it, we sample the tree (randomly descend many
-    times) and process samples on the fly. This way we:
+    Instead of evaluating the whole tree and only then processing it, we sample the tree (randomly descend many times)
+    and process samples on the fly. This way we:
     - can parallelize processing of a single example tree, which was troublesome before
     - can handle huge trees (astronomical number of nodes)  <--- this is the main reason
 
-    This way we also don't need to store the whole tree in Python RAM, but caching tree node info in RAM speeds things
-    up significantly, so trees should be kept in RAM when possible. Reasonable default was implemented: they are kept
-    in RAM, but freed when RAM becomes low.
+    This way we also don't need to store the whole tree in RAM, but caching tree node info in RAM speeds things up
+    significantly, so trees should be kept in RAM when possible.Major part of RAM is used by NITTA, not Python, so
+    for now it's enough to restart the NITTAs (by restarting the sampling process).
 
-    We sacrifice accuracy, but it seems to be a reasonable trade-off.
+    We sacrifice some accuracy, but it seems to be a reasonable trade-off.
 
     About n_nittas: for Intel Core i5-12400F (6 cores, 12 threads)
     - 1 NITTA is enough to give 80%-100% load on all cores, seems optimal
     - 2+ NITTAs lead to huge performance drop (context switching, perhaps)
     So, n_nittas=1 seems the best choice for now.
 
-    About n_workers: we can parallelize on IO waits thanks to asyncio. It seems enough, because multiprocessing
-    doesn't give any performance boost (perhaps, even the opposite due to the overhead). So, n_workers=1 fits best too.
+    About n_workers: we can parallelize on IO waits thanks to asyncio. It seems enough, because multiprocessing doesn't
+    give any performance boost (perhaps, even the opposite due to the overhead). So, n_workers=1 fits best too.
     """
     example_name = os.path.basename(example)
     async with AsyncExitStack() as stack:
@@ -173,89 +177,138 @@ async def run_example_and_sample_tree_parallel(
 
         tqdm_args = dict(total=n_samples, desc=f"Tree sampling", unit="samples")
 
+        # we needed deque only for O(1) appendleft. here we don't use appendleft, so list should be fine.
+        results: List[dict] = []
+
         if n_workers > 1:
-
-            def job(**kwargs):
-                return asyncio.run(_retrieve_and_process_tree_with_sampling(**kwargs))
-
             with tqdm_joblib(samples_per_batch, **tqdm_args):
-                results = Parallel(n_jobs=n_workers)(
-                    delayed(job)(
-                        nitta_baseurl=nitta_baseurls[i % len(nitta_baseurls)],
-                        root=root,
-                        n_samples=samples_per_batch,
-                        samples_per_batch=samples_per_batch,
-                    )
-                    for i in range(n_batches)
+                results = sum(
+                    Parallel(n_jobs=n_workers)(
+                        delayed(_retrieve_and_process_tree_with_sampling_remote_job)(
+                            nitta_baseurl=nitta_baseurls[i % len(nitta_baseurls)],
+                            root=root,
+                            n_samples=samples_per_batch,
+                            samples_per_batch=samples_per_batch,
+                            example_name=example_name,
+                        )
+                        for i in range(n_batches)
+                    ),
+                    [],
                 )
         else:
             logging.getLogger().setLevel(logging.INFO)
             with tqdm(**tqdm_args) as pbar:
-                results = await _retrieve_and_process_tree_with_sampling(
-                    nitta_baseurls[0],
-                    root,
-                    n_samples,
+                await _retrieve_and_process_tree_with_sampling(
+                    results_accum=results,
+                    session=session,
+                    nitta_baseurl=nitta_baseurls[0],
+                    root=root,
+                    metrics_collector=LeafMetricsCollector(),
+                    n_samples=n_samples,
                     samples_per_batch=samples_per_batch,
-                    existing_session=session,
                     pbar=pbar,
+                    example_name=example_name,
                 )
             logging.getLogger().setLevel(logging.DEBUG)
 
-    logger.info(f"DONE: {len(results)} results, {len(set(results))} unique")
-    return results
+    results_df = _build_df_and_save_sampling_results(results, example_name, data_dir)
+
+    n_results = len(results)
+    n_unique_sids = len(results_df.sid.unique())
+    node_clash_percent = (1 - n_unique_sids / n_results) * 100
+    logger.info(
+        f"TREE SAMPLING DONE: {n_unique_sids} unique nodes, clash ratio {node_clash_percent:.3f}%"
+    )
+    return results_df
+
+
+def _retrieve_and_process_tree_with_sampling_remote_job(**kwargs):
+    """
+    A remote worker process job that does necessary initialization before calling
+    `_retrieve_and_process_tree_with_sampling`.
+    """
+
+    async def _async_job():
+        async with ClientSession() as session:
+            return await _retrieve_and_process_tree_with_sampling(
+                **kwargs,
+                session=session,
+                metrics_collector=LeafMetricsCollector(),
+                results_accum=[],
+            )
+
+    asyncio.run(_async_job())
 
 
 async def _retrieve_and_process_tree_with_sampling(
+    results_accum: List[dict],
+    session: ClientSession,
     nitta_baseurl: str,
     root: NittaNodeInTree,
+    metrics_collector: LeafMetricsCollector,
     n_samples: int,
     samples_per_batch: int = _DEFAULT_SAMPLES_PER_BATCH,
-    existing_session: Optional[ClientSession] = None,
     pbar: Optional[tqdm_instance] = None,
+    example_name: Optional[str] = None,
 ):
     """
-    A job for local or remote worker that implements sampling-based tree gathering and processing into training data.
+    Implements sampling-based tree gathering and processing into training data.
 
     Forks the sampling into N coroutines-batches and uses `asyncio.gather` to parallelize their IO waits.
     """
-    session = existing_session or ClientSession()
-    try:
-        results: Deque[str] = deque()
-
-        for batch_n in range(n_samples // samples_per_batch + 1):
-            samples_left = (
-                samples_per_batch
-                if batch_n < n_samples // samples_per_batch
-                else n_samples % samples_per_batch
-            )
-            results.append(
-                await asyncio.gather(
-                    *[
-                        _retrieve_and_process_single_tree_sample(
-                            nitta_baseurl,
-                            root,
-                            session,
-                        )
-                        for _ in range(samples_left)
-                    ]
+    for batch_n in range(n_samples // samples_per_batch + 1):
+        samples_left = (
+            samples_per_batch
+            if batch_n < n_samples // samples_per_batch
+            else n_samples % samples_per_batch
+        )
+        await asyncio.gather(
+            *[
+                _retrieve_and_process_single_tree_sample(
+                    results_accum,
+                    session,
+                    nitta_baseurl,
+                    root,
+                    metrics_collector,
+                    example_name,
                 )
-            )
-            if pbar is not None:
-                pbar.update(samples_left)
+                for _ in range(samples_left)
+            ]
+        )
+        if pbar is not None:
+            pbar.update(samples_left)
 
-        return sum(results, [])
-    finally:
-        if not existing_session:
-            await session.close()
+    return results_accum
 
 
 async def _retrieve_and_process_single_tree_sample(
+    results_accum: List[dict],
+    session: ClientSession,
     nitta_baseurl: str,
     root: NittaNodeInTree,
-    session: ClientSession,
+    metrics_collector: LeafMetricsCollector,
+    example_name: Optional[str] = None,
 ):
     leaf = await retrieve_random_descending_thread(
         root, nitta_baseurl, session, ignore_dirty_tree=True
     )
+    metrics_collector.collect_leaf_node(leaf)
+    return assemble_training_data_via_backpropagation_from_leaf(
+        results_accum, leaf, metrics_collector, example_name=example_name
+    )
 
-    return leaf.sid
+
+def _build_df_and_save_sampling_results(
+    results: List[dict], example_name: str, data_dir: Path
+) -> pd.DataFrame:
+    """
+    Builds a DataFrame from the sampling results and saves it to the `data_dir`.
+    """
+    results_df = pd.DataFrame(results)
+    sampling_run_id = datetime.now().strftime("%y%m%d_%H%M%S")
+
+    results_df.to_csv(
+        data_dir / f"{example_name}.sampling.{sampling_run_id}.csv", index=False
+    )
+
+    return results_df

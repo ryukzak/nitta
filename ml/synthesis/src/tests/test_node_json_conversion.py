@@ -13,7 +13,7 @@ def test_node_from_raw_dict(test_root, test_root_dict):
 def test_node_to_train_df_dict(test_root: NittaNodeInTree):
     assert test_root.children, "test root must have children for this test to run"
     assert nitta_node_to_df_dict(
-        test_root, siblings=tuple(test_root.children), example="test"
+        test_root, siblings=test_root.children, example="test"
     ) == {
         "alt_bindings": 1,
         "alt_dataflows": 0,

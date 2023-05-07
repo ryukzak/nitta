@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.utils.cache import cached
@@ -23,7 +23,7 @@ def _extract_params_dict(node: NittaNode) -> dict:
 
 
 def _extract_alternative_siblings_dict(
-    node: NittaNode, siblings: Tuple[NittaNode, ...]
+    node: NittaNode, siblings: Iterable[NittaNode]
 ) -> dict:
     bindings, refactorings, dataflows = 0, 0, 0
 
@@ -45,7 +45,7 @@ def _extract_alternative_siblings_dict(
 
 def nitta_node_to_df_dict(
     node: NittaNode,
-    siblings: Tuple[NittaNode, ...],
+    siblings: Iterable[NittaNode],
     example: Optional[str] = None,
 ) -> dict:
     return dict(

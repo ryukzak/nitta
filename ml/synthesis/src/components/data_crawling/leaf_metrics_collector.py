@@ -42,33 +42,45 @@ class SingleMetricCollector:
         )
 
 
+class LeafMetrics:
+    DURATION = "duration"
+    DEPTH = "depth"
+
+    @classmethod
+    def all(cls):
+        return (cls.DURATION, cls.DEPTH)
+
+
 class LeafMetricsCollector:
     """Collects leaf nodes, stores their metrics and computes metrics distributions when needed"""
 
     def __init__(self):
         self.collectors: Dict[str, SingleMetricCollector] = {
-            metric: SingleMetricCollector(metric) for metric in ("duration", "depth")
+            metric: SingleMetricCollector(metric) for metric in LeafMetrics.all()
         }
         self._cached_distributions = None
 
-    def collect_leaf_node(self, node: NittaNode):
+    def collect_leaf_node(self, node: NittaNode, ignore_unsuccessful: bool = True):
         assert (
             node.is_terminal
-        ), "Only leaf nodes should be collected for metrics distributions"
-        assert (
-            node.is_finish
-        ), "Shouldn't collect metrics from unsuccessful synthesis leafs"
+        ), "only leaf nodes should be collected for metrics distributions"
+
+        if not node.is_finish:
+            assert (
+                ignore_unsuccessful
+            ), "shouldn't collect metrics from unsuccessful synthesis leafs"
+            return
 
         duration, depth = get_leaf_metrics(node)
 
         if duration is not None:
-            self.collectors["duration"].collect(duration)
+            self.collectors[LeafMetrics.DURATION].collect(duration)
         else:
             logger.warning(
                 f"Tried to collect metrics for node without duration: {node}"
             )
 
-        self.collectors["depth"].collect(depth)
+        self.collectors[LeafMetrics.DEPTH].collect(depth)
 
         self._cached_distributions = None
 
