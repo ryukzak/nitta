@@ -214,19 +214,35 @@ async def run_example_and_sample_tree_parallel(
                     [],
                 )
         else:
+            # set logging level to INFO for tqdm (otherwise DEBUG messages will break tqdm's progress bar)
             logging.getLogger().setLevel(logging.INFO)
-            with tqdm(**tqdm_args) as pbar:
-                await _retrieve_and_process_tree_with_sampling(
-                    results_accum=results,
-                    session=session,
-                    nitta_baseurl=nitta_baseurls[0],
-                    root=root,
-                    metrics_collector=LeafMetricsCollector(),
-                    n_samples=n_samples,
-                    samples_per_batch=samples_per_batch,
-                    pbar=pbar,
-                    example_name=example_name,
-                )
+
+            try:
+                with tqdm(**tqdm_args) as pbar:
+                    await _retrieve_and_process_tree_with_sampling(
+                        results_accum=results,
+                        session=session,
+                        nitta_baseurl=nitta_baseurls[0],
+                        root=root,
+                        metrics_collector=LeafMetricsCollector(),
+                        n_samples=n_samples,
+                        samples_per_batch=samples_per_batch,
+                        pbar=pbar,
+                        example_name=example_name,
+                    )
+            except KeyboardInterrupt:
+
+                def _no_traceback_excepthook(exc_type, exc_val, traceback):
+                    pass
+
+                if sys.excepthook is sys.__excepthook__:
+                    sys.excepthook = _no_traceback_excepthook
+
+                if len(results) == 0:
+                    raise
+
+                logger.info("Interrupted by user, processing nodes gathered so far.")
+
             logging.getLogger().setLevel(logging.DEBUG)
 
     results_df = _build_df_and_save_sampling_results(results, example_name, data_dir)
