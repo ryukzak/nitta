@@ -51,7 +51,7 @@ instance (ToString v, Time t) => Show (EndpointSt v (TimeConstraint t)) where
 instance (ToString v, Time t) => Show (EndpointSt v (Interval t)) where
     show EndpointSt{epRole, epAt} = "!" <> show epRole <> "@(" <> show epAt <> ")"
 
-instance (Ord v) => Patch (EndpointSt v tp) (Changeset v) where
+instance Ord v => Patch (EndpointSt v tp) (Changeset v) where
     patch diff ep@EndpointSt{epRole} = ep{epRole = patch diff epRole}
 
 instance (ToJSON v, ToJSON tp) => ToJSON (EndpointSt v tp)
@@ -76,11 +76,11 @@ data EndpointRole v
       Target v
     deriving (Eq, Ord, Generic)
 
-instance (ToString v) => Show (EndpointRole v) where
+instance ToString v => Show (EndpointRole v) where
     show (Source vs) = "Source " <> S.join "," (vsToStringList vs)
     show (Target v) = "Target " <> toString v
 
-instance (Ord v) => Patch (EndpointRole v) (Changeset v) where
+instance Ord v => Patch (EndpointRole v) (Changeset v) where
     patch Changeset{changeI} (Target v) = Target $ fromMaybe v $ changeI M.!? v
     patch Changeset{changeO} (Source vs) =
         Source $ S.unions $ map (\v -> fromMaybe (S.singleton v) $ changeO M.!? v) $ S.elems vs
@@ -89,7 +89,7 @@ instance Variables (EndpointRole v) v where
     variables (Source vs) = vs
     variables (Target v) = S.singleton v
 
-instance (ToJSON v) => ToJSON (EndpointRole v)
+instance ToJSON v => ToJSON (EndpointRole v)
 
 isSubroleOf (Target a) (Target b) = a == b
 isSubroleOf (Source as) (Source bs) = as `S.isSubsetOf` bs

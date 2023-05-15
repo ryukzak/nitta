@@ -153,11 +153,11 @@ crop x
     | abs x == x = x .&. valueMask x
     | otherwise = x .|. complement (valueMask x)
 
-valueMask :: (Val x) => x -> x
+valueMask :: Val x => x -> x
 valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth x - 1) - 1) 0
 
 -- TODO: try to avoid this class
-class (Default x) => DefaultX u x | u -> x where
+class Default x => DefaultX u x | u -> x where
     defX :: u -> x
     defX _ = def
 
@@ -173,7 +173,7 @@ scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 -- | All values with attributes.
 data Attr x = Attr {value :: x, invalid :: Bool} deriving (Eq, Ord)
 
-instance (Validity x) => Validity (Attr x) where
+instance Validity x => Validity (Attr x) where
     validate Attr{value} = validate value
 
 setInvalidAttr Attr{value, invalid} = Attr{value, invalid = invalid || isInvalid value}
@@ -188,19 +188,19 @@ instance Applicative Attr where
         let value = f x y
          in Attr{value, invalid = x' || y'}
 
-instance (Show x) => Show (Attr x) where
+instance Show x => Show (Attr x) where
     show Attr{invalid = True} = "NaN"
     show Attr{value, invalid = False} = show value
 
-instance (Read x) => Read (Attr x) where
+instance Read x => Read (Attr x) where
     readsPrec d r = case readsPrec d r of
         [(x, r')] -> [(pure x, r')]
         _ -> error $ "can not read IntX from: " ++ r
 
-instance (PrintfArg x) => PrintfArg (Attr x) where
+instance PrintfArg x => PrintfArg (Attr x) where
     formatArg Attr{value} = formatArg value
 
-instance (Default x) => Default (Attr x) where
+instance Default x => Default (Attr x) where
     def = pure def
 
 instance (Enum x, Validity x) => Enum (Attr x) where
@@ -259,11 +259,11 @@ instance (Val x, Integral x) => Val (Attr x) where
     verilogHelper Attr{value} = verilogHelper value
     verilogAssertRE Attr{value} = verilogAssertRE value
 
-instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
+instance FixedPointCompatible x => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
     fractionalBitSize Attr{value} = fractionalBitSize value
 
-instance (ToJSON x) => ToJSON (Attr x) where
+instance ToJSON x => ToJSON (Attr x) where
     toJSON Attr{value} = toJSON value
 
 -- * Integer
@@ -285,7 +285,7 @@ instance Val Int where
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
     deriving (Show, Eq, Ord)
 
-instance (KnownNat m) => Validity (IntX m) where
+instance KnownNat m => Validity (IntX m) where
     validate x@(IntX raw) =
         let (minRaw, maxRaw) = minMaxRaw x
          in check (minRaw <= raw && raw <= maxRaw) "value is not out of range"
@@ -322,7 +322,7 @@ instance Integral (IntX w) where
         let (a', b') = a `quotRem` b
          in (IntX a', IntX b')
 
-instance (KnownNat w) => Bits (IntX w) where
+instance KnownNat w => Bits (IntX w) where
     (IntX a) .&. (IntX b) = IntX (a .&. b)
     (IntX a) .|. (IntX b) = IntX (a .|. b)
     (IntX a) `xor` (IntX b) = IntX (a `xor` b)
@@ -337,7 +337,7 @@ instance (KnownNat w) => Bits (IntX w) where
     bit ix = IntX $ bit ix
     popCount (IntX a) = popCount a
 
-instance (KnownNat w) => Val (IntX w) where
+instance KnownNat w => Val (IntX w) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy w)
 
     rawData (IntX x) = fromIntegral x

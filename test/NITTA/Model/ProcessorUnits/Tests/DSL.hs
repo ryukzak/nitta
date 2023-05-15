@@ -314,7 +314,7 @@ assertBindFullness = do
                 fInps = unionsMap inputs fs
                 show' = show . S.map toString
 
-assertAllEndpointRoles :: (Var v) => [EndpointRole v] -> PUStatement pu v x t ()
+assertAllEndpointRoles :: Var v => [EndpointRole v] -> PUStatement pu v x t ()
 assertAllEndpointRoles roles = do
     UnitTestState{unit} <- get
     let opts = S.fromList $ map epRole $ endpointOptions unit
@@ -329,7 +329,7 @@ assertEndpoint a b role = do
         Nothing -> lift $ assertFailure $ "assertEndpoint: '" <> show ep <> "' not defined in: " <> show opts
         Just _ -> return ()
 
-assertLocks :: (Locks pu v) => [Lock v] -> PUStatement pu v x t ()
+assertLocks :: Locks pu v => [Lock v] -> PUStatement pu v x t ()
 assertLocks expectLocks = do
     UnitTestState{unit} <- get
     let actualLocks0 = locks unit
@@ -564,7 +564,7 @@ assertAllocationOptions options = do
                     #{ showArray actual }
                     |]
 
-assertPU :: (Typeable a) => T.Text -> Proxy a -> TSStatement x ()
+assertPU :: Typeable a => T.Text -> Proxy a -> TSStatement x ()
 assertPU tag puProxy = do
     UnitTestState{unit = TargetSystem{mUnit}} <- get
     let pu = M.lookup tag $ bnPus mUnit
@@ -624,7 +624,7 @@ synthesizeAndCoSim = do
     assertSynthesisComplete
     assertTargetSystemCoSimulation
 
-tracePU :: (Show pu) => PUStatement pu v x t ()
+tracePU :: Show pu => PUStatement pu v x t ()
 tracePU = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "PU: " <> show unit
@@ -639,7 +639,7 @@ traceEndpoints = do
     UnitTestState{unit} <- get
     lift $ putListLn "Endpoints: " $ endpointOptions unit
 
-traceProcess :: (ProcessorUnit u v x Int) => Statement u v x ()
+traceProcess :: ProcessorUnit u v x Int => Statement u v x ()
 traceProcess = do
     UnitTestState{unit} <- get
     lift $ putStrLn $ "Process: " <> show (pretty $ process unit)

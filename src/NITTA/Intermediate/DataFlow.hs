@@ -41,7 +41,7 @@ instance Eq (DataFlowGraph v x) where
     (DFLeaf f1) == (DFLeaf f2) = f1 == f2
     _ == _ = False
 
-instance (Var v) => Variables (DataFlowGraph v x) v where
+instance Var v => Variables (DataFlowGraph v x) v where
     variables (DFLeaf fb) = variables fb
     variables (DFCluster g) = unionsMap variables g
 
@@ -71,7 +71,7 @@ instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
 
-instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
+instance Var v => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 
     resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =

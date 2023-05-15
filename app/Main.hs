@@ -23,6 +23,7 @@ import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
+import Data.String (IsString (..))
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -163,6 +164,8 @@ getNittaArgs = do
             exitWith exitCode
     catch (cmdArgs nittaArgs) handleError
 
+fromConf toml s = getFromTomlSection s =<< toml
+
 main = do
     ( Nitta
             filename
@@ -188,7 +191,6 @@ main = do
         Nothing -> return Nothing
         Just path -> Just . getToml <$> T.readFile path
 
-    let fromConf s = getFromTomlSection s =<< toml
     let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
@@ -198,7 +200,7 @@ main = do
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> fromConf "ioSync" <|> Just Sync
+                ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
@@ -243,7 +245,7 @@ main = do
             when lsim $ logicalSimulation format frPrettyLog prj
         )
         $ parseFX . fromJust
-        $ type_ <|> fromConf "type" <|> Just "fx32.32"
+        $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
@@ -272,6 +274,7 @@ readSourceCode filename = do
     return src
 
 -- | Simulation on intermediate level (data-flow graph)
+functionalSimulation :: (Val x, Var v) => Int -> [(v, [x])] -> [Char] -> FrontendResult v x -> IO ()
 functionalSimulation n received format FrontendResult{frDataFlow, frPrettyLog} = do
     let cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."

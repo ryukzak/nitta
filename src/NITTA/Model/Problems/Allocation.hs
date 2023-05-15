@@ -27,7 +27,7 @@ data Allocation tag = Allocation
     }
     deriving (Generic, Eq)
 
-instance (ToString tag) => Show (Allocation tag) where
+instance ToString tag => Show (Allocation tag) where
     show Allocation{networkTag, processUnitTag} = "Allocation of " <> toString processUnitTag <> " on " <> toString networkTag
 
 class AllocationProblem u tag | u -> tag where

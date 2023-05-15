@@ -67,12 +67,12 @@ divider pipeline mock =
         , mock
         }
 
-instance (Time t) => Default (Divider v x t) where
+instance Time t => Default (Divider v x t) where
     def = divider 4 True
 
-instance (Default x) => DefaultX (Divider v x t) x
+instance Default x => DefaultX (Divider v x t) x
 
-instance (Ord t) => WithFunctions (Divider v x t) (F v x) where
+instance Ord t => WithFunctions (Divider v x t) (F v x) where
     functions Divider{process_, remains, jobs} =
         functions process_
             ++ remains
@@ -91,7 +91,7 @@ data Job v x t
         }
     deriving (Eq, Show)
 
-instance (Ord v) => Variables (Job v x t) v where
+instance Ord v => Variables (Job v x t) v where
     variables WaitArguments{arguments} = S.fromList $ map snd arguments
     variables WaitResults{results} = S.unions $ map snd results
 
@@ -101,7 +101,7 @@ isWaitArguments _ = False
 isWaitResults WaitResults{} = True
 isWaitResults _ = False
 
-instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
             Right pu{remains = f : remains}
@@ -163,7 +163,7 @@ firstWaitResults jobs =
             then Nothing
             else Just $ minimumOn readyAt jobs'
 
-instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
+instance VarValTime v x t => EndpointProblem (Divider v x t) v t where
     endpointOptions pu@Divider{remains, jobs} =
         let executeNewFunction
                 | any isWaitArguments jobs = []
@@ -322,7 +322,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
 
 instance IOTestBench (Divider v x t) v x
 
-instance (VarValTime v x t) => Testable (Divider v x t) v x where
+instance VarValTime v x t => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench

@@ -94,14 +94,14 @@ busNetwork name iosync =
 instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
     def = busNetwork "defaultBus" ASync
 
-instance (Var v) => Variables (BusNetwork tag v x t) v where
+instance Var v => Variables (BusNetwork tag v x t) v where
     variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded
 
 bindedFunctions puTitle BusNetwork{bnBinded}
     | puTitle `M.member` bnBinded = bnBinded M.! puTitle
     | otherwise = []
 
-instance (Default x) => DefaultX (BusNetwork tag v x t) x
+instance Default x => DefaultX (BusNetwork tag v x t) x
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
@@ -419,7 +419,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                         scheduleRefactoring (I.singleton $ nextTick bn) ref
                     }
 
-instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
+instance UnitTag tag => AllocationProblem (BusNetwork tag v x t) tag where
     allocationOptions BusNetwork{bnName, bnRemains, bnPUPrototypes} =
         map toOptions $ M.keys $ M.filter (\PUPrototype{pProto} -> any (`allowToProcess` pProto) bnRemains) bnPUPrototypes
         where
@@ -830,7 +830,7 @@ modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} bui
             , bnPUPrototypes = prototypes
             }
 
-defineNetwork :: (Default t) => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
 
 addCustom ::

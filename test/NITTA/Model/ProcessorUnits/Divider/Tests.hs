@@ -185,12 +185,13 @@ tests =
                 end
                 f(1024, 1024)
             |]
-            -- FIXME: Auto text can't work correctly, because processGen don't take into account the
-            -- facts that some variables may go out.
-            -- , testProperty "isUnitSynthesisFinish" $ isUnitSynthesisFinish <$> dividerGen
-            -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ initialCycleCntxGen =<< dividerGen
         ]
     where
+        -- FIXME: Auto text can't work correctly, because processGen don't take into account the
+        -- facts that some variables may go out.
+        -- , testProperty "isUnitSynthesisFinish" $ isUnitSynthesisFinish <$> dividerGen
+        -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ initialCycleCntxGen =<< dividerGen
+
         u2 = def :: Divider String (Attr (IntX 16)) Int
 
 -- where

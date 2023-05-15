@@ -31,7 +31,7 @@ data MicroarchitectureDesc tag = MicroarchitectureDesc
     }
     deriving (Generic)
 
-instance (ToJSON tag) => ToJSON (MicroarchitectureDesc tag)
+instance ToJSON tag => ToJSON (MicroarchitectureDesc tag)
 
 data NetworkDesc tag = NetworkDesc
     { networkTag :: tag
@@ -40,7 +40,7 @@ data NetworkDesc tag = NetworkDesc
     }
     deriving (Generic)
 
-instance (ToJSON tag) => ToJSON (NetworkDesc tag)
+instance ToJSON tag => ToJSON (NetworkDesc tag)
 
 data UnitDesc tag = UnitDesc
     { unitTag :: tag
@@ -48,9 +48,9 @@ data UnitDesc tag = UnitDesc
     }
     deriving (Generic)
 
-instance (ToJSON tag) => ToJSON (UnitDesc tag)
+instance ToJSON tag => ToJSON (UnitDesc tag)
 
-microarchitectureDesc :: forall tag v x t. (Typeable x) => BusNetwork tag v x t -> MicroarchitectureDesc tag
+microarchitectureDesc :: forall tag v x t. Typeable x => BusNetwork tag v x t -> MicroarchitectureDesc tag
 microarchitectureDesc BusNetwork{bnName, bnPus, ioSync} =
     MicroarchitectureDesc
         { networks =
