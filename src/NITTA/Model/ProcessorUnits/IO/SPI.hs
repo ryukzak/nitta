@@ -44,7 +44,7 @@ instance SimpleIOInterface SPIinterface
 
 type SPI v x t = SimpleIO SPIinterface v x t
 
-anySPI :: (Time t) => Int -> Maybe Int -> SPI v x t
+anySPI :: Time t => Int -> Maybe Int -> SPI v x t
 anySPI bounceFilter bufferSize =
     SimpleIO
         { bounceFilter
@@ -95,7 +95,7 @@ spiSlavePorts tag =
         , slave_cs = InputPortTag $ tag <> "_cs"
         }
 
-instance (Time t) => Default (SPI v x t) where
+instance Time t => Default (SPI v x t) where
     def = anySPI 0 $ Just 6
 
 instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (SPI v x t) where

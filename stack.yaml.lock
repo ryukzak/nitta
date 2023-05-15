@@ -7,38 +7,45 @@ packages:
 - completed:
     hackage: alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3,995
     pantry-tree:
-      size: 262
       sha256: 98715aed391e9e76b61cc0491843b2a860d0aba0d062a4a696574632b8ad6753
+      size: 262
   original:
     hackage: alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3
 - completed:
+    commit: 33971287445c5e2531d9605a287486dfc3cbe1da
+    git: https://github.com/mirokuratczyk/htoml.git
     name: htoml
-    version: 1.0.0.3
-    git: https://github.com/mirokuratczyk/htoml.git
     pantry-tree:
-      size: 10869
       sha256: 7f4578a5e8c97ff32f6e136750447b2769e80e8ccc2eb9b92bb2b3a02acccf9d
-    commit: 33971287445c5e2531d9605a287486dfc3cbe1da
+      size: 10869
+    version: 1.0.0.3
   original:
-    git: https://github.com/mirokuratczyk/htoml.git
     commit: 33971287445c5e2531d9605a287486dfc3cbe1da
+    git: https://github.com/mirokuratczyk/htoml.git
 - completed:
     hackage: language-lua-0.11.0.1@sha256:b3bdf864965279f830323d5ed7d38073b2687b3a07b7fa73aa13782560f48f89,2919
     pantry-tree:
-      size: 3473
       sha256: e4f6fcc91fbde9c6a6e3c9281a51dee49706d5868866695cc09f9bdf031799d4
+      size: 3473
   original:
     hackage: language-lua-0.11.0.1@sha256:b3bdf864965279f830323d5ed7d38073b2687b3a07b7fa73aa13782560f48f89
 - completed:
     hackage: servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2,3522
     pantry-tree:
-      size: 961
       sha256: ba201c0f2aa274afa40dfd3c31abe6e5b0791f14320f7167e750c57508dc70f6
+      size: 961
   original:
     hackage: servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2
+- completed:
+    hackage: ginger-0.10.4.0@sha256:7ca26896395fda951443ed3bba5f24fd6036c44167d424e744d1e0c8c6b138fd,3855
+    pantry-tree:
+      sha256: c3d93b51ba0e76853b217debb662cdcf5eca78288d49c809f823be27a072bfbf
+      size: 1430
+  original:
+    hackage: ginger-0.10.4.0
 snapshots:
 - completed:
-    size: 619164
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/18.yaml
-    sha256: 65b9809265860e085b4f61d4eb00d5d73e41190693620385a69cc9d9df7a901d
-  original: lts-19.18
+    sha256: 401a0e813162ba62f04517f60c7d25e93a0f867f94a902421ebf07d1fb5a8c46
+    size: 650044
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/21.yaml
+  original: lts-20.21

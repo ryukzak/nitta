@@ -37,7 +37,7 @@ instance SimpleIOInterface I2Cinterface
 
 type I2C v x t = SimpleIO I2Cinterface v x t
 
-i2cUnit :: (Time t) => Int -> I2C v x t
+i2cUnit :: Time t => Int -> I2C v x t
 i2cUnit bounceFilter =
     SimpleIO
         { bounceFilter

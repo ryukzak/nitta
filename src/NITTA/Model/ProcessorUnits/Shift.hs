@@ -54,7 +54,7 @@ data Shift v x t = Shift
     -- ^ description of target computation process
     }
 
-instance (Var v) => Locks (Shift v x t) v where
+instance Var v => Locks (Shift v x t) v where
     locks Shift{sources, target = Just t} =
         [ Lock{lockBy = t, locked}
         | locked <- sources
@@ -73,7 +73,7 @@ shift sRight =
         , process_ = def
         }
 
-instance (Default t) => Default (Shift v x t) where
+instance Default t => Default (Shift v x t) where
     def = shift True
 
 instance BreakLoopProblem (Shift v x t) v x
@@ -81,7 +81,7 @@ instance ConstantFoldingProblem (Shift v x t) v x
 instance OptimizeAccumProblem (Shift v x t) v x
 instance ResolveDeadlockProblem (Shift v x t) v x
 
-instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Shift v x t) v x t where
     tryBind f pu@Shift{remain}
         | Just f' <- castF f =
             case f' of
@@ -109,7 +109,7 @@ execution pu@Shift{target = Nothing, sources = [], remain} f
                 }
 execution _ _ = error "Not right arguments in execution function in shift module"
 
-instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
+instance VarValTime v x t => EndpointProblem (Shift v x t) v t where
     endpointOptions pu@Shift{target = Just t} =
         [EndpointSt (Target t) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)]
     endpointOptions pu@Shift{sources, byteShiftDiv, byteShiftMod}
@@ -264,7 +264,7 @@ instance Connected (Shift v x t) where
 instance IOConnected (Shift v x t) where
     data IOPorts (Shift v x t) = ShiftIO
 
-instance (Val x) => TargetSystemComponent (Shift v x t) where
+instance Val x => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware _tag _pu = FromLibrary "pu_shift.v"
     software _ _ = Empty

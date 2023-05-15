@@ -55,7 +55,7 @@ data AllocationMetrics = AllocationMetrics
 instance ToJSON AllocationMetrics
 
 instance
-    (UnitTag tag) =>
+    UnitTag tag =>
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
         (TargetSystem (BusNetwork tag v x t) tag v x t)

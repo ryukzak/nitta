@@ -76,8 +76,8 @@ $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
 $(deriveTypeScript defaultOptions ''ResolveDeadlockMetrics)
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
-$(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
+$(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''TimeConstraint)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
@@ -109,8 +109,8 @@ $(deriveTypeScript defaultOptions ''TestbenchReport)
 
 -- Microarchitecture
 $(deriveTypeScript defaultOptions ''IOSynchronization)
-$(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''UnitDesc)
+$(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
 
 main = do

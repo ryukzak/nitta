@@ -12,13 +12,13 @@ jobs:
   notify-about-push:
     runs-on: ubuntu-latest
     steps:
-    - name: Send msg on push
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: html
-        args: |
+      - name: Send msg on push
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          args: |
             Repository: <strong>${{ github.event.repository.full_name }}</strong>
             Ref: <strong>${{ github.ref }}</strong>
             Event: <strong>${{ github.event_name }}</strong>
@@ -44,7 +44,7 @@ jobs:
         with:
           enable-stack: true
           stack-no-global: true
-          stack-version: 'latest'
+          stack-version: "latest"
 
       - name: Build nitta backend dependencies and doctest
         run: |
@@ -71,7 +71,7 @@ jobs:
         with:
           enable-stack: true
           stack-no-global: true
-          stack-version: 'latest'
+          stack-version: "latest"
 
       - name: Build nitta backend dependencies and doctest
         run: |
@@ -98,7 +98,7 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v3.2.5
         with:
-          path: '**/node_modules'
+          path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
       - name: Build nitta frontend dependencies
@@ -117,7 +117,7 @@ jobs:
 
       - name: Copy test coverage to GH_PAGES_DIR
         run: cp -r $(stack path --local-hpc-root)/combined/custom ${{ env.GH_PAGES_DIR }}/hpc
-      
+
       - name: Copy API doc to GH_PAGES_DIR
         run: |
           mkdir -p "${{ env.GH_PAGES_DIR }}/rest-api/"
@@ -151,18 +151,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: nitta
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: 'Set up HLint'
-      uses: haskell/actions/hlint-setup@v2.3.3
-      with:
-        version: '3.5'
+      - name: "Set up HLint"
+        uses: haskell/actions/hlint-setup@v2.3.3
+        with:
+          version: "3.5"
 
-    - name: 'Run HLint'
-      uses: haskell/actions/hlint-run@v2.3.3
-      with:
-        path: .
-        fail-on: suggestion
+      - name: "Run HLint"
+        uses: haskell/actions/hlint-run@v2.3.3
+        with:
+          path: .
+          fail-on: suggestion
 
   haskell-formatting:
     runs-on: ubuntu-latest
@@ -177,7 +177,7 @@ jobs:
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
-        uses: fourmolu/fourmolu-action@v6
+        uses: fourmolu/fourmolu-action@v8 # fourmolu-0.12.0.0
 
   typescript-formatting:
     runs-on: ubuntu-latest

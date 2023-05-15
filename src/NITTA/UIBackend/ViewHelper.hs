@@ -64,7 +64,7 @@ data TreeView a = TreeNodeView
     }
     deriving (Generic, Show)
 
-instance (ToJSON a) => ToJSON (TreeView a)
+instance ToJSON a => ToJSON (TreeView a)
 
 instance ToSample (TreeView ShortNodeView) where
     toSamples _ =

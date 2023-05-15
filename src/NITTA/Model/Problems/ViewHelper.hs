@@ -24,7 +24,7 @@ import Numeric.Interval.NonEmpty
 newtype IntervalView = IntervalView T.Text
     deriving (Generic)
 
-instance (Time t) => Viewable (Interval t) IntervalView where
+instance Time t => Viewable (Interval t) IntervalView where
     view = IntervalView . T.replace (showText (maxBound :: t)) "INF" . showText
 
 instance ToJSON IntervalView
@@ -62,14 +62,14 @@ data DecisionView
         }
     deriving (Generic)
 
-instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
+instance UnitTag tag => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
             , pu = toText pu
             }
 
-instance (UnitTag tag) => Viewable (Allocation tag) DecisionView where
+instance UnitTag tag => Viewable (Allocation tag) DecisionView where
     view Allocation{networkTag, processUnitTag} =
         AllocationView
             { networkTag = toText networkTag
@@ -114,7 +114,7 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance (Var v) => Viewable (ResolveDeadlock v x) DecisionView where
+instance Var v => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
             { newBuffer = showText newBuffer

@@ -66,7 +66,7 @@ data JobState
 
 taskVars lst = S.fromList $ map snd lst
 
-instance (Var v) => Show (Job v x) where
+instance Var v => Show (Job v x) where
     show Job{tasks, func, state} =
         [i|Job{tasks=#{ show' tasks }, func=#{ func }, state=#{ state }}|]
         where
@@ -81,7 +81,7 @@ data Accum v x t = Accum
     -- ^ Process
     }
 
-instance (VarValTime v x t) => Pretty (Accum v x t) where
+instance VarValTime v x t => Pretty (Accum v x t) where
     pretty a =
         [__i|
             Accum:
@@ -90,10 +90,10 @@ instance (VarValTime v x t) => Pretty (Accum v x t) where
                 #{ indent 4 $ pretty $ process_ a }
             |]
 
-instance (VarValTime v x t) => Show (Accum v x t) where
+instance VarValTime v x t => Show (Accum v x t) where
     show = show . pretty
 
-instance (VarValTime v x t) => Default (Accum v x t) where
+instance VarValTime v x t => Default (Accum v x t) where
     def =
         Accum
             { remainJobs = []
@@ -101,7 +101,7 @@ instance (VarValTime v x t) => Default (Accum v x t) where
             , process_ = def
             }
 
-instance (Default x) => DefaultX (Accum v x t) x
+instance Default x => DefaultX (Accum v x t) x
 
 registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
     pu
@@ -257,7 +257,7 @@ instance UnambiguouslyDecode (Accum v x t) where
     decodeInstruction (Load neg) = def{resetAccSignal = False, loadSignal = True, negSignal = Just neg}
     decodeInstruction Out = def{oeSignal = True}
 
-instance (Var v) => Locks (Accum v x t) v where
+instance Var v => Locks (Accum v x t) v where
     locks Accum{currentJob = Nothing, remainJobs} = concatMap (locks . func) remainJobs
     locks Accum{currentJob = Just Job{tasks = []}} = error "Accum locks: internal error"
     locks Accum{currentJob = Just Job{tasks = t : ts}, remainJobs} =
@@ -273,7 +273,7 @@ instance (Var v) => Locks (Accum v x t) v where
                 ]
          in current ++ remain
 
-instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
+instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware _tag _pu = FromLibrary "pu_accum.v"
     software _ _ = Empty
@@ -306,11 +306,11 @@ instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-instance (Ord t) => WithFunctions (Accum v x t) (F v x) where
+instance Ord t => WithFunctions (Accum v x t) (F v x) where
     functions Accum{process_, remainJobs} =
         functions process_ ++ map func remainJobs
 
-instance (VarValTime v x t) => Testable (Accum v x t) v x where
+instance VarValTime v x t => Testable (Accum v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         let tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
 
