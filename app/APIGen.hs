@@ -186,8 +186,9 @@ main = do
             (ts ++ "\n" ++ "type NId = string\n")
             [ ("type ", "export type ") -- export all types
             , ("interface ", "export interface ") -- export all interfaces
-            , ("[k: T1]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
-            , ("[k: T2]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in T1]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in T2]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in number]?: number", "[k: number]: number") -- dirty hack for fixing map types for TreeInfo
             ]
     infoM "NITTA.APIGen" $ "Generate typescript interface " <> output_path <> "/types.ts...OK"
 

@@ -269,7 +269,7 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName = do
         LuaAlgBuilder{algStartupArgs} <- get
-        let startupVarsNames = map ((fromMaybe $ error "processStatement: internal error") . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
+        let startupVarsNames = map (fromMaybe (error "processStatement: internal error") . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
         let startupVarsVersions = map (\x -> LuaValueInstance{lviName = fst x, lviAssignCount = 0, lviIsConstant = False}) startupVarsNames
         mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
     where
