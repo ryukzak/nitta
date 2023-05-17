@@ -325,7 +325,9 @@ log2md records =
     let n = length records
         cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
+        formatCell x@(x1 : x2 : xs) = x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs
+        formatCell x = error $ "formatCell: unexpected sequence:" <> show x
+        cycleFormattedTable = map (formatCell . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
      in render
             ( hsep 0 left $
                 map (vcat left . map text) cycleFormattedTable
@@ -347,8 +349,11 @@ log2md records =
 ]
 -}
 log2json records =
-    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ log2list records
+    let listHashMap = transpose $ map varAndValues $ log2list records
      in encodePretty $ map HM.fromList listHashMap
+    where
+        varAndValues (k : vs) = map (\v -> (k, read v :: Double)) vs
+        varAndValues x = error $ "varAndValues: unexpected sequence:" <> show x
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS

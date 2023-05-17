@@ -341,7 +341,6 @@ instance
     , Default (Microcode pu)
     , ProcessorUnit pu v x t
     , UnambiguouslyDecode pu
-    , Time t
     , Typeable pu
     ) =>
     ByTime pu t

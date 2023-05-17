@@ -254,16 +254,18 @@ instance VarValTime v x t => BreakLoopProblem (Fram v x t) v x where
     breakLoopOptions Fram{memory} =
         [ BreakLoop x o i_
         | (_, Cell{state = NotBrokenLoop, job = Just Job{function}}) <- A.assocs memory
-        , let Just (Loop (X x) (O o) (I i_)) = castF function
+        , let (Loop (X x) (O o) (I i_)) = fromJust $ castF function
         ]
     breakLoopDecision fram@Fram{memory} bl@BreakLoop{loopO} =
-        let Just (addr, cell@Cell{history, job = Just Job{binds}}) =
-                L.find
-                    ( \case
-                        (_, Cell{job = Just Job{function}}) -> function == recLoop bl
-                        _ -> False
-                    )
+        let (addr, cell@Cell{history, job}) =
+                fromJust
+                    $ L.find
+                        ( \case
+                            (_, Cell{job = Just Job{function}}) -> function == recLoop bl
+                            _ -> False
+                        )
                     $ A.assocs memory
+            Job{binds} = fromJust job
             ((iPid, oPid), process_) = runSchedule fram $ do
                 revoke <- scheduleFunctionRevoke $ recLoop bl
                 f1 <- scheduleFunctionBind $ recLoopOut bl

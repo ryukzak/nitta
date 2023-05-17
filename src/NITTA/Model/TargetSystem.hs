@@ -49,12 +49,7 @@ isSynthesisComplete :: ProcessorUnit u v x t => TargetSystem u tag v x t -> Bool
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
 
-instance
-    ( VarValTime v x t
-    , ProcessorUnit u v x t
-    ) =>
-    ProcessorUnit (TargetSystem u tag v x t) v x t
-    where
+instance ProcessorUnit u v x t => ProcessorUnit (TargetSystem u tag v x t) v x t where
     tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
     process TargetSystem{mUnit} = process mUnit
     parallelismType TargetSystem{mUnit} = parallelismType mUnit

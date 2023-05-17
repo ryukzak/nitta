@@ -170,7 +170,7 @@ instance (ToJSON v, VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                     |]
     hardwareInstance _title _pu _env = error "internal error"
 
-instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
+instance VarValTime v x t => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag <> "_env_init_flag"
 
     testEnvironment
@@ -224,7 +224,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                         end
                     |]
 
-                Just envInitFlagName = testEnvironmentInitFlag tag sio
+                envInitFlagName =
+                    fromMaybe (error "SPI: testEnvironment: internal error") $
+                        testEnvironmentInitFlag tag sio
              in case ioPorts of
                     SPISlave{..} ->
                         let receiveCycle transmit =

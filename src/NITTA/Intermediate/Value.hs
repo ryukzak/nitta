@@ -215,10 +215,10 @@ instance (Num x, Validity x) => Num (Attr x) where
     fromInteger = setInvalidAttr . pure . fromInteger
     negate = setInvalidAttr . fmap negate
 
-instance (Ord x, Real x, Validity x) => Real (Attr x) where
+instance (Real x, Validity x) => Real (Attr x) where
     toRational Attr{value} = toRational value
 
-instance (Integral x, Validity x, Val x) => Integral (Attr x) where
+instance Val x => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
         let (minB, maxB) = minMaxRaw' (dataWidth b `shiftR` 1)
@@ -242,7 +242,7 @@ instance (Bits x, Validity x) => Bits (Attr x) where
     bit ix = pure $ bit ix
     popCount Attr{value} = popCount value
 
-instance (Val x, Integral x) => Val (Attr x) where
+instance Val x => Val (Attr x) where
     dataWidth Attr{value} = dataWidth value
 
     rawData Attr{value} = rawData value
@@ -375,7 +375,9 @@ instance (KnownNat b, KnownNat m) => Validity (FX m b) where
 
 instance (KnownNat m, KnownNat b) => Read (FX m b) where
     readsPrec d r =
-        let [(x :: Double, "")] = readsPrec d r
+        let x = case readsPrec d r of
+                [(x' :: Double, "")] -> x'
+                _ -> error $ "can not read FX from: " ++ r
             result = FX $ round (x * scalingFactor result)
          in [(result, "")]
 

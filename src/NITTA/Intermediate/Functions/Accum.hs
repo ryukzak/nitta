@@ -108,12 +108,27 @@ toBlocksSplit exprInput =
      in splitBySemicolon $ matchAll exprPattern filtered []
 
 accGen blocks =
-    let partedExpr = map (partition (\(x : _) -> x /= '='))
+    let partedExpr =
+            map
+                ( partition $ \case
+                    (x : _) -> x /= '='
+                    x -> error $ "error in accGen: " <> show x
+                )
         signPush ('+' : name) = Push Plus (I $ T.pack name)
         signPush ('-' : name) = Push Minus (I $ T.pack name)
         signPush _ = error "Error in matching + and -"
         pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ S.fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
+        pullCreate lst =
+            Pull $
+                O $
+                    S.fromList $
+                        foldl
+                            ( \buff -> \case
+                                (_ : name) -> T.pack name : buff
+                                _ -> error "accGen internal error"
+                            )
+                            []
+                            lst
      in Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
 instance Var v => Locks (Acc v x) v where
