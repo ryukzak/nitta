@@ -118,8 +118,18 @@ actionGroups [] = []
 actionGroups as =
     let (pushs, as') = span F.isPush as
         (pulls, as'') = span F.isPull as'
-     in [ map (\(F.Push sign (I v)) -> (sign == F.Minus, v)) pushs
-        , concatMap (\(F.Pull (O vs)) -> map (True,) $ S.elems vs) pulls
+     in [ map
+            ( \case
+                (F.Push sign (I v)) -> (sign == F.Minus, v)
+                _ -> error "actionGroups: internal error"
+            )
+            pushs
+        , concatMap
+            ( \case
+                (F.Pull (O vs)) -> map (True,) $ S.elems vs
+                _ -> error "actionGroups: internal error"
+            )
+            pulls
         ]
             : actionGroups as''
 
@@ -131,7 +141,7 @@ sourceTask tasks
     | odd $ length tasks = Just $ head tasks
     | otherwise = Nothing
 
-instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu
         | Just (F.Add a b c) <- castF f =
             Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c]) pu
@@ -145,7 +155,7 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
 
     process = process_
 
-instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
+instance VarValTime v x t => EndpointProblem (Accum v x t) v t where
     endpointOptions pu@Accum{currentJob = Just Job{tasks, state}}
         | Just task <- targetTask tasks =
             let from = case state of
@@ -178,7 +188,9 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         pu@Accum{currentJob = Just job@Job{tasks, state}}
         d@EndpointSt{epRole = Target v, epAt}
             | Just task <- targetTask tasks =
-                let ([(neg, _v)], task') = L.partition ((== v) . snd) task
+                let ((neg, _v), task') = case L.partition ((== v) . snd) task of
+                        ([negAndVar], ts) -> (negAndVar, ts)
+                        _ -> error "Accum: endpointDecision: internal error"
                     instr = case state of
                         Initialize -> ResetAndLoad neg
                         _ -> Load neg

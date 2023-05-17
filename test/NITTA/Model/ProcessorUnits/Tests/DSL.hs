@@ -515,7 +515,12 @@ mkConstantFolding old new = return $ ConstantFolding old new
 assertRefactor :: (Typeable ref, Eq ref, Show ref) => ref -> TSStatement x ()
 assertRefactor ref = do
     refactors <- filter isRefactorStep . map (descent . pDesc) . steps . process . unit <$> get
-    case L.find (\(RefactorStep r) -> Just ref == cast r) refactors of
+    case L.find
+        ( \case
+            (RefactorStep r) -> Just ref == cast r
+            _ -> error "assertRefactor: impossible"
+        )
+        refactors of
         Nothing -> lift $ assertFailure $ "Refactor not present: " <> show ref <> " in " <> show refactors
         Just _ -> return ()
 
@@ -535,7 +540,14 @@ mkAllocationOptions networkTag puTags =
 assertAllocation :: (Typeable a, Eq a, Show a) => Int -> a -> TSStatement x ()
 assertAllocation number alloc = do
     allocations <- filter isAllocationStep . map (descent . pDesc) . steps . process . unit <$> get
-    let matched = length $ filter (\(AllocationStep a) -> Just alloc == cast a) allocations
+    let matched =
+            length $
+                filter
+                    ( \case
+                        (AllocationStep a) -> Just alloc == cast a
+                        _ -> error "assertAllocation: internal error"
+                    )
+                    allocations
     when (matched /= number) $
         lift $
             assertFailure

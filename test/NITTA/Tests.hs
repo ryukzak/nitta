@@ -176,16 +176,15 @@ test_patchFunction =
             @?= "a + b' = c = d'"
     ]
 
-pu =
-    let Right pu' =
-            tryBind
-                f1
-                PU
-                    { diff = def
-                    , unit = def :: Accum T.Text Int Int
-                    , uEnv = undefined
-                    }
-     in pu'
+pu = case tryBind
+    f1
+    PU
+        { diff = def
+        , unit = def :: Accum T.Text Int Int
+        , uEnv = undefined
+        } of
+    Right pu_ -> pu_
+    Left err -> error $ show err
 
 test_patchEndpointOptions =
     [ testCase "non-patched function options" $

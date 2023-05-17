@@ -63,7 +63,7 @@ instance Default TemplateConf where
             , ignore = Just [templateConfFileName]
             }
 
-instance (Eq k, Hashable k) => Default (M.HashMap k v) where
+instance Hashable k => Default (M.HashMap k v) where
     def = M.fromList []
 
 instance FromJSON TemplateConf

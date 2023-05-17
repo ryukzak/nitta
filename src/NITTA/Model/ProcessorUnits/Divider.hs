@@ -189,7 +189,9 @@ instance VarValTime v x t => EndpointProblem (Divider v x t) v t where
                         }
              in endpointDecision pu' d
         | ([WaitArguments{function, arguments}], jobs') <- partition (S.member v . variables) jobs =
-            let ([(tag, _v)], arguments') = partition ((== v) . snd) arguments
+            let (tag, arguments') = case partition ((== v) . snd) arguments of
+                    ([(tag', _v)], other) -> (tag', other)
+                    _ -> error "Divider: endpointDecision: internal error"
                 nextTick' = sup epAt + 1
              in case arguments' of
                     [] ->
@@ -214,7 +216,9 @@ instance VarValTime v x t => EndpointProblem (Divider v x t) v t where
                             }
     endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}
         | ([job@WaitResults{results, function}], jobs') <- partition ((vs `S.isSubsetOf`) . variables) jobs =
-            let ([(tag, allVs)], results') = partition ((vs `S.isSubsetOf`) . snd) results
+            let ((tag, allVs), results') = case partition ((vs `S.isSubsetOf`) . snd) results of
+                    ([(tag_, allVs_)], other) -> ((tag_, allVs_), other)
+                    _ -> error "Divider: endpointDecision: internal error"
                 allVs' = allVs S.\\ vs
                 results'' = filterEmptyResults $ (tag, allVs') : results'
                 jobs'' =

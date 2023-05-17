@@ -34,7 +34,7 @@ import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Time
+
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
 import NITTA.Utils
@@ -132,8 +132,7 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
 -- | Function for testBench PU test
 snippetTestBench ::
     forall m v x t.
-    ( VarValTime v x t
-    , WithFunctions m (F v x)
+    ( WithFunctions m (F v x)
     , ProcessorUnit m v x t
     , TargetSystemComponent m
     , UnambiguouslyDecode m
@@ -147,7 +146,7 @@ snippetTestBench ::
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
     SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
-        let cycleCntx : _ = cntxProcess
+        let cycleCntx = head cntxProcess
             name = moduleName pName pUnit
             p@Process{steps} = process pUnit
             fs = functions pUnit

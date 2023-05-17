@@ -23,7 +23,7 @@ import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
-import Data.String (IsString (..))
+
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -258,7 +258,10 @@ main = do
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
-        [m, b] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
+        (m, b) = case fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input of
+            [m_, b_] -> (m_, b_)
+            _ -> error "parseFX: impossible"
+
         convert = fromJust . someNatVal . read
      in (convert m, convert b)
 
