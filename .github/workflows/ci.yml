@@ -72,12 +72,6 @@ jobs:
           enable-stack: true
           stack-no-global: true
           stack-version: "latest"
-
-      - name: Build nitta backend dependencies and doctest
-        run: |
-          stack build --haddock --test --only-dependencies
-          stack install doctest
-
       - name: Install Icarus Verilog
         run: sudo apt-get install iverilog
 
@@ -88,9 +82,7 @@ jobs:
         run: stack hpc report nitta
 
       - name: Check examples by doctest
-        run: |
-          stack build
-          find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+        run: find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
       - name: Generate backend API
         run: stack exec nitta-api-gen -- -v
@@ -135,7 +127,6 @@ jobs:
 
   verilog-formatting:
     runs-on: ubuntu-latest
-    needs: nitta
     container: ryukzak/alpine-iverilog
     defaults:
       run:
@@ -149,7 +140,6 @@ jobs:
 
   haskell-lint:
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
       - uses: actions/checkout@v3
 
@@ -166,24 +156,17 @@ jobs:
 
   haskell-formatting:
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
       - uses: actions/checkout@v3
-
-      - name: Cache haskell-stack and fourmolu
-        uses: actions/cache@v3.2.5
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
         uses: fourmolu/fourmolu-action@v8 # fourmolu-0.12.0.0
 
   typescript-formatting:
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
       - uses: actions/checkout@v3
+
       - name: Check ts and tsx code style by prettier
         working-directory: ./web
         run: |
