@@ -1,0 +1,175 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    3 </span>
+<span class="lineno">    4 </span>{- |
+<span class="lineno">    5 </span>Module      : NITTA.Intermediate.Analysis
+<span class="lineno">    6 </span>Description : Analysis of the process execution flow
+<span class="lineno">    7 </span>Copyright   : (c) Aleksandr Penskoi, 2022
+<span class="lineno">    8 </span>License     : BSD3
+<span class="lineno">    9 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   10 </span>Stability   : experimental
+<span class="lineno">   11 </span>
+<span class="lineno">   12 </span>Much of the work in this module focuses on building waves of process execution.
+<span class="lineno">   13 </span>In this case, we call a wave a set of functions that are ready for execution (all input vars are ready to use)
+<span class="lineno">   14 </span>and that can be performed independently of each other.
+<span class="lineno">   15 </span>Example:
+<span class="lineno">   16 </span>
+<span class="lineno">   17 </span>Lua code:
+<span class="lineno">   18 </span>
+<span class="lineno">   19 </span>@
+<span class="lineno">   20 </span>function sum(a)
+<span class="lineno">   21 </span>    local d = a + 1
+<span class="lineno">   22 </span>    sum(d)
+<span class="lineno">   23 </span>end
+<span class="lineno">   24 </span>sum(0)
+<span class="lineno">   25 </span>@
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>After building DataFlowGraph, we get the following set of functions:
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>@
+<span class="lineno">   30 </span>- const(1) = !1#0
+<span class="lineno">   31 </span>- loop(0, d^0#0) = a^0#0
+<span class="lineno">   32 </span>- a^0#0 + !1#0 = d^0#0
+<span class="lineno">   33 </span>@
+<span class="lineno">   34 </span>
+<span class="lineno">   35 </span>Const and Loop function can be executed at the first wave because all input variables are ready to use.
+<span class="lineno">   36 </span>After executing first wave a^0#0 and !1#0 will be ready, so we will be able to execute add function.
+<span class="lineno">   37 </span>So the resulting process waves are the following:
+<span class="lineno">   38 </span>
+<span class="lineno">   39 </span>@
+<span class="lineno">   40 </span>[
+<span class="lineno">   41 </span>    ProcessWave {
+<span class="lineno">   42 </span>        pwFs = [const(1) = !1#0,loop(0, d^0#0) = a^0#0],
+<span class="lineno">   43 </span>        pwOut = fromList [&quot;!1#0&quot;,&quot;a^0#0&quot;]
+<span class="lineno">   44 </span>    },
+<span class="lineno">   45 </span>    ProcessWave {
+<span class="lineno">   46 </span>        pwFs = [a^0#0 + !1#0 = d^0#0],
+<span class="lineno">   47 </span>        pwOut = fromList [&quot;d^0#0&quot;]
+<span class="lineno">   48 </span>    }
+<span class="lineno">   49 </span>]
+<span class="lineno">   50 </span>@
+<span class="lineno">   51 </span>-}
+<span class="lineno">   52 </span>module NITTA.Intermediate.Analysis (
+<span class="lineno">   53 </span>    ProcessWave (..),
+<span class="lineno">   54 </span>    buildProcessWaves,
+<span class="lineno">   55 </span>    reorderAlgorithm,
+<span class="lineno">   56 </span>    estimateVarWaves,
+<span class="lineno">   57 </span>) where
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>import Data.List qualified as L
+<span class="lineno">   60 </span>import Data.Map qualified as M
+<span class="lineno">   61 </span>import Data.Set qualified as S
+<span class="lineno">   62 </span>import GHC.Generics
+<span class="lineno">   63 </span>import NITTA.Intermediate.Functions
+<span class="lineno">   64 </span>import NITTA.Intermediate.Types
+<span class="lineno">   65 </span>import NITTA.Utils.Base
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span>data ProcessWave v x = ProcessWave
+<span class="lineno">   68 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">pwFs</span></span></span> :: [F v x]
+<span class="lineno">   69 </span>    -- ^ Functions that can be executed at this wave
+<span class="lineno">   70 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">pwOut</span></span></span> :: S.Set v
+<span class="lineno">   71 </span>    -- ^ Set of output variables related to the functions from this step
+<span class="lineno">   72 </span>    }
+<span class="lineno">   73 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
+<span class="lineno">   74 </span>
+<span class="lineno">   75 </span>data Builder v x = Builder
+<span class="lineno">   76 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwRemains</span></span></span> :: S.Set (F v x)
+<span class="lineno">   77 </span>    -- ^ Functions that can be calculated due to lack of ready input values
+<span class="lineno">   78 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwIn</span></span></span> :: S.Set v
+<span class="lineno">   79 </span>    -- ^ Variables that defined at the beginning of the process
+<span class="lineno">   80 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pwReadyIn</span></span></span> :: S.Set v
+<span class="lineno">   81 </span>    -- ^ Variables that is ready to be used us inputs
+<span class="lineno">   82 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">pwGraph</span></span></span> :: [ProcessWave v x]
+<span class="lineno">   83 </span>    -- ^ Resulting process flow
+<span class="lineno">   84 </span>    }
+<span class="lineno">   85 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
+<span class="lineno">   86 </span>
+<span class="lineno">   87 </span>{- |
+<span class="lineno">   88 </span>Sort functions in order of execution.
+<span class="lineno">   89 </span>Note that some function could be executed in parallel, in this case we save order from the source list.
+<span class="lineno">   90 </span>-}
+<span class="lineno">   91 </span>reorderAlgorithm :: (Var v, Val x) =&gt; [F v x] -&gt; [F v x]
+<span class="lineno">   92 </span><span class="decl"><span class="istickedoff">reorderAlgorithm alg = concatMap pwFs $ buildProcessWaves [] alg</span></span>
+<span class="lineno">   93 </span>
+<span class="lineno">   94 </span>{- |
+<span class="lineno">   95 </span>Functions can be divided into waves of execution.
+<span class="lineno">   96 </span>For each output variable, we define the wave number on which the variable will be defined.
+<span class="lineno">   97 </span>-}
+<span class="lineno">   98 </span>estimateVarWaves :: (Var v, Val x, Num a) =&gt; [v] -&gt; [F v x] -&gt; M.Map v a
+<span class="lineno">   99 </span><span class="decl"><span class="istickedoff">estimateVarWaves alreadyVars fs = M.fromList $ go 0 $ buildProcessWaves alreadyVars fs</span>
+<span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">go n (ProcessWave{pwFs} : pss) = go (n + 1) pss &lt;&gt; [(out, n) | out &lt;- S.toList $ unionsMap outputs pwFs]</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">go _ [] = []</span></span>
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span>-- | Divide function into execution waves.
+<span class="lineno">  105 </span>buildProcessWaves :: (Var v, Val x) =&gt; [v] -&gt; [F v x] -&gt; [ProcessWave v x]
+<span class="lineno">  106 </span><span class="decl"><span class="istickedoff">buildProcessWaves vars fs =</span>
+<span class="lineno">  107 </span><span class="spaces">    </span><span class="istickedoff">let pwIn = S.fromList vars</span>
+<span class="lineno">  108 </span><span class="spaces">        </span><span class="istickedoff">(loops, other) = L.partition isLoop fs</span>
+<span class="lineno">  109 </span><span class="spaces">        </span><span class="istickedoff">beginning =</span>
+<span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">-- Place all loops at the beginning of the algorithm to avoid circular dependencies in functions.</span>
+<span class="lineno">  111 </span><span class="spaces">            </span><span class="istickedoff">[ ProcessWave</span>
+<span class="lineno">  112 </span><span class="spaces">                </span><span class="istickedoff">{ pwFs = loops</span>
+<span class="lineno">  113 </span><span class="spaces">                </span><span class="istickedoff">, pwOut = unionsMap outputs loops</span>
+<span class="lineno">  114 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">| not (null loops)</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">]</span>
+<span class="lineno">  117 </span><span class="spaces">        </span><span class="istickedoff">builder =</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">Builder</span>
+<span class="lineno">  119 </span><span class="spaces">                </span><span class="istickedoff">{ pwRemains = S.fromList other</span>
+<span class="lineno">  120 </span><span class="spaces">                </span><span class="istickedoff">, pwGraph = beginning</span>
+<span class="lineno">  121 </span><span class="spaces">                </span><span class="istickedoff">, pwIn</span>
+<span class="lineno">  122 </span><span class="spaces">                </span><span class="istickedoff">, pwReadyIn = pwIn `S.union` unionsMap pwOut beginning</span>
+<span class="lineno">  123 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">  124 </span><span class="spaces">     </span><span class="istickedoff">in pwGraph $ execBuilder builder 0</span></span>
+<span class="lineno">  125 </span>
+<span class="lineno">  126 </span>execBuilder :: Ord v =&gt; Builder v x -&gt; Int -&gt; Builder v x
+<span class="lineno">  127 </span><span class="decl"><span class="istickedoff">execBuilder builder@Builder{pwRemains} prev</span>
+<span class="lineno">  128 </span><span class="spaces">    </span><span class="istickedoff">| S.null pwRemains = builder</span>
+<span class="lineno">  129 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">S.size pwRemains == prev</span> = <span class="nottickedoff">error &quot;Process waves construction stuck in a loop&quot;</span></span>
+<span class="lineno">  130 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = execBuilder (foldl applyRemaining builder pwRemains) $ S.size pwRemains</span></span>
+<span class="lineno">  131 </span>
+<span class="lineno">  132 </span>applyRemaining :: Ord v =&gt; Builder v x -&gt; F v x -&gt; Builder v x
+<span class="lineno">  133 </span><span class="decl"><span class="istickedoff">applyRemaining builder@Builder{pwRemains, pwGraph, pwIn, pwReadyIn} func =</span>
+<span class="lineno">  134 </span><span class="spaces">    </span><span class="istickedoff">let fIn = inputs func</span>
+<span class="lineno">  135 </span><span class="spaces">        </span><span class="istickedoff">fOut = outputs func</span>
+<span class="lineno">  136 </span><span class="spaces">        </span><span class="istickedoff">pendingIn = S.difference fIn pwReadyIn</span>
+<span class="lineno">  137 </span><span class="spaces">     </span><span class="istickedoff">in if not $ null pendingIn</span>
+<span class="lineno">  138 </span><span class="spaces">            </span><span class="istickedoff">then builder</span>
+<span class="lineno">  139 </span><span class="spaces">            </span><span class="istickedoff">else</span>
+<span class="lineno">  140 </span><span class="spaces">                </span><span class="istickedoff">builder</span>
+<span class="lineno">  141 </span><span class="spaces">                    </span><span class="istickedoff">{ pwReadyIn = S.union fOut pwReadyIn</span>
+<span class="lineno">  142 </span><span class="spaces">                    </span><span class="istickedoff">, pwGraph = insertF func (S.difference fIn pwIn) fOut pwGraph</span>
+<span class="lineno">  143 </span><span class="spaces">                    </span><span class="istickedoff">, pwRemains = S.delete func pwRemains</span>
+<span class="lineno">  144 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
+<span class="lineno">  145 </span>
+<span class="lineno">  146 </span>insertF :: Ord v =&gt; F v x -&gt; S.Set v -&gt; S.Set v -&gt; [ProcessWave v x] -&gt; [ProcessWave v x]
+<span class="lineno">  147 </span><span class="decl"><span class="istickedoff">insertF f fIn fOut []</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">null fIn</span> = [ProcessWave{pwFs = [f], pwOut = fOut}]</span>
+<span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error &quot;Cannot calculate process wave for the function&quot;</span></span>
+<span class="lineno">  150 </span><span class="spaces"></span><span class="istickedoff">insertF f fIn fOut (ps@ProcessWave{pwFs, pwOut} : pss)</span>
+<span class="lineno">  151 </span><span class="spaces">    </span><span class="istickedoff">| null fIn = ps{pwFs = f : pwFs, pwOut = S.union fOut pwOut} : pss</span>
+<span class="lineno">  152 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = ps : insertF f (S.difference fIn pwOut) fOut pss</span></span>
+
+</pre>
+</body>
+</html>

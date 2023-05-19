@@ -1,0 +1,107 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    3 </span>
+<span class="lineno">    4 </span>{- |
+<span class="lineno">    5 </span>Module      : NITTA.Intermediate.DataFlow
+<span class="lineno">    6 </span>Description : DataFlow graph
+<span class="lineno">    7 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">    8 </span>License     : BSD3
+<span class="lineno">    9 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   10 </span>Stability   : experimental
+<span class="lineno">   11 </span>-}
+<span class="lineno">   12 </span>module NITTA.Intermediate.DataFlow (
+<span class="lineno">   13 </span>    DataFlowGraph (..),
+<span class="lineno">   14 </span>    fsToDataFlowGraph,
+<span class="lineno">   15 </span>    addFuncToDataFlowGraph,
+<span class="lineno">   16 </span>) where
+<span class="lineno">   17 </span>
+<span class="lineno">   18 </span>import Data.Default
+<span class="lineno">   19 </span>import Data.List qualified as L
+<span class="lineno">   20 </span>import Data.Set qualified as S
+<span class="lineno">   21 </span>import GHC.Generics
+<span class="lineno">   22 </span>import NITTA.Intermediate.Types
+<span class="lineno">   23 </span>import NITTA.Model.Problems.Refactor
+<span class="lineno">   24 </span>import NITTA.Utils.Base
+<span class="lineno">   25 </span>
+<span class="lineno">   26 </span>{- | Data flow graph - intermediate representation of application algorithm.
+<span class="lineno">   27 </span>Right now can be replaced by @[F v x]@, but for future features like
+<span class="lineno">   28 </span>conduction statement, we don't do that.
+<span class="lineno">   29 </span>-}
+<span class="lineno">   30 </span>data DataFlowGraph v x
+<span class="lineno">   31 </span>    = DFLeaf (F v x)
+<span class="lineno">   32 </span>    | DFCluster [DataFlowGraph v x]
+<span class="lineno">   33 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, Generic)
+<span class="lineno">   34 </span>
+<span class="lineno">   35 </span>instance Default (DataFlowGraph v x) where
+<span class="lineno">   36 </span>    <span class="decl"><span class="istickedoff">def = DFCluster []</span></span>
+<span class="lineno">   37 </span>
+<span class="lineno">   38 </span>instance Eq (DataFlowGraph v x) where
+<span class="lineno">   39 </span>    -- `show` used for avoid `Ord (DataFlowGraph v x)`
+<span class="lineno">   40 </span>    <span class="decl"><span class="istickedoff">(DFCluster c1) == (DFCluster c2) = S.fromList (map show c1) == S.fromList (map show c2)</span>
+<span class="lineno">   41 </span><span class="spaces">    </span><span class="istickedoff">(DFLeaf f1) == (DFLeaf f2) = <span class="nottickedoff">f1 == f2</span></span>
+<span class="lineno">   42 </span><span class="spaces">    </span><span class="istickedoff">_ == _ = <span class="nottickedoff">False</span></span></span>
+<span class="lineno">   43 </span>
+<span class="lineno">   44 </span>instance Var v =&gt; Variables (DataFlowGraph v x) v where
+<span class="lineno">   45 </span>    <span class="decl"><span class="istickedoff">variables (DFLeaf fb) = variables fb</span>
+<span class="lineno">   46 </span><span class="spaces">    </span><span class="istickedoff">variables (DFCluster g) = unionsMap variables g</span></span>
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>instance WithFunctions (DataFlowGraph v x) (F v x) where
+<span class="lineno">   49 </span>    <span class="decl"><span class="istickedoff">functions (DFLeaf f) = [f]</span>
+<span class="lineno">   50 </span><span class="spaces">    </span><span class="istickedoff">functions (DFCluster g) = concatMap functions g</span></span>
+<span class="lineno">   51 </span>
+<span class="lineno">   52 </span>instance (Var v, Val x) =&gt; BreakLoopProblem (DataFlowGraph v x) v x where
+<span class="lineno">   53 </span>    <span class="decl"><span class="nottickedoff">breakLoopOptions _dfg = []</span></span>
+<span class="lineno">   54 </span>
+<span class="lineno">   55 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision dfg bl =</span>
+<span class="lineno">   56 </span><span class="spaces">        </span><span class="istickedoff">let origin = recLoop bl</span>
+<span class="lineno">   57 </span><span class="spaces">         </span><span class="istickedoff">in fsToDataFlowGraph $</span>
+<span class="lineno">   58 </span><span class="spaces">                </span><span class="istickedoff">(recLoopIn bl){funHistory = <span class="nottickedoff">[origin]</span>}</span>
+<span class="lineno">   59 </span><span class="spaces">                    </span><span class="istickedoff">: (recLoopOut bl){funHistory = <span class="nottickedoff">[origin]</span>}</span>
+<span class="lineno">   60 </span><span class="spaces">                    </span><span class="istickedoff">: (functions dfg L.\\ [origin])</span></span>
+<span class="lineno">   61 </span>
+<span class="lineno">   62 </span>instance (Var v, Val x) =&gt; ConstantFoldingProblem (DataFlowGraph v x) v x where
+<span class="lineno">   63 </span>    <span class="decl"><span class="nottickedoff">constantFoldingOptions _dfg = []</span></span>
+<span class="lineno">   64 </span>
+<span class="lineno">   65 </span>    <span class="decl"><span class="istickedoff">constantFoldingDecision dfg ref@ConstantFolding{} =</span>
+<span class="lineno">   66 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph $ constantFoldingDecision (functions dfg) ref</span></span>
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>instance (Var v, Val x) =&gt; OptimizeAccumProblem (DataFlowGraph v x) v x where
+<span class="lineno">   69 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumOptions _dfg = []</span></span>
+<span class="lineno">   70 </span>
+<span class="lineno">   71 </span>    <span class="decl"><span class="istickedoff">optimizeAccumDecision dfg ref@OptimizeAccum{} =</span>
+<span class="lineno">   72 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref</span></span>
+<span class="lineno">   73 </span>
+<span class="lineno">   74 </span>instance Var v =&gt; ResolveDeadlockProblem (DataFlowGraph v x) v x where
+<span class="lineno">   75 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions _dfg = []</span></span>
+<span class="lineno">   76 </span>
+<span class="lineno">   77 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =</span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>-- | Convert @[ F v x ]@ to 'DataFlowGraph'.
+<span class="lineno">   81 </span><span class="decl"><span class="istickedoff">fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs</span></span>
+<span class="lineno">   82 </span>
+<span class="lineno">   83 </span><span class="decl"><span class="istickedoff">addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)</span>
+<span class="lineno">   84 </span><span class="spaces"></span><span class="istickedoff">addFuncToDataFlowGraph f leaf = <span class="nottickedoff">DFCluster [DFLeaf f, leaf]</span></span></span>
+
+</pre>
+</body>
+</html>

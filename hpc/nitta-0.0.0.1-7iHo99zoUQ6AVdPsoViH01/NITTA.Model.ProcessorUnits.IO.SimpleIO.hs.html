@@ -1,0 +1,296 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE DuplicateRecordFields #-}
+<span class="lineno">    2 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    3 </span>{-# LANGUAGE QuasiQuotes #-}
+<span class="lineno">    4 </span>{-# LANGUAGE RecordWildCards #-}
+<span class="lineno">    5 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    6 </span>
+<span class="lineno">    7 </span>{- |
+<span class="lineno">    8 </span>Module      : NITTA.Model.ProcessorUnits.IO.SimpleIO
+<span class="lineno">    9 </span>Description :
+<span class="lineno">   10 </span>Copyright   : (c) Aleksandr Penskoi, 2019
+<span class="lineno">   11 </span>License     : BSD3
+<span class="lineno">   12 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   13 </span>Stability   : experimental
+<span class="lineno">   14 </span>-}
+<span class="lineno">   15 </span>module NITTA.Model.ProcessorUnits.IO.SimpleIO (
+<span class="lineno">   16 </span>    SimpleIOInterface,
+<span class="lineno">   17 </span>    SimpleIO (..),
+<span class="lineno">   18 </span>    Ports (..),
+<span class="lineno">   19 </span>    protocolDescription,
+<span class="lineno">   20 </span>) where
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>import Control.Monad
+<span class="lineno">   23 </span>import Data.Aeson (ToJSON (toJSON))
+<span class="lineno">   24 </span>import Data.Aeson.Encode.Pretty
+<span class="lineno">   25 </span>import Data.Default
+<span class="lineno">   26 </span>import Data.List qualified as L
+<span class="lineno">   27 </span>import Data.Maybe
+<span class="lineno">   28 </span>import Data.Set qualified as S
+<span class="lineno">   29 </span>import Data.String.Interpolate
+<span class="lineno">   30 </span>import Data.String.ToString
+<span class="lineno">   31 </span>import Data.Text qualified as T
+<span class="lineno">   32 </span>import Data.Text.Lazy (toStrict)
+<span class="lineno">   33 </span>import Data.Text.Lazy.Builder
+<span class="lineno">   34 </span>import Data.Typeable
+<span class="lineno">   35 </span>import GHC.Generics (Generic)
+<span class="lineno">   36 </span>import NITTA.Intermediate.Functions qualified as F
+<span class="lineno">   37 </span>import NITTA.Intermediate.Types
+<span class="lineno">   38 </span>import NITTA.Model.Problems
+<span class="lineno">   39 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   40 </span>import NITTA.Model.Time
+<span class="lineno">   41 </span>import NITTA.Project.Types (Implementation (Immediate))
+<span class="lineno">   42 </span>import NITTA.Utils
+<span class="lineno">   43 </span>import NITTA.Utils.ProcessDescription
+<span class="lineno">   44 </span>import Numeric.Interval.NonEmpty ((...))
+<span class="lineno">   45 </span>import Numeric.Interval.NonEmpty qualified as I
+<span class="lineno">   46 </span>import Prettyprinter
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>class Typeable i =&gt; SimpleIOInterface i
+<span class="lineno">   49 </span>
+<span class="lineno">   50 </span>data SimpleIO i v x t = SimpleIO
+<span class="lineno">   51 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">bounceFilter</span></span></span> :: Int
+<span class="lineno">   52 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bufferSize</span></span></span> :: Maybe Int
+<span class="lineno">   53 </span>    -- ^ if 'Nothing' then size should defined by algorithm
+<span class="lineno">   54 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">receiveQueue</span></span></span> :: [Q v x]
+<span class="lineno">   55 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">receiveN</span></span></span> :: Int
+<span class="lineno">   56 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">isReceiveOver</span></span></span> :: Bool
+<span class="lineno">   57 </span>    -- ^ set if send buffer overlap receive buffer
+<span class="lineno">   58 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sendQueue</span></span></span> :: [Q v x]
+<span class="lineno">   59 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sendN</span></span></span> :: Int
+<span class="lineno">   60 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
+<span class="lineno">   61 </span>    }
+<span class="lineno">   62 </span>
+<span class="lineno">   63 </span>instance (VarValTime v x t, SimpleIOInterface i) =&gt; Pretty (SimpleIO i v x t) where
+<span class="lineno">   64 </span>    <span class="decl"><span class="istickedoff">pretty io =</span>
+<span class="lineno">   65 </span><span class="spaces">        </span><span class="istickedoff">[__i|</span>
+<span class="lineno">   66 </span><span class="spaces">            </span><span class="istickedoff">SimpleIO:</span>
+<span class="lineno">   67 </span><span class="spaces">                </span><span class="istickedoff">bounceFilter: #{ bounceFilter io }</span>
+<span class="lineno">   68 </span><span class="spaces">                </span><span class="istickedoff">bufferSize: #{ bufferSize io }</span>
+<span class="lineno">   69 </span><span class="spaces">                </span><span class="istickedoff">receiveQueue: #{ receiveQueue io }</span>
+<span class="lineno">   70 </span><span class="spaces">                </span><span class="istickedoff">receiveN: #{ receiveN io }</span>
+<span class="lineno">   71 </span><span class="spaces">                </span><span class="istickedoff">isReceiveOver: #{ isReceiveOver io }</span>
+<span class="lineno">   72 </span><span class="spaces">                </span><span class="istickedoff">sendQueue: #{ sendQueue io }</span>
+<span class="lineno">   73 </span><span class="spaces">                </span><span class="istickedoff">sendN: #{ sendN io }</span>
+<span class="lineno">   74 </span><span class="spaces">                </span><span class="istickedoff">#{ indent 4 $ pretty $ process_ io }</span>
+<span class="lineno">   75 </span><span class="spaces">            </span><span class="istickedoff">|]</span></span>
+<span class="lineno">   76 </span>
+<span class="lineno">   77 </span>data Q v x = Q {<span class="istickedoff"><span class="decl"><span class="istickedoff">vars</span></span></span> :: [v], <span class="nottickedoff"><span class="decl"><span class="nottickedoff">function</span></span></span> :: F v x, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">cads</span></span></span> :: [ProcessStepID]}
+<span class="lineno">   78 </span>
+<span class="lineno">   79 </span>instance (Var v, Val x) =&gt; Show (Q v x) where
+<span class="lineno">   80 </span>    <span class="decl"><span class="nottickedoff">show Q{vars, function, cads} =</span>
+<span class="lineno">   81 </span><span class="spaces">        </span><span class="nottickedoff">concat</span>
+<span class="lineno">   82 </span><span class="spaces">            </span><span class="nottickedoff">[ &quot;Q{&quot;</span>
+<span class="lineno">   83 </span><span class="spaces">            </span><span class="nottickedoff">, &quot;vars: &quot; &lt;&gt; concatMap toString vars &lt;&gt; &quot;,&quot;</span>
+<span class="lineno">   84 </span><span class="spaces">            </span><span class="nottickedoff">, &quot;function: &quot; &lt;&gt; show function &lt;&gt; &quot;,&quot;</span>
+<span class="lineno">   85 </span><span class="spaces">            </span><span class="nottickedoff">, &quot;cads : &quot; &lt;&gt; show cads &lt;&gt; &quot;}&quot;</span>
+<span class="lineno">   86 </span><span class="spaces">            </span><span class="nottickedoff">]</span></span>
+<span class="lineno">   87 </span>
+<span class="lineno">   88 </span>instance
+<span class="lineno">   89 </span>    (VarValTime v x t, SimpleIOInterface i) =&gt;
+<span class="lineno">   90 </span>    ProcessorUnit (SimpleIO i v x t) v x t
+<span class="lineno">   91 </span>    where
+<span class="lineno">   92 </span>    <span class="decl"><span class="istickedoff">tryBind f sio@SimpleIO{sendQueue, receiveQueue, receiveN, sendN, bufferSize}</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff">| Just F.Receive{} &lt;- castF f</span>
+<span class="lineno">   94 </span><span class="spaces">        </span><span class="istickedoff">, <span class="tickonlyfalse">fromMaybe <span class="nottickedoff">maxBound</span> bufferSize == receiveN</span> =</span>
+<span class="lineno">   95 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff">Left &quot;IO process unit to small buffer size&quot;</span></span>
+<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">| Just F.Send{} &lt;- castF f</span>
+<span class="lineno">   97 </span><span class="spaces">        </span><span class="istickedoff">, <span class="tickonlyfalse">fromMaybe <span class="nottickedoff">maxBound</span> bufferSize == sendN</span> =</span>
+<span class="lineno">   98 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff">Left &quot;IO process unit to small buffer size&quot;</span></span>
+<span class="lineno">   99 </span><span class="spaces">        </span><span class="istickedoff">| Just (F.Receive (O vs)) &lt;- castF f</span>
+<span class="lineno">  100 </span><span class="spaces">        </span><span class="istickedoff">, let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =</span>
+<span class="lineno">  101 </span><span class="spaces">            </span><span class="istickedoff">Right</span>
+<span class="lineno">  102 </span><span class="spaces">                </span><span class="istickedoff">sio</span>
+<span class="lineno">  103 </span><span class="spaces">                    </span><span class="istickedoff">{ receiveQueue = Q{vars = S.elems vs, function = f, <span class="nottickedoff">cads</span>} : receiveQueue</span>
+<span class="lineno">  104 </span><span class="spaces">                    </span><span class="istickedoff">, receiveN = receiveN + 1</span>
+<span class="lineno">  105 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
+<span class="lineno">  106 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="istickedoff">| Just (F.Send (I v)) &lt;- castF f</span>
+<span class="lineno">  108 </span><span class="spaces">        </span><span class="istickedoff">, let (cads, process_) = runSchedule sio $ scheduleFunctionBind f =</span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">Right</span>
+<span class="lineno">  110 </span><span class="spaces">                </span><span class="istickedoff">sio</span>
+<span class="lineno">  111 </span><span class="spaces">                    </span><span class="istickedoff">{ sendQueue = Q{vars = [v], function = f, <span class="nottickedoff">cads</span>} : sendQueue</span>
+<span class="lineno">  112 </span><span class="spaces">                    </span><span class="istickedoff">, sendN = sendN + 1</span>
+<span class="lineno">  113 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
+<span class="lineno">  114 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Left $ <span class="nottickedoff">&quot;IO processor unit do not support: &quot; ++ show f</span></span></span>
+<span class="lineno">  116 </span>
+<span class="lineno">  117 </span>    <span class="decl"><span class="istickedoff">process = process_</span></span>
+<span class="lineno">  118 </span>
+<span class="lineno">  119 </span>instance BreakLoopProblem (SimpleIO i v x t) v x
+<span class="lineno">  120 </span>instance ConstantFoldingProblem (SimpleIO i v x t) v x
+<span class="lineno">  121 </span>instance OptimizeAccumProblem (SimpleIO i v x t) v x
+<span class="lineno">  122 </span>instance ResolveDeadlockProblem (SimpleIO i v x t) v x
+<span class="lineno">  123 </span>
+<span class="lineno">  124 </span>instance
+<span class="lineno">  125 </span>    (VarValTime v x t, SimpleIOInterface i) =&gt;
+<span class="lineno">  126 </span>    EndpointProblem (SimpleIO i v x t) v t
+<span class="lineno">  127 </span>    where
+<span class="lineno">  128 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@SimpleIO{receiveQueue, sendQueue} =</span>
+<span class="lineno">  129 </span><span class="spaces">        </span><span class="istickedoff">let source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (nextTick pu + 1 ... maxBound) (1 ... maxBound)</span>
+<span class="lineno">  130 </span><span class="spaces">            </span><span class="istickedoff">receiveOpts = map (source . vars) receiveQueue</span>
+<span class="lineno">  131 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  132 </span><span class="spaces">            </span><span class="istickedoff">target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (I.singleton 1)</span>
+<span class="lineno">  133 </span><span class="spaces">            </span><span class="istickedoff">sendOpts = map (target . head . vars) sendQueue</span>
+<span class="lineno">  134 </span><span class="spaces">         </span><span class="istickedoff">in receiveOpts ++ sendOpts</span></span>
+<span class="lineno">  135 </span>
+<span class="lineno">  136 </span>    <span class="decl"><span class="istickedoff">endpointDecision sio@SimpleIO{receiveQueue} d@EndpointSt{epRole = Source vs, epAt}</span>
+<span class="lineno">  137 </span><span class="spaces">        </span><span class="istickedoff">| ([q@Q{function, vars = allVars}], receiveQueue') &lt;-</span>
+<span class="lineno">  138 </span><span class="spaces">            </span><span class="istickedoff">L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue</span>
+<span class="lineno">  139 </span><span class="spaces">        </span><span class="istickedoff">, let remainVars = allVars L.\\ S.elems vs</span>
+<span class="lineno">  140 </span><span class="spaces">              </span><span class="istickedoff">process_ = execSchedule sio $ do</span>
+<span class="lineno">  141 </span><span class="spaces">                </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Receiving $ null remainVars</span>
+<span class="lineno">  142 </span><span class="spaces">                </span><span class="istickedoff">when (null remainVars) $ void $ scheduleFunction epAt function</span>
+<span class="lineno">  143 </span><span class="spaces">              </span><span class="istickedoff">receiveQueue'' =</span>
+<span class="lineno">  144 </span><span class="spaces">                </span><span class="istickedoff">if null remainVars</span>
+<span class="lineno">  145 </span><span class="spaces">                    </span><span class="istickedoff">then receiveQueue'</span>
+<span class="lineno">  146 </span><span class="spaces">                    </span><span class="istickedoff">else q{vars = remainVars} : receiveQueue' =</span>
+<span class="lineno">  147 </span><span class="spaces">            </span><span class="istickedoff">sio{receiveQueue = receiveQueue'', process_}</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision sio@SimpleIO{sendQueue, sendN, receiveQueue, receiveN} d@EndpointSt{epRole = Target v, epAt}</span>
+<span class="lineno">  149 </span><span class="spaces">        </span><span class="istickedoff">| ([Q{function}], sendQueue') &lt;- L.partition ((v ==) . head . vars) sendQueue</span>
+<span class="lineno">  150 </span><span class="spaces">        </span><span class="istickedoff">, let process_ = execSchedule sio $ do</span>
+<span class="lineno">  151 </span><span class="spaces">                </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt Sending</span>
+<span class="lineno">  152 </span><span class="spaces">                </span><span class="istickedoff">scheduleFunction epAt function =</span>
+<span class="lineno">  153 </span><span class="spaces">            </span><span class="istickedoff">sio</span>
+<span class="lineno">  154 </span><span class="spaces">                </span><span class="istickedoff">{ sendQueue = sendQueue'</span>
+<span class="lineno">  155 </span><span class="spaces">                </span><span class="istickedoff">, isReceiveOver = (sendN - length sendQueue) &gt;= (receiveN - length receiveQueue)</span>
+<span class="lineno">  156 </span><span class="spaces">                </span><span class="istickedoff">, process_</span>
+<span class="lineno">  157 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">  158 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
+<span class="lineno">  159 </span>
+<span class="lineno">  160 </span>{- | Access to received data buffer was implemented like a queue. OE signal read
+<span class="lineno">  161 </span>received value multiple times __without changing__ &quot;pointer&quot; to the next value.
+<span class="lineno">  162 </span>OE and WR signals simultaneously read received value and __increment__ &quot;pointer&quot;
+<span class="lineno">  163 </span>to the next value. We do that for the reduced number of signal lines.
+<span class="lineno">  164 </span>
+<span class="lineno">  165 </span>Example:
+<span class="lineno">  166 </span>
+<span class="lineno">  167 </span>1. Nop - do nothing;
+<span class="lineno">  168 </span>
+<span class="lineno">  169 </span>2. Send (WR signal) - read a value from data_bus to send buffer[0], pointer
+<span class="lineno">  170 </span>   increments automatically.
+<span class="lineno">  171 </span>
+<span class="lineno">  172 </span>3. Send (WR signal) - read a value from data_bus to send buffer[1], pointer
+<span class="lineno">  173 </span>   increments automatically.
+<span class="lineno">  174 </span>
+<span class="lineno">  175 </span>4. Nop - do nothing.
+<span class="lineno">  176 </span>
+<span class="lineno">  177 </span>5. Receive False (OE signal) - write a value to data_bus from receive buffer[0]
+<span class="lineno">  178 </span>   without pointer changing.
+<span class="lineno">  179 </span>
+<span class="lineno">  180 </span>6. Receive True (OE and WR signal) - write a value to data_bus from receive
+<span class="lineno">  181 </span>   buffer[0] with pointer increment.
+<span class="lineno">  182 </span>-}
+<span class="lineno">  183 </span>instance Controllable (SimpleIO i v x t) where
+<span class="lineno">  184 </span>    data Instruction (SimpleIO i v x t)
+<span class="lineno">  185 </span>        = Receiving Bool
+<span class="lineno">  186 </span>        | Sending
+<span class="lineno">  187 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  188 </span>
+<span class="lineno">  189 </span>    data Microcode (SimpleIO i v x t) = Microcode
+<span class="lineno">  190 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
+<span class="lineno">  191 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  192 </span>        }
+<span class="lineno">  193 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  194 </span>
+<span class="lineno">  195 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues SimpleIOPorts{..} Microcode{..} =</span>
+<span class="lineno">  196 </span><span class="spaces">        </span><span class="istickedoff">[ (wr, Bool wrSignal)</span>
+<span class="lineno">  197 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  198 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  199 </span>
+<span class="lineno">  200 </span>    <span class="decl"><span class="istickedoff">usedPortTags SimpleIOPorts{wr, oe} = [<span class="nottickedoff">wr</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  201 </span>
+<span class="lineno">  202 </span>    <span class="decl"><span class="istickedoff">takePortTags (wr : oe : _) _ = SimpleIOPorts wr oe &quot;stop&quot;</span>
+<span class="lineno">  203 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  204 </span>
+<span class="lineno">  205 </span>instance Default (Microcode (SimpleIO i v x t)) where
+<span class="lineno">  206 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  207 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  208 </span><span class="spaces">            </span><span class="istickedoff">{ wrSignal = False</span>
+<span class="lineno">  209 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
+<span class="lineno">  210 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  211 </span>
+<span class="lineno">  212 </span>instance UnambiguouslyDecode (SimpleIO i v x t) where
+<span class="lineno">  213 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Sending = def{wrSignal = True}</span>
+<span class="lineno">  214 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Receiving next) = def{oeSignal = True, wrSignal = next}</span></span>
+<span class="lineno">  215 </span>
+<span class="lineno">  216 </span>instance Connected (SimpleIO i v x t) where
+<span class="lineno">  217 </span>    data Ports (SimpleIO i v x t) = SimpleIOPorts
+<span class="lineno">  218 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag
+<span class="lineno">  219 </span>        , -- \|this flag which indicates an end of the data transaction
+<span class="lineno">  220 </span>          -- requires for stop computational process while data transferring
+<span class="lineno">  221 </span>          -- to avoid loses
+<span class="lineno">  222 </span>          <span class="nottickedoff"><span class="decl"><span class="nottickedoff">stop</span></span></span> :: String
+<span class="lineno">  223 </span>        }
+<span class="lineno">  224 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  225 </span>
+<span class="lineno">  226 </span>instance Var v =&gt; Locks (SimpleIO i v x t) v where
+<span class="lineno">  227 </span>    <span class="decl"><span class="istickedoff">locks SimpleIO{} = []</span></span>
+<span class="lineno">  228 </span>
+<span class="lineno">  229 </span>data ProtocolDescription v = ProtocolDescription
+<span class="lineno">  230 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">description</span></span></span> :: T.Text
+<span class="lineno">  231 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">interface</span></span></span> :: T.Text
+<span class="lineno">  232 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">dataType</span></span></span> :: T.Text
+<span class="lineno">  233 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">toNitta</span></span></span> :: [v]
+<span class="lineno">  234 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">fromNitta</span></span></span> :: [v]
+<span class="lineno">  235 </span>    }
+<span class="lineno">  236 </span>    deriving (Generic)
+<span class="lineno">  237 </span>
+<span class="lineno">  238 </span>instance ToJSON v =&gt; ToJSON (ProtocolDescription v)
+<span class="lineno">  239 </span>
+<span class="lineno">  240 </span>protocolDescription ::
+<span class="lineno">  241 </span>    forall i v x t.
+<span class="lineno">  242 </span>    (VarValTime v x t, SimpleIOInterface i, ToJSON v) =&gt;
+<span class="lineno">  243 </span>    T.Text -&gt;
+<span class="lineno">  244 </span>    SimpleIO i v x t -&gt;
+<span class="lineno">  245 </span>    T.Text -&gt;
+<span class="lineno">  246 </span>    Implementation
+<span class="lineno">  247 </span><span class="decl"><span class="istickedoff">protocolDescription tag io d</span>
+<span class="lineno">  248 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlyfalse">not $ null $ endpointOptions io</span> = <span class="nottickedoff">error &quot;EndpointProblem is not completed&quot;</span></span>
+<span class="lineno">  249 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
+<span class="lineno">  250 </span><span class="spaces">        </span><span class="istickedoff">let impFile = toString $ tag &lt;&gt; &quot;.json&quot;</span>
+<span class="lineno">  251 </span><span class="spaces">            </span><span class="istickedoff">fbs = getIntermediates $ process_ io</span>
+<span class="lineno">  252 </span><span class="spaces">         </span><span class="istickedoff">in Immediate impFile $</span>
+<span class="lineno">  253 </span><span class="spaces">                </span><span class="istickedoff">toStrict $</span>
+<span class="lineno">  254 </span><span class="spaces">                    </span><span class="istickedoff">toLazyText $</span>
+<span class="lineno">  255 </span><span class="spaces">                        </span><span class="istickedoff">encodePrettyToTextBuilder $</span>
+<span class="lineno">  256 </span><span class="spaces">                            </span><span class="istickedoff">toJSON</span>
+<span class="lineno">  257 </span><span class="spaces">                                </span><span class="istickedoff">ProtocolDescription</span>
+<span class="lineno">  258 </span><span class="spaces">                                    </span><span class="istickedoff">{ description = d</span>
+<span class="lineno">  259 </span><span class="spaces">                                    </span><span class="istickedoff">, interface = showText $ typeRep <span class="nottickedoff">(Proxy :: Proxy i)</span></span>
+<span class="lineno">  260 </span><span class="spaces">                                    </span><span class="istickedoff">, dataType = showText $ typeRep <span class="nottickedoff">(Proxy :: Proxy x)</span></span>
+<span class="lineno">  261 </span><span class="spaces">                                    </span><span class="istickedoff">, toNitta = map (oneOf . outputs) $ filter isReceive fbs</span>
+<span class="lineno">  262 </span><span class="spaces">                                    </span><span class="istickedoff">, fromNitta = map (oneOf . inputs) $ filter isSend fbs</span>
+<span class="lineno">  263 </span><span class="spaces">                                    </span><span class="istickedoff">}</span></span>
+<span class="lineno">  264 </span>
+<span class="lineno">  265 </span>isReceive :: (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
+<span class="lineno">  266 </span><span class="decl"><span class="istickedoff">isReceive f</span>
+<span class="lineno">  267 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Receive{} &lt;- castF f = True</span>
+<span class="lineno">  268 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
+<span class="lineno">  269 </span>
+<span class="lineno">  270 </span>isSend :: (Typeable v, Typeable x) =&gt; F v x -&gt; Bool
+<span class="lineno">  271 </span><span class="decl"><span class="istickedoff">isSend f</span>
+<span class="lineno">  272 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Send{} &lt;- castF f = True</span>
+<span class="lineno">  273 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
+
+</pre>
+</body>
+</html>

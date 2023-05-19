@@ -1,0 +1,105 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{- |
+<span class="lineno">    2 </span>Module      : NITTA.Frontends.XMILE.MathParser
+<span class="lineno">    3 </span>Description : Parses XMILE math equations
+<span class="lineno">    4 </span>Copyright   : (c) Artur Gogiyan, 2022
+<span class="lineno">    5 </span>License     : BSD3
+<span class="lineno">    6 </span>Maintainer  : artur.gogiyan@gmail.com
+<span class="lineno">    7 </span>Stability   : experimental
+<span class="lineno">    8 </span>-}
+<span class="lineno">    9 </span>module NITTA.Frontends.XMILE.MathParser (
+<span class="lineno">   10 </span>    parseXmileEquation,
+<span class="lineno">   11 </span>    calculateDefaultValue,
+<span class="lineno">   12 </span>    XMExpr (..),
+<span class="lineno">   13 </span>    XMDuop (..),
+<span class="lineno">   14 </span>) where
+<span class="lineno">   15 </span>
+<span class="lineno">   16 </span>import Data.HashMap.Strict qualified as HM
+<span class="lineno">   17 </span>import Data.Maybe (fromMaybe)
+<span class="lineno">   18 </span>import Data.Text as T
+<span class="lineno">   19 </span>import Text.Parsec
+<span class="lineno">   20 </span>import Text.Parsec.Expr
+<span class="lineno">   21 </span>import Text.Parsec.Language
+<span class="lineno">   22 </span>import Text.Parsec.String
+<span class="lineno">   23 </span>import Text.Parsec.Token
+<span class="lineno">   24 </span>import Text.Read hiding (parens)
+<span class="lineno">   25 </span>
+<span class="lineno">   26 </span>data XMExpr = Var String | Val Double | Duo {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">xmeOp</span></span></span> :: XMDuop, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">xmeLexpr</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">xmeRexpr</span></span></span> :: XMExpr}
+<span class="lineno">   27 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>data XMDuop = Mul | Div | Add | Sub deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">   30 </span>
+<span class="lineno">   31 </span><span class="decl"><span class="istickedoff">languageDef =</span>
+<span class="lineno">   32 </span><span class="spaces">    </span><span class="istickedoff">emptyDef</span>
+<span class="lineno">   33 </span><span class="spaces">        </span><span class="istickedoff">{ identStart = letter &lt;|&gt; space &lt;|&gt; digit &lt;|&gt; <span class="nottickedoff">char '\&quot;'</span></span>
+<span class="lineno">   34 </span><span class="spaces">        </span><span class="istickedoff">, identLetter = letter &lt;|&gt; space &lt;|&gt; digit &lt;|&gt; char '.'</span>
+<span class="lineno">   35 </span><span class="spaces">        </span><span class="istickedoff">, opStart = <span class="nottickedoff">oneOf &quot;+-/*&quot;</span></span>
+<span class="lineno">   36 </span><span class="spaces">        </span><span class="istickedoff">, opLetter = oneOf &quot;+-/*&quot;</span>
+<span class="lineno">   37 </span><span class="spaces">        </span><span class="istickedoff">, reservedOpNames = <span class="nottickedoff">[&quot;+&quot;, &quot;-&quot;, &quot;/&quot;, &quot;*&quot;]</span></span>
+<span class="lineno">   38 </span><span class="spaces">        </span><span class="istickedoff">, reservedNames = [&quot;true&quot;, &quot;false&quot;]</span>
+<span class="lineno">   39 </span><span class="spaces">        </span><span class="istickedoff">}</span></span>
+<span class="lineno">   40 </span>
+<span class="lineno">   41 </span>TokenParser
+<span class="lineno">   42 </span>    { parens = m_parens
+<span class="lineno">   43 </span>    , identifier = m_identifier
+<span class="lineno">   44 </span>    , reservedOp = m_reservedOp
+<span class="lineno">   45 </span>    } = <span class="istickedoff">makeTokenParser languageDef</span>
+<span class="lineno">   46 </span>
+<span class="lineno">   47 </span><span class="decl"><span class="istickedoff">parseXmileEquation eqn = case parse exprparser &quot;&quot; eqn of</span>
+<span class="lineno">   48 </span><span class="spaces">    </span><span class="istickedoff">Right e -&gt; prepareTree e</span>
+<span class="lineno">   49 </span><span class="spaces">    </span><span class="istickedoff">Left _ -&gt; <span class="nottickedoff">error $ &quot;error while parsing XMILE equation : &quot; &lt;&gt; eqn</span></span></span>
+<span class="lineno">   50 </span>
+<span class="lineno">   51 </span>exprparser :: Parser XMExpr
+<span class="lineno">   52 </span><span class="decl"><span class="istickedoff">exprparser = buildExpressionParser table term &lt;?&gt; <span class="nottickedoff">&quot;expression&quot;</span></span></span>
+<span class="lineno">   53 </span><span class="decl"><span class="istickedoff">table =</span>
+<span class="lineno">   54 </span><span class="spaces">    </span><span class="istickedoff">[ [Infix (m_reservedOp &quot;*&quot; &gt;&gt; return (Duo Mul)) AssocLeft]</span>
+<span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">, [Infix (m_reservedOp &quot;/&quot; &gt;&gt; return (Duo Div)) AssocLeft]</span>
+<span class="lineno">   56 </span><span class="spaces">    </span><span class="istickedoff">, [Infix (m_reservedOp &quot;+&quot; &gt;&gt; return (Duo Add)) AssocLeft]</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">, [Infix (m_reservedOp &quot;-&quot; &gt;&gt; return (Duo Sub)) AssocLeft]</span>
+<span class="lineno">   58 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
+<span class="lineno">   59 </span><span class="decl"><span class="istickedoff">term =</span>
+<span class="lineno">   60 </span><span class="spaces">    </span><span class="istickedoff">m_parens exprparser &lt;|&gt; fmap Var (between (skipMany (char '\&quot;')) (skipMany (char '\&quot;' &lt;|&gt; space)) m_identifier)</span></span>
+<span class="lineno">   61 </span>
+<span class="lineno">   62 </span><span class="decl"><span class="istickedoff">trimString str = T.unpack $ T.map repl $ T.strip $ T.pack str</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">   64 </span><span class="spaces">        </span><span class="istickedoff">repl ' ' = '_'</span>
+<span class="lineno">   65 </span><span class="spaces">        </span><span class="istickedoff">repl c = c</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span><span class="decl"><span class="istickedoff">prepareTree (Var str) = maybe (Var $ trimString str) Val $ readMaybe str</span>
+<span class="lineno">   68 </span><span class="spaces"></span><span class="istickedoff">prepareTree v@(Val _) = <span class="nottickedoff">v</span></span>
+<span class="lineno">   69 </span><span class="spaces"></span><span class="istickedoff">prepareTree (Duo op a b) = Duo op (prepareTree a) (prepareTree b)</span></span>
+<span class="lineno">   70 </span>
+<span class="lineno">   71 </span><span class="decl"><span class="istickedoff">calculateDefaultValue _ (Val value) = value</span>
+<span class="lineno">   72 </span><span class="spaces"></span><span class="istickedoff">calculateDefaultValue defaultValues (Var name) = <span class="nottickedoff">fromMaybe 0 $ HM.lookup (T.pack name) defaultValues</span></span>
+<span class="lineno">   73 </span><span class="spaces"></span><span class="istickedoff">calculateDefaultValue defaultValues e@(Duo op expl expr) =</span>
+<span class="lineno">   74 </span><span class="spaces">    </span><span class="istickedoff">let leftValue = calculateDefaultValue <span class="nottickedoff">defaultValues</span> expl</span>
+<span class="lineno">   75 </span><span class="spaces">        </span><span class="istickedoff">rightValue = calculateDefaultValue <span class="nottickedoff">defaultValues</span> expr</span>
+<span class="lineno">   76 </span><span class="spaces">     </span><span class="istickedoff">in case op of</span>
+<span class="lineno">   77 </span><span class="spaces">            </span><span class="istickedoff">Mul -&gt; leftValue * rightValue</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="istickedoff">Div</span>
+<span class="lineno">   79 </span><span class="spaces">                </span><span class="istickedoff">| rightValue == 0 -&gt; error (&quot;division to zero in expression '&quot; &lt;&gt; show e &lt;&gt; &quot;'&quot;)</span>
+<span class="lineno">   80 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> -&gt; leftValue / rightValue</span>
+<span class="lineno">   81 </span><span class="spaces">            </span><span class="istickedoff">Add -&gt; leftValue + rightValue</span>
+<span class="lineno">   82 </span><span class="spaces">            </span><span class="istickedoff">Sub -&gt; leftValue - rightValue</span></span>
+
+</pre>
+</body>
+</html>

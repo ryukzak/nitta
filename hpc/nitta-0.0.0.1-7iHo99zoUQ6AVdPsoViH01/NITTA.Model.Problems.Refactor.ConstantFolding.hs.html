@@ -1,0 +1,151 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>-- All extensions should be enabled explicitly due to doctest in this module.
+<span class="lineno">    2 </span>{-# LANGUAGE DeriveGeneric #-}
+<span class="lineno">    3 </span>{-# LANGUAGE FlexibleContexts #-}
+<span class="lineno">    4 </span>{-# LANGUAGE FlexibleInstances #-}
+<span class="lineno">    5 </span>{-# LANGUAGE FunctionalDependencies #-}
+<span class="lineno">    6 </span>{-# LANGUAGE ImportQualifiedPost #-}
+<span class="lineno">    7 </span>{-# LANGUAGE LambdaCase #-}
+<span class="lineno">    8 </span>{-# LANGUAGE NamedFieldPuns #-}
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>{- |
+<span class="lineno">   11 </span>Module      : NITTA.Model.Problems.Refactor.ConstantFolding
+<span class="lineno">   12 </span>Description : Constant folding optimization
+<span class="lineno">   13 </span>Copyright   : (c) Daniil Prohorov, 2021
+<span class="lineno">   14 </span>License     : BSD3
+<span class="lineno">   15 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   16 </span>Stability   : experimental
+<span class="lineno">   17 </span>
+<span class="lineno">   18 </span>== ASCII digram
+<span class="lineno">   19 </span>
+<span class="lineno">   20 </span>Before compile-time eval optimization
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>@
+<span class="lineno">   23 </span>    +------------------+
+<span class="lineno">   24 </span>    |                  |         +-------------------------+
+<span class="lineno">   25 </span>    | Constant 2 &quot;a&quot;   |         |                         |
+<span class="lineno">   26 </span>    |                  +--------&gt;+                         |      +--------------+
+<span class="lineno">   27 </span>    +------------------+         |                         |      |              |
+<span class="lineno">   28 </span>                                 |   Add &quot;a&quot; &quot;b&quot; [&quot;res&quot;]   +-----&gt;+    ......    |
+<span class="lineno">   29 </span>    +------------------+         |                         |      |              |
+<span class="lineno">   30 </span>    |                  +--------&gt;+                         |      +--------------+
+<span class="lineno">   31 </span>    | Constant 3 &quot;b1&quot;  |         |                         |
+<span class="lineno">   32 </span>    |                  |         +-------------------------+
+<span class="lineno">   33 </span>    +------------------+
+<span class="lineno">   34 </span>@
+<span class="lineno">   35 </span>
+<span class="lineno">   36 </span>After compile-time eval optimization
+<span class="lineno">   37 </span>
+<span class="lineno">   38 </span>@
+<span class="lineno">   39 </span>    +------------------+         +--------------+
+<span class="lineno">   40 </span>    |                  |         |              |
+<span class="lineno">   41 </span>    | Constant 5 &quot;res&quot; +--------&gt;+    ......    |
+<span class="lineno">   42 </span>    |                  |         |              |
+<span class="lineno">   43 </span>    +------------------+         +--------------+
+<span class="lineno">   44 </span>@
+<span class="lineno">   45 </span>
+<span class="lineno">   46 </span>== Example from ASCII diagram
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>&gt;&gt;&gt; let a = constant 1 [&quot;a&quot;]
+<span class="lineno">   49 </span>&gt;&gt;&gt; let b = constant 2 [&quot;b&quot;]
+<span class="lineno">   50 </span>&gt;&gt;&gt; let res = add &quot;a&quot; &quot;b&quot; [&quot;res&quot;]
+<span class="lineno">   51 </span>&gt;&gt;&gt; loopRes = loop 1 &quot;e&quot; [&quot;res&quot;]
+<span class="lineno">   52 </span>&gt;&gt;&gt; let fs = [a, b, res, loopRes] :: [F String Int]
+<span class="lineno">   53 </span>&gt;&gt;&gt; constantFoldingDecision fs $ head $ constantFoldingOptions fs
+<span class="lineno">   54 </span>[loop(1, e) = res,const(3) = res]
+<span class="lineno">   55 </span>-}
+<span class="lineno">   56 </span>module NITTA.Model.Problems.Refactor.ConstantFolding (
+<span class="lineno">   57 </span>    ConstantFolding (..),
+<span class="lineno">   58 </span>    ConstantFoldingProblem (..),
+<span class="lineno">   59 </span>) where
+<span class="lineno">   60 </span>
+<span class="lineno">   61 </span>import Data.Default
+<span class="lineno">   62 </span>import Data.HashMap.Strict qualified as HM
+<span class="lineno">   63 </span>import Data.List qualified as L
+<span class="lineno">   64 </span>import Data.Set qualified as S
+<span class="lineno">   65 </span>import GHC.Generics
+<span class="lineno">   66 </span>import NITTA.Intermediate.Functions
+<span class="lineno">   67 </span>import NITTA.Intermediate.Types
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span>data ConstantFolding v x = ConstantFolding
+<span class="lineno">   70 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">cRefOld</span></span></span> :: [F v x]
+<span class="lineno">   71 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">cRefNew</span></span></span> :: [F v x]
+<span class="lineno">   72 </span>    }
+<span class="lineno">   73 </span>    deriving (Generic, <span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">   74 </span>
+<span class="lineno">   75 </span>class ConstantFoldingProblem u v x | u -&gt; v x where
+<span class="lineno">   76 </span>    -- | Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done
+<span class="lineno">   77 </span>    constantFoldingOptions :: u -&gt; [ConstantFolding v x]
+<span class="lineno">   78 </span>    <span class="decl"><span class="nottickedoff">constantFoldingOptions _ = []</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>    -- | Function takes 'ConstantFolding' and modify 'DataFlowGraph'
+<span class="lineno">   81 </span>    constantFoldingDecision :: u -&gt; ConstantFolding v x -&gt; u
+<span class="lineno">   82 </span>    <span class="decl"><span class="nottickedoff">constantFoldingDecision _ _ = error &quot;not implemented&quot;</span></span>
+<span class="lineno">   83 </span>
+<span class="lineno">   84 </span>instance (Var v, Val x) =&gt; ConstantFoldingProblem [F v x] v x where
+<span class="lineno">   85 </span>    <span class="decl"><span class="istickedoff">constantFoldingOptions fs =</span>
+<span class="lineno">   86 </span><span class="spaces">        </span><span class="istickedoff">let clusters = selectClusters fs</span>
+<span class="lineno">   87 </span><span class="spaces">            </span><span class="istickedoff">evaluatedClusters = map evalCluster clusters</span>
+<span class="lineno">   88 </span><span class="spaces">            </span><span class="istickedoff">zipOfClusters = zip clusters evaluatedClusters</span>
+<span class="lineno">   89 </span><span class="spaces">            </span><span class="istickedoff">filteredZip = filter (\case ([_], _) -&gt; False; _ -&gt; True) zipOfClusters</span>
+<span class="lineno">   90 </span><span class="spaces">            </span><span class="istickedoff">options = [ConstantFolding{cRefOld = c, cRefNew = ec} | (c, ec) &lt;- filteredZip, c /= ec]</span>
+<span class="lineno">   91 </span><span class="spaces">            </span><span class="istickedoff">optionsFiltered = filter isBlankOptions options</span>
+<span class="lineno">   92 </span><span class="spaces">            </span><span class="istickedoff">isBlankOptions = not . null . constantFoldingDecision fs</span>
+<span class="lineno">   93 </span><span class="spaces">         </span><span class="istickedoff">in optionsFiltered</span></span>
+<span class="lineno">   94 </span>
+<span class="lineno">   95 </span>    <span class="decl"><span class="istickedoff">constantFoldingDecision fs ConstantFolding{cRefOld, cRefNew}</span>
+<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlyfalse">cRefOld == cRefNew</span> = <span class="nottickedoff">cRefNew</span></span>
+<span class="lineno">   97 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = deleteExtraF $ (fs L.\\ cRefOld) &lt;&gt; cRefNew</span></span>
+<span class="lineno">   98 </span>
+<span class="lineno">   99 </span><span class="decl"><span class="istickedoff">selectClusters fs =</span>
+<span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">let consts = filter isConst fs</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">isIntersection a b = not . S.null $ S.intersection a b</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)</span>
+<span class="lineno">  103 </span><span class="spaces">        </span><span class="istickedoff">getInputConsts f = filter (\c -&gt; outputs c `isIntersection` inputs f) consts</span>
+<span class="lineno">  104 </span><span class="spaces">        </span><span class="istickedoff">createCluster f</span>
+<span class="lineno">  105 </span><span class="spaces">            </span><span class="istickedoff">| inputsAreConst f = f : getInputConsts f</span>
+<span class="lineno">  106 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = [<span class="nottickedoff">f</span>]</span>
+<span class="lineno">  107 </span><span class="spaces">     </span><span class="istickedoff">in map createCluster fs</span></span>
+<span class="lineno">  108 </span>
+<span class="lineno">  109 </span><span class="decl"><span class="istickedoff">evalCluster [f] = <span class="nottickedoff">[f]</span></span>
+<span class="lineno">  110 </span><span class="spaces"></span><span class="istickedoff">evalCluster fs = outputResult</span>
+<span class="lineno">  111 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">(consts, fSingleton) = L.partition isConst fs</span>
+<span class="lineno">  113 </span><span class="spaces">        </span><span class="istickedoff">f = case fSingleton of</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">[f'] -&gt; f'</span>
+<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error &quot;evalCluster: internal error&quot;</span></span>
+<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">cntx = CycleCntx $ HM.fromList $ concatMap (simulate <span class="nottickedoff">def</span>) consts</span>
+<span class="lineno">  117 </span><span class="spaces">        </span><span class="istickedoff">outputResult</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">| null $ outputs f = fs</span>
+<span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = map (\(v, x) -&gt; constant x [v]) (simulate cntx f) &lt;&gt; consts</span></span>
+<span class="lineno">  120 </span>
+<span class="lineno">  121 </span><span class="decl"><span class="istickedoff">deleteExtraF fs =</span>
+<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">L.nub</span>
+<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">[ f1</span>
+<span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">| f1 &lt;- fs</span>
+<span class="lineno">  125 </span><span class="spaces">        </span><span class="istickedoff">, f2 &lt;- fs</span>
+<span class="lineno">  126 </span><span class="spaces">        </span><span class="istickedoff">, f1 /= f2</span>
+<span class="lineno">  127 </span><span class="spaces">        </span><span class="istickedoff">, not $ null (variables f1 `S.intersection` variables f2)</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+
+</pre>
+</body>
+</html>

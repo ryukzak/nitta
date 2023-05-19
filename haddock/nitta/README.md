@@ -44,12 +44,12 @@ See: [CONTRIBUTING.md](CONTRIBUTING.md)
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 
 ``` console
-$ brew install stack
-$ stack install hlint fourmolu
+$ brew install ghcup
+$ ghcup install stack
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
-> Make sure that you have up to date version of hlint and fourmolu (as on CI)!   
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
@@ -73,7 +73,7 @@ $ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
-> Make sure that you have up to date version of hlint and fourmolu (as on CI)!  
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
 ``` console
@@ -257,4 +257,3 @@ $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 $ stack exec nitta -- examples/teacup.lua -p=8080
 Running NITTA server at http://localhost:8080 ...
 ```
-

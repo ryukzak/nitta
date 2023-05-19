@@ -1,0 +1,157 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE AllowAmbiguousTypes #-}
+<span class="lineno">    2 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    3 </span>
+<span class="lineno">    4 </span>{-# OPTIONS -fno-warn-orphans #-}
+<span class="lineno">    5 </span>
+<span class="lineno">    6 </span>{- |
+<span class="lineno">    7 </span>Module      : NITTA.Project.Types
+<span class="lineno">    8 </span>Description : Types for a target project description and generation
+<span class="lineno">    9 </span>Copyright   : (c) Aleksandr Penskoi, 2019
+<span class="lineno">   10 </span>License     : BSD3
+<span class="lineno">   11 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   12 </span>Stability   : experimental
+<span class="lineno">   13 </span>-}
+<span class="lineno">   14 </span>module NITTA.Project.Types (
+<span class="lineno">   15 </span>    Project (..),
+<span class="lineno">   16 </span>    defProjectTemplates,
+<span class="lineno">   17 </span>    TargetSystemComponent (..),
+<span class="lineno">   18 </span>    Implementation (..),
+<span class="lineno">   19 </span>    UnitEnv (..),
+<span class="lineno">   20 </span>    envInputPorts,
+<span class="lineno">   21 </span>    envOutputPorts,
+<span class="lineno">   22 </span>    envInOutPorts,
+<span class="lineno">   23 </span>) where
+<span class="lineno">   24 </span>
+<span class="lineno">   25 </span>import Data.Default
+<span class="lineno">   26 </span>import Data.Set qualified as S
+<span class="lineno">   27 </span>import Data.Text qualified as T
+<span class="lineno">   28 </span>import NITTA.Intermediate.Types
+<span class="lineno">   29 </span>import NITTA.Intermediate.Value ()
+<span class="lineno">   30 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   31 </span>import NITTA.Utils
+<span class="lineno">   32 </span>
+<span class="lineno">   33 </span>{- | Target project for different purpose (testing, target system, etc). Should
+<span class="lineno">   34 </span>be writable to disk.
+<span class="lineno">   35 </span>-}
+<span class="lineno">   36 </span>
+<span class="lineno">   37 </span>-- FIXME: collision between target project name and output directory. Maybe
+<span class="lineno">   38 </span>-- pName or pTargetProjectPath should be maybe? Or both?
+<span class="lineno">   39 </span>data Project m v x = Project
+<span class="lineno">   40 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pName</span></span></span> :: T.Text
+<span class="lineno">   41 </span>    -- ^ target project name
+<span class="lineno">   42 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pLibPath</span></span></span> :: FilePath
+<span class="lineno">   43 </span>    -- ^ IP-core library path
+<span class="lineno">   44 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTargetProjectPath</span></span></span> :: FilePath
+<span class="lineno">   45 </span>    -- ^ output path for target project
+<span class="lineno">   46 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pAbsTargetProjectPath</span></span></span> :: FilePath
+<span class="lineno">   47 </span>    -- ^ absolute output path for target project
+<span class="lineno">   48 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pInProjectNittaPath</span></span></span> :: FilePath
+<span class="lineno">   49 </span>    -- ^ relative to the project path output path for NITTA processor inside target project
+<span class="lineno">   50 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pAbsNittaPath</span></span></span> :: FilePath
+<span class="lineno">   51 </span>    -- ^ absolute output path for NITTA processor inside target project
+<span class="lineno">   52 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pUnit</span></span></span> :: m
+<span class="lineno">   53 </span>    -- ^ 'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
+<span class="lineno">   54 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pUnitEnv</span></span></span> :: UnitEnv m
+<span class="lineno">   55 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTestCntx</span></span></span> :: Cntx v x
+<span class="lineno">   56 </span>    -- ^ testbench context with input values
+<span class="lineno">   57 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTemplates</span></span></span> :: [FilePath]
+<span class="lineno">   58 </span>    -- ^ Target platform templates
+<span class="lineno">   59 </span>    }
+<span class="lineno">   60 </span>
+<span class="lineno">   61 </span>defProjectTemplates :: [FilePath]
+<span class="lineno">   62 </span><span class="decl"><span class="istickedoff">defProjectTemplates =</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">[ &quot;templates/Icarus&quot;</span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">, &quot;templates/DE0-Nano&quot;</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span>instance Default x =&gt; DefaultX (Project m v x) x
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span>-- | Type class for target components. Target -- a target system project or a testbench.
+<span class="lineno">   70 </span>class TargetSystemComponent pu where
+<span class="lineno">   71 </span>    -- | Name of the structural hardware module or Verilog module name (network or process unit)
+<span class="lineno">   72 </span>    moduleName :: T.Text -&gt; pu -&gt; T.Text
+<span class="lineno">   73 </span>
+<span class="lineno">   74 </span>    -- | Software and other specification which depends on application algorithm
+<span class="lineno">   75 </span>    software :: T.Text -&gt; pu -&gt; Implementation
+<span class="lineno">   76 </span>
+<span class="lineno">   77 </span>    -- | Hardware which depends on microarchitecture description and requires synthesis.
+<span class="lineno">   78 </span>    hardware :: T.Text -&gt; pu -&gt; Implementation
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>    -- | Generate code for making an instance of the hardware module
+<span class="lineno">   81 </span>    hardwareInstance :: T.Text -&gt; pu -&gt; UnitEnv pu -&gt; Verilog
+<span class="lineno">   82 </span>
+<span class="lineno">   83 </span>-- | Element of target system implementation
+<span class="lineno">   84 </span>data Implementation
+<span class="lineno">   85 </span>    = -- | Immediate implementation in the from of Ginger template (@nitta.paths.nest@ + 'projectContext')
+<span class="lineno">   86 </span>      Immediate {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">impFileName</span></span></span> :: FilePath, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">impText</span></span></span> :: T.Text}
+<span class="lineno">   87 </span>    | -- | Fetch implementation from library
+<span class="lineno">   88 </span>      FromLibrary {impFileName :: FilePath}
+<span class="lineno">   89 </span>    | -- | Aggregation of many implementation parts in separate paths
+<span class="lineno">   90 </span>      Aggregate {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">impPath</span></span></span> :: Maybe FilePath, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">subComponents</span></span></span> :: [Implementation]}
+<span class="lineno">   91 </span>    | -- | Nothing
+<span class="lineno">   92 </span>      Empty
+<span class="lineno">   93 </span>
+<span class="lineno">   94 </span>{- | Resolve uEnv element to verilog source code. E.g. `dataIn` into
+<span class="lineno">   95 </span>`data_bus`, `dataOut` into `accum_data_out`.
+<span class="lineno">   96 </span>-}
+<span class="lineno">   97 </span>data UnitEnv m = UnitEnv
+<span class="lineno">   98 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sigClk</span></span></span> :: T.Text
+<span class="lineno">   99 </span>    -- ^ clock signal
+<span class="lineno">  100 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sigRst</span></span></span> :: T.Text
+<span class="lineno">  101 </span>    -- ^ reset signal
+<span class="lineno">  102 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sigCycleBegin</span></span></span> :: T.Text
+<span class="lineno">  103 </span>    -- ^ posedge on computation cycle begin
+<span class="lineno">  104 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sigInCycle</span></span></span> :: T.Text
+<span class="lineno">  105 </span>    -- ^ positive on computation cycle
+<span class="lineno">  106 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sigCycleEnd</span></span></span> :: T.Text
+<span class="lineno">  107 </span>    -- ^ posedge on computation cycle end
+<span class="lineno">  108 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">ctrlPorts</span></span></span> :: Maybe (Ports m)
+<span class="lineno">  109 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">ioPorts</span></span></span> :: Maybe (IOPorts m)
+<span class="lineno">  110 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">valueIn</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">valueOut</span></span></span> :: Maybe (T.Text, T.Text)
+<span class="lineno">  111 </span>    }
+<span class="lineno">  112 </span>
+<span class="lineno">  113 </span>instance Default (UnitEnv m) where
+<span class="lineno">  114 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk = &quot;clk&quot;</span>
+<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">, sigRst = &quot;rst&quot;</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">, sigCycleBegin = &quot;flag_cycle_begin&quot;</span>
+<span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">, sigInCycle = &quot;flag_in_cycle&quot;</span>
+<span class="lineno">  120 </span><span class="spaces">            </span><span class="istickedoff">, sigCycleEnd = &quot;flag_cycle_end&quot;</span>
+<span class="lineno">  121 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = <span class="nottickedoff">Nothing</span></span>
+<span class="lineno">  122 </span><span class="spaces">            </span><span class="istickedoff">, ioPorts = <span class="nottickedoff">Nothing</span></span>
+<span class="lineno">  123 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = <span class="nottickedoff">Nothing</span></span>
+<span class="lineno">  124 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = <span class="nottickedoff">Nothing</span></span>
+<span class="lineno">  125 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  126 </span>
+<span class="lineno">  127 </span><span class="decl"><span class="istickedoff">envInputPorts UnitEnv{ioPorts = Just ports} = inputPorts ports</span>
+<span class="lineno">  128 </span><span class="spaces"></span><span class="istickedoff">envInputPorts UnitEnv{ioPorts = Nothing} = <span class="nottickedoff">S.empty</span></span></span>
+<span class="lineno">  129 </span>
+<span class="lineno">  130 </span><span class="decl"><span class="istickedoff">envOutputPorts UnitEnv{ioPorts = Just ports} = outputPorts ports</span>
+<span class="lineno">  131 </span><span class="spaces"></span><span class="istickedoff">envOutputPorts UnitEnv{ioPorts = Nothing} = <span class="nottickedoff">S.empty</span></span></span>
+<span class="lineno">  132 </span>
+<span class="lineno">  133 </span><span class="decl"><span class="istickedoff">envInOutPorts UnitEnv{ioPorts = Just ports} = inoutPorts <span class="nottickedoff">ports</span></span>
+<span class="lineno">  134 </span><span class="spaces"></span><span class="istickedoff">envInOutPorts UnitEnv{ioPorts = Nothing} = <span class="nottickedoff">S.empty</span></span></span>
+
+</pre>
+</body>
+</html>

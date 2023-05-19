@@ -201,7 +201,7 @@ verilogHelper :: Val x => x -> Text
 
 -- | RE for extraction assertion data from a testbench log
 verilogAssertRE :: Val x => x -> Regex
-class (Default x) => DefaultX u x | u -> x
+class Default x => DefaultX u x | u -> x
 defX :: DefaultX u x => u -> x
 
 -- | Type class for values, which contain information about fractional part
@@ -255,7 +255,7 @@ instance Data.Default.Class.Default (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => GHC.Enum.Enum (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => GHC.Num.Num (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => GHC.Real.Integral (NITTA.Intermediate.Value.FX m b)
-instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => Data.Bits.Bits (NITTA.Intermediate.Value.FX m b)
+instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => GHC.Bits.Bits (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => NITTA.Intermediate.Value.Val (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => NITTA.Intermediate.Value.FixedPointCompatible (NITTA.Intermediate.Value.FX m b)
 instance (GHC.TypeNats.KnownNat m, GHC.TypeNats.KnownNat b) => GHC.Real.Real (NITTA.Intermediate.Value.FX m b)
@@ -268,7 +268,7 @@ instance GHC.Enum.Enum (NITTA.Intermediate.Value.IntX w)
 instance GHC.Num.Num (NITTA.Intermediate.Value.IntX w)
 instance GHC.Real.Real (NITTA.Intermediate.Value.IntX w)
 instance GHC.Real.Integral (NITTA.Intermediate.Value.IntX w)
-instance GHC.TypeNats.KnownNat w => Data.Bits.Bits (NITTA.Intermediate.Value.IntX w)
+instance GHC.TypeNats.KnownNat w => GHC.Bits.Bits (NITTA.Intermediate.Value.IntX w)
 instance GHC.TypeNats.KnownNat w => NITTA.Intermediate.Value.Val (NITTA.Intermediate.Value.IntX w)
 instance NITTA.Intermediate.Value.FixedPointCompatible (NITTA.Intermediate.Value.IntX w)
 instance Data.Aeson.Types.ToJSON.ToJSON (NITTA.Intermediate.Value.IntX w)
@@ -281,10 +281,10 @@ instance Text.Printf.PrintfArg x => Text.Printf.PrintfArg (NITTA.Intermediate.Va
 instance Data.Default.Class.Default x => Data.Default.Class.Default (NITTA.Intermediate.Value.Attr x)
 instance (GHC.Enum.Enum x, Data.Validity.Validity x) => GHC.Enum.Enum (NITTA.Intermediate.Value.Attr x)
 instance (GHC.Num.Num x, Data.Validity.Validity x) => GHC.Num.Num (NITTA.Intermediate.Value.Attr x)
-instance (GHC.Classes.Ord x, GHC.Real.Real x, Data.Validity.Validity x) => GHC.Real.Real (NITTA.Intermediate.Value.Attr x)
-instance (GHC.Real.Integral x, Data.Validity.Validity x, NITTA.Intermediate.Value.Val x) => GHC.Real.Integral (NITTA.Intermediate.Value.Attr x)
-instance (Data.Bits.Bits x, Data.Validity.Validity x) => Data.Bits.Bits (NITTA.Intermediate.Value.Attr x)
-instance (NITTA.Intermediate.Value.Val x, GHC.Real.Integral x) => NITTA.Intermediate.Value.Val (NITTA.Intermediate.Value.Attr x)
+instance (GHC.Real.Real x, Data.Validity.Validity x) => GHC.Real.Real (NITTA.Intermediate.Value.Attr x)
+instance NITTA.Intermediate.Value.Val x => GHC.Real.Integral (NITTA.Intermediate.Value.Attr x)
+instance (GHC.Bits.Bits x, Data.Validity.Validity x) => GHC.Bits.Bits (NITTA.Intermediate.Value.Attr x)
+instance NITTA.Intermediate.Value.Val x => NITTA.Intermediate.Value.Val (NITTA.Intermediate.Value.Attr x)
 instance NITTA.Intermediate.Value.FixedPointCompatible x => NITTA.Intermediate.Value.FixedPointCompatible (NITTA.Intermediate.Value.Attr x)
 instance Data.Aeson.Types.ToJSON.ToJSON x => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Intermediate.Value.Attr x)
 instance NITTA.Intermediate.Value.Val GHC.Types.Int
@@ -307,7 +307,7 @@ X :: x -> X x
 
 -- | Box forall functions.
 data F v x
-[F] :: (Function f v, Patch f (v, v), Locks f v, Show f, Label f, FunctionSimulation f v x, Typeable f, Eq f) => {fun :: f, funHistory :: [F v x]} -> F v x
+[F] :: (Function f v, Patch f (v, v), Locks f v, Show f, Label f, FunctionSimulation f v x, Typeable f, Eq f) => f -> [F v x] -> F v x
 
 -- | Helper for JSON serialization
 data FView
@@ -342,7 +342,7 @@ Lock :: v -> v -> Lock v
 --   
 --   For example: &gt; c := a + b &gt; [ Lock{ locked=c, lockBy=a }, Lock{
 --   locked=c, lockBy=b } ]
-class (Var v) => Locks x v | x -> v
+class Var v => Locks x v | x -> v
 locks :: Locks x v => x -> [Lock v]
 
 -- | All input variables locks all output variables.
@@ -421,8 +421,8 @@ log2csv :: ToString a => [HashMap a String] -> ByteString
 
 -- | Make sequence of received values '[ Map v x ]'
 cntxReceivedBySlice :: Ord v => Cntx v x -> [Map v x]
-getCntx :: (Eq a, Hashable a, ToString a) => CycleCntx a v -> a -> v
-updateCntx :: (Eq v, Hashable v, ToString v) => CycleCntx v x -> [(v, x)] -> Either String (CycleCntx v x)
+getCntx :: (Hashable a, ToString a) => CycleCntx a v -> a -> v
+updateCntx :: (Hashable v, ToString v) => CycleCntx v x -> [(v, x)] -> Either String (CycleCntx v x)
 
 -- | Patch class allows replacing one variable by another. Especially for
 --   algorithm refactor.
@@ -450,7 +450,7 @@ Changeset :: Map v v -> Map v (Set v) -> Changeset v
 [changeO] :: Changeset v -> Map v (Set v)
 
 -- | Reverse changeset for patch a process unit options / decision.
-reverseDiff :: Ord a => Changeset a -> Changeset a
+reverseDiff :: Ord t => Changeset t -> Changeset t
 instance GHC.Classes.Ord v => GHC.Classes.Ord (NITTA.Intermediate.Types.I v)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Types.I v)
 instance GHC.Classes.Ord v => GHC.Classes.Ord (NITTA.Intermediate.Types.O v)
@@ -635,7 +635,7 @@ fromTemplate :: UnitTag tag => tag -> String -> tag
 --   <li>other features implemented by different type classes (see above
 --   and in <a>NITTA.Model.Problems</a>).</li>
 --   </ol>
-class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t
+class VarValTime v x t => ProcessorUnit u v x t | u -> v x t
 tryBind :: ProcessorUnit u v x t => F v x -> u -> Either String u
 process :: ProcessorUnit u v x t => u -> Process t (StepInfo v x t)
 
@@ -715,7 +715,7 @@ data StepInfo v x t
 [InstructionStep] :: (Show (Instruction pu), Typeable (Instruction pu)) => Instruction pu -> StepInfo v x t
 
 -- | wrapper for nested process unit step (used for networks)
-[NestedStep] :: UnitTag tag => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
+[NestedStep] :: UnitTag tag => tag -> Step t (StepInfo v x t) -> StepInfo v x t
 
 -- | Process unit allocation step
 [AllocationStep] :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
@@ -754,18 +754,18 @@ extractInstructionAt :: (ProcessorUnit u v x t, Typeable u) => u -> t -> [Instru
 --   transfers.<pre>tick | Endpoint | Instruction | 8 | | OE | 9 | Source
 --   ["b"] | | &lt;- nextTick 10 | Target "c" | WR | </pre></li>
 --   </ol>
-withShift :: (Eq p, Num p) => p -> p -> p
+withShift :: (Eq a, Num a) => a -> a -> a
 isRefactorStep :: StepInfo v x t -> Bool
 isAllocationStep :: StepInfo v x t -> Bool
 
 -- | Type class for controllable units. Defines two level of a unit
 --   behaviour representation (see ahead).
 class Controllable pu where {
-    data family Instruction pu :: Type;
+    data Instruction pu :: Type;
     
     -- | Microcode desctibe controll signals on each mUnit cycle (without
     --   exclusion).
-    data family Microcode pu :: Type;
+    data Microcode pu :: Type;
 }
 
 -- | Zip port signal tags and value.
@@ -791,7 +791,7 @@ decodeInstruction :: UnambiguouslyDecode pu => Instruction pu -> Microcode pu
 class Connected pu where {
     
     -- | A processor unit control ports (signals, flags).
-    data family Ports pu :: Type;
+    data Ports pu :: Type;
 }
 
 -- | Getting microcode value at a specific time.
@@ -813,7 +813,7 @@ BrokenSignal :: SignalValue
 
 -- | Type class of processor units with IO ports.
 class IOConnected pu where {
-    data family IOPorts pu :: Type;
+    data IOPorts pu :: Type;
 }
 
 -- | External input ports, which go outside of NITTA mUnit.
@@ -856,7 +856,7 @@ instance GHC.Show.Show NITTA.Model.ProcessorUnits.Types.InoutPortTag
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Types.OutputPortTag
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Types.InputPortTag
 instance NITTA.Model.ProcessorUnits.Types.ProcessorUnit u v x t => NITTA.Model.ProcessorUnits.Types.NextTick u t
-instance (GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction pu), Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode pu), NITTA.Model.ProcessorUnits.Types.ProcessorUnit pu v x t, NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode pu, NITTA.Model.Time.Time t, Data.Typeable.Internal.Typeable pu) => NITTA.Model.ProcessorUnits.Types.ByTime pu t
+instance (GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction pu), Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode pu), NITTA.Model.ProcessorUnits.Types.ProcessorUnit pu v x t, NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode pu, Data.Typeable.Internal.Typeable pu) => NITTA.Model.ProcessorUnits.Types.ByTime pu t
 instance GHC.Classes.Ord t => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.ProcessorUnits.Types.Process t (NITTA.Model.ProcessorUnits.Types.StepInfo v x t)) (NITTA.Intermediate.Types.F v x)
 instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.ProcessorUnits.Types.Step t (NITTA.Model.ProcessorUnits.Types.StepInfo v x t)) (NITTA.Intermediate.Types.Changeset v)
 instance (NITTA.Intermediate.Variable.Var v, GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Step t (NITTA.Model.ProcessorUnits.Types.StepInfo v x t))) => GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.StepInfo v x t)
@@ -1110,7 +1110,7 @@ instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Label (NI
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.ShiftLR v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.ShiftLR v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.ShiftLR v x) v
-instance (NITTA.Intermediate.Variable.Var v, Data.Bits.Bits x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.ShiftLR v x) v x
+instance (NITTA.Intermediate.Variable.Var v, GHC.Bits.Bits x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.ShiftLR v x) v x
 instance GHC.Show.Show x => NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Constant v x)
 instance (NITTA.Intermediate.Variable.Var v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Intermediate.Functions.Constant v x)
 instance (GHC.Show.Show x, GHC.Classes.Eq x, Data.Typeable.Internal.Typeable x) => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Constant v x) v
@@ -1694,7 +1694,7 @@ TraceVar :: Maybe Text -> Text -> TraceVar
 [tvVar] :: TraceVar -> Text
 prettyLog :: (Real t, Show t, PrintfType v, PrintfArg t, ToString a) => [TraceVar] -> [HashMap a t] -> [HashMap String v]
 getTraceVarFormat :: Maybe Text -> Text
-identifyFrontendType :: String -> Maybe FrontendType -> FrontendType
+identifyFrontendType :: FilePath -> Maybe FrontendType -> FrontendType
 translate :: (IsString v, ToString v, Suffix v, Hashable v, Val x, Typeable v, Ord v) => FrontendType -> Text -> FrontendResult v x
 instance Data.Data.Data NITTA.Frontends.FrontendType
 instance GHC.Show.Show NITTA.Frontends.FrontendType
@@ -1724,7 +1724,7 @@ execSchedule :: ProcessorUnit u v x t => u -> State (Schedule u v x t) a -> Proc
 --   
 --   Why can not we get a process here? In the case of Bus Network, it also
 --   fetches processes from underlying units.
-execScheduleWithProcess :: p -> Process t (StepInfo v x t) -> State (Schedule p v x t) a -> Process t (StepInfo v x t)
+execScheduleWithProcess :: pu -> Process t (StepInfo v x t) -> State (Schedule pu v x t) a -> Process t (StepInfo v x t)
 
 -- | Add process step with passed the time and info.
 scheduleStep :: MonadState (Schedule pu v x t) m => Interval t -> StepInfo v x t -> m [ProcessStepID]
@@ -1788,14 +1788,14 @@ endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> 
 getEndpoint :: Step t (StepInfo v x t) -> Maybe (EndpointRole v)
 getInstruction :: Step t (StepInfo v x t) -> Maybe (StepInfo v x t)
 getCad :: Step t (StepInfo v x t) -> Maybe String
-getEndpoints :: Ord t => Process t (StepInfo v x t) -> [EndpointRole v]
+getEndpoints :: Ord b => Process b (StepInfo v x t) -> [EndpointRole v]
 transferred :: ProcessorUnit u a1 x t => u -> Set a1
 inputsPushedAt :: (Ord a, Ord a, Function f a) => Process a (StepInfo a x t2) -> f -> a
 stepsInterval :: Ord a => [Step a i] -> Interval a
 relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (StepInfo a x t2)]
 isIntermediate :: Step t (StepInfo v x t) -> Bool
 getIntermediate :: Step t (StepInfo v x t) -> Maybe (F v x)
-getIntermediates :: Ord t => Process t (StepInfo v x t) -> [F v x]
+getIntermediates :: Ord b => Process b (StepInfo v x t) -> [F v x]
 isEndpoint :: Step t (StepInfo v x t) -> Bool
 isInstruction :: Step t (StepInfo v x t) -> Bool
 getToml :: Text -> Table
@@ -1957,7 +1957,7 @@ SnippetTestBenchConf :: [Text] -> Ports m -> (Microcode m -> Text) -> SnippetTes
 [tbcMC2verilogLiteral] :: SnippetTestBenchConf m -> Microcode m -> Text
 
 -- | Function for testBench PU test
-snippetTestBench :: forall m v x t. (VarValTime v x t, WithFunctions m (F v x), ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m)) => Project m v x -> SnippetTestBenchConf m -> Text
+snippetTestBench :: forall m v x t. (WithFunctions m (F v x), ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m)) => Project m v x -> SnippetTestBenchConf m -> Text
 instance GHC.Generics.Generic (NITTA.Project.TestBench.TestbenchReport v x)
 instance (Data.String.ToString.ToString v, GHC.Show.Show x) => GHC.Show.Show (NITTA.Project.TestBench.TestbenchReport v x)
 
@@ -1966,7 +1966,7 @@ module NITTA.Model.Networks.Types
 
 -- | Existential container for a processor unit .
 data PU v x t
-[PU] :: PUClasses pu v x t => {unit :: pu, diff :: Changeset v, uEnv :: UnitEnv pu} -> PU v x t
+[PU] :: PUClasses pu v x t => pu -> Changeset v -> UnitEnv pu -> PU v x t
 type PUClasses pu v x t = (ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, Show (Instruction pu), Typeable pu, UnambiguouslyDecode pu, TargetSystemComponent pu, Controllable pu, IOTestBench pu v x, Locks pu v)
 data IOSynchronization
 
@@ -1982,7 +1982,7 @@ OnBoard :: IOSynchronization
 -- | PU and some additional information required for allocation on
 --   BusNetwork
 data PUPrototype tag v x t
-[PUPrototype] :: (UnitTag tag, PUClasses pu v x t) => {pTag :: tag " Prototype tag. You can specify tag as a template by adding {x}. This will allow to allocate PU more than once by replacing {x} with index. When PU is allocated processUnitTag will look like bnName_pTag.", pProto :: pu " PU prototype", pIOPorts :: IOPorts pu " IO ports that will be used by PU"} -> PUPrototype tag v x t
+[PUPrototype] :: (UnitTag tag, PUClasses pu v x t) => tag -> pu -> IOPorts pu -> PUPrototype tag v x t
 puInputPorts :: PU v x t -> Set InputPortTag
 puOutputPorts :: PU v x t -> Set OutputPortTag
 puInOutPorts :: PU v x t -> Set InoutPortTag
@@ -2028,22 +2028,22 @@ instance GHC.Show.Show NITTA.Project.Template.Conf
 instance Data.Default.Class.Default NITTA.Project.Template.TemplateConf
 instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Project.Template.TemplateConf
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Project.Template.TemplateConf
-instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Data.Default.Class.Default (Data.HashMap.Internal.HashMap k v)
+instance Data.Hashable.Class.Hashable k => Data.Default.Class.Default (Data.HashMap.Internal.HashMap k v)
 
 
 module NITTA.Project
 
 -- | Write project with all available parts.
 writeProject :: (TargetSystemComponent m, Testable m v x) => Project m v x -> IO ()
-runTestbench :: (WithFunctions u a, ProcessorUnit u v x t, Hashable v, IsString v, DefaultX u p, Val p, Show a, Read x, Eq v, TargetSystemComponent u, Testable u v x) => Project u v x -> IO (TestbenchReport v x)
+runTestbench :: (WithFunctions u a, ProcessorUnit u v x t, Hashable v, IsString v, DefaultX u p, Val p, Show a, Read x, TargetSystemComponent u, Testable u v x) => Project u v x -> IO (TestbenchReport v x)
 
 
 module NITTA.Model.ProcessorUnits.Shift
 data Shift v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 shift :: Default t => Bool -> Shift v x t
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Shift.Shift v x t))
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Shift.Mode
@@ -2405,8 +2405,8 @@ multiplier :: Default t => Bool -> Multiplier v x t
 data Multiplier v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t))
@@ -2435,7 +2435,7 @@ instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (
 
 
 module NITTA.Model.ProcessorUnits.IO.SimpleIO
-class (Typeable i) => SimpleIOInterface i
+class Typeable i => SimpleIOInterface i
 data SimpleIO i v x t
 SimpleIO :: Int -> Maybe Int -> [Q v x] -> Int -> Bool -> [Q v x] -> Int -> Process t (StepInfo v x t) -> SimpleIO i v x t
 [$sel:bounceFilter:SimpleIO] :: SimpleIO i v x t -> Int
@@ -2452,7 +2452,7 @@ SimpleIO :: Int -> Maybe Int -> [Q v x] -> Int -> Bool -> [Q v x] -> Int -> Proc
 [$sel:process_:SimpleIO] :: SimpleIO i v x t -> Process t (StepInfo v x t)
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
+data Ports pu :: Type
 protocolDescription :: forall i v x t. (VarValTime v x t, SimpleIOInterface i, ToJSON v) => Text -> SimpleIO i v x t -> Text -> Implementation
 instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t))
 instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t))
@@ -2481,15 +2481,15 @@ type SPI v x t = SimpleIO SPIinterface v x t
 anySPI :: Time t => Int -> Maybe Int -> SPI v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 spiMasterPorts :: Text -> IOPorts (SPI v x t)
 spiSlavePorts :: Text -> IOPorts (SPI v x t)
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t))
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t)
 instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t)
 instance (Data.Aeson.Types.ToJSON.ToJSON v, NITTA.Model.Time.VarValTime v x t) => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t)
-instance (NITTA.Model.Time.VarValTime v x t, GHC.Num.Num x) => NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t) v x
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.IO.SPI.SPI v x t) v x
 instance NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIOInterface NITTA.Model.ProcessorUnits.IO.SPI.SPIinterface
 
 
@@ -2498,8 +2498,8 @@ type I2C v x t = SimpleIO I2Cinterface v x t
 i2cUnit :: Time t => Int -> I2C v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.IO.I2C.I2C v x t))
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.IO.I2C.I2C v x t)
 instance (Data.Aeson.Types.ToJSON.ToJSON v, NITTA.Model.Time.VarValTime v x t) => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.IO.I2C.I2C v x t)
@@ -2518,8 +2518,8 @@ Fram :: Array Int (Cell v x t) -> [(Buffer v x, Job v x t)] -> Process t (StepIn
 [$sel:process_:Fram] :: Fram v x t -> Process t (StepInfo v x t)
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 framWithSize :: (Default x, Default t) => Int -> Fram v x t
 instance GHC.Classes.Eq t => GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Fram.Job v x t)
 instance GHC.Show.Show t => GHC.Show.Show (NITTA.Model.ProcessorUnits.Fram.Job v x t)
@@ -2566,8 +2566,8 @@ Divider :: [Job v x t] -> [F v x] -> Process t (StepInfo v x t) -> t -> Bool -> 
 divider :: Default t => t -> Bool -> Divider v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Divider.InputDesc
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Divider.InputDesc
 instance GHC.Classes.Eq NITTA.Model.ProcessorUnits.Divider.OutputDesc
@@ -2637,8 +2637,8 @@ Broken :: [F v x] -> [v] -> [v] -> Maybe t -> Maybe (t, F v x) -> [ProcessStepID
 [$sel:unknownDataOut:Broken] :: Broken v x t -> Bool
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Broken.Broken v x t))
 instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Broken.Broken v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Broken.Broken v x t))
@@ -2670,8 +2670,8 @@ module NITTA.Model.ProcessorUnits.Accum
 data Accum v x t
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 instance GHC.Show.Show NITTA.Model.ProcessorUnits.Accum.JobState
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
 instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Accum.Accum v x t))
@@ -2683,8 +2683,8 @@ instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NIT
 instance NITTA.Model.Time.VarValTime v x t => GHC.Show.Show (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance NITTA.Model.Time.VarValTime v x t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.Accum.Accum v x t) x
-instance (NITTA.Model.Time.VarValTime v x t, GHC.Num.Num x) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x t
-instance (NITTA.Model.Time.VarValTime v x t, GHC.Num.Num x) => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v t
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x t
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v t
 instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
 instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Accum.Accum v x t)
@@ -2861,7 +2861,7 @@ isSynthesisComplete :: ProcessorUnit u v x t => TargetSystem u tag v x t -> Bool
 instance GHC.Generics.Generic (NITTA.Model.TargetSystem.TargetSystem u tag v x t)
 instance Data.Default.Class.Default u => Data.Default.Class.Default (NITTA.Model.TargetSystem.TargetSystem u tag v x t)
 instance NITTA.Intermediate.Types.WithFunctions u (NITTA.Intermediate.Types.F v x) => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.TargetSystem.TargetSystem u tag v x t) (NITTA.Intermediate.Types.F v x)
-instance (NITTA.Model.Time.VarValTime v x t, NITTA.Model.ProcessorUnits.Types.ProcessorUnit u v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x t
+instance NITTA.Model.ProcessorUnits.Types.ProcessorUnit u v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x t
 instance NITTA.Model.Problems.Bind.BindProblem u tag v x => NITTA.Model.Problems.Bind.BindProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag v x
 instance NITTA.Model.Problems.Dataflow.DataflowProblem u tag v t => NITTA.Model.Problems.Dataflow.DataflowProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag v t
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem u v x) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
@@ -2944,13 +2944,13 @@ BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) ->
 -- | Set of the PUs that could be added to the network during synthesis
 --   process
 [bnPUPrototypes] :: BusNetwork tag v x t -> Map tag (PUPrototype tag v x t)
-data family Instruction pu :: Type
+data Instruction pu :: Type
 
 -- | A processor unit control ports (signals, flags).
-data family Ports pu :: Type
-data family IOPorts pu :: Type
+data Ports pu :: Type
+data IOPorts pu :: Type
 bindedFunctions :: Ord k => k -> BusNetwork k v x t -> [F v x]
-controlSignalLiteral :: Interpolatable (IsCustomSink dst) src dst => src -> dst
+controlSignalLiteral :: (Builder (IsCustomSink dst) dst ~ Builder (IsCustomSink dst) dst, Interpolatable (IsCustomSink dst) src dst) => src -> dst
 busNetwork :: Default t => tag -> IOSynchronization -> BusNetwork tag v x t
 modifyNetwork :: BusNetwork k v x t -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
@@ -3017,7 +3017,7 @@ Tree :: Sid -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m
 [sSubForestVar] :: Tree m tag v x t -> TMVar [Tree m tag v x t]
 data SynthesisDecision ctx m
 [Root] :: SynthesisDecision ctx m
-[SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} -> SynthesisDecision ctx m
+[SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => o -> d -> p -> Map Text Float -> SynthesisDecision ctx m
 data SynthesisState m tag v x t
 SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> [ProcessWave v x] -> Int -> Int -> Set v -> SynthesisState m tag v x t
 [sParent] :: SynthesisState m tag v x t -> Maybe (Tree m tag v x t)
@@ -3239,7 +3239,7 @@ bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 
 
 module NITTA.Synthesis.Analysis
-getTreeInfo :: (ProcessorUnit u v x t, Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag v x t) tag v x t -> IO TreeInfo
+getTreeInfo :: (ProcessorUnit u v1 x1 t1, Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag1 v1 x1 t1) tag v x t -> IO TreeInfo
 
 -- | Metrics of synthesis tree process
 data TreeInfo
@@ -3477,7 +3477,7 @@ instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.T
 module NITTA.UIBackend
 
 -- | Run backend server.
-backendServer :: (UnitTag w, Val w, Bounded w, Hashable w, Suffix w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, Label w, Show w, Default w, Integral w, Typeable w, Typeable w, Ord w, ToString w, IsString w) => Port -> [(w, [w])] -> String -> TargetSystem (BusNetwork w w w w) w w w w -> IO ()
+backendServer :: (UnitTag w, Val w, Bounded w, Hashable w, Suffix w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, Label w, Show w, Default w, Integral w, Typeable w, Typeable w, Ord w, ToString w, IsString w) => Int -> [(w, [w])] -> String -> TargetSystem (BusNetwork w w w w) w w w w -> IO ()
 prepareJSAPI :: Interpolatable 'True p Text => p -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath

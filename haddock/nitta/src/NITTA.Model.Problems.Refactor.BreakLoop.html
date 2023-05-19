@@ -39,31 +39,24 @@ For more details: 'NITTA.Intermediate.Functions.Loop'
 </span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Functions.html"><span class="hs-identifier">NITTA.Intermediate.Functions</span></a></span><span>
 </span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html"><span class="hs-identifier">NITTA.Intermediate.Types</span></a></span><span>
 </span><span id="line-41"></span><span>
-</span><span id="line-42"></span><span id="local-6989586621680152680"><span id="local-6989586621680152681"></span></span><span class="hs-keyword">data</span><span> </span><span id="BreakLoop"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-var">BreakLoop</span></a></span></span><span> </span><span id="local-6989586621680152833"><span class="annot"><a href="#local-6989586621680152833"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680152832"><span class="annot"><a href="#local-6989586621680152832"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BreakLoop"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-var">BreakLoop</span></a></span></span><span>
+</span><span id="line-42"></span><span id="local-6989586621680183195"><span id="local-6989586621680183196"></span></span><span class="hs-keyword">data</span><span> </span><span id="BreakLoop"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-var">BreakLoop</span></a></span></span><span> </span><span id="local-6989586621680183342"><span class="annot"><a href="#local-6989586621680183342"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680183341"><span class="annot"><a href="#local-6989586621680183341"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BreakLoop"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-var">BreakLoop</span></a></span></span><span>
 </span><span id="line-43"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="loopX"><span class="annot"><span class="annottext">forall v x. BreakLoop v x -&gt; x
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopX"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680152832"><span class="hs-identifier hs-type">x</span></a></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopX"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680183341"><span class="hs-identifier hs-type">x</span></a></span><span>
 </span><span id="line-44"></span><span>    </span><span class="hs-comment">-- ^ initial looped value</span><span>
 </span><span id="line-45"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="loopO"><span class="annot"><span class="annottext">forall v x. BreakLoop v x -&gt; Set v
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopO"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680152833"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopO"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680183342"><span class="hs-identifier hs-type">v</span></a></span><span>
 </span><span id="line-46"></span><span>    </span><span class="hs-comment">-- ^ output variables</span><span>
 </span><span id="line-47"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="loopI"><span class="annot"><span class="annottext">forall v x. BreakLoop v x -&gt; v
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopI"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680152833"><span class="hs-identifier hs-type">v</span></a></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#loopI"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680183342"><span class="hs-identifier hs-type">v</span></a></span><span>
 </span><span id="line-48"></span><span>    </span><span class="hs-comment">-- ^ input variable</span><span>
 </span><span id="line-49"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-50"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall x. BreakLoop v x -&gt; Rep (BreakLoop v x) x)
--&gt; (forall x. Rep (BreakLoop v x) x -&gt; BreakLoop v x)
--&gt; Generic (BreakLoop v x)
-forall x. Rep (BreakLoop v x) x -&gt; BreakLoop v x
-forall x. BreakLoop v x -&gt; Rep (BreakLoop v x) x
-forall a.
+</span><span id="line-50"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a.
 (forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
 forall v x x. Rep (BreakLoop v x) x -&gt; BreakLoop v x
 forall v x x. BreakLoop v x -&gt; Rep (BreakLoop v x) x
 $cto :: forall v x x. Rep (BreakLoop v x) x -&gt; BreakLoop v x
 $cfrom :: forall v x x. BreakLoop v x -&gt; Rep (BreakLoop v x) x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152664"><span id="local-6989586621680152670"><span class="annot"><span class="annottext">BreakLoop v x -&gt; BreakLoop v x -&gt; Bool
-(BreakLoop v x -&gt; BreakLoop v x -&gt; Bool)
--&gt; (BreakLoop v x -&gt; BreakLoop v x -&gt; Bool) -&gt; Eq (BreakLoop v x)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183179"><span id="local-6989586621680183185"><span class="annot"><span class="annottext">BreakLoop v x -&gt; BreakLoop v x -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
 forall v x. (Eq x, Eq v) =&gt; BreakLoop v x -&gt; BreakLoop v x -&gt; Bool
 /= :: BreakLoop v x -&gt; BreakLoop v x -&gt; Bool
@@ -72,138 +65,109 @@ $c/= :: forall v x. (Eq x, Eq v) =&gt; BreakLoop v x -&gt; BreakLoop v x -&gt; B
 $c== :: forall v x. (Eq x, Eq v) =&gt; BreakLoop v x -&gt; BreakLoop v x -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-51"></span><span>
-</span><span id="line-52"></span><span id="local-6989586621680152818"><span id="local-6989586621680152819"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680152658"><span id="local-6989586621680152661"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152819"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152818"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152819"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152818"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-53"></span><span>    </span><span id="local-6989586621680152643"><span class="annot"><span class="annottext">show :: BreakLoop v x -&gt; String
+</span><span id="line-52"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680183173"><span id="local-6989586621680183176"><span id="local-6989586621680183327"><span id="local-6989586621680183328"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183328"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Value.html#Val"><span class="hs-identifier hs-type">Val</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183327"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183328"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183327"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>    </span><span id="local-6989586621680183158"><span class="annot"><span class="annottext">show :: BreakLoop v x -&gt; String
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;BreakLoop: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
-forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; (BreakLoop v x -&gt; String) -&gt; BreakLoop v x -&gt; String
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">F v x -&gt; String
-forall a. Show a =&gt; a -&gt; String
-</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">(F v x -&gt; String)
--&gt; (BreakLoop v x -&gt; F v x) -&gt; BreakLoop v x -&gt; String
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">BreakLoop v x -&gt; F v x
-forall {v} {x}.
+</span><span class="hs-string">&quot;BreakLoop: &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall {v} {x}.
 (Hashable v, Suffix v, ToString v, IsString v, Ord v, Show x,
  Typeable v, Typeable x, Eq x) =&gt;
 BreakLoop v x -&gt; F v x
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoop"><span class="hs-identifier hs-var">recLoop</span></a></span></span></span><span>
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoop"><span class="hs-identifier hs-var">recLoop</span></a></span><span>
 </span><span id="line-54"></span><span>
-</span><span id="line-55"></span><span class="hs-keyword">class</span><span> </span><span id="BreakLoopProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoopProblem"><span class="hs-identifier hs-var">BreakLoopProblem</span></a></span></span><span> </span><span id="local-6989586621680152797"><span class="annot"><a href="#local-6989586621680152797"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680152796"><span class="annot"><a href="#local-6989586621680152796"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680152795"><span class="annot"><a href="#local-6989586621680152795"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680152797"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680152796"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152795"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-56"></span><span>    </span><span id="breakLoopOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopOptions"><span class="hs-identifier hs-type">breakLoopOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680152797"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152796"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152795"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-57"></span><span>    </span><span id="local-6989586621680152638"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopOptions"><span class="hs-identifier hs-var hs-var">breakLoopOptions</span></a></span><span> </span><span class="annot"><span class="annottext">u
+</span><span id="line-55"></span><span class="hs-keyword">class</span><span> </span><span id="BreakLoopProblem"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoopProblem"><span class="hs-identifier hs-var">BreakLoopProblem</span></a></span></span><span> </span><span id="local-6989586621680183306"><span class="annot"><a href="#local-6989586621680183306"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680183305"><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680183304"><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680183306"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-56"></span><span>    </span><span id="breakLoopOptions"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopOptions"><span class="hs-identifier hs-type">breakLoopOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680183306"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-57"></span><span>    </span><span id="local-6989586621680183153"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopOptions"><span class="hs-identifier hs-var hs-var">breakLoopOptions</span></a></span><span> </span><span class="annot"><span class="annottext">u
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span></span><span>
 </span><span id="line-58"></span><span>
-</span><span id="line-59"></span><span>    </span><span id="breakLoopDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopDecision"><span class="hs-identifier hs-type">breakLoopDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680152797"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152796"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680152795"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680152797"><span class="hs-identifier hs-type">u</span></a></span><span>
-</span><span id="line-60"></span><span>    </span><span id="local-6989586621680152636"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopDecision"><span class="hs-identifier hs-var hs-var">breakLoopDecision</span></a></span><span> </span><span class="annot"><span class="annottext">u
+</span><span id="line-59"></span><span>    </span><span id="breakLoopDecision"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopDecision"><span class="hs-identifier hs-type">breakLoopDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680183306"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183305"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680183304"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680183306"><span class="hs-identifier hs-type">u</span></a></span><span>
+</span><span id="line-60"></span><span>    </span><span id="local-6989586621680183151"><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopDecision"><span class="hs-identifier hs-var hs-var">breakLoopDecision</span></a></span><span> </span><span class="annot"><span class="annottext">u
 </span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">BreakLoop v x
-</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; u
-forall a. HasCallStack =&gt; String -&gt; a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;not supported&quot;</span></span></span><span>
 </span><span id="line-61"></span><span>
 </span><span id="line-62"></span><span id="recLoop"><span class="annot"><span class="annottext">recLoop :: BreakLoop v x -&gt; F v x
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoop"><span class="hs-identifier hs-var hs-var">recLoop</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680152594"><span class="annot"><span class="annottext">x
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoop"><span class="hs-identifier hs-var hs-var">recLoop</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680183108"><span class="annot"><span class="annottext">x
 loopX :: x
 loopX :: forall v x. BreakLoop v x -&gt; x
-</span><a href="#local-6989586621680152594"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152593"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680183108"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183107"><span class="annot"><span class="annottext">Set v
 loopO :: Set v
 loopO :: forall v x. BreakLoop v x -&gt; Set v
-</span><a href="#local-6989586621680152593"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152592"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680183107"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183106"><span class="annot"><span class="annottext">v
 loopI :: v
 loopI :: forall v x. BreakLoop v x -&gt; v
-</span><a href="#local-6989586621680152592"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-63"></span><span>    </span><span class="annot"><span class="annottext">Loop v x -&gt; F v x
-forall {f} {v} {x}.
+</span><a href="#local-6989586621680183106"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><span class="annottext">forall {f} {v} {x}.
 (Function f v, Patch f (v, v), Locks f v, Show f, Label f,
  FunctionSimulation f v x, Typeable f, Eq f) =&gt;
 f -&gt; F v x
-</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">(Loop v x -&gt; F v x) -&gt; Loop v x -&gt; F v x
-forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">X x -&gt; O v -&gt; I v -&gt; Loop v x
-forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
-</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x -&gt; X x
-forall x. x -&gt; X x
+</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
+</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall x. x -&gt; X x
 </span><a href="NITTA.Intermediate.Types.html#X"><span class="hs-identifier hs-var">X</span></a></span><span> </span><span class="annot"><span class="annottext">x
-</span><a href="#local-6989586621680152594"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; O v
-forall v. Set v -&gt; O v
+</span><a href="#local-6989586621680183108"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. Set v -&gt; O v
 </span><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-var">O</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680152593"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; I v
-forall v. v -&gt; I v
+</span><a href="#local-6989586621680183107"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. v -&gt; I v
 </span><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-var">I</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680152592"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680183106"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-64"></span><span>
 </span><span id="line-65"></span><span id="recLoopIn"><span class="annot"><span class="annottext">recLoopIn :: BreakLoop v x -&gt; F v x
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoopIn"><span class="hs-identifier hs-var hs-var">recLoopIn</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680152548"><span class="annot"><span class="annottext">x
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoopIn"><span class="hs-identifier hs-var hs-var">recLoopIn</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680183062"><span class="annot"><span class="annottext">x
 loopX :: x
 loopX :: forall v x. BreakLoop v x -&gt; x
-</span><a href="#local-6989586621680152548"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152547"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680183062"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183061"><span class="annot"><span class="annottext">Set v
 loopO :: Set v
 loopO :: forall v x. BreakLoop v x -&gt; Set v
-</span><a href="#local-6989586621680152547"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152546"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680183061"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183060"><span class="annot"><span class="annottext">v
 loopI :: v
 loopI :: forall v x. BreakLoop v x -&gt; v
-</span><a href="#local-6989586621680152546"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">LoopEnd v x -&gt; F v x
-forall {f} {v} {x}.
+</span><a href="#local-6989586621680183060"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">forall {f} {v} {x}.
 (Function f v, Patch f (v, v), Locks f v, Show f, Label f,
  FunctionSimulation f v x, Typeable f, Eq f) =&gt;
 f -&gt; F v x
-</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">(LoopEnd v x -&gt; F v x) -&gt; LoopEnd v x -&gt; F v x
-forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Loop v x -&gt; I v -&gt; LoopEnd v x
-forall v x. Loop v x -&gt; I v -&gt; LoopEnd v x
-</span><a href="NITTA.Intermediate.Functions.html#LoopEnd"><span class="hs-identifier hs-var">LoopEnd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">X x -&gt; O v -&gt; I v -&gt; Loop v x
-forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
-</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x -&gt; X x
-forall x. x -&gt; X x
+</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x. Loop v x -&gt; I v -&gt; LoopEnd v x
+</span><a href="NITTA.Intermediate.Functions.html#LoopEnd"><span class="hs-identifier hs-var">LoopEnd</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
+</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall x. x -&gt; X x
 </span><a href="NITTA.Intermediate.Types.html#X"><span class="hs-identifier hs-var">X</span></a></span><span> </span><span class="annot"><span class="annottext">x
-</span><a href="#local-6989586621680152548"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; O v
-forall v. Set v -&gt; O v
+</span><a href="#local-6989586621680183062"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. Set v -&gt; O v
 </span><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-var">O</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680152547"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; I v
-forall v. v -&gt; I v
+</span><a href="#local-6989586621680183061"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. v -&gt; I v
 </span><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-var">I</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680152546"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; I v
-forall v. v -&gt; I v
+</span><a href="#local-6989586621680183060"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. v -&gt; I v
 </span><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-var">I</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680152546"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680183060"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-67"></span><span>
 </span><span id="line-68"></span><span id="recLoopOut"><span class="annot"><span class="annottext">recLoopOut :: BreakLoop v x -&gt; F v x
-</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoopOut"><span class="hs-identifier hs-var hs-var">recLoopOut</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680152506"><span class="annot"><span class="annottext">x
+</span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoopOut"><span class="hs-identifier hs-var hs-var">recLoopOut</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span id="local-6989586621680183020"><span class="annot"><span class="annottext">x
 loopX :: x
 loopX :: forall v x. BreakLoop v x -&gt; x
-</span><a href="#local-6989586621680152506"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152505"><span class="annot"><span class="annottext">Set v
+</span><a href="#local-6989586621680183020"><span class="hs-identifier hs-var hs-var">loopX</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183019"><span class="annot"><span class="annottext">Set v
 loopO :: Set v
 loopO :: forall v x. BreakLoop v x -&gt; Set v
-</span><a href="#local-6989586621680152505"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680152504"><span class="annot"><span class="annottext">v
+</span><a href="#local-6989586621680183019"><span class="hs-identifier hs-var hs-var">loopO</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680183018"><span class="annot"><span class="annottext">v
 loopI :: v
 loopI :: forall v x. BreakLoop v x -&gt; v
-</span><a href="#local-6989586621680152504"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">LoopBegin v x -&gt; F v x
-forall {f} {v} {x}.
+</span><a href="#local-6989586621680183018"><span class="hs-identifier hs-var hs-var">loopI</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">forall {f} {v} {x}.
 (Function f v, Patch f (v, v), Locks f v, Show f, Label f,
  FunctionSimulation f v x, Typeable f, Eq f) =&gt;
 f -&gt; F v x
-</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">(LoopBegin v x -&gt; F v x) -&gt; LoopBegin v x -&gt; F v x
-forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Loop v x -&gt; O v -&gt; LoopBegin v x
-forall v x. Loop v x -&gt; O v -&gt; LoopBegin v x
-</span><a href="NITTA.Intermediate.Functions.html#LoopBegin"><span class="hs-identifier hs-var">LoopBegin</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">X x -&gt; O v -&gt; I v -&gt; Loop v x
-forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
-</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x -&gt; X x
-forall x. x -&gt; X x
+</span><a href="NITTA.Intermediate.Types.html#packF"><span class="hs-identifier hs-var">packF</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x. Loop v x -&gt; O v -&gt; LoopBegin v x
+</span><a href="NITTA.Intermediate.Functions.html#LoopBegin"><span class="hs-identifier hs-var">LoopBegin</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v x. X x -&gt; O v -&gt; I v -&gt; Loop v x
+</span><a href="NITTA.Intermediate.Functions.html#Loop"><span class="hs-identifier hs-var">Loop</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall x. x -&gt; X x
 </span><a href="NITTA.Intermediate.Types.html#X"><span class="hs-identifier hs-var">X</span></a></span><span> </span><span class="annot"><span class="annottext">x
-</span><a href="#local-6989586621680152506"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; O v
-forall v. Set v -&gt; O v
+</span><a href="#local-6989586621680183020"><span class="hs-identifier hs-var">loopX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. Set v -&gt; O v
 </span><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-var">O</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680152505"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">v -&gt; I v
-forall v. v -&gt; I v
+</span><a href="#local-6989586621680183019"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. v -&gt; I v
 </span><a href="NITTA.Intermediate.Types.html#I"><span class="hs-identifier hs-var">I</span></a></span><span> </span><span class="annot"><span class="annottext">v
-</span><a href="#local-6989586621680152504"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set v -&gt; O v
-forall v. Set v -&gt; O v
+</span><a href="#local-6989586621680183018"><span class="hs-identifier hs-var">loopI</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v. Set v -&gt; O v
 </span><a href="NITTA.Intermediate.Types.html#O"><span class="hs-identifier hs-var">O</span></a></span><span> </span><span class="annot"><span class="annottext">Set v
-</span><a href="#local-6989586621680152505"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680183019"><span class="hs-identifier hs-var">loopO</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-70"></span></pre></body></html>

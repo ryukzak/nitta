@@ -1,0 +1,371 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE DuplicateRecordFields #-}
+<span class="lineno">    2 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    3 </span>{-# LANGUAGE QuasiQuotes #-}
+<span class="lineno">    4 </span>{-# LANGUAGE RecordWildCards #-}
+<span class="lineno">    5 </span>{-# LANGUAGE StandaloneDeriving #-}
+<span class="lineno">    6 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    7 </span>
+<span class="lineno">    8 </span>{- |
+<span class="lineno">    9 </span>Module      : NITTA.Model.ProcessorUnits.Broken
+<span class="lineno">   10 </span>Description : Process Unit for negative tests
+<span class="lineno">   11 </span>Copyright   : (c) Aleksandr Penskoi, 2020
+<span class="lineno">   12 </span>License     : BSD3
+<span class="lineno">   13 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   14 </span>Stability   : experimental
+<span class="lineno">   15 </span>-}
+<span class="lineno">   16 </span>module NITTA.Model.ProcessorUnits.Broken (
+<span class="lineno">   17 </span>    Broken (..),
+<span class="lineno">   18 </span>    Ports (..),
+<span class="lineno">   19 </span>    IOPorts (..),
+<span class="lineno">   20 </span>) where
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>import Control.Monad
+<span class="lineno">   23 </span>import Data.Default
+<span class="lineno">   24 </span>import Data.List (find, (\\))
+<span class="lineno">   25 </span>import Data.Set (elems, fromList, member)
+<span class="lineno">   26 </span>import Data.String.Interpolate
+<span class="lineno">   27 </span>import Data.String.ToString
+<span class="lineno">   28 </span>import Data.Text qualified as T
+<span class="lineno">   29 </span>import NITTA.Intermediate.Functions qualified as F
+<span class="lineno">   30 </span>import NITTA.Intermediate.Types
+<span class="lineno">   31 </span>import NITTA.Model.Problems
+<span class="lineno">   32 </span>import NITTA.Model.ProcessorUnits.Types
+<span class="lineno">   33 </span>import NITTA.Model.Time
+<span class="lineno">   34 </span>import NITTA.Project
+<span class="lineno">   35 </span>import NITTA.Utils
+<span class="lineno">   36 </span>import NITTA.Utils.ProcessDescription
+<span class="lineno">   37 </span>import Numeric.Interval.NonEmpty (sup, (...))
+<span class="lineno">   38 </span>import Numeric.Interval.NonEmpty qualified as I
+<span class="lineno">   39 </span>import Prettyprinter
+<span class="lineno">   40 </span>
+<span class="lineno">   41 </span>data Broken v x t = Broken
+<span class="lineno">   42 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">remain</span></span></span> :: [F v x]
+<span class="lineno">   43 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">targets</span></span></span> :: [v]
+<span class="lineno">   44 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sources</span></span></span> :: [v]
+<span class="lineno">   45 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">doneAt</span></span></span> :: Maybe t
+<span class="lineno">   46 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentWork</span></span></span> :: Maybe (t, F v x)
+<span class="lineno">   47 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">currentWorkEndpoints</span></span></span> :: [ProcessStepID]
+<span class="lineno">   48 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">process_</span></span></span> :: Process t (StepInfo v x t)
+<span class="lineno">   49 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">brokeVerilog</span></span></span> :: Bool
+<span class="lineno">   50 </span>    -- ^ generate verilog code with syntax error
+<span class="lineno">   51 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrongVerilogSimulationValue</span></span></span> :: Bool
+<span class="lineno">   52 </span>    -- ^ use process unit HW implementation with error
+<span class="lineno">   53 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrongControlOnPush</span></span></span> :: Bool
+<span class="lineno">   54 </span>    -- ^ wrong control sequence for data push (receiving data to PU)
+<span class="lineno">   55 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrongControlOnPull</span></span></span> :: Bool
+<span class="lineno">   56 </span>    -- ^ wrong control sequence for data pull (sending data from PU)
+<span class="lineno">   57 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lostEndpointTarget</span></span></span> :: Bool
+<span class="lineno">   58 </span>    -- ^ lost target endpoint due synthesis
+<span class="lineno">   59 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lostEndpointSource</span></span></span> :: Bool
+<span class="lineno">   60 </span>    -- ^ lost source endpoint due synthesis
+<span class="lineno">   61 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrongAttr</span></span></span> :: Bool
+<span class="lineno">   62 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lostFunctionInVerticalRelation</span></span></span> :: Bool
+<span class="lineno">   63 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lostEndpointInVerticalRelation</span></span></span> :: Bool
+<span class="lineno">   64 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lostInstructionInVerticalRelation</span></span></span> :: Bool
+<span class="lineno">   65 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unknownDataOut</span></span></span> :: Bool
+<span class="lineno">   66 </span>    }
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>instance VarValTime v x t =&gt; Pretty (Broken v x t) where
+<span class="lineno">   69 </span>    <span class="decl"><span class="istickedoff">pretty Broken{..} =</span>
+<span class="lineno">   70 </span><span class="spaces">        </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span>
+<span class="lineno">   71 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">Broken:</span></span></span></span></span>
+<span class="lineno">   72 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">remain:#{ remain }</span></span></span></span></span>
+<span class="lineno">   73 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">targets:#{ map toString targets }</span></span></span></span></span>
+<span class="lineno">   74 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">sources:#{ map toString sources }</span></span></span></span></span>
+<span class="lineno">   75 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">currentWork: #{ currentWork }</span></span></span></span></span>
+<span class="lineno">   76 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">currentWorkEndpoints: #{ currentWorkEndpoints }</span></span></span></span></span>
+<span class="lineno">   77 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">brokeVerilog: #{ brokeVerilog }</span></span></span></span></span>
+<span class="lineno">   78 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">wrongVerilogSimulationValue: #{ wrongVerilogSimulationValue }</span></span></span></span></span>
+<span class="lineno">   79 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">wrongControlOnPush: #{ wrongControlOnPush }</span></span></span></span></span>
+<span class="lineno">   80 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">wrongControlOnPull: #{ wrongControlOnPull }</span></span></span></span></span>
+<span class="lineno">   81 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">lostEndpointTarget: #{ lostEndpointTarget }</span></span></span></span></span>
+<span class="lineno">   82 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">lostEndpointSource: #{ lostEndpointSource }</span></span></span></span></span>
+<span class="lineno">   83 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">wrongAttr: #{ wrongAttr }</span></span></span></span></span>
+<span class="lineno">   84 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">unknownDataOut: #{ unknownDataOut }</span></span></span></span></span>
+<span class="lineno">   85 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">#{ indent 4 $ pretty $ process_ }</span></span></span></span></span>
+<span class="lineno">   86 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span></span></span></span>
+<span class="lineno">   87 </span>
+<span class="lineno">   88 </span>instance Var v =&gt; Locks (Broken v x t) v where
+<span class="lineno">   89 </span>    <span class="decl"><span class="istickedoff">locks Broken{remain, sources, targets} =</span>
+<span class="lineno">   90 </span><span class="spaces">        </span><span class="istickedoff">[ <span class="nottickedoff">Lock{lockBy, locked}</span></span>
+<span class="lineno">   91 </span><span class="spaces">        </span><span class="istickedoff">| locked &lt;- sources</span>
+<span class="lineno">   92 </span><span class="spaces">        </span><span class="istickedoff">, lockBy &lt;- targets</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff">]</span>
+<span class="lineno">   94 </span><span class="spaces">            </span><span class="istickedoff">++ [ <span class="nottickedoff">Lock{lockBy, locked}</span></span>
+<span class="lineno">   95 </span><span class="spaces">               </span><span class="istickedoff">| locked &lt;- concatMap (elems . variables) remain</span>
+<span class="lineno">   96 </span><span class="spaces">               </span><span class="istickedoff">, lockBy &lt;- sources ++ targets</span>
+<span class="lineno">   97 </span><span class="spaces">               </span><span class="istickedoff">]</span></span>
+<span class="lineno">   98 </span>
+<span class="lineno">   99 </span>instance BreakLoopProblem (Broken v x t) v x
+<span class="lineno">  100 </span>instance ConstantFoldingProblem (Broken v x t) v x
+<span class="lineno">  101 </span>instance OptimizeAccumProblem (Broken v x t) v x
+<span class="lineno">  102 </span>instance ResolveDeadlockProblem (Broken v x t) v x
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span>instance VarValTime v x t =&gt; ProcessorUnit (Broken v x t) v x t where
+<span class="lineno">  105 </span>    <span class="decl"><span class="istickedoff">tryBind f pu@Broken{remain}</span>
+<span class="lineno">  106 </span><span class="spaces">        </span><span class="istickedoff">| Just F.BrokenBuffer{} &lt;- castF f = Right pu{remain = f : remain}</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Left $ <span class="nottickedoff">&quot;The function is unsupported by Broken: &quot; ++ show f</span></span></span>
+<span class="lineno">  108 </span>    <span class="decl"><span class="istickedoff">process = process_</span></span>
+<span class="lineno">  109 </span>
+<span class="lineno">  110 </span><span class="decl"><span class="istickedoff">execution pu@Broken{targets = [], sources = [], remain, process_} f</span>
+<span class="lineno">  111 </span><span class="spaces">    </span><span class="istickedoff">| Just (F.BrokenBuffer (I x) (O y)) &lt;- castF f =</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">pu</span>
+<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">{ targets = [x]</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">, sources = elems y</span>
+<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">, currentWork = Just (nextTick process_, f)</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">, remain = remain \\ [f]</span>
+<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  118 </span><span class="spaces"></span><span class="istickedoff">execution _ _ = <span class="nottickedoff">error &quot;Broken: internal execution error.&quot;</span></span></span>
+<span class="lineno">  119 </span>
+<span class="lineno">  120 </span>instance VarValTime v x t =&gt; EndpointProblem (Broken v x t) v t where
+<span class="lineno">  121 </span>    <span class="decl"><span class="istickedoff">endpointOptions Broken{targets = [_], lostEndpointTarget = True} = <span class="nottickedoff">[]</span></span>
+<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions pu@Broken{targets = [v]} =</span>
+<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">let start = nextTick pu `withShift` 1 ... maxBound</span>
+<span class="lineno">  124 </span><span class="spaces">            </span><span class="istickedoff">dur = 1 ... maxBound</span>
+<span class="lineno">  125 </span><span class="spaces">         </span><span class="istickedoff">in [EndpointSt (Target v) $ TimeConstraint start dur]</span>
+<span class="lineno">  126 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions Broken{doneAt = Just _, lostEndpointSource = True} = []</span>
+<span class="lineno">  127 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions pu@Broken{sources, doneAt = Just at}</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">not $ null sources</span> =</span>
+<span class="lineno">  129 </span><span class="spaces">            </span><span class="istickedoff">let start = max at (nextTick pu + 1) ... maxBound</span>
+<span class="lineno">  130 </span><span class="spaces">                </span><span class="istickedoff">dur = 1 ... maxBound</span>
+<span class="lineno">  131 </span><span class="spaces">             </span><span class="istickedoff">in [EndpointSt (Source $ fromList sources) $ TimeConstraint start dur]</span>
+<span class="lineno">  132 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions pu@Broken{remain, lostEndpointTarget = True}</span>
+<span class="lineno">  133 </span><span class="spaces">        </span><span class="istickedoff">| not $ null remain = concatMap <span class="nottickedoff">(endpointOptions . execution pu)</span> $ tail remain</span>
+<span class="lineno">  134 </span><span class="spaces">    </span><span class="istickedoff">endpointOptions pu@Broken{remain} = concatMap (endpointOptions . execution pu) remain</span></span>
+<span class="lineno">  135 </span>
+<span class="lineno">  136 </span>    <span class="decl"><span class="istickedoff">endpointDecision pu@Broken{targets = [v], currentWorkEndpoints, wrongControlOnPush} d@EndpointSt{epRole = Target v', epAt}</span>
+<span class="lineno">  137 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">v == v'</span> =</span>
+<span class="lineno">  138 </span><span class="spaces">            </span><span class="istickedoff">let workAt = epAt + I.singleton (if wrongControlOnPush then 1 else 0)</span>
+<span class="lineno">  139 </span><span class="spaces">                </span><span class="istickedoff">(newEndpoints, process_') = runSchedule pu $ do</span>
+<span class="lineno">  140 </span><span class="spaces">                    </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe workAt Load</span>
+<span class="lineno">  141 </span><span class="spaces">             </span><span class="istickedoff">in pu</span>
+<span class="lineno">  142 </span><span class="spaces">                    </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  143 </span><span class="spaces">                    </span><span class="istickedoff">, targets = []</span>
+<span class="lineno">  144 </span><span class="spaces">                    </span><span class="istickedoff">, currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints</span>
+<span class="lineno">  145 </span><span class="spaces">                    </span><span class="istickedoff">, doneAt = Just $ sup epAt + 3</span>
+<span class="lineno">  146 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision</span>
+<span class="lineno">  148 </span><span class="spaces">        </span><span class="istickedoff">pu@Broken</span>
+<span class="lineno">  149 </span><span class="spaces">            </span><span class="istickedoff">{ targets = [v]</span>
+<span class="lineno">  150 </span><span class="spaces">            </span><span class="istickedoff">, currentWorkEndpoints</span>
+<span class="lineno">  151 </span><span class="spaces">            </span><span class="istickedoff">, wrongControlOnPush</span>
+<span class="lineno">  152 </span><span class="spaces">            </span><span class="istickedoff">, lostEndpointInVerticalRelation</span>
+<span class="lineno">  153 </span><span class="spaces">            </span><span class="istickedoff">, lostInstructionInVerticalRelation</span>
+<span class="lineno">  154 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  155 </span><span class="spaces">        </span><span class="istickedoff">d@EndpointSt{epRole = Target v', epAt}</span>
+<span class="lineno">  156 </span><span class="spaces">            </span><span class="istickedoff">| <span class="nottickedoff">v == v'</span></span>
+<span class="lineno">  157 </span><span class="spaces">            </span><span class="istickedoff">, let (newEndpoints, process_') = <span class="nottickedoff">runSchedule pu $ do</span></span>
+<span class="lineno">  158 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">let ins =</span></span>
+<span class="lineno">  159 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">if lostInstructionInVerticalRelation</span></span>
+<span class="lineno">  160 </span><span class="spaces">                                </span><span class="istickedoff"><span class="nottickedoff">then return []</span></span>
+<span class="lineno">  161 </span><span class="spaces">                                </span><span class="istickedoff"><span class="nottickedoff">else scheduleInstructionUnsafe (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load</span></span>
+<span class="lineno">  162 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"></span></span>
+<span class="lineno">  163 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">if lostEndpointInVerticalRelation</span></span>
+<span class="lineno">  164 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">then return []</span></span>
+<span class="lineno">  165 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">else scheduleEndpoint d ins</span> =</span>
+<span class="lineno">  166 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">pu</span></span>
+<span class="lineno">  167 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">{ process_ = process_'</span></span>
+<span class="lineno">  168 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">, targets = []</span></span>
+<span class="lineno">  169 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">, currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints</span></span>
+<span class="lineno">  170 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">, doneAt = Just $ sup epAt + 3</span></span>
+<span class="lineno">  171 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">}</span></span>
+<span class="lineno">  172 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision</span>
+<span class="lineno">  173 </span><span class="spaces">        </span><span class="istickedoff">pu@Broken</span>
+<span class="lineno">  174 </span><span class="spaces">            </span><span class="istickedoff">{ targets = []</span>
+<span class="lineno">  175 </span><span class="spaces">            </span><span class="istickedoff">, sources</span>
+<span class="lineno">  176 </span><span class="spaces">            </span><span class="istickedoff">, doneAt</span>
+<span class="lineno">  177 </span><span class="spaces">            </span><span class="istickedoff">, currentWork = Just (a, f)</span>
+<span class="lineno">  178 </span><span class="spaces">            </span><span class="istickedoff">, currentWorkEndpoints</span>
+<span class="lineno">  179 </span><span class="spaces">            </span><span class="istickedoff">, wrongControlOnPull</span>
+<span class="lineno">  180 </span><span class="spaces">            </span><span class="istickedoff">, lostFunctionInVerticalRelation</span>
+<span class="lineno">  181 </span><span class="spaces">            </span><span class="istickedoff">, lostEndpointInVerticalRelation</span>
+<span class="lineno">  182 </span><span class="spaces">            </span><span class="istickedoff">, lostInstructionInVerticalRelation</span>
+<span class="lineno">  183 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  184 </span><span class="spaces">        </span><span class="istickedoff">EndpointSt{epRole = epRole@(Source v), epAt}</span>
+<span class="lineno">  185 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">not $ null sources</span></span>
+<span class="lineno">  186 </span><span class="spaces">            </span><span class="istickedoff">, let sources' = sources \\ elems v</span>
+<span class="lineno">  187 </span><span class="spaces">            </span><span class="istickedoff">, <span class="tickonlytrue">sources' /= sources</span></span>
+<span class="lineno">  188 </span><span class="spaces">            </span><span class="istickedoff">, let (newEndpoints, process_') = runSchedule pu $ do</span>
+<span class="lineno">  189 </span><span class="spaces">                    </span><span class="istickedoff">let doAt = shiftI (if wrongControlOnPull then 0 else -1) epAt</span>
+<span class="lineno">  190 </span><span class="spaces">                    </span><span class="istickedoff">-- Inlined: endpoints &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe doAt Out</span>
+<span class="lineno">  191 </span><span class="spaces">                    </span><span class="istickedoff">endpoints &lt;- do</span>
+<span class="lineno">  192 </span><span class="spaces">                        </span><span class="istickedoff">high &lt;- scheduleStep epAt $ EndpointRoleStep epRole</span>
+<span class="lineno">  193 </span><span class="spaces">                        </span><span class="istickedoff">low &lt;- scheduleInstructionUnsafe doAt Out</span>
+<span class="lineno">  194 </span><span class="spaces">                        </span><span class="istickedoff">establishVerticalRelations</span>
+<span class="lineno">  195 </span><span class="spaces">                            </span><span class="istickedoff">(if lostEndpointInVerticalRelation then [] else high)</span>
+<span class="lineno">  196 </span><span class="spaces">                            </span><span class="istickedoff">(if lostInstructionInVerticalRelation then [] else low)</span>
+<span class="lineno">  197 </span><span class="spaces">                        </span><span class="istickedoff">return high</span>
+<span class="lineno">  198 </span><span class="spaces">                    </span><span class="istickedoff">when (null sources') $ do</span>
+<span class="lineno">  199 </span><span class="spaces">                        </span><span class="istickedoff">high &lt;- scheduleFunction (a ... sup epAt) f</span>
+<span class="lineno">  200 </span><span class="spaces">                        </span><span class="istickedoff">let low = endpoints ++ currentWorkEndpoints</span>
+<span class="lineno">  201 </span><span class="spaces">                        </span><span class="istickedoff">establishVerticalRelations</span>
+<span class="lineno">  202 </span><span class="spaces">                            </span><span class="istickedoff">(if lostFunctionInVerticalRelation then [] else high)</span>
+<span class="lineno">  203 </span><span class="spaces">                            </span><span class="istickedoff">(if lostEndpointInVerticalRelation then [] else low)</span>
+<span class="lineno">  204 </span><span class="spaces">                    </span><span class="istickedoff">return endpoints =</span>
+<span class="lineno">  205 </span><span class="spaces">                </span><span class="istickedoff">pu</span>
+<span class="lineno">  206 </span><span class="spaces">                    </span><span class="istickedoff">{ process_ = process_'</span>
+<span class="lineno">  207 </span><span class="spaces">                    </span><span class="istickedoff">, sources = sources'</span>
+<span class="lineno">  208 </span><span class="spaces">                    </span><span class="istickedoff">, doneAt = if null sources' then Nothing else doneAt</span>
+<span class="lineno">  209 </span><span class="spaces">                    </span><span class="istickedoff">, currentWork = if null sources' then Nothing else Just (a, f)</span>
+<span class="lineno">  210 </span><span class="spaces">                    </span><span class="istickedoff">, currentWorkEndpoints = if null sources' then [] else newEndpoints ++ currentWorkEndpoints</span>
+<span class="lineno">  211 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  212 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Broken{targets = [], sources = [], remain} d</span>
+<span class="lineno">  213 </span><span class="spaces">        </span><span class="istickedoff">| let v = oneOf $ variables d</span>
+<span class="lineno">  214 </span><span class="spaces">        </span><span class="istickedoff">, Just f &lt;- find (\f -&gt; v `member` variables f) remain =</span>
+<span class="lineno">  215 </span><span class="spaces">            </span><span class="istickedoff">endpointDecision (execution pu f) d</span>
+<span class="lineno">  216 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
+<span class="lineno">  217 </span>
+<span class="lineno">  218 </span>instance Controllable (Broken v x t) where
+<span class="lineno">  219 </span>    data Instruction (Broken v x t)
+<span class="lineno">  220 </span>        = Load
+<span class="lineno">  221 </span>        | Out
+<span class="lineno">  222 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  223 </span>
+<span class="lineno">  224 </span>    data Microcode (Broken v x t) = Microcode
+<span class="lineno">  225 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
+<span class="lineno">  226 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  227 </span>        }
+<span class="lineno">  228 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  229 </span>
+<span class="lineno">  230 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues BrokenPorts{..} Microcode{..} =</span>
+<span class="lineno">  231 </span><span class="spaces">        </span><span class="istickedoff">[ (wr, Bool wrSignal)</span>
+<span class="lineno">  232 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  233 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  234 </span>
+<span class="lineno">  235 </span>    <span class="decl"><span class="istickedoff">usedPortTags BrokenPorts{wr, oe} = [<span class="nottickedoff">wr</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  236 </span>
+<span class="lineno">  237 </span>    <span class="decl"><span class="istickedoff">takePortTags (wr : oe : _) _ = BrokenPorts wr oe</span>
+<span class="lineno">  238 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  239 </span>
+<span class="lineno">  240 </span>instance Default (Microcode (Broken v x t)) where
+<span class="lineno">  241 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  242 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  243 </span><span class="spaces">            </span><span class="istickedoff">{ wrSignal = False</span>
+<span class="lineno">  244 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
+<span class="lineno">  245 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  246 </span>
+<span class="lineno">  247 </span>instance Time t =&gt; Default (Broken v x t) where
+<span class="lineno">  248 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  249 </span><span class="spaces">        </span><span class="istickedoff">Broken</span>
+<span class="lineno">  250 </span><span class="spaces">            </span><span class="istickedoff">{ remain = []</span>
+<span class="lineno">  251 </span><span class="spaces">            </span><span class="istickedoff">, targets = []</span>
+<span class="lineno">  252 </span><span class="spaces">            </span><span class="istickedoff">, sources = []</span>
+<span class="lineno">  253 </span><span class="spaces">            </span><span class="istickedoff">, doneAt = Nothing</span>
+<span class="lineno">  254 </span><span class="spaces">            </span><span class="istickedoff">, currentWork = Nothing</span>
+<span class="lineno">  255 </span><span class="spaces">            </span><span class="istickedoff">, currentWorkEndpoints = []</span>
+<span class="lineno">  256 </span><span class="spaces">            </span><span class="istickedoff">, process_ = def</span>
+<span class="lineno">  257 </span><span class="spaces">            </span><span class="istickedoff">, brokeVerilog = False</span>
+<span class="lineno">  258 </span><span class="spaces">            </span><span class="istickedoff">, wrongVerilogSimulationValue = False</span>
+<span class="lineno">  259 </span><span class="spaces">            </span><span class="istickedoff">, wrongControlOnPush = False</span>
+<span class="lineno">  260 </span><span class="spaces">            </span><span class="istickedoff">, wrongControlOnPull = False</span>
+<span class="lineno">  261 </span><span class="spaces">            </span><span class="istickedoff">, lostEndpointTarget = False</span>
+<span class="lineno">  262 </span><span class="spaces">            </span><span class="istickedoff">, lostEndpointSource = False</span>
+<span class="lineno">  263 </span><span class="spaces">            </span><span class="istickedoff">, wrongAttr = False</span>
+<span class="lineno">  264 </span><span class="spaces">            </span><span class="istickedoff">, lostFunctionInVerticalRelation = False</span>
+<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">, lostEndpointInVerticalRelation = False</span>
+<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">, lostInstructionInVerticalRelation = False</span>
+<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">, unknownDataOut = False</span>
+<span class="lineno">  268 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  269 </span>
+<span class="lineno">  270 </span>instance Default x =&gt; DefaultX (Broken v x t) x
+<span class="lineno">  271 </span>
+<span class="lineno">  272 </span>instance UnambiguouslyDecode (Broken v x t) where
+<span class="lineno">  273 </span>    <span class="decl"><span class="istickedoff">decodeInstruction Load = def{wrSignal = True}</span>
+<span class="lineno">  274 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Out = def{oeSignal = True}</span></span>
+<span class="lineno">  275 </span>
+<span class="lineno">  276 </span>instance Connected (Broken v x t) where
+<span class="lineno">  277 </span>    data Ports (Broken v x t) = BrokenPorts
+<span class="lineno">  278 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span> :: SignalTag
+<span class="lineno">  279 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag
+<span class="lineno">  280 </span>        }
+<span class="lineno">  281 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  282 </span>
+<span class="lineno">  283 </span>instance IOConnected (Broken v x t) where
+<span class="lineno">  284 </span>    data IOPorts (Broken v x t) = BrokenIO
+<span class="lineno">  285 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  286 </span>
+<span class="lineno">  287 </span>instance VarValTime v x t =&gt; TargetSystemComponent (Broken v x t) where
+<span class="lineno">  288 </span>    <span class="decl"><span class="istickedoff">moduleName _title _pu = &quot;pu_broken&quot;</span></span>
+<span class="lineno">  289 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  290 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = Aggregate Nothing [FromLibrary &quot;pu_broken.v&quot;]</span></span>
+<span class="lineno">  291 </span>
+<span class="lineno">  292 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  293 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  294 </span><span class="spaces">        </span><span class="istickedoff">pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}</span>
+<span class="lineno">  295 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  296 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  297 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just BrokenPorts{..}</span>
+<span class="lineno">  298 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  299 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  301 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  302 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">/*</span></span></span>
+<span class="lineno">  303 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">#{ pretty pu }</span></span></span>
+<span class="lineno">  304 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">*/</span></span></span>
+<span class="lineno">  305 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_broken \#</span></span></span>
+<span class="lineno">  306 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  307 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  308 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .IS_BROKEN( #{ bool2verilog wrongVerilogSimulationValue } )</span></span></span>
+<span class="lineno">  309 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .WRONG_ATTR( #{ bool2verilog wrongAttr } )</span></span></span>
+<span class="lineno">  310 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .UNKNOWN_DATA_OUT( #{ bool2verilog unknownDataOut } )</span></span></span>
+<span class="lineno">  311 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
+<span class="lineno">  312 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
+<span class="lineno">  313 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  314 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span>
+<span class="lineno">  315 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } ), .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  316 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  317 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
+<span class="lineno">  318 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } ), .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  319 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">#{ if brokeVerilog then &quot;WRONG VERILOG&quot; else &quot;&quot; :: T.Text }</span></span></span>
+<span class="lineno">  320 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  321 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  322 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  323 </span>
+<span class="lineno">  324 </span>instance IOTestBench (Broken v x t) v x
+<span class="lineno">  325 </span>
+<span class="lineno">  326 </span>instance Ord t =&gt; WithFunctions (Broken v x t) (F v x) where
+<span class="lineno">  327 </span>    <span class="decl"><span class="istickedoff">functions Broken{process_, remain, currentWork} =</span>
+<span class="lineno">  328 </span><span class="spaces">        </span><span class="istickedoff">functions process_</span>
+<span class="lineno">  329 </span><span class="spaces">            </span><span class="istickedoff">++ remain</span>
+<span class="lineno">  330 </span><span class="spaces">            </span><span class="istickedoff">++ case currentWork of</span>
+<span class="lineno">  331 </span><span class="spaces">                </span><span class="istickedoff">Just (_, f) -&gt; <span class="nottickedoff">[f]</span></span>
+<span class="lineno">  332 </span><span class="spaces">                </span><span class="istickedoff">Nothing -&gt; []</span></span>
+<span class="lineno">  333 </span>
+<span class="lineno">  334 </span>instance VarValTime v x t =&gt; Testable (Broken v x t) v x where
+<span class="lineno">  335 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  336 </span><span class="spaces">        </span><span class="istickedoff">Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
+<span class="lineno">  337 </span><span class="spaces">            </span><span class="istickedoff">snippetTestBench</span>
+<span class="lineno">  338 </span><span class="spaces">                </span><span class="istickedoff">prj</span>
+<span class="lineno">  339 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  340 </span><span class="spaces">                    </span><span class="istickedoff">{ tbcSignals = [&quot;oe&quot;, &quot;wr&quot;]</span>
+<span class="lineno">  341 </span><span class="spaces">                    </span><span class="istickedoff">, tbcPorts =</span>
+<span class="lineno">  342 </span><span class="spaces">                        </span><span class="istickedoff">BrokenPorts</span>
+<span class="lineno">  343 </span><span class="spaces">                            </span><span class="istickedoff">{ oe = SignalTag &quot;oe&quot;</span>
+<span class="lineno">  344 </span><span class="spaces">                            </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
+<span class="lineno">  345 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  346 </span><span class="spaces">                    </span><span class="istickedoff">, tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} -&gt;</span>
+<span class="lineno">  347 </span><span class="spaces">                        </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oeSignal }; wr &lt;= #{ bool2verilog wrSignal };|]</span>
+<span class="lineno">  348 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
+
+</pre>
+</body>
+</html>
