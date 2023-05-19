@@ -64,7 +64,7 @@ defProjectTemplates =
     , "templates/DE0-Nano"
     ]
 
-instance (Default x) => DefaultX (Project m v x) x
+instance Default x => DefaultX (Project m v x) x
 
 -- | Type class for target components. Target -- a target system project or a testbench.
 class TargetSystemComponent pu where

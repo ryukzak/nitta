@@ -44,7 +44,7 @@ instance (ToString tag, Show (EndpointSt v tp)) => Show (DataflowSt tag v tp) wh
         where
             show' (tag, ep) = "(" <> toString tag <> ", " <> show ep <> ")"
 
-instance (Ord v) => Variables (DataflowSt tag v tp) v where
+instance Ord v => Variables (DataflowSt tag v tp) v where
     variables DataflowSt{dfTargets} = unionsMap (variables . snd) dfTargets
 
 {- | Implemented for any things, which can send data between processor units over
@@ -55,7 +55,7 @@ class DataflowProblem u tag v t | u -> tag v t where
     dataflowDecision :: u -> DataflowSt tag v (Interval t) -> u
 
 -- | Convert dataflow option to decision.
-dataflowOption2decision :: (Time t) => DataflowSt tag v (TimeConstraint t) -> DataflowSt tag v (Interval t)
+dataflowOption2decision :: Time t => DataflowSt tag v (TimeConstraint t) -> DataflowSt tag v (Interval t)
 dataflowOption2decision (DataflowSt (srcTag, srcEp) trgs) =
     let targetsAt = map (epAt . snd) trgs
 

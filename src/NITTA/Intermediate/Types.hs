@@ -82,9 +82,9 @@ import Text.PrettyPrint.Boxes hiding ((<>))
 newtype I v = I v
     deriving (Eq, Ord)
 
-instance (ToString v) => Show (I v) where show (I v) = toString v
+instance ToString v => Show (I v) where show (I v) = toString v
 
-instance (Eq v) => Patch (I v) (v, v) where
+instance Eq v => Patch (I v) (v, v) where
     patch (v, v') i@(I v0)
         | v0 == v = I v'
         | otherwise = i
@@ -96,10 +96,10 @@ instance Variables (I v) v where
 newtype O v = O (S.Set v)
     deriving (Eq, Ord)
 
-instance (Ord v) => Patch (O v) (v, v) where
+instance Ord v => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
-instance (ToString v) => Show (O v) where
+instance ToString v => Show (O v) where
     show (O vs)
         | S.null vs = "_"
         | otherwise = S.join " = " $ vsToStringList vs
@@ -119,7 +119,7 @@ For example:
 > c := a + b
 > [ Lock{ locked=c, lockBy=a }, Lock{ locked=c, lockBy=b } ]
 -}
-class (Var v) => Locks x v | x -> v where
+class Var v => Locks x v | x -> v where
     locks :: x -> [Lock v]
 
 -- | Variable casuality.
@@ -129,11 +129,11 @@ data Lock v = Lock
     }
     deriving (Eq, Ord, Generic)
 
-instance (ToString v) => Show (Lock v) where
+instance ToString v => Show (Lock v) where
     show Lock{locked, lockBy} =
         "Lock{locked=" <> toString locked <> ", lockBy=" <> toString lockBy <> "}"
 
-instance (ToJSON v) => ToJSON (Lock v)
+instance ToJSON v => ToJSON (Lock v)
 
 -- | All input variables locks all output variables.
 inputsLockOutputs f =
@@ -210,7 +210,7 @@ instance FunctionSimulation (F v x) v x where
 instance Label (F v x) where
     label F{fun} = label fun
 
-instance (Var v) => Locks (F v x) v where
+instance Var v => Locks (F v x) v where
     locks F{fun} = locks fun
 
 instance Ord (F v x) where
@@ -223,7 +223,7 @@ instance Patch (F v x) (v, v) where
             , funHistory = fun0 : funHistory
             }
 
-instance (Ord v) => Patch (F v x) (Changeset v) where
+instance Ord v => Patch (F v x) (Changeset v) where
     patch Changeset{changeI, changeO} f0 =
         let changeI' =
                 mapMaybe
@@ -244,13 +244,13 @@ instance (Ord v) => Patch (F v x) (Changeset v) where
                     $ outputs f0
          in foldl (\f diff -> patch diff f) f0 $ changeI' ++ changeO'
 
-instance (Patch b v) => Patch [b] v where
+instance Patch b v => Patch [b] v where
     patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
     show F{fun} = show fun
 
-instance (Var v) => Variables (F v x) v where
+instance Var v => Variables (F v x) v where
     variables F{fun} = inputs fun `S.union` outputs fun
 
 -- | Helper for extraction function from existential container 'F'.
@@ -301,7 +301,7 @@ data Cntx v x = Cntx
     , cntxCycleNumber :: Int
     }
 
-instance (Show x) => Show (Cntx String x) where
+instance Show x => Show (Cntx String x) where
     show Cntx{cntxProcess} = log2md $ map (HM.map show . cycleCntx) cntxProcess
 
 log2list cntxProcess0 =
@@ -325,7 +325,9 @@ log2md records =
     let n = length records
         cntx2listCycle = ("Cycle" : map show [1 .. n]) : log2list records
         maxLength t = length $ foldr1 (\x y -> if length x >= length y then x else y) t
-        cycleFormattedTable = map ((\x@(x1 : x2 : xs) -> x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs) . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
+        formatCell x@(x1 : x2 : xs) = x1 : ("|:" ++ replicate (maxLength x) '-') : x2 : xs
+        formatCell x = error $ "formatCell: unexpected sequence:" <> show x
+        cycleFormattedTable = map (formatCell . map ("| " ++)) cntx2listCycle ++ [replicate (n + 2) "|"]
      in render
             ( hsep 0 left $
                 map (vcat left . map text) cycleFormattedTable
@@ -347,8 +349,11 @@ log2md records =
 ]
 -}
 log2json records =
-    let listHashMap = transpose $ map (\(k : vs) -> map (\v -> (k, read v :: Double)) vs) $ log2list records
+    let listHashMap = transpose $ map varAndValues $ log2list records
      in encodePretty $ map HM.fromList listHashMap
+    where
+        varAndValues (k : vs) = map (\v -> (k, read v :: Double)) vs
+        varAndValues x = error $ "varAndValues: unexpected sequence:" <> show x
 
 {- |
  >>> import qualified Data.ByteString.Lazy.Char8 as BS
@@ -369,7 +374,7 @@ instance Default (Cntx v x) where
             }
 
 -- | Make sequence of received values '[ Map v x ]'
-cntxReceivedBySlice :: (Ord v) => Cntx v x -> [M.Map v x]
+cntxReceivedBySlice :: Ord v => Cntx v x -> [M.Map v x]
 cntxReceivedBySlice Cntx{cntxReceived} = cntxReceivedBySlice' $ M.assocs cntxReceived
 
 cntxReceivedBySlice' received
@@ -410,7 +415,7 @@ data Changeset v = Changeset
     }
     deriving (Eq)
 
-instance (Var v) => Show (Changeset v) where
+instance Var v => Show (Changeset v) where
     show Changeset{changeI, changeO} =
         let changeI' = S.join ", " $ map (\(a, b) -> "(" <> toString a <> ", " <> toString b <> ")") $ M.assocs changeI
             changeO' = S.join ", " $ map (\(a, bs) -> "(" <> toString a <> ", [" <> S.join ", " (vsToStringList bs) <> "])") $ M.assocs changeO

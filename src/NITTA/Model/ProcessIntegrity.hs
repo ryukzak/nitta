@@ -29,7 +29,7 @@ class ProcessIntegrity u where
 
 isProcessIntegrity u = isRight $ checkProcessIntegrity u
 
-instance (ProcessorUnit (pu v x t) v x t) => ProcessIntegrity (pu v x t) where
+instance ProcessorUnit (pu v x t) v x t => ProcessIntegrity (pu v x t) where
     checkProcessIntegrity pu =
         collectChecks
             [ checkVerticalRelations (up2down pu) (pid2intermediate pu) (pid2endpoint pu) "intermediate not related to endpoint"

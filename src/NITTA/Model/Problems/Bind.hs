@@ -22,12 +22,12 @@ data Bind tag v x
     = Bind (F v x) tag
     deriving (Generic, Eq)
 
-instance (ToString tag) => Show (Bind tag v x) where
+instance ToString tag => Show (Bind tag v x) where
     show (Bind f tag) = "Bind " <> show f <> " " <> toString tag
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [Bind tag v x]
     bindDecision :: u -> Bind tag v x -> u
 
-instance (Var v) => Variables (Bind tab v x) v where
+instance Var v => Variables (Bind tab v x) v where
     variables (Bind f _tag) = variables f

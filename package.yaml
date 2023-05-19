@@ -20,23 +20,23 @@ description: |-
 
   Page: <https://ryukzak.github.io/projects/nitta/>
 
-category: 'CGRA, ASIP, CAD, hardware'
+category: "CGRA, ASIP, CAD, hardware"
 author: Aleksandr Penskoi
 maintainer: aleksandr.penskoi@gmail.com
 copyright: 2021 Aleksandr Penskoi
 license: BSD3
-homepage: 'https://ryukzak.github.io/projects/nitta/'
+homepage: "https://ryukzak.github.io/projects/nitta/"
 extra-doc-files:
   - README.md
 
 ghc-options:
-  - '-j'
-  - '-Wall'
-  - '-Werror'
-  - '-Wcompat'
-  - '-Wredundant-constraints'
-  - '-fno-warn-missing-signatures'
-  - '-optP-Wno-nonportable-include-path'
+  - "-j"
+  - "-Wall"
+  - "-Werror"
+  - "-Wcompat"
+  - "-Wredundant-constraints"
+  - "-fno-warn-missing-signatures"
+  - "-optP-Wno-nonportable-include-path"
 
 default-extensions:
   - DeriveDataTypeable
@@ -103,7 +103,6 @@ library:
     - hxt
     - parsec
 
-    
 executables:
   nitta:
     main: Main
@@ -111,23 +110,23 @@ executables:
       - Paths_nitta
     source-dirs: app
     ghc-options:
-      - '-threaded'
-      - '-rtsopts'
-      - '-with-rtsopts=-N'
+      - "-threaded"
+      - "-rtsopts"
+      - "-with-rtsopts=-N"
     dependencies:
       - cmdargs
       - hslogger
       - nitta
-      
+
   nitta-api-gen:
     main: APIGen
     source-dirs: app
     other-modules:
       - Paths_nitta
     ghc-options:
-      - '-threaded'
-      - '-rtsopts'
-      - '-with-rtsopts=-N'
+      - "-threaded"
+      - "-rtsopts"
+      - "-with-rtsopts=-N"
     dependencies:
       - aeson
       - aeson-typescript
@@ -136,16 +135,15 @@ executables:
       - hslogger
       - nitta
 
-
 tests:
   nitta-test:
     main: Spec
     source-dirs: test
     ghc-options:
-      - '-threaded'
-      - '-rtsopts'
-      - '-with-rtsopts=-N'
-      - '-j'
+      - "-threaded"
+      - "-rtsopts"
+      - "-with-rtsopts=-N"
+      - "-j"
     dependencies:
       - QuickCheck
       - atomic-primops

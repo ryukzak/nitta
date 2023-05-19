@@ -55,14 +55,14 @@ type PUClasses pu v x t =
 -- | Existential container for a processor unit .
 data PU v x t where
     PU ::
-        (PUClasses pu v x t) =>
+        PUClasses pu v x t =>
         { unit :: pu
         , diff :: Changeset v
         , uEnv :: UnitEnv pu
         } ->
         PU v x t
 
-instance (Ord v) => EndpointProblem (PU v x t) v t where
+instance Ord v => EndpointProblem (PU v x t) v t where
     endpointOptions PU{diff, unit} =
         map (patch diff) $ endpointOptions unit
 
@@ -88,7 +88,7 @@ instance ResolveDeadlockProblem (PU v x t) v x where
     resolveDeadlockDecision PU{diff, unit, uEnv} d =
         PU{unit = resolveDeadlockDecision unit d, diff, uEnv}
 
-instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{diff, unit, uEnv} =
         case tryBind fb unit of
             Right unit' -> Right PU{unit = unit', diff, uEnv}
@@ -98,7 +98,7 @@ instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
          in p{steps = map (patch diff) $ steps p}
     parallelismType PU{unit} = parallelismType unit
 
-instance (Ord v) => Patch (PU v x t) (Changeset v) where
+instance Ord v => Patch (PU v x t) (Changeset v) where
     patch diff' PU{unit, diff, uEnv} =
         PU
             { unit
@@ -110,10 +110,10 @@ instance (Ord v) => Patch (PU v x t) (Changeset v) where
             , uEnv
             }
 
-instance (Ord v) => Patch (PU v x t) (I v, I v) where
+instance Ord v => Patch (PU v x t) (I v, I v) where
     patch (I v, I v') pu@PU{diff = diff@Changeset{changeI}} = pu{diff = diff{changeI = M.insert v v' changeI}}
 
-instance (Ord v) => Patch (PU v x t) (O v, O v) where
+instance Ord v => Patch (PU v x t) (O v, O v) where
     patch (O vs, O vs') pu@PU{diff = diff@Changeset{changeO}} =
         pu
             { diff =
@@ -126,7 +126,7 @@ instance (Ord v) => Patch (PU v x t) (O v, O v) where
                     }
             }
 
-instance (Var v) => Locks (PU v x t) v where
+instance Var v => Locks (PU v x t) v where
     locks PU{unit, diff = diff@Changeset{changeI, changeO}}
         | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " <> show diff
         | otherwise =

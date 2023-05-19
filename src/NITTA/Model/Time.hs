@@ -31,7 +31,7 @@ type VarValTime v x t = (Var v, Val x, Time t)
 -- | Shortcut for time type constrain.
 type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t)
 
-instance (ToJSON t) => ToJSON (Interval t)
+instance ToJSON t => ToJSON (Interval t)
 
 -- | Time constrain for processor activity.
 data TimeConstraint t = TimeConstraint
@@ -52,7 +52,7 @@ instance (Show t, Eq t, Bounded t) => Show (TimeConstraint t) where
                         then show a ++ "..INF"
                         else show a ++ ".." ++ show b
 
-instance (ToJSON tp) => ToJSON (TimeConstraint tp)
+instance ToJSON tp => ToJSON (TimeConstraint tp)
 
 -- | Forgoten implementation of tagged time for speculative if statement. Current - dead code.
 data TaggedTime tag t = TaggedTime
@@ -61,26 +61,26 @@ data TaggedTime tag t = TaggedTime
     }
     deriving (Typeable, Generic)
 
-instance (Default t) => Default (TaggedTime tag t) where
+instance Default t => Default (TaggedTime tag t) where
     def = TaggedTime Nothing def
 
 instance (Time t, Show tag) => Show (TaggedTime tag t) where
     show (TaggedTime tag t) = show t ++ maybe "" (("!" ++) . show) tag
 
-instance {-# OVERLAPS #-} (Time t) => Show (TaggedTime String t) where
+instance {-# OVERLAPS #-} Time t => Show (TaggedTime String t) where
     show (TaggedTime tag t) = show t ++ maybe "" ("!" ++) tag
 
-instance (Eq t) => Eq (TaggedTime tag t) where
+instance Eq t => Eq (TaggedTime tag t) where
     (TaggedTime _ a) == (TaggedTime _ b) = a == b
 
-instance (Ord t) => Ord (TaggedTime tag t) where
+instance Ord t => Ord (TaggedTime tag t) where
     (TaggedTime _ a) `compare` (TaggedTime _ b) = a `compare` b
 
-instance (Enum t) => Enum (TaggedTime tag t) where
+instance Enum t => Enum (TaggedTime tag t) where
     toEnum i = TaggedTime Nothing $ toEnum i
     fromEnum (TaggedTime _ i) = fromEnum i
 
-instance (Num t) => Bounded (TaggedTime tag t) where
+instance Num t => Bounded (TaggedTime tag t) where
     minBound = TaggedTime Nothing 0
     maxBound = TaggedTime Nothing 1000
 

@@ -1,10 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 {- |
 Module      : NITTA.Frontends.Lua.Tests
@@ -583,8 +585,9 @@ test_trace_features =
             | 4      | 4  |
             | 5      | 5  |\n
             |]
-        -- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
     ]
+
+-- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
 
 test_examples =
     [ unitTestCase "teacup io wait" def $ do

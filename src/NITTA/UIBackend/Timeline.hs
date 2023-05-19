@@ -41,7 +41,7 @@ data TimelineWithViewPoint t = TimelineWithViewPoint
     }
     deriving (Generic)
 
-instance (Time t) => Show (ProcessTimelines t) where
+instance Time t => Show (ProcessTimelines t) where
     show ProcessTimelines{timelines} =
         let vpLength = maximum $ map (length . show . timelineViewpoint) timelines
             normalizeVP s = s ++ replicate (vpLength - length s) ' '
@@ -64,7 +64,7 @@ data TimelinePoint t = TimelinePoint
     }
     deriving (Generic)
 
-instance {-# OVERLAPS #-} (Time t) => Show [TimelinePoint t] where
+instance {-# OVERLAPS #-} Time t => Show [TimelinePoint t] where
     show [] = "."
     -- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} <- descent pDesc = "^"
     -- show ( Single Step{ pDesc } ) | EndpointRoleStep Target{} <- descent pDesc = "v"
