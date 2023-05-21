@@ -28,8 +28,6 @@ module NITTA.Model.ProcessorUnits.Types (
     Step (..),
     StepInfo (..),
     Relation (..),
-    isVertical,
-    isHorizontal,
     descent,
     whatsHappen,
     extractInstructionAt,
@@ -268,12 +266,6 @@ data Relation
       --  connected to refactoring steps, including new binding steps.
       Horizontal {hPrev, hNext :: ProcessStepID}
     deriving (Show, Generic, Ord, Eq)
-
-isVertical Vertical{} = True
-isVertical _ = False
-
-isHorizontal Horizontal{} = True
-isHorizontal _ = False
 
 instance ToJSON Relation
 
