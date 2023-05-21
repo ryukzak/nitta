@@ -101,6 +101,11 @@ jobs:
         working-directory: ./web
         timeout-minutes: 5
         run: yarn build
+        
+      - name: Install Weeder
+        run: |
+          stack install weeder-2.4.1
+          weeder
 
       - name: Copy doc to GH_PAGES_DIR
         run: |
