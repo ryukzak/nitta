@@ -111,7 +111,8 @@ getIntermediate _ = Nothing
 
 getIntermediates p = mapMaybe getIntermediate $ sortOn stepStart $ steps p
 
-isEndpoint ep = isJust $ getEndpoint ep
+getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
+getEndpoint _ = Nothing
 
 isInstruction instr = isJust $ getInstruction instr
 
