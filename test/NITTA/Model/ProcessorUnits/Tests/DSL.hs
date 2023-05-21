@@ -116,7 +116,6 @@ import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Frontends.Lua
-import NITTA.Intermediate.Analysis (buildProcessWaves)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
