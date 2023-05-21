@@ -11,9 +11,7 @@ Stability   : experimental
 module NITTA.Utils (
     doc2text,
     Verilog,
-    comment,
     shiftI,
-    modify'_,
 
     -- * HDL generation
     bool2verilog,
@@ -25,7 +23,6 @@ module NITTA.Utils (
     endpointAt,
     getEndpoint,
     getInstruction,
-    getCad,
     getEndpoints,
     transferred,
     inputsPushedAt,
@@ -34,7 +31,6 @@ module NITTA.Utils (
     isIntermediate,
     getIntermediate,
     getIntermediates,
-    isEndpoint,
     isInstruction,
     module NITTA.Utils.Base,
 
@@ -66,11 +62,6 @@ import Text.Toml (parseTomlDoc)
 type Verilog = Doc ()
 doc2text :: Verilog -> T.Text
 doc2text = renderStrict . layoutPretty defaultLayoutOptions
-
-comment str = unlines $ map ("// " <>) $ lines str
-
-modify'_ :: (s -> s) -> State s ()
-modify'_ = modify'
 
 shiftI offset i = i + I.singleton offset
 
@@ -113,9 +104,6 @@ endpointAt t p =
         [] -> Nothing
         eps -> error $ "endpoints collision at: " ++ show t ++ " " ++ show eps
 
-getCad Step{pDesc} | CADStep cad <- descent pDesc = Just cad
-getCad _ = Nothing
-
 isIntermediate s = isJust $ getIntermediate s
 
 getIntermediate Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
@@ -124,9 +112,6 @@ getIntermediate _ = Nothing
 getIntermediates p = mapMaybe getIntermediate $ sortOn stepStart $ steps p
 
 isEndpoint ep = isJust $ getEndpoint ep
-
-getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
-getEndpoint _ = Nothing
 
 isInstruction instr = isJust $ getInstruction instr
 
