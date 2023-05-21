@@ -102,7 +102,7 @@ jobs:
         timeout-minutes: 5
         run: yarn build
         
-      - name: Install Weeder
+      - name: Install & run Weeder
         run: |
           stack install weeder-2.4.1
           weeder
