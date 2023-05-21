@@ -40,7 +40,6 @@ module NITTA.Utils (
     getFromTomlSection,
 ) where
 
-import Control.Monad.State (State, modify')
 import Data.Aeson
 import Data.Bits (setBit, testBit)
 import Data.HashMap.Strict qualified as HM
