@@ -108,6 +108,7 @@ jobs:
 
       - name: run Weeder
         run: |
+          echo "/home/runner/.local/bin" >> $GITHUB_PATH
           weeder
 
       - name: Copy doc to GH_PAGES_DIR
