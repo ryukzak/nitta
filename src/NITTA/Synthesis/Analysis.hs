@@ -54,22 +54,25 @@ instance Monoid TreeInfo where
             , stepsSuccess = HM.empty
             }
 
-getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do
-    subForestM <- atomically $ tryReadTMVar sSubForestVar
-    subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
-    let isSuccess = isComplete tree && isLeaf tree
-    let isFail = (not . isComplete) tree && isLeaf tree
-    let duration = fromEnum $ processDuration $ sTarget $ sState tree
+getTreeInfo (TVar treeMap) = do
+    let nodeList = M.elems treeMap
+    subForestInfo <- mconcat <$> mapM getNodeInfo nodeList
+    return subForestInfo
+
+getNodeInfo node@Node{sID = Sid sid, sState} = do
+    let isSuccess = isComplete node && isLeaf node
+    let isFail = (not . isComplete) node && isLeaf node
+    let duration = fromEnum $ processDuration $ sTarget $ sState
     let successDepends value field =
             if not isSuccess
-                then field subForestInfo
-                else HM.alter (Just . maybe 1 (+ 1)) value $ field subForestInfo
+                then field
+                else HM.alter (Just . maybe 1 (+ 1)) value field
     return $
         TreeInfo
-            { nodes = 1 + nodes subForestInfo
-            , success = if isSuccess then 1 else 0 + success subForestInfo
-            , failed = if isFail then 1 else 0 + failed subForestInfo
-            , notProcessed = maybe 1 (const 0) subForestM + notProcessed subForestInfo
-            , durationSuccess = successDepends duration durationSuccess
-            , stepsSuccess = successDepends (length sid) stepsSuccess
+            { nodes = 1
+            , success = if isSuccess then 1 else 0
+            , failed = if isFail then 1 else 0
+            , notProcessed = if isLeaf node then 0 else 1
+            , durationSuccess = successDepends duration (durationSuccess mempty)
+            , stepsSuccess = successDepends (length sid) (stepsSuccess mempty)
             }

@@ -28,6 +28,7 @@ wrong steps.
 module NITTA.Synthesis.Types (
     SynthesisDecisionCls (..),
     Tree (..),
+    Node (..),
     SynthesisDecision (..),
     SynthesisState (..),
     Sid (..),
@@ -39,7 +40,6 @@ module NITTA.Synthesis.Types (
     defScore,
 ) where
 
-import Control.Concurrent.STM (TMVar)
 import Data.Aeson (ToJSON, toJSON)
 import Data.Default
 import Data.List.Split
@@ -112,13 +112,14 @@ instance FromHttpApiData Sid where
     parseUrlPiece = Right . readText
 
 -- | Synthesis tree
-data Tree m tag v x t = Tree
+data Tree m tag v x t = TVar (M.Map Sid (Node m tag v x t))
+
+data Node m tag v x t = Node
     { sID :: Sid
     , sState :: SynthesisState m tag v x t
     , sDecision :: SynthesisDecision (SynthesisState m tag v x t) m
-    , sSubForestVar :: TMVar [Tree m tag v x t]
-    -- ^ lazy mutable field with different synthesis options and sub nodes
     }
+
 
 targetUnit = mUnit . sTarget . sState
 targetDFG = mDataFlowGraph . sTarget . sState
@@ -138,7 +139,7 @@ class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
     estimate :: ctx -> o -> d -> p -> Float
 
 data SynthesisState m tag v x t = SynthesisState
-    { sParent :: Maybe (Tree m tag v x t)
+    { sParent :: Maybe Sid
     , sTarget :: m
     , sAllocationOptions :: [Allocation tag]
     -- ^ PU allocation options cache

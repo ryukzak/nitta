@@ -18,6 +18,8 @@ module NITTA.Synthesis.Steps.ResolveDeadlock (
 import Data.Aeson (ToJSON)
 import Data.Set qualified as S
 import GHC.Generics
+import Data.Map.Strict qualified as M
+import Control.Concurrent.STM.TVar
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Refactor
@@ -64,15 +66,23 @@ decisionRepeats d parent =
     let ds = toRootDecisionStrings parent
      in length $ takeWhile (== show d) ds
 
-toRootDecisionStrings parent =
-    map
-        ( ( \case
-                SynthesisDecision{decision} -> show decision
-                _ -> ""
-          )
-            . sDecision
-        )
-        $ toRoot parent
+toRootDecisionStrings tree sid = do
+    nodePath <- toRoot tree sid
+    return $ map ((\case
+          SynthesisDecision {decision} -> show decision
+          _ -> "") . sDecision) nodePath
 
-toRoot (Just tree@Tree{sState = SynthesisState{sParent}}) = tree : toRoot sParent
-toRoot _ = []
+toRoot :: TVar (M.Map Sid (Node m tag v x t)) -> Maybe Sid -> IO [Node m tag v x t]
+toRoot _ Nothing = return []
+toRoot tvar (Just sid) = do
+    map <- readTVarIO tvar
+    case M.lookup sid map of
+        Nothing -> return []
+        Just node -> do
+            let SynthesisState{sParent} = sState node
+            (node:) <$> toRoot tvar sParent
+
+-- getNodeFromTVar :: TVar (M.Map Sid (Node m tag v x t)) -> Sid -> IO (Maybe (Node m tag v x t))
+-- getNodeFromTVar tvar sid = atomically $ do
+--     nodeMap <- readTVar tvar
+--     return $ M.lookup sid nodeMap
