@@ -51,6 +51,11 @@ jobs:
           stack build --haddock --test --only-dependencies
           stack install doctest
 
+      - name: Install & run Weeder
+        run: |
+          stack install weeder-2.4.1
+          weeder
+
   nitta:
     runs-on: ubuntu-latest
     needs: nitta-haskell-deps
@@ -102,7 +107,7 @@ jobs:
         timeout-minutes: 5
         run: yarn build
 
-      - name: Install & run Weeder
+      - name: run Weeder
         run: |
           stack install weeder-2.4.1
           weeder
