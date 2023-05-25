@@ -52,7 +52,9 @@ jobs:
           stack install doctest
 
       - name: Install weeder
-        run: stack install weeder-2.4.1
+        run: |
+          stack install weeder-2.4.1
+          weeder
 
   nitta:
     runs-on: ubuntu-latest
@@ -104,9 +106,6 @@ jobs:
         working-directory: ./web
         timeout-minutes: 5
         run: yarn build
-
-      - name: run weeder
-        run: weeder
 
       - name: Copy doc to GH_PAGES_DIR
         run: |
