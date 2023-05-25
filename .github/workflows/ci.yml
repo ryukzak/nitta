@@ -109,6 +109,7 @@ jobs:
 
       - name: run Weeder
         run: |
+          export PATH="/home/runner/.local/bin:$PATH"
           weeder
 
       - name: Copy doc to GH_PAGES_DIR
