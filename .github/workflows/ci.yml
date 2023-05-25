@@ -52,7 +52,7 @@ jobs:
           stack install doctest
 
       - name: Install weeder
-          run: stack install weeder-2.4.1
+        run: stack install weeder-2.4.1
 
   nitta:
     runs-on: ubuntu-latest
