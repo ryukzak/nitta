@@ -99,6 +99,18 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     assertSynthesisDone,
     synthesizeAndCoSim,
     assertSynthesisComplete,
+
+    -- * Trace (inspection for debug)
+    traceBind,
+    traceDataflow,
+    traceEndpoints,
+    traceFunctions,
+    tracePU,
+    traceProcess,
+    traceRefactor,
+    traceProcessWaves,
+    traceAllocation,
+    traceDataflowState,
 ) where
 
 import Control.Monad.Identity
@@ -116,6 +128,7 @@ import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Typeable
 import NITTA.Frontends.Lua
+import NITTA.Intermediate.Analysis (buildProcessWaves)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -622,5 +635,65 @@ synthesizeAndCoSim = do
     synthesis $ stateOfTheArtSynthesisIO ()
     assertSynthesisComplete
     assertTargetSystemCoSimulation
+
+tracePU :: Show pu => PUStatement pu v x t ()
+tracePU = do
+    UnitTestState{unit} <- get
+    lift $ putStrLn $ "PU: " <> show unit
+
+traceFunctions :: Statement u v x ()
+traceFunctions = do
+    UnitTestState{functs} <- get
+    lift $ putListLn "Functions: " functs
+
+traceEndpoints :: PUStatement pu v x t ()
+traceEndpoints = do
+    UnitTestState{unit} <- get
+    lift $ putListLn "Endpoints: " $ endpointOptions unit
+
+traceProcess :: ProcessorUnit u v x Int => Statement u v x ()
+traceProcess = do
+    UnitTestState{unit} <- get
+    lift $ putStrLn $ "Process: " <> show (pretty $ process unit)
+
+traceDataflowState :: TSStatement x ()
+traceDataflowState = do
+    UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
+    lift $
+        do
+            putStrLn "DataFlowGraph: "
+            print mDataFlowGraph
+
+traceDataflow :: TSStatement x ()
+traceDataflow = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Dataflow: " $ dataflowOptions mUnit
+
+traceProcessWaves :: TSStatement x ()
+traceProcessWaves = do
+    UnitTestState{unit = TargetSystem{mDataFlowGraph}} <- get
+    lift $ putStrLn $ showArray $ buildProcessWaves [] $ functions mDataFlowGraph
+
+traceBind :: TSStatement x ()
+traceBind = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Bind: " $ bindOptions mUnit
+
+traceAllocation :: TSStatement x ()
+traceAllocation = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "Allocation: " $ allocationOptions mUnit
+
+traceRefactor :: TSStatement x ()
+traceRefactor = do
+    UnitTestState{unit = TargetSystem{mUnit}} <- get
+    lift $ putListLn "breakLoopOptions: " $ breakLoopOptions mUnit
+    lift $ putListLn "constantFoldingOptions: " $ constantFoldingOptions mUnit
+    lift $ putListLn "optimizeAccumOptions: " $ optimizeAccumOptions mUnit
+    lift $ putListLn "resolveDeadlockOptions: " $ resolveDeadlockOptions mUnit
+
+putListLn name opts = do
+    putStrLn name
+    mapM_ (\b -> putStrLn $ "- " <> show b) opts
 
 showArray l = S.join "\n\t" (map show l)
