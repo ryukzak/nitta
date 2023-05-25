@@ -37,6 +37,7 @@ jobs:
           path: |
             ~/.stack
             .stack-work
+            /home/runner/.local/bin
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
@@ -108,7 +109,6 @@ jobs:
 
       - name: run Weeder
         run: |
-          export PATH="/home/runner/.local/bin:$PATH"
           weeder
 
       - name: Copy doc to GH_PAGES_DIR
