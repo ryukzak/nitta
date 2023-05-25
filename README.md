@@ -1,4 +1,4 @@
-# NITTA - Tool for Hard Real-Time CGRA Processors
+# NITTA -- Tool for Hard Real-Time CGRA Processors
 
 [![NITTA Build and Test](https://github.com/ryukzak/nitta/actions/workflows/ci.yml/badge.svg)](https://github.com/ryukzak/nitta/actions/workflows/ci.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
@@ -44,47 +44,54 @@ See: [CONTRIBUTING.md](CONTRIBUTING.md)
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 
 ``` console
-$ brew install ghcup
-$ ghcup install stack
+brew install ghcup
+ghcup install stack
 ```
-> Make sure that PATH contains $HOME/.local/bin.
 
+> Make sure that PATH contains $HOME/.local/bin.
+>
 > Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+
 ``` console
-$ brew install icarus-verilog
-$ brew tap homebrew/cask
-$ brew cask install gtkwave
+brew install icarus-verilog
+brew tap homebrew/cask
+brew cask install gtkwave
 ```
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
+
 ``` console
-$ brew install npm yarn
-$ npm install --global tern prettier
+brew install npm yarn
+npm install --global tern prettier
 ```
 
 ### Ubuntu
 
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
-``` console
-$ sudo apt-get install haskell-stack
-$ stack install hlint fourmolu
-```
-> Make sure that PATH contains $HOME/.local/bin.
 
+``` console
+sudo apt-get install haskell-stack
+stack install hlint fourmolu
+```
+
+> Make sure that PATH contains $HOME/.local/bin.
+>
 > Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+
 ``` console
-$ sudo apt-get install iverilog
-$ sudo apt-get install gtkwave
+sudo apt-get install iverilog
+sudo apt-get install gtkwave
 ```
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
+
 ``` console
-$ sudo apt-get install npm yarn
-$ npm install --global tern prettier yarn
+sudo apt-get install npm yarn
+npm install --global tern prettier yarn
 ```
 
 ## Build
@@ -94,25 +101,28 @@ Inside the project path
 ### Build backend
 
 ``` console
-$ stack build
+stack build
 ```
 
 ### Build frontend
+
 ``` console
-$ stack exec nitta-api-gen
-$ yarn --cwd web install
-$ yarn --cwd web run build
+stack exec nitta-api-gen
+yarn --cwd web install
+yarn --cwd web run build
 ```
 
 ### Build documentation
+
 ``` console
-$ stack build --haddock # for nitta CAD
-$ stack exec nitta-api-gen # for REST API description
+stack build --haddock # for nitta CAD
+stack exec nitta-api-gen # for REST API description
 ```
 
 For the fast rebuild, the project adds `--fast` flag.
 
 ### Testing
+
 ``` console
 $ stack build --test
 nitta-0.0.0.1: unregistering (dependencies changed)
@@ -135,12 +145,14 @@ Completed 2 action(s).
 ```
 
 Run specified test or group:
-```
+
+```shell
 $ stack test --test-arguments '-p "pattern for the test name"'
 ...
 ```
 
 ### Other
+
 ``` console
 # build only one target
 $ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
@@ -180,7 +192,6 @@ stack exec ghc-pkg unregister interpolate -- --force
 stack exec -- haddock test/**/*.hs -odocs -h
 ```
 
-
 ## Usage
 
 ``` console
@@ -215,7 +226,8 @@ Other:
          --numeric-version             Print just the version number
 ```
 
-### Logical simulation for a specific algorithm:
+### Logical simulation for a specific algorithm
+
 ``` console
 $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | Cycle  | temp_cup_1  | time_0  |
@@ -232,7 +244,8 @@ $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | 10     | 168.750     | 1.125   |
 ```
 
-### Synthesis of a target system for a specific algorithm:
+### Synthesis of a target system for a specific algorithm
+
 ``` console
 $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 [NOTICE : NITTA] synthesis process...ok
@@ -252,7 +265,8 @@ $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 | 10     | 168.750     | 1.125   |
 ```
 
-### Run with user interface:
+### Run with user interface
+
 ``` console
 $ stack exec nitta -- examples/teacup.lua -p=8080
 Running NITTA server at http://localhost:8080 ...
