@@ -37,7 +37,9 @@ import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend
+import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores)
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
@@ -235,7 +237,14 @@ main = do
 
             when fsim $ functionalSimulation n received format frontendResult
 
-            prj <-
+            prj <- withLazyMlBackendServer $ \serverGetter -> do
+                -- TODO: this needs to be refactored and unified with logic in backendServer. and state monad?
+                let ctx =
+                        (def :: BackendCtx tag v x t)
+                            { mlBackendGetter = serverGetter
+                            , nodeScores = nodeScores
+                            }
+
                 synthesizeTargetSystem
                     (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
                         { tName = "main"
@@ -244,7 +253,8 @@ main = do
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = stateOfTheArtSynthesisIO def
+                        , -- , tSynthesisMethod = stateOfTheArtSynthesisIO ctx
+                          tSynthesisMethod = topDownScoreSynthesisIO 1.2 100000 "default" ctx
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

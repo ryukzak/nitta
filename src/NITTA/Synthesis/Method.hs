@@ -16,6 +16,7 @@ module NITTA.Synthesis.Method (
     simpleSynthesisIO,
     smartBindSynthesisIO,
     obviousBindThreadIO,
+    topDownScoreSynthesisIO,
     allBestThreadIO,
     stateOfTheArtSynthesisIO,
     allBindsAndRefsIO,
@@ -24,7 +25,10 @@ module NITTA.Synthesis.Method (
 ) where
 
 import Data.Aeson (ToJSON)
+import Data.Heap qualified as H
 import Data.List qualified as L
+import Data.Map.Strict qualified as M
+import Data.Text (Text)
 import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
@@ -68,7 +72,7 @@ smartBindSynthesisIO ctx tree = do
     allBestThreadIO ctx 1 tree'
 
 bestThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
-bestThreadIO _ 0 node = return $ trace "bestThreadIO reach step limit!" node
+bestThreadIO _ 0 node = return $ trace "bestThreadIO've reached the step limit!" node
 bestThreadIO ctx limit tree = do
     subForest <- positiveSubForestIO ctx tree
     case subForest of
@@ -136,6 +140,46 @@ bestLeaf tree leafs =
                 minimumOn
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
+
+topDownScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+topDownScoreSynthesisIO = topDownScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0
+
+topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do
+    if step > limit
+        then do
+            infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - STEP LIMIT REACHED: " <> show (sID currentNode)
+            return currentNode
+        else do
+            -- currentNode should not be in the heap at this point, but all its children will be
+            subForest <- positiveSubForestIO ctx currentNode
+            let Sid sidParts = sID currentNode
+                nextNodeDepth = length sidParts
+                -- priority calculation should prefer nodes that are closer to the leafs
+                depthCoeff = depthCoeffBase ** fromIntegral nextNodeDepth
+                getPriority allScores = depthCoeff * (allScores M.! scoreKey)
+                subForestOnlyHeap = H.fromList [(getPriority $ scores $ sDecision child, child) | child <- subForest]
+                heapWithSubforest = H.union heap subForestOnlyHeap
+
+            case H.viewHead heapWithSubforest of
+                Nothing -> do
+                    infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - TREE EXHAUSTED: " <> show (sID currentNode)
+                    return currentNode
+                Just (_, nextBestScoreNode) -> do
+                    if isComplete nextBestScoreNode
+                        then do
+                            infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - DONE: " <> show (sID nextBestScoreNode)
+                            return nextBestScoreNode
+                        else do
+                            infoM
+                                "NITTA.Synthesis"
+                                ( "topDownScoreSynthesisIO: nextPrio="
+                                    <> show (getPriority $ scores $ sDecision nextBestScoreNode)
+                                    <> ", "
+                                    <> show (sID currentNode)
+                                    <> " -> "
+                                    <> show (sID nextBestScoreNode)
+                                )
+                            topDownScoreSynthesisIO' (H.drop 1 heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
 
 {- | Shortcut for constraints in signatures of synthesis method functions.
 This used to be (VarValTime v x t, UnitTag tag). See below for more info.

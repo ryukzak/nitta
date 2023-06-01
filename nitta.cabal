@@ -146,6 +146,7 @@ library
     , filepath
     , ginger
     , hashable
+    , heap
     , hslogger
     , htoml
     , http-api-data
@@ -208,6 +209,7 @@ executable nitta
     , data-default
     , filepath
     , ginger
+    , heap
     , hslogger
     , htoml
     , intervals
@@ -255,6 +257,7 @@ executable nitta-api-gen
     , directory
     , filepath
     , ginger
+    , heap
     , hslogger
     , htoml
     , intervals
@@ -333,6 +336,7 @@ test-suite nitta-test
     , genvalidity
     , genvalidity-property
     , ginger
+    , heap
     , htoml
     , hxt
     , intervals

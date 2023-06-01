@@ -57,6 +57,7 @@ dependencies:
   - boxes
   - bytestring
   - containers
+  - heap
   - data-default
   - filepath
   - ginger
