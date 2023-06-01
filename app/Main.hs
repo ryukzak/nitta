@@ -72,6 +72,7 @@ data Nitta = Nitta
     , format :: String
     , frontend_language :: Maybe FrontendType
     , score :: [T.Text]
+    , depth_base :: Float
     }
     deriving (Show, Data, Typeable)
 
@@ -157,6 +158,11 @@ nittaArgs =
                 &= typ "NAME"
                 &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
                 &= groupname "Synthesis"
+        , depth_base =
+            1.2
+                &= help "Only for top-down score synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
+                &= typ "FLOAT"
+                &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -190,6 +196,7 @@ main = do
             format
             frontend_language
             score
+            depth_base
         ) <-
         getNittaArgs
     let nodeScores = score
@@ -254,7 +261,7 @@ main = do
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
                         , -- , tSynthesisMethod = stateOfTheArtSynthesisIO ctx
-                          tSynthesisMethod = topDownScoreSynthesisIO 1.2 100000 "default" ctx
+                          tSynthesisMethod = topDownScoreSynthesisIO depth_base 100000 "default" ctx
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

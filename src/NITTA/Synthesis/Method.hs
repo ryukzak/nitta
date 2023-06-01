@@ -42,6 +42,7 @@ import NITTA.UIBackend.ViewHelper
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 import System.Log.Logger
+import Text.Printf (printf)
 
 {- | The constant, which restricts the maximum number of synthesis steps. Avoids
 the endless synthesis process.
@@ -152,12 +153,12 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
         else do
             -- currentNode should not be in the heap at this point, but all its children will be
             subForest <- positiveSubForestIO ctx currentNode
-            let Sid sidParts = sID currentNode
-                nextNodeDepth = length sidParts
+            let getNodeDepth node = (\(Sid sidParts) -> length sidParts) $ sID node
                 -- priority calculation should prefer nodes that are closer to the leafs
-                depthCoeff = depthCoeffBase ** fromIntegral nextNodeDepth
-                getPriority allScores = depthCoeff * (allScores M.! scoreKey)
-                subForestOnlyHeap = H.fromList [(getPriority $ scores $ sDecision child, child) | child <- subForest]
+                depthCoeff = depthCoeffBase ** fromIntegral (getNodeDepth currentNode)
+                getScore node = scores (sDecision node) M.! scoreKey
+                getPriority node = depthCoeff * getScore node
+                subForestOnlyHeap = H.fromList [(getPriority child, child) | child <- subForest]
                 heapWithSubforest = H.union heap subForestOnlyHeap
 
             case H.viewHead heapWithSubforest of
@@ -170,16 +171,28 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
                             infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - DONE: " <> show (sID nextBestScoreNode)
                             return nextBestScoreNode
                         else do
+                            let prio = getPriority nextBestScoreNode
+                                depth = getNodeDepth nextBestScoreNode
+                                score = getScore nextBestScoreNode
+                                -- the more steps we make, the more aggressively we drop nodes to find new ones
+                                aggressiveness = 1.0 :: Float -- [0.0; +inf)
+                                aggressiveDropPerSteps = 2500.0
+                                aggressiveDropCount = fromIntegral step / aggressiveDropPerSteps * aggressiveness
+                                dropCount = round $ 1 + aggressiveDropCount * aggressiveness
+
                             infoM
                                 "NITTA.Synthesis"
-                                ( "topDownScoreSynthesisIO: nextPrio="
-                                    <> show (getPriority $ scores $ sDecision nextBestScoreNode)
-                                    <> ", "
-                                    <> show (sID currentNode)
-                                    <> " -> "
-                                    <> show (sID nextBestScoreNode)
+                                ( printf
+                                    "topDownScoreSynthesisIO: prio=%-15s depth=%-5s score=%-10s drops=%-3s %s -> %s"
+                                    (show prio)
+                                    (show depth)
+                                    (show score)
+                                    (show dropCount)
+                                    (show $ sID currentNode)
+                                    (show $ sID nextBestScoreNode)
                                 )
-                            topDownScoreSynthesisIO' (H.drop 1 heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
+
+                            topDownScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
 
 {- | Shortcut for constraints in signatures of synthesis method functions.
 This used to be (VarValTime v x t, UnitTag tag). See below for more info.
