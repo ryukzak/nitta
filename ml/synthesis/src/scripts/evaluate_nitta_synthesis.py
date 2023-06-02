@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import random
+import sys
 from asyncio.subprocess import DEVNULL, PIPE
 from pathlib import Path
 from time import perf_counter
@@ -24,11 +25,16 @@ _evaluated_args = {
         "model_v1": "--score=ml_v1_final",
         "model_v2": "--score=ml_v2_exp2",
     },
+    "synthesis_method": {
+        "sota": "--synthesis-method=stateOfTheArtSynthesisIO",
+        "top-down-1.2": "--synthesis-method=topDownScoreSynthesisIO --depth-base=1.2",
+        "top-down-1.4": "--synthesis-method=topDownScoreSynthesisIO --depth-base=1.4",
+    },
 }
 examples = [*sorted(EXAMPLES_DIR.glob("**/*.lua"))]
+# examples = [EXAMPLES_DIR / "fibonacci.lua"]
 _const_args = "-e"
-_nitta_step_log_line_marker = "[DEBUG : NITTA.Synthesis] explore:"
-_measurement_tries = 5
+_measurement_tries = 4
 
 
 async def _run_config_and_save_results(
@@ -44,6 +50,7 @@ async def _run_config_and_save_results(
     ) as nitta_proc:
         start_time = perf_counter()
 
+        success = False
         timeout = False
         try:
             await asyncio.wait_for(nitta_proc.wait(), timeout=_nitta_running_timeout_s)
@@ -56,14 +63,18 @@ async def _run_config_and_save_results(
         while line:
             decoded_line = line.decode("utf-8")
             # logger.debug(decoded_line)
-            if _nitta_step_log_line_marker in decoded_line:
+            if "[DEBUG : NITTA.Synthesis] explore:" in decoded_line:
                 steps += 1
+            if "synthesis process...ok" in decoded_line:
+                success = True
             line = await nitta_proc.stdout.readline()
 
         results.append(
             {
                 "example": example.name,
                 "synthesis_steps": steps,
+                "success": int(success),
+                "timeout": int(timeout),
                 **{param_name: opt_name for param_name, opt_name, _ in run_config},
                 **({} if timeout else {"time": perf_counter() - start_time}),
             }
@@ -110,16 +121,22 @@ if __name__ == "__main__":
         logger.info("Interrupted by user, saving what we have")
 
     logger.info(f"Finished with {len(results)} results")
+    if not results:
+        sys.exit(0)
+
     df = pd.DataFrame(results)
     index_cols = ["example", *_evaluated_args.keys()]
+    counter_cols = ["success", "timeout"]
     df = df.set_index(index_cols, drop=False)
     df = df.groupby(df.index).agg(
         {
-            **{col: "sample" for col in index_cols},
+            "example": ["sample", "count"],
+            **{col: ["sample"] for col in index_cols if col != "example"},
+            **{col: ["mean", "sum"] for col in counter_cols},
             **{
-                col: ["count", "mean", "std", "min", "max"]
+                col: ["mean", "std", "min", "max"]
                 for col in df.columns
-                if col not in index_cols
+                if col not in index_cols + counter_cols
             },
         }
     )

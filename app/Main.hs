@@ -73,6 +73,7 @@ data Nitta = Nitta
     , frontend_language :: Maybe FrontendType
     , score :: [T.Text]
     , depth_base :: Float
+    , synthesis_method :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -163,6 +164,11 @@ nittaArgs =
                 &= help "Only for top-down score synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
+        , synthesis_method =
+            "topDownScoreSynthesisIO"
+                &= help "Synthesis method (default: 'topDownScoreSynthesisIO')"
+                &= typ "FUNCTION_NAME"
+                &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -197,6 +203,7 @@ main = do
             frontend_language
             score
             depth_base
+            synthesis_method
         ) <-
         getNittaArgs
     let nodeScores = score
@@ -251,6 +258,10 @@ main = do
                             { mlBackendGetter = serverGetter
                             , nodeScores = nodeScores
                             }
+                    synthesisMethod = case synthesis_method of
+                        "topDownScoreSynthesisIO" -> topDownScoreSynthesisIO depth_base 100000 Nothing ctx
+                        "stateOfTheArtSynthesisIO" -> stateOfTheArtSynthesisIO ctx
+                        _ -> error $ "unregistered synthesis method: " <> synthesis_method
 
                 synthesizeTargetSystem
                     (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
@@ -260,8 +271,7 @@ main = do
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
-                        , -- , tSynthesisMethod = stateOfTheArtSynthesisIO ctx
-                          tSynthesisMethod = topDownScoreSynthesisIO depth_base 100000 Nothing ctx
+                        , tSynthesisMethod = synthesisMethod
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }
