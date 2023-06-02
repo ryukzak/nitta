@@ -261,7 +261,7 @@ main = do
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
                         , -- , tSynthesisMethod = stateOfTheArtSynthesisIO ctx
-                          tSynthesisMethod = topDownScoreSynthesisIO depth_base 100000 "default" ctx
+                          tSynthesisMethod = topDownScoreSynthesisIO depth_base 100000 Nothing ctx
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

@@ -142,7 +142,7 @@ bestLeaf tree leafs =
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
 
-topDownScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+topDownScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
 topDownScoreSynthesisIO = topDownScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0
 
 topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do
@@ -156,7 +156,9 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
             let getNodeDepth node = (\(Sid sidParts) -> length sidParts) $ sID node
                 -- priority calculation should prefer nodes that are closer to the leafs
                 depthCoeff = depthCoeffBase ** fromIntegral (getNodeDepth currentNode)
-                getScore node = scores (sDecision node) M.! scoreKey
+                getScore node = case scoreKey of
+                    Nothing -> defScore . sDecision $ node
+                    Just key -> scores (sDecision node) M.! key
                 getPriority node = depthCoeff * getScore node
                 -- heapWithSubforest = foldl (\acc child -> H.insert (getPriority child, child) acc) heap subForest
                 -- the version above (fold + insert) takes 1.7x more time than below (fromList + union)
