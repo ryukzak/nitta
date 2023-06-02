@@ -20,7 +20,7 @@ def _map_categorical(df, c):
     )
 
 
-def preprocess_df(df_orig: DataFrame) -> DataFrame:
+def preprocess_train_data_df(df_orig: DataFrame) -> DataFrame:
     df: DataFrame = df_orig.copy()
 
     for bool_column in [
@@ -42,6 +42,7 @@ def preprocess_df(df_orig: DataFrame) -> DataFrame:
         axis="columns",
         errors="ignore",
     )
+    df = df_to_model_columns(df, label=True)
     df = df.fillna(0)
     return df
 
@@ -71,10 +72,10 @@ _BASELINE_MODEL_COLUMNS = [
 
 
 def df_to_model_columns(
-    df: DataFrame, model_columns: Optional[list[str]] = None
+    df: DataFrame, model_columns: Optional[list[str]] = None, label: bool = False
 ) -> DataFrame:
     if not model_columns:
-        model_columns = _BASELINE_MODEL_COLUMNS
+        model_columns = _BASELINE_MODEL_COLUMNS + (["label"] if label else [])
 
     df = pd.concat([pd.DataFrame(columns=model_columns), df])[
         model_columns

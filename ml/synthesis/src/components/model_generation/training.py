@@ -2,6 +2,8 @@ from pathlib import Path
 from time import strftime
 from typing import Optional, Tuple
 
+import pandas as pd
+from matplotlib import pyplot as plt
 from tensorflow.python.data import Dataset
 from tensorflow.python.keras.models import Model
 
@@ -28,7 +30,7 @@ def train_and_save_baseline_model(
     model = create_baseline_model(input_shape=sample.shape)
     effective_fitting_kwargs = dict(
         epochs=20,
-        steps_per_epoch=2250,
+        steps_per_epoch=3000,
     )
     if fitting_kwargs:
         effective_fitting_kwargs.update(fitting_kwargs)
@@ -47,5 +49,12 @@ def train_and_save_baseline_model(
     model.save(out_dir)
     with (out_dir / "metainfo.json").open("w") as f:
         f.write(metainfo.json())
+
+    hist_df = pd.DataFrame(results.history)
+    hist_df[["loss", "val_loss"]].plot()
+    plt.grid()
+    hist_df[["mae", "val_mae"]].plot()
+    plt.grid()
+    plt.savefig(out_dir / "history.png")
 
     return model, metainfo

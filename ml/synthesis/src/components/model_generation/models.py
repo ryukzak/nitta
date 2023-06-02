@@ -16,7 +16,7 @@ def create_baseline_model(input_shape) -> tf.keras.Model:
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(lr=3e-4),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=3e-4),
         loss="mse",
         metrics=["mae"],
     )

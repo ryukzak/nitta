@@ -6,7 +6,7 @@ from components.common.logging import configure_logging, get_logger
 from components.common.model_loading import load_model
 from components.data_crawling.example_running import get_data_for_many_examples_parallel
 from components.data_processing.dataset_creation import create_datasets
-from components.data_processing.feature_engineering import preprocess_df
+from components.data_processing.feature_engineering import preprocess_train_data_df
 from components.model_generation.training import train_and_save_baseline_model
 from consts import MODELS_DIR
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         is_manual = False
 
         training_data = load_all_existing_training_data()
-        preprocessed = preprocess_df(training_data)
+        preprocessed = preprocess_train_data_df(training_data)
         train_ds, val_ds = create_datasets(preprocessed)
 
         model, meta = train_and_save_baseline_model(

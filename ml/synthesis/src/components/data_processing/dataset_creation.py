@@ -1,5 +1,6 @@
-from typing import Tuple
+from typing import List, Optional, Tuple
 
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.python.data import Dataset
 
@@ -27,9 +28,14 @@ def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False, log_columns=Fa
     return ds
 
 
-def create_datasets(df) -> Tuple[Dataset, Dataset]:
+def create_datasets(
+    df, test_df: Optional[pd.DataFrame] = None
+) -> Tuple[Dataset, Dataset]:
     # create training and evaluation datasets
-    train_df, test_df = train_test_split(df.sample(frac=1), test_size=0.2)
+    if test_df is not None:
+        train_df = df
+    else:
+        train_df, test_df = train_test_split(df.sample(frac=1), test_size=0.2)
 
     n = len(df)
     logger.info(f"N:\t{n}")

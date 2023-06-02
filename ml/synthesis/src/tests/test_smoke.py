@@ -12,7 +12,7 @@ from components.data_crawling.example_running import (
 )
 from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
-from components.data_processing.feature_engineering import preprocess_df
+from components.data_processing.feature_engineering import preprocess_train_data_df
 from components.model_generation.training import train_and_save_baseline_model
 from consts import EXAMPLES_DIR, EnvVarNames
 
@@ -30,7 +30,7 @@ async def test_smoke():
             df = load_all_existing_training_data(tmp_data_dir)
             assert df[TARGET_COLUMNS].dropna().size > 0, "Labels weren't calculated"
 
-            pdf = preprocess_df(df)
+            pdf = preprocess_train_data_df(df)
             tds, vds = create_datasets(pdf)
 
             model_name = "test-model"

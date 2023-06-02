@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from http import HTTPStatus
 
 import pandas as pd
@@ -6,19 +7,19 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from starlette.responses import HTMLResponse
 
-from components.common.nitta_node import NittaNodeInTree, NittaNode
+from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 from components.data_processing.feature_engineering import (
-    preprocess_df,
     df_to_model_columns,
+    preprocess_train_data_df,
 )
 from mlbackend.dtos import (
-    Response,
     ModelInfo,
     PostScoreRequestBody,
     PostScoreResponseData,
+    Response,
 )
-from mlbackend.models_store import models, ModelNotFoundError
+from mlbackend.models_store import ModelNotFoundError, models
 
 app = FastAPI(
     title="NITTA ML Backend",
@@ -71,7 +72,7 @@ def score_with_model(
                 for target_node in target_nodes
             ]
         )
-        df = preprocess_df(df)
+        df = preprocess_train_data_df(df)
         df = df_to_model_columns(df)
         scores.append(model.predict(df.values).reshape(-1).tolist())
 
