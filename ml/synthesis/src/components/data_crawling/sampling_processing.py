@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from math import exp, log
 from pathlib import Path
 from typing import List, Optional
@@ -8,6 +7,7 @@ import pandas as pd
 
 from components.common.logging import get_logger
 from components.data_crawling.node_label_computation import aggregate_node_labels
+from components.data_crawling.saving import save_df_with_timestamp
 from consts import DATA_DIR
 
 logger = get_logger(__name__)
@@ -24,7 +24,6 @@ def build_df_and_save_sampling_results(
     )
 
     results_df = pd.DataFrame(results)
-    sampling_run_id = datetime.now().strftime("%y%m%d_%H%M%S")
 
     # there may be significant duplication of data in results at this point.
     # clashing nodes differ only in labels.
@@ -38,10 +37,9 @@ def build_df_and_save_sampling_results(
     results_df = results_df[~results_df.index.duplicated(keep="first")]
     results_df.label = results_df_labels
 
-    output_fn = data_dir / f"{example_name}.sampling.{sampling_run_id}.csv"
-    results_df.to_csv(output_fn)
-
-    logger.info(f"Results saved to {output_fn}")
+    save_df_with_timestamp(
+        results_df, data_dir, f"{example_name}.sampling", what="results"
+    )
 
     return results_df
 

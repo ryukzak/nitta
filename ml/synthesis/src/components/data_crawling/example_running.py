@@ -47,16 +47,28 @@ async def run_nitta(
     nitta_env: Optional[dict] = None,
     given_port: Optional[int] = None,
 ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
+    port = given_port or find_random_free_port()
+    cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
+    async with run_nitta_raw(cmd, nitta_env, wait_for_server=True) as proc:
+        nitta_baseurl = f"http://localhost:{port}"
+        yield proc, nitta_baseurl
+
+
+@asynccontextmanager
+async def run_nitta_raw(
+    cmd: str,
+    env: Optional[dict] = None,
+    wait_for_server: bool = False,
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+) -> AsyncGenerator[asyncio.subprocess.Process, None]:
     env = os.environ.copy()
-    env.update(nitta_env or {})
+    env.update(env or {})
 
     proc = None
     retries_left = _NITTA_START_MAX_RETRIES
     try:
         while (proc is None or proc.returncode is not None) and retries_left > 0:
-            port = given_port or find_random_free_port()
-
-            cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
             logger.info(f"Starting NITTA, cmd: {cmd}")
 
             preexec_fn = (
@@ -65,16 +77,18 @@ async def run_nitta(
             proc = await asyncio.create_subprocess_shell(
                 cmd,
                 cwd=str(ROOT_DIR),
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+                stdout=stdout,
+                stderr=stderr,
                 shell=True,
                 preexec_fn=preexec_fn,
                 env=env,
             )
 
-            logger.info(
-                f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs."
-            )
+            logger.info(f"NITTA has been launched, PID {proc.pid}.")
+            if not wait_for_server:
+                break
+
+            logger.info(f"Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
             await sleep(_NITTA_START_WAIT_DELAY_S)
 
             if proc.returncode is not None:
@@ -88,18 +102,21 @@ async def run_nitta(
 
         if proc is None or proc.returncode is not None:
             raise RuntimeError(
-                f"Failed to start NITTA after {_NITTA_START_MAX_RETRIES} retries."
+                f"Failed to start NITTA after {_NITTA_START_MAX_RETRIES - retries_left} retries."
             )
 
-        nitta_baseurl = f"http://localhost:{port}"
-        yield proc, nitta_baseurl
+        yield proc
     finally:
         if proc is not None and proc.returncode is None:
             pid = proc.pid
-            pgid = os.getpgid(pid)
-            logger.info(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
-            os.killpg(pgid, signal.SIGTERM)
-            await proc.wait()
+            try:
+                pgid = os.getpgid(pid)
+                logger.info(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
+                os.killpg(pgid, signal.SIGTERM)
+                await proc.wait()
+            except ProcessLookupError:
+                # seemingly, NITTA died just after if check
+                pass
 
 
 async def run_example_and_retrieve_tree_data(

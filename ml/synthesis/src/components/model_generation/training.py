@@ -8,6 +8,7 @@ from tensorflow.python.data import Dataset
 from tensorflow.python.keras.models import Model
 
 from components.common.logging import get_logger
+from components.data_crawling.saving import get_current_time_str
 from components.model_generation.model_metainfo import ModelMetainfo
 from components.model_generation.models import create_baseline_model
 from consts import MODELS_DIR
@@ -49,7 +50,7 @@ def train_and_save_baseline_model(
     )
 
     if not output_model_name:
-        output_model_name = f"model-{strftime('%Y%m%d-%H%M%S')}"
+        output_model_name = f"model_{get_current_time_str()}"
 
     out_dir = models_dir / output_model_name
     model.save(out_dir)
