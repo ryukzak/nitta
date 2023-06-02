@@ -30,16 +30,22 @@ def train_and_save_baseline_model(
     model = create_baseline_model(input_shape=sample.shape)
     effective_fitting_kwargs = dict(
         epochs=20,
-        steps_per_epoch=3000,
+        steps_per_epoch=2500,
     )
     if fitting_kwargs:
         effective_fitting_kwargs.update(fitting_kwargs)
-    results = model.fit(x=train_ds, validation_data=val_ds, **effective_fitting_kwargs)
+
+    try:
+        model.fit(x=train_ds, validation_data=val_ds, **effective_fitting_kwargs)
+    except KeyboardInterrupt:
+        logger.info("Training interrupted by user, saving as is")
+
+    history = model.history.history
 
     # TODO: proper model evaluation on an independent dataset
     metainfo = ModelMetainfo(
-        train_mae=results.history["mae"][-1],
-        validation_mae=results.history["val_mae"][-1],
+        train_mae=history["mae"][-1],
+        validation_mae=history["val_mae"][-1],
     )
 
     if not output_model_name:
@@ -50,11 +56,13 @@ def train_and_save_baseline_model(
     with (out_dir / "metainfo.json").open("w") as f:
         f.write(metainfo.json())
 
-    hist_df = pd.DataFrame(results.history)
-    hist_df[["loss", "val_loss"]].plot()
-    plt.grid()
-    hist_df[["mae", "val_mae"]].plot()
-    plt.grid()
-    plt.savefig(out_dir / "history.png")
+    hist_df = pd.DataFrame(history)
+    hist_df.to_csv(out_dir / "history.csv", index=False)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    hist_df[["loss", "val_loss"]].plot(ax=ax[0])
+    ax[0].grid()
+    hist_df[["mae", "val_mae"]].plot(ax=ax[1])
+    ax[1].grid()
+    fig.savefig(out_dir / "history.png")
 
     return model, metainfo
