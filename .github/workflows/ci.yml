@@ -53,8 +53,7 @@ jobs:
           stack install doctest
 
       - name: Install weeder
-        run: |
-          stack install weeder-2.4.1
+        run: stack install weeder-2.4.1
 
   nitta:
     runs-on: ubuntu-latest
@@ -108,7 +107,7 @@ jobs:
         timeout-minutes: 5
         run: yarn build
 
-      - name: run Weeder
+      - name: Run weeder
         run: |
           export PATH="/home/runner/.local/bin:$PATH"
           weeder
