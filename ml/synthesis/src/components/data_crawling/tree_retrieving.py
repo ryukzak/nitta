@@ -2,6 +2,7 @@ import asyncio
 import time
 from random import choice
 
+import numpy as np
 import orjson
 from aiohttp import ClientSession
 
@@ -105,6 +106,12 @@ async def retrieve_random_descending_thread(
             )
             break
 
-        node = choice(node.children)
+        # weight descending probability by score
+        # this is a quick way to increase representation of successful nodes in results of the big trees
+        shift = 3000  # to avoid negative scores
+        pivot = shift + 2000
+        weights = np.array([child.score for child in node.children])
+        weights = ((weights + shift) / pivot) ** 3
+        node = np.random.choice(node.children, p=weights / weights.sum())
 
     return node

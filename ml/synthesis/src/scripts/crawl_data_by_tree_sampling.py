@@ -1,14 +1,26 @@
 import asyncio
+import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import List
 
 from components.common.logging import configure_logging, get_logger
 from components.data_crawling.example_running import (
     run_example_and_sample_tree_parallel,
 )
+from components.data_crawling.sampling_processing import (
+    build_df_and_save_sampling_results,
+    estimate_tree_coverage_based_on_clash_ratio,
+    process_sampling_results,
+)
+from consts import DATA_DIR
 
 _DEFAULT_N_SAMPLES = 5000
+_DEFAULT_N_SAMPLES_PER_BATCH = 150
+_DEFAULT_N_WORKERS = 1
+_DEFAULT_N_NITTAS = 1
+_DEFAULT_NITTA_EXE_PATH = "stack exec nitta --"
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -34,23 +46,30 @@ if __name__ == "__main__":
         type=int,
     )
     argparser.add_argument(
+        "-b",
+        "--n-samples-per-batch",
+        help=f"Number of samples to gather in a single batch. Default: {_DEFAULT_N_SAMPLES_PER_BATCH}.",
+        default=_DEFAULT_N_SAMPLES_PER_BATCH,
+        type=int,
+    )
+    argparser.add_argument(
         "-w",
         "--n-workers",
-        help="Number of workers to use for parallel sampling. 1 recommended in most cases. Default: 1.",
-        default=1,
+        help=f"Number of workers to use for parallel sampling. 1 recommended in most cases. Default: {_DEFAULT_N_WORKERS}.",
+        default=_DEFAULT_N_WORKERS,
         type=int,
     )
     argparser.add_argument(
         "-i",
         "--n-nittas",
-        help="Number of NITTA instances to run. 1 recommended in most cases. Default: 1.",
-        default=1,
+        help=f"Number of NITTA instances to run. 1 recommended in most cases. Default: {_DEFAULT_N_NITTAS}.",
+        default=_DEFAULT_N_NITTAS,
         type=int,
     )
     argparser.add_argument(
         "--nitta-path",
-        help="Path to the NITTA executable. Default: 'stack exec nitta' is used.",
-        default="stack exec nitta --",
+        help=f"Path to the NITTA executable. Default: '{_DEFAULT_NITTA_EXE_PATH}' is used.",
+        default=_DEFAULT_NITTA_EXE_PATH,
         type=str,
     )
 
@@ -91,12 +110,33 @@ if __name__ == "__main__":
         f"Starting sampling of {args.file} with {args.n_samples} samples {samples_notice}"
     )
 
-    asyncio.run(
-        run_example_and_sample_tree_parallel(
-            file_to_run,
-            n_samples=args.n_samples,
-            n_workers=args.n_workers,
-            n_nittas=args.n_nittas,
-            nitta_exe_path=args.nitta_path,
+    results: List[dict] = []
+
+    try:
+        asyncio.run(
+            run_example_and_sample_tree_parallel(
+                file_to_run,
+                n_samples=args.n_samples,
+                n_samples_per_batch=args.n_samples_per_batch,
+                n_workers=args.n_workers,
+                n_nittas=args.n_nittas,
+                nitta_exe_path=args.nitta_path,
+                results_accum=results,
+            )
         )
-    )
+    except KeyboardInterrupt:
+
+        def _no_traceback_excepthook(exc_type, exc_val, traceback):
+            pass
+
+        if sys.excepthook is sys.__excepthook__:
+            sys.excepthook = _no_traceback_excepthook
+
+        if len(results) == 0:
+            raise
+
+        logger.info("Interrupted by user, processing nodes gathered so far.")
+    except Exception:
+        logger.exception("Unexpected error, processing nodes gathered so far.")
+
+    process_sampling_results(file_to_run, results)
