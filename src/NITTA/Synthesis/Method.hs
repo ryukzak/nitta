@@ -158,6 +158,8 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
                 depthCoeff = depthCoeffBase ** fromIntegral (getNodeDepth currentNode)
                 getScore node = scores (sDecision node) M.! scoreKey
                 getPriority node = depthCoeff * getScore node
+                -- heapWithSubforest = foldl (\acc child -> H.insert (getPriority child, child) acc) heap subForest
+                -- the version above (fold + insert) takes 1.7x more time than below (fromList + union)
                 subForestOnlyHeap = H.fromList [(getPriority child, child) | child <- subForest]
                 heapWithSubforest = H.union heap subForestOnlyHeap
 
@@ -175,9 +177,10 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
                                 depth = getNodeDepth nextBestScoreNode
                                 score = getScore nextBestScoreNode
                                 -- the more steps we make, the more aggressively we drop nodes to find new ones
-                                aggressiveness = 1.0 :: Float -- [0.0; +inf)
+                                aggressiveness = 0.5 :: Float -- [0.0; +inf)
+                                maxDrops = 5
                                 aggressiveDropPerSteps = 2500.0
-                                aggressiveDropCount = fromIntegral step / aggressiveDropPerSteps * aggressiveness
+                                aggressiveDropCount = min (maxDrops - 1) $ fromIntegral step / aggressiveDropPerSteps * aggressiveness
                                 dropCount = round $ 1 + aggressiveDropCount * aggressiveness
 
                             infoM
