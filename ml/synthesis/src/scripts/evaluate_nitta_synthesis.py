@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 _output_dir = "evaluation"
 _nitta_path = "stack exec nitta --"
-_nitta_running_timeout_s = 10
+_nitta_running_timeout_s = 60
 _evaluated_args = {
     "score": {
         "default": "",
