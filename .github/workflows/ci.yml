@@ -108,9 +108,7 @@ jobs:
         run: yarn build
 
       - name: Run weeder
-        run: |
-          export PATH="/home/runner/.local/bin:$PATH"
-          weeder
+        run: weeder
 
       - name: Copy doc to GH_PAGES_DIR
         run: |
