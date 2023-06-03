@@ -10,7 +10,10 @@ from aiohttp import ClientSession, ServerDisconnectedError
 from components.common.logging import configure_logging, get_logger
 from components.data_crawling.example_running import run_nitta
 from components.data_crawling.nitta_node import NittaNode
-from components.data_crawling.tree_retrieving import retrieve_subforest, retrieve_whole_nitta_tree
+from components.data_crawling.tree_retrieving import (
+    retrieve_subforest,
+    retrieve_whole_nitta_tree,
+)
 from components.data_processing.feature_engineering import df_to_model_columns
 from consts import MODELS_DIR
 from IPython.display import display
@@ -120,7 +123,9 @@ def assemble_tree_dataframe(
         return pd.concat(result)
 
 
-async def select_best_by_evaluator(session, evaluator, node, nitta_baseurl, counters, children_limit=None):
+async def select_best_by_evaluator(
+    session, evaluator, node, nitta_baseurl, counters, children_limit=None
+):
     counters[evaluator.__name__] += 1
 
     if node.is_leaf:
@@ -209,7 +214,9 @@ def reset_counters():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("example_paths", type=str, nargs="+", help="Paths to the example files")
+    parser.add_argument(
+        "example_paths", type=str, nargs="+", help="Paths to the example files"
+    )
     parser.add_argument(
         "--evaluator",
         type=str,
@@ -232,7 +239,9 @@ async def main(args):
 
     evaluator_dict = {"nitta": old_evaluator, "ml": new_evaluator}
 
-    evaluator_choices = [choice for choice in evaluator_choices if choice in evaluator_dict]
+    evaluator_choices = [
+        choice for choice in evaluator_choices if choice in evaluator_dict
+    ]
     if not evaluator_choices:
         print("Invalid evaluator choices. Using the new evaluator as default.")
         evaluator_choices = ["nitta"]
@@ -263,7 +272,9 @@ async def main(args):
                 for evaluator_choice in evaluator_choices:
                     evaluator = evaluator_dict[evaluator_choice]
                     start_time = perf_counter()
-                    best = await select_best_by_evaluator(session, evaluator, root, nitta_baseurl, counters, 2)
+                    best = await select_best_by_evaluator(
+                        session, evaluator, root, nitta_baseurl, counters, 2
+                    )
                     end_time = perf_counter() - start_time
                     result_dict["evaluators"][evaluator_choice] = {
                         "best": best,

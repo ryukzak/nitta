@@ -51,7 +51,9 @@ class BackendBaseUrlFile(AbstractContextManager):
         self.port = find_random_free_port()
 
         base_url = self._base_url_fmt.format(port=self.port)
-        logger.info(f"Writing base URL ({base_url}) to file ({self.filepath.absolute()}).")
+        logger.info(
+            f"Writing base URL ({base_url}) to file ({self.filepath.absolute()})."
+        )
         with self.filepath.open("w") as f:
             f.write(base_url + "\n")
         return self
@@ -64,7 +66,8 @@ class BackendBaseUrlFile(AbstractContextManager):
     ) -> bool | None:
         if not self.filepath.exists():
             logger.warning(
-                f"Exiting, so wanted to remove {self.filepath.absolute()}, " f"but it does not exist. Doing nothing."
+                f"Exiting, so wanted to remove {self.filepath.absolute()}, "
+                f"but it does not exist. Doing nothing."
             )
             return
 

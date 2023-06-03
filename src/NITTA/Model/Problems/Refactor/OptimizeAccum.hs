@@ -134,17 +134,17 @@ optimizeCluster fs = concatMap refactored fs
 
 refactorFunction f' f
     | Just (Acc lst') <- castF f'
-    , Just (Acc lst) <- castF f
-    , let singleOutBool = (1 ==) $ length $ outputs f'
-          isOutInpIntersect =
-            any
-                ( \case
-                    Push _ (I v) -> elem v $ outputs f'
-                    _ -> False
-                )
-                lst
-          makeRefactor = singleOutBool && isOutInpIntersect
-       in makeRefactor =
+      , Just (Acc lst) <- castF f
+      , let singleOutBool = (1 ==) $ length $ outputs f'
+            isOutInpIntersect =
+                any
+                    ( \case
+                        Push _ (I v) -> elem v $ outputs f'
+                        _ -> False
+                    )
+                    lst
+            makeRefactor = singleOutBool && isOutInpIntersect
+         in makeRefactor =
         let subs _ (Push Minus _) (Push Plus v) = Just $ Push Minus v
             subs _ (Push Minus _) (Push Minus v) = Just $ Push Plus v
             subs _ (Push Plus _) push@(Push _ _) = Just push
@@ -159,8 +159,8 @@ refactorFunction f' f
             refactorAcc _ _ (Push _ (I _)) = undefined
          in [packF $ Acc $ concatMap (refactorAcc lst' f') lst]
     | Just f1 <- fromAddSub f'
-    , Just f2 <- fromAddSub f
-    , (1 ==) $ length $ outputs f' = case refactorFunction f1 f2 of
+      , Just f2 <- fromAddSub f
+      , (1 ==) $ length $ outputs f' = case refactorFunction f1 f2 of
         [fNew] -> [fNew]
         _ -> [f, f']
     | otherwise = [f, f']

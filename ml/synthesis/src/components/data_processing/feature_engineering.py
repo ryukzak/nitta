@@ -12,7 +12,9 @@ def _map_bool(c):
 
 
 def _map_categorical(df, c):
-    return pd.concat([df.drop([c.name], axis=1), pd.get_dummies(c, prefix=c.name)], axis=1)
+    return pd.concat(
+        [df.drop([c.name], axis=1), pd.get_dummies(c, prefix=c.name)], axis=1
+    )
 
 
 def preprocess_df(df: DataFrame) -> DataFrame:
@@ -27,7 +29,9 @@ def preprocess_df(df: DataFrame) -> DataFrame:
         if bool_column in df.columns:
             df[bool_column] = _map_bool(df[bool_column])
         else:
-            logger.warning(f"Column/parameter {bool_column} not found in provided node info.")
+            logger.warning(
+                f"Column/parameter {bool_column} not found in provided node info."
+            )
 
     df = _map_categorical(df, df.tag)
     df = df.drop(
@@ -74,6 +78,8 @@ def df_to_model_columns(df: DataFrame, model_columns: list[str] = None) -> DataF
     if not model_columns:
         model_columns = _BASELINE_MODEL_COLUMNS
 
-    df = pd.concat([pd.DataFrame(columns=model_columns), df])[model_columns]  # reset columns, fill data if possible
+    df = pd.concat([pd.DataFrame(columns=model_columns), df])[
+        model_columns
+    ]  # reset columns, fill data if possible
     df = df.fillna(0)  # fill NaNs in columns (mostly OHE flags) with 0
     return df

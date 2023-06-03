@@ -15,10 +15,10 @@ import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
 
 data BackendCtx tag v x t = BackendCtx
-    { root :: DefTree tag v x t
-    -- ^ root synthesis node
-    , receivedValues :: [(v, [x])]
-    -- ^ lists of received by IO values
+    { -- | root synthesis node
+      root :: DefTree tag v x t
+    , -- | lists of received by IO values
+      receivedValues :: [(v, [x])]
     , outputPath :: String
     , mlBackendGetter :: IO MlBackendServer
     , mlScoringModel :: Maybe String

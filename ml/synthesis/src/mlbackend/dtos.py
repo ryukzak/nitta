@@ -101,7 +101,9 @@ class ScoringInput(CustomizedBaseModel):
 
 
 class PostScoreRequestBody(CustomizedBaseModel):
-    inputs: List[ScoringInput] = Field(description="List of inputs to get score predictions for. ")
+    inputs: List[ScoringInput] = Field(
+        description="List of inputs to get score predictions for. "
+    )
 
 
 # data, not whole body (which can include "data" field and metadata)

@@ -36,22 +36,22 @@ import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Prelude hiding (init)
 
 data Shift v x t = Shift
-    { remain :: [F v x]
-    -- ^ list of FU, that will be binded later
-    , target :: Maybe v
-    -- ^ current input value, that we want to shift
-    , sources :: [v]
-    -- ^ list of output values
-    , sRight :: Bool
-    -- ^ True -> shift right; False -> shift left
-    , byteShiftDiv :: Int
-    -- ^ shift div 8 (is used for byte shift)
-    , byteShiftMod :: Int
-    -- ^ shift mod 8 (is used for bit shift)
-    , currentWork :: Maybe (F v x)
-    -- ^ current function in PU
-    , process_ :: Process t (StepInfo v x t)
-    -- ^ description of target computation process
+    { -- | list of FU, that will be binded later
+      remain :: [F v x]
+    , -- | current input value, that we want to shift
+      target :: Maybe v
+    , -- | list of output values
+      sources :: [v]
+    , -- | True -> shift right; False -> shift left
+      sRight :: Bool
+    , -- | shift div 8 (is used for byte shift)
+      byteShiftDiv :: Int
+    , -- | shift mod 8 (is used for bit shift)
+      byteShiftMod :: Int
+    , -- | current function in PU
+      currentWork :: Maybe (F v x)
+    , -- | description of target computation process
+      process_ :: Process t (StepInfo v x t)
     }
 
 instance Var v => Locks (Shift v x t) v where
@@ -114,7 +114,7 @@ instance VarValTime v x t => EndpointProblem (Shift v x t) v t where
         [EndpointSt (Target t) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)]
     endpointOptions pu@Shift{sources, byteShiftDiv, byteShiftMod}
         | not $ null sources
-        , byteShiftDiv == 0 =
+          , byteShiftDiv == 0 =
             let timeConstrain = TimeConstraint (startTime ... maxBound) (1 ... maxBound)
                 startTime = nextTick pu + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
@@ -176,9 +176,9 @@ instance VarValTime v x t => EndpointProblem (Shift v x t) v t where
             , epAt
             }
             | not $ null sources
-            , let sources' = sources \\ elems v
-            , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
-            , sources' /= sources =
+              , let sources' = sources \\ elems v
+              , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
+              , sources' /= sources =
                 let process_' = execSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) Out
                         when (null sources') $ do
@@ -193,7 +193,7 @@ instance VarValTime v x t => EndpointProblem (Shift v x t) v t where
                         }
     endpointDecision pu@Shift{target = Nothing, sources = [], remain} d
         | let v = oneOf $ variables d
-        , Just f <- find (\f -> v `member` variables f) remain =
+          , Just f <- find (\f -> v `member` variables f) remain =
             endpointDecision (execution pu f) d
     endpointDecision _pu d = error [i|incorrect decision #{ d } for Shift|]
 
