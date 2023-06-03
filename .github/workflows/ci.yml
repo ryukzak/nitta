@@ -185,7 +185,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install black isort flake8
+          pip install black isort pyproject-flake8==5.0.4
 
       - name: Check code style with black
         run: black --check ml
@@ -194,4 +194,4 @@ jobs:
         run: isort --recursive ml
 
       - name: Check code style with flake8
-        run: flake8 ml
+        run: pflake8 ml
