@@ -69,9 +69,7 @@ class NittaNode:
             return deque(((self.duration, self.depth),))
         else:
             children_metrics = (
-                child.subtree_leafs_metrics
-                for child in self.children
-                if child.subtree_leafs_metrics is not None
+                child.subtree_leafs_metrics for child in self.children if child.subtree_leafs_metrics is not None
             )
             return sum(children_metrics, deque())
 
@@ -81,10 +79,7 @@ class NittaNode:
             return deque((self.compute_label(metrics_distrib),))
         else:
             return sum(
-                (
-                    child.get_subtree_leafs_labels(metrics_distrib)
-                    for child in self.children
-                ),
+                (child.get_subtree_leafs_labels(metrics_distrib) for child in self.children),
                 deque(),
             )
 
@@ -101,9 +96,7 @@ class NittaNode:
             # if std is 0, then we have a single value getting normalized. the nominator is also zero.
             # let's define normalized_metrics for this edge case as all-zeros, so they don't break anything.
             # adding an epsilon to avoid division by zero.
-            normalized_metrics = (metrics - metrics_distrib.mean(axis=0)) / (
-                metrics_distrib.std(axis=0) + 1e-5
-            )
+            normalized_metrics = (metrics - metrics_distrib.mean(axis=0)) / (metrics_distrib.std(axis=0) + 1e-5)
 
             return normalized_metrics.dot(_METRICS_WEIGHTS)
 

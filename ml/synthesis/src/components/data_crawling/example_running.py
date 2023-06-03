@@ -42,9 +42,7 @@ async def run_nitta(
 
     proc = None
     try:
-        preexec_fn = (
-            None if os.name == "nt" else os.setsid
-        )  # see https://stackoverflow.com/a/4791612
+        preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
         proc = await asyncio.create_subprocess_shell(
             cmd,
             cwd=str(ROOT_DIR),
@@ -55,9 +53,7 @@ async def run_nitta(
             env=env,
         )
 
-        logger.info(
-            f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs."
-        )
+        logger.info(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
         await sleep(_NITTA_START_WAIT_DELAY_S)
 
         yield proc, nitta_baseurl

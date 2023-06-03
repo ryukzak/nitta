@@ -32,10 +32,7 @@ async def retrieve_subforest(
 
     levels_left_for_child = None if levels_left is None else levels_left - 1
     await asyncio.gather(
-        *[
-            retrieve_subforest(child, session, nitta_baseurl, levels_left_for_child)
-            for child in node.children
-        ]
+        *[retrieve_subforest(child, session, nitta_baseurl, levels_left_for_child) for child in node.children]
     )
 
 

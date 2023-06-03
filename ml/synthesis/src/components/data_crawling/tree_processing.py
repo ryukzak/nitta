@@ -23,9 +23,7 @@ def _extract_params_dict(node: NittaNode) -> dict:
         return {"pRefactoringType": node.decision.tag}
 
 
-def _extract_alternative_siblings_dict(
-    node: NittaNode, siblings: tuple[NittaNode]
-) -> dict:
+def _extract_alternative_siblings_dict(node: NittaNode, siblings: tuple[NittaNode]) -> dict:
     bindings, refactorings, dataflows = 0, 0, 0
 
     for sibling in siblings:
@@ -75,15 +73,11 @@ def assemble_tree_dataframe(
 
     def child_process_job(node: NittaNode):
         accum = deque()
-        _assemble_tree_dataframe_recursion(
-            accum, example, node, metrics_distrib, include_label, levels_left
-        )
+        _assemble_tree_dataframe_recursion(accum, example, node, metrics_distrib, include_label, levels_left)
         return accum
 
     if n_workers > 1:
-        deques = Parallel(n_jobs=n_workers)(
-            delayed(child_process_job)(node) for node in node.children
-        )
+        deques = Parallel(n_jobs=n_workers)(delayed(child_process_job)(node) for node in node.children)
     else:
         deques = [child_process_job(node)]
 

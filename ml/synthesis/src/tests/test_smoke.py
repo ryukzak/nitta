@@ -23,9 +23,7 @@ async def test_smoke():
             tmp_data_dir = Path(tmp_data_dir_name)
             tmp_models_dir = Path(tmp_model_dir_name)
 
-            await run_example_and_retrieve_tree_data(
-                EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir
-            )
+            await run_example_and_retrieve_tree_data(EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir)
             df = load_all_existing_training_data(tmp_data_dir)
             assert df[TARGET_COLUMNS].dropna().size > 0, "Labels weren't calculated"
 
@@ -47,10 +45,7 @@ async def test_smoke():
             model, metainfo = load_model(tmp_models_dir / model_name)
             inp_shape = strip_none_from_tensor_shape(model.input_shape)
             out_shape = strip_none_from_tensor_shape(model.output_shape)
-            assert (
-                model.predict(np.zeros(shape=inp_shape).reshape(1, -1))[0].shape
-                == out_shape
-            )
+            assert model.predict(np.zeros(shape=inp_shape).reshape(1, -1))[0].shape == out_shape
             assert isinstance(metainfo.train_mae, float)
             assert isinstance(metainfo.validation_mae, float)
 

@@ -42,18 +42,14 @@ def get_model_info(model_name: str) -> Response[ModelInfo]:
 
 
 @app.post("/models/{model_name}/score")
-def score_with_model(
-    model_name: str, body: PostScoreRequestBody
-) -> Response[PostScoreResponseData]:
+def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[PostScoreResponseData]:
     """Runs score prediction with model of given name for each input in a given list of inputs."""
     model, meta = models[model_name]
 
     scores = []
 
     for inp in body.inputs:
-        nodes: list[NittaNode] = [
-            NittaNode.from_dict(node.dict()) for node in inp.nodes
-        ]
+        nodes: list[NittaNode] = [NittaNode.from_dict(node.dict()) for node in inp.nodes]
         siblings, target_nodes = [], []
         for node in nodes:
             if inp.scoring_target == "all" or inp.scoring_target == node.sid:
@@ -67,12 +63,7 @@ def score_with_model(
                 detail="No target node(s) were found",
             )
 
-        df = pd.DataFrame(
-            [
-                nitta_node_to_df_dict(target_node, siblings=tuple(nodes))
-                for target_node in target_nodes
-            ]
-        )
+        df = pd.DataFrame([nitta_node_to_df_dict(target_node, siblings=tuple(nodes)) for target_node in target_nodes])
         df = preprocess_df(df)
         df = df_to_model_columns(df)
         scores.append(model.predict(df.values).reshape(-1).tolist())
