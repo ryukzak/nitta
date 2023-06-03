@@ -70,7 +70,6 @@ data Nitta = Nitta
     , output_path :: FilePath
     , format :: String
     , frontend_language :: Maybe FrontendType
-    , ml_scoring_model :: Maybe String
     }
     deriving (Show, Data, Typeable)
 
@@ -150,13 +149,6 @@ nittaArgs =
                 &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
-        , ml_scoring_model =
-            Nothing
-                &= help "Name of ML model used to score the nodes during synthesis (default: no ML scoring)"
-                &= typ "NAME"
-                &= explicit
-                &= name "ml-scoring-model"
-                &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -191,7 +183,6 @@ main = do
             output_path
             format
             frontend_language
-            ml_scoring_model
         ) <-
         getNittaArgs
     setupLogger verbose extra_verbose
@@ -231,7 +222,7 @@ main = do
                             Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
                         Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
                 warningIfUnexpectedPort expect port
-                backendServer port received output_path ml_scoring_model $ mkModelWithOneNetwork ma frDataFlow
+                backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
             when fsim $ functionalSimulation n received format frontendResult

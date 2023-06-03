@@ -30,11 +30,11 @@ statement. Describe sending data between processor units over a network. Any
 'DataflowSt' has implicently linked "NITTA.Model.Problems.Endpoint".
 -}
 data DataflowSt tag v tp = DataflowSt
-    { -- | A source processor unit of data flow transaction, and it's time
-      --  constrains which defines when data can be sended.
-      dfSource :: (tag, EndpointSt v tp)
-    , -- | All possible targets of dataflow transaction.
-      dfTargets :: [(tag, EndpointSt v tp)]
+    { dfSource :: (tag, EndpointSt v tp)
+    -- ^ A source processor unit of data flow transaction, and it's time
+    --  constrains which defines when data can be sended.
+    , dfTargets :: [(tag, EndpointSt v tp)]
+    -- ^ All possible targets of dataflow transaction.
     }
     deriving (Generic)
 

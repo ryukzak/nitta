@@ -136,20 +136,20 @@ instance Hashable LuaValueInstance where
             + hashWithSalt i lviIsConstant
 
 data LuaAlgBuilder x = LuaAlgBuilder
-    { -- | A list containing all expressions to be added to the final graph.
-      algGraph :: [LuaStatement x]
-    , -- | A table that maps a variable name to the most recent corresponding LuaValueInstance.
-      algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
-    , -- | A table needed to generate unique temporary variable names.
-      algVarCounters :: HM.HashMap T.Text Int
-    , -- | A table lists all uses of a particular LuaValueInstance.
-      algVars :: HM.HashMap LuaValueInstance [T.Text]
-    , -- | Map argument index to the variable name and initial value (in text).
-      algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
-    , -- | A table correlating constant with LuaValueInstance which store this constant.
-      algConstants :: HM.HashMap T.Text LuaValueInstance
-    , -- | A list that stores debug information about monitored variables and their display formats.
-      algTraceFuncs :: [([T.Text], Maybe T.Text)]
+    { algGraph :: [LuaStatement x]
+    -- ^ A list containing all expressions to be added to the final graph.
+    , algLatestLuaValueInstance :: HM.HashMap T.Text LuaValueInstance
+    -- ^ A table that maps a variable name to the most recent corresponding LuaValueInstance.
+    , algVarCounters :: HM.HashMap T.Text Int
+    -- ^ A table needed to generate unique temporary variable names.
+    , algVars :: HM.HashMap LuaValueInstance [T.Text]
+    -- ^ A table lists all uses of a particular LuaValueInstance.
+    , algStartupArgs :: HM.HashMap Int (T.Text, T.Text)
+    -- ^ Map argument index to the variable name and initial value (in text).
+    , algConstants :: HM.HashMap T.Text LuaValueInstance
+    -- ^ A table correlating constant with LuaValueInstance which store this constant.
+    , algTraceFuncs :: [([T.Text], Maybe T.Text)]
+    -- ^ A list that stores debug information about monitored variables and their display formats.
     }
     deriving (Show)
 
@@ -405,10 +405,10 @@ buildAlg syntaxTree =
 
 findStartupFunction (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
-      , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
-      , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
-      , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
-      , fnCall == fnAssign =
+    , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
+    , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
+    , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
+    , fnCall == fnAssign =
         (fnCall, call, funAssign)
 findStartupFunction _ = error "can't find startup function in lua source code"
 
@@ -452,8 +452,8 @@ translateLua src =
                 startupArgNames =
                     map
                         (\(_idx, (varName, _initValue)) -> varName)
-                        $ HM.toList $
-                            algStartupArgs algBuilder
+                        $ HM.toList
+                        $ algStartupArgs algBuilder
              in map (\name -> ([name <> "^0"], Nothing)) startupArgNames <> traceFuncs
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]

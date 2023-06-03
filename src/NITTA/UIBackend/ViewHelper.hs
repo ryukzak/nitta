@@ -29,7 +29,6 @@ module NITTA.UIBackend.ViewHelper (
     ShortNodeView,
     NodeView,
     StepInfoView (..),
-    VarValTimeJSON,
 ) where
 
 import Control.Concurrent.STM
@@ -46,9 +45,8 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Project.TestBench
+import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
-import NITTA.Synthesis.Steps
-import NITTA.Synthesis.Types
 import NITTA.UIBackend.ViewHelperCls
 import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty

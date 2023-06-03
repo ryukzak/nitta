@@ -20,10 +20,10 @@ import Data.String.ToString (ToString (..))
 import GHC.Generics (Generic)
 
 data Allocation tag = Allocation
-    { -- | Tag of the BusNetwork where PU will be allocated
-      networkTag :: tag
-    , -- | Tag of the prototype that will be used for allocation
-      processUnitTag :: tag
+    { networkTag :: tag
+    -- ^ Tag of the BusNetwork where PU will be allocated
+    , processUnitTag :: tag
+    -- ^ Tag of the prototype that will be used for allocation
     }
     deriving (Generic, Eq)
 

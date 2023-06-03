@@ -354,33 +354,33 @@ import Prettyprinter
 synthesis model for that PU.
 -}
 data Multiplier v x t = Multiplier
-    { -- | List of the assigned but not processed functions. To execute a
-      --  function:
-      --
-      --  - removing the function from this list;
-      --
-      --  - transfering information from function to 'targets' and 'sources'
-      --    fields.
-      --
-      --  An assigned function can be executed in random order.
-      remain :: [F v x]
-    , -- | List of variables, which is needed to push to the PU for current
-      --  function evaluation.
-      targets :: [v]
-    , -- | List of variables, which is needed to pull from PU for current
-      --  function evaluation. Pull order is arbitrary. All pulled variables
-      --  correspond to the same value (same result).
-      sources :: [v]
-    , -- | Current work, if some function is executed.
-      currentWork :: Maybe (F v x)
-    , -- | Description of scheduled computation process
-      --  ('NITTA.Model.ProcessorUnits.Types').
-      process_ :: Process t (StepInfo v x t)
-    , -- | HDL implementation of PU contains a multiplier IP core from Altera.
-      --  Icarus Verilog can not simulate it. If `isMocked` is set, a target
-      --  system will be contained non-synthesizable implementation of that
-      --  IP-core.
-      isMocked :: Bool
+    { remain :: [F v x]
+    -- ^ List of the assigned but not processed functions. To execute a
+    --  function:
+    --
+    --  - removing the function from this list;
+    --
+    --  - transfering information from function to 'targets' and 'sources'
+    --    fields.
+    --
+    --  An assigned function can be executed in random order.
+    , targets :: [v]
+    -- ^ List of variables, which is needed to push to the PU for current
+    --  function evaluation.
+    , sources :: [v]
+    -- ^ List of variables, which is needed to pull from PU for current
+    --  function evaluation. Pull order is arbitrary. All pulled variables
+    --  correspond to the same value (same result).
+    , currentWork :: Maybe (F v x)
+    -- ^ Current work, if some function is executed.
+    , process_ :: Process t (StepInfo v x t)
+    -- ^ Description of scheduled computation process
+    --  ('NITTA.Model.ProcessorUnits.Types').
+    , isMocked :: Bool
+    -- ^ HDL implementation of PU contains a multiplier IP core from Altera.
+    --  Icarus Verilog can not simulate it. If `isMocked` is set, a target
+    --  system will be contained non-synthesizable implementation of that
+    --  IP-core.
     }
 
 instance VarValTime v x t => Pretty (Multiplier v x t) where
@@ -544,12 +544,12 @@ instance VarValTime v x t => EndpointProblem (Multiplier v x t) v t where
 
     endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
-          , ([_], targets') <- partition (== v) targets
-          , --  Computation process planning is carried out.
-            let process_' = execSchedule pu $ do
-                    -- this is required for correct work of automatically generated tests,
-                    -- that takes information about time from Process
-                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt Load =
+        , ([_], targets') <- partition (== v) targets
+        , --  Computation process planning is carried out.
+          let process_' = execSchedule pu $ do
+                -- this is required for correct work of automatically generated tests,
+                -- that takes information about time from Process
+                scheduleEndpoint d $ scheduleInstructionUnsafe epAt Load =
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
@@ -557,21 +557,21 @@ instance VarValTime v x t => EndpointProblem (Multiplier v x t) v t where
                 }
     endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just f, process_} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
-          , let sources' = sources \\ S.elems v
-          , sources' /= sources
-          , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
-          , -- Compututation process planning is carring on.
-            let process_' = execSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
-                    when (null sources') $ do
-                        -- Set up the vertical relantions between functional unit
-                        -- and related to that data sending.
+        , let sources' = sources \\ S.elems v
+        , sources' /= sources
+        , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
+        , -- Compututation process planning is carring on.
+          let process_' = execSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
+                when (null sources') $ do
+                    -- Set up the vertical relantions between functional unit
+                    -- and related to that data sending.
 
-                        -- Function don't connected to bind step. It should be fixed.
-                        scheduleFunctionFinish_ [] f $ a ... sup epAt
-                    -- this is needed to correct work of automatically generated tests
-                    -- that takes time about time from Process
-                    return endpoints =
+                    -- Function don't connected to bind step. It should be fixed.
+                    scheduleFunctionFinish_ [] f $ a ... sup epAt
+                -- this is needed to correct work of automatically generated tests
+                -- that takes time about time from Process
+                return endpoints =
             pu
                 { process_ = process_'
                 , -- In case if not all variables what asked - remaining are saved.
@@ -582,7 +582,7 @@ instance VarValTime v x t => EndpointProblem (Multiplier v x t) v t where
                 }
     endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-          , Just f <- find (\f -> v `S.member` variables f) remain =
+        , Just f <- find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     -- If something went wrong.
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]

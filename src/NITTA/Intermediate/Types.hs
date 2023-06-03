@@ -231,17 +231,17 @@ instance Ord v => Patch (F v x) (Changeset v) where
                         Just v' -> Just (v, v')
                         Nothing -> Nothing
                     )
-                    $ S.elems $
-                        inputs f0
+                    $ S.elems
+                    $ inputs f0
             changeO' =
-                concat $
-                    mapMaybe
+                concat
+                    $ mapMaybe
                         ( \v -> case changeO M.!? v of
                             Just vs -> Just [(v, v') | v' <- S.elems vs]
                             Nothing -> Nothing
                         )
-                        $ S.elems $
-                            outputs f0
+                    $ S.elems
+                    $ outputs f0
          in foldl (\f diff -> patch diff f) f0 $ changeI' ++ changeO'
 
 instance Patch b v => Patch [b] v where
@@ -294,10 +294,10 @@ instance Default (CycleCntx v x) where
     def = CycleCntx HM.empty
 
 data Cntx v x = Cntx
-    { -- | all variables on each process cycle
-      cntxProcess :: [CycleCntx v x]
-    , -- | sequences of all received values, one value per process cycle
-      cntxReceived :: M.Map v [x]
+    { cntxProcess :: [CycleCntx v x]
+    -- ^ all variables on each process cycle
+    , cntxReceived :: M.Map v [x]
+    -- ^ sequences of all received values, one value per process cycle
     , cntxCycleNumber :: Int
     }
 
@@ -405,13 +405,13 @@ class Patch f diff where
 Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
 -}
 data Changeset v = Changeset
-    { -- | change set for input variables (one to one)
-      changeI :: M.Map v v
-    , -- | change set for output variables. Many to many relations:
-      --
-      --  > fromList [(a, {x}), (b, {x})] -- several output variables to one
-      --  > fromList [(c, {y, z})] -- one output variable to many
-      changeO :: M.Map v (S.Set v)
+    { changeI :: M.Map v v
+    -- ^ change set for input variables (one to one)
+    , changeO :: M.Map v (S.Set v)
+    -- ^ change set for output variables. Many to many relations:
+    --
+    --  > fromList [(a, {x}), (b, {x})] -- several output variables to one
+    --  > fromList [(c, {y, z})] -- one output variable to many
     }
     deriving (Eq)
 
