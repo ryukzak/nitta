@@ -73,7 +73,7 @@ def score_with_model(
             ]
         )
         df = preprocess_train_data_df(df)
-        df = df_to_model_columns(df)
+        df = df_to_model_columns(df, model_columns=meta.input_columns)
         scores.append(model.predict(df.values).reshape(-1).tolist())
 
     return Response(
