@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 _output_dir = "evaluation"
 _nitta_path = "stack exec nitta --"
-_nitta_running_timeout_s = 120
+_nitta_running_timeout_s = 10
 _evaluated_args = {
     "score": {
         "default": "",
@@ -34,7 +34,7 @@ _evaluated_args = {
 examples = [*sorted(EXAMPLES_DIR.glob("**/*.lua"))]
 # examples = [EXAMPLES_DIR / "fibonacci.lua"]
 _const_args = "-e"
-_measurement_tries = 4
+_measurement_tries = 3
 
 
 async def _run_config_and_save_results(
@@ -52,12 +52,6 @@ async def _run_config_and_save_results(
 
         success = False
         timeout = False
-        try:
-            await asyncio.wait_for(nitta_proc.wait(), timeout=_nitta_running_timeout_s)
-        except asyncio.TimeoutError:
-            logger.info(f"Timed out after {_nitta_running_timeout_s:.0f}s")
-            timeout = True
-
         steps = 0
         line = await nitta_proc.stdout.readline()
         while line:
@@ -67,7 +61,24 @@ async def _run_config_and_save_results(
                 steps += 1
             if "synthesis process...ok" in decoded_line:
                 success = True
-            line = await nitta_proc.stdout.readline()
+                break
+
+            line = None
+            while not line:
+                if (perf_counter() - start_time) > _nitta_running_timeout_s:
+                    logger.info(f"Timed out after {_nitta_running_timeout_s:.0f}s")
+                    timeout = True
+                    break
+                try:
+                    line = await asyncio.wait_for(
+                        nitta_proc.stdout.readline(), timeout=1
+                    )
+                except asyncio.TimeoutError:
+                    pass
+
+        logger.debug(
+            f"Done parsing stdout, success={success}, timeout={timeout}, steps={steps}"
+        )
 
         results.append(
             {
