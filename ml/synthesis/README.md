@@ -147,6 +147,29 @@ docker run \
 	-it \
 	nitta-dev
 ```
+## Руководство по вводу аргументов для скрипта оценки
+
+Скрипт `evaluation.py` поддерживает различные аргументы командной строки, которые можно использовать для настройки и контроля процесса оценки. Вот описание доступных аргументов:
+
+- `example_paths` (обязательный): Пути к файлам с примерами, разделенные пробелами.
+- `--evaluator` (опциональный): Методы оценки, которые следует использовать. Можно указать один или несколько методов, разделенных пробелами. Допустимые значения: `nitta`, `ml`.
+- `--nitta_args` (опциональный): Аргументы, которые передаются в Nitta. Введите аргументы в формате `--nitta_args="аргументы"`.
+- `--help`: Выводит справку о доступных аргументах.
+
+Пример использования команды:
+```bash
+python3 ml/synthesis/src/scripts/evaluation.py examples/fibonacci.lua examples/counter.lua --evaluator nitta ml --nitta_args="--format=csv"
+
+Algorithm: examples/fibonacci.lua
+     duration  depth  evaluator_calls      time
+nitta       5      8                9  0.906887
+ml          5      9               10  1.902110
+
+Algorithm: examples/counter.lua
+     duration  depth  evaluator_calls      time
+nitta       5      8                9  5.687186
+ml          5      8                9  7.122119
+```
 
 #### Linux
 

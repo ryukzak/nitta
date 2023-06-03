@@ -6,10 +6,8 @@ from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
 from components.data_crawling.tree_retrieving import retrieve_subforest
 from components.data_processing.feature_engineering import preprocess_df
 from components.data_processing.feature_engineering import df_to_model_columns
-from components.data_crawling.tree_processing import assemble_tree_dataframe
 from components.data_crawling.nitta_node import NittaNode
 from components.common.logging import get_logger, configure_logging
-from mlbackend.models_store import models
 
 from consts import DATA_DIR, ROOT_DIR, MODELS_DIR
 import time
@@ -22,7 +20,67 @@ from IPython.display import display
 from time import perf_counter
 import argparse
 
-model, model_metainfo = models["example_model_1"]
+model = tf.keras.models.load_model(MODELS_DIR)
+
+
+def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
+    def map_bool(c):
+        return c.apply(lambda v: 1 if v is True else (0 if v is False else v))
+
+    def map_categorical(df, c, options=None):
+        return pd.concat([df.drop([c.name], axis=1), pd.get_dummies(c, prefix=c.name, columns=options)], axis=1)
+
+    df = df.copy()
+    df.is_leaf = map_bool(df.is_leaf)
+    df.pCritical = map_bool(df.pCritical)
+    df.pPossibleDeadlock = map_bool(df.pPossibleDeadlock)
+    df.pRestrictedTime = map_bool(df.pRestrictedTime)
+    df = map_categorical(df, df.tag, ['tag_BindDecisionView', 'tag_BreakLoopView', 'tag_ConstantFoldingView',
+                                      'tag_DataflowDecisionView', 'tag_OptimizeAccumView', 'tag_ResolveDeadlockView'])
+    df = df.drop(["pWave", "example", "sid", "old_score", "is_leaf", "pRefactoringType"], axis="columns")
+
+    df = df.fillna(0)
+    return df
+
+
+def _extract_params_dict(node: NittaNode) -> dict:
+    if node.decision.tag in ["BindDecisionView", "DataflowDecisionView"]:
+        result = node.parameters.copy()
+        if node.decision.tag == "DataflowDecisionView":
+            result["pNotTransferableInputs"] = sum(result["pNotTransferableInputs"])
+        return result
+    elif node.decision.tag == "RootView":
+        return {}
+    else:
+        # refactorings
+        return {"pRefactoringType": node.decision.tag}
+
+
+def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None, include_label=True,
+                            levels_left=None) -> pd.DataFrame:
+    if include_label and metrics_distrib is None:
+        metrics_distrib = node.subtree_leafs_metrics
+
+    self_df = pd.DataFrame(dict(
+        example=example,
+        sid=node.sid,
+        tag=node.decision.tag,
+        old_score=node.score,
+        is_leaf=node.is_leaf,
+        **_extract_params_dict(node),
+    ), index=[0])
+    if include_label:
+        self_df["label"] = node.compute_label(metrics_distrib)
+
+    levels_left_for_child = None if levels_left is None else levels_left - 1
+    if node.is_leaf or levels_left == -1:
+        return self_df
+    else:
+        result = [assemble_tree_dataframe(example, child, metrics_distrib, include_label, levels_left_for_child)
+                  for child in node.children]
+        if node.sid != "-":
+            result.insert(0, self_df)
+        return pd.concat(result)
 
 
 async def select_best_by_evaluator(session, evaluator, node, nitta_baseurl, counters, children_limit=None):
@@ -64,7 +122,6 @@ def old_evaluator(node: NittaNode):
     return node.score
 
 
-
 def new_evaluator(node: NittaNode):
     final_columns = ['alt_bindings', 'alt_refactorings', 'alt_dataflows', 'pOutputNumber', 'pAlternative',
                      'pAllowDataFlow', 'pCritical', 'pPercentOfBindedInputs', 'pPossibleDeadlock',
@@ -85,48 +142,79 @@ def new_evaluator(node: NittaNode):
 def reset_counters():
     global counters
     counters = defaultdict(lambda: 0)
-    
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("example_path", type=str, help="Path to the example file")
+    parser.add_argument("example_paths", type=str, nargs='+', help="Paths to the example files")
+    parser.add_argument("--evaluator", type=str, nargs='+', choices=["nitta", "ml"], help="Evaluator to use")
+    parser.add_argument("--nitta_args", type=str, default="", help="Additional arguments for Nitta")
     return parser.parse_args()
 
+
 async def main(args):
-    example = Path(args.example_path)
+    examples = args.example_paths
+    evaluator_choices = args.evaluator
 
-    logger = get_logger(__name__)
-    configure_logging()
-    start_time = perf_counter()
+    evaluator_dict = {"nitta": old_evaluator, "ml": new_evaluator}
 
-    reset_counters()
+    evaluator_choices = [choice for choice in evaluator_choices if choice in evaluator_dict]
+    if not evaluator_choices:
+        print("Invalid evaluator choices. Using the new evaluator as default.")
+        evaluator_choices = ["nitta"]
 
-    logger.info(f"Selected algorithm: {example}")
+    results = []
 
-    nitta_tree = None
-    async with run_nitta(example) as (proc, nitta_baseurl):
-        try:
+    for example in examples:
+        example = Path(example)
+
+        logger = get_logger(__name__)
+        configure_logging()
+        reset_counters()
+
+        logger.info(f"Selected algorithm: {example}")
+
+        nitta_tree = None
+        async with run_nitta(example, nitta_args=args.nitta_args) as (proc, nitta_baseurl):
             nitta_tree = await retrieve_whole_nitta_tree(nitta_baseurl)
             new_evaluator(nitta_tree.children[0])
             reset_counters()
             root = await retrieve_whole_nitta_tree(nitta_baseurl)
 
             async with ClientSession() as session:
-                best_new = await select_best_by_evaluator(session, new_evaluator, root, nitta_baseurl, counters, 2)
-                logger.info("NEW DONE %s", best_new)
-                best_old = await select_best_by_evaluator(session, old_evaluator, root, nitta_baseurl, counters, 2)
-                logger.info("OLD DONE %s", best_old)
+                result_dict = {
+                    "example": example,
+                    "evaluators": {}
+                }
+                for evaluator_choice in evaluator_choices:
+                    evaluator = evaluator_dict[evaluator_choice]
+                    start_time = perf_counter()
+                    best = await select_best_by_evaluator(session, evaluator, root, nitta_baseurl, counters, 2)
+                    end_time = perf_counter() - start_time
+                    result_dict["evaluators"][evaluator_choice] = {
+                        "best": best,
+                        "duration": best.duration,
+                        "depth": best.depth,
+                        "evaluator_calls": counters[evaluator_choice + "_evaluator"],
+                        "time": end_time
+                    }
+                    logger.info(f"{evaluator_choice.upper()} DONE %s", best)
+                    logger.info(f"Finished {evaluator_choice} in {end_time:.2f} s")
+                results.append(result_dict)
 
-        finally:
-            proc.kill()
+    for result in results:
+        print(f"\nAlgorithm: {result['example']}")
+        dfs = []
+        for evaluator, evaluator_result in result["evaluators"].items():
+            df = pd.DataFrame(dict(duration=[evaluator_result['duration']],
+                                   depth=[evaluator_result['depth']],
+                                   evaluator_calls=[evaluator_result['evaluator_calls']],
+                                   time=[evaluator_result['time']]),
+                              index=[evaluator])
+            dfs.append(df)
+        result_df = pd.concat(dfs)
+        display(result_df)
 
-    display(best_old)
-    display(best_new)
-    display(pd.DataFrame(dict(duration=[best_old.duration, best_new.duration],
-                              depth=[best_old.depth, best_new.depth],
-                              evaluator_calls=[counters["old_evaluator"], counters["new_evaluator"]]),
-                         index=["old", "new"]))
-
-    logger.info(f"Finished in {perf_counter() - start_time:.2f} s")
 
 async def test_script():
     class Args:
@@ -134,10 +222,11 @@ async def test_script():
             self.example_path = example_path
 
     args = Args("examples/fibonacci.lua")
-    await main(args)    
+    await main(args)
+
 
 if __name__ == "__main__":
     args = parse_args()
     asyncio.run(main(args))
 # Раскомментируйте следующую строку для выполнения тестовой функции
-  # asyncio.run(test_script())
+# asyncio.run(test_script())
