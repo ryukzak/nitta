@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from pandas import DataFrame
-
 from consts import DATA_DIR
+from pandas import DataFrame
 
 
 def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:

@@ -1,9 +1,8 @@
 from typing import Tuple
 
+from components.common.logging import get_logger
 from sklearn.model_selection import train_test_split
 from tensorflow.python.data import Dataset
-
-from components.common.logging import get_logger
 
 logger = get_logger(__name__)
 

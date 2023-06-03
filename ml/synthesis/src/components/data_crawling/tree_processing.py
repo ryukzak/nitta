@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 from collections import deque
 from typing import Deque, Optional
 
 import numpy as np
 import pandas as pd
-from cachetools import cached, Cache
-from joblib import Parallel, delayed
-
+from cachetools import Cache, cached
 from components.data_crawling.nitta_node import NittaNode
+from joblib import Parallel, delayed
 
 
 def _extract_params_dict(node: NittaNode) -> dict:
@@ -36,13 +36,19 @@ def _extract_alternative_siblings_dict(node: NittaNode, siblings: tuple[NittaNod
         else:
             refactorings += 1
 
-    return dict(alt_bindings=bindings,
-                alt_refactorings=refactorings,
-                alt_dataflows=dataflows)
+    return dict(
+        alt_bindings=bindings,
+        alt_refactorings=refactorings,
+        alt_dataflows=dataflows,
+    )
 
 
 @cached(cache=Cache(10000))
-def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: str = None, ) -> dict:
+def nitta_node_to_df_dict(
+    node: NittaNode,
+    siblings: tuple[NittaNode],
+    example: str = None,
+) -> dict:
     return dict(
         example=example,
         sid=node.sid,
@@ -54,8 +60,14 @@ def nitta_node_to_df_dict(node: NittaNode, siblings: tuple[NittaNode], example: 
     )
 
 
-def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None, include_label=True,
-                            levels_left=None, n_workers: int = 1) -> pd.DataFrame:
+def assemble_tree_dataframe(
+    example: str,
+    node: NittaNode,
+    metrics_distrib=None,
+    include_label=True,
+    levels_left=None,
+    n_workers: int = 1,
+) -> pd.DataFrame:
     if include_label and metrics_distrib is None:
         metrics_distrib = np.array(node.subtree_leafs_metrics)
 
@@ -72,8 +84,14 @@ def assemble_tree_dataframe(example: str, node: NittaNode, metrics_distrib=None,
     return pd.DataFrame(sum(deques, deque()))
 
 
-def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: NittaNode, metrics_distrib: np.ndarray,
-                                       include_label: bool, levels_left: Optional[int]):
+def _assemble_tree_dataframe_recursion(
+    accum: Deque[dict],
+    example: str,
+    node: NittaNode,
+    metrics_distrib: np.ndarray,
+    include_label: bool,
+    levels_left: Optional[int],
+):
     siblings = (node.parent.children or []) if node.parent else []
     self_dict = nitta_node_to_df_dict(node, tuple(siblings), example)
 
@@ -85,7 +103,13 @@ def _assemble_tree_dataframe_recursion(accum: Deque[dict], example: str, node: N
     else:
         levels_left_for_child = None if levels_left is None else levels_left - 1
         for child in node.children:
-            _assemble_tree_dataframe_recursion(accum, example, child, metrics_distrib, include_label,
-                                               levels_left_for_child)
+            _assemble_tree_dataframe_recursion(
+                accum,
+                example,
+                child,
+                metrics_distrib,
+                include_label,
+                levels_left_for_child,
+            )
             if node.sid != "-":
                 accum.appendleft(self_dict)  # so it's from roots to leaves

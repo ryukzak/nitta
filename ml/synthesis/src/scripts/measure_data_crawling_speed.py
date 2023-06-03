@@ -3,10 +3,10 @@ import sys
 from pathlib import Path
 from time import perf_counter
 
+from components.common.logging import configure_logging, get_logger
 from components.data_crawling.example_running import run_example_and_retrieve_tree_data
-from components.common.logging import get_logger, configure_logging
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = get_logger(__name__)
     configure_logging()
 

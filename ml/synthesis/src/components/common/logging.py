@@ -3,7 +3,7 @@ from logging import Logger
 
 
 def get_logger(module_name: str) -> Logger:
-    """ Fixes stdlib's logging function case and create a unified logger factory. """
+    """Fixes stdlib's logging function case and create a unified logger factory."""
     if module_name == "__main__":
         return logging.getLogger()  # root logger
     return logging.getLogger(module_name)

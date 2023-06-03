@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Tuple
 
 import tensorflow as tf
-
 from components.common.logging import get_logger
 from components.model_generation.model_metainfo import ModelMetainfo
 

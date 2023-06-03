@@ -1,6 +1,6 @@
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional, Any, List, Tuple, Deque
+from typing import Any, Deque, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -41,8 +41,8 @@ class NittaNode:
     duration: Optional[int]
     sid: str
 
-    children: Optional[List['NittaNode']] = field(default=None, repr=False)
-    parent: Optional['NittaNode'] = field(default=None, repr=False)
+    children: Optional[List["NittaNode"]] = field(default=None, repr=False)
+    parent: Optional["NittaNode"] = field(default=None, repr=False)
 
     def __hash__(self):
         return hash(self.sid)
@@ -58,18 +58,19 @@ class NittaNode:
 
     @cached_property
     def depth(self) -> int:
-        return self.sid.count('-') if self.sid != '-' else 0
+        return self.sid.count("-") if self.sid != "-" else 0
 
     @cached_property
     def subtree_leafs_metrics(self) -> Optional[Deque[Tuple[int, int]]]:
-        """ :returns: deque(tuple(duration, depth)) or None if node is a failed leaf """
+        """:returns: deque(tuple(duration, depth)) or None if node is a failed leaf"""
         if self.is_leaf:
             if not self.is_finish:
                 return None
             return deque(((self.duration, self.depth),))
         else:
-            children_metrics = \
-                (child.subtree_leafs_metrics for child in self.children if child.subtree_leafs_metrics is not None)
+            children_metrics = (
+                child.subtree_leafs_metrics for child in self.children if child.subtree_leafs_metrics is not None
+            )
             return sum(children_metrics, deque())
 
     @cached_node_method
@@ -77,7 +78,10 @@ class NittaNode:
         if self.is_leaf:
             return deque((self.compute_label(metrics_distrib),))
         else:
-            return sum((child.get_subtree_leafs_labels(metrics_distrib) for child in self.children), deque())
+            return sum(
+                (child.get_subtree_leafs_labels(metrics_distrib) for child in self.children),
+                deque(),
+            )
 
     @cached_node_method
     def compute_label(self, metrics_distrib: np.ndarray) -> float:

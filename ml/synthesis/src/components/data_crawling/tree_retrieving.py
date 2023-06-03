@@ -2,7 +2,6 @@ import asyncio
 import time
 
 from aiohttp import ClientSession
-
 from components.common.logging import get_logger
 from components.common.utils import debounce
 from components.data_crawling.nitta_node import NittaNode
@@ -11,7 +10,12 @@ logger = get_logger(__name__)
 logger_debug_debounced = debounce(1)(logger.debug)
 
 
-async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_baseurl: str, levels_left=None):
+async def retrieve_subforest(
+    node: NittaNode,
+    session: ClientSession,
+    nitta_baseurl: str,
+    levels_left=None,
+):
     node.children = []
     if node.is_leaf or levels_left == -1:
         return
@@ -35,7 +39,7 @@ async def retrieve_subforest(node: NittaNode, session: ClientSession, nitta_base
 async def retrieve_whole_nitta_tree(nitta_baseurl: str, max_depth=None) -> NittaNode:
     start_time = time.perf_counter()
     async with ClientSession() as session:
-        async with session.get(nitta_baseurl + f"/node/-") as resp:
+        async with session.get(nitta_baseurl + "/node/-") as resp:
             root_raw = await resp.json()
         root = NittaNode.from_dict(root_raw)
         await retrieve_subforest(root, session, nitta_baseurl, max_depth)

@@ -1,9 +1,8 @@
-from typing import TypeVar, Generic, Dict, List, Union
-
-from pydantic import BaseModel, Field
-from pydantic.generics import GenericModel
+from typing import Generic, List, TypeVar
 
 from components.utils.string import snake_to_lower_camel_case
+from pydantic import BaseModel, Field
+from pydantic.generics import GenericModel
 
 TData = TypeVar("TData")
 
@@ -36,7 +35,8 @@ class ModelInfo(CustomizedBaseModel):
 # related to corresponding NITTA REST API DTO
 # TODO: link those types to NITTA Haskell source code via code generation like it's done with with TypeScript?
 class NittaNodeView(CustomizedBaseModel):
-    """ `NodeView` from NITTA Haskell sources. """
+    """`NodeView` from NITTA Haskell sources."""
+
     sid: str = Field(example="-0-4-7-3-4-1-1-0")
     is_terminal: bool
     is_finish: bool
@@ -52,18 +52,19 @@ class NittaNodeView(CustomizedBaseModel):
             "pWave": 4,
             "pOutputNumber": 1,
             "pAlternative": 2,
-            "pCritical": False
-        })
+            "pCritical": False,
+        },
+    )
     decision: dict = Field(
         description="SynthesisDecision.decision from NITTA Haskell sources.",
         example={
             "tag": "BindDecisionView",
             "function": {
                 "fvFun": "loop(0.000000, res^0#0) = i^0#0",
-                "fvHistory": []
+                "fvHistory": [],
             },
-            "pu": "fram1"
-        }
+            "pu": "fram1",
+        },
     )
     score: int  # compatibility
 
@@ -85,23 +86,22 @@ class ScoringInput(CustomizedBaseModel):
     to ignore that for now since optimizations will definitely be possible when they become needed. For example, we can
     always add mentioned data gathering branching based on currently used model at the cost of reduced flexibility.
     """
+
     scoring_target: str = Field(
         description="SID of a node which we need to predict the score for. This node must be in `nodes` list. "
-                    "You can also pass the value `all` to get scores for all nodes in the `nodes` list.",
-        example="-0-4-7-3-4-1-1-0"
+        "You can also pass the value `all` to get scores for all nodes in the `nodes` list.",
+        example="-0-4-7-3-4-1-1-0",
     )
     nodes: List[NittaNodeView] = Field(
         description="`NodeView`s of scoring target node and all its siblings (all possible synthesis tree choices "
-                    "from current parent node)."
+        "from current parent node)."
     )
     # parents?
     # decision history? (can differ from parents!)
 
 
 class PostScoreRequestBody(CustomizedBaseModel):
-    inputs: List[ScoringInput] = Field(
-        description="List of inputs to get score predictions for. "
-    )
+    inputs: List[ScoringInput] = Field(description="List of inputs to get score predictions for. ")
 
 
 # data, not whole body (which can include "data" field and metadata)

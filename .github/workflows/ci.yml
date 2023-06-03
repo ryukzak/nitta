@@ -172,3 +172,26 @@ jobs:
         run: |
           yarn add -s prettier
           yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+
+  python-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          pip install black isort flake8
+
+      - name: Check code style with black
+        run: black --check ml
+
+      - name: Sort imports with isort
+        run: isort --recursive ml
+
+      - name: Check code style with flake8
+        run: flake8 ml

@@ -1,9 +1,8 @@
 from __future__ import annotations
+
 import pandas as pd
-
-from pandas import DataFrame
-
 from components.common.logging import get_logger
+from pandas import DataFrame
 
 logger = get_logger(__name__)
 
@@ -19,25 +18,56 @@ def _map_categorical(df, c):
 def preprocess_df(df: DataFrame) -> DataFrame:
     df: DataFrame = df.copy()
 
-    for bool_column in ["is_leaf", "pCritical", "pPossibleDeadlock", "pRestrictedTime"]:
+    for bool_column in [
+        "is_leaf",
+        "pCritical",
+        "pPossibleDeadlock",
+        "pRestrictedTime",
+    ]:
         if bool_column in df.columns:
             df[bool_column] = _map_bool(df[bool_column])
         else:
             logger.warning(f"Column/parameter {bool_column} not found in provided node info.")
 
     df = _map_categorical(df, df.tag)
-    df = df.drop(["pWave", "example", "sid", "old_score", "is_leaf", "pRefactoringType"], axis="columns", errors="ignore")
+    df = df.drop(
+        [
+            "pWave",
+            "example",
+            "sid",
+            "old_score",
+            "is_leaf",
+            "pRefactoringType",
+        ],
+        axis="columns",
+        errors="ignore",
+    )
     df = df.fillna(0)
     return df
 
 
 # TODO: move that to metainfo of the model, find a way to make input building model-dependent
 #  (pickled module? function name?)
-_BASELINE_MODEL_COLUMNS = \
-    ["alt_bindings", "alt_refactorings", "alt_dataflows", "pAllowDataFlow", "pAlternative", "pCritical",
-     "pNumberOfBindedFunctions", "pOutputNumber", "pPercentOfBindedInputs", "pPossibleDeadlock", "pRestless",
-     "pFirstWaveOfTargetUse", "pNotTransferableInputs", "pRestrictedTime", "pWaitTime", "tag_BindDecisionView",
-     "tag_BreakLoopView", "tag_DataflowDecisionView"]
+_BASELINE_MODEL_COLUMNS = [
+    "alt_bindings",
+    "alt_refactorings",
+    "alt_dataflows",
+    "pAllowDataFlow",
+    "pAlternative",
+    "pCritical",
+    "pNumberOfBindedFunctions",
+    "pOutputNumber",
+    "pPercentOfBindedInputs",
+    "pPossibleDeadlock",
+    "pRestless",
+    "pFirstWaveOfTargetUse",
+    "pNotTransferableInputs",
+    "pRestrictedTime",
+    "pWaitTime",
+    "tag_BindDecisionView",
+    "tag_BreakLoopView",
+    "tag_DataflowDecisionView",
+]
 
 
 def df_to_model_columns(df: DataFrame, model_columns: list[str] = None) -> DataFrame:

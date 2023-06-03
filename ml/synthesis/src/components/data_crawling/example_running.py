@@ -1,23 +1,20 @@
 import asyncio
 import os
 import pickle
-import random
 import signal
 import sys
 from asyncio import sleep
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
-from typing import Tuple, List
+from typing import AsyncGenerator, List, Tuple
 
 import pandas as pd
-from joblib import Parallel, delayed
-
 from components.common.logging import get_logger
-from components.common.port_management import is_port_in_use, find_random_free_port
-from components.data_crawling.tree_processing import assemble_tree_dataframe
+from components.common.port_management import find_random_free_port
 from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
+from components.data_crawling.tree_processing import assemble_tree_dataframe
 from consts import DATA_DIR, ROOT_DIR
+from joblib import Parallel, delayed
 
 logger = get_logger(__name__)
 
@@ -25,12 +22,13 @@ _NITTA_START_WAIT_DELAY_S: int = 2
 
 
 @asynccontextmanager
-async def run_nitta(example: Path,
-                    nitta_exe_path: str = "stack exec nitta -- ",
-                    nitta_args: str = "",
-                    nitta_env: dict = None,
-                    port: int = None
-                    ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
+async def run_nitta(
+    example: Path,
+    nitta_exe_path: str = "stack exec nitta -- ",
+    nitta_args: str = "",
+    nitta_env: dict = None,
+    port: int = None,
+) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
     if port is None:
         port = find_random_free_port()
 
@@ -46,8 +44,13 @@ async def run_nitta(example: Path,
     try:
         preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
         proc = await asyncio.create_subprocess_shell(
-            cmd, cwd=str(ROOT_DIR), stdout=sys.stdout, stderr=sys.stderr, shell=True,
-            preexec_fn=preexec_fn, env=env
+            cmd,
+            cwd=str(ROOT_DIR),
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            shell=True,
+            preexec_fn=preexec_fn,
+            env=env,
         )
 
         logger.info(f"NITTA has been launched, PID {proc.pid}. Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
@@ -63,12 +66,14 @@ async def run_nitta(example: Path,
             await proc.wait()
 
 
-async def run_example_and_retrieve_tree_data(example: Path,
-                                             data_dir: Path = DATA_DIR,
-                                             nitta_exe_path: str = "stack exec nitta -- ") -> pd.DataFrame:
+async def run_example_and_retrieve_tree_data(
+    example: Path,
+    data_dir: Path = DATA_DIR,
+    nitta_exe_path: str = "stack exec nitta -- ",
+) -> pd.DataFrame:
     example_name = os.path.basename(example)
     async with run_nitta(example, nitta_exe_path) as (proc, nitta_baseurl):
-        logger.info(f"Retrieving tree.")
+        logger.info("Retrieving tree.")
         tree = await retrieve_whole_nitta_tree(nitta_baseurl)
         data_dir.mkdir(exist_ok=True)
 

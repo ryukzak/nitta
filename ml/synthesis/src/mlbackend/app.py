@@ -1,17 +1,16 @@
 from __future__ import annotations
+
 from http import HTTPStatus
 
-import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from fastapi.exception_handlers import http_exception_handler
-from starlette.responses import HTMLResponse
-
 from components.data_crawling.nitta_node import NittaNode
 from components.data_crawling.tree_processing import nitta_node_to_df_dict
-from components.data_processing.feature_engineering import preprocess_df, df_to_model_columns
-from mlbackend.dtos import Response, ModelInfo, PostScoreRequestBody, PostScoreResponseData
-from mlbackend.models_store import models, ModelNotFoundError
+from components.data_processing.feature_engineering import df_to_model_columns, preprocess_df
+from fastapi import FastAPI, HTTPException
+from fastapi.exception_handlers import http_exception_handler
+from mlbackend.dtos import ModelInfo, PostScoreRequestBody, PostScoreResponseData, Response
+from mlbackend.models_store import ModelNotFoundError, models
+from starlette.responses import HTMLResponse
 
 app = FastAPI(
     title="NITTA ML Backend",
@@ -25,12 +24,18 @@ app = FastAPI(
 @app.get("/models/{model_name}")
 def get_model_info(model_name: str) -> Response[ModelInfo]:
     model, meta = models[model_name]
-    return Response(data=ModelInfo(name=model_name, train_mae=meta.train_mae, validation_mae=meta.validation_mae))
+    return Response(
+        data=ModelInfo(
+            name=model_name,
+            train_mae=meta.train_mae,
+            validation_mae=meta.validation_mae,
+        )
+    )
 
 
 @app.post("/models/{model_name}/score")
 def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[PostScoreResponseData]:
-    """ Runs score prediction with model of given name for each input in a given list of inputs. """
+    """Runs score prediction with model of given name for each input in a given list of inputs."""
     model, meta = models[model_name]
 
     scores = []
@@ -45,21 +50,29 @@ def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[Po
                 siblings.append(node)
 
         if not target_nodes:
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="No target node(s) were found")
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="No target node(s) were found",
+            )
 
         df = pd.DataFrame([nitta_node_to_df_dict(target_node, siblings=tuple(nodes)) for target_node in target_nodes])
         df = preprocess_df(df)
         df = df_to_model_columns(df)
         scores.append(model.predict(df.values).reshape(-1).tolist())
 
-    return Response(data=PostScoreResponseData(
-        scores=scores,
-    ))
+    return Response(
+        data=PostScoreResponseData(
+            scores=scores,
+        )
+    )
 
 
 @app.exception_handler(ModelNotFoundError)
 async def model_not_found_exception_handler(request, exc):
-    return await http_exception_handler(request, HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)))
+    return await http_exception_handler(
+        request,
+        HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)),
+    )
 
 
 @app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
@@ -69,19 +82,19 @@ def get_rapidoc_docs():
         <html>
             <head>
                 <meta charset="utf-8">
-                <script 
-                    type="module" 
+                <script
+                    type="module"
                     src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"
                 ></script>
             </head>
             <body>
-                <rapi-doc 
+                <rapi-doc
                     spec-url="{app.openapi_url}"
                     render-style="read"
                     show-header="false"
                     default-schema-tab="schema"
                     theme="light"
                 ></rapi-doc>
-            </body> 
+            </body>
         </html>
     """

@@ -3,18 +3,18 @@ from __future__ import annotations
 from os import PathLike
 from pathlib import Path
 
-from tensorflow.python.keras import Model
-
 from components.common.logging import get_logger
 from components.common.model_loading import load_model
 from components.model_generation.model_metainfo import ModelMetainfo
 from consts import MODELS_DIR
+from tensorflow.python.keras import Model
 
 logger = get_logger(__name__)
 
 
 class ModelsStore:
-    """ Loads models on-demand and caches them between calls. """
+    """Loads models on-demand and caches them between calls."""
+
     model_dir: Path
     models: dict[str, (Model, ModelMetainfo)] = {}
 
