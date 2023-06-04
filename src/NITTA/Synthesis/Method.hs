@@ -99,7 +99,7 @@ allBindsAndRefsIO tree = do
             <$> positiveSubForestIO tree
     case subForest of
         [] -> return tree
-        _ -> allBindsAndRefsIO $ minimumOn (defScore . sDecision) subForest
+        _ -> allBindsAndRefsIO $ maximumOn (defScore . sDecision) subForest
 
 refactorThreadIO tree = do
     subForest <- positiveSubForestIO tree
