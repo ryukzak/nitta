@@ -118,7 +118,7 @@ span.spaces    { background: white }
 <span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; positiveSubForestIO tree</span>
 <span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
 <span class="lineno">  101 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
-<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO $ minimumOn (defScore . sDecision) subForest</span></span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO $ maximumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">  103 </span>
 <span class="lineno">  104 </span><span class="decl"><span class="istickedoff">refactorThreadIO tree = do</span>
 <span class="lineno">  105 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO tree</span>
