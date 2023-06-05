@@ -734,8 +734,6 @@ Vertical :: ProcessStepID -> Relation
 --   connected to refactoring steps, including new binding steps.
 Horizontal :: ProcessStepID -> Relation
 [hPrev, hNext] :: Relation -> ProcessStepID
-isVertical :: Relation -> Bool
-isHorizontal :: Relation -> Bool
 descent :: StepInfo v x t -> StepInfo v x t
 whatsHappen :: Ord a => a -> Process a i -> [Step a i]
 extractInstructionAt :: (ProcessorUnit u v x t, Typeable u) => u -> t -> [Instruction u]
@@ -1777,9 +1775,7 @@ instance NITTA.Model.ProcessorUnits.Types.NextTick (NITTA.Utils.ProcessDescripti
 module NITTA.Utils
 doc2text :: Verilog -> Text
 type Verilog = Doc ()
-comment :: String -> String
 shiftI :: (Num a, Ord a) => a -> Interval a -> Interval a
-modify'_ :: (s -> s) -> State s ()
 bool2verilog :: Bool -> Text
 values2dump :: (Foldable t, Show a) => t a -> [Char]
 hdlValDump :: Val p => p -> Text
@@ -1787,7 +1783,6 @@ toModuleName :: [Char] -> [Char]
 endpointAt :: (Ord a, Show a, ToString v) => a -> Process a (StepInfo v x t) -> Maybe (EndpointRole v)
 getEndpoint :: Step t (StepInfo v x t) -> Maybe (EndpointRole v)
 getInstruction :: Step t (StepInfo v x t) -> Maybe (StepInfo v x t)
-getCad :: Step t (StepInfo v x t) -> Maybe String
 getEndpoints :: Ord b => Process b (StepInfo v x t) -> [EndpointRole v]
 transferred :: ProcessorUnit u a1 x t => u -> Set a1
 inputsPushedAt :: (Ord a, Ord a, Function f a) => Process a (StepInfo a x t2) -> f -> a
@@ -1796,7 +1791,6 @@ relatedEndpoints :: Ord a => Process t1 (StepInfo a x t2) -> Set a -> [Step t1 (
 isIntermediate :: Step t (StepInfo v x t) -> Bool
 getIntermediate :: Step t (StepInfo v x t) -> Maybe (F v x)
 getIntermediates :: Ord b => Process b (StepInfo v x t) -> [F v x]
-isEndpoint :: Step t (StepInfo v x t) -> Bool
 isInstruction :: Step t (StepInfo v x t) -> Bool
 getToml :: Text -> Table
 getFromToml :: (FromJSON a, ToJSON a) => HashMap Text a -> a
@@ -2874,7 +2868,6 @@ instance NITTA.Model.Problems.Allocation.AllocationProblem u tag => NITTA.Model.
 module NITTA.Model.ProcessIntegrity
 class ProcessIntegrity u
 checkProcessIntegrity :: ProcessIntegrity u => u -> Either String ()
-isProcessIntegrity :: ProcessIntegrity u => u -> Bool
 instance NITTA.Model.ProcessorUnits.Types.ProcessorUnit (pu v x t) v x t => NITTA.Model.ProcessIntegrity.ProcessIntegrity (pu v x t)
 
 module NITTA.Model.Problems.ViewHelper
