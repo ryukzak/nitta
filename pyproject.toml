@@ -6,5 +6,3 @@ profile = "black"
 
 [tool.black]
 line-length = 125
-
-
