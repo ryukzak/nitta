@@ -199,7 +199,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements-dev.txt
+          pip install -r requirements-dev.txt --use-feature=pyproject
 
       - name: Check code style with black
         run: black --check scripts
