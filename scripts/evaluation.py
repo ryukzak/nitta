@@ -12,8 +12,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, AsyncGenerator, List, Optional, Tuple
 
-from aiohttp import ClientSession, ServerDisconnectedError
-from dataclasses_json import LetterCase, dataclass_json
+from aiohttp import ClientSession, ServerDisconnectedError  # type: ignore
+from dataclasses_json import LetterCase, dataclass_json     # type: ignore
 
 _METRICS_WEIGHTS = {"duration": -1, "depth": -0.1}
 _LAMBDA = 0.6
