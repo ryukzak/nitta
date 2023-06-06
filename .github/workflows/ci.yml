@@ -185,7 +185,6 @@ jobs:
           yarn add -s prettier
           yarn exec -s prettier -- --check src/**/*.{ts,tsx}
 
-
   python-formatting:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -212,8 +211,6 @@ jobs:
 
       - name: Run mypy type checking
         run: mypy scripts
-
-
 
   markdown-formatting:
     timeout-minutes: 5
