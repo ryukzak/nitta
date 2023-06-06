@@ -1,0 +1,4 @@
+black
+isort
+pyproject-flake8==5.0.4
+mypy

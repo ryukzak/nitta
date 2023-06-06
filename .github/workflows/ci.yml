@@ -199,10 +199,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install black \
-                      isort \
-                      pyproject-flake8==5.0.4 \
-                      mypy
+          pip install -r requirements-dev.txt
 
       - name: Check code style with black
         run: black --check scripts
@@ -211,7 +208,7 @@ jobs:
         run: isort --recursive scripts
 
       - name: Check code style with flake8
-        run: flake8 scripts
+        run: pflake8 scripts
 
       - name: Run mypy type checking
         run: mypy scripts
