@@ -165,13 +165,10 @@ examples using
 
 python3 /scripts/evaluation.py examples/fibonacci.lua examples/counter.lua --nitta_args="--format=csv"
 
-Algorithm: examples/fibonacci.lua
-     duration  depth  evaluator_calls      time
-nitta       5      8                9  0.906887
+              duration  depth  evaluator_calls      time
+fibonacci         5      8                9  0.970245
+counter           5      8                9  5.217567
 
-Algorithm: examples/counter.lua
-     duration  depth  evaluator_calls      time
-nitta       5      8                9  5.687186
 
 ```
 

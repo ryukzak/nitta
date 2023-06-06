@@ -60,7 +60,7 @@ async def run_nitta(
     nitta_baseurl = f"http://localhost:{port}"
 
     cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
-
+    print(cmd)
     env = os.environ.copy()
     env.update(nitta_env or {})
 
@@ -150,50 +150,43 @@ def parse_args():
 async def main(args):
     examples = args.example_paths
 
-    results = []
+    df_list = []  # List to hold all dataframes
 
     for example in examples:
-        example = Path(example)
+        example_path = Path(example)
 
         reset_counters()
 
-        print(f"Selected algorithm: {example}")
+        print(f"Selected algorithm: {example_path.stem}")
 
-        async with run_nitta(example, nitta_args=args.nitta_args) as (
+        async with run_nitta(example_path, nitta_args=args.nitta_args) as (
             proc,
             nitta_baseurl,
         ):
             root = await retrieve_whole_nitta_tree(nitta_baseurl)
 
             async with ClientSession() as session:
-                result_dict = {"example": example, "evaluators": {}}
+                result_dict = {}
                 evaluator = old_evaluator
                 start_time = perf_counter()
                 best = await select_best_by_evaluator(session, evaluator, root, nitta_baseurl, counters, 2)
                 end_time = perf_counter() - start_time
-                result_dict["evaluators"]["nitta"] = {
-                    "best": best,
+                result_dict = {
                     "duration": best.duration,
                     "depth": best.depth,
                     "evaluator_calls": counters[evaluator.__name__],
                     "time": end_time,
                 }
-                print("NITTA DONE %s", best)
-                print(f"Finished nitta in {end_time:.2f} s")
-                results.append(result_dict)
+                print(f"{example_path.stem.upper()} DONE {best}")
+                print(f"Finished {example_path.stem} in {end_time:.2f} s")
 
-    for result in results:
-        print(f"\nAlgorithm: {result['example']}")
-        df = pd.DataFrame(
-            dict(
-                duration=[result["evaluators"]["nitta"]["duration"]],
-                depth=[result["evaluators"]["nitta"]["depth"]],
-                evaluator_calls=[result["evaluators"]["nitta"]["evaluator_calls"]],
-                time=[result["evaluators"]["nitta"]["time"]],
-            ),
-            index=["nitta"],
-        )
-        print(df)
+                # Create a DataFrame for each example
+                df = pd.DataFrame(result_dict, index=[example_path.stem])
+                df_list.append(df)  # Append the df to the list
+
+    # Concatenate all the DataFrames in the list
+    results_df = pd.concat(df_list)
+    print(results_df)
 
 
 if __name__ == "__main__":
