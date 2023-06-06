@@ -187,6 +187,7 @@ jobs:
 
 
   python-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -194,11 +195,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
-          pip install black isort pyproject-flake8==5.0.4
+          pip install -r requirements-dev.txt
 
       - name: Check code style with black
         run: black --check scripts
@@ -207,7 +208,12 @@ jobs:
         run: isort --recursive scripts
 
       - name: Check code style with flake8
-        run: pflake8 scripts
+        run: flake8 scripts
+
+      - name: Run mypy type checking
+        run: mypy scripts
+
+
 
   markdown-formatting:
     timeout-minutes: 5
@@ -221,4 +227,3 @@ jobs:
         with:
           files: .
           config_file: .markdownlint.yaml
-
