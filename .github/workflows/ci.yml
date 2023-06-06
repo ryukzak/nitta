@@ -27,7 +27,7 @@ jobs:
 
   nitta-haskell-deps:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
 
@@ -134,6 +134,7 @@ jobs:
           branch: gh-pages
 
   verilog-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     container: ryukzak/alpine-iverilog
     defaults:
@@ -147,6 +148,7 @@ jobs:
           test "$(grep -ci error make_hdl.log)" -eq 0
 
   haskell-lint:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -163,6 +165,7 @@ jobs:
           fail-on: suggestion
 
   haskell-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -171,6 +174,7 @@ jobs:
         uses: fourmolu/fourmolu-action@v8 # fourmolu-0.12.0.0
 
   typescript-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -180,6 +184,7 @@ jobs:
         run: |
           yarn add -s prettier
           yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+
 
   python-formatting:
     runs-on: ubuntu-latest
@@ -203,3 +208,17 @@ jobs:
 
       - name: Check code style with flake8
         run: pflake8 scripts
+
+  markdown-formatting:
+    timeout-minutes: 5
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3.2.0
+
+      - name: Run mdl for check markdown format
+        uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: .
+          config_file: .markdownlint.yaml
+
