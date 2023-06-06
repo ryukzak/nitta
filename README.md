@@ -156,6 +156,7 @@ $ stack test --test-arguments '-p "pattern for the test name"'
 The `evaluation.py` script supports various command-line arguments that can be used to customize and control the evaluation process.
 
 Use for command-line arguments informations
+
 ```bash
 $ python3 scripts/evaluation.py --help
 usage: evaluation.py [-h] [--nitta_args NITTA_ARGS] example_paths [example_paths ...]
@@ -170,6 +171,7 @@ optional arguments:
 ```
 
 Run lists of algorithms
+
 ```bash
 $ python3 scripts/evaluation.py examples/fibonacci.lua examples/counter.lua --nitta_args="--format=csv"
 
