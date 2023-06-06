@@ -57,7 +57,6 @@ async def run_nitta(
     nitta_env: dict = None,
     port: int = 8090,
 ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
-
     nitta_baseurl = f"http://localhost:{port}"
 
     cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
@@ -164,7 +163,6 @@ async def main(args):
             proc,
             nitta_baseurl,
         ):
-
             root = await retrieve_whole_nitta_tree(nitta_baseurl)
 
             async with ClientSession() as session:
