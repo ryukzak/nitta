@@ -140,6 +140,26 @@ $ stack test --test-arguments '-p "pattern for the test name"'
 ...
 ```
 
+### Testing algorithm performance
+The `evaluation.py` script supports various command-line arguments that can be used to customize and control the evaluation process.
+
+- `example_paths` (required): Paths to the example files, separated by spaces.
+- `--nitta_args` (optional): Arguments passed to Nitta. Enter the arguments in the format `--nitta_args="<arguments>"`.
+- `--help`: Prints help information about the available arguments.
+
+examples using
+```bash
+python3 /scripts/evaluation.py examples/fibonacci.lua examples/counter.lua --nitta_args="--format=csv"
+
+Algorithm: examples/fibonacci.lua
+     duration  depth  evaluator_calls      time
+nitta       5      8                9  0.906887
+
+Algorithm: examples/counter.lua
+     duration  depth  evaluator_calls      time
+nitta       5      8                9  5.687186
+```
+
 ### Other
 ``` console
 # build only one target
