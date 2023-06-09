@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 {- |
 Module      : NITTA.Synthesis.Analysis
 Description : Analysis synthesis proccess.
