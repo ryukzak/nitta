@@ -17,8 +17,6 @@ module NITTA.Synthesis.Explore (
     getTreePathIO,
     subForestIO,
     positiveSubForestIO,
-    isComplete,
-    isLeaf,
 ) where
 
 import Control.Concurrent.STM
