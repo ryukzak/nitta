@@ -3217,6 +3217,7 @@ type DefTree tag v x t = Tree (TargetSystem (BusNetwork tag v x t) tag v x t) ta
 -- | The synthesis method is a function, which manipulates a synthesis
 --   tree. It receives a node and explores it deeply by IO.
 type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
+noSynthesis :: () -> SynthesisMethod tag v x t
 
 -- | Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
@@ -3356,8 +3357,8 @@ TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph
 
 -- | source code format type
 [tSourceCodeType] :: TargetSynthesis tag v x t -> FrontendType
-runTargetSynthesis :: (Bounded t, Suffix v1, Hashable v1, UnitTag tag2, Val p, Default t, Show t, Integral t, Typeable t, Typeable v1, Ord v1, ToString v1, IsString v1) => TargetSynthesis tag2 v1 p t -> IO (Either String (TestbenchReport v1 p))
-synthesizeTargetSystem :: forall {tag2} {x2} {v2} {t}. (UnitTag tag2, Suffix v2, Hashable v2, Val x2, Bounded t, Show t, Default t, Integral t, Typeable v2, Typeable t, Ord v2, ToString v2, IsString v2) => TargetSynthesis tag2 v2 x2 t -> IO (Either String (Project (BusNetwork tag2 v2 x2 t) v2 x2))
+runTargetSynthesis :: (Bounded t, Suffix v1, Hashable v1, UnitTag tag, Val p, Default t, Show t, Integral t, Typeable t, Typeable v1, Ord v1, ToString v1, IsString v1) => TargetSynthesis tag v1 p t -> IO (Either String (TestbenchReport v1 p))
+synthesizeTargetSystem :: (UnitTag tag, VarValTime v x t) => TargetSynthesis tag v x t -> IO (DefTree tag v x t, Either String (Project (BusNetwork tag v x t) v x))
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Synthesis.TargetSynthesis tag v x t) v x t
 
@@ -3470,7 +3471,7 @@ instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.T
 module NITTA.UIBackend
 
 -- | Run backend server.
-backendServer :: (UnitTag w, Val w, Bounded w, Hashable w, Suffix w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, Label w, Show w, Default w, Integral w, Typeable w, Typeable w, Ord w, ToString w, IsString w) => Int -> [(w, [w])] -> String -> TargetSystem (BusNetwork w w w w) w w w w -> IO ()
+backendServer :: (Suffix w, Hashable w, Val w, Bounded w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, UnitTag w, Label w, ToString w, IsString w, Typeable w, Typeable w, Show w, Default w, Integral w, Ord w) => Int -> [(w, [w])] -> String -> DefTree w w w w -> IO ()
 prepareJSAPI :: Interpolatable 'True p Text => p -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath

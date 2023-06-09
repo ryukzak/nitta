@@ -201,29 +201,42 @@ nitta v0.0.0.1 - tool for hard real-time CGRA processors
 nitta [OPTIONS] FILE
 
 Target system configuration:
-         --uarch=PATH                  Microarchitecture configuration file
-  -t     --type=fxM.B                  Overrides data type specified in
-                                       config file
-         --io-sync=sync|async|onboard  Overrides IO synchronization mode
-                                       specified in config file
-         --templates=PATH[:PATH]       Target platform templates (default:
-                                       'templates/Icarus:templates/DE0-Nano')
+         --uarch=PATH                        Microarchitecture configuration
+                                             file
+  -a     --auto-uarch                        Use empty microarchitecture and
+                                             allocate PUs during synthesis
+                                             process.
+  -t     --type=fxM.B                        Overrides data type specified in
+                                             config file
+         --io-sync=sync|async|onboard        Overrides IO synchronization
+                                             mode specified in config file
+         --templates=PATH[:PATH]             Target platform templates
+                                             (default:
+                                             'templates/Icarus:templates/DE0-Nano')
+         --frontend-language=Lua|XMILE       Language used to source
+                                             algorithm description. (default:
+                                             decision by file extension)
 Common flags:
-  -p     --port=INT                    Run nitta server for UI on specific
-                                       port (by default - not run)
-  -o     --output-path=PATH            Target system path
+  -p     --port=INT                          Run nitta server for UI on
+                                             specific port (by default - not
+                                             run)
+  -o     --output-path=PATH                  Target system path
 Simulation:
-  -n=INT                               Number of simulation cycles
-  -f     --fsim                        Functional simulation with trace
-  -l     --lsim                        Logical (HDL) simulation with trace
-         --format=md|json|csv          Simulation output format (default:
-                                       'md')
+  -n=INT                                     Number of simulation cycles
+  -f     --fsim                              Functional simulation with trace
+  -l     --lsim                              Logical (HDL) simulation with
+                                             trace
+         --format=md|json|csv                Simulation output format
+                                             (default: 'md')
 Other:
-  -v     --verbose                     Verbose
-  -e     --extra-verbose               Extra verbose
-  -?     --help                        Display help message
-  -V     --version                     Print version information
-         --numeric-version             Print just the version number
+  -v     --verbose                           Verbose
+  -e     --extra-verbose                     Extra verbose
+  -?     --help                              Display help message
+  -V     --version                           Print version information
+         --numeric-version                   Print just the version number
+Synthesis:
+  -m     --method=stateoftheart|nosynthesis  Synthesis method (default:
+                                             stateoftheart)
 ```
 
 ### Logical simulation for a specific algorithm
@@ -268,6 +281,8 @@ $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 ### Run with user interface
 
 ``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080
+$ stack exec nitta -- examples/teacup.lua -p=8080 --method=nosynthesis
 Running NITTA server at http://localhost:8080 ...
 ```
+
+by default UI open already synthesised algorithm. By adding `--method=nosynthesis` we prevent automatical synthesis.
