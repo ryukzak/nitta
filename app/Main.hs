@@ -37,7 +37,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
-import NITTA.Synthesis (noSynthesis, stateOfTheArtSynthesisIO, TargetSynthesis(..),synthesizeTargetSystem)
+import NITTA.Synthesis (TargetSynthesis (..), noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem)
 import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
@@ -53,9 +53,9 @@ import Text.Read
 import Text.Regex
 
 data SynthesisMethodArg
-  = StateOfTheArt
-  | NoSynthesis
-  deriving (Show, Data, Typeable)
+    = StateOfTheArt
+    | NoSynthesis
+    deriving (Show, Data, Typeable)
 
 synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
 synthesisMethod NoSynthesis = noSynthesis
@@ -234,7 +234,7 @@ main = do
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = (synthesisMethod method) ()
+                        , tSynthesisMethod = synthesisMethod method ()
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

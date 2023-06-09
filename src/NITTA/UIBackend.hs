@@ -27,7 +27,6 @@ import Data.Either
 import Data.Maybe (fromJust)
 import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
--- import NITTA.Synthesis
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static
@@ -90,7 +89,7 @@ application receivedValues synthesisRoot outputPath = do
                         :<|> Raw
                     )
             )
-            ( synthesisServer BackendCtx{root=synthesisRoot, receivedValues, outputPath}
+            ( synthesisServer BackendCtx{root = synthesisRoot, receivedValues, outputPath}
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
                 :<|> serveDirectoryWith frontendAppSettings{ssLookupFile = fileOrIndex}
             )

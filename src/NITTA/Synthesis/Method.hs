@@ -35,7 +35,6 @@ import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 import System.Log.Logger
 
-
 {- | The constant, which restricts the maximum number of synthesis steps. Avoids
 the endless synthesis process.
 -}
@@ -43,8 +42,8 @@ stepLimit = 750 :: Int
 
 noSynthesis :: () -> SynthesisMethod tag v x t
 noSynthesis () tree = do
-  infoM "NITTA.Synthesis" $ "noSynthesis"
-  return tree
+    infoM "NITTA.Synthesis" "noSynthesis"
+    return tree
 
 -- | The most complex synthesis method, which embedded all another. That all.
 stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t
