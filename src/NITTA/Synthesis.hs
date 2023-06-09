@@ -154,9 +154,18 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (TargetSynthesis tag v
     parallelismType TargetSynthesis{tMicroArch} = parallelismType tMicroArch
 
 runTargetSynthesis leaf = do
-    prj <- synthesizeTargetSystem leaf
+    (_root, prj) <- synthesizeTargetSystem leaf
     traverse runTestbench prj
 
+synthesizeTargetSystem ::
+    (UnitTag tag, VarValTime v x t) =>
+    TargetSynthesis tag v x t ->
+    IO
+        ( DefTree tag v x t
+        , Either
+            String
+            (Project (BusNetwork tag v x t) v x)
+        )
 synthesizeTargetSystem
     TargetSynthesis
         { tName
@@ -175,10 +184,12 @@ synthesizeTargetSystem
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
         tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
         root <- synthesisTreeRootIO (mkModelWithOneNetwork tMicroArch tDFG')
-        synthesise root >>= \case
-            Left err -> return $ Left err
-            Right leafNode -> do
-                Right <$> writeProject' leafNode
+        prj <-
+            synthesise root >>= \case
+                Left err -> return $ Left err
+                Right leafNode -> do
+                    Right <$> writeProject' leafNode
+        return (root, prj)
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."

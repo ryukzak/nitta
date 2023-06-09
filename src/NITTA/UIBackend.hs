@@ -27,7 +27,6 @@ import Data.Either
 import Data.Maybe (fromJust)
 import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import NITTA.Synthesis
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static
@@ -80,8 +79,7 @@ fileOrIndex pieces = do
             ssLookupFile frontendAppSettings $ fromJust $ toPieces ["index.html"]
         _ -> return res
 
-application receivedValues model outputPath = do
-    root <- synthesisTreeRootIO model
+application receivedValues synthesisRoot outputPath = do
     return $
         serve
             ( Proxy ::
@@ -91,7 +89,7 @@ application receivedValues model outputPath = do
                         :<|> Raw
                     )
             )
-            ( synthesisServer BackendCtx{root, receivedValues, outputPath}
+            ( synthesisServer BackendCtx{root = synthesisRoot, receivedValues, outputPath}
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
                 :<|> serveDirectoryWith frontendAppSettings{ssLookupFile = fileOrIndex}
             )
@@ -100,12 +98,12 @@ isLocalPortFree port =
     isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
 
 -- | Run backend server.
-backendServer port receivedValues outputPath modelState = do
+backendServer port receivedValues outputPath synthesisRoot = do
     putStrLn $ "Running NITTA server at http://localhost:" <> show port <> " ..."
     -- on OS X, if we run system with busy port - application ignore that.
     -- see: https://nitta.io/nitta-corp/nitta/issues/9
     isFree <- isLocalPortFree port
     unless isFree $ error "resource busy (Port already in use)"
-    app <- application receivedValues modelState outputPath
+    app <- application receivedValues synthesisRoot outputPath
     setLocaleEncoding utf8
     run port $ simpleCors app

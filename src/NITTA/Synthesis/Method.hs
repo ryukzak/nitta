@@ -13,6 +13,7 @@ Stability   : experimental
 module NITTA.Synthesis.Method (
     DefTree,
     SynthesisMethod,
+    noSynthesis,
     simpleSynthesisIO,
     smartBindSynthesisIO,
     obviousBindThreadIO,
@@ -38,6 +39,11 @@ import System.Log.Logger
 the endless synthesis process.
 -}
 stepLimit = 750 :: Int
+
+noSynthesis :: () -> SynthesisMethod tag v x t
+noSynthesis () tree = do
+    infoM "NITTA.Synthesis" "noSynthesis"
+    return tree
 
 -- | The most complex synthesis method, which embedded all another. That all.
 stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t

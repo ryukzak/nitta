@@ -37,12 +37,11 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
-import NITTA.Synthesis
+import NITTA.Synthesis (TargetSynthesis (..), noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem)
 import NITTA.UIBackend
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
-import System.Console.CmdArgs.Explicit (HelpFormat (HelpFormatDefault), helpText)
 import System.Exit
 import System.FilePath.Posix
 import System.IO (stdout)
@@ -52,6 +51,14 @@ import System.Log.Handler.Simple
 import System.Log.Logger
 import Text.Read
 import Text.Regex
+
+data SynthesisMethodArg
+    = StateOfTheArt
+    | NoSynthesis
+    deriving (Show, Data, Typeable)
+
+synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
+synthesisMethod NoSynthesis = noSynthesis
 
 -- | Command line interface.
 data Nitta = Nitta
@@ -70,6 +77,7 @@ data Nitta = Nitta
     , output_path :: FilePath
     , format :: String
     , frontend_language :: Maybe FrontendType
+    , method :: SynthesisMethodArg
     }
     deriving (Show, Data, Typeable)
 
@@ -149,6 +157,11 @@ nittaArgs =
                 &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
+        , method =
+            StateOfTheArt
+                &= help "Synthesis method (default: stateoftheart)"
+                &= typ "stateoftheart|nosynthesis"
+                &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -157,12 +170,7 @@ nittaArgs =
         defTemplates = S.join ":" defProjectTemplates
 
 getNittaArgs :: IO Nitta
-getNittaArgs = do
-    let handleError :: ExitCode -> IO Nitta
-        handleError exitCode = do
-            print $ helpText [] HelpFormatDefault $ cmdArgsMode nittaArgs
-            exitWith exitCode
-    catch (cmdArgs nittaArgs) handleError
+getNittaArgs = cmdArgs nittaArgs
 
 fromConf toml s = getFromTomlSection s =<< toml
 
@@ -183,6 +191,7 @@ main = do
             output_path
             format
             frontend_language
+            method
         ) <-
         getNittaArgs
     setupLogger verbose extra_verbose
@@ -214,20 +223,9 @@ main = do
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
-            when (port > 0) $ do
-                bufE <- try $ readFile (apiPath </> "PORT")
-                let expect = case bufE of
-                        Right buf -> case readEither buf of
-                            Right p -> p
-                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
-                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                warningIfUnexpectedPort expect port
-                backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
-                exitSuccess
-
             when fsim $ functionalSimulation n received format frontendResult
 
-            prj <-
+            (synthesisRoot, prjE) <-
                 synthesizeTargetSystem
                     (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
                         { tName = "main"
@@ -236,13 +234,23 @@ main = do
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = stateOfTheArtSynthesisIO ()
+                        , tSynthesisMethod = synthesisMethod method ()
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }
-                    >>= either error return
 
-            when lsim $ logicalSimulation format frPrettyLog prj
+            when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+
+            when (port > 0) $ do
+                bufE <- try $ readFile (apiPath </> "PORT")
+                let expect = case bufE of
+                        Right buf -> case readEither buf of
+                            Right p -> p
+                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
+                warningIfUnexpectedPort expect port
+                backendServer port received output_path synthesisRoot
+                exitSuccess
         )
         $ parseFX . fromJust
         $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
