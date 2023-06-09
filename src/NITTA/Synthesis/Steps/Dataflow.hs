@@ -101,14 +101,13 @@ instance
             , pRestrictedTime
             , pFirstWaveOfTargetUse
             } =
-            2000
-                + (numberOfDataflowOptions >= threshold)
-                <?> 1000
-                + pRestrictedTime
-                <?> 200
-                - sum pNotTransferableInputs
-                * 5
-                - pWaitTime
-                - pFirstWaveOfTargetUse
+            sum
+                [ 2000
+                , (numberOfDataflowOptions >= threshold) <?> 1000
+                , pRestrictedTime <?> 200
+                , sum pNotTransferableInputs * (-5)
+                , -pWaitTime
+                , -pFirstWaveOfTargetUse
+                ]
 
 threshold = 20

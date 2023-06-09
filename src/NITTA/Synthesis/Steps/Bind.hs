@@ -99,23 +99,17 @@ instance
 
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
     estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
-        3000
-            + pCritical
-            <?> 1000
-            + (pAlternative == 1)
-            <?> 500
-            + pAllowDataFlow
-            * 10
-            + pPercentOfBindedInputs
-            * 50
-            - fromMaybe (-1) pWave
-            * 50
-            - pNumberOfBindedFunctions
-            * 10
-            - pRestless
-            * 4
-            + pOutputNumber
-            * 2
+        sum
+            [ 3000
+            , pCritical <?> 1000
+            , (pAlternative == 1) <?> 500
+            , pAllowDataFlow * 10
+            , pPercentOfBindedInputs * 50
+            , fromMaybe (-1) pWave * 50
+            , pNumberOfBindedFunctions * 10
+            , pRestless * 4
+            , pOutputNumber * 2
+            ]
 
 waitingTimeOfVariables net =
     [ (variable, inf $ tcAvailable constrain)
