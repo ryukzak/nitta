@@ -105,9 +105,9 @@ instance
             , (pAlternative == 1) <?> 500
             , pAllowDataFlow * 10
             , pPercentOfBindedInputs * 50
-            , fromMaybe (-1) pWave * 50
-            , pNumberOfBindedFunctions * 10
-            , pRestless * 4
+            , -fromMaybe (-1) pWave * 50
+            , -pNumberOfBindedFunctions * 10
+            , -pRestless * 4
             , pOutputNumber * 2
             ]
 
