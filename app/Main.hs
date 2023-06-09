@@ -214,20 +214,9 @@ main = do
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
-            when (port > 0) $ do
-                bufE <- try $ readFile (apiPath </> "PORT")
-                let expect = case bufE of
-                        Right buf -> case readEither buf of
-                            Right p -> p
-                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
-                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                warningIfUnexpectedPort expect port
-                backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
-                exitSuccess
-
             when fsim $ functionalSimulation n received format frontendResult
 
-            prj <-
+            (synthesisRoot, prjE) <-
                 synthesizeTargetSystem
                     (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
                         { tName = "main"
@@ -240,9 +229,19 @@ main = do
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }
-                    >>= either error return
 
-            when lsim $ logicalSimulation format frPrettyLog prj
+            when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+
+            when (port > 0) $ do
+                bufE <- try $ readFile (apiPath </> "PORT")
+                let expect = case bufE of
+                        Right buf -> case readEither buf of
+                            Right p -> p
+                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
+                warningIfUnexpectedPort expect port
+                backendServer port received output_path synthesisRoot
+                exitSuccess
         )
         $ parseFX . fromJust
         $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
