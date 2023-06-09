@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 {- |
 Module      : NITTA.Synthesis.Analysis
 Description : Analysis synthesis proccess.
@@ -20,10 +22,10 @@ import NITTA.Synthesis.Types
 
 -- | Metrics of synthesis tree process
 data TreeInfo = TreeInfo
-    { nodes :: Int
-    , success :: Int
-    , failed :: Int
-    , notProcessed :: Int
+    { nodes :: !Int
+    , success :: !Int
+    , failed :: !Int
+    , notProcessed :: !Int
     , durationSuccess :: HM.HashMap Int Int
     , stepsSuccess :: HM.HashMap Int Int
     }
@@ -39,8 +41,8 @@ instance Semigroup TreeInfo where
                 , success = sum $ map success synthesisInfoList
                 , failed = sum $ map failed synthesisInfoList
                 , notProcessed = sum $ map notProcessed synthesisInfoList
-                , durationSuccess = if not $ null durationSuccessList then foldl1 (HM.unionWith (+)) durationSuccessList else HM.empty
-                , stepsSuccess = if not $ null stepsSuccessList then foldl1 (HM.unionWith (+)) stepsSuccessList else HM.empty
+                , durationSuccess = if not $ null durationSuccessList then foldr1 (HM.unionWith (+)) durationSuccessList else HM.empty
+                , stepsSuccess = if not $ null stepsSuccessList then foldr1 (HM.unionWith (+)) stepsSuccessList else HM.empty
                 }
 
 instance Monoid TreeInfo where
