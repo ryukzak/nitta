@@ -57,8 +57,9 @@ instance Monoid TreeInfo where
 getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
     subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
-    let isSuccess = isComplete tree && isLeaf tree
-    let isFail = (not . isComplete) tree && isLeaf tree
+    let (isSuccess, isFail)
+            | isLeaf tree = if isComplete tree then (True, False) else (False, True)
+            | otherwise = (False, False)
     let duration = fromEnum $ processDuration $ sTarget $ sState tree
     let successDepends value field =
             if not isSuccess
