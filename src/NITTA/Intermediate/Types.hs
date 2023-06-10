@@ -30,6 +30,7 @@ module NITTA.Intermediate.Types (
     FView (..),
     packF,
     castF,
+    functionType,
     Function (..),
     Lock (..),
     Locks (..),
@@ -193,6 +194,8 @@ data F v x where
         F v x
 
 packF f = F{fun = f, funHistory = []}
+
+functionType F{fun} = typeOf fun
 
 instance Eq (F v x) where
     F{fun = a} == F{fun = b}

@@ -10,6 +10,7 @@ import {
   IOptimizeAccumView,
   IResolveDeadlockView,
   NetworkDesc,
+  IBindsView,
   UnitDesc,
   Relation,
   TimeConstraint,
@@ -41,6 +42,7 @@ export type Decision = DecisionView;
 export type Root = IRootView;
 
 export type Bind = IBindDecisionView;
+export type Binds = IBindsView;
 export type Allocation = IAllocationView;
 export type Dataflow = IDataflowDecisionView;
 

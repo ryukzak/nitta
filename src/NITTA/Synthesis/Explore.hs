@@ -169,7 +169,10 @@ nodeCtx parent nModel =
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
             , bindingAlternative =
                 foldl
-                    (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)
+                    ( \st b -> case b of
+                        (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st
+                        _ -> st
+                    )
                     M.empty
                     sBindOptions
             , possibleDeadlockBinds =

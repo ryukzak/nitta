@@ -10,7 +10,9 @@ module NITTA.Model.Problems.ViewHelper (
 ) where
 
 import Data.Aeson
-import Data.Bifunctor
+import Data.Bifunctor (Bifunctor (bimap))
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Set qualified as S
 import Data.Text qualified as T
 import GHC.Generics
@@ -34,6 +36,9 @@ data DecisionView
     | BindDecisionView
         { function :: FView
         , pu :: T.Text
+        }
+    | BindsView
+        { bindGroup :: HM.HashMap T.Text [FView]
         }
     | AllocationView
         { networkTag :: T.Text
@@ -68,6 +73,7 @@ instance UnitTag tag => Viewable (Bind tag v x) DecisionView where
             { function = view f
             , pu = toText pu
             }
+    view Binds{bindGroup} = BindsView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup
 
 instance UnitTag tag => Viewable (Allocation tag) DecisionView where
     view Allocation{networkTag, processUnitTag} =

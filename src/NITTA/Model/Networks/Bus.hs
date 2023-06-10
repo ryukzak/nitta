@@ -299,15 +299,88 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 
 ----------------------------------------------------------------------
 
+cartesianProduct :: [[a]] -> [[a]]
+cartesianProduct [] = [[]]
+cartesianProduct (xs : xss) = [x : ys | x <- xs, ys <- cartesianProduct xss]
+
+fixGroupBinding :: (UnitTag tag, VarValTime v x t) => BusNetwork tag v x t -> [(tag, F v x)] -> [(tag, F v x)]
+fixGroupBinding _bn [] = []
+fixGroupBinding bn@BusNetwork{bnPus} (b@(tag, f) : binds)
+    | Right _ <- tryBind f (bnPus M.! tag) = b : fixGroupBinding (bindDecision bn $ Bind f tag) binds
+    | otherwise = fixGroupBinding bn binds
+
+mergeFunctionWithSameType = False
+
+{- | GroupBindHash required to find equal from task point of view bindings.
+ E.g. (we have 2 units and 3 functions with the same type):
+ @u1 <- f1, f2, f3; u2 <- _ === u1 <- _; u2 <-  f1, f2, f3@ because all
+ task will performing by one unit and it is not matter which one.
+
+ Corner cases:
+
+ - not all group binding are correct (e.g. self sending)
+
+ - we can't wait that unit is empty
+
+ - Combination like: `u1 <- f1, f2; u2 <- f3 !== u1 <- f1, f3; u2 <- f2` are not
+   equal because we don't take into accout their place in DFG.
+-}
+bindsHash :: UnitTag k => BusNetwork k v x t -> [(k, F v x)] -> S.Set (TypeRep, Int, S.Set String)
+bindsHash BusNetwork{bnPus, bnBinded} binds =
+    let distribution = binds2bindGroup binds
+     in S.fromList
+            $ map
+                ( \(tag, fs) ->
+                    let
+                        u = bnPus M.! tag
+                        binded = maybe 0 length $ bnBinded M.!? tag
+                        fs' =
+                            S.fromList $
+                                if mergeFunctionWithSameType
+                                    then map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
+                                    else map show fs
+                     in
+                        (unitType u, binded, fs')
+                )
+            $ M.assocs distribution
+
+nubNotObliviousBinds :: UnitTag k => BusNetwork k v x t -> [[(k, F v x)]] -> [[(k, F v x)]]
+nubNotObliviousBinds bn bindss =
+    let hashed = map (\binds -> (bindsHash bn binds, binds)) bindss
+     in M.elems $ M.fromList hashed
+
 instance
     (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = concatMap optionsFor bnRemains
+    bindOptions bn@BusNetwork{bnRemains, bnPus} =
+        let binds = map optionsFor bnRemains
+
+            -- oblivious mean we have only one option to bind function
+            obliviousBinds = concat $ filter ((== 1) . length) binds
+            singleAssingmentBinds
+                | null obliviousBinds = []
+                | otherwise = [Binds True $ binds2bindGroup obliviousBinds]
+
+            notObliviousBinds :: [[(tag, F v x)]]
+            notObliviousBinds = filter ((> 1) . length) binds
+            -- TODO: split this on several independent tasks. It should significantly reduce complexity
+            multiBinds :: [Bind tag v x]
+            multiBinds
+                | null notObliviousBinds = []
+                | otherwise =
+                    map (Binds False . binds2bindGroup) $
+                        filter ((> 1) . length) $
+                            map (fixGroupBinding bn) $
+                                nubNotObliviousBinds bn $
+                                    cartesianProduct notObliviousBinds
+
+            simpleBinds = concatMap (map (\(tag, f) -> Bind f tag)) binds
+         in singleAssingmentBinds <> multiBinds <> simpleBinds
         where
             optionsFor f =
-                [ Bind f puTitle
-                | (puTitle, pu) <- M.assocs bnPus
+                [ (tag, f)
+                | (tag, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
 
@@ -318,6 +391,8 @@ instance
             , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
             , bnRemains = filter (/= f) bnRemains
             }
+    bindDecision bn@BusNetwork{} Binds{bindGroup} =
+        foldl bindDecision bn $ concatMap (\(tag, fs) -> map (`Bind` tag) fs) $ M.assocs bindGroup
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus
