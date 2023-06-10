@@ -3001,13 +3001,15 @@ estimate :: SynthesisDecisionCls ctx m o d p => ctx -> o -> d -> p -> Float
 
 -- | Synthesis tree
 data Tree m tag v x t
-Tree :: Sid -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m -> TMVar [Tree m tag v x t] -> Tree m tag v x t
+Tree :: Sid -> SynthesisState m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m -> TMVar [Tree m tag v x t] -> Bool -> Bool -> Tree m tag v x t
 [sID] :: Tree m tag v x t -> Sid
 [sState] :: Tree m tag v x t -> SynthesisState m tag v x t
 [sDecision] :: Tree m tag v x t -> SynthesisDecision (SynthesisState m tag v x t) m
 
 -- | lazy mutable field with different synthesis options and sub nodes
 [sSubForestVar] :: Tree m tag v x t -> TMVar [Tree m tag v x t]
+[isLeaf] :: Tree m tag v x t -> Bool
+[isComplete] :: Tree m tag v x t -> Bool
 data SynthesisDecision ctx m
 [Root] :: SynthesisDecision ctx m
 [SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => o -> d -> p -> Map Text Float -> SynthesisDecision ctx m
@@ -3075,6 +3077,24 @@ instance GHC.Base.Semigroup NITTA.Synthesis.Types.Sid
 instance GHC.Base.Monoid NITTA.Synthesis.Types.Sid
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Types.Sid
 instance Web.Internal.HttpApiData.FromHttpApiData NITTA.Synthesis.Types.Sid
+
+
+module NITTA.Synthesis.Analysis
+getTreeInfo :: (Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag v x t) tag v x t -> IO TreeInfo
+
+-- | Metrics of synthesis tree process
+data TreeInfo
+TreeInfo :: !Int -> !Int -> !Int -> !Int -> HashMap Int Int -> HashMap Int Int -> TreeInfo
+[nodes] :: TreeInfo -> !Int
+[success] :: TreeInfo -> !Int
+[failed] :: TreeInfo -> !Int
+[notProcessed] :: TreeInfo -> !Int
+[durationSuccess] :: TreeInfo -> HashMap Int Int
+[stepsSuccess] :: TreeInfo -> HashMap Int Int
+instance GHC.Show.Show NITTA.Synthesis.Analysis.TreeInfo
+instance GHC.Generics.Generic NITTA.Synthesis.Analysis.TreeInfo
+instance GHC.Base.Semigroup NITTA.Synthesis.Analysis.TreeInfo
+instance GHC.Base.Monoid NITTA.Synthesis.Analysis.TreeInfo
 
 
 module NITTA.Synthesis.Steps.ResolveDeadlock
@@ -3205,8 +3225,6 @@ subForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Def
 -- | For synthesis method is more usefull, because throw away all useless
 --   trees in subForest (objective function value less than zero).
 positiveSubForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
-isComplete :: ProcessorUnit u v x t => Tree (TargetSystem u tag v x t) tag v x t -> Bool
-isLeaf :: Tree m tag v x t -> Bool
 
 
 module NITTA.Synthesis.Method
@@ -3230,24 +3248,6 @@ allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag
 stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t
 allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-
-
-module NITTA.Synthesis.Analysis
-getTreeInfo :: (ProcessorUnit u v1 x1 t1, Enum a, Num a, NextTick u a) => Tree (TargetSystem u tag1 v1 x1 t1) tag v x t -> IO TreeInfo
-
--- | Metrics of synthesis tree process
-data TreeInfo
-TreeInfo :: Int -> Int -> Int -> Int -> HashMap Int Int -> HashMap Int Int -> TreeInfo
-[nodes] :: TreeInfo -> Int
-[success] :: TreeInfo -> Int
-[failed] :: TreeInfo -> Int
-[notProcessed] :: TreeInfo -> Int
-[durationSuccess] :: TreeInfo -> HashMap Int Int
-[stepsSuccess] :: TreeInfo -> HashMap Int Int
-instance GHC.Show.Show NITTA.Synthesis.Analysis.TreeInfo
-instance GHC.Generics.Generic NITTA.Synthesis.Analysis.TreeInfo
-instance GHC.Base.Semigroup NITTA.Synthesis.Analysis.TreeInfo
-instance GHC.Base.Monoid NITTA.Synthesis.Analysis.TreeInfo
 
 
 -- | TargetSynthesis is an entry point for synthesis process.
@@ -3379,7 +3379,7 @@ FView :: Text -> [Text] -> FView
 --   typescript types.
 class Viewable t v | t -> v
 view :: Viewable t v => t -> v
-viewNodeTree :: (ProcessorUnit u v x t, NextTick u b, Num b, Enum b) => Tree (TargetSystem u tag v x t) tag v x t -> IO (TreeView ShortNodeView)
+viewNodeTree :: (Enum b, Num b, NextTick u b) => Tree (TargetSystem u tag v x t) tag v x t -> IO (TreeView ShortNodeView)
 data TreeView a
 data ShortNodeView
 data NodeView tag v x t

@@ -137,61 +137,63 @@ span.spaces    { background: white }
 <span class="lineno">  118 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDecision</span></span></span> :: SynthesisDecision (SynthesisState m tag v x t) m
 <span class="lineno">  119 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sSubForestVar</span></span></span> :: TMVar [Tree m tag v x t]
 <span class="lineno">  120 </span>    -- ^ lazy mutable field with different synthesis options and sub nodes
-<span class="lineno">  121 </span>    }
-<span class="lineno">  122 </span>
-<span class="lineno">  123 </span><span class="decl"><span class="istickedoff">targetUnit = mUnit . sTarget . sState</span></span>
-<span class="lineno">  124 </span><span class="decl"><span class="istickedoff">targetDFG = mDataFlowGraph . sTarget . sState</span></span>
-<span class="lineno">  125 </span>
-<span class="lineno">  126 </span>data SynthesisDecision ctx m where
-<span class="lineno">  127 </span>    Root :: SynthesisDecision ctx m
-<span class="lineno">  128 </span>    SynthesisDecision ::
-<span class="lineno">  129 </span>        (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) =&gt;
-<span class="lineno">  130 </span>        {<span class="decl"><span class="nottickedoff">option</span></span> :: o, <span class="decl"><span class="nottickedoff">decision</span></span> :: d, <span class="decl"><span class="nottickedoff">metrics</span></span> :: p, <span class="istickedoff"><span class="nottickedoff"><span class="decl"><span class="istickedoff">scores</span></span></span></span> :: Map Text Float} -&gt;
-<span class="lineno">  131 </span>        SynthesisDecision ctx m
-<span class="lineno">  132 </span>
-<span class="lineno">  133 </span><span class="decl"><span class="istickedoff">defScore = (M.! &quot;default&quot;) . scores</span></span>
+<span class="lineno">  121 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">isLeaf</span></span></span> :: Bool
+<span class="lineno">  122 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">isComplete</span></span></span> :: Bool
+<span class="lineno">  123 </span>    }
+<span class="lineno">  124 </span>
+<span class="lineno">  125 </span><span class="decl"><span class="istickedoff">targetUnit = mUnit . sTarget . sState</span></span>
+<span class="lineno">  126 </span><span class="decl"><span class="istickedoff">targetDFG = mDataFlowGraph . sTarget . sState</span></span>
+<span class="lineno">  127 </span>
+<span class="lineno">  128 </span>data SynthesisDecision ctx m where
+<span class="lineno">  129 </span>    Root :: SynthesisDecision ctx m
+<span class="lineno">  130 </span>    SynthesisDecision ::
+<span class="lineno">  131 </span>        (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) =&gt;
+<span class="lineno">  132 </span>        {<span class="decl"><span class="nottickedoff">option</span></span> :: o, <span class="decl"><span class="nottickedoff">decision</span></span> :: d, <span class="decl"><span class="nottickedoff">metrics</span></span> :: p, <span class="istickedoff"><span class="nottickedoff"><span class="decl"><span class="istickedoff">scores</span></span></span></span> :: Map Text Float} -&gt;
+<span class="lineno">  133 </span>        SynthesisDecision ctx m
 <span class="lineno">  134 </span>
-<span class="lineno">  135 </span>class SynthesisDecisionCls ctx m o d p | ctx o -&gt; m d p where
-<span class="lineno">  136 </span>    decisions :: ctx -&gt; o -&gt; [(d, m)]
-<span class="lineno">  137 </span>    parameters :: ctx -&gt; o -&gt; d -&gt; p
-<span class="lineno">  138 </span>    estimate :: ctx -&gt; o -&gt; d -&gt; p -&gt; Float
-<span class="lineno">  139 </span>
-<span class="lineno">  140 </span>data SynthesisState m tag v x t = SynthesisState
-<span class="lineno">  141 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sParent</span></span></span> :: Maybe (Tree m tag v x t)
-<span class="lineno">  142 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sTarget</span></span></span> :: m
-<span class="lineno">  143 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sAllocationOptions</span></span></span> :: [Allocation tag]
-<span class="lineno">  144 </span>    -- ^ PU allocation options cache
-<span class="lineno">  145 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBindOptions</span></span></span> :: [Bind tag v x]
-<span class="lineno">  146 </span>    -- ^ bind options cache
-<span class="lineno">  147 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sResolveDeadlockOptions</span></span></span> :: [ResolveDeadlock v x]
-<span class="lineno">  148 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sOptimizeAccumOptions</span></span></span> :: [OptimizeAccum v x]
-<span class="lineno">  149 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sConstantFoldingOptions</span></span></span> :: [ConstantFolding v x]
-<span class="lineno">  150 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBreakLoopOptions</span></span></span> :: [BreakLoop v x]
-<span class="lineno">  151 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDataflowOptions</span></span></span> :: [DataflowSt tag v (TimeConstraint t)]
-<span class="lineno">  152 </span>    -- ^ dataflow options cache
-<span class="lineno">  153 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindingAlternative</span></span></span> :: M.Map (F v x) [tag]
-<span class="lineno">  154 </span>    -- ^ a map from functions to possible processor unit tags
-<span class="lineno">  155 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">possibleDeadlockBinds</span></span></span> :: S.Set (F v x)
-<span class="lineno">  156 </span>    -- ^ a function set, which binding may cause dead lock
-<span class="lineno">  157 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindWaves</span></span></span> :: M.Map v Int
-<span class="lineno">  158 </span>    -- ^ if algorithm will be represented as a graph, where nodes -
-<span class="lineno">  159 </span>    --  variables of not binded functions, edges - casuality, wave is a
-<span class="lineno">  160 </span>    --  minimal number of a step from an initial node to selected
-<span class="lineno">  161 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">processWaves</span></span></span> :: [ProcessWave v x]
-<span class="lineno">  162 </span>    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
-<span class="lineno">  163 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfProcessWaves</span></span></span> :: Int
-<span class="lineno">  164 </span>    -- ^ Number of execution waves of the algorithm.
-<span class="lineno">  165 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfDataflowOptions</span></span></span> :: Int
-<span class="lineno">  166 </span>    -- ^ number of dataflow options
-<span class="lineno">  167 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">transferableVars</span></span></span> :: S.Set v
-<span class="lineno">  168 </span>    -- ^ a variable set, which can be transferred on the current
-<span class="lineno">  169 </span>    --  synthesis step
-<span class="lineno">  170 </span>    }
-<span class="lineno">  171 </span>
-<span class="lineno">  172 </span>-- * Utils
+<span class="lineno">  135 </span><span class="decl"><span class="istickedoff">defScore = (M.! &quot;default&quot;) . scores</span></span>
+<span class="lineno">  136 </span>
+<span class="lineno">  137 </span>class SynthesisDecisionCls ctx m o d p | ctx o -&gt; m d p where
+<span class="lineno">  138 </span>    decisions :: ctx -&gt; o -&gt; [(d, m)]
+<span class="lineno">  139 </span>    parameters :: ctx -&gt; o -&gt; d -&gt; p
+<span class="lineno">  140 </span>    estimate :: ctx -&gt; o -&gt; d -&gt; p -&gt; Float
+<span class="lineno">  141 </span>
+<span class="lineno">  142 </span>data SynthesisState m tag v x t = SynthesisState
+<span class="lineno">  143 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sParent</span></span></span> :: Maybe (Tree m tag v x t)
+<span class="lineno">  144 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sTarget</span></span></span> :: m
+<span class="lineno">  145 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sAllocationOptions</span></span></span> :: [Allocation tag]
+<span class="lineno">  146 </span>    -- ^ PU allocation options cache
+<span class="lineno">  147 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBindOptions</span></span></span> :: [Bind tag v x]
+<span class="lineno">  148 </span>    -- ^ bind options cache
+<span class="lineno">  149 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sResolveDeadlockOptions</span></span></span> :: [ResolveDeadlock v x]
+<span class="lineno">  150 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sOptimizeAccumOptions</span></span></span> :: [OptimizeAccum v x]
+<span class="lineno">  151 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sConstantFoldingOptions</span></span></span> :: [ConstantFolding v x]
+<span class="lineno">  152 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBreakLoopOptions</span></span></span> :: [BreakLoop v x]
+<span class="lineno">  153 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDataflowOptions</span></span></span> :: [DataflowSt tag v (TimeConstraint t)]
+<span class="lineno">  154 </span>    -- ^ dataflow options cache
+<span class="lineno">  155 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindingAlternative</span></span></span> :: M.Map (F v x) [tag]
+<span class="lineno">  156 </span>    -- ^ a map from functions to possible processor unit tags
+<span class="lineno">  157 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">possibleDeadlockBinds</span></span></span> :: S.Set (F v x)
+<span class="lineno">  158 </span>    -- ^ a function set, which binding may cause dead lock
+<span class="lineno">  159 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindWaves</span></span></span> :: M.Map v Int
+<span class="lineno">  160 </span>    -- ^ if algorithm will be represented as a graph, where nodes -
+<span class="lineno">  161 </span>    --  variables of not binded functions, edges - casuality, wave is a
+<span class="lineno">  162 </span>    --  minimal number of a step from an initial node to selected
+<span class="lineno">  163 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">processWaves</span></span></span> :: [ProcessWave v x]
+<span class="lineno">  164 </span>    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
+<span class="lineno">  165 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfProcessWaves</span></span></span> :: Int
+<span class="lineno">  166 </span>    -- ^ Number of execution waves of the algorithm.
+<span class="lineno">  167 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfDataflowOptions</span></span></span> :: Int
+<span class="lineno">  168 </span>    -- ^ number of dataflow options
+<span class="lineno">  169 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">transferableVars</span></span></span> :: S.Set v
+<span class="lineno">  170 </span>    -- ^ a variable set, which can be transferred on the current
+<span class="lineno">  171 </span>    --  synthesis step
+<span class="lineno">  172 </span>    }
 <span class="lineno">  173 </span>
-<span class="lineno">  174 </span><span class="decl"><span class="istickedoff">True &lt;?&gt; v = v</span>
-<span class="lineno">  175 </span><span class="spaces"></span><span class="istickedoff">False &lt;?&gt; _ = 0</span></span>
+<span class="lineno">  174 </span>-- * Utils
+<span class="lineno">  175 </span>
+<span class="lineno">  176 </span><span class="decl"><span class="istickedoff">True &lt;?&gt; v = v</span>
+<span class="lineno">  177 </span><span class="spaces"></span><span class="istickedoff">False &lt;?&gt; _ = 0</span></span>
 
 </pre>
 </body>

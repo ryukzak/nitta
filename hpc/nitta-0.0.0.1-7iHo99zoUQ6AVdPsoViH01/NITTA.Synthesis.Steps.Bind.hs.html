@@ -118,41 +118,35 @@ span.spaces    { background: white }
 <span class="lineno">   99 </span>
 <span class="lineno">  100 </span>    <span class="decl"><span class="istickedoff">estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500</span>
 <span class="lineno">  101 </span><span class="spaces">    </span><span class="istickedoff">estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =</span>
-<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">3000</span>
-<span class="lineno">  103 </span><span class="spaces">            </span><span class="istickedoff">+ pCritical</span>
-<span class="lineno">  104 </span><span class="spaces">            </span><span class="istickedoff">&lt;?&gt; 1000</span>
-<span class="lineno">  105 </span><span class="spaces">            </span><span class="istickedoff">+ (pAlternative == 1)</span>
-<span class="lineno">  106 </span><span class="spaces">            </span><span class="istickedoff">&lt;?&gt; 500</span>
-<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">+ pAllowDataFlow</span>
-<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">* 10</span>
-<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">+ pPercentOfBindedInputs</span>
-<span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">* 50</span>
-<span class="lineno">  111 </span><span class="spaces">            </span><span class="istickedoff">- fromMaybe <span class="nottickedoff">(-1)</span> pWave</span>
-<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">* 50</span>
-<span class="lineno">  113 </span><span class="spaces">            </span><span class="istickedoff">- pNumberOfBindedFunctions</span>
-<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">* 10</span>
-<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">- pRestless</span>
-<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">* 4</span>
-<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">+ pOutputNumber</span>
-<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">* 2</span></span>
-<span class="lineno">  119 </span>
-<span class="lineno">  120 </span><span class="decl"><span class="istickedoff">waitingTimeOfVariables net =</span>
-<span class="lineno">  121 </span><span class="spaces">    </span><span class="istickedoff">[ (variable, inf $ tcAvailable constrain)</span>
-<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">| DataflowSt{dfSource = (_, srcEp), dfTargets} &lt;- dataflowOptions net</span>
-<span class="lineno">  123 </span><span class="spaces">    </span><span class="istickedoff">, let constrain = epAt srcEp</span>
-<span class="lineno">  124 </span><span class="spaces">    </span><span class="istickedoff">, variable &lt;- S.elems (variables srcEp S.\\ unionsMap (variables . snd) dfTargets)</span>
-<span class="lineno">  125 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
-<span class="lineno">  126 </span>
-<span class="lineno">  127 </span><span class="decl"><span class="istickedoff">optionsAfterBind f tag TargetSystem{mUnit = BusNetwork{bnPus}} =</span>
-<span class="lineno">  128 </span><span class="spaces">    </span><span class="istickedoff">case tryBind f (bnPus M.! tag) of</span>
-<span class="lineno">  129 </span><span class="spaces">        </span><span class="istickedoff">Right pu' -&gt; filter (\(EndpointSt act _) -&gt; act `optionOf` f) $ endpointOptions pu'</span>
-<span class="lineno">  130 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">[]</span></span>
-<span class="lineno">  131 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  132 </span><span class="spaces">        </span><span class="istickedoff">act `optionOf` f' = not $ S.null (variables act `S.intersection` variables f')</span></span>
-<span class="lineno">  133 </span>
-<span class="lineno">  134 </span><span class="decl"><span class="istickedoff">isBind SynthesisDecision{metrics}</span>
-<span class="lineno">  135 </span><span class="spaces">    </span><span class="istickedoff">| isJust (cast <span class="nottickedoff">metrics</span> :: Maybe BindMetrics) = True</span>
-<span class="lineno">  136 </span><span class="spaces"></span><span class="istickedoff">isBind _ = False</span></span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">sum</span>
+<span class="lineno">  103 </span><span class="spaces">            </span><span class="istickedoff">[ 3000</span>
+<span class="lineno">  104 </span><span class="spaces">            </span><span class="istickedoff">, pCritical &lt;?&gt; 1000</span>
+<span class="lineno">  105 </span><span class="spaces">            </span><span class="istickedoff">, (pAlternative == 1) &lt;?&gt; 500</span>
+<span class="lineno">  106 </span><span class="spaces">            </span><span class="istickedoff">, pAllowDataFlow * 10</span>
+<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">, pPercentOfBindedInputs * 50</span>
+<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">, -fromMaybe <span class="nottickedoff">(-1)</span> pWave * 50</span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">, -pNumberOfBindedFunctions * 10</span>
+<span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">, -pRestless * 4</span>
+<span class="lineno">  111 </span><span class="spaces">            </span><span class="istickedoff">, pOutputNumber * 2</span>
+<span class="lineno">  112 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
+<span class="lineno">  113 </span>
+<span class="lineno">  114 </span><span class="decl"><span class="istickedoff">waitingTimeOfVariables net =</span>
+<span class="lineno">  115 </span><span class="spaces">    </span><span class="istickedoff">[ (variable, inf $ tcAvailable constrain)</span>
+<span class="lineno">  116 </span><span class="spaces">    </span><span class="istickedoff">| DataflowSt{dfSource = (_, srcEp), dfTargets} &lt;- dataflowOptions net</span>
+<span class="lineno">  117 </span><span class="spaces">    </span><span class="istickedoff">, let constrain = epAt srcEp</span>
+<span class="lineno">  118 </span><span class="spaces">    </span><span class="istickedoff">, variable &lt;- S.elems (variables srcEp S.\\ unionsMap (variables . snd) dfTargets)</span>
+<span class="lineno">  119 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
+<span class="lineno">  120 </span>
+<span class="lineno">  121 </span><span class="decl"><span class="istickedoff">optionsAfterBind f tag TargetSystem{mUnit = BusNetwork{bnPus}} =</span>
+<span class="lineno">  122 </span><span class="spaces">    </span><span class="istickedoff">case tryBind f (bnPus M.! tag) of</span>
+<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">Right pu' -&gt; filter (\(EndpointSt act _) -&gt; act `optionOf` f) $ endpointOptions pu'</span>
+<span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">[]</span></span>
+<span class="lineno">  125 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  126 </span><span class="spaces">        </span><span class="istickedoff">act `optionOf` f' = not $ S.null (variables act `S.intersection` variables f')</span></span>
+<span class="lineno">  127 </span>
+<span class="lineno">  128 </span><span class="decl"><span class="istickedoff">isBind SynthesisDecision{metrics}</span>
+<span class="lineno">  129 </span><span class="spaces">    </span><span class="istickedoff">| isJust (cast <span class="nottickedoff">metrics</span> :: Maybe BindMetrics) = True</span>
+<span class="lineno">  130 </span><span class="spaces"></span><span class="istickedoff">isBind _ = False</span></span>
 
 </pre>
 </body>

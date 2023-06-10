@@ -47,18 +47,18 @@ It also agreed to the process inspection.
 </span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.Interval.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">singleton</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">sup</span></span><span class="hs-special">)</span><span>
 </span><span id="line-48"></span><span>
 </span><span id="line-49"></span><span class="hs-comment">-- | Process builder state.</span><span>
-</span><span id="line-50"></span><span class="hs-keyword">data</span><span> </span><span id="Schedule"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-var">Schedule</span></a></span></span><span> </span><span id="local-6989586621680189172"><span class="annot"><a href="#local-6989586621680189172"><span class="hs-identifier hs-type">pu</span></a></span></span><span> </span><span id="local-6989586621680189171"><span class="annot"><a href="#local-6989586621680189171"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680189170"><span class="annot"><a href="#local-6989586621680189170"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680189169"><span class="annot"><a href="#local-6989586621680189169"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Schedule"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-var">Schedule</span></a></span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">data</span><span> </span><span id="Schedule"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-var">Schedule</span></a></span></span><span> </span><span id="local-6989586621680189519"><span class="annot"><a href="#local-6989586621680189519"><span class="hs-identifier hs-type">pu</span></a></span></span><span> </span><span id="local-6989586621680189518"><span class="annot"><a href="#local-6989586621680189518"><span class="hs-identifier hs-type">v</span></a></span></span><span> </span><span id="local-6989586621680189517"><span class="annot"><a href="#local-6989586621680189517"><span class="hs-identifier hs-type">x</span></a></span></span><span> </span><span id="local-6989586621680189516"><span class="annot"><a href="#local-6989586621680189516"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Schedule"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-var">Schedule</span></a></span></span><span>
 </span><span id="line-51"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="schProcess"><span class="annot"><span class="annottext">forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189169"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189171"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189170"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189169"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189516"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189518"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189517"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189516"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-52"></span><span>    </span><span class="hs-comment">-- ^ Defining process.</span><span>
 </span><span id="line-53"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="iProxy"><span class="annot"><span class="annottext">forall pu v x t. Schedule pu v x t -&gt; Proxy (Instruction pu)
-</span><a href="NITTA.Utils.ProcessDescription.html#iProxy"><span class="hs-identifier hs-var hs-var">iProxy</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189172"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span><span>
+</span><a href="NITTA.Utils.ProcessDescription.html#iProxy"><span class="hs-identifier hs-var hs-var">iProxy</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189519"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-54"></span><span>    </span><span class="hs-comment">-- ^ Proxy for process unit instruction, which is needed for API simplify. Without that,</span><span>
 </span><span id="line-55"></span><span>    </span><span class="hs-comment">--  for some function, the user needs to describe type explicitly.</span><span>
 </span><span id="line-56"></span><span>    </span><span class="hs-special">}</span><span>
 </span><span id="line-57"></span><span>
-</span><span id="line-58"></span><span class="hs-keyword">instance</span><span> </span><span class="hs-pragma">{-# OVERLAPS</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span id="local-6989586621680189145"><span id="local-6989586621680189146"><span id="local-6989586621680189147"><span id="local-6989586621680189148"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NextTick"><span class="hs-identifier hs-type">NextTick</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189148"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189147"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189146"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189145"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680189145"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-59"></span><span>    </span><span id="local-6989586621680188881"><span class="annot"><span class="annottext">nextTick :: Schedule pu v x t -&gt; t
+</span><span id="line-58"></span><span class="hs-keyword">instance</span><span> </span><span class="hs-pragma">{-# OVERLAPS</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span id="local-6989586621680189492"><span id="local-6989586621680189493"><span id="local-6989586621680189494"><span id="local-6989586621680189495"><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#NextTick"><span class="hs-identifier hs-type">NextTick</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189495"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189494"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189493"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189492"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680189492"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-59"></span><span>    </span><span id="local-6989586621680189228"><span class="annot"><span class="annottext">nextTick :: Schedule pu v x t -&gt; t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick"><span class="hs-identifier hs-var hs-var hs-var hs-var">nextTick</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall u t. NextTick u t =&gt; u -&gt; t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick"><span class="hs-identifier hs-var">nextTick</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
@@ -68,16 +68,16 @@ It also agreed to the process inspection.
 from the PU by the 'process' function.
 -}</span><span>
 </span><span id="line-64"></span><span id="execSchedule"><span class="annot"><span class="annottext">execSchedule :: u -&gt; State (Schedule u v x t) a -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#execSchedule"><span class="hs-identifier hs-var hs-var">execSchedule</span></a></span></span><span> </span><span id="local-6989586621680188876"><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680188876"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680188875"><span class="annot"><span class="annottext">State (Schedule u v x t) a
-</span><a href="#local-6989586621680188875"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
+</span><a href="NITTA.Utils.ProcessDescription.html#execSchedule"><span class="hs-identifier hs-var hs-var">execSchedule</span></a></span></span><span> </span><span id="local-6989586621680189223"><span class="annot"><span class="annottext">u
+</span><a href="#local-6989586621680189223"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680189222"><span class="annot"><span class="annottext">State (Schedule u v x t) a
+</span><a href="#local-6989586621680189222"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {u} {v} {x} {t} {a}.
 ProcessorUnit u v x t =&gt;
 u -&gt; State (Schedule u v x t) a -&gt; (a, Process t (StepInfo v x t))
 </span><a href="NITTA.Utils.ProcessDescription.html#runSchedule"><span class="hs-identifier hs-var">runSchedule</span></a></span><span> </span><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680188876"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">State (Schedule u v x t) a
-</span><a href="#local-6989586621680188875"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680189223"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">State (Schedule u v x t) a
+</span><a href="#local-6989586621680189222"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-65"></span><span>
 </span><span id="line-66"></span><span class="hs-comment">{- | Execute process builder and return new process description. The initial
 process state is passed explicetly.
@@ -89,10 +89,10 @@ processes from underlying units.
 -&gt; Process t (StepInfo v x t)
 -&gt; State (Schedule pu v x t) a
 -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#execScheduleWithProcess"><span class="hs-identifier hs-var hs-var">execScheduleWithProcess</span></a></span></span><span> </span><span id="local-6989586621680188874"><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680188874"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680188873"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188873"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621680188872"><span class="annot"><span class="annottext">State (Schedule pu v x t) a
-</span><a href="#local-6989586621680188872"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
+</span><a href="NITTA.Utils.ProcessDescription.html#execScheduleWithProcess"><span class="hs-identifier hs-var hs-var">execScheduleWithProcess</span></a></span></span><span> </span><span id="local-6989586621680189221"><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680189221"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680189220"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189220"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621680189219"><span class="annot"><span class="annottext">State (Schedule pu v x t) a
+</span><a href="#local-6989586621680189219"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {pu} {t} {v} {x} {a}.
 pu
@@ -100,28 +100,28 @@ pu
 -&gt; State (Schedule pu v x t) a
 -&gt; (a, Process t (StepInfo v x t))
 </span><a href="NITTA.Utils.ProcessDescription.html#runScheduleWithProcess"><span class="hs-identifier hs-var">runScheduleWithProcess</span></a></span><span> </span><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680188874"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188873"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">State (Schedule pu v x t) a
-</span><a href="#local-6989586621680188872"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680189221"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189220"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">State (Schedule pu v x t) a
+</span><a href="#local-6989586621680189219"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-73"></span><span>
 </span><span id="line-74"></span><span class="hs-comment">{- | Execute process builder and return list of new step UID and new process description. The initial
 process state is getting from the PU by the 'process' function.
 -}</span><span>
 </span><span id="line-77"></span><span id="runSchedule"><span class="annot"><span class="annottext">runSchedule :: u -&gt; State (Schedule u v x t) a -&gt; (a, Process t (StepInfo v x t))
-</span><a href="NITTA.Utils.ProcessDescription.html#runSchedule"><span class="hs-identifier hs-var hs-var">runSchedule</span></a></span></span><span> </span><span id="local-6989586621680188868"><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680188868"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680188867"><span class="annot"><span class="annottext">State (Schedule u v x t) a
-</span><a href="#local-6989586621680188867"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {t} {v} {x} {a}.
+</span><a href="NITTA.Utils.ProcessDescription.html#runSchedule"><span class="hs-identifier hs-var hs-var">runSchedule</span></a></span></span><span> </span><span id="local-6989586621680189215"><span class="annot"><span class="annottext">u
+</span><a href="#local-6989586621680189215"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680189214"><span class="annot"><span class="annottext">State (Schedule u v x t) a
+</span><a href="#local-6989586621680189214"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {t} {v} {x} {a}.
 pu
 -&gt; Process t (StepInfo v x t)
 -&gt; State (Schedule pu v x t) a
 -&gt; (a, Process t (StepInfo v x t))
 </span><a href="NITTA.Utils.ProcessDescription.html#runScheduleWithProcess"><span class="hs-identifier hs-var">runScheduleWithProcess</span></a></span><span> </span><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680188868"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall u v x t.
+</span><a href="#local-6989586621680189215"><span class="hs-identifier hs-var">pu</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall u v x t.
 ProcessorUnit u v x t =&gt;
 u -&gt; Process t (StepInfo v x t)
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#process"><span class="hs-identifier hs-var">process</span></a></span><span> </span><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680188868"><span class="hs-identifier hs-var">pu</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">State (Schedule u v x t) a
-</span><a href="#local-6989586621680188867"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680189215"><span class="hs-identifier hs-var">pu</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">State (Schedule u v x t) a
+</span><a href="#local-6989586621680189214"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-78"></span><span>
 </span><span id="line-79"></span><span class="hs-comment">{- | Execute process builder and return list of new step UID and new process description. The initial
 process state is passed explicetly.
@@ -130,62 +130,62 @@ process state is passed explicetly.
 -&gt; Process t (StepInfo v x t)
 -&gt; State (Schedule pu v x t) a
 -&gt; (a, Process t (StepInfo v x t))
-</span><a href="NITTA.Utils.ProcessDescription.html#runScheduleWithProcess"><span class="hs-identifier hs-var hs-var">runScheduleWithProcess</span></a></span></span><span> </span><span id="local-6989586621680188865"><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680188865"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680188864"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188864"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621680188863"><span class="annot"><span class="annottext">State (Schedule pu v x t) a
-</span><a href="#local-6989586621680188863"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-83"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680188862"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188862"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680188861"><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188861"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Utils.ProcessDescription.html#runScheduleWithProcess"><span class="hs-identifier hs-var hs-var">runScheduleWithProcess</span></a></span></span><span> </span><span id="local-6989586621680189212"><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680189212"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span id="local-6989586621680189211"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189211"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621680189210"><span class="annot"><span class="annottext">State (Schedule pu v x t) a
+</span><a href="#local-6989586621680189210"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680189209"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680189209"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680189208"><span class="annot"><span class="annottext">Schedule pu v x t
+</span><a href="#local-6989586621680189208"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-84"></span><span>            </span><span class="annot"><span class="annottext">forall s a. State s a -&gt; s -&gt; (a, s)
 </span><span class="hs-identifier hs-var">runState</span></span><span>
 </span><span id="line-85"></span><span>                </span><span class="annot"><span class="annottext">State (Schedule pu v x t) a
-</span><a href="#local-6989586621680188863"><span class="hs-identifier hs-var">st</span></a></span><span>
+</span><a href="#local-6989586621680189210"><span class="hs-identifier hs-var">st</span></a></span><span>
 </span><span id="line-86"></span><span>                </span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span>
 </span><span id="line-87"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188864"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680189211"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-88"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">iProxy :: Proxy (Instruction pu)
 </span><a href="NITTA.Utils.ProcessDescription.html#iProxy"><span class="hs-identifier hs-var">iProxy</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall pu. pu -&gt; Proxy (Instruction pu)
-</span><a href="#local-6989586621680188859"><span class="hs-identifier hs-var">ip</span></a></span><span> </span><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680188865"><span class="hs-identifier hs-var">pu</span></a></span><span>
+</span><a href="#local-6989586621680189206"><span class="hs-identifier hs-var">ip</span></a></span><span> </span><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680189212"><span class="hs-identifier hs-var">pu</span></a></span><span>
 </span><span id="line-89"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-90"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188862"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189209"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188861"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680189208"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-91"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-92"></span><span>        </span><span id="local-6989586621680189106"><span class="annot"><a href="#local-6989586621680188859"><span class="hs-identifier hs-type">ip</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680189106"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189106"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span></span><span>
-</span><span id="line-93"></span><span>        </span><span id="local-6989586621680188859"><span class="annot"><span class="annottext">ip :: forall pu. pu -&gt; Proxy (Instruction pu)
-</span><a href="#local-6989586621680188859"><span class="hs-identifier hs-var hs-var">ip</span></a></span></span><span> </span><span class="annot"><span class="annottext">pu
+</span><span id="line-92"></span><span>        </span><span id="local-6989586621680189453"><span class="annot"><a href="#local-6989586621680189206"><span class="hs-identifier hs-type">ip</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680189453"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189453"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-93"></span><span>        </span><span id="local-6989586621680189206"><span class="annot"><span class="annottext">ip :: forall pu. pu -&gt; Proxy (Instruction pu)
+</span><a href="#local-6989586621680189206"><span class="hs-identifier hs-var hs-var">ip</span></a></span></span><span> </span><span class="annot"><span class="annottext">pu
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {k} (t :: k). Proxy t
 </span><span class="hs-identifier hs-var">Proxy</span></span><span>
 </span><span id="line-94"></span><span>
 </span><span id="line-95"></span><span class="hs-comment">-- | Add process step with passed the time and info.</span><span>
 </span><span id="line-96"></span><span id="scheduleStep"><span class="annot"><span class="annottext">scheduleStep :: Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var hs-var">scheduleStep</span></a></span></span><span> </span><span id="local-6989586621680188855"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188855"><span class="hs-identifier hs-var">placeInTime</span></a></span></span><span> </span><span id="local-6989586621680188854"><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680188854"><span class="hs-identifier hs-var">stepInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var hs-var">scheduleStep</span></a></span></span><span> </span><span id="local-6989586621680189202"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189202"><span class="hs-identifier hs-var">placeInTime</span></a></span></span><span> </span><span id="local-6989586621680189201"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680189201"><span class="hs-identifier hs-var">stepInfo</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-97"></span><span>    </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 (ProcessStepID -&gt; Step t (StepInfo v x t)) -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var">scheduleStep'</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680188852"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188852"><span class="hs-identifier hs-var">uid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall t i. ProcessStepID -&gt; Interval t -&gt; i -&gt; Step t i
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var">scheduleStep'</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680189199"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189199"><span class="hs-identifier hs-var">uid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall t i. ProcessStepID -&gt; Interval t -&gt; i -&gt; Step t i
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-var">Step</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188852"><span class="hs-identifier hs-var">uid</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188855"><span class="hs-identifier hs-var">placeInTime</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680188854"><span class="hs-identifier hs-var">stepInfo</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680189199"><span class="hs-identifier hs-var">uid</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189202"><span class="hs-identifier hs-var">placeInTime</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="#local-6989586621680189201"><span class="hs-identifier hs-var">stepInfo</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-98"></span><span>
 </span><span id="line-99"></span><span id="scheduleStep%27"><span class="annot"><span class="annottext">scheduleStep' :: (ProcessStepID -&gt; Step t (StepInfo v x t)) -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var hs-var">scheduleStep'</span></a></span></span><span> </span><span id="local-6989586621680188840"><span class="annot"><span class="annottext">ProcessStepID -&gt; Step t (StepInfo v x t)
-</span><a href="#local-6989586621680188840"><span class="hs-identifier hs-var">mkStep</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-100"></span><span>    </span><span id="local-6989586621680188839"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
-</span><a href="#local-6989586621680188839"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680188838"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188838"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188836"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var hs-var">scheduleStep'</span></a></span></span><span> </span><span id="local-6989586621680189187"><span class="annot"><span class="annottext">ProcessStepID -&gt; Step t (StepInfo v x t)
+</span><a href="#local-6989586621680189187"><span class="hs-identifier hs-var">mkStep</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621680189186"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
+</span><a href="#local-6989586621680189186"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
+</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680189185"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189185"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680189183"><span class="annot"><span class="annottext">ProcessStepID
 nextUid :: forall t i. Process t i -&gt; ProcessStepID
 nextUid :: ProcessStepID
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#nextUid"><span class="hs-identifier hs-var hs-var">nextUid</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680188834"><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#nextUid"><span class="hs-identifier hs-var hs-var">nextUid</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680189181"><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
 steps :: forall t i. Process t i -&gt; [Step t i]
 steps :: [Step t (StepInfo v x t)]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var hs-var">steps</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
@@ -193,38 +193,38 @@ steps :: [Step t (StepInfo v x t)]
 </span><span id="line-101"></span><span>    </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">put</span></span><span>
 </span><span id="line-102"></span><span>        </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188839"><span class="hs-identifier hs-var">sch</span></a></span><span>
+</span><a href="#local-6989586621680189186"><span class="hs-identifier hs-var">sch</span></a></span><span>
 </span><span id="line-103"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-104"></span><span>                </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188838"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680189185"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-105"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">nextUid :: ProcessStepID
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextUid"><span class="hs-identifier hs-var">nextUid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Enum a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">succ</span></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188836"><span class="hs-identifier hs-var">nextUid</span></a></span><span>
+</span><a href="#local-6989586621680189183"><span class="hs-identifier hs-var">nextUid</span></a></span><span>
 </span><span id="line-106"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">steps :: [Step t (StepInfo v x t)]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ProcessStepID -&gt; Step t (StepInfo v x t)
-</span><a href="#local-6989586621680188840"><span class="hs-identifier hs-var">mkStep</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188836"><span class="hs-identifier hs-var">nextUid</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680189187"><span class="hs-identifier hs-var">mkStep</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189183"><span class="hs-identifier hs-var">nextUid</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[Step t (StepInfo v x t)]
-</span><a href="#local-6989586621680188834"><span class="hs-identifier hs-var">steps</span></a></span><span>
+</span><a href="#local-6989586621680189181"><span class="hs-identifier hs-var">steps</span></a></span><span>
 </span><span id="line-107"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-108"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-109"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188836"><span class="hs-identifier hs-var">nextUid</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680189183"><span class="hs-identifier hs-var">nextUid</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-110"></span><span>
 </span><span id="line-111"></span><span class="hs-comment">{- | Add to the process description information about vertical relations, which are defined by the
 Cartesian product of high and low lists.
 -}</span><span>
 </span><span id="line-114"></span><span id="establishVerticalRelations"><span class="annot"><span class="annottext">establishVerticalRelations :: [ProcessStepID] -&gt; [ProcessStepID] -&gt; m ()
-</span><a href="NITTA.Utils.ProcessDescription.html#establishVerticalRelations"><span class="hs-identifier hs-var hs-var">establishVerticalRelations</span></a></span></span><span> </span><span id="local-6989586621680188824"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188824"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span id="local-6989586621680188823"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188823"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-115"></span><span>    </span><span id="local-6989586621680188822"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
-</span><a href="#local-6989586621680188822"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680188821"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188821"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188820"><span class="annot"><span class="annottext">[Relation]
+</span><a href="NITTA.Utils.ProcessDescription.html#establishVerticalRelations"><span class="hs-identifier hs-var hs-var">establishVerticalRelations</span></a></span></span><span> </span><span id="local-6989586621680189171"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189171"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span id="local-6989586621680189170"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189170"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-115"></span><span>    </span><span id="local-6989586621680189169"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
+</span><a href="#local-6989586621680189169"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
+</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680189168"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189168"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680189167"><span class="annot"><span class="annottext">[Relation]
 relations :: forall t i. Process t i -&gt; [Relation]
 relations :: [Relation]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#relations"><span class="hs-identifier hs-var hs-var">relations</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
@@ -232,22 +232,22 @@ relations :: [Relation]
 </span><span id="line-116"></span><span>    </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">put</span></span><span>
 </span><span id="line-117"></span><span>        </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188822"><span class="hs-identifier hs-var">sch</span></a></span><span>
+</span><a href="#local-6989586621680189169"><span class="hs-identifier hs-var">sch</span></a></span><span>
 </span><span id="line-118"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-119"></span><span>                </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188821"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680189168"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-120"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">relations :: [Relation]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#relations"><span class="hs-identifier hs-var">relations</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ProcessStepID -&gt; ProcessStepID -&gt; Relation
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#Vertical"><span class="hs-identifier hs-var">Vertical</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188817"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188816"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680188817"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188817"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188824"><span class="hs-identifier hs-var">high</span></a></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680188816"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188816"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188823"><span class="hs-identifier hs-var">low</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680189164"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189163"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680189164"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189164"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189171"><span class="hs-identifier hs-var">high</span></a></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680189163"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189163"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189170"><span class="hs-identifier hs-var">low</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Relation]
-</span><a href="#local-6989586621680188820"><span class="hs-identifier hs-var">relations</span></a></span><span>
+</span><a href="#local-6989586621680189167"><span class="hs-identifier hs-var">relations</span></a></span><span>
 </span><span id="line-121"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-122"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-123"></span><span>
@@ -255,44 +255,44 @@ relations :: [Relation]
 level), which are defined by the Cartesian product of high and low lists.
 -}</span><span>
 </span><span id="line-127"></span><span id="establishHorizontalRelations"><span class="annot"><span class="annottext">establishHorizontalRelations :: [ProcessStepID] -&gt; [ProcessStepID] -&gt; m ()
-</span><a href="NITTA.Utils.ProcessDescription.html#establishHorizontalRelations"><span class="hs-identifier hs-var hs-var">establishHorizontalRelations</span></a></span></span><span> </span><span id="local-6989586621680188810"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188810"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span id="local-6989586621680188809"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188809"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-128"></span><span>    </span><span id="local-6989586621680188808"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
-</span><a href="#local-6989586621680188808"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680188807"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188807"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188806"><span class="annot"><span class="annottext">[Relation]
+</span><a href="NITTA.Utils.ProcessDescription.html#establishHorizontalRelations"><span class="hs-identifier hs-var hs-var">establishHorizontalRelations</span></a></span></span><span> </span><span id="local-6989586621680189157"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189157"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span id="local-6989586621680189156"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189156"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-128"></span><span>    </span><span id="local-6989586621680189155"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
+</span><a href="#local-6989586621680189155"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
+</span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="local-6989586621680189154"><span class="annot"><span class="annottext">p :: Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189154"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span class="hs-special">{</span><span id="local-6989586621680189153"><span class="annot"><span class="annottext">[Relation]
 relations :: [Relation]
 relations :: forall t i. Process t i -&gt; [Relation]
-</span><a href="#local-6989586621680188806"><span class="hs-identifier hs-var hs-var">relations</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="#local-6989586621680189153"><span class="hs-identifier hs-var hs-var">relations</span></a></span></span><span class="hs-special">}</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-129"></span><span>    </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">put</span></span><span>
 </span><span id="line-130"></span><span>        </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188808"><span class="hs-identifier hs-var">sch</span></a></span><span>
+</span><a href="#local-6989586621680189155"><span class="hs-identifier hs-var">sch</span></a></span><span>
 </span><span id="line-131"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-132"></span><span>                </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188807"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680189154"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-133"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">relations :: [Relation]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#relations"><span class="hs-identifier hs-var">relations</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ProcessStepID -&gt; ProcessStepID -&gt; Relation
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#Horizontal"><span class="hs-identifier hs-var">Horizontal</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188804"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188803"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680188804"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188804"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188810"><span class="hs-identifier hs-var">high</span></a></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680188803"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188803"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188809"><span class="hs-identifier hs-var">low</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680189151"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189150"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680189151"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189151"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189157"><span class="hs-identifier hs-var">high</span></a></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680189150"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680189150"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189156"><span class="hs-identifier hs-var">low</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Relation]
-</span><a href="#local-6989586621680188806"><span class="hs-identifier hs-var">relations</span></a></span><span>
+</span><a href="#local-6989586621680189153"><span class="hs-identifier hs-var">relations</span></a></span><span>
 </span><span id="line-134"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-135"></span><span>            </span><span class="hs-special">}</span><span>
 </span><span id="line-136"></span><span>
 </span><span id="line-137"></span><span id="scheduleFunctionBind"><span class="annot"><span class="annottext">scheduleFunctionBind :: a -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionBind"><span class="hs-identifier hs-var hs-var">scheduleFunctionBind</span></a></span></span><span> </span><span id="local-6989586621680188792"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188792"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-138"></span><span>    </span><span id="local-6989586621680188791"><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188791"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionBind"><span class="hs-identifier hs-var hs-var">scheduleFunctionBind</span></a></span></span><span> </span><span id="local-6989586621680189139"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680189139"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-138"></span><span>    </span><span id="local-6989586621680189138"><span class="annot"><span class="annottext">Schedule pu v x t
+</span><a href="#local-6989586621680189138"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-139"></span><span>    </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
@@ -301,20 +301,20 @@ Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><span class="hs-identifier hs-var">singleton</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall u t. NextTick u t =&gt; u -&gt; t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick"><span class="hs-identifier hs-var">nextTick</span></a></span><span> </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188791"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189138"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x t. String -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#CADStep"><span class="hs-identifier hs-var">CADStep</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;bind &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188792"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680189139"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-140"></span><span>
 </span><span id="line-141"></span><span id="scheduleFunctionRevoke"><span class="annot"><span class="annottext">scheduleFunctionRevoke :: a -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionRevoke"><span class="hs-identifier hs-var hs-var">scheduleFunctionRevoke</span></a></span></span><span> </span><span id="local-6989586621680188779"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188779"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-142"></span><span>    </span><span id="local-6989586621680188778"><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188778"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionRevoke"><span class="hs-identifier hs-var hs-var">scheduleFunctionRevoke</span></a></span></span><span> </span><span id="local-6989586621680189126"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680189126"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-142"></span><span>    </span><span id="local-6989586621680189125"><span class="annot"><span class="annottext">Schedule pu v x t
+</span><a href="#local-6989586621680189125"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-143"></span><span>    </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
@@ -323,20 +323,20 @@ Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><span class="hs-identifier hs-var">singleton</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall u t. NextTick u t =&gt; u -&gt; t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick"><span class="hs-identifier hs-var">nextTick</span></a></span><span> </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188778"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189125"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x t. String -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#CADStep"><span class="hs-identifier hs-var">CADStep</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;revoke &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188779"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680189126"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-144"></span><span>
 </span><span id="line-145"></span><span id="scheduleAllocation"><span class="annot"><span class="annottext">scheduleAllocation :: a -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleAllocation"><span class="hs-identifier hs-var hs-var">scheduleAllocation</span></a></span></span><span> </span><span id="local-6989586621680188765"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188765"><span class="hs-identifier hs-var">alloc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-146"></span><span>    </span><span id="local-6989586621680188764"><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188764"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleAllocation"><span class="hs-identifier hs-var hs-var">scheduleAllocation</span></a></span></span><span> </span><span id="local-6989586621680189112"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680189112"><span class="hs-identifier hs-var">alloc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-146"></span><span>    </span><span id="local-6989586621680189111"><span class="annot"><span class="annottext">Schedule pu v x t
+</span><a href="#local-6989586621680189111"><span class="hs-identifier hs-var">schedule</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-147"></span><span>    </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
@@ -345,35 +345,35 @@ Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><span class="hs-identifier hs-var">singleton</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall u t. NextTick u t =&gt; u -&gt; t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick"><span class="hs-identifier hs-var">nextTick</span></a></span><span> </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188764"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189111"><span class="hs-identifier hs-var">schedule</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a v x t. (Typeable a, Show a, Eq a) =&gt; a -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#AllocationStep"><span class="hs-identifier hs-var">AllocationStep</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188765"><span class="hs-identifier hs-var">alloc</span></a></span><span>
+</span><a href="#local-6989586621680189112"><span class="hs-identifier hs-var">alloc</span></a></span><span>
 </span><span id="line-148"></span><span>
 </span><span id="line-149"></span><span class="hs-comment">-- | Add to the process description information about function evaluation.</span><span>
 </span><span id="line-150"></span><span id="scheduleFunction"><span class="annot"><span class="annottext">scheduleFunction :: Interval t -&gt; F v x -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunction"><span class="hs-identifier hs-var hs-var">scheduleFunction</span></a></span></span><span> </span><span id="local-6989586621680188760"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188760"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680188759"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188759"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunction"><span class="hs-identifier hs-var hs-var">scheduleFunction</span></a></span></span><span> </span><span id="local-6989586621680189107"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189107"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680189106"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680189106"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
 Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var">scheduleStep</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188760"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189107"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x t. F v x -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#IntermediateStep"><span class="hs-identifier hs-var">IntermediateStep</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188759"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680189106"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-151"></span><span>
 </span><span id="line-152"></span><span id="scheduleRefactoring"><span class="annot"><span class="annottext">scheduleRefactoring :: Interval t -&gt; ref -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleRefactoring"><span class="hs-identifier hs-var hs-var">scheduleRefactoring</span></a></span></span><span> </span><span id="local-6989586621680188749"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188749"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680188748"><span class="annot"><span class="annottext">ref
-</span><a href="#local-6989586621680188748"><span class="hs-identifier hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleRefactoring"><span class="hs-identifier hs-var hs-var">scheduleRefactoring</span></a></span></span><span> </span><span id="local-6989586621680189096"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189096"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680189095"><span class="annot"><span class="annottext">ref
+</span><a href="#local-6989586621680189095"><span class="hs-identifier hs-var">ref</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
 Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var">scheduleStep</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188749"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189096"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a v x t. (Typeable a, Show a, Eq a) =&gt; a -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#RefactorStep"><span class="hs-identifier hs-var">RefactorStep</span></a></span><span> </span><span class="annot"><span class="annottext">ref
-</span><a href="#local-6989586621680188748"><span class="hs-identifier hs-var">ref</span></a></span><span>
+</span><a href="#local-6989586621680189095"><span class="hs-identifier hs-var">ref</span></a></span><span>
 </span><span id="line-153"></span><span>
 </span><span id="line-154"></span><span class="hs-comment">{- | Schedule function and establish vertical relations between bind step,
 function step, and all related endpoints.
@@ -382,55 +382,55 @@ function step, and all related endpoints.
 -&gt; F v x
 -&gt; Interval t
 -&gt; StateT (Schedule pu v x t) Identity [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionFinish"><span class="hs-identifier hs-var hs-var">scheduleFunctionFinish</span></a></span></span><span> </span><span id="local-6989586621680188728"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188728"><span class="hs-identifier hs-var">bPID</span></a></span></span><span> </span><span id="local-6989586621680188727"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188727"><span class="hs-identifier hs-var">function</span></a></span></span><span> </span><span id="local-6989586621680188726"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188726"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-158"></span><span>    </span><span id="local-6989586621680188725"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188725"><span class="hs-identifier hs-var">fPID</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionFinish"><span class="hs-identifier hs-var hs-var">scheduleFunctionFinish</span></a></span></span><span> </span><span id="local-6989586621680189075"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189075"><span class="hs-identifier hs-var">bPID</span></a></span></span><span> </span><span id="local-6989586621680189074"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680189074"><span class="hs-identifier hs-var">function</span></a></span></span><span> </span><span id="local-6989586621680189073"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189073"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-158"></span><span>    </span><span id="local-6989586621680189072"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189072"><span class="hs-identifier hs-var">fPID</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
 Interval t -&gt; F v x -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunction"><span class="hs-identifier hs-var">scheduleFunction</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188726"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188727"><span class="hs-identifier hs-var">function</span></a></span><span>
+</span><a href="#local-6989586621680189073"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680189074"><span class="hs-identifier hs-var">function</span></a></span><span>
 </span><span id="line-159"></span><span>    </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 [ProcessStepID] -&gt; [ProcessStepID] -&gt; m ()
 </span><a href="NITTA.Utils.ProcessDescription.html#establishVerticalRelations"><span class="hs-identifier hs-var">establishVerticalRelations</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188728"><span class="hs-identifier hs-var">bPID</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188725"><span class="hs-identifier hs-var">fPID</span></a></span><span>
-</span><span id="line-160"></span><span>    </span><span id="local-6989586621680188724"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188724"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall pu v x t.
+</span><a href="#local-6989586621680189075"><span class="hs-identifier hs-var">bPID</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189072"><span class="hs-identifier hs-var">fPID</span></a></span><span>
+</span><span id="line-160"></span><span>    </span><span id="local-6989586621680189071"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><a href="#local-6989586621680189071"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall pu v x t.
 State (Schedule pu v x t) (Process t (StepInfo v x t))
 </span><a href="NITTA.Utils.ProcessDescription.html#getProcessSlice"><span class="hs-identifier hs-var">getProcessSlice</span></a></span><span>
-</span><span id="line-161"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680188714"><span class="annot"><span class="annottext">low :: [ProcessStepID]
-</span><a href="#local-6989586621680188714"><span class="hs-identifier hs-var hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span id="line-161"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680189061"><span class="annot"><span class="annottext">low :: [ProcessStepID]
+</span><a href="#local-6989586621680189061"><span class="hs-identifier hs-var hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Step t i -&gt; ProcessStepID
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pID"><span class="hs-identifier hs-var">pID</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {a} {t} {x} {t}.
 Ord a =&gt;
 Process t (StepInfo a x t) -&gt; Set a -&gt; [Step t (StepInfo a x t)]
 </span><a href="NITTA.Utils.ProcessDescription.html#relatedEndpoints"><span class="hs-identifier hs-var">relatedEndpoints</span></a></span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188724"><span class="hs-identifier hs-var">process_</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189071"><span class="hs-identifier hs-var">process_</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188727"><span class="hs-identifier hs-var">function</span></a></span><span>
+</span><a href="#local-6989586621680189074"><span class="hs-identifier hs-var">function</span></a></span><span>
 </span><span id="line-162"></span><span>    </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 [ProcessStepID] -&gt; [ProcessStepID] -&gt; m ()
 </span><a href="NITTA.Utils.ProcessDescription.html#establishVerticalRelations"><span class="hs-identifier hs-var">establishVerticalRelations</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188725"><span class="hs-identifier hs-var">fPID</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188714"><span class="hs-identifier hs-var">low</span></a></span><span>
+</span><a href="#local-6989586621680189072"><span class="hs-identifier hs-var">fPID</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189061"><span class="hs-identifier hs-var">low</span></a></span><span>
 </span><span id="line-163"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188725"><span class="hs-identifier hs-var">fPID</span></a></span><span>
+</span><a href="#local-6989586621680189072"><span class="hs-identifier hs-var">fPID</span></a></span><span>
 </span><span id="line-164"></span><span>
 </span><span id="line-165"></span><span id="scheduleFunctionFinish_"><span class="annot"><span class="annottext">scheduleFunctionFinish_ :: [ProcessStepID]
 -&gt; F v x -&gt; Interval t -&gt; StateT (Schedule pu v x t) Identity ()
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionFinish_"><span class="hs-identifier hs-var hs-var">scheduleFunctionFinish_</span></a></span></span><span> </span><span id="local-6989586621680188695"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188695"><span class="hs-identifier hs-var">bPID</span></a></span></span><span> </span><span id="local-6989586621680188694"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188694"><span class="hs-identifier hs-var">function</span></a></span></span><span> </span><span id="local-6989586621680188693"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188693"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionFinish_"><span class="hs-identifier hs-var hs-var">scheduleFunctionFinish_</span></a></span></span><span> </span><span id="local-6989586621680189042"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189042"><span class="hs-identifier hs-var">bPID</span></a></span></span><span> </span><span id="local-6989586621680189041"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680189041"><span class="hs-identifier hs-var">function</span></a></span></span><span> </span><span id="local-6989586621680189040"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189040"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
 </span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t} {pu}.
 (Ord v, Typeable v, IsString v, ToString v, Suffix v,
@@ -440,158 +440,158 @@ MonadState (Schedule pu v x t) m =&gt;
 -&gt; Interval t
 -&gt; StateT (Schedule pu v x t) Identity [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleFunctionFinish"><span class="hs-identifier hs-var">scheduleFunctionFinish</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188695"><span class="hs-identifier hs-var">bPID</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680188694"><span class="hs-identifier hs-var">function</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188693"><span class="hs-identifier hs-var">at</span></a></span><span>
+</span><a href="#local-6989586621680189042"><span class="hs-identifier hs-var">bPID</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680189041"><span class="hs-identifier hs-var">function</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680189040"><span class="hs-identifier hs-var">at</span></a></span><span>
 </span><span id="line-166"></span><span>
 </span><span id="line-167"></span><span class="hs-comment">{- | Add to the process description information about endpoint behaviour, and it's low-level
 implementation (on instruction level). Vertical relations connect endpoint level and instruction
 level steps.
 -}</span><span>
 </span><span id="line-171"></span><span id="scheduleEndpoint"><span class="annot"><span class="annottext">scheduleEndpoint :: EndpointSt v (Interval t) -&gt; m [ProcessStepID] -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleEndpoint"><span class="hs-identifier hs-var hs-var">scheduleEndpoint</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Endpoint.html#EndpointSt"><span class="hs-identifier hs-type">EndpointSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188682"><span class="annot"><span class="annottext">Interval t
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleEndpoint"><span class="hs-identifier hs-var hs-var">scheduleEndpoint</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Endpoint.html#EndpointSt"><span class="hs-identifier hs-type">EndpointSt</span></a></span><span class="hs-special">{</span><span id="local-6989586621680189029"><span class="annot"><span class="annottext">Interval t
 epAt :: forall v tp. EndpointSt v tp -&gt; tp
 epAt :: Interval t
-</span><a href="NITTA.Model.Problems.Endpoint.html#epAt"><span class="hs-identifier hs-var hs-var">epAt</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680188680"><span class="annot"><span class="annottext">EndpointRole v
+</span><a href="NITTA.Model.Problems.Endpoint.html#epAt"><span class="hs-identifier hs-var hs-var">epAt</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680189027"><span class="annot"><span class="annottext">EndpointRole v
 epRole :: forall v tp. EndpointSt v tp -&gt; EndpointRole v
 epRole :: EndpointRole v
-</span><a href="NITTA.Model.Problems.Endpoint.html#epRole"><span class="hs-identifier hs-var hs-var">epRole</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680188678"><span class="annot"><span class="annottext">m [ProcessStepID]
-</span><a href="#local-6989586621680188678"><span class="hs-identifier hs-var">codeGen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-172"></span><span>    </span><span id="local-6989586621680188677"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188677"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
+</span><a href="NITTA.Model.Problems.Endpoint.html#epRole"><span class="hs-identifier hs-var hs-var">epRole</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680189025"><span class="annot"><span class="annottext">m [ProcessStepID]
+</span><a href="#local-6989586621680189025"><span class="hs-identifier hs-var">codeGen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-172"></span><span>    </span><span id="local-6989586621680189024"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189024"><span class="hs-identifier hs-var">high</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
 Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var">scheduleStep</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188682"><span class="hs-identifier hs-var">epAt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680189029"><span class="hs-identifier hs-var">epAt</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall v x t. EndpointRole v -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#EndpointRoleStep"><span class="hs-identifier hs-var">EndpointRoleStep</span></a></span><span> </span><span class="annot"><span class="annottext">EndpointRole v
-</span><a href="#local-6989586621680188680"><span class="hs-identifier hs-var">epRole</span></a></span><span>
-</span><span id="line-173"></span><span>    </span><span id="local-6989586621680188675"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188675"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m [ProcessStepID]
-</span><a href="#local-6989586621680188678"><span class="hs-identifier hs-var">codeGen</span></a></span><span>
+</span><a href="#local-6989586621680189027"><span class="hs-identifier hs-var">epRole</span></a></span><span>
+</span><span id="line-173"></span><span>    </span><span id="local-6989586621680189022"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189022"><span class="hs-identifier hs-var">low</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m [ProcessStepID]
+</span><a href="#local-6989586621680189025"><span class="hs-identifier hs-var">codeGen</span></a></span><span>
 </span><span id="line-174"></span><span>    </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 [ProcessStepID] -&gt; [ProcessStepID] -&gt; m ()
 </span><a href="NITTA.Utils.ProcessDescription.html#establishVerticalRelations"><span class="hs-identifier hs-var">establishVerticalRelations</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188677"><span class="hs-identifier hs-var">high</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188675"><span class="hs-identifier hs-var">low</span></a></span><span>
+</span><a href="#local-6989586621680189024"><span class="hs-identifier hs-var">high</span></a></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680189022"><span class="hs-identifier hs-var">low</span></a></span><span>
 </span><span id="line-175"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188677"><span class="hs-identifier hs-var">high</span></a></span><span>
+</span><a href="#local-6989586621680189024"><span class="hs-identifier hs-var">high</span></a></span><span>
 </span><span id="line-176"></span><span>
 </span><span id="line-177"></span><span id="scheduleEndpoint_"><span class="annot"><span class="annottext">scheduleEndpoint_ :: EndpointSt v (Interval t) -&gt; f [ProcessStepID] -&gt; f ()
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleEndpoint_"><span class="hs-identifier hs-var hs-var">scheduleEndpoint_</span></a></span></span><span> </span><span id="local-6989586621680188666"><span class="annot"><span class="annottext">EndpointSt v (Interval t)
-</span><a href="#local-6989586621680188666"><span class="hs-identifier hs-var">ep</span></a></span></span><span> </span><span id="local-6989586621680188665"><span class="annot"><span class="annottext">f [ProcessStepID]
-</span><a href="#local-6989586621680188665"><span class="hs-identifier hs-var">codeGen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleEndpoint_"><span class="hs-identifier hs-var hs-var">scheduleEndpoint_</span></a></span></span><span> </span><span id="local-6989586621680189013"><span class="annot"><span class="annottext">EndpointSt v (Interval t)
+</span><a href="#local-6989586621680189013"><span class="hs-identifier hs-var">ep</span></a></span></span><span> </span><span id="local-6989586621680189012"><span class="annot"><span class="annottext">f [ProcessStepID]
+</span><a href="#local-6989586621680189012"><span class="hs-identifier hs-var">codeGen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
 </span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 EndpointSt v (Interval t) -&gt; m [ProcessStepID] -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleEndpoint"><span class="hs-identifier hs-var">scheduleEndpoint</span></a></span><span> </span><span class="annot"><span class="annottext">EndpointSt v (Interval t)
-</span><a href="#local-6989586621680188666"><span class="hs-identifier hs-var">ep</span></a></span><span> </span><span class="annot"><span class="annottext">f [ProcessStepID]
-</span><a href="#local-6989586621680188665"><span class="hs-identifier hs-var">codeGen</span></a></span><span>
+</span><a href="#local-6989586621680189013"><span class="hs-identifier hs-var">ep</span></a></span><span> </span><span class="annot"><span class="annottext">f [ProcessStepID]
+</span><a href="#local-6989586621680189012"><span class="hs-identifier hs-var">codeGen</span></a></span><span>
 </span><span id="line-178"></span><span>
 </span><span id="line-179"></span><span class="hs-comment">{- | Add to the process description information about instruction evaluation.
 Unsafe means: without instruction collision check and nextTick consistency.
 -}</span><span>
 </span><span id="line-182"></span><span id="scheduleInstructionUnsafe"><span class="annot"><span class="annottext">scheduleInstructionUnsafe :: Interval t -&gt; Instruction pu -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleInstructionUnsafe"><span class="hs-identifier hs-var hs-var">scheduleInstructionUnsafe</span></a></span></span><span> </span><span id="local-6989586621680188646"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188646"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span id="local-6989586621680188645"><span class="annot"><span class="annottext">Instruction pu
-</span><a href="#local-6989586621680188645"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-183"></span><span>    </span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188644"><span class="annot"><span class="annottext">Proxy (Instruction pu)
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleInstructionUnsafe"><span class="hs-identifier hs-var hs-var">scheduleInstructionUnsafe</span></a></span></span><span> </span><span id="local-6989586621680188993"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680188993"><span class="hs-identifier hs-var">at</span></a></span></span><span> </span><span id="local-6989586621680188992"><span class="annot"><span class="annottext">Instruction pu
+</span><a href="#local-6989586621680188992"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-183"></span><span>    </span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188991"><span class="annot"><span class="annottext">Proxy (Instruction pu)
 iProxy :: Proxy (Instruction pu)
 iProxy :: forall pu v x t. Schedule pu v x t -&gt; Proxy (Instruction pu)
-</span><a href="#local-6989586621680188644"><span class="hs-identifier hs-var hs-var">iProxy</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="#local-6989586621680188991"><span class="hs-identifier hs-var hs-var">iProxy</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
-</span><span id="line-184"></span><span>    </span><span id="local-6989586621680188643"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188643"><span class="hs-identifier hs-var">buf</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
+</span><span id="line-184"></span><span>    </span><span id="local-6989586621680188990"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680188990"><span class="hs-identifier hs-var">buf</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 MonadState (Schedule pu v x t) m =&gt;
 Interval t -&gt; StepInfo v x t -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep"><span class="hs-identifier hs-var">scheduleStep</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188646"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680188993"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall pu v x t.
 (Show (Instruction pu), Typeable (Instruction pu)) =&gt;
 Instruction pu -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#InstructionStep"><span class="hs-identifier hs-var">InstructionStep</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Instruction pu
-</span><a href="#local-6989586621680188645"><span class="hs-identifier hs-var">instr</span></a></span><span> </span><span class="annot"><span class="annottext">forall a (proxy :: * -&gt; *). a -&gt; proxy a -&gt; a
+</span><a href="#local-6989586621680188992"><span class="hs-identifier hs-var">instr</span></a></span><span> </span><span class="annot"><span class="annottext">forall a (proxy :: * -&gt; *). a -&gt; proxy a -&gt; a
 </span><span class="hs-operator hs-var">`asProxyTypeOf`</span></span><span> </span><span class="annot"><span class="annottext">Proxy (Instruction pu)
-</span><a href="#local-6989586621680188644"><span class="hs-identifier hs-var">iProxy</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680188991"><span class="hs-identifier hs-var">iProxy</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-185"></span><span>    </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 t -&gt; m ()
-</span><a href="#local-6989586621680188641"><span class="hs-identifier hs-var">updateTick</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680188988"><span class="hs-identifier hs-var">updateTick</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">sup</span></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188646"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680188993"><span class="hs-identifier hs-var">at</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">t
 </span><span class="hs-number">1</span></span><span>
 </span><span id="line-186"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188643"><span class="hs-identifier hs-var">buf</span></a></span><span>
+</span><a href="#local-6989586621680188990"><span class="hs-identifier hs-var">buf</span></a></span><span>
 </span><span id="line-187"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-188"></span><span>        </span><span id="local-6989586621680188641"><span class="annot"><span class="annottext">updateTick :: t -&gt; m ()
-</span><a href="#local-6989586621680188641"><span class="hs-identifier hs-var hs-var">updateTick</span></a></span></span><span> </span><span id="local-6989586621680188634"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680188634"><span class="hs-identifier hs-var">tick</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-189"></span><span>            </span><span id="local-6989586621680188633"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
-</span><a href="#local-6989586621680188633"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188632"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><span id="line-188"></span><span>        </span><span id="local-6989586621680188988"><span class="annot"><span class="annottext">updateTick :: t -&gt; m ()
+</span><a href="#local-6989586621680188988"><span class="hs-identifier hs-var hs-var">updateTick</span></a></span></span><span> </span><span id="local-6989586621680188981"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621680188981"><span class="hs-identifier hs-var">tick</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-189"></span><span>            </span><span id="local-6989586621680188980"><span class="annot"><span class="annottext">sch :: Schedule pu v x t
+</span><a href="#local-6989586621680188980"><span class="hs-identifier hs-var">sch</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188979"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
 schProcess :: Process t (StepInfo v x t)
 schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188632"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="#local-6989586621680188979"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-190"></span><span>            </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">put</span></span><span>
 </span><span id="line-191"></span><span>                </span><span class="annot"><span class="annottext">Schedule pu v x t
-</span><a href="#local-6989586621680188633"><span class="hs-identifier hs-var">sch</span></a></span><span>
+</span><a href="#local-6989586621680188980"><span class="hs-identifier hs-var">sch</span></a></span><span>
 </span><span id="line-192"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Utils.ProcessDescription.html#schProcess"><span class="hs-identifier hs-var">schProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-193"></span><span>                        </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188632"><span class="hs-identifier hs-var">schProcess</span></a></span><span>
+</span><a href="#local-6989586621680188979"><span class="hs-identifier hs-var">schProcess</span></a></span><span>
 </span><span id="line-194"></span><span>                            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">nextTick_ :: t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#nextTick_"><span class="hs-identifier hs-var">nextTick_</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621680188634"><span class="hs-identifier hs-var">tick</span></a></span><span>
+</span><a href="#local-6989586621680188981"><span class="hs-identifier hs-var">tick</span></a></span><span>
 </span><span id="line-195"></span><span>                            </span><span class="hs-special">}</span><span>
 </span><span id="line-196"></span><span>                    </span><span class="hs-special">}</span><span>
 </span><span id="line-197"></span><span>
 </span><span id="line-198"></span><span id="scheduleInstructionUnsafe_"><span class="annot"><span class="annottext">scheduleInstructionUnsafe_ :: Interval t -&gt; Instruction pu -&gt; f ()
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleInstructionUnsafe_"><span class="hs-identifier hs-var hs-var">scheduleInstructionUnsafe_</span></a></span></span><span> </span><span id="local-6989586621680188618"><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188618"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680188617"><span class="annot"><span class="annottext">Instruction pu
-</span><a href="#local-6989586621680188617"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleInstructionUnsafe_"><span class="hs-identifier hs-var hs-var">scheduleInstructionUnsafe_</span></a></span></span><span> </span><span id="local-6989586621680188965"><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680188965"><span class="hs-identifier hs-var">ti</span></a></span></span><span> </span><span id="local-6989586621680188964"><span class="annot"><span class="annottext">Instruction pu
+</span><a href="#local-6989586621680188964"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
 </span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {pu} {v} {x} {t} {m :: * -&gt; *}.
 (MonadState (Schedule pu v x t) m, Show (Instruction pu),
  Typeable pu, Num t) =&gt;
 Interval t -&gt; Instruction pu -&gt; m [ProcessStepID]
 </span><a href="NITTA.Utils.ProcessDescription.html#scheduleInstructionUnsafe"><span class="hs-identifier hs-var">scheduleInstructionUnsafe</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188618"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">Instruction pu
-</span><a href="#local-6989586621680188617"><span class="hs-identifier hs-var">instr</span></a></span><span>
+</span><a href="#local-6989586621680188965"><span class="hs-identifier hs-var">ti</span></a></span><span> </span><span class="annot"><span class="annottext">Instruction pu
+</span><a href="#local-6989586621680188964"><span class="hs-identifier hs-var">instr</span></a></span><span>
 </span><span id="line-199"></span><span>
 </span><span id="line-200"></span><span class="hs-comment">-- | Add to the process description information about nested step.</span><span>
 </span><span id="line-201"></span><span id="scheduleNestedStep"><span class="annot"><span class="annottext">scheduleNestedStep :: tag -&gt; Step t (StepInfo v x t) -&gt; m ProcessStepID
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleNestedStep"><span class="hs-identifier hs-var hs-var">scheduleNestedStep</span></a></span></span><span> </span><span id="local-6989586621680188598"><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680188598"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680188597"><span class="annot"><span class="annottext">step :: Step t (StepInfo v x t)
-</span><a href="#local-6989586621680188597"><span class="hs-identifier hs-var">step</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188596"><span class="annot"><span class="annottext">Interval t
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleNestedStep"><span class="hs-identifier hs-var hs-var">scheduleNestedStep</span></a></span></span><span> </span><span id="local-6989586621680188945"><span class="annot"><span class="annottext">tag
+</span><a href="#local-6989586621680188945"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621680188944"><span class="annot"><span class="annottext">step :: Step t (StepInfo v x t)
+</span><a href="#local-6989586621680188944"><span class="hs-identifier hs-var">step</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188943"><span class="annot"><span class="annottext">Interval t
 pInterval :: forall t i. Step t i -&gt; Interval t
 pInterval :: Interval t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-202"></span><span>    </span><span id="local-6989586621680188594"><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188594"><span class="hs-identifier hs-var">pID</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
+</span><span id="line-202"></span><span>    </span><span id="local-6989586621680188941"><span class="annot"><span class="annottext">[ProcessStepID]
+</span><a href="#local-6989586621680188941"><span class="hs-identifier hs-var">pID</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {pu} {v} {x} {t}.
 MonadState (Schedule pu v x t) m =&gt;
 (ProcessStepID -&gt; Step t (StepInfo v x t)) -&gt; m [ProcessStepID]
-</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var">scheduleStep'</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680188593"><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188593"><span class="hs-identifier hs-var">uid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall t i. ProcessStepID -&gt; Interval t -&gt; i -&gt; Step t i
+</span><a href="NITTA.Utils.ProcessDescription.html#scheduleStep%27"><span class="hs-identifier hs-var">scheduleStep'</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680188940"><span class="annot"><span class="annottext">ProcessStepID
+</span><a href="#local-6989586621680188940"><span class="hs-identifier hs-var">uid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall t i. ProcessStepID -&gt; Interval t -&gt; i -&gt; Step t i
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-var">Step</span></a></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
-</span><a href="#local-6989586621680188593"><span class="hs-identifier hs-var">uid</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
-</span><a href="#local-6989586621680188596"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680188940"><span class="hs-identifier hs-var">uid</span></a></span><span> </span><span class="annot"><span class="annottext">Interval t
+</span><a href="#local-6989586621680188943"><span class="hs-identifier hs-var">pInterval</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall tag t v x.
 UnitTag tag =&gt;
 tag -&gt; Step t (StepInfo v x t) -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#NestedStep"><span class="hs-identifier hs-var">NestedStep</span></a></span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680188598"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680188597"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680188945"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
+</span><a href="#local-6989586621680188944"><span class="hs-identifier hs-var">step</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-203"></span><span>    </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
 </span><span class="hs-identifier hs-var">when</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; ProcessStepID
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188594"><span class="hs-identifier hs-var">pID</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680188941"><span class="hs-identifier hs-var">pID</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">ProcessStepID
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
@@ -601,39 +601,39 @@ tag -&gt; Step t (StepInfo v x t) -&gt; StepInfo v x t
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; a
 </span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[ProcessStepID]
-</span><a href="#local-6989586621680188594"><span class="hs-identifier hs-var">pID</span></a></span><span>
+</span><a href="#local-6989586621680188941"><span class="hs-identifier hs-var">pID</span></a></span><span>
 </span><span id="line-205"></span><span>
 </span><span id="line-206"></span><span class="hs-comment">-- | Get a current slice of the computational process.</span><span>
-</span><span id="line-207"></span><span id="local-6989586621680189008"><span id="local-6989586621680189009"><span id="local-6989586621680189010"><span id="local-6989586621680189011"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#getProcessSlice"><span class="hs-identifier hs-type">getProcessSlice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">State</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189011"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189010"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189009"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189008"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189008"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189010"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189009"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189008"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-207"></span><span id="local-6989586621680189355"><span id="local-6989586621680189356"><span id="local-6989586621680189357"><span id="local-6989586621680189358"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#getProcessSlice"><span class="hs-identifier hs-type">getProcessSlice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">State</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189358"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189357"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189356"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189355"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189355"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189357"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189356"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189355"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span></span><span>
 </span><span id="line-208"></span><span id="getProcessSlice"><span class="annot"><span class="annottext">getProcessSlice :: forall pu v x t.
 State (Schedule pu v x t) (Process t (StepInfo v x t))
 </span><a href="NITTA.Utils.ProcessDescription.html#getProcessSlice"><span class="hs-identifier hs-var hs-var">getProcessSlice</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-209"></span><span>    </span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188582"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
+</span><span id="line-209"></span><span>    </span><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#Schedule"><span class="hs-identifier hs-type">Schedule</span></a></span><span class="hs-special">{</span><span id="local-6989586621680188929"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
 schProcess :: Process t (StepInfo v x t)
 schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188582"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
+</span><a href="#local-6989586621680188929"><span class="hs-identifier hs-var hs-var">schProcess</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall s (m :: * -&gt; *). MonadState s m =&gt; m s
 </span><span class="hs-identifier hs-var">get</span></span><span>
 </span><span id="line-210"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo v x t)
-</span><a href="#local-6989586621680188582"><span class="hs-identifier hs-var">schProcess</span></a></span><span>
+</span><a href="#local-6989586621680188929"><span class="hs-identifier hs-var">schProcess</span></a></span><span>
 </span><span id="line-211"></span><span>
 </span><span id="line-212"></span><span id="relatedEndpoints"><span class="annot"><span class="annottext">relatedEndpoints :: Process t (StepInfo a x t) -&gt; Set a -&gt; [Step t (StepInfo a x t)]
-</span><a href="NITTA.Utils.ProcessDescription.html#relatedEndpoints"><span class="hs-identifier hs-var hs-var">relatedEndpoints</span></a></span></span><span> </span><span id="local-6989586621680188575"><span class="annot"><span class="annottext">Process t (StepInfo a x t)
-</span><a href="#local-6989586621680188575"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span id="local-6989586621680188574"><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680188574"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Utils.ProcessDescription.html#relatedEndpoints"><span class="hs-identifier hs-var hs-var">relatedEndpoints</span></a></span></span><span> </span><span id="local-6989586621680188922"><span class="annot"><span class="annottext">Process t (StepInfo a x t)
+</span><a href="#local-6989586621680188922"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span id="local-6989586621680188921"><span class="annot"><span class="annottext">Set a
+</span><a href="#local-6989586621680188921"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-213"></span><span>    </span><span class="annot"><span class="annottext">forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span>
 </span><span id="line-214"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
 </span><span id="line-215"></span><span>            </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span class="annot"><span class="annottext">pDesc :: forall t i. Step t i -&gt; i
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#EndpointRoleStep"><span class="hs-identifier hs-type">EndpointRoleStep</span></a></span><span> </span><span id="local-6989586621680188572"><span class="annot"><span class="annottext">EndpointRole a
-</span><a href="#local-6989586621680188572"><span class="hs-keyword hs-var">role</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#EndpointRoleStep"><span class="hs-identifier hs-type">EndpointRoleStep</span></a></span><span> </span><span id="local-6989586621680188919"><span class="annot"><span class="annottext">EndpointRole a
+</span><a href="#local-6989586621680188919"><span class="hs-keyword hs-var">role</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">EndpointRole a
-</span><a href="#local-6989586621680188572"><span class="hs-keyword hs-var">role</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
+</span><a href="#local-6989586621680188919"><span class="hs-keyword hs-var">role</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">`S.intersection`</span></span><span> </span><span class="annot"><span class="annottext">Set a
-</span><a href="#local-6989586621680188574"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680188921"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-216"></span><span>            </span><span class="annot"><span class="annottext">Step t (StepInfo a x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
@@ -641,16 +641,16 @@ schProcess :: forall pu v x t. Schedule pu v x t -&gt; Process t (StepInfo v x t
 </span><span id="line-218"></span><span>        </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Process t i -&gt; [Step t i]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">Process t (StepInfo a x t)
-</span><a href="#local-6989586621680188575"><span class="hs-identifier hs-var">process_</span></a></span><span>
+</span><a href="#local-6989586621680188922"><span class="hs-identifier hs-var">process_</span></a></span><span>
 </span><span id="line-219"></span><span>
 </span><span id="line-220"></span><span class="hs-comment">-- | Helper for instruction extraction from a rigid type variable.</span><span>
-</span><span id="line-221"></span><span id="local-6989586621680188918"><span id="local-6989586621680188919"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#castInstruction"><span class="hs-identifier hs-type">castInstruction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680188919"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680188918"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680188918"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680188919"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680188918"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-221"></span><span id="local-6989586621680189265"><span id="local-6989586621680189266"><span class="annot"><a href="NITTA.Utils.ProcessDescription.html#castInstruction"><span class="hs-identifier hs-type">castInstruction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680189266"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621680189265"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680189265"><span class="hs-identifier hs-type">pu</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680189266"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier hs-type">Instruction</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680189265"><span class="hs-identifier hs-type">pu</span></a></span><span class="hs-special">)</span></span></span><span>
 </span><span id="line-222"></span><span id="castInstruction"><span class="annot"><span class="annottext">castInstruction :: forall a pu.
 (Typeable a, Typeable pu) =&gt;
 pu -&gt; a -&gt; Maybe (Instruction pu)
-</span><a href="NITTA.Utils.ProcessDescription.html#castInstruction"><span class="hs-identifier hs-var hs-var">castInstruction</span></a></span></span><span> </span><span id="local-6989586621680188563"><span class="annot"><span class="annottext">pu
-</span><a href="#local-6989586621680188563"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span id="local-6989586621680188562"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188562"><span class="hs-identifier hs-var">inst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+</span><a href="NITTA.Utils.ProcessDescription.html#castInstruction"><span class="hs-identifier hs-var hs-var">castInstruction</span></a></span></span><span> </span><span id="local-6989586621680188910"><span class="annot"><span class="annottext">pu
+</span><a href="#local-6989586621680188910"><span class="hs-identifier hs-var">_pu</span></a></span></span><span> </span><span id="local-6989586621680188909"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680188909"><span class="hs-identifier hs-var">inst</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680188562"><span class="hs-identifier hs-var">inst</span></a></span><span>
+</span><a href="#local-6989586621680188909"><span class="hs-identifier hs-var">inst</span></a></span><span>
 </span><span id="line-223"></span></pre></body></html>
