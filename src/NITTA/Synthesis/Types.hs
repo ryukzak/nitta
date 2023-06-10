@@ -118,6 +118,8 @@ data Tree m tag v x t = Tree
     , sDecision :: SynthesisDecision (SynthesisState m tag v x t) m
     , sSubForestVar :: TMVar [Tree m tag v x t]
     -- ^ lazy mutable field with different synthesis options and sub nodes
+    , isLeaf :: Bool
+    , isComplete :: Bool
     }
 
 targetUnit = mUnit . sTarget . sState
