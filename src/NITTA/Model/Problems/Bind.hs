@@ -26,7 +26,7 @@ import NITTA.Utils.Base (unionsMap)
 
 data Bind tag v x
     = Bind (F v x) tag -- FIXME: swap arguments sequence
-    | Binds {isSingleAssignment :: Bool, bindGroup :: M.Map tag [F v x]}
+    | Binds {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
     deriving (Generic, Eq)
 
 bindGroup2binds :: Bind tag v x -> [(tag, F v x)]
@@ -50,10 +50,10 @@ binds2bindGroup binds =
 
 instance UnitTag tag => Show (Bind tag v x) where
     show (Bind f tag) = "Bind " <> showFAndTag (f, tag)
-    show (Binds{isSingleAssignment, bindGroup}) =
+    show (Binds{isObliviousBinds, bindGroup}) =
         concat
             [ "Binds "
-            , if isSingleAssignment then "SingleAssignment " else ""
+            , if isObliviousBinds then "obliviousBinds " else ""
             , S.join "; " (map showFsAndTag $ M.assocs bindGroup)
             ]
 

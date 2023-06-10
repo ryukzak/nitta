@@ -111,11 +111,11 @@ instance
                     waves | all isJust waves -> Just $ maximum $ catMaybes waves
                     _ -> Nothing
                 }
-    parameters SynthesisState{sTarget, unitWorkloadInFunction} binds@Binds{isSingleAssignment, bindGroup} _ =
+    parameters SynthesisState{sTarget, unitWorkloadInFunction} binds@Binds{isObliviousBinds, bindGroup} _ =
         let dfgFunCount = length $ functions $ mDataFlowGraph sTarget
             bindFunCount = length $ functions binds
          in BindsMetrics
-                { pOnlyObliviousBinds = isSingleAssignment
+                { pOnlyObliviousBinds = isObliviousBinds
                 , pFunctionPercentInBinds = fromIntegral bindFunCount / fromIntegral dfgFunCount
                 , pAvgBinds = avg $ map (fromIntegral . length . snd) $ M.assocs bindGroup
                 , pVarianceBinds = stddev $ map (fromIntegral . length . snd) $ M.assocs bindGroup
