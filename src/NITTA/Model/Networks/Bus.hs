@@ -303,6 +303,15 @@ cartesianProduct :: [[a]] -> [[a]]
 cartesianProduct [] = [[]]
 cartesianProduct (xs : xss) = [x : ys | x <- xs, ys <- cartesianProduct xss]
 
+{- | Not all bindings can be applied to unit a the same time. E.g.:
+
+ - @b = reg(a)@
+ - @c = reg(b)@
+
+ Can't be binded to same unit because it require self sending of data.
+
+ In this case, we just throw away conflicted bindings.
+-}
 fixGroupBinding :: (UnitTag tag, VarValTime v x t) => BusNetwork tag v x t -> [(tag, F v x)] -> [(tag, F v x)]
 fixGroupBinding _bn [] = []
 fixGroupBinding bn@BusNetwork{bnPus} (b@(tag, f) : binds)

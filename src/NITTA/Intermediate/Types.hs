@@ -195,6 +195,7 @@ data F v x where
 
 packF f = F{fun = f, funHistory = []}
 
+functionType :: F v x -> TypeRep
 functionType F{fun} = typeOf fun
 
 instance Eq (F v x) where

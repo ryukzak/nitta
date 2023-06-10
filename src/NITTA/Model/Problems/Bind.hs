@@ -60,6 +60,7 @@ instance UnitTag tag => Show (Bind tag v x) where
 showFAndTag :: UnitTag tag => (F v x, tag) -> String
 showFAndTag (f, tag) = toString tag <> " <- " <> show f
 
+showFsAndTag :: (ToString a1, Show a2) => (a1, [a2]) -> String
 showFsAndTag (tag, fs) = toString tag <> " <- " <> S.join ", " (map show fs)
 
 class BindProblem u tag v x | u -> tag v x where

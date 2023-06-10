@@ -170,6 +170,7 @@ data SynthesisState m tag v x t = SynthesisState
     -- ^ a variable set, which can be transferred on the current
     --  synthesis step
     , unitWorkloadInFunction :: M.Map tag Int
+    -- ^ dictionary with number of binded functions for each unit
     }
 
 -- * Utils

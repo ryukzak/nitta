@@ -64,6 +64,7 @@ data PU v x t where
         } ->
         PU v x t
 
+unitType :: PU v x t -> TypeRep
 unitType PU{unit} = typeOf unit
 
 instance Ord v => EndpointProblem (PU v x t) v t where
