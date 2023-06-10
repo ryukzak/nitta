@@ -36,14 +36,14 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
             </Col>
             <Col md={4} lg={3}>
               <MapHistogram
-                data={result.data.durationSuccess}
+                data={result.data.targetProcessDuration}
                 color={CHART_COLOR_PALLETE.blue}
                 name="success nodes with duration"
               />
             </Col>
             <Col md={4} lg={3}>
               <MapHistogram
-                data={result.data.stepsSuccess}
+                data={result.data.synthesisStepsForSuccess}
                 color={CHART_COLOR_PALLETE.orange}
                 name="success nodes with steps"
               />
