@@ -318,7 +318,7 @@ fixGroupBinding bn@BusNetwork{bnPus} (b@(tag, f) : binds)
     | Right _ <- tryBind f (bnPus M.! tag) = b : fixGroupBinding (bindDecision bn $ Bind f tag) binds
     | otherwise = fixGroupBinding bn binds
 
-mergeFunctionWithSameType = False
+mergeFunctionWithSameType = True
 
 {- | GroupBindHash required to find equal from task point of view bindings.
  E.g. (we have 2 units and 3 functions with the same type):
