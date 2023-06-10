@@ -346,7 +346,13 @@ bindsHash BusNetwork{bnPus, bnBinded} binds =
                         fs' =
                             S.fromList $
                                 if mergeFunctionWithSameType
-                                    then map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
+                                    then -- TODO: merge only functions without
+                                    -- inputs, because they are equal from
+                                    -- scheduling point of view
+
+                                    -- TODO: other way to reduce numner of
+                                    -- combinations
+                                        map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
                                     else map show fs
                      in
                         (unitType u, binded, fs')
@@ -373,7 +379,8 @@ instance
 
             notObliviousBinds :: [[(tag, F v x)]]
             notObliviousBinds = filter ((> 1) . length) binds
-            -- TODO: split this on several independent tasks. It should significantly reduce complexity
+            -- TODO: split them on independent bindGroups. It should
+            -- significantly reduce complexity.
             multiBinds :: [Bind tag v x]
             multiBinds
                 | null notObliviousBinds = []

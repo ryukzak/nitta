@@ -55,6 +55,10 @@ stateOfTheArtSynthesisIO () tree = do
     l4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO tree
     return $ bestLeaf tree [l1, l2, l3, l4]
 
+-- FIXME: Write me
+-- allGroupBindsSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+-- allGroupBindsSynthesisIO
+
 -- | Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
