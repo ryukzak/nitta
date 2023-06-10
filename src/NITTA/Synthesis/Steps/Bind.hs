@@ -128,10 +128,12 @@ instance
                 let lstAvg = avg lst
                  in sqrt $ avg $ map (\x -> (x - lstAvg) ^ (2 :: Int)) lst
 
-    estimate _ctx _o _d BindsMetrics{pSingleAssingmentBinds} =
+    estimate _ctx _o _d BindsMetrics{pSingleAssingmentBinds, pVarInBindPercent, pVarianceBinds} =
         sum
-            [ 4000
+            [ 4100
             , pSingleAssingmentBinds <?> 1000
+            , fromInteger $ round pVarInBindPercent * 10
+            , fromInteger $ round pVarianceBinds * (-20)
             ]
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500
     estimate _ctx _o _d BindMetrics{pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber} =
