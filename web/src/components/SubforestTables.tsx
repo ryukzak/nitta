@@ -59,7 +59,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("oblivious", (e: Node) => String((e.parameters as IBindsMetrics).pSingleAssingmentBinds), 75),
           textColumn("percent", (e: Node) => String((e.parameters as IBindsMetrics).pVarInBindPercent), 75),
           textColumn("avg", (e: Node) => String((e.parameters as IBindsMetrics).pAvgBinds), 50),
-          textColumn("variance", (e: Node) => String((e.parameters as IBindsMetrics).pVarianceBinds), 50),
+          textColumn("variance", (e: Node) => String((e.parameters as IBindsMetrics).pVarianceBinds), 75),
           textColumn("avgAfter", (e: Node) => String((e.parameters as IBindsMetrics).pAvgVariablesAfterBind), 50),
           textColumn(
             "varianceAfter",
