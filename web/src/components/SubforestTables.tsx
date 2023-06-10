@@ -56,16 +56,12 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
 
-          textColumn("oblivious", (e: Node) => String((e.parameters as IBindsMetrics).pSingleAssingmentBinds), 75),
-          textColumn("percent", (e: Node) => String((e.parameters as IBindsMetrics).pVarInBindPercent), 75),
+          textColumn("oblivious", (e: Node) => String((e.parameters as IBindsMetrics).pOnlyObliviousBinds), 75),
+          textColumn("percent", (e: Node) => String((e.parameters as IBindsMetrics).pFunctionPercentInBinds), 75),
           textColumn("avg", (e: Node) => String((e.parameters as IBindsMetrics).pAvgBinds), 50),
           textColumn("variance", (e: Node) => String((e.parameters as IBindsMetrics).pVarianceBinds), 75),
-          textColumn("avgAfter", (e: Node) => String((e.parameters as IBindsMetrics).pAvgVariablesAfterBind), 50),
-          textColumn(
-            "varianceAfter",
-            (e: Node) => String((e.parameters as IBindsMetrics).pVarianceVariablesAfterBind),
-            50
-          ),
+          textColumn("avgLoad", (e: Node) => String((e.parameters as IBindsMetrics).pAvgUnitWorkload), 75),
+          textColumn("varianceLoad", (e: Node) => String((e.parameters as IBindsMetrics).pVarianceUnitWorkload), 100),
 
           detailColumn(),
         ]}

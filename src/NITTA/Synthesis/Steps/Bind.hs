@@ -54,17 +54,17 @@ data BindMetrics
         , pWave :: Maybe Float
         }
     | BindsMetrics
-        { pSingleAssingmentBinds :: Bool
-        -- ^ Is there a single assignment bind only
-        , pVarInBindPercent :: Float
+        { pOnlyObliviousBinds :: Bool
+        -- ^ We don't have alternatives for binding
+        , pFunctionPercentInBinds :: Float
         -- ^ number of binded functions / number of all functions in DFG
         , pAvgBinds :: Float
         -- ^ average number of binds per unit
         , pVarianceBinds :: Float
         -- ^ variance of binds per unit
-        , pAvgVariablesAfterBind :: Float
+        , pAvgUnitWorkload :: Float
         -- ^ average number of variables after bind per unit
-        , pVarianceVariablesAfterBind :: Float
+        , pVarianceUnitWorkload :: Float
         -- ^ variance of variables after bind per unit
         }
     deriving (Generic)
@@ -111,28 +111,29 @@ instance
                     waves | all isJust waves -> Just $ maximum $ catMaybes waves
                     _ -> Nothing
                 }
-    parameters SynthesisState{sTarget} binds@Binds{isSingleAssignment, bindGroup} _ =
+    parameters SynthesisState{sTarget, unitWorkloadInFunction} binds@Binds{isSingleAssignment, bindGroup} _ =
         let dfgFunCount = length $ functions $ mDataFlowGraph sTarget
             bindFunCount = length $ functions binds
          in BindsMetrics
-                { pSingleAssingmentBinds = isSingleAssignment
-                , pVarInBindPercent = fromIntegral bindFunCount / fromIntegral dfgFunCount
+                { pOnlyObliviousBinds = isSingleAssignment
+                , pFunctionPercentInBinds = fromIntegral bindFunCount / fromIntegral dfgFunCount
                 , pAvgBinds = avg $ map (fromIntegral . length . snd) $ M.assocs bindGroup
                 , pVarianceBinds = stddev $ map (fromIntegral . length . snd) $ M.assocs bindGroup
-                , pAvgVariablesAfterBind = 0
-                , pVarianceVariablesAfterBind = 0
+                , pAvgUnitWorkload = avg $ map unitWorkload $ M.keys bindGroup
+                , pVarianceUnitWorkload = stddev $ map unitWorkload $ M.keys bindGroup
                 }
         where
+            unitWorkload = fromIntegral . (unitWorkloadInFunction M.!)
             avg lst = sum lst / fromIntegral (length lst)
             stddev lst =
                 let lstAvg = avg lst
                  in sqrt $ avg $ map (\x -> (x - lstAvg) ^ (2 :: Int)) lst
 
-    estimate _ctx _o _d BindsMetrics{pSingleAssingmentBinds, pVarInBindPercent, pVarianceBinds} =
+    estimate _ctx _o _d BindsMetrics{pOnlyObliviousBinds, pFunctionPercentInBinds, pVarianceBinds} =
         sum
             [ 4100
-            , pSingleAssingmentBinds <?> 1000
-            , fromInteger $ round pVarInBindPercent * 10
+            , pOnlyObliviousBinds <?> 1000
+            , fromInteger $ round pFunctionPercentInBinds * 10
             , fromInteger $ round pVarianceBinds * (-20)
             ]
     estimate _ctx _o _d BindMetrics{pPossibleDeadlock = True} = 500

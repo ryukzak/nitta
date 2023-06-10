@@ -169,6 +169,7 @@ data SynthesisState m tag v x t = SynthesisState
     , transferableVars :: S.Set v
     -- ^ a variable set, which can be transferred on the current
     --  synthesis step
+    , unitWorkloadInFunction :: M.Map tag Int
     }
 
 -- * Utils

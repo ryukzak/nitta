@@ -192,4 +192,13 @@ nodeCtx parent nModel =
                     | (DataflowSt _ targets) <- sDataflowOptions
                     , (_, ep) <- targets
                     ]
+            , unitWorkloadInFunction =
+                let
+                    BusNetwork{bnBinded, bnPus} = mUnit nModel
+                 in
+                    M.fromList
+                        $ map
+                            ( \uTag -> (uTag, maybe 0 length $ bnBinded M.!? uTag)
+                            )
+                        $ M.keys bnPus
             }
