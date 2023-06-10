@@ -12,7 +12,6 @@ Stability   : experimental
 module NITTA.Model.Problems.Bind (
     Bind (..),
     BindProblem (..),
-    bindGroup2binds,
     binds2bindGroup,
 ) where
 
@@ -28,10 +27,6 @@ data Bind tag v x
     = Bind (F v x) tag -- FIXME: swap arguments sequence
     | Binds {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
     deriving (Generic, Eq)
-
-bindGroup2binds :: Bind tag v x -> [(tag, F v x)]
-bindGroup2binds (Bind f tag) = [(tag, f)]
-bindGroup2binds Binds{bindGroup} = [(tag, f) | (tag, fs) <- M.assocs bindGroup, f <- fs]
 
 binds2bindGroup :: UnitTag tag => [(tag, F v x)] -> M.Map tag [F v x]
 binds2bindGroup binds =
