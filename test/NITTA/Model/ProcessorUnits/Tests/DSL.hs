@@ -439,7 +439,7 @@ synthesis method = do
 doBind :: T.Text -> F T.Text x -> TSStatement x ()
 doBind uTag f = do
     st@UnitTestState{unit = ts} <- get
-    let d = Bind uTag f
+    let d = SingleBind uTag f
         opts = bindOptions ts
     unless (d `L.elem` opts) $
         lift $

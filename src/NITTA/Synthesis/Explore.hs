@@ -170,7 +170,7 @@ nodeCtx parent nModel =
             , bindingAlternative =
                 foldl
                     ( \st b -> case b of
-                        (Bind uTag f) -> M.alter (return . maybe [uTag] (uTag :)) f st
+                        (SingleBind uTag f) -> M.alter (return . maybe [uTag] (uTag :)) f st
                         _ -> st
                     )
                     M.empty
@@ -178,7 +178,7 @@ nodeCtx parent nModel =
             , possibleDeadlockBinds =
                 S.fromList
                     [ f
-                    | (Bind uTag f) <- sBindOptions
+                    | (SingleBind uTag f) <- sBindOptions
                     , Lock{lockBy} <- locks f
                     , lockBy `S.member` unionsMap variables (bindedFunctions uTag $ mUnit nModel)
                     ]

@@ -157,7 +157,8 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
                         Root{} -> "root"
                         SynthesisDecision{metrics}
                             | Just AllocationMetrics{} <- cast metrics -> "Allocation"
-                            | Just BindMetrics{} <- cast metrics -> "Bind"
+                            | Just SingleBindMetrics{} <- cast metrics -> "SingleBind"
+                            | Just GroupBindMetrics{} <- cast metrics -> "GroupBind"
                             | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
                             | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"
                             | Just DataflowMetrics{} <- cast metrics -> "Transport"
@@ -219,7 +220,7 @@ instance ToSample (NodeView tag v x t) where
                 , duration = 0
                 , parameters =
                     toJSON $
-                        BindMetrics
+                        SingleBindMetrics
                             { pCritical = False
                             , pAlternative = 1
                             , pRestless = 0
@@ -230,7 +231,7 @@ instance ToSample (NodeView tag v x t) where
                             , pPercentOfBindedInputs = 0.2
                             , pWave = Just 2
                             }
-                , decision = BindDecisionView (FView "buffer(a) = b = c" []) "pu"
+                , decision = SingleBindView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032
                 }
             , NodeView

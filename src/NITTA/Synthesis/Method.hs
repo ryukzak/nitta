@@ -102,8 +102,8 @@ obviousBindThreadIO tree = do
     maybe (return tree) obviousBindThreadIO $
         L.find
             ( ( \case
-                    Just BindMetrics{pPossibleDeadlock = True} -> False
-                    Just BindMetrics{pAlternative = 1} -> True
+                    Just SingleBindMetrics{pPossibleDeadlock = True} -> False
+                    Just SingleBindMetrics{pAlternative = 1} -> True
                     _ -> False
               )
                 . cast

@@ -33,11 +33,11 @@ instance ToJSON IntervalView
 
 data DecisionView
     = RootView
-    | BindDecisionView
+    | SingleBindView
         { function :: FView
         , pu :: T.Text
         }
-    | BindsView
+    | GroupBindView
         { bindGroup :: HM.HashMap T.Text [FView]
         }
     | AllocationView
@@ -68,12 +68,12 @@ data DecisionView
     deriving (Generic)
 
 instance UnitTag tag => Viewable (Bind tag v x) DecisionView where
-    view (Bind uTag f) =
-        BindDecisionView
+    view (SingleBind uTag f) =
+        SingleBindView
             { function = view f
             , pu = toText uTag
             }
-    view Binds{bindGroup} = BindsView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup
+    view GroupBind{bindGroup} = GroupBindView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup
 
 instance UnitTag tag => Viewable (Allocation tag) DecisionView where
     view Allocation{networkTag, processUnitTag} =

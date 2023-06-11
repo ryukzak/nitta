@@ -24,8 +24,8 @@ import NITTA.Model.ProcessorUnits.Types (UnitTag)
 import NITTA.Utils.Base (unionsMap)
 
 data Bind tag v x
-    = Bind tag (F v x)
-    | Binds {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
+    = SingleBind tag (F v x)
+    | GroupBind {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
     deriving (Generic, Eq)
 
 binds2bindGroup :: UnitTag tag => [(tag, F v x)] -> M.Map tag [F v x]
@@ -44,8 +44,8 @@ binds2bindGroup binds =
         binds
 
 instance UnitTag tag => Show (Bind tag v x) where
-    show (Bind uTag f) = "Bind " <> showFAndTag (f, uTag)
-    show (Binds{isObliviousBinds, bindGroup}) =
+    show (SingleBind uTag f) = "Bind " <> showFAndTag (f, uTag)
+    show (GroupBind{isObliviousBinds, bindGroup}) =
         concat
             [ "Binds "
             , if isObliviousBinds then "obliviousBinds " else ""
@@ -63,9 +63,9 @@ class BindProblem u tag v x | u -> tag v x where
     bindDecision :: u -> Bind tag v x -> u
 
 instance Var v => Variables (Bind tab v x) v where
-    variables (Bind _tag f) = variables f
-    variables Binds{bindGroup} = unionsMap variables $ concat $ M.elems bindGroup
+    variables (SingleBind _tag f) = variables f
+    variables GroupBind{bindGroup} = unionsMap variables $ concat $ M.elems bindGroup
 
 instance WithFunctions (Bind tag v x) (F v x) where
-    functions (Bind _tag f) = [f]
-    functions Binds{bindGroup} = concat $ M.elems bindGroup
+    functions (SingleBind _tag f) = [f]
+    functions GroupBind{bindGroup} = concat $ M.elems bindGroup
