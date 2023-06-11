@@ -132,6 +132,7 @@ data SynthesisDecision ctx m where
         {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} ->
         SynthesisDecision ctx m
 
+defScore :: SynthesisDecision ctx m -> Float
 defScore = (M.! "default") . scores
 
 class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where

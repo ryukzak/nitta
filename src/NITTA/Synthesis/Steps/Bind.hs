@@ -13,7 +13,9 @@ Stability   : experimental
 -}
 module NITTA.Synthesis.Steps.Bind (
     BindMetrics (..),
-    isBind,
+    isSingleBind,
+    isMultiBind,
+    isObliviousMultiBind,
 ) where
 
 import Data.Aeson (ToJSON)
@@ -164,6 +166,17 @@ optionsAfterBind f tag TargetSystem{mUnit = BusNetwork{bnPus}} =
     where
         act `optionOf` f' = not $ S.null (variables act `S.intersection` variables f')
 
-isBind SynthesisDecision{metrics}
-    | isJust (cast metrics :: Maybe BindMetrics) = True
-isBind _ = False
+isSingleBind :: SynthesisDecision ctx m -> Bool
+isSingleBind SynthesisDecision{metrics}
+    | Just BindMetrics{} <- cast metrics :: Maybe BindMetrics = True
+isSingleBind _ = False
+
+isMultiBind :: SynthesisDecision ctx m -> Bool
+isMultiBind SynthesisDecision{metrics}
+    | Just BindsMetrics{} <- cast metrics :: Maybe BindMetrics = True
+isMultiBind _ = False
+
+isObliviousMultiBind :: SynthesisDecision ctx m -> Bool
+isObliviousMultiBind SynthesisDecision{metrics}
+    | Just BindsMetrics{pOnlyObliviousBinds = True} <- cast metrics :: Maybe BindMetrics = True
+isObliviousMultiBind _ = False
