@@ -170,7 +170,7 @@ nodeCtx parent nModel =
             , bindingAlternative =
                 foldl
                     ( \st b -> case b of
-                        (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st
+                        (Bind uTag f) -> M.alter (return . maybe [uTag] (uTag :)) f st
                         _ -> st
                     )
                     M.empty
@@ -178,9 +178,9 @@ nodeCtx parent nModel =
             , possibleDeadlockBinds =
                 S.fromList
                     [ f
-                    | (Bind f tag) <- sBindOptions
+                    | (Bind uTag f) <- sBindOptions
                     , Lock{lockBy} <- locks f
-                    , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
+                    , lockBy `S.member` unionsMap variables (bindedFunctions uTag $ mUnit nModel)
                     ]
             , bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs
             , processWaves

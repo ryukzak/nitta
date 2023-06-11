@@ -68,10 +68,10 @@ data DecisionView
     deriving (Generic)
 
 instance UnitTag tag => Viewable (Bind tag v x) DecisionView where
-    view (Bind f pu) =
+    view (Bind uTag f) =
         BindDecisionView
             { function = view f
-            , pu = toText pu
+            , pu = toText uTag
             }
     view Binds{bindGroup} = BindsView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup
 

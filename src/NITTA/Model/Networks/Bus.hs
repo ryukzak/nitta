@@ -314,8 +314,8 @@ cartesianProduct (xs : xss) = [x : ys | x <- xs, ys <- cartesianProduct xss]
 -}
 fixGroupBinding :: (UnitTag tag, VarValTime v x t) => BusNetwork tag v x t -> [(tag, F v x)] -> [(tag, F v x)]
 fixGroupBinding _bn [] = []
-fixGroupBinding bn@BusNetwork{bnPus} (b@(tag, f) : binds)
-    | Right _ <- tryBind f (bnPus M.! tag) = b : fixGroupBinding (bindDecision bn $ Bind f tag) binds
+fixGroupBinding bn@BusNetwork{bnPus} (b@(uTag, f) : binds)
+    | Right _ <- tryBind f (bnPus M.! uTag) = b : fixGroupBinding (bindDecision bn $ Bind uTag f) binds
     | otherwise = fixGroupBinding bn binds
 
 mergeFunctionWithSameType = True
@@ -391,7 +391,7 @@ instance
                                 nubNotObliviousBinds bn $
                                     cartesianProduct notObliviousBinds
 
-            simpleBinds = concatMap (map (\(tag, f) -> Bind f tag)) binds
+            simpleBinds = concatMap (map (\(uTag, f) -> Bind uTag f)) binds
          in singleAssingmentBinds <> multiBinds <> simpleBinds
         where
             optionsFor f =
@@ -400,7 +400,7 @@ instance
                 , allowToProcess f pu
                 ]
 
-    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
+    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind tag f) =
         bn
             { bnPus = M.adjust (bind f) tag bnPus
             , bnBinded = registerBinding tag f bnBinded
@@ -408,7 +408,7 @@ instance
             , bnRemains = filter (/= f) bnRemains
             }
     bindDecision bn@BusNetwork{} Binds{bindGroup} =
-        foldl bindDecision bn $ concatMap (\(tag, fs) -> map (`Bind` tag) fs) $ M.assocs bindGroup
+        foldl bindDecision bn $ concatMap (\(tag, fs) -> map (Bind tag) fs) $ M.assocs bindGroup
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus

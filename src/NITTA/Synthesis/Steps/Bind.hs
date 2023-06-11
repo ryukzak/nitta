@@ -91,7 +91,7 @@ instance
             , possibleDeadlockBinds
             , bindWaves
             }
-        (Bind f tag)
+        (Bind tag f)
         _ =
             BindMetrics
                 { pCritical = isInternalLockPossible f

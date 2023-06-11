@@ -24,7 +24,7 @@ import NITTA.Model.ProcessorUnits.Types (UnitTag)
 import NITTA.Utils.Base (unionsMap)
 
 data Bind tag v x
-    = Bind (F v x) tag -- FIXME: swap arguments sequence
+    = Bind tag (F v x)
     | Binds {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
     deriving (Generic, Eq)
 
@@ -44,7 +44,7 @@ binds2bindGroup binds =
         binds
 
 instance UnitTag tag => Show (Bind tag v x) where
-    show (Bind f tag) = "Bind " <> showFAndTag (f, tag)
+    show (Bind uTag f) = "Bind " <> showFAndTag (f, uTag)
     show (Binds{isObliviousBinds, bindGroup}) =
         concat
             [ "Binds "
@@ -63,9 +63,9 @@ class BindProblem u tag v x | u -> tag v x where
     bindDecision :: u -> Bind tag v x -> u
 
 instance Var v => Variables (Bind tab v x) v where
-    variables (Bind f _tag) = variables f
+    variables (Bind _tag f) = variables f
     variables Binds{bindGroup} = unionsMap variables $ concat $ M.elems bindGroup
 
 instance WithFunctions (Bind tag v x) (F v x) where
-    functions (Bind f _tag) = [f]
+    functions (Bind _tag f) = [f]
     functions Binds{bindGroup} = concat $ M.elems bindGroup
