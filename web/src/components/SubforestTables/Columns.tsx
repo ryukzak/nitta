@@ -5,8 +5,8 @@ import * as Icon from "react-bootstrap-icons";
 
 import {
   Allocation,
-  Binds,
-  Bind,
+  GroupBind,
+  SingleBind,
   Dataflow,
   BreakLoop,
   OptimizeAccum,
@@ -142,8 +142,8 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
 }
 
 export function showDecision(decision: DecisionView): ReactElement {
-  if (decision.tag === "BindDecisionView") return showBind(decision);
-  else if (decision.tag === "BindsView") return showBinds(decision);
+  if (decision.tag === "SingleBindView") return showBind(decision);
+  else if (decision.tag === "GroupBindView") return showBinds(decision);
   else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
@@ -153,7 +153,7 @@ export function showDecision(decision: DecisionView): ReactElement {
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
-export function showBinds(decision: Binds): ReactElement {
+export function showBinds(decision: GroupBind): ReactElement {
   const binds = Object.keys(decision.bindGroup).map((uTag: string) => {
     let fs = decision.bindGroup[uTag]!;
     return (
@@ -170,7 +170,7 @@ export function showBinds(decision: Binds): ReactElement {
   return <div> {binds} </div>;
 }
 
-export function showBind(decision: Bind): ReactElement {
+export function showBind(decision: SingleBind): ReactElement {
   return (
     <div>
       <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}

@@ -4,7 +4,7 @@ import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
-import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
+import { api, IntermediateGraph, Dataflow, SingleBind, Node } from "services/HaskellApiService";
 import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
@@ -162,8 +162,8 @@ function makeProcState(nodes: Node[]): ProcessState {
         procState.transferedVars.push(target[1].epRole.contents as string);
       });
     }
-    if (n.decision.tag === "BindDecisionView") {
-      let d = n.decision as Bind;
+    if (n.decision.tag === "SingleBindView") {
+      let d = n.decision as SingleBind;
       procState.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
     }
   });
