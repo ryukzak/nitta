@@ -391,7 +391,7 @@ instance
                                 nubNotObliviousBinds bn $
                                     cartesianProduct notObliviousBinds
 
-            simpleBinds = concatMap (map (\(uTag, f) -> SingleBind uTag f)) binds
+            simpleBinds = concatMap (map $ uncurry SingleBind) binds
          in singleAssingmentBinds <> multiBinds <> simpleBinds
         where
             optionsFor f =
