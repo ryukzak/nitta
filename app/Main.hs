@@ -33,7 +33,7 @@ import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
-import NITTA.Model.Networks.Bus
+import NITTA.Model.Networks.Bus 
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
@@ -57,7 +57,7 @@ import Text.Regex
 data SynthesisMethodArg
     = StateOfTheArt
     | TopDownByScore
-    | NoSynthesis
+    | NoSynthesis 
     deriving (Show, Data, Typeable)
 
 synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
@@ -171,7 +171,7 @@ nittaArgs =
                 &= groupname "Synthesis"
         , depth_base =
             1.4
-                &= help "Only for '" ++ show ++ "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
+                &= help "Only for '" ++ show TopDownByScore ++ "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
         , method =
@@ -247,11 +247,14 @@ main = do
             when fsim $ functionalSimulation n received format frontendResult
 
             prj <- withLazyMlBackendServer $ \serverGetter -> do
-                -- TODO: this needs to be refactored and unified with logic in backendServer. and state monad?
+                -- TODO: state monad? rename BackendCtx to something more generic?
                 let ctx =
                         (def :: BackendCtx tag v x t)
-                            { mlBackendGetter = serverGetter
-                            , nodeScores = nodeScores
+                            { root = synthesisRoot
+                              , receivedValues = received
+                              , outputPath = output_path
+                              , mlBackendGetter = serverGetter
+                              , nodeScores = nodeScores
                             }
 
                 (synthesisRoot, prjE) <-
