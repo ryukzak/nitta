@@ -224,7 +224,7 @@ async def run_example_and_sample_tree_parallel(
                                 nitta_baseurl=nitta_baseurls[i % len(nitta_baseurls)],
                                 root=root,
                                 n_samples=n_samples_per_batch,
-                                b_samples_per_batch=n_samples_per_batch,
+                                n_samples_per_batch=n_samples_per_batch,
                                 example_name=example_name,
                             )
                             for i in range(n_batches)
@@ -269,7 +269,7 @@ def _retrieve_and_process_tree_with_sampling_remote_job(**kwargs):
                 results_accum=[],
             )
 
-    asyncio.run(_async_job())
+    return asyncio.run(_async_job())
 
 
 async def _retrieve_and_process_tree_with_sampling(
