@@ -12,13 +12,13 @@ jobs:
   notify-about-push:
     runs-on: ubuntu-latest
     steps:
-    - name: Send msg on push
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: html
-        args: |
+      - name: Send msg on push
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          args: |
             Repository: <strong>${{ github.event.repository.full_name }}</strong>
             Ref: <strong>${{ github.ref }}</strong>
             Event: <strong>${{ github.event_name }}</strong>
@@ -27,7 +27,7 @@ jobs:
 
   nitta-haskell-deps:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
 
@@ -37,19 +37,23 @@ jobs:
           path: |
             ~/.stack
             .stack-work
+            /home/runner/.local/bin
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v2.3.3
+        uses: haskell/actions/setup@v2.4.3
         with:
           enable-stack: true
           stack-no-global: true
-          stack-version: 'latest'
+          stack-version: "latest"
 
       - name: Build nitta backend dependencies and doctest
         run: |
           stack build --haddock --test --only-dependencies
           stack install doctest
+
+      - name: Install weeder
+        run: stack install weeder-2.4.1
 
   nitta:
     runs-on: ubuntu-latest
@@ -64,6 +68,7 @@ jobs:
           path: |
             ~/.stack
             .stack-work
+            /home/runner/.local/bin
           key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
 
       - name: Install haskell-stack
@@ -71,13 +76,7 @@ jobs:
         with:
           enable-stack: true
           stack-no-global: true
-          stack-version: 'latest'
-
-      - name: Build nitta backend dependencies and doctest
-        run: |
-          stack build --haddock --test --only-dependencies
-          stack install doctest
-
+          stack-version: "latest"
       - name: Install Icarus Verilog
         run: sudo apt-get install iverilog
 
@@ -88,9 +87,7 @@ jobs:
         run: stack hpc report nitta
 
       - name: Check examples by doctest
-        run: |
-          stack build
-          find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+        run: find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
       - name: Generate backend API
         run: stack exec nitta-api-gen -- -v
@@ -98,7 +95,7 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v3.2.5
         with:
-          path: '**/node_modules'
+          path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
       - name: Build nitta frontend dependencies
@@ -110,6 +107,9 @@ jobs:
         timeout-minutes: 5
         run: yarn build
 
+      - name: Run weeder
+        run: weeder
+
       - name: Copy doc to GH_PAGES_DIR
         run: |
           mkdir -p "${{ env.GH_PAGES_DIR }}/haddock/"
@@ -117,7 +117,7 @@ jobs:
 
       - name: Copy test coverage to GH_PAGES_DIR
         run: cp -r $(stack path --local-hpc-root)/combined/custom ${{ env.GH_PAGES_DIR }}/hpc
-      
+
       - name: Copy API doc to GH_PAGES_DIR
         run: |
           mkdir -p "${{ env.GH_PAGES_DIR }}/rest-api/"
@@ -134,8 +134,8 @@ jobs:
           branch: gh-pages
 
   verilog-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
-    needs: nitta
     container: ryukzak/alpine-iverilog
     defaults:
       run:
@@ -148,44 +148,52 @@ jobs:
           test "$(grep -ci error make_hdl.log)" -eq 0
 
   haskell-lint:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: 'Set up HLint'
-      uses: haskell/actions/hlint-setup@v2.3.3
-      with:
-        version: '3.5'
+      - name: "Set up HLint"
+        uses: haskell/actions/hlint-setup@v2.3.3
+        with:
+          version: "3.5"
 
-    - name: 'Run HLint'
-      uses: haskell/actions/hlint-run@v2.3.3
-      with:
-        path: .
-        fail-on: suggestion
+      - name: "Run HLint"
+        uses: haskell/actions/hlint-run@v2.3.3
+        with:
+          path: .
+          fail-on: suggestion
 
   haskell-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
       - uses: actions/checkout@v3
-
-      - name: Cache haskell-stack and fourmolu
-        uses: actions/cache@v3.2.5
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}-fourmolu
 
       - name: Check formatting
-        uses: fourmolu/fourmolu-action@v6
+        uses: fourmolu/fourmolu-action@v8 # fourmolu-0.12.0.0
 
   typescript-formatting:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
-    needs: nitta
     steps:
       - uses: actions/checkout@v3
+
       - name: Check ts and tsx code style by prettier
         working-directory: ./web
         run: |
           yarn add -s prettier
           yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+
+  markdown-formatting:
+    timeout-minutes: 5
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3.2.0
+
+      - name: Run mdl for check markdown format
+        uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: .
+          config_file: .markdownlint.yaml

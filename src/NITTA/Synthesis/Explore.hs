@@ -49,12 +49,15 @@ synthesisTreeRootIO = atomically . rootSynthesisTreeSTM
 
 rootSynthesisTreeSTM model = do
     sSubForestVar <- newEmptyTMVar
+    let sState = nodeCtx Nothing model
     return
         Tree
             { sID = def
-            , sState = nodeCtx Nothing model
+            , sState
             , sDecision = Root
             , sSubForestVar
+            , isLeaf = isLeaf' sState
+            , isComplete = isComplete' sState
             }
 
 -- | Get specific by @nId@ node from a synthesis tree.
@@ -157,6 +160,20 @@ subForest (objective function value less than zero).
 -}
 positiveSubForestIO ctx tree = filter ((> 0) . defScore . sDecision) <$> subForestIO ctx tree
 
+isLeaf'
+    SynthesisState
+        { sAllocationOptions = []
+        , sBindOptions = []
+        , sDataflowOptions = []
+        , sBreakLoopOptions = []
+        , sResolveDeadlockOptions = []
+        , sOptimizeAccumOptions = []
+        , sConstantFoldingOptions = []
+        } = True
+isLeaf' _ = False
+
+isComplete' = isSynthesisComplete . sTarget
+
 -- * Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =
@@ -178,6 +195,8 @@ exploreSubForestVar parent@Tree{sID, sState} =
                     , sState = ctx'
                     , sDecision = desc
                     , sSubForestVar
+                    , isLeaf = isLeaf' ctx'
+                    , isComplete = isComplete' ctx'
                     }
 
 decisionAndContext parent@Tree{sState = ctx} o =

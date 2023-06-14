@@ -94,14 +94,14 @@ busNetwork name iosync =
 instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
     def = busNetwork "defaultBus" ASync
 
-instance (Var v) => Variables (BusNetwork tag v x t) v where
+instance Var v => Variables (BusNetwork tag v x t) v where
     variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded
 
 bindedFunctions puTitle BusNetwork{bnBinded}
     | puTitle `M.member` bnBinded = bnBinded M.! puTitle
     | otherwise = []
 
-instance (Default x) => DefaultX (BusNetwork tag v x t) x
+instance Default x => DefaultX (BusNetwork tag v x t) x
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
@@ -232,13 +232,15 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
 
                 -- Vertical relations between FB and Transport
                 mapM_
-                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = IntermediateStep f}}} ->
-                        mapM_
-                            ( \v ->
-                                when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelations [pID] [v2transportStepKey M.! v]
-                            )
-                            $ variables f
+                    ( \case
+                        Step{pID, pDesc = NestedStep{nStep = Step{pDesc = IntermediateStep f}}} ->
+                            mapM_
+                                ( \v ->
+                                    when (v `M.member` v2transportStepKey) $
+                                        establishVerticalRelations [pID] [v2transportStepKey M.! v]
+                                )
+                                $ variables f
+                        _ -> error "Bus: process: insternal error"
                     )
                     $ filter isIntermediate steps
          in wholeProcess
@@ -321,7 +323,7 @@ instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus
 
     breakLoopDecision bn@BusNetwork{bnBinded, bnPus} bl@BreakLoop{} =
-        let Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
+        let (puTag, bindedToPU) = fromJust $ L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
             bindedToPU' = recLoopIn bl : recLoopOut bl : (bindedToPU L.\\ [recLoop bl])
          in bn
                 { bnPus = M.adjust (`breakLoopDecision` bl) puTag bnPus
@@ -407,9 +409,10 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
     resolveDeadlockDecision
         bn@BusNetwork{bnRemains, bnBinded, bnPus, bnProcess}
         ref@ResolveDeadlock{newBuffer, changeset} =
-            let Just (tag, _) =
-                    L.find
-                        (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
+            let (tag, _) =
+                    fromJust
+                        $ L.find
+                            (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
                         $ M.assocs bnBinded
              in bn
                     { bnRemains = newBuffer : patch changeset bnRemains
@@ -419,7 +422,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                         scheduleRefactoring (I.singleton $ nextTick bn) ref
                     }
 
-instance (UnitTag tag) => AllocationProblem (BusNetwork tag v x t) tag where
+instance UnitTag tag => AllocationProblem (BusNetwork tag v x t) tag where
     allocationOptions BusNetwork{bnName, bnRemains, bnPUPrototypes} =
         map toOptions $ M.keys $ M.filter (\PUPrototype{pProto} -> any (`allowToProcess` pProto) bnRemains) bnPUPrototypes
         where
@@ -574,7 +577,7 @@ instance (UnitTag tag, VarValTime v x t) => TargetSystemComponent (BusNetwork ta
             values (BusNetworkMC arr) =
                 reverse $
                     map snd $
-                        L.sortOn ((\(Just [ix]) -> read ix :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . T.unpack . signalTag . fst) $
+                        L.sortOn ((\ix -> read ix :: Int) . head . fromJust . matchRegex (mkRegex "([[:digit:]]+)") . T.unpack . signalTag . fst) $
                             M.assocs arr
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
@@ -830,7 +833,7 @@ modifyNetwork net@BusNetwork{bnPus, bnPUPrototypes, bnSignalBusWidth, bnEnv} bui
             , bnPUPrototypes = prototypes
             }
 
-defineNetwork :: (Default t) => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
+defineNetwork :: Default t => k -> IOSynchronization -> State (BuilderSt k v x t) a -> BusNetwork k v x t
 defineNetwork bnName ioSync builder = modifyNetwork (busNetwork bnName ioSync) builder
 
 addCustom ::

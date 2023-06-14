@@ -1,4 +1,4 @@
-# NITTA - Tool for Hard Real-Time CGRA Processors
+# NITTA -- Tool for Hard Real-Time CGRA Processors
 
 [![NITTA Build and Test](https://github.com/ryukzak/nitta/actions/workflows/ci.yml/badge.svg)](https://github.com/ryukzak/nitta/actions/workflows/ci.yml)
 [![Test Coverage](https://img.shields.io/badge/Test%20Coverage-hpc-blue)](https://ryukzak.github.io/nitta/hpc/hpc_index.html)
@@ -44,47 +44,54 @@ See: [CONTRIBUTING.md](CONTRIBUTING.md)
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
 
 ``` console
-$ brew install stack
-$ stack install hlint fourmolu
+brew install ghcup
+ghcup install stack
 ```
-> Make sure that PATH contains $HOME/.local/bin.
 
-> Make sure that you have up to date version of hlint and fourmolu (as on CI)!   
+> Make sure that PATH contains $HOME/.local/bin.
+>
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+
 ``` console
-$ brew install icarus-verilog
-$ brew tap homebrew/cask
-$ brew cask install gtkwave
+brew install icarus-verilog
+brew tap homebrew/cask
+brew cask install gtkwave
 ```
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
+
 ``` console
-$ brew install npm yarn
-$ npm install --global tern prettier
+brew install npm yarn
+npm install --global tern prettier
 ```
 
 ### Ubuntu
 
 Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools for Haskell.
-``` console
-$ sudo apt-get install haskell-stack
-$ stack install hlint fourmolu
-```
-> Make sure that PATH contains $HOME/.local/bin.
 
-> Make sure that you have up to date version of hlint and fourmolu (as on CI)!  
+``` console
+sudo apt-get install haskell-stack
+stack install hlint fourmolu
+```
+
+> Make sure that PATH contains $HOME/.local/bin.
+>
+> Make sure that you have up to date version of hlint and fourmolu (as on CI)!
 
 Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+
 ``` console
-$ sudo apt-get install iverilog
-$ sudo apt-get install gtkwave
+sudo apt-get install iverilog
+sudo apt-get install gtkwave
 ```
 
 Install [npm](https://github.com/npm/cli) and required developer tools for UI.
+
 ``` console
-$ sudo apt-get install npm yarn
-$ npm install --global tern prettier yarn
+sudo apt-get install npm yarn
+npm install --global tern prettier yarn
 ```
 
 ## Build
@@ -94,25 +101,28 @@ Inside the project path
 ### Build backend
 
 ``` console
-$ stack build
+stack build
 ```
 
 ### Build frontend
+
 ``` console
-$ stack exec nitta-api-gen
-$ yarn --cwd web install
-$ yarn --cwd web run build
+stack exec nitta-api-gen
+yarn --cwd web install
+yarn --cwd web run build
 ```
 
 ### Build documentation
+
 ``` console
-$ stack build --haddock # for nitta CAD
-$ stack exec nitta-api-gen # for REST API description
+stack build --haddock # for nitta CAD
+stack exec nitta-api-gen # for REST API description
 ```
 
 For the fast rebuild, the project adds `--fast` flag.
 
 ### Testing
+
 ``` console
 $ stack build --test
 nitta-0.0.0.1: unregistering (dependencies changed)
@@ -135,12 +145,14 @@ Completed 2 action(s).
 ```
 
 Run specified test or group:
-```
+
+```shell
 $ stack test --test-arguments '-p "pattern for the test name"'
 ...
 ```
 
 ### Other
+
 ``` console
 # build only one target
 $ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
@@ -180,7 +192,6 @@ stack exec ghc-pkg unregister interpolate -- --force
 stack exec -- haddock test/**/*.hs -odocs -h
 ```
 
-
 ## Usage
 
 ``` console
@@ -190,32 +201,46 @@ nitta v0.0.0.1 - tool for hard real-time CGRA processors
 nitta [OPTIONS] FILE
 
 Target system configuration:
-         --uarch=PATH                  Microarchitecture configuration file
-  -t     --type=fxM.B                  Overrides data type specified in
-                                       config file
-         --io-sync=sync|async|onboard  Overrides IO synchronization mode
-                                       specified in config file
-         --templates=PATH[:PATH]       Target platform templates (default:
-                                       'templates/Icarus:templates/DE0-Nano')
+         --uarch=PATH                        Microarchitecture configuration
+                                             file
+  -a     --auto-uarch                        Use empty microarchitecture and
+                                             allocate PUs during synthesis
+                                             process.
+  -t     --type=fxM.B                        Overrides data type specified in
+                                             config file
+         --io-sync=sync|async|onboard        Overrides IO synchronization
+                                             mode specified in config file
+         --templates=PATH[:PATH]             Target platform templates
+                                             (default:
+                                             'templates/Icarus:templates/DE0-Nano')
+         --frontend-language=Lua|XMILE       Language used to source
+                                             algorithm description. (default:
+                                             decision by file extension)
 Common flags:
-  -p     --port=INT                    Run nitta server for UI on specific
-                                       port (by default - not run)
-  -o     --output-path=PATH            Target system path
+  -p     --port=INT                          Run nitta server for UI on
+                                             specific port (by default - not
+                                             run)
+  -o     --output-path=PATH                  Target system path
 Simulation:
-  -n=INT                               Number of simulation cycles
-  -f     --fsim                        Functional simulation with trace
-  -l     --lsim                        Logical (HDL) simulation with trace
-         --format=md|json|csv          Simulation output format (default:
-                                       'md')
+  -n=INT                                     Number of simulation cycles
+  -f     --fsim                              Functional simulation with trace
+  -l     --lsim                              Logical (HDL) simulation with
+                                             trace
+         --format=md|json|csv                Simulation output format
+                                             (default: 'md')
 Other:
-  -v     --verbose                     Verbose
-  -e     --extra-verbose               Extra verbose
-  -?     --help                        Display help message
-  -V     --version                     Print version information
-         --numeric-version             Print just the version number
+  -v     --verbose                           Verbose
+  -e     --extra-verbose                     Extra verbose
+  -?     --help                              Display help message
+  -V     --version                           Print version information
+         --numeric-version                   Print just the version number
+Synthesis:
+  -m     --method=stateoftheart|nosynthesis  Synthesis method (default:
+                                             stateoftheart)
 ```
 
-### Logical simulation for a specific algorithm:
+### Logical simulation for a specific algorithm
+
 ``` console
 $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | Cycle  | temp_cup_1  | time_0  |
@@ -232,7 +257,8 @@ $ stack exec nitta -- examples/teacup.lua --fsim --format=md -t=fx24.32
 | 10     | 168.750     | 1.125   |
 ```
 
-### Synthesis of a target system for a specific algorithm:
+### Synthesis of a target system for a specific algorithm
+
 ``` console
 $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 [NOTICE : NITTA] synthesis process...ok
@@ -252,9 +278,11 @@ $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 | 10     | 168.750     | 1.125   |
 ```
 
-### Run with user interface:
+### Run with user interface
+
 ``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080
+$ stack exec nitta -- examples/teacup.lua -p=8080 --method=nosynthesis
 Running NITTA server at http://localhost:8080 ...
 ```
 
+by default UI open already synthesised algorithm. By adding `--method=nosynthesis` we prevent automatical synthesis.

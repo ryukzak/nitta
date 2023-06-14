@@ -45,7 +45,7 @@ import Numeric.Interval.NonEmpty ((...))
 import Numeric.Interval.NonEmpty qualified as I
 import Prettyprinter
 
-class (Typeable i) => SimpleIOInterface i
+class Typeable i => SimpleIOInterface i
 
 data SimpleIO i v x t = SimpleIO
     { bounceFilter :: Int
@@ -223,7 +223,7 @@ instance Connected (SimpleIO i v x t) where
         }
         deriving (Show)
 
-instance (Var v) => Locks (SimpleIO i v x t) v where
+instance Var v => Locks (SimpleIO i v x t) v where
     locks SimpleIO{} = []
 
 data ProtocolDescription v = ProtocolDescription
@@ -235,7 +235,7 @@ data ProtocolDescription v = ProtocolDescription
     }
     deriving (Generic)
 
-instance (ToJSON v) => ToJSON (ProtocolDescription v)
+instance ToJSON v => ToJSON (ProtocolDescription v)
 
 protocolDescription ::
     forall i v x t.

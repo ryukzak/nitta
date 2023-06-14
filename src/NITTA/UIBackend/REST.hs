@@ -257,10 +257,10 @@ instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = n
 
 instance ToSample Char where toSamples _ = noSamples
 
-instance (UnitTag tag) => ToSample (Lock tag) where
+instance UnitTag tag => ToSample (Lock tag) where
     toSamples _ = singleSample Lock{locked = "b", lockBy = "a"}
 
-instance {-# OVERLAPS #-} (UnitTag tag) => ToSample [(T.Text, [Lock tag])] where
+instance {-# OVERLAPS #-} UnitTag tag => ToSample [(T.Text, [Lock tag])] where
     toSamples _ = singleSample [("PU or function tag", [Lock{locked = "b", lockBy = "a"}])]
 
 type DebugAPI tag v t =
@@ -316,7 +316,7 @@ instance ToParam (QueryParam' mods "loopsNumber" Int) where
 instance ToSample Sid where
     toSamples _ = [("The synthesis node path from the root by edge indexes.", Sid [1, 1, 3])]
 
-instance (Time t) => ToSample (Process t StepInfoView) where
+instance Time t => ToSample (Process t StepInfoView) where
     toSamples _ =
         [
             ( "for process unit"
@@ -344,7 +344,7 @@ instance (Time t) => ToSample (Process t StepInfoView) where
             )
         ]
 
-instance (UnitTag tag) => ToSample (MicroarchitectureDesc tag) where
+instance UnitTag tag => ToSample (MicroarchitectureDesc tag) where
     toSamples _ =
         let bn :: BusNetwork tag String (IntX 32) Int = defineNetwork "net1" Sync $ do
                 addCustom "fram1" (framWithSize 16) FramIO

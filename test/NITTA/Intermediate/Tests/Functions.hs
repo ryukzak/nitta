@@ -30,7 +30,7 @@ inputVarGen = I . T.pack <$> vectorOf varNameSize (elements ['a' .. 'z'])
 -- singleton.
 uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
-instance (Arbitrary x) => Arbitrary (Loop T.Text x) where
+instance Arbitrary x => Arbitrary (Loop T.Text x) where
     arbitrary = suchThat (Loop <$> (X <$> arbitrary) <*> outputVarsGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Buffer T.Text x) where
@@ -57,5 +57,5 @@ instance Arbitrary (Acc T.Text x) where
 instance Arbitrary (IntX m) where
     arbitrary = IntX <$> choose (0, 256)
 
-instance (Arbitrary x) => Arbitrary (Attr x) where
+instance Arbitrary x => Arbitrary (Attr x) where
     arbitrary = Attr <$> arbitrary <*> arbitrary

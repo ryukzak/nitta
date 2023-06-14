@@ -28,8 +28,6 @@ module NITTA.Model.ProcessorUnits.Types (
     Step (..),
     StepInfo (..),
     Relation (..),
-    isVertical,
-    isHorizontal,
     descent,
     whatsHappen,
     extractInstructionAt,
@@ -112,7 +110,7 @@ intermediate representation:
 3. other features implemented by different type classes (see above and in
    "NITTA.Model.Problems").
 -}
-class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
+class VarValTime v x t => ProcessorUnit u v x t | u -> v x t where
     -- If the processor unit can execute a function, then it will return the PU
     -- model with already bound function (only registeration, actual scheduling
     -- will be happening later). If not, it will return @Left@ value with a
@@ -143,7 +141,7 @@ allowToProcess f pu = isRight $ tryBind f pu
 class NextTick u t | u -> t where
     nextTick :: u -> t
 
-instance (ProcessorUnit u v x t) => NextTick u t where
+instance ProcessorUnit u v x t => NextTick u t where
     nextTick = nextTick . process
 
 ---------------------------------------------------------------------
@@ -182,13 +180,13 @@ instance (Time t, Show i) => Pretty (Process t i) where
 
 instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
-instance (Default t) => Default (Process t i) where
+instance Default t => Default (Process t i) where
     def = Process{steps = [], relations = [], nextTick_ = def, nextUid = def}
 
 instance {-# OVERLAPS #-} NextTick (Process t si) t where
     nextTick = nextTick_
 
-instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
+instance Ord t => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
         where
             get Step{pDesc} | IntermediateStep f <- descent pDesc = Just f
@@ -210,7 +208,7 @@ data Step t i = Step
 
 instance (ToJSON t, ToJSON i) => ToJSON (Step t i)
 
-instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
+instance Ord v => Patch (Step t (StepInfo v x t)) (Changeset v) where
     patch diff step@Step{pDesc} = step{pDesc = patch diff pDesc}
 
 -- | Informative process step description at a specific process level.
@@ -229,7 +227,7 @@ data StepInfo v x t where
         Instruction pu ->
         StepInfo v x t
     -- | wrapper for nested process unit step (used for networks)
-    NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
+    NestedStep :: UnitTag tag => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
     -- | Process unit allocation step
     AllocationStep :: (Typeable a, Show a, Eq a) => a -> StepInfo v x t
 
@@ -251,7 +249,7 @@ instance (Var v, Show (Step t (StepInfo v x t))) => Show (StepInfo v x t) where
     show (InstructionStep instr) = "Instruction: " <> show instr
     show NestedStep{nTitle, nStep = Step{pDesc}} = "@" <> toString nTitle <> " " <> show pDesc
 
-instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
+instance Ord v => Patch (StepInfo v x t) (Changeset v) where
     patch diff (IntermediateStep f) = IntermediateStep $ patch diff f
     patch diff (EndpointRoleStep ep) = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
@@ -269,12 +267,6 @@ data Relation
       Horizontal {hPrev, hNext :: ProcessStepID}
     deriving (Show, Generic, Ord, Eq)
 
-isVertical Vertical{} = True
-isVertical _ = False
-
-isHorizontal Horizontal{} = True
-isHorizontal _ = False
-
 instance ToJSON Relation
 
 whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps
@@ -283,7 +275,7 @@ whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps
 
 extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
     where
-        inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
+        inst :: Typeable (Instruction pu) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
         inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
 
@@ -341,7 +333,6 @@ instance
     , Default (Microcode pu)
     , ProcessorUnit pu v x t
     , UnambiguouslyDecode pu
-    , Time t
     , Typeable pu
     ) =>
     ByTime pu t

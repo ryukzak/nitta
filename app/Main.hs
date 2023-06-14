@@ -23,6 +23,7 @@ import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
+
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -36,14 +37,13 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
-import NITTA.Synthesis
 import NITTA.Synthesis.MlBackend.ServerInstance
+import NITTA.Synthesis (TargetSynthesis (..), noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem, topDownScoreSynthesisIO)
 import NITTA.UIBackend
 import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores)
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
-import System.Console.CmdArgs.Explicit (HelpFormat (HelpFormatDefault), helpText)
 import System.Exit
 import System.FilePath.Posix
 import System.IO (stdout)
@@ -53,6 +53,16 @@ import System.Log.Handler.Simple
 import System.Log.Logger
 import Text.Read
 import Text.Regex
+
+data SynthesisMethodArg
+    = StateOfTheArt
+    | TopDownByScore
+    | NoSynthesis
+    deriving (Show, Data, Typeable)
+
+synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
+synthesisMethod TopDownByScore = topDownScoreSynthesisIO
+synthesisMethod NoSynthesis = noSynthesis
 
 -- | Command line interface.
 data Nitta = Nitta
@@ -73,7 +83,7 @@ data Nitta = Nitta
     , frontend_language :: Maybe FrontendType
     , score :: [T.Text]
     , depth_base :: Float
-    , synthesis_method :: String
+    , method :: SynthesisMethodArg
     }
     deriving (Show, Data, Typeable)
 
@@ -160,14 +170,14 @@ nittaArgs =
                 &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
                 &= groupname "Synthesis"
         , depth_base =
-            1.2
-                &= help "Only for top-down score synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
+            1.4
+                &= help "Only for '" ++ show ++ "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
-        , synthesis_method =
-            "topDownScoreSynthesisIO"
-                &= help "Synthesis method (default: 'topDownScoreSynthesisIO')"
-                &= typ "FUNCTION_NAME"
+        , method =
+            StateOfTheArt
+                &= help "Synthesis method (default: stateoftheart)"
+                &= typ "stateoftheart|topdownbyscore|nosynthesis"
                 &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
@@ -177,12 +187,9 @@ nittaArgs =
         defTemplates = S.join ":" defProjectTemplates
 
 getNittaArgs :: IO Nitta
-getNittaArgs = do
-    let handleError :: ExitCode -> IO Nitta
-        handleError exitCode = do
-            print $ helpText [] HelpFormatDefault $ cmdArgsMode nittaArgs
-            exitWith exitCode
-    catch (cmdArgs nittaArgs) handleError
+getNittaArgs = cmdArgs nittaArgs
+
+fromConf toml s = getFromTomlSection s =<< toml
 
 main = do
     ( Nitta
@@ -203,7 +210,7 @@ main = do
             frontend_language
             score
             depth_base
-            synthesis_method
+            method
         ) <-
         getNittaArgs
     let nodeScores = score
@@ -214,7 +221,6 @@ main = do
         Nothing -> return Nothing
         Just path -> Just . getToml <$> T.readFile path
 
-    let fromConf s = getFromTomlSection s =<< toml
     let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
@@ -224,7 +230,7 @@ main = do
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> fromConf "ioSync" <|> Just Sync
+                ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
@@ -238,17 +244,6 @@ main = do
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
-            when (port > 0) $ do
-                bufE <- try $ readFile (apiPath </> "PORT")
-                let expect = case bufE of
-                        Right buf -> case readEither buf of
-                            Right p -> p
-                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
-                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                warningIfUnexpectedPort expect port
-                backendServer port received output_path nodeScores $ mkModelWithOneNetwork ma frDataFlow
-                exitSuccess
-
             when fsim $ functionalSimulation n received format frontendResult
 
             prj <- withLazyMlBackendServer $ \serverGetter -> do
@@ -258,33 +253,43 @@ main = do
                             { mlBackendGetter = serverGetter
                             , nodeScores = nodeScores
                             }
-                    synthesisMethod = case synthesis_method of
-                        "topDownScoreSynthesisIO" -> topDownScoreSynthesisIO depth_base 100000 Nothing ctx
-                        "stateOfTheArtSynthesisIO" -> stateOfTheArtSynthesisIO ctx
-                        _ -> error $ "unregistered synthesis method: " <> synthesis_method
 
-                synthesizeTargetSystem
-                    (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
-                        { tName = "main"
-                        , tPath = output_path
-                        , tMicroArch = ma
-                        , tDFG = frDataFlow
-                        , tReceivedValues = received
-                        , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = synthesisMethod
-                        , tSimulationCycleN = n
-                        , tSourceCodeType = exactFrontendType
-                        }
-                    >>= either error return
+                (synthesisRoot, prjE) <-
+                    synthesizeTargetSystem
+                        (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
+                            { tName = "main"
+                            , tPath = output_path
+                            , tMicroArch = ma
+                            , tDFG = frDataFlow
+                            , tReceivedValues = received
+                            , tTemplates = S.split ":" templates
+                            , tSynthesisMethod = synthesisMethod method ctx
+                            , tSimulationCycleN = n
+                            , tSourceCodeType = exactFrontendType
+                            }
 
-            when lsim $ logicalSimulation format frPrettyLog prj
+                when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+
+                when (port > 0) $ do
+                    bufE <- try $ readFile (apiPath </> "PORT")
+                    let expect = case bufE of
+                            Right buf -> case readEither buf of
+                                Right p -> p
+                                Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                            Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
+                    warningIfUnexpectedPort expect port
+                    backendServer port received output_path synthesisRoot
+                    exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> fromConf "type" <|> Just "fx32.32"
+        $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
-        [m, b] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
+        (m, b) = case fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input of
+            [m_, b_] -> (m_, b_)
+            _ -> error "parseFX: impossible"
+
         convert = fromJust . someNatVal . read
      in (convert m, convert b)
 
@@ -309,6 +314,7 @@ readSourceCode filename = do
     return src
 
 -- | Simulation on intermediate level (data-flow graph)
+functionalSimulation :: (Val x, Var v) => Int -> [(v, [x])] -> [Char] -> FrontendResult v x -> IO ()
 functionalSimulation n received format FrontendResult{frDataFlow, frPrettyLog} = do
     let cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."

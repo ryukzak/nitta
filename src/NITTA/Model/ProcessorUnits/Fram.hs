@@ -57,7 +57,7 @@ framWithSize size =
         , process_ = def
         }
 
-instance (VarValTime v x t) => Pretty (Fram v x t) where
+instance VarValTime v x t => Pretty (Fram v x t) where
     pretty Fram{memory} =
         [__i|
             Fram:
@@ -75,13 +75,13 @@ instance (Default t, Default x) => Default (Fram v x t) where
         where
             defaultSize = 16
 
-instance (Default x) => DefaultX (Fram v x t) x
+instance Default x => DefaultX (Fram v x t) x
 
-instance (VarValTime v x t) => WithFunctions (Fram v x t) (F v x) where
+instance VarValTime v x t => WithFunctions (Fram v x t) (F v x) where
     functions Fram{remainBuffers, memory} =
         map (packF . fst) remainBuffers ++ concatMap functions (A.elems memory)
 
-instance (VarValTime v x t) => Variables (Fram v x t) v where
+instance VarValTime v x t => Variables (Fram v x t) v where
     variables fram = S.unions $ map variables $ functions fram
 
 -- | Memory cell
@@ -112,7 +112,7 @@ instance WithFunctions (Cell v x t) (F v x) where
     functions Cell{history, job = Just Job{function}} = function : history
     functions Cell{history} = history
 
-instance (Default x) => Default (Cell v x t) where
+instance Default x => Default (Cell v x t) where
     def =
         Cell
             { state = NotUsed
@@ -158,7 +158,7 @@ data CellState v x t
     | DoLoopTarget v
     deriving (Eq)
 
-instance (VarValTime v x t) => Pretty (CellState v x t) where
+instance VarValTime v x t => Pretty (CellState v x t) where
     pretty NotUsed = "NotUsed"
     pretty Done = "Done"
     pretty (DoConstant vs) = "DoConstant " <> viaShow (map toString vs)
@@ -195,7 +195,7 @@ addrWidth Fram{memory} = log2 $ numElements memory
     where
         log2 = ceiling . (logBase 2 :: Double -> Double) . fromIntegral
 
-instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Fram v x t) v x t where
     tryBind f fram
         | not $ null (variables f `S.intersection` variables fram) =
             Left "can not bind (self transaction)"
@@ -246,24 +246,26 @@ instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
     process Fram{process_} = process_
     parallelismType _ = Full
 
-instance (Var v) => Locks (Fram v x t) v where
+instance Var v => Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
+instance VarValTime v x t => BreakLoopProblem (Fram v x t) v x where
     breakLoopOptions Fram{memory} =
         [ BreakLoop x o i_
         | (_, Cell{state = NotBrokenLoop, job = Just Job{function}}) <- A.assocs memory
-        , let Just (Loop (X x) (O o) (I i_)) = castF function
+        , let (Loop (X x) (O o) (I i_)) = fromJust $ castF function
         ]
     breakLoopDecision fram@Fram{memory} bl@BreakLoop{loopO} =
-        let Just (addr, cell@Cell{history, job = Just Job{binds}}) =
-                L.find
-                    ( \case
-                        (_, Cell{job = Just Job{function}}) -> function == recLoop bl
-                        _ -> False
-                    )
+        let (addr, cell@Cell{history, job}) =
+                fromJust
+                    $ L.find
+                        ( \case
+                            (_, Cell{job = Just Job{function}}) -> function == recLoop bl
+                            _ -> False
+                        )
                     $ A.assocs memory
+            Job{binds} = fromJust job
             ((iPid, oPid), process_) = runSchedule fram $ do
                 revoke <- scheduleFunctionRevoke $ recLoop bl
                 f1 <- scheduleFunctionBind $ recLoopOut bl
@@ -289,7 +291,7 @@ instance ConstantFoldingProblem (Fram v x t) v x
 instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
-instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
+instance VarValTime v x t => EndpointProblem (Fram v x t) v t where
     endpointOptions pu@Fram{remainBuffers, memory} =
         let target v = EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)
                 where
@@ -490,7 +492,7 @@ instance UnambiguouslyDecode (Fram v x t) where
     decodeInstruction (PrepareRead addr) = Microcode True False $ Just addr
     decodeInstruction (Write addr) = Microcode False True $ Just addr
 
-instance (VarValTime v x t) => Testable (Fram v x t) v x where
+instance VarValTime v x t => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         let tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
             showMicrocode Microcode{oeSignal, wrSignal, addrSignal} =
@@ -513,7 +515,7 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
 
 softwareFile tag pu = moduleName tag pu <> "." <> tag <> ".dump"
 
-instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
+instance VarValTime v x t => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
     hardware _tag _pu = FromLibrary "pu_fram.v"
     software tag fram@Fram{memory} =

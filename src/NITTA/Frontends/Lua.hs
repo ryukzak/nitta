@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# OPTIONS_GHC -Wno-type-defaults -Wno-incomplete-uni-patterns #-}
 
 {- |
 Module      : NITTA.Frontends.Lua
@@ -229,7 +229,12 @@ getNextTmpVarName fOut
                 return $ "_0#" <> fOut
 
 addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody names _ _)) = do
-    mapM_ (\(Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber) $ zip3 names exps [0 ..]
+    mapM_
+        ( \case
+            (Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber
+            _ -> error "addStartupFuncArgs: internal error"
+        )
+        $ zip3 names exps [0 ..]
     return ""
     where
         addToBuffer name valueString serialNumber = do
@@ -251,7 +256,12 @@ processStatement fn (Assign lexps@[_] [Unop Neg (Number ntype ntext)]) =
 processStatement _ (Assign lexp [rexp]) = do
     parseRightExp (map parseLeftExp lexp) rexp
 processStatement startupFunctionName (Assign vars exps) | length vars == length exps = do
-    mapM_ (\(VarName (Name name), expr) -> processStatement startupFunctionName (Assign [VarName (Name (getTempAlias name))] [expr])) $ zip vars exps
+    mapM_
+        ( \case
+            (VarName (Name name), expr) -> processStatement startupFunctionName (Assign [VarName (Name (getTempAlias name))] [expr])
+            _ -> error "processStatement: internal error"
+        )
+        $ zip vars exps
     mapM_ (\(VarName (Name name)) -> addAlias name (getTempAlias name)) vars
     where
         getTempAlias name = name <> "&"
@@ -259,7 +269,7 @@ processStatement startupFunctionName (Assign vars exps) | length vars == length 
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName = do
         LuaAlgBuilder{algStartupArgs} <- get
-        let startupVarsNames = map ((\(Just x) -> x) . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
+        let startupVarsNames = map (fromMaybe (error "processStatement: internal error") . (`HM.lookup` algStartupArgs)) [0 .. (HM.size algStartupArgs)]
         let startupVarsVersions = map (\x -> LuaValueInstance{lviName = fst x, lviAssignCount = 0, lviIsConstant = False}) startupVarsNames
         mapM_ parseStartupArg $ zip3 args startupVarsVersions (map (readText . snd) startupVarsNames)
     where

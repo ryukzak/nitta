@@ -65,7 +65,7 @@ data Broken v x t = Broken
     , unknownDataOut :: Bool
     }
 
-instance (VarValTime v x t) => Pretty (Broken v x t) where
+instance VarValTime v x t => Pretty (Broken v x t) where
     pretty Broken{..} =
         [__i|
             Broken:
@@ -85,7 +85,7 @@ instance (VarValTime v x t) => Pretty (Broken v x t) where
                 #{ indent 4 $ pretty $ process_ }
             |]
 
-instance (Var v) => Locks (Broken v x t) v where
+instance Var v => Locks (Broken v x t) v where
     locks Broken{remain, sources, targets} =
         [ Lock{lockBy, locked}
         | locked <- sources
@@ -101,7 +101,7 @@ instance ConstantFoldingProblem (Broken v x t) v x
 instance OptimizeAccumProblem (Broken v x t) v x
 instance ResolveDeadlockProblem (Broken v x t) v x
 
-instance (VarValTime v x t) => ProcessorUnit (Broken v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Broken v x t) v x t where
     tryBind f pu@Broken{remain}
         | Just F.BrokenBuffer{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Broken: " ++ show f
@@ -117,7 +117,7 @@ execution pu@Broken{targets = [], sources = [], remain, process_} f
             }
 execution _ _ = error "Broken: internal execution error."
 
-instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
+instance VarValTime v x t => EndpointProblem (Broken v x t) v t where
     endpointOptions Broken{targets = [_], lostEndpointTarget = True} = []
     endpointOptions pu@Broken{targets = [v]} =
         let start = nextTick pu `withShift` 1 ... maxBound
@@ -244,7 +244,7 @@ instance Default (Microcode (Broken v x t)) where
             , oeSignal = False
             }
 
-instance (Time t) => Default (Broken v x t) where
+instance Time t => Default (Broken v x t) where
     def =
         Broken
             { remain = []
@@ -267,7 +267,7 @@ instance (Time t) => Default (Broken v x t) where
             , unknownDataOut = False
             }
 
-instance (Default x) => DefaultX (Broken v x t) x
+instance Default x => DefaultX (Broken v x t) x
 
 instance UnambiguouslyDecode (Broken v x t) where
     decodeInstruction Load = def{wrSignal = True}
@@ -284,7 +284,7 @@ instance IOConnected (Broken v x t) where
     data IOPorts (Broken v x t) = BrokenIO
         deriving (Show)
 
-instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
+instance VarValTime v x t => TargetSystemComponent (Broken v x t) where
     moduleName _title _pu = "pu_broken"
     software _ _ = Empty
     hardware _tag _pu = Aggregate Nothing [FromLibrary "pu_broken.v"]
@@ -323,7 +323,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
 
 instance IOTestBench (Broken v x t) v x
 
-instance (Ord t) => WithFunctions (Broken v x t) (F v x) where
+instance Ord t => WithFunctions (Broken v x t) (F v x) where
     functions Broken{process_, remain, currentWork} =
         functions process_
             ++ remain
@@ -331,7 +331,7 @@ instance (Ord t) => WithFunctions (Broken v x t) (F v x) where
                 Just (_, f) -> [f]
                 Nothing -> []
 
-instance (VarValTime v x t) => Testable (Broken v x t) v x where
+instance VarValTime v x t => Testable (Broken v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench

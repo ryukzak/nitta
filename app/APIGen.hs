@@ -76,8 +76,8 @@ $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
 $(deriveTypeScript defaultOptions ''ResolveDeadlockMetrics)
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
-$(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
+$(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''TimeConstraint)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
@@ -109,8 +109,8 @@ $(deriveTypeScript defaultOptions ''TestbenchReport)
 
 -- Microarchitecture
 $(deriveTypeScript defaultOptions ''IOSynchronization)
-$(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''UnitDesc)
+$(deriveTypeScript defaultOptions ''NetworkDesc)
 $(deriveTypeScript defaultOptions ''MicroarchitectureDesc)
 
 main = do
@@ -186,8 +186,9 @@ main = do
             (ts ++ "\n" ++ "type NId = string\n")
             [ ("type ", "export type ") -- export all types
             , ("interface ", "export interface ") -- export all interfaces
-            , ("[k: T1]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
-            , ("[k: T2]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in T1]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in T2]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k in number]?: number", "[k: number]: number") -- dirty hack for fixing map types for TreeInfo
             ]
     infoM "NITTA.APIGen" $ "Generate typescript interface " <> output_path <> "/types.ts...OK"
 

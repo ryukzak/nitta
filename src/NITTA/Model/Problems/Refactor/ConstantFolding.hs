@@ -109,7 +109,10 @@ selectClusters fs =
 evalCluster [f] = [f]
 evalCluster fs = outputResult
     where
-        (consts, [f]) = L.partition isConst fs
+        (consts, fSingleton) = L.partition isConst fs
+        f = case fSingleton of
+            [f'] -> f'
+            _ -> error "evalCluster: internal error"
         cntx = CycleCntx $ HM.fromList $ concatMap (simulate def) consts
         outputResult
             | null $ outputs f = fs

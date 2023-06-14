@@ -137,16 +137,16 @@ test_manual =
 
 f1 = F.add "a" "b" ["c", "d"] :: F T.Text Int
 
-patchP :: (Patch a (T.Text, T.Text)) => (T.Text, T.Text) -> a -> a
+patchP :: Patch a (T.Text, T.Text) => (T.Text, T.Text) -> a -> a
 patchP = patch
 
-patchI :: (Patch a (I T.Text, I T.Text)) => (I T.Text, I T.Text) -> a -> a
+patchI :: Patch a (I T.Text, I T.Text) => (I T.Text, I T.Text) -> a -> a
 patchI = patch
 
-patchO :: (Patch a (O T.Text, O T.Text)) => (O T.Text, O T.Text) -> a -> a
+patchO :: Patch a (O T.Text, O T.Text) => (O T.Text, O T.Text) -> a -> a
 patchO = patch
 
-patchC :: (Patch a (Changeset T.Text)) => Changeset T.Text -> a -> a
+patchC :: Patch a (Changeset T.Text) => Changeset T.Text -> a -> a
 patchC = patch
 
 test_patchFunction =
@@ -176,16 +176,15 @@ test_patchFunction =
             @?= "a + b' = c = d'"
     ]
 
-pu =
-    let Right pu' =
-            tryBind
-                f1
-                PU
-                    { diff = def
-                    , unit = def :: Accum T.Text Int Int
-                    , uEnv = undefined
-                    }
-     in pu'
+pu = case tryBind
+    f1
+    PU
+        { diff = def
+        , unit = def :: Accum T.Text Int Int
+        , uEnv = undefined
+        } of
+    Right pu_ -> pu_
+    Left err -> error $ show err
 
 test_patchEndpointOptions =
     [ testCase "non-patched function options" $

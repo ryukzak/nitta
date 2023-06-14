@@ -35,37 +35,32 @@ data TargetSystem u tag v x t = TargetSystem
     }
     deriving (Generic)
 
-instance (Default u) => Default (TargetSystem u tag v x t) where
+instance Default u => Default (TargetSystem u tag v x t) where
     def = TargetSystem def def
 
-instance (WithFunctions u (F v x)) => WithFunctions (TargetSystem u tag v x t) (F v x) where
+instance WithFunctions u (F v x) => WithFunctions (TargetSystem u tag v x t) (F v x) where
     functions TargetSystem{mUnit, mDataFlowGraph} =
         assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) $ -- inconsistent TargetSystem
             functions mUnit
 
 processDuration TargetSystem{mUnit} = nextTick mUnit - 1
 
-isSynthesisComplete :: (ProcessorUnit u v x t) => TargetSystem u tag v x t -> Bool
+isSynthesisComplete :: ProcessorUnit u v x t => TargetSystem u tag v x t -> Bool
 isSynthesisComplete TargetSystem{mUnit, mDataFlowGraph} =
     transferred mUnit == variables mDataFlowGraph
 
-instance
-    ( VarValTime v x t
-    , ProcessorUnit u v x t
-    ) =>
-    ProcessorUnit (TargetSystem u tag v x t) v x t
-    where
+instance ProcessorUnit u v x t => ProcessorUnit (TargetSystem u tag v x t) v x t where
     tryBind f ts@TargetSystem{mUnit} = (\u -> ts{mUnit = u}) <$> tryBind f mUnit
     process TargetSystem{mUnit} = process mUnit
     parallelismType TargetSystem{mUnit} = parallelismType mUnit
     puSize TargetSystem{mUnit} = puSize mUnit
 
-instance (BindProblem u tag v x) => BindProblem (TargetSystem u tag v x t) tag v x where
+instance BindProblem u tag v x => BindProblem (TargetSystem u tag v x t) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
 
     bindDecision ts@TargetSystem{mUnit} d = ts{mUnit = bindDecision mUnit d}
 
-instance (DataflowProblem u tag v t) => DataflowProblem (TargetSystem u tag v x t) tag v t where
+instance DataflowProblem u tag v t => DataflowProblem (TargetSystem u tag v x t) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit
 
     dataflowDecision f@TargetSystem{mUnit} d = f{mUnit = dataflowDecision mUnit d}
@@ -112,7 +107,7 @@ instance (Var v, ResolveDeadlockProblem u v x) => ResolveDeadlockProblem (Target
             , mUnit = resolveDeadlockDecision mUnit d
             }
 
-instance (AllocationProblem u tag) => AllocationProblem (TargetSystem u tag v x t) tag where
+instance AllocationProblem u tag => AllocationProblem (TargetSystem u tag v x t) tag where
     allocationOptions TargetSystem{mUnit} = allocationOptions mUnit
 
     allocationDecision f@TargetSystem{mUnit} d = f{mUnit = allocationDecision mUnit d}

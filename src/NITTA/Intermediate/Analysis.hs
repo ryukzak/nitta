@@ -123,13 +123,13 @@ buildProcessWaves vars fs =
                 }
      in pwGraph $ execBuilder builder 0
 
-execBuilder :: (Ord v) => Builder v x -> Int -> Builder v x
+execBuilder :: Ord v => Builder v x -> Int -> Builder v x
 execBuilder builder@Builder{pwRemains} prev
     | S.null pwRemains = builder
     | S.size pwRemains == prev = error "Process waves construction stuck in a loop"
     | otherwise = execBuilder (foldl applyRemaining builder pwRemains) $ S.size pwRemains
 
-applyRemaining :: (Ord v) => Builder v x -> F v x -> Builder v x
+applyRemaining :: Ord v => Builder v x -> F v x -> Builder v x
 applyRemaining builder@Builder{pwRemains, pwGraph, pwIn, pwReadyIn} func =
     let fIn = inputs func
         fOut = outputs func
@@ -143,7 +143,7 @@ applyRemaining builder@Builder{pwRemains, pwGraph, pwIn, pwReadyIn} func =
                     , pwRemains = S.delete func pwRemains
                     }
 
-insertF :: (Ord v) => F v x -> S.Set v -> S.Set v -> [ProcessWave v x] -> [ProcessWave v x]
+insertF :: Ord v => F v x -> S.Set v -> S.Set v -> [ProcessWave v x] -> [ProcessWave v x]
 insertF f fIn fOut []
     | null fIn = [ProcessWave{pwFs = [f], pwOut = fOut}]
     | otherwise = error "Cannot calculate process wave for the function"

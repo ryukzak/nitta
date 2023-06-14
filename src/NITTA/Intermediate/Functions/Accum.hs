@@ -43,7 +43,7 @@ instance Show Sign where
 
 data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
-instance (Var v) => Show (Action v) where
+instance Var v => Show (Action v) where
     show (Push s (I v)) = show s <> toString v
     show (Pull (O vs)) = S.join " " $ map ("= " <>) $ vsToStringList vs
 
@@ -53,7 +53,7 @@ instance Variables (Action v) v where
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
-instance (Var v) => Show (Acc v x) where
+instance Var v => Show (Acc v x) where
     show (Acc acts) =
         let lastElement = last acts
             initElements = init acts
@@ -82,11 +82,11 @@ fromPush _ = error "Error in fromPush function in acc"
 fromPull (Pull (O vs)) = vs
 fromPull _ = error "Error in fromPull function in acc"
 
-instance (Ord v) => Function (Acc v x) v where
+instance Ord v => Function (Acc v x) v where
     inputs (Acc lst) = S.fromList $ map fromPush $ filter isPush lst
     outputs (Acc lst) = unionsMap fromPull $ filter isPull lst
 
-instance (Ord v) => Patch (Acc v x) (v, v) where
+instance Ord v => Patch (Acc v x) (v, v) where
     patch diff (Acc lst) =
         Acc $
             nub $
@@ -108,15 +108,30 @@ toBlocksSplit exprInput =
      in splitBySemicolon $ matchAll exprPattern filtered []
 
 accGen blocks =
-    let partedExpr = map (partition (\(x : _) -> x /= '='))
+    let partedExpr =
+            map
+                ( partition $ \case
+                    (x : _) -> x /= '='
+                    x -> error $ "error in accGen: " <> show x
+                )
         signPush ('+' : name) = Push Plus (I $ T.pack name)
         signPush ('-' : name) = Push Minus (I $ T.pack name)
         signPush _ = error "Error in matching + and -"
         pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ S.fromList $ foldl (\buff (_ : name) -> T.pack name : buff) [] lst
+        pullCreate lst =
+            Pull $
+                O $
+                    S.fromList $
+                        foldl
+                            ( \buff -> \case
+                                (_ : name) -> T.pack name : buff
+                                _ -> error "accGen internal error"
+                            )
+                            []
+                            lst
      in Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
-instance (Var v) => Locks (Acc v x) v where
+instance Var v => Locks (Acc v x) v where
     locks (Acc actions) =
         let (lockByActions, lockedActions) = span isPush actions
          in [ Lock{locked, lockBy}
