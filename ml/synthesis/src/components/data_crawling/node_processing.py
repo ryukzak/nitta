@@ -80,11 +80,11 @@ def get_subtree_size(node: NittaNodeInTree) -> int:
 
 
 def get_leaf_metrics(node: NittaNode):
-    return node.duration, get_depth(node)
+    return node.duration, get_depth(node.sid)
 
 
-def get_depth(node: NittaNode) -> int:
-    return node.sid.count("-") if node.sid != "-" else 0
+def get_depth(sid: str) -> int:
+    return sid.count("-") if sid != "-" else 0
 
 
 # def subtree_leafs_metrics(node: NittaNode) -> Optional[Deque[Tuple[int, int]]]:

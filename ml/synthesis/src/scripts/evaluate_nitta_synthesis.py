@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import random
+import re
 import sys
 from asyncio.subprocess import DEVNULL, PIPE
 from pathlib import Path
@@ -10,8 +11,10 @@ from typing import Iterable, List, Tuple
 import pandas as pd
 
 from components.common.logging import configure_logging, get_logger
-from components.data_crawling.example_running import run_nitta_raw
-from components.data_crawling.saving import save_df_with_timestamp
+from components.common.saving import save_df_with_timestamp
+from components.data_crawling.example_running import run_nitta, run_nitta_raw
+from components.data_crawling.node_processing import get_depth
+from components.data_crawling.tree_retrieving import retrieve_single_node
 from consts import EXAMPLES_DIR
 
 logger = get_logger(__name__)
@@ -53,12 +56,20 @@ async def _run_config_and_save_results(
         success = False
         timeout = False
         steps = 0
+        last_sid = ""
+        explore_regexp = re.compile(
+            r"^\[DEBUG : NITTA\.Synthesis\] explore: (?P<sid>(-\d+)+)"
+        )
+
         line = await nitta_proc.stdout.readline()
         while line:
             decoded_line = line.decode("utf-8")
-            # logger.debug(decoded_line)
-            if "[DEBUG : NITTA.Synthesis] explore:" in decoded_line:
+
+            explore_match = explore_regexp.match(decoded_line)
+            if explore_match:
                 steps += 1
+                last_sid = explore_match.group("sid")
+
             if "synthesis process...ok" in decoded_line:
                 success = True
                 break
@@ -80,14 +91,33 @@ async def _run_config_and_save_results(
             f"Done parsing stdout, success={success}, timeout={timeout}, steps={steps}"
         )
 
+        elapsed_time = perf_counter() - start_time
+        if last_sid:
+            async with run_nitta(example) as (_, nitta_baseurl):
+                node = await retrieve_single_node(nitta_baseurl, last_sid)
+
         results.append(
             {
                 "example": example.name,
-                "synthesis_steps": steps,
                 "success": int(success),
                 "timeout": int(timeout),
                 **{param_name: opt_name for param_name, opt_name, _ in run_config},
-                **({} if timeout else {"time": perf_counter() - start_time}),
+                **(
+                    {}
+                    if timeout
+                    else {
+                        "time": elapsed_time,
+                        "synthesis_steps": steps,
+                    }
+                ),
+                **(
+                    {}
+                    if not success
+                    else {
+                        "result_depth": get_depth(last_sid),
+                        "duration": node.duration,
+                    }
+                ),
             }
         )
 

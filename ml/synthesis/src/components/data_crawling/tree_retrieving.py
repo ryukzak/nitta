@@ -7,7 +7,7 @@ import orjson
 from aiohttp import ClientSession
 
 from components.common.logging import get_logger
-from components.common.nitta_node import NittaNodeInTree
+from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.common.utils import debounce
 
 logger = get_logger(__name__)
@@ -115,3 +115,10 @@ async def retrieve_random_descending_thread(
         node = np.random.choice(node.children, p=weights / weights.sum())
 
     return node
+
+
+async def retrieve_single_node(nitta_baseurl: str, sid: str) -> NittaNode:
+    async with ClientSession() as session:
+        async with session.get(f"{nitta_baseurl}/node/{sid}") as resp:
+            node_raw = await resp.json(loads=orjson.loads)
+    return NittaNode.parse_obj(node_raw)

@@ -6,6 +6,7 @@ from typing import Dict, List
 import pandas as pd
 
 from components.common.logging import configure_logging, get_logger
+from components.common.saving import save_df_with_timestamp
 from components.data_crawling.example_running import (
     run_example_and_sample_tree_parallel,
 )
@@ -78,4 +79,6 @@ if __name__ == "__main__":
         if example_stats is not None:
             stats.append(example_stats)
 
-    pd.DataFrame(stats).to_csv(DATA_DIR / "stats.csv")
+    save_df_with_timestamp(
+        pd.DataFrame(stats), DATA_DIR, "stats", what="crawling summary"
+    )

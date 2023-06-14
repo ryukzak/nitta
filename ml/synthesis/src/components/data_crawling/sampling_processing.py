@@ -6,8 +6,8 @@ from typing import List, Optional
 import pandas as pd
 
 from components.common.logging import get_logger
+from components.common.saving import save_df_with_timestamp
 from components.data_crawling.node_label_computation import aggregate_node_labels
-from components.data_crawling.saving import save_df_with_timestamp
 from consts import DATA_DIR
 
 logger = get_logger(__name__)
@@ -50,7 +50,7 @@ def estimate_tree_coverage_based_on_clash_ratio(
     """
     This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on clash ratio.
 
-    It's based the following hypotheses:
+    It's based on the following hypotheses:
         1) tree coverage is in pure functional (mathematical) dependency on clash ratio
         2) this dependency is tree-independent and is explained purely by random descent algorithm definition,
            probability theory and statistics.
