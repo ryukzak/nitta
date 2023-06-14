@@ -37,7 +37,9 @@ import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend
+import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores)
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
@@ -70,6 +72,8 @@ data Nitta = Nitta
     , format :: String
     , frontend_language :: Maybe FrontendType
     , score :: [T.Text]
+    , depth_base :: Float
+    , synthesis_method :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -155,6 +159,16 @@ nittaArgs =
                 &= typ "NAME"
                 &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
                 &= groupname "Synthesis"
+        , depth_base =
+            1.2
+                &= help "Only for top-down score synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
+                &= typ "FLOAT"
+                &= groupname "Synthesis"
+        , synthesis_method =
+            "topDownScoreSynthesisIO"
+                &= help "Synthesis method (default: 'topDownScoreSynthesisIO')"
+                &= typ "FUNCTION_NAME"
+                &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
         &= helpArg [groupname "Other"]
@@ -188,6 +202,8 @@ main = do
             format
             frontend_language
             score
+            depth_base
+            synthesis_method
         ) <-
         getNittaArgs
     let nodeScores = score
@@ -235,7 +251,18 @@ main = do
 
             when fsim $ functionalSimulation n received format frontendResult
 
-            prj <-
+            prj <- withLazyMlBackendServer $ \serverGetter -> do
+                -- TODO: this needs to be refactored and unified with logic in backendServer. and state monad?
+                let ctx =
+                        (def :: BackendCtx tag v x t)
+                            { mlBackendGetter = serverGetter
+                            , nodeScores = nodeScores
+                            }
+                    synthesisMethod = case synthesis_method of
+                        "topDownScoreSynthesisIO" -> topDownScoreSynthesisIO depth_base 100000 Nothing ctx
+                        "stateOfTheArtSynthesisIO" -> stateOfTheArtSynthesisIO ctx
+                        _ -> error $ "unregistered synthesis method: " <> synthesis_method
+
                 synthesizeTargetSystem
                     (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
                         { tName = "main"
@@ -244,7 +271,7 @@ main = do
                         , tDFG = frDataFlow
                         , tReceivedValues = received
                         , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = stateOfTheArtSynthesisIO def
+                        , tSynthesisMethod = synthesisMethod
                         , tSimulationCycleN = n
                         , tSourceCodeType = exactFrontendType
                         }

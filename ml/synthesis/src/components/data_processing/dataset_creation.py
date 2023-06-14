@@ -1,5 +1,6 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from tensorflow.python.data import Dataset
 
@@ -27,16 +28,22 @@ def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False, log_columns=Fa
     return ds
 
 
-def create_datasets(df) -> Tuple[Dataset, Dataset]:
+def create_datasets(
+    df, val_df: Optional[pd.DataFrame] = None
+) -> Tuple[Dataset, Dataset]:
     # create training and evaluation datasets
-    train_df, test_df = train_test_split(df.sample(frac=1), test_size=0.2)
+    if val_df is not None:
+        train_df = df.sample(frac=1)
+        val_df = val_df.sample(frac=1)
+    else:
+        train_df, val_df = train_test_split(df.sample(frac=1), test_size=0.2)
 
     n = len(df)
     logger.info(f"N:\t{n}")
     logger.info(f"Train:\t{len(train_df)}, {len(train_df) / n * 100:.0f}%")
-    logger.info(f"Test:\t{len(test_df)}, {len(test_df) / n * 100:.0f}%")
+    logger.info(f"Val:\t{len(val_df)}, {len(val_df) / n * 100:.0f}%")
 
-    train_ds = _df_to_dataset(train_df, batch_size=16, repeat=True, log_columns=True)
-    test_ds = _df_to_dataset(test_df)
+    train_ds = _df_to_dataset(train_df, batch_size=128, repeat=True, log_columns=True)
+    val_ds = _df_to_dataset(val_df)
 
-    return train_ds, test_ds
+    return train_ds, val_ds

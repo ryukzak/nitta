@@ -1,13 +1,9 @@
-from dataclasses import dataclass
+from typing import List, Optional
 
-from dataclasses_json import dataclass_json
+from components.common.customized_pydantic_model import CustomizedBaseModel
 
 
-@dataclass
-class ModelMetainfo:
+class ModelMetainfo(CustomizedBaseModel):
     train_mae: float
     validation_mae: float
-
-
-# workaround for PyCharm's understanding that it's @dataclass
-ModelMetainfo = dataclass_json(ModelMetainfo)
+    input_columns: Optional[List[str]] = None

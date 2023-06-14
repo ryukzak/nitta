@@ -2,15 +2,15 @@ import sys
 from pathlib import Path
 
 from components.common.data_loading import load_all_existing_training_data
-from components.common.logging import get_logger, configure_logging
+from components.common.logging import configure_logging, get_logger
 from components.common.model_loading import load_model
 from components.data_crawling.example_running import get_data_for_many_examples_parallel
 from components.data_processing.dataset_creation import create_datasets
-from components.data_processing.feature_engineering import preprocess_df
+from components.data_processing.feature_engineering import preprocess_train_data_df
 from components.model_generation.training import train_and_save_baseline_model
 from consts import MODELS_DIR
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = get_logger(__name__)
     configure_logging()
 
@@ -40,13 +40,17 @@ if __name__ == '__main__':
         is_manual = False
 
         training_data = load_all_existing_training_data()
-        preprocessed = preprocess_df(training_data)
+        preprocessed = preprocess_train_data_df(training_data)
         train_ds, val_ds = create_datasets(preprocessed)
 
-        model, meta = train_and_save_baseline_model(train_ds, val_ds, output_model_name="production")
+        model, meta = train_and_save_baseline_model(
+            train_ds, val_ds, output_model_name="production"
+        )
 
     # TODO: use TF Asset to save metadata
     with (model_dir / "description.txt").open("w") as f:
-        f.write(f"{'Manually' if is_manual else 'Automatically'} trained model for synthesis \n\n")
+        f.write(
+            f"{'Manually' if is_manual else 'Automatically'} trained model for synthesis \n\n"
+        )
         f.write(f"Training MAE: {meta.train_mae:.3f}\n")
         f.write(f"Validation MAE: {meta.validation_mae:.3f}\n")

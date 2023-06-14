@@ -28,6 +28,7 @@ class BackendBaseUrlFile(AbstractContextManager):
         with BackendBaseUrlFile(".ml_backend_base_url", "http://localhost:{port}/mlbackend") as base_url_file:
             server.start(port=base_url_file.port)
     """
+
     filepath: Path
     port: int | None
     _base_url_fmt: str
@@ -37,7 +38,7 @@ class BackendBaseUrlFile(AbstractContextManager):
         self.port = None
         self._base_url_fmt = base_url_fmt
 
-    def __enter__(self) -> 'BackendBaseUrlFile':
+    def __enter__(self) -> "BackendBaseUrlFile":
         if self.filepath.exists():
             with self.filepath.open("r") as f:
                 old_base_url = f.read()
@@ -50,17 +51,24 @@ class BackendBaseUrlFile(AbstractContextManager):
         self.port = find_random_free_port()
 
         base_url = self._base_url_fmt.format(port=self.port)
-        logger.info(f"Writing base URL ({base_url}) to file ({self.filepath.absolute()}).")
+        logger.info(
+            f"Writing base URL ({base_url}) to file ({self.filepath.absolute()})."
+        )
         with self.filepath.open("w") as f:
             f.write(base_url + "\n")
         return self
 
-    def __exit__(self, __exc_type: Type[BaseException] | None,
-                 __exc_value: BaseException | None,
-                 __traceback: TracebackType | None) -> bool | None:
+    def __exit__(
+        self,
+        __exc_type: Type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None,
+    ) -> bool | None:
         if not self.filepath.exists():
-            logger.warning(f"Exiting, so wanted to remove {self.filepath.absolute()}, "
-                           f"but it does not exist. Doing nothing.")
+            logger.warning(
+                f"Exiting, so wanted to remove {self.filepath.absolute()}, "
+                f"but it does not exist. Doing nothing."
+            )
             return
 
         logger.info(f"Exiting, so removing {self.filepath.absolute()}.")
