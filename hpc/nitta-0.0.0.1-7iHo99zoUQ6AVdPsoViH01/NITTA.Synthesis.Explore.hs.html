@@ -199,7 +199,7 @@ span.spaces    { background: white }
 <span class="lineno">  180 </span><span class="spaces">                    </span><span class="istickedoff">[ f</span>
 <span class="lineno">  181 </span><span class="spaces">                    </span><span class="istickedoff">| (SingleBind uTag f) &lt;- sBindOptions</span>
 <span class="lineno">  182 </span><span class="spaces">                    </span><span class="istickedoff">, Lock{lockBy} &lt;- locks f</span>
-<span class="lineno">  183 </span><span class="spaces">                    </span><span class="istickedoff">, lockBy `S.member` unionsMap variables (bindedFunctions uTag $ mUnit nModel)</span>
+<span class="lineno">  183 </span><span class="spaces">                    </span><span class="istickedoff">, lockBy `S.member` unionsMap variables (boundFunctions uTag $ mUnit nModel)</span>
 <span class="lineno">  184 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
 <span class="lineno">  185 </span><span class="spaces">            </span><span class="istickedoff">, bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs</span>
 <span class="lineno">  186 </span><span class="spaces">            </span><span class="istickedoff">, processWaves</span>
@@ -213,11 +213,11 @@ span.spaces    { background: white }
 <span class="lineno">  194 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
 <span class="lineno">  195 </span><span class="spaces">            </span><span class="istickedoff">, unitWorkloadInFunction =</span>
 <span class="lineno">  196 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">let</span></span>
-<span class="lineno">  197 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">BusNetwork{bnBinded, bnPus} = mUnit nModel</span></span>
+<span class="lineno">  197 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">BusNetwork{bnBound, bnPus} = mUnit nModel</span></span>
 <span class="lineno">  198 </span><span class="spaces">                 </span><span class="istickedoff"><span class="nottickedoff">in</span></span>
 <span class="lineno">  199 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">M.fromList</span></span>
 <span class="lineno">  200 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">$ map</span></span>
-<span class="lineno">  201 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">( \uTag -&gt; (uTag, maybe 0 length $ bnBinded M.!? uTag)</span></span>
+<span class="lineno">  201 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">( \uTag -&gt; (uTag, maybe 0 length $ bnBound M.!? uTag)</span></span>
 <span class="lineno">  202 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">)</span></span>
 <span class="lineno">  203 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">$ M.keys bnPus</span></span>
 <span class="lineno">  204 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>

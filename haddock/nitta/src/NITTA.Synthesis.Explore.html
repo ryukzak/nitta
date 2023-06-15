@@ -847,7 +847,7 @@ lockBy :: a
 </span><span class="hs-operator hs-var">`S.member`</span></span><span> </span><span class="annot"><span class="annottext">forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall {k} {v} {x} {t}. Ord k =&gt; k -&gt; BusNetwork k v x t -&gt; [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bindedFunctions"><span class="hs-identifier hs-var">bindedFunctions</span></a></span><span> </span><span class="annot"><span class="annottext">k
+</span><a href="NITTA.Model.Networks.Bus.html#boundFunctions"><span class="hs-identifier hs-var">boundFunctions</span></a></span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680234312"><span class="hs-identifier hs-var">uTag</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall u tag v x t. TargetSystem u tag v x t -&gt; u
 </span><a href="NITTA.Model.TargetSystem.html#mUnit"><span class="hs-identifier hs-var">mUnit</span></a></span><span> </span><span class="annot"><span class="annottext">TargetSystem (BusNetwork k a x t) k a x t
@@ -897,9 +897,9 @@ processWaves :: [ProcessWave a x]
 </span><a href="NITTA.Synthesis.Types.html#unitWorkloadInFunction"><span class="hs-identifier hs-var">unitWorkloadInFunction</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-196"></span><span>                </span><span class="hs-keyword">let</span><span>
 </span><span id="line-197"></span><span>                    </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680234289"><span class="annot"><span class="annottext">Map k [F a x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-bnBinded :: Map k [F a x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680234287"><span class="annot"><span class="annottext">Map k (PU a x t)
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+bnBound :: Map k [F a x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680234287"><span class="annot"><span class="annottext">Map k (PU a x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 bnPus :: Map k (PU a x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnPus"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall u tag v x t. TargetSystem u tag v x t -&gt; u
@@ -918,7 +918,7 @@ bnPus :: Map k (PU a x t)
 </span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Map k [F a x]
-</span><a href="#local-6989586621680234289"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; Maybe a
+</span><a href="#local-6989586621680234289"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; Maybe a
 </span><span class="hs-operator hs-var">M.!?</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680234284"><span class="hs-identifier hs-var">uTag</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-202"></span><span>                            </span><span class="hs-special">)</span><span>

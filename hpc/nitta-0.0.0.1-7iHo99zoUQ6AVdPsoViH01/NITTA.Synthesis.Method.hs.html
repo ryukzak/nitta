@@ -73,15 +73,15 @@ span.spaces    { background: white }
 <span class="lineno">   54 </span><span class="spaces">    </span><span class="istickedoff">l2 &lt;- smartBindSynthesisIO tree</span>
 <span class="lineno">   55 </span><span class="spaces">    </span><span class="istickedoff">l3 &lt;- bestThreadIO stepLimit tree</span>
 <span class="lineno">   56 </span><span class="spaces">    </span><span class="istickedoff">l4 &lt;- bestThreadIO stepLimit =&lt;&lt; allBindsAndRefsIO tree</span>
-<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">l5 &lt;- obliviousGroupBindsIO tree &gt;&gt;= tryAllGroupBindsByIO (bestThreadIO stepLimit)</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">l5 &lt;- obviousGroupBindsIO tree &gt;&gt;= tryAllGroupBindsByIO (bestThreadIO stepLimit)</span>
 <span class="lineno">   58 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf <span class="nottickedoff">tree</span> [l1, l2, l3, l4, l5]</span></span>
 <span class="lineno">   59 </span>
 <span class="lineno">   60 </span>-- | Schedule process by simple synthesis.
 <span class="lineno">   61 </span>simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   62 </span><span class="decl"><span class="istickedoff">simpleSynthesisIO root = do</span>
 <span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;simpleSynthesisIO: &quot; &lt;&gt; show (sID root)</span></span>
-<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">lastObliviousNode &lt;- obviousBindThreadIO root</span>
-<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO 1 lastObliviousNode</span></span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">lastObviousNode &lt;- obviousBindThreadIO root</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO 1 lastObviousNode</span></span>
 <span class="lineno">   66 </span>
 <span class="lineno">   67 </span>smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
 <span class="lineno">   68 </span><span class="decl"><span class="istickedoff">smartBindSynthesisIO tree = do</span>
@@ -104,10 +104,10 @@ span.spaces    { background: white }
 <span class="lineno">   85 </span><span class="spaces">        </span><span class="nottickedoff">[] -&gt; error &quot;all step is over&quot;</span>
 <span class="lineno">   86 </span><span class="spaces">        </span><span class="nottickedoff">_ -&gt; return $ maximumOn (defScore . sDecision) subForest</span></span>
 <span class="lineno">   87 </span>
-<span class="lineno">   88 </span>obliviousGroupBindsIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
-<span class="lineno">   89 </span><span class="decl"><span class="istickedoff">obliviousGroupBindsIO tree = do</span>
-<span class="lineno">   90 </span><span class="spaces">    </span><span class="istickedoff">binds &lt;- selectSubForestIO isObliviousMultiBind tree</span>
-<span class="lineno">   91 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) obliviousGroupBindsIO $ bestDecision binds</span></span>
+<span class="lineno">   88 </span>obviousGroupBindsIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t
+<span class="lineno">   89 </span><span class="decl"><span class="istickedoff">obviousGroupBindsIO tree = do</span>
+<span class="lineno">   90 </span><span class="spaces">    </span><span class="istickedoff">binds &lt;- selectSubForestIO isObviousMultiBind tree</span>
+<span class="lineno">   91 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) obviousGroupBindsIO $ bestDecision binds</span></span>
 <span class="lineno">   92 </span>
 <span class="lineno">   93 </span>tryAllGroupBindsByIO :: (VarValTime v x t, UnitTag tag) =&gt; SynthesisMethod tag v x t -&gt; SynthesisMethod tag v x t
 <span class="lineno">   94 </span><span class="decl"><span class="istickedoff">tryAllGroupBindsByIO method tree = do</span>

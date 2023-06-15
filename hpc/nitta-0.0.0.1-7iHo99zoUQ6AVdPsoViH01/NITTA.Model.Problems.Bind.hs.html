@@ -44,7 +44,7 @@ span.spaces    { background: white }
 <span class="lineno">   25 </span>
 <span class="lineno">   26 </span>data Bind tag v x
 <span class="lineno">   27 </span>    = SingleBind tag (F v x)
-<span class="lineno">   28 </span>    | GroupBind {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">isObliviousBinds</span></span></span> :: Bool, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindGroup</span></span></span> :: M.Map tag [F v x]}
+<span class="lineno">   28 </span>    | GroupBind {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">isObviousBinds</span></span></span> :: Bool, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindGroup</span></span></span> :: M.Map tag [F v x]}
 <span class="lineno">   29 </span>    deriving (Generic, <span class="decl"><span class="istickedoff">Eq</span></span>)
 <span class="lineno">   30 </span>
 <span class="lineno">   31 </span>binds2bindGroup :: UnitTag tag =&gt; [(tag, F v x)] -&gt; M.Map tag [F v x]
@@ -64,10 +64,10 @@ span.spaces    { background: white }
 <span class="lineno">   45 </span>
 <span class="lineno">   46 </span>instance UnitTag tag =&gt; Show (Bind tag v x) where
 <span class="lineno">   47 </span>    <span class="decl"><span class="istickedoff">show (SingleBind uTag f) = &quot;Bind &quot; &lt;&gt; <span class="nottickedoff">showFAndTag (f, uTag)</span></span>
-<span class="lineno">   48 </span><span class="spaces">    </span><span class="istickedoff">show (GroupBind{isObliviousBinds, bindGroup}) =</span>
+<span class="lineno">   48 </span><span class="spaces">    </span><span class="istickedoff">show (GroupBind{isObviousBinds, bindGroup}) =</span>
 <span class="lineno">   49 </span><span class="spaces">        </span><span class="istickedoff">concat</span>
 <span class="lineno">   50 </span><span class="spaces">            </span><span class="istickedoff">[ &quot;Binds &quot;</span>
-<span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">, <span class="nottickedoff">if isObliviousBinds then &quot;obliviousBinds &quot; else &quot;&quot;</span></span>
+<span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">, <span class="nottickedoff">if isObviousBinds then &quot;obviousBinds &quot; else &quot;&quot;</span></span>
 <span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">, <span class="nottickedoff">S.join &quot;; &quot; (map showFsAndTag $ M.assocs bindGroup)</span></span>
 <span class="lineno">   53 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
 <span class="lineno">   54 </span>

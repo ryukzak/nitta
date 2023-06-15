@@ -19,7 +19,7 @@ Stability   : experimental
 </span><span id="line-19"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Instruction"><span class="hs-identifier">Instruction</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-20"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Ports"><span class="hs-identifier">Ports</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-21"></span><span>    </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IOPorts"><span class="hs-identifier">IOPorts</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#bindedFunctions"><span class="hs-identifier">bindedFunctions</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#boundFunctions"><span class="hs-identifier">boundFunctions</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-23"></span><span>    </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#controlSignalLiteral"><span class="hs-identifier">controlSignalLiteral</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-24"></span><span>    </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#busNetwork"><span class="hs-identifier">busNetwork</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-25"></span><span>
@@ -65,10 +65,10 @@ Stability   : experimental
 </span><a href="NITTA.Model.Networks.Bus.html#bnName"><span class="hs-identifier hs-var hs-var">bnName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680230492"><span class="hs-identifier hs-type">tag</span></a></span><span>
 </span><span id="line-65"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="bnRemains"><span class="annot"><span class="annottext">forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 </span><a href="NITTA.Model.Networks.Bus.html#bnRemains"><span class="hs-identifier hs-var hs-var">bnRemains</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230491"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230490"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-66"></span><span>    </span><span class="hs-comment">-- ^ List of functions binded to network, but not binded to any process unit.</span><span>
-</span><span id="line-67"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="bnBinded"><span class="annot"><span class="annottext">forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680230492"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230491"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230490"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-68"></span><span>    </span><span class="hs-comment">-- ^ Map process unit name to list of binded functions.</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-comment">-- ^ List of functions bound to network, but not bound to any process unit.</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="bnBound"><span class="annot"><span class="annottext">forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680230492"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230491"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230490"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-comment">-- ^ Map process unit name to list of bound functions.</span><span>
 </span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="bnProcess"><span class="annot"><span class="annottext">forall tag v x t.
 BusNetwork tag v x t -&gt; Process t (StepInfo v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnProcess"><span class="hs-identifier hs-var hs-var">bnProcess</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Process"><span class="hs-identifier hs-type">Process</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230489"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#StepInfo"><span class="hs-identifier hs-type">StepInfo</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230491"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230490"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230489"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
@@ -100,8 +100,8 @@ BusNetwork tag v x t -&gt; Map tag (PUPrototype tag v x t)
 </span><a href="#local-6989586621680229489"><span class="hs-identifier hs-var">name</span></a></span><span>
 </span><span id="line-84"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnRemains :: [F v x]
 </span><a href="NITTA.Model.Networks.Bus.html#bnRemains"><span class="hs-identifier hs-var">bnRemains</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-85"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBinded :: Map tag [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a
+</span><span id="line-85"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBound :: Map tag [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a
 </span><span class="hs-identifier hs-var">M.empty</span></span><span>
 </span><span id="line-86"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnProcess"><span class="hs-identifier hs-var">bnProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Default a =&gt; a
@@ -135,28 +135,28 @@ tag -&gt; IOSynchronization -&gt; BusNetwork tag v x t
 </span><span id="line-97"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680230412"><span id="local-6989586621680230413"><span id="local-6989586621680230414"><span id="local-6989586621680230415"><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230415"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Variable.html#Variables"><span class="hs-identifier hs-type">Variables</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230414"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230415"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230413"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230412"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680230415"><span class="hs-identifier hs-type">v</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-98"></span><span>    </span><span id="local-6989586621680229466"><span class="annot"><span class="annottext">variables :: BusNetwork tag v x t -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var hs-var hs-var hs-var">variables</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680229464"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680229464"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680229464"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [a]
 </span><span class="hs-identifier hs-var">M.elems</span></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680229464"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680229464"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-99"></span><span>
-</span><span id="line-100"></span><span id="bindedFunctions"><span class="annot"><span class="annottext">bindedFunctions :: k -&gt; BusNetwork k v x t -&gt; [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bindedFunctions"><span class="hs-identifier hs-var hs-var">bindedFunctions</span></a></span></span><span> </span><span id="local-6989586621680229457"><span class="annot"><span class="annottext">k
+</span><span id="line-100"></span><span id="boundFunctions"><span class="annot"><span class="annottext">boundFunctions :: k -&gt; BusNetwork k v x t -&gt; [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#boundFunctions"><span class="hs-identifier hs-var hs-var">boundFunctions</span></a></span></span><span> </span><span id="local-6989586621680229457"><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680229457"><span class="hs-identifier hs-var">puTitle</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680229456"><span class="annot"><span class="annottext">Map k [F v x]
-bnBinded :: Map k [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">}</span><span>
+bnBound :: Map k [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">}</span><span>
 </span><span id="line-101"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680229457"><span class="hs-identifier hs-var">puTitle</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Bool
 </span><span class="hs-operator hs-var">`M.member`</span></span><span> </span><span class="annot"><span class="annottext">Map k [F v x]
-</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map k [F v x]
-</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; a
+</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map k [F v x]
+</span><a href="#local-6989586621680229456"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; a
 </span><span class="hs-operator hs-var">M.!</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680229457"><span class="hs-identifier hs-var">puTitle</span></a></span><span>
 </span><span id="line-102"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
@@ -170,14 +170,14 @@ bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 bnRemains :: [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 </span><a href="#local-6989586621680229442"><span class="hs-identifier hs-var hs-var">bnRemains</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680229441"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680229441"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680229441"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[F v x]
 </span><a href="#local-6989586621680229442"><span class="hs-identifier hs-var">bnRemains</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [a]
 </span><span class="hs-identifier hs-var">M.elems</span></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680229441"><span class="hs-identifier hs-var">bnBinded</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680229441"><span class="hs-identifier hs-var">bnBound</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-108"></span><span>
 </span><span id="line-109"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680230352"><span id="local-6989586621680230353"><span id="local-6989586621680230354"><span id="local-6989586621680230355"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230355"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Dataflow.html#DataflowProblem"><span class="hs-identifier hs-type">DataflowProblem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230353"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230352"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680230355"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230354"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230352"><span class="hs-identifier hs-type">t</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-110"></span><span>    </span><span id="local-6989586621680229386"><span class="annot"><span class="annottext">dataflowOptions :: BusNetwork tag v x t -&gt; [DataflowSt tag v (TimeConstraint t)]
@@ -965,7 +965,7 @@ ioSync :: IOSynchronization
 bnSignalBusWidth :: Int
 bnPus :: Map tag (PU v x t)
 bnProcess :: Process t (StepInfo v x t)
-bnBinded :: Map tag [F v x]
+bnBound :: Map tag [F v x]
 bnRemains :: [F v x]
 bnName :: tag
 bnPUPrototypes :: forall tag v x t.
@@ -977,7 +977,7 @@ bnSignalBusWidth :: forall tag v x t. BusNetwork tag v x t -&gt; Int
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 bnProcess :: forall tag v x t.
 BusNetwork tag v x t -&gt; Process t (StepInfo v x t)
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 bnName :: forall tag v x t. BusNetwork tag v x t -&gt; tag
 </span><a href="#local-6989586621680228929"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span></span></span></span></span></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680228928"><span class="annot"><span class="annottext">t
@@ -1079,7 +1079,7 @@ Ports pu -&gt; Microcode pu -&gt; [(SignalTag, SignalValue)]
  - @b = reg(a)@
  - @c = reg(b)@
 
- Can't be binded to same unit because it require self sending of data.
+ Can't be bound to same unit because it require self sending of data.
 
  In this case, we just throw away conflicted bindings.
 -}</span><span>
@@ -1154,9 +1154,9 @@ BusNetwork k v x t
 bnPus :: Map k (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228845"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228844"><span class="annot"><span class="annottext">Map k [F v x]
-bnBinded :: Map k [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680228844"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680228843"><span class="annot"><span class="annottext">[(k, F v x)]
+bnBound :: Map k [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680228844"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680228843"><span class="annot"><span class="annottext">[(k, F v x)]
 </span><a href="#local-6989586621680228843"><span class="hs-identifier hs-var">binds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-339"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680228842"><span class="annot"><span class="annottext">distribution :: Map k [F v x]
 </span><a href="#local-6989586621680228842"><span class="hs-identifier hs-var hs-var">distribution</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall tag v x. UnitTag tag =&gt; [(tag, F v x)] -&gt; Map tag [F v x]
@@ -1176,13 +1176,13 @@ bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 </span><a href="#local-6989586621680228845"><span class="hs-identifier hs-var">bnPus</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; a
 </span><span class="hs-operator hs-var">M.!</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680228839"><span class="hs-identifier hs-var">tag</span></a></span><span>
-</span><span id="line-345"></span><span>                        </span><span id="local-6989586621680228836"><span class="annot"><span class="annottext">binded :: Int
-</span><a href="#local-6989586621680228836"><span class="hs-identifier hs-var hs-var">binded</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span id="line-345"></span><span>                        </span><span id="local-6989586621680228836"><span class="annot"><span class="annottext">bound :: Int
+</span><a href="#local-6989586621680228836"><span class="hs-identifier hs-var hs-var">bound</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
 </span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Map k [F v x]
-</span><a href="#local-6989586621680228844"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; Maybe a
+</span><a href="#local-6989586621680228844"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; Maybe a
 </span><span class="hs-operator hs-var">M.!?</span></span><span> </span><span class="annot"><span class="annottext">k
 </span><a href="#local-6989586621680228839"><span class="hs-identifier hs-var">tag</span></a></span><span>
 </span><span id="line-346"></span><span>                        </span><span id="local-6989586621680228834"><span class="annot"><span class="annottext">fs' :: Set [Char]
@@ -1220,7 +1220,7 @@ bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 </span><span id="line-358"></span><span>                        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall v x t. PU v x t -&gt; TypeRep
 </span><a href="NITTA.Model.Networks.Types.html#unitType"><span class="hs-identifier hs-var">unitType</span></a></span><span> </span><span class="annot"><span class="annottext">PU v x t
 </span><a href="#local-6989586621680228837"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680228836"><span class="hs-identifier hs-var">binded</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set [Char]
+</span><a href="#local-6989586621680228836"><span class="hs-identifier hs-var">bound</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Set [Char]
 </span><a href="#local-6989586621680228834"><span class="hs-identifier hs-var">fs'</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-359"></span><span>                </span><span class="hs-special">)</span><span>
 </span><span id="line-360"></span><span>            </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -1228,11 +1228,11 @@ bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map k [F v x]
 </span><a href="#local-6989586621680228842"><span class="hs-identifier hs-var">distribution</span></a></span><span>
 </span><span id="line-361"></span><span>
-</span><span id="line-362"></span><span id="local-6989586621680230004"><span id="local-6989586621680230005"><span id="local-6989586621680230006"><span id="local-6989586621680230007"><span class="annot"><a href="NITTA.Model.Networks.Bus.html#nubNotObliviousBinds"><span class="hs-identifier hs-type">nubNotObliviousBinds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230004"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span></span></span></span></span><span>
-</span><span id="line-363"></span><span id="nubNotObliviousBinds"><span class="annot"><span class="annottext">nubNotObliviousBinds :: forall k v x t.
+</span><span id="line-362"></span><span id="local-6989586621680230004"><span id="local-6989586621680230005"><span id="local-6989586621680230006"><span id="local-6989586621680230007"><span class="annot"><a href="NITTA.Model.Networks.Bus.html#nubNotObviousBinds"><span class="hs-identifier hs-type">nubNotObviousBinds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230004"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230007"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230006"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230005"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span></span></span></span></span><span>
+</span><span id="line-363"></span><span id="nubNotObviousBinds"><span class="annot"><span class="annottext">nubNotObviousBinds :: forall k v x t.
 UnitTag k =&gt;
 BusNetwork k v x t -&gt; [[(k, F v x)]] -&gt; [[(k, F v x)]]
-</span><a href="NITTA.Model.Networks.Bus.html#nubNotObliviousBinds"><span class="hs-identifier hs-var hs-var">nubNotObliviousBinds</span></a></span></span><span> </span><span id="local-6989586621680228818"><span class="annot"><span class="annottext">BusNetwork k v x t
+</span><a href="NITTA.Model.Networks.Bus.html#nubNotObviousBinds"><span class="hs-identifier hs-var hs-var">nubNotObviousBinds</span></a></span></span><span> </span><span id="local-6989586621680228818"><span class="annot"><span class="annottext">BusNetwork k v x t
 </span><a href="#local-6989586621680228818"><span class="hs-identifier hs-var">bn</span></a></span></span><span> </span><span id="local-6989586621680228817"><span class="annot"><span class="annottext">[[(k, F v x)]]
 </span><a href="#local-6989586621680228817"><span class="hs-identifier hs-var">bindss</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-364"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680228816"><span class="annot"><span class="annottext">hashed :: [(Set (TypeRep, Int, Set [Char]), [(k, F v x)])]
@@ -1272,9 +1272,9 @@ bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228780"><span class="hs-identifier hs-var">optionsFor</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
 </span><a href="#local-6989586621680228783"><span class="hs-identifier hs-var">bnRemains</span></a></span><span>
 </span><span id="line-373"></span><span>
-</span><span id="line-374"></span><span>            </span><span class="hs-comment">-- oblivious mean we have only one option to bind function</span><span>
-</span><span id="line-375"></span><span>            </span><span id="local-6989586621680228779"><span class="annot"><span class="annottext">obliviousBinds :: [(tag, F v x)]
-</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var hs-var">obliviousBinds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span id="line-374"></span><span>            </span><span class="hs-comment">-- obvious mean we have only one option to bind function</span><span>
+</span><span id="line-375"></span><span>            </span><span id="local-6989586621680228779"><span class="annot"><span class="annottext">obviousBinds :: [(tag, F v x)]
+</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var hs-var">obviousBinds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
@@ -1287,18 +1287,18 @@ bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228778"><span class="hs-identifier hs-var hs-var">singleAssingmentBinds</span></a></span></span><span>
 </span><span id="line-377"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(tag, F v x)]
-</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var">obliviousBinds</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var">obviousBinds</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-378"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">forall tag v x. Bool -&gt; Map tag [F v x] -&gt; Bind tag v x
 </span><a href="NITTA.Model.Problems.Bind.html#GroupBind"><span class="hs-identifier hs-var">GroupBind</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall tag v x. UnitTag tag =&gt; [(tag, F v x)] -&gt; Map tag [F v x]
 </span><a href="NITTA.Model.Problems.Bind.html#binds2bindGroup"><span class="hs-identifier hs-var">binds2bindGroup</span></a></span><span> </span><span class="annot"><span class="annottext">[(tag, F v x)]
-</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var">obliviousBinds</span></a></span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680228779"><span class="hs-identifier hs-var">obviousBinds</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-379"></span><span>
-</span><span id="line-380"></span><span>            </span><span class="annot"><a href="#local-6989586621680228776"><span class="hs-identifier hs-type">notObliviousBinds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230047"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230046"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230045"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span><span>
-</span><span id="line-381"></span><span>            </span><span id="local-6989586621680228776"><span class="annot"><span class="annottext">notObliviousBinds :: [[(tag, F v x)]]
-</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var hs-var">notObliviousBinds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span id="line-380"></span><span>            </span><span class="annot"><a href="#local-6989586621680228776"><span class="hs-identifier hs-type">notObviousBinds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680230047"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#F"><span class="hs-identifier hs-type">F</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230046"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680230045"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-381"></span><span>            </span><span id="local-6989586621680228776"><span class="annot"><span class="annottext">notObviousBinds :: [[(tag, F v x)]]
+</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var hs-var">notObviousBinds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
@@ -1312,7 +1312,7 @@ bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228775"><span class="hs-identifier hs-var hs-var">multiBinds</span></a></span></span><span>
 </span><span id="line-386"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
 </span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[[(tag, F v x)]]
-</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var">notObliviousBinds</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var">notObviousBinds</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-387"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-388"></span><span>                    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
@@ -1339,12 +1339,12 @@ BusNetwork tag v x t -&gt; [(tag, F v x)] -&gt; [(tag, F v x)]
 </span><span id="line-391"></span><span>                                </span><span class="annot"><span class="annottext">forall k v x t.
 UnitTag k =&gt;
 BusNetwork k v x t -&gt; [[(k, F v x)]] -&gt; [[(k, F v x)]]
-</span><a href="NITTA.Model.Networks.Bus.html#nubNotObliviousBinds"><span class="hs-identifier hs-var">nubNotObliviousBinds</span></a></span><span> </span><span class="annot"><span class="annottext">BusNetwork tag v x t
+</span><a href="NITTA.Model.Networks.Bus.html#nubNotObviousBinds"><span class="hs-identifier hs-var">nubNotObviousBinds</span></a></span><span> </span><span class="annot"><span class="annottext">BusNetwork tag v x t
 </span><a href="#local-6989586621680228784"><span class="hs-identifier hs-var">bn</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
 </span><span id="line-392"></span><span>                                    </span><span class="annot"><span class="annottext">forall a. [[a]] -&gt; [[a]]
 </span><a href="NITTA.Model.Networks.Bus.html#cartesianProduct"><span class="hs-identifier hs-var">cartesianProduct</span></a></span><span> </span><span class="annot"><span class="annottext">[[(tag, F v x)]]
-</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var">notObliviousBinds</span></a></span><span>
+</span><a href="#local-6989586621680228776"><span class="hs-identifier hs-var">notObviousBinds</span></a></span><span>
 </span><span id="line-393"></span><span>
 </span><span id="line-394"></span><span>            </span><span id="local-6989586621680228774"><span class="annot"><span class="annottext">simpleBinds :: [Bind tag v x]
 </span><a href="#local-6989586621680228774"><span class="hs-identifier hs-var hs-var">simpleBinds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
@@ -1388,9 +1388,9 @@ BusNetwork tag v x t -&gt; Process t (StepInfo v x t)
 bnPus :: Map tag (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228756"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228755"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680228755"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228754"><span class="annot"><span class="annottext">[F v x]
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680228755"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228754"><span class="annot"><span class="annottext">[F v x]
 bnRemains :: [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 </span><a href="#local-6989586621680228754"><span class="hs-identifier hs-var hs-var">bnRemains</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Bind.html#SingleBind"><span class="hs-identifier hs-type">SingleBind</span></a></span><span> </span><span id="local-6989586621680228753"><span class="annot"><span class="annottext">tag
@@ -1405,12 +1405,12 @@ bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 </span><a href="#local-6989586621680228752"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228753"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag (PU v x t)
 </span><a href="#local-6989586621680228756"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
-</span><span id="line-406"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBinded :: Map tag [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {k} {a}. Ord k =&gt; k -&gt; a -&gt; Map k [a] -&gt; Map k [a]
+</span><span id="line-406"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBound :: Map tag [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {k} {a}. Ord k =&gt; k -&gt; a -&gt; Map k [a] -&gt; Map k [a]
 </span><a href="NITTA.Model.Networks.Bus.html#registerBinding"><span class="hs-identifier hs-var">registerBinding</span></a></span><span> </span><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228753"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">F v x
 </span><a href="#local-6989586621680228752"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228755"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680228755"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-407"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnProcess"><span class="hs-identifier hs-var">bnProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {t} {v} {x} {a}.
 pu
@@ -1470,16 +1470,16 @@ bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><span id="line-416"></span><span>    </span><span id="local-6989586621680228665"><span class="annot"><span class="annottext">breakLoopDecision :: BusNetwork tag v x t -&gt; BreakLoop v x -&gt; BusNetwork tag v x t
 </span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#breakLoopDecision"><span class="hs-identifier hs-var hs-var hs-var hs-var">breakLoopDecision</span></a></span></span><span> </span><span id="local-6989586621680228663"><span class="annot"><span class="annottext">bn :: BusNetwork tag v x t
 </span><a href="#local-6989586621680228663"><span class="hs-identifier hs-var">bn</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span class="hs-special">{</span><span id="local-6989586621680228662"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228661"><span class="annot"><span class="annottext">Map tag (PU v x t)
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228661"><span class="annot"><span class="annottext">Map tag (PU v x t)
 bnPus :: Map tag (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228661"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">}</span><span> </span><span id="local-6989586621680228660"><span class="annot"><span class="annottext">bl :: BreakLoop v x
 </span><a href="#local-6989586621680228660"><span class="hs-identifier hs-var">bl</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#BreakLoop"><span class="hs-identifier hs-type">BreakLoop</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-417"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680228658"><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228658"><span class="hs-identifier hs-var">puTag</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228657"><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680228657"><span class="hs-identifier hs-var">bindedToPU</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; Maybe a -&gt; a
+</span><a href="#local-6989586621680228657"><span class="hs-identifier hs-var">boundToPU</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromJust</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">L.find</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
@@ -1493,9 +1493,9 @@ BreakLoop v x -&gt; F v x
 </span><span class="hs-identifier hs-var">snd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
-</span><span id="line-418"></span><span>            </span><span id="local-6989586621680228652"><span class="annot"><span class="annottext">bindedToPU' :: [F v x]
-</span><a href="#local-6989586621680228652"><span class="hs-identifier hs-var hs-var">bindedToPU'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {v} {x}.
+</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
+</span><span id="line-418"></span><span>            </span><span id="local-6989586621680228652"><span class="annot"><span class="annottext">boundToPU' :: [F v x]
+</span><a href="#local-6989586621680228652"><span class="hs-identifier hs-var hs-var">boundToPU'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {v} {x}.
 (Hashable v, Suffix v, ToString v, IsString v, Ord v, Show x,
  Typeable v, Typeable x, Eq x) =&gt;
 BreakLoop v x -&gt; F v x
@@ -1508,7 +1508,7 @@ BreakLoop v x -&gt; F v x
 </span><a href="NITTA.Model.Problems.Refactor.BreakLoop.html#recLoopOut"><span class="hs-identifier hs-var">recLoopOut</span></a></span><span> </span><span class="annot"><span class="annottext">BreakLoop v x
 </span><a href="#local-6989586621680228660"><span class="hs-identifier hs-var">bl</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680228657"><span class="hs-identifier hs-var">bindedToPU</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680228657"><span class="hs-identifier hs-var">boundToPU</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">L.\\</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">forall {v} {x}.
 (Hashable v, Suffix v, ToString v, IsString v, Ord v, Show x,
  Typeable v, Typeable x, Eq x) =&gt;
@@ -1524,12 +1524,12 @@ BreakLoop v x -&gt; F v x
 </span><a href="#local-6989586621680228660"><span class="hs-identifier hs-var">bl</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228658"><span class="hs-identifier hs-var">puTag</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag (PU v x t)
 </span><a href="#local-6989586621680228661"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
-</span><span id="line-421"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBinded :: Map tag [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span id="line-421"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBound :: Map tag [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228658"><span class="hs-identifier hs-var">puTag</span></a></span><span> </span><span class="annot"><span class="annottext">[F v x]
-</span><a href="#local-6989586621680228652"><span class="hs-identifier hs-var">bindedToPU'</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680228652"><span class="hs-identifier hs-var">boundToPU'</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
+</span><a href="#local-6989586621680228662"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-422"></span><span>                </span><span class="hs-special">}</span><span>
 </span><span id="line-423"></span><span>
 </span><span id="line-424"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680229936"><span id="local-6989586621680229937"><span id="local-6989586621680229938"><span id="local-6989586621680229939"><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#UnitTag"><span class="hs-identifier hs-type">UnitTag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229939"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Model.Time.html#VarValTime"><span class="hs-identifier hs-type">VarValTime</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229938"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229937"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229936"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Refactor.OptimizeAccum.html#OptimizeAccumProblem"><span class="hs-identifier hs-type">OptimizeAccumProblem</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Networks.Bus.html#BusNetwork"><span class="hs-identifier hs-type">BusNetwork</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229939"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229938"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229937"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229936"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621680229938"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229937"><span class="hs-identifier hs-type">x</span></a></span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
@@ -1645,9 +1645,9 @@ Interval t -&gt; ref -&gt; m [Int]
 bnPus :: Map tag (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228519"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228518"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680228518"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680228518"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-446"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span class="annot"><a href="#local-6989586621680228517"><span class="hs-identifier hs-type">prepareResolve</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680229889"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Refactor.ResolveDeadlock.html#ResolveDeadlock"><span class="hs-identifier hs-type">ResolveDeadlock</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229889"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680229888"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-447"></span><span>            </span><span id="local-6989586621680228517"><span class="annot"><span class="annottext">prepareResolve :: Set v -&gt; [ResolveDeadlock v x]
 </span><a href="#local-6989586621680228517"><span class="hs-identifier hs-var hs-var">prepareResolve</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
@@ -1731,7 +1731,7 @@ bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 </span><span id="line-466"></span><span>                    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228518"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680228518"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-467"></span><span>
 </span><span id="line-468"></span><span>            </span><span id="local-6989586621680228496"><span class="annot"><span class="annottext">allPULocks :: [(tag, [Lock v])]
 </span><a href="#local-6989586621680228496"><span class="hs-identifier hs-var hs-var">allPULocks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
@@ -1867,9 +1867,9 @@ u -&gt; [EndpointSt v (TimeConstraint t)]
 bnRemains :: [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 </span><a href="#local-6989586621680228439"><span class="hs-identifier hs-var hs-var">bnRemains</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228438"><span class="annot"><span class="annottext">Map tag [F v x]
-bnBinded :: Map tag [F v x]
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
-</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var hs-var">bnBinded</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228437"><span class="annot"><span class="annottext">Map tag (PU v x t)
+bnBound :: Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var hs-var">bnBound</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228437"><span class="annot"><span class="annottext">Map tag (PU v x t)
 bnPus :: Map tag (PU v x t)
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 </span><a href="#local-6989586621680228437"><span class="hs-identifier hs-var hs-var">bnPus</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680228436"><span class="annot"><span class="annottext">Process t (StepInfo v x t)
@@ -1910,7 +1910,7 @@ changeset :: Changeset v
 </span><span id="line-507"></span><span>                        </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-508"></span><span>             </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">BusNetwork tag v x t
 </span><a href="#local-6989586621680228440"><span class="hs-identifier hs-var">bn</span></a></span><span>
 </span><span id="line-509"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">bnRemains :: [F v x]
@@ -1927,12 +1927,12 @@ changeset :: Changeset v
 </span><a href="#local-6989586621680228431"><span class="hs-identifier hs-var">changeset</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">tag
 </span><a href="#local-6989586621680228429"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Map tag (PU v x t)
 </span><a href="#local-6989586621680228437"><span class="hs-identifier hs-var">bnPus</span></a></span><span>
-</span><span id="line-511"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBinded :: Map tag [F v x]
-</span><a href="NITTA.Model.Networks.Bus.html#bnBinded"><span class="hs-identifier hs-var">bnBinded</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b k. (a -&gt; b) -&gt; Map k a -&gt; Map k b
+</span><span id="line-511"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnBound :: Map tag [F v x]
+</span><a href="NITTA.Model.Networks.Bus.html#bnBound"><span class="hs-identifier hs-var">bnBound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b k. (a -&gt; b) -&gt; Map k a -&gt; Map k b
 </span><span class="hs-identifier hs-var">M.map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall f diff. Patch f diff =&gt; diff -&gt; f -&gt; f
 </span><a href="NITTA.Intermediate.Types.html#patch"><span class="hs-identifier hs-var">patch</span></a></span><span> </span><span class="annot"><span class="annottext">Changeset v
 </span><a href="#local-6989586621680228431"><span class="hs-identifier hs-var">changeset</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Map tag [F v x]
-</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var">bnBinded</span></a></span><span>
+</span><a href="#local-6989586621680228438"><span class="hs-identifier hs-var">bnBound</span></a></span><span>
 </span><span id="line-512"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">bnProcess :: Process t (StepInfo v x t)
 </span><a href="NITTA.Model.Networks.Bus.html#bnProcess"><span class="hs-identifier hs-var">bnProcess</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {pu} {t} {v} {x} {a}.
 pu
@@ -2240,7 +2240,7 @@ ioSync :: IOSynchronization
 bnSignalBusWidth :: Int
 bnPus :: Map tag (PU v x t)
 bnProcess :: Process t (StepInfo v x t)
-bnBinded :: Map tag [F v x]
+bnBound :: Map tag [F v x]
 bnRemains :: [F v x]
 bnName :: tag
 bnPUPrototypes :: forall tag v x t.
@@ -2252,7 +2252,7 @@ bnSignalBusWidth :: forall tag v x t. BusNetwork tag v x t -&gt; Int
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
 bnProcess :: forall tag v x t.
 BusNetwork tag v x t -&gt; Process t (StepInfo v x t)
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 bnName :: forall tag v x t. BusNetwork tag v x t -&gt; tag
 </span><a href="#local-6989586621680228169"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span></span></span></span></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
@@ -2448,7 +2448,7 @@ bnEnv :: UnitEnv (BusNetwork tag v x t)
 ioSync :: IOSynchronization
 bnSignalBusWidth :: Int
 bnPus :: Map tag (PU v x t)
-bnBinded :: Map tag [F v x]
+bnBound :: Map tag [F v x]
 bnRemains :: [F v x]
 bnName :: tag
 bnPUPrototypes :: forall tag v x t.
@@ -2458,7 +2458,7 @@ BusNetwork tag v x t -&gt; UnitEnv (BusNetwork tag v x t)
 ioSync :: forall tag v x t. BusNetwork tag v x t -&gt; IOSynchronization
 bnSignalBusWidth :: forall tag v x t. BusNetwork tag v x t -&gt; Int
 bnPus :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag (PU v x t)
-bnBinded :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
+bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 bnRemains :: forall tag v x t. BusNetwork tag v x t -&gt; [F v x]
 bnName :: forall tag v x t. BusNetwork tag v x t -&gt; tag
 </span><a href="#local-6989586621680228076"><span class="hs-glyph hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">..</span></a></span></span></span></span></span></span></span></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>

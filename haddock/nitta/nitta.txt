@@ -907,7 +907,7 @@ module NITTA.Model.Problems.Bind
 data Bind tag v x
 SingleBind :: tag -> F v x -> Bind tag v x
 GroupBind :: Bool -> Map tag [F v x] -> Bind tag v x
-[isObliviousBinds] :: Bind tag v x -> Bool
+[isObviousBinds] :: Bind tag v x -> Bool
 [bindGroup] :: Bind tag v x -> Map tag [F v x]
 class BindProblem u tag v x | u -> tag v x
 bindOptions :: BindProblem u tag v x => u -> [Bind tag v x]
@@ -2925,12 +2925,11 @@ data BusNetwork tag v x t
 BusNetwork :: tag -> [F v x] -> Map tag [F v x] -> Process t (StepInfo v x t) -> Map tag (PU v x t) -> Int -> IOSynchronization -> UnitEnv (BusNetwork tag v x t) -> Map tag (PUPrototype tag v x t) -> BusNetwork tag v x t
 [bnName] :: BusNetwork tag v x t -> tag
 
--- | List of functions binded to network, but not binded to any process
---   unit.
+-- | List of functions bound to network, but not bound to any process unit.
 [bnRemains] :: BusNetwork tag v x t -> [F v x]
 
--- | Map process unit name to list of binded functions.
-[bnBinded] :: BusNetwork tag v x t -> Map tag [F v x]
+-- | Map process unit name to list of bound functions.
+[bnBound] :: BusNetwork tag v x t -> Map tag [F v x]
 
 -- | Network process (bindings and transport instructions)
 [bnProcess] :: BusNetwork tag v x t -> Process t (StepInfo v x t)
@@ -2951,7 +2950,7 @@ data Instruction pu :: Type
 -- | A processor unit control ports (signals, flags).
 data Ports pu :: Type
 data IOPorts pu :: Type
-bindedFunctions :: Ord k => k -> BusNetwork k v x t -> [F v x]
+boundFunctions :: Ord k => k -> BusNetwork k v x t -> [F v x]
 controlSignalLiteral :: (Builder (IsCustomSink dst) dst ~ Builder (IsCustomSink dst) dst, Interpolatable (IsCustomSink dst) src dst) => src -> dst
 busNetwork :: Default t => tag -> IOSynchronization -> BusNetwork tag v x t
 modifyNetwork :: BusNetwork k v x t -> State (BuilderSt k v x t) a -> BusNetwork k v x t
@@ -3047,8 +3046,8 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag
 [possibleDeadlockBinds] :: SynthesisState m tag v x t -> Set (F v x)
 
 -- | if algorithm will be represented as a graph, where nodes - variables
---   of not binded functions, edges - casuality, wave is a minimal number
---   of a step from an initial node to selected
+--   of not bound functions, edges - casuality, wave is a minimal number of
+--   a step from an initial node to selected
 [bindWaves] :: SynthesisState m tag v x t -> Map v Int
 
 -- | Execution waves of the algorithm. See detailed description in
@@ -3064,7 +3063,7 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag
 -- | a variable set, which can be transferred on the current synthesis step
 [transferableVars] :: SynthesisState m tag v x t -> Set v
 
--- | dictionary with number of binded functions for each unit
+-- | dictionary with number of bound functions for each unit
 [unitWorkloadInFunction] :: SynthesisState m tag v x t -> Map tag Int
 
 -- | Synthesis node ID. ID is a relative path, encoded as a sequence of an
@@ -3180,17 +3179,17 @@ SingleBindMetrics :: Bool -> Float -> Float -> Float -> Float -> Bool -> Float -
 
 -- | May this binding cause deadlock?
 [pPossibleDeadlock] :: BindMetrics -> Bool
-[pNumberOfBindedFunctions] :: BindMetrics -> Float
+[pNumberOfBoundFunctions] :: BindMetrics -> Float
 
--- | number of binded input variables / number of all input variables
-[pPercentOfBindedInputs] :: BindMetrics -> Float
+-- | number of bound input variables / number of all input variables
+[pPercentOfBoundInputs] :: BindMetrics -> Float
 [pWave] :: BindMetrics -> Maybe Float
 GroupBindMetrics :: Bool -> Float -> Float -> Float -> Float -> Float -> BindMetrics
 
 -- | We don't have alternatives for binding
-[pOnlyObliviousBinds] :: BindMetrics -> Bool
+[pOnlyObviousBinds] :: BindMetrics -> Bool
 
--- | number of binded functions / number of all functions in DFG
+-- | number of bound functions / number of all functions in DFG
 [pFunctionPercentInBinds] :: BindMetrics -> Float
 
 -- | average number of binds per unit
@@ -3206,7 +3205,7 @@ GroupBindMetrics :: Bool -> Float -> Float -> Float -> Float -> Float -> BindMet
 [pVarianceUnitWorkload] :: BindMetrics -> Float
 isSingleBind :: SynthesisDecision ctx m -> Bool
 isMultiBind :: SynthesisDecision ctx m -> Bool
-isObliviousMultiBind :: SynthesisDecision ctx m -> Bool
+isObviousMultiBind :: SynthesisDecision ctx m -> Bool
 instance GHC.Generics.Generic NITTA.Synthesis.Steps.Bind.BindMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.Bind.BindMetrics
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Bind.Bind tag v x) (NITTA.Model.Problems.Bind.Bind tag v x) NITTA.Synthesis.Steps.Bind.BindMetrics

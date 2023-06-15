@@ -38,7 +38,7 @@ span.spaces    { background: white }
 <span class="lineno">   19 </span>    Instruction (..),
 <span class="lineno">   20 </span>    Ports (..),
 <span class="lineno">   21 </span>    IOPorts (..),
-<span class="lineno">   22 </span>    bindedFunctions,
+<span class="lineno">   22 </span>    boundFunctions,
 <span class="lineno">   23 </span>    controlSignalLiteral,
 <span class="lineno">   24 </span>    busNetwork,
 <span class="lineno">   25 </span>
@@ -82,9 +82,9 @@ span.spaces    { background: white }
 <span class="lineno">   63 </span>data BusNetwork tag v x t = BusNetwork
 <span class="lineno">   64 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnName</span></span></span> :: tag
 <span class="lineno">   65 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnRemains</span></span></span> :: [F v x]
-<span class="lineno">   66 </span>    -- ^ List of functions binded to network, but not binded to any process unit.
-<span class="lineno">   67 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnBinded</span></span></span> :: M.Map tag [F v x]
-<span class="lineno">   68 </span>    -- ^ Map process unit name to list of binded functions.
+<span class="lineno">   66 </span>    -- ^ List of functions bound to network, but not bound to any process unit.
+<span class="lineno">   67 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnBound</span></span></span> :: M.Map tag [F v x]
+<span class="lineno">   68 </span>    -- ^ Map process unit name to list of bound functions.
 <span class="lineno">   69 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bnProcess</span></span></span> :: Process t (StepInfo v x t)
 <span class="lineno">   70 </span>    -- ^ Network process (bindings and transport instructions)
 <span class="lineno">   71 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">bnPus</span></span></span> :: M.Map tag (PU v x t)
@@ -101,7 +101,7 @@ span.spaces    { background: white }
 <span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">BusNetwork</span>
 <span class="lineno">   83 </span><span class="spaces">        </span><span class="istickedoff">{ bnName = name</span>
 <span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">, bnRemains = []</span>
-<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">, bnBinded = M.empty</span>
+<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">, bnBound = M.empty</span>
 <span class="lineno">   86 </span><span class="spaces">        </span><span class="istickedoff">, bnProcess = def</span>
 <span class="lineno">   87 </span><span class="spaces">        </span><span class="istickedoff">, bnPus = def</span>
 <span class="lineno">   88 </span><span class="spaces">        </span><span class="istickedoff">, bnSignalBusWidth = 0</span>
@@ -114,16 +114,16 @@ span.spaces    { background: white }
 <span class="lineno">   95 </span>    <span class="decl"><span class="nottickedoff">def = busNetwork &quot;defaultBus&quot; ASync</span></span>
 <span class="lineno">   96 </span>
 <span class="lineno">   97 </span>instance Var v =&gt; Variables (BusNetwork tag v x t) v where
-<span class="lineno">   98 </span>    <span class="decl"><span class="istickedoff">variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded</span></span>
+<span class="lineno">   98 </span>    <span class="decl"><span class="istickedoff">variables BusNetwork{bnBound} = unionsMap variables $ concat $ M.elems bnBound</span></span>
 <span class="lineno">   99 </span>
-<span class="lineno">  100 </span><span class="decl"><span class="istickedoff">bindedFunctions puTitle BusNetwork{bnBinded}</span>
-<span class="lineno">  101 </span><span class="spaces">    </span><span class="istickedoff">| puTitle `M.member` bnBinded = bnBinded M.! puTitle</span>
+<span class="lineno">  100 </span><span class="decl"><span class="istickedoff">boundFunctions puTitle BusNetwork{bnBound}</span>
+<span class="lineno">  101 </span><span class="spaces">    </span><span class="istickedoff">| puTitle `M.member` bnBound = bnBound M.! puTitle</span>
 <span class="lineno">  102 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = []</span></span>
 <span class="lineno">  103 </span>
 <span class="lineno">  104 </span>instance Default x =&gt; DefaultX (BusNetwork tag v x t) x
 <span class="lineno">  105 </span>
 <span class="lineno">  106 </span>instance WithFunctions (BusNetwork tag v x t) (F v x) where
-<span class="lineno">  107 </span>    <span class="decl"><span class="istickedoff">functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)</span></span>
+<span class="lineno">  107 </span>    <span class="decl"><span class="istickedoff">functions BusNetwork{bnRemains, bnBound} = bnRemains ++ concat (M.elems bnBound)</span></span>
 <span class="lineno">  108 </span>
 <span class="lineno">  109 </span>instance (UnitTag tag, VarValTime v x t) =&gt; DataflowProblem (BusNetwork tag v x t) tag v t where
 <span class="lineno">  110 </span>    <span class="decl"><span class="istickedoff">dataflowOptions BusNetwork{bnPus, bnProcess} =</span>
@@ -327,7 +327,7 @@ span.spaces    { background: white }
 <span class="lineno">  308 </span> - @b = reg(a)@
 <span class="lineno">  309 </span> - @c = reg(b)@
 <span class="lineno">  310 </span>
-<span class="lineno">  311 </span> Can't be binded to same unit because it require self sending of data.
+<span class="lineno">  311 </span> Can't be bound to same unit because it require self sending of data.
 <span class="lineno">  312 </span>
 <span class="lineno">  313 </span> In this case, we just throw away conflicted bindings.
 <span class="lineno">  314 </span>-}
@@ -354,14 +354,14 @@ span.spaces    { background: white }
 <span class="lineno">  335 </span>   equal because we don't take into accout their place in DFG.
 <span class="lineno">  336 </span>-}
 <span class="lineno">  337 </span>bindsHash :: UnitTag k =&gt; BusNetwork k v x t -&gt; [(k, F v x)] -&gt; S.Set (TypeRep, Int, S.Set String)
-<span class="lineno">  338 </span><span class="decl"><span class="istickedoff">bindsHash BusNetwork{bnPus, bnBinded} binds =</span>
+<span class="lineno">  338 </span><span class="decl"><span class="istickedoff">bindsHash BusNetwork{bnPus, bnBound} binds =</span>
 <span class="lineno">  339 </span><span class="spaces">    </span><span class="istickedoff">let distribution = binds2bindGroup binds</span>
 <span class="lineno">  340 </span><span class="spaces">     </span><span class="istickedoff">in S.fromList</span>
 <span class="lineno">  341 </span><span class="spaces">            </span><span class="istickedoff">$ map</span>
 <span class="lineno">  342 </span><span class="spaces">                </span><span class="istickedoff">( \(tag, fs) -&gt;</span>
 <span class="lineno">  343 </span><span class="spaces">                    </span><span class="istickedoff">let</span>
 <span class="lineno">  344 </span><span class="spaces">                        </span><span class="istickedoff">u = bnPus M.! tag</span>
-<span class="lineno">  345 </span><span class="spaces">                        </span><span class="istickedoff">binded = maybe 0 length $ bnBinded M.!? tag</span>
+<span class="lineno">  345 </span><span class="spaces">                        </span><span class="istickedoff">bound = maybe 0 length $ bnBound M.!? tag</span>
 <span class="lineno">  346 </span><span class="spaces">                        </span><span class="istickedoff">fs' =</span>
 <span class="lineno">  347 </span><span class="spaces">                            </span><span class="istickedoff">S.fromList $</span>
 <span class="lineno">  348 </span><span class="spaces">                                </span><span class="istickedoff">if <span class="tickonlytrue">mergeFunctionWithSameType</span></span>
@@ -374,12 +374,12 @@ span.spaces    { background: white }
 <span class="lineno">  355 </span><span class="spaces">                                        </span><span class="istickedoff">map (show . (\lst -&gt; (head lst, length lst))) (L.group $ map functionType fs)</span>
 <span class="lineno">  356 </span><span class="spaces">                                    </span><span class="istickedoff">else <span class="nottickedoff">map show fs</span></span>
 <span class="lineno">  357 </span><span class="spaces">                     </span><span class="istickedoff">in</span>
-<span class="lineno">  358 </span><span class="spaces">                        </span><span class="istickedoff">(unitType u, binded, fs')</span>
+<span class="lineno">  358 </span><span class="spaces">                        </span><span class="istickedoff">(unitType u, bound, fs')</span>
 <span class="lineno">  359 </span><span class="spaces">                </span><span class="istickedoff">)</span>
 <span class="lineno">  360 </span><span class="spaces">            </span><span class="istickedoff">$ M.assocs distribution</span></span>
 <span class="lineno">  361 </span>
-<span class="lineno">  362 </span>nubNotObliviousBinds :: UnitTag k =&gt; BusNetwork k v x t -&gt; [[(k, F v x)]] -&gt; [[(k, F v x)]]
-<span class="lineno">  363 </span><span class="decl"><span class="istickedoff">nubNotObliviousBinds bn bindss =</span>
+<span class="lineno">  362 </span>nubNotObviousBinds :: UnitTag k =&gt; BusNetwork k v x t -&gt; [[(k, F v x)]] -&gt; [[(k, F v x)]]
+<span class="lineno">  363 </span><span class="decl"><span class="istickedoff">nubNotObviousBinds bn bindss =</span>
 <span class="lineno">  364 </span><span class="spaces">    </span><span class="istickedoff">let hashed = map (\binds -&gt; (bindsHash bn binds, binds)) bindss</span>
 <span class="lineno">  365 </span><span class="spaces">     </span><span class="istickedoff">in M.elems $ M.fromList hashed</span></span>
 <span class="lineno">  366 </span>
@@ -390,25 +390,25 @@ span.spaces    { background: white }
 <span class="lineno">  371 </span>    <span class="decl"><span class="istickedoff">bindOptions bn@BusNetwork{bnRemains, bnPus} =</span>
 <span class="lineno">  372 </span><span class="spaces">        </span><span class="istickedoff">let binds = map optionsFor bnRemains</span>
 <span class="lineno">  373 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  374 </span><span class="spaces">            </span><span class="istickedoff">-- oblivious mean we have only one option to bind function</span>
-<span class="lineno">  375 </span><span class="spaces">            </span><span class="istickedoff">obliviousBinds = concat $ filter ((== 1) . length) binds</span>
+<span class="lineno">  374 </span><span class="spaces">            </span><span class="istickedoff">-- obvious mean we have only one option to bind function</span>
+<span class="lineno">  375 </span><span class="spaces">            </span><span class="istickedoff">obviousBinds = concat $ filter ((== 1) . length) binds</span>
 <span class="lineno">  376 </span><span class="spaces">            </span><span class="istickedoff">singleAssingmentBinds</span>
-<span class="lineno">  377 </span><span class="spaces">                </span><span class="istickedoff">| null obliviousBinds = []</span>
-<span class="lineno">  378 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = [GroupBind True $ binds2bindGroup obliviousBinds]</span>
+<span class="lineno">  377 </span><span class="spaces">                </span><span class="istickedoff">| null obviousBinds = []</span>
+<span class="lineno">  378 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = [GroupBind True $ binds2bindGroup obviousBinds]</span>
 <span class="lineno">  379 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  380 </span><span class="spaces">            </span><span class="istickedoff">notObliviousBinds :: [[(tag, F v x)]]</span>
-<span class="lineno">  381 </span><span class="spaces">            </span><span class="istickedoff">notObliviousBinds = filter ((&gt; 1) . length) binds</span>
+<span class="lineno">  380 </span><span class="spaces">            </span><span class="istickedoff">notObviousBinds :: [[(tag, F v x)]]</span>
+<span class="lineno">  381 </span><span class="spaces">            </span><span class="istickedoff">notObviousBinds = filter ((&gt; 1) . length) binds</span>
 <span class="lineno">  382 </span><span class="spaces">            </span><span class="istickedoff">-- TODO: split them on independent bindGroups. It should</span>
 <span class="lineno">  383 </span><span class="spaces">            </span><span class="istickedoff">-- significantly reduce complexity.</span>
 <span class="lineno">  384 </span><span class="spaces">            </span><span class="istickedoff">multiBinds :: [Bind tag v x]</span>
 <span class="lineno">  385 </span><span class="spaces">            </span><span class="istickedoff">multiBinds</span>
-<span class="lineno">  386 </span><span class="spaces">                </span><span class="istickedoff">| null notObliviousBinds = []</span>
+<span class="lineno">  386 </span><span class="spaces">                </span><span class="istickedoff">| null notObviousBinds = []</span>
 <span class="lineno">  387 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
 <span class="lineno">  388 </span><span class="spaces">                    </span><span class="istickedoff">map (GroupBind False . binds2bindGroup) $</span>
 <span class="lineno">  389 </span><span class="spaces">                        </span><span class="istickedoff">filter ((&gt; 1) . length) $</span>
 <span class="lineno">  390 </span><span class="spaces">                            </span><span class="istickedoff">map (fixGroupBinding bn) $</span>
-<span class="lineno">  391 </span><span class="spaces">                                </span><span class="istickedoff">nubNotObliviousBinds bn $</span>
-<span class="lineno">  392 </span><span class="spaces">                                    </span><span class="istickedoff">cartesianProduct notObliviousBinds</span>
+<span class="lineno">  391 </span><span class="spaces">                                </span><span class="istickedoff">nubNotObviousBinds bn $</span>
+<span class="lineno">  392 </span><span class="spaces">                                    </span><span class="istickedoff">cartesianProduct notObviousBinds</span>
 <span class="lineno">  393 </span><span class="spaces"></span><span class="istickedoff"></span>
 <span class="lineno">  394 </span><span class="spaces">            </span><span class="istickedoff">simpleBinds = concatMap (map $ uncurry SingleBind) binds</span>
 <span class="lineno">  395 </span><span class="spaces">         </span><span class="istickedoff">in singleAssingmentBinds &lt;&gt; multiBinds &lt;&gt; simpleBinds</span>
@@ -419,10 +419,10 @@ span.spaces    { background: white }
 <span class="lineno">  400 </span><span class="spaces">                </span><span class="istickedoff">, allowToProcess f pu</span>
 <span class="lineno">  401 </span><span class="spaces">                </span><span class="istickedoff">]</span></span>
 <span class="lineno">  402 </span>
-<span class="lineno">  403 </span>    <span class="decl"><span class="istickedoff">bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (SingleBind tag f) =</span>
+<span class="lineno">  403 </span>    <span class="decl"><span class="istickedoff">bindDecision bn@BusNetwork{bnProcess, bnPus, bnBound, bnRemains} (SingleBind tag f) =</span>
 <span class="lineno">  404 </span><span class="spaces">        </span><span class="istickedoff">bn</span>
 <span class="lineno">  405 </span><span class="spaces">            </span><span class="istickedoff">{ bnPus = M.adjust (bind f) tag bnPus</span>
-<span class="lineno">  406 </span><span class="spaces">            </span><span class="istickedoff">, bnBinded = registerBinding tag f bnBinded</span>
+<span class="lineno">  406 </span><span class="spaces">            </span><span class="istickedoff">, bnBound = registerBinding tag f bnBound</span>
 <span class="lineno">  407 </span><span class="spaces">            </span><span class="istickedoff">, bnProcess = execScheduleWithProcess <span class="nottickedoff">bn</span> bnProcess $ scheduleFunctionBind f</span>
 <span class="lineno">  408 </span><span class="spaces">            </span><span class="istickedoff">, bnRemains = filter (/= f) bnRemains</span>
 <span class="lineno">  409 </span><span class="spaces">            </span><span class="istickedoff">}</span>
@@ -432,12 +432,12 @@ span.spaces    { background: white }
 <span class="lineno">  413 </span>instance (UnitTag tag, VarValTime v x t) =&gt; BreakLoopProblem (BusNetwork tag v x t) v x where
 <span class="lineno">  414 </span>    <span class="decl"><span class="istickedoff">breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus</span></span>
 <span class="lineno">  415 </span>
-<span class="lineno">  416 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision bn@BusNetwork{bnBinded, bnPus} bl@BreakLoop{} =</span>
-<span class="lineno">  417 </span><span class="spaces">        </span><span class="istickedoff">let (puTag, bindedToPU) = fromJust $ L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded</span>
-<span class="lineno">  418 </span><span class="spaces">            </span><span class="istickedoff">bindedToPU' = recLoopIn bl : recLoopOut bl : (bindedToPU L.\\ [recLoop bl])</span>
+<span class="lineno">  416 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision bn@BusNetwork{bnBound, bnPus} bl@BreakLoop{} =</span>
+<span class="lineno">  417 </span><span class="spaces">        </span><span class="istickedoff">let (puTag, boundToPU) = fromJust $ L.find (elem (recLoop bl) . snd) $ M.assocs bnBound</span>
+<span class="lineno">  418 </span><span class="spaces">            </span><span class="istickedoff">boundToPU' = recLoopIn bl : recLoopOut bl : (boundToPU L.\\ [recLoop bl])</span>
 <span class="lineno">  419 </span><span class="spaces">         </span><span class="istickedoff">in bn</span>
 <span class="lineno">  420 </span><span class="spaces">                </span><span class="istickedoff">{ bnPus = M.adjust (`breakLoopDecision` bl) puTag bnPus</span>
-<span class="lineno">  421 </span><span class="spaces">                </span><span class="istickedoff">, bnBinded = M.insert puTag bindedToPU' bnBinded</span>
+<span class="lineno">  421 </span><span class="spaces">                </span><span class="istickedoff">, bnBound = M.insert puTag boundToPU' bnBound</span>
 <span class="lineno">  422 </span><span class="spaces">                </span><span class="istickedoff">}</span></span>
 <span class="lineno">  423 </span>
 <span class="lineno">  424 </span>instance (UnitTag tag, VarValTime v x t) =&gt; OptimizeAccumProblem (BusNetwork tag v x t) v x where
@@ -461,7 +461,7 @@ span.spaces    { background: white }
 <span class="lineno">  442 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">  443 </span>
 <span class="lineno">  444 </span>instance (UnitTag tag, VarValTime v x t) =&gt; ResolveDeadlockProblem (BusNetwork tag v x t) v x where
-<span class="lineno">  445 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =</span>
+<span class="lineno">  445 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockOptions bn@BusNetwork{bnPus, bnBound} =</span>
 <span class="lineno">  446 </span><span class="spaces">        </span><span class="istickedoff">let prepareResolve :: S.Set v -&gt; [ResolveDeadlock v x]</span>
 <span class="lineno">  447 </span><span class="spaces">            </span><span class="istickedoff">prepareResolve =</span>
 <span class="lineno">  448 </span><span class="spaces">                </span><span class="istickedoff">map resolveDeadlock</span>
@@ -482,7 +482,7 @@ span.spaces    { background: white }
 <span class="lineno">  463 </span><span class="spaces">            </span><span class="istickedoff">selfSending =</span>
 <span class="lineno">  464 </span><span class="spaces">                </span><span class="istickedoff">concatMap</span>
 <span class="lineno">  465 </span><span class="spaces">                    </span><span class="istickedoff">(\(tag, fs) -&gt; prepareResolve (unionsMap inputs fs `S.intersection` puOutputs tag))</span>
-<span class="lineno">  466 </span><span class="spaces">                    </span><span class="istickedoff">$ M.assocs bnBinded</span>
+<span class="lineno">  466 </span><span class="spaces">                    </span><span class="istickedoff">$ M.assocs bnBound</span>
 <span class="lineno">  467 </span><span class="spaces"></span><span class="istickedoff"></span>
 <span class="lineno">  468 </span><span class="spaces">            </span><span class="istickedoff">allPULocks = map (second locks) $ M.assocs bnPus</span>
 <span class="lineno">  469 </span><span class="spaces"></span><span class="istickedoff"></span>
@@ -517,17 +517,17 @@ span.spaces    { background: white }
 <span class="lineno">  498 </span><span class="spaces">            </span><span class="istickedoff">maybeSended = M.keysSet var2endpointRole</span></span>
 <span class="lineno">  499 </span>
 <span class="lineno">  500 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision</span>
-<span class="lineno">  501 </span><span class="spaces">        </span><span class="istickedoff">bn@BusNetwork{bnRemains, bnBinded, bnPus, bnProcess}</span>
+<span class="lineno">  501 </span><span class="spaces">        </span><span class="istickedoff">bn@BusNetwork{bnRemains, bnBound, bnPus, bnProcess}</span>
 <span class="lineno">  502 </span><span class="spaces">        </span><span class="istickedoff">ref@ResolveDeadlock{newBuffer, changeset} =</span>
 <span class="lineno">  503 </span><span class="spaces">            </span><span class="istickedoff">let (tag, _) =</span>
 <span class="lineno">  504 </span><span class="spaces">                    </span><span class="istickedoff">fromJust</span>
 <span class="lineno">  505 </span><span class="spaces">                        </span><span class="istickedoff">$ L.find</span>
 <span class="lineno">  506 </span><span class="spaces">                            </span><span class="istickedoff">(\(_, f) -&gt; not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)</span>
-<span class="lineno">  507 </span><span class="spaces">                        </span><span class="istickedoff">$ M.assocs bnBinded</span>
+<span class="lineno">  507 </span><span class="spaces">                        </span><span class="istickedoff">$ M.assocs bnBound</span>
 <span class="lineno">  508 </span><span class="spaces">             </span><span class="istickedoff">in bn</span>
 <span class="lineno">  509 </span><span class="spaces">                    </span><span class="istickedoff">{ bnRemains = newBuffer : patch changeset bnRemains</span>
 <span class="lineno">  510 </span><span class="spaces">                    </span><span class="istickedoff">, bnPus = M.adjust (patch changeset) tag bnPus</span>
-<span class="lineno">  511 </span><span class="spaces">                    </span><span class="istickedoff">, bnBinded = M.map (patch changeset) bnBinded</span>
+<span class="lineno">  511 </span><span class="spaces">                    </span><span class="istickedoff">, bnBound = M.map (patch changeset) bnBound</span>
 <span class="lineno">  512 </span><span class="spaces">                    </span><span class="istickedoff">, bnProcess = execScheduleWithProcess <span class="nottickedoff">bn</span> bnProcess $ do</span>
 <span class="lineno">  513 </span><span class="spaces">                        </span><span class="istickedoff">scheduleRefactoring (I.singleton $ nextTick bn) ref</span>
 <span class="lineno">  514 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
