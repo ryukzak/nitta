@@ -13,63 +13,82 @@ module NITTA.Synthesis.Analysis (
 
 import Control.Concurrent.STM
 import Data.HashMap.Strict qualified as HM
+import Data.Maybe (isJust)
 import GHC.Generics
-import NITTA.Model.TargetSystem (processDuration)
+import NITTA.Model.ProcessorUnits.Types (NextTick)
+import NITTA.Model.TargetSystem (TargetSystem, processDuration)
+import NITTA.Model.Time (VarValTime)
 import NITTA.Synthesis.Types
 
 -- | Metrics of synthesis tree process
 data TreeInfo = TreeInfo
-    { nodes :: !Int
-    , success :: !Int
-    , failed :: !Int
-    , notProcessed :: !Int
-    , durationSuccess :: HM.HashMap Int Int
-    , stepsSuccess :: HM.HashMap Int Int
+    { nodesVisited :: !Int
+    , nodesSuccess :: !Int
+    , nodesFailed :: !Int
+    , nodesNotProcessed :: !Int
+    , targetProcessDuration :: HM.HashMap Int Int
+    , synthesisStepsForSuccess :: HM.HashMap Int Int
     }
     deriving (Generic, Show)
 
 instance Semigroup TreeInfo where
-    (<>) synthesisInfo1 synthesisInfo2 =
-        let synthesisInfoList = [synthesisInfo1, synthesisInfo2]
-            durationSuccessList = map durationSuccess synthesisInfoList
-            stepsSuccessList = map stepsSuccess synthesisInfoList
+    a <> b =
+        let ab = [a, b]
+            durationSuccessList = map targetProcessDuration ab
+            stepsSuccessList = map synthesisStepsForSuccess ab
          in TreeInfo
-                { nodes = sum $ map nodes synthesisInfoList
-                , success = sum $ map success synthesisInfoList
-                , failed = sum $ map failed synthesisInfoList
-                , notProcessed = sum $ map notProcessed synthesisInfoList
-                , durationSuccess = if not $ null durationSuccessList then foldr1 (HM.unionWith (+)) durationSuccessList else HM.empty
-                , stepsSuccess = if not $ null stepsSuccessList then foldr1 (HM.unionWith (+)) stepsSuccessList else HM.empty
+                { nodesVisited = sum $ map nodesVisited ab
+                , nodesSuccess = sum $ map nodesSuccess ab
+                , nodesFailed = sum $ map nodesFailed ab
+                , nodesNotProcessed = sum $ map nodesNotProcessed ab
+                , targetProcessDuration = if not $ null durationSuccessList then foldr1 (HM.unionWith (+)) durationSuccessList else HM.empty
+                , synthesisStepsForSuccess = if not $ null stepsSuccessList then foldr1 (HM.unionWith (+)) stepsSuccessList else HM.empty
                 }
 
 instance Monoid TreeInfo where
     mempty =
         TreeInfo
-            { nodes = 0
-            , success = 0
-            , failed = 0
-            , notProcessed = 0
-            , durationSuccess = HM.empty
-            , stepsSuccess = HM.empty
+            { nodesVisited = 0
+            , nodesSuccess = 0
+            , nodesFailed = 0
+            , nodesNotProcessed = 0
+            , targetProcessDuration = HM.empty
+            , synthesisStepsForSuccess = HM.empty
             }
 
+getTreeInfo ::
+    (VarValTime v x t, NextTick u t) =>
+    Tree (TargetSystem u tag v x t) tag v x t ->
+    IO TreeInfo
 getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
-    subForestInfo <- maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
+    let isProcessed = isJust subForestM
+    TreeInfo
+        { nodesVisited
+        , nodesSuccess
+        , nodesFailed
+        , targetProcessDuration
+        , synthesisStepsForSuccess
+        , nodesNotProcessed
+        } <-
+        maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM
+
     let (isSuccess, isFail)
             | isLeaf tree = if isComplete tree then (True, False) else (False, True)
             | otherwise = (False, False)
+
     let duration = fromEnum $ processDuration $ sTarget $ sState tree
-    let successDepends value field =
-            if not isSuccess
-                then field subForestInfo
-                else HM.alter (Just . maybe 1 (+ 1)) value $ field subForestInfo
+
+    let registerIfSuccess stat value
+            | not isSuccess = stat
+            | otherwise = HM.alter (Just . maybe 1 (+ 1)) value stat
+
     return $
         TreeInfo
-            { nodes = 1 + nodes subForestInfo
-            , success = if isSuccess then 1 else 0 + success subForestInfo
-            , failed = if isFail then 1 else 0 + failed subForestInfo
-            , notProcessed = maybe 1 (const 0) subForestM + notProcessed subForestInfo
-            , durationSuccess = successDepends duration durationSuccess
-            , stepsSuccess = successDepends (length sid) stepsSuccess
+            { nodesVisited = nodesVisited + 1
+            , nodesSuccess = nodesSuccess + if isSuccess then 1 else 0
+            , nodesFailed = nodesFailed + if isFail then 1 else 0
+            , nodesNotProcessed = nodesNotProcessed + if isProcessed then 0 else 1
+            , targetProcessDuration = registerIfSuccess targetProcessDuration duration
+            , synthesisStepsForSuccess = registerIfSuccess synthesisStepsForSuccess $ length sid
             }

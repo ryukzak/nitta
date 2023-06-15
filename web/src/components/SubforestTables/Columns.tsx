@@ -5,12 +5,13 @@ import * as Icon from "react-bootstrap-icons";
 
 import {
   Allocation,
-  Bind,
+  GroupBind,
+  SingleBind,
   Dataflow,
   BreakLoop,
   OptimizeAccum,
   ConstantFolding,
-  ResolveDeadlock
+  ResolveDeadlock,
 } from "services/HaskellApiService";
 import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
 import { Interval, FView, DecisionView } from "services/gen/types";
@@ -141,7 +142,8 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
 }
 
 export function showDecision(decision: DecisionView): ReactElement {
-  if (decision.tag === "BindDecisionView") return showBind(decision);
+  if (decision.tag === "SingleBindView") return showBind(decision);
+  else if (decision.tag === "GroupBindView") return showBinds(decision);
   else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
@@ -151,7 +153,24 @@ export function showDecision(decision: DecisionView): ReactElement {
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
-export function showBind(decision: Bind): ReactElement {
+export function showBinds(decision: GroupBind): ReactElement {
+  const binds = Object.keys(decision.bindGroup).map((uTag: string) => {
+    let fs = decision.bindGroup[uTag]!;
+    return (
+      <div>
+        <strong>{uTag}</strong> <Icon.ArrowLeft />
+        <ul>
+          {fs.map((e) => (
+            <li key={e.fvFun}>{e.fvFun}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  });
+  return <div> {binds} </div>;
+}
+
+export function showBind(decision: SingleBind): ReactElement {
   return (
     <div>
       <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}

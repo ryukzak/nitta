@@ -132,6 +132,7 @@ data SynthesisDecision ctx m where
         {option :: o, decision :: d, metrics :: p, scores :: Map Text Float} ->
         SynthesisDecision ctx m
 
+defScore :: SynthesisDecision ctx m -> Float
 defScore = (M.! "default") . scores
 
 class SynthesisDecisionCls ctx m o d p | ctx o -> m d p where
@@ -169,6 +170,8 @@ data SynthesisState m tag v x t = SynthesisState
     , transferableVars :: S.Set v
     -- ^ a variable set, which can be transferred on the current
     --  synthesis step
+    , unitWorkloadInFunction :: M.Map tag Int
+    -- ^ dictionary with number of binded functions for each unit
     }
 
 -- * Utils

@@ -10,7 +10,9 @@ module NITTA.Model.Problems.ViewHelper (
 ) where
 
 import Data.Aeson
-import Data.Bifunctor
+import Data.Bifunctor (Bifunctor (bimap))
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as M
 import Data.Set qualified as S
 import Data.Text qualified as T
 import GHC.Generics
@@ -31,9 +33,12 @@ instance ToJSON IntervalView
 
 data DecisionView
     = RootView
-    | BindDecisionView
+    | SingleBindView
         { function :: FView
         , pu :: T.Text
+        }
+    | GroupBindView
+        { bindGroup :: HM.HashMap T.Text [FView]
         }
     | AllocationView
         { networkTag :: T.Text
@@ -63,11 +68,12 @@ data DecisionView
     deriving (Generic)
 
 instance UnitTag tag => Viewable (Bind tag v x) DecisionView where
-    view (Bind f pu) =
-        BindDecisionView
+    view (SingleBind uTag f) =
+        SingleBindView
             { function = view f
-            , pu = toText pu
+            , pu = toText uTag
             }
+    view GroupBind{bindGroup} = GroupBindView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup
 
 instance UnitTag tag => Viewable (Allocation tag) DecisionView where
     view Allocation{networkTag, processUnitTag} =

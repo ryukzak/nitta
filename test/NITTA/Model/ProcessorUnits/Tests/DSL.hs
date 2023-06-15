@@ -437,9 +437,9 @@ synthesis method = do
     put st{unit = sTarget $ sState leaf}
 
 doBind :: T.Text -> F T.Text x -> TSStatement x ()
-doBind tag f = do
+doBind uTag f = do
     st@UnitTestState{unit = ts} <- get
-    let d = Bind f tag
+    let d = SingleBind uTag f
         opts = bindOptions ts
     unless (d `L.elem` opts) $
         lift $

@@ -26,6 +26,7 @@ module NITTA.Synthesis.Method (
 import Data.List qualified as L
 import Data.Typeable
 import Debug.Trace
+import NITTA.Model.Networks.Bus (BusNetwork)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Synthesis.Explore
@@ -53,7 +54,8 @@ stateOfTheArtSynthesisIO () tree = do
     l2 <- smartBindSynthesisIO tree
     l3 <- bestThreadIO stepLimit tree
     l4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO tree
-    return $ bestLeaf tree [l1, l2, l3, l4]
+    l5 <- obliviousGroupBindsIO tree >>= tryAllGroupBindsByIO (bestThreadIO stepLimit)
+    return $ bestLeaf tree [l1, l2, l3, l4, l5]
 
 -- | Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
@@ -83,14 +85,25 @@ bestStepIO tree = do
         [] -> error "all step is over"
         _ -> return $ maximumOn (defScore . sDecision) subForest
 
+obliviousGroupBindsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+obliviousGroupBindsIO tree = do
+    binds <- selectSubForestIO isObliviousMultiBind tree
+    maybe (return tree) obliviousGroupBindsIO $ bestDecision binds
+
+tryAllGroupBindsByIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t -> SynthesisMethod tag v x t
+tryAllGroupBindsByIO method tree = do
+    bindSubForest <- selectSubForestIO isMultiBind tree
+    leafs <- mapM method bindSubForest
+    return $ bestLeaf tree leafs
+
 obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 obviousBindThreadIO tree = do
     subForest <- positiveSubForestIO tree
     maybe (return tree) obviousBindThreadIO $
         L.find
             ( ( \case
-                    Just BindMetrics{pPossibleDeadlock = True} -> False
-                    Just BindMetrics{pAlternative = 1} -> True
+                    Just SingleBindMetrics{pPossibleDeadlock = True} -> False
+                    Just SingleBindMetrics{pAlternative = 1} -> True
                     _ -> False
               )
                 . cast
@@ -101,12 +114,13 @@ obviousBindThreadIO tree = do
 allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 allBindsAndRefsIO tree = do
     subForest <-
-        filter ((\d -> isBind d || isRefactor d) . sDecision)
+        filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
             <$> positiveSubForestIO tree
     case subForest of
         [] -> return tree
         _ -> allBindsAndRefsIO $ maximumOn (defScore . sDecision) subForest
 
+refactorThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 refactorThreadIO tree = do
     subForest <- positiveSubForestIO tree
     maybe (return tree) refactorThreadIO $
@@ -115,7 +129,7 @@ refactorThreadIO tree = do
 smartBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 smartBindThreadIO tree = do
     subForest <-
-        filter ((\d -> isBind d || isRefactor d) . sDecision)
+        filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
             <$> (positiveSubForestIO =<< refactorThreadIO tree)
     case subForest of
         [] -> return tree
@@ -137,3 +151,20 @@ bestLeaf tree leafs =
                 minimumOn
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
+
+-- * Helpers
+
+selectSubForestIO ::
+    ( UnitTag tag
+    , VarValTime v x t
+    , m ~ TargetSystem (BusNetwork tag v x t) tag v x t
+    , ctx ~ SynthesisState m tag v x t
+    ) =>
+    (SynthesisDecision ctx m -> Bool) ->
+    DefTree tag v x t ->
+    IO [DefTree tag v x t]
+selectSubForestIO p tree = filter (p . sDecision) <$> positiveSubForestIO tree
+
+bestDecision :: [DefTree tag v x t] -> Maybe (DefTree tag v x t)
+bestDecision [] = Nothing
+bestDecision xs = Just $ maximumOn (defScore . sDecision) xs
