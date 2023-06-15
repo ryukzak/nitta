@@ -15,7 +15,7 @@ module NITTA.Synthesis.Steps.Bind (
     BindMetrics (..),
     isSingleBind,
     isMultiBind,
-    isObliviousMultiBind,
+    isObviousMultiBind,
 ) where
 
 import Data.Aeson (ToJSON)
@@ -56,7 +56,7 @@ data BindMetrics
         , pWave :: Maybe Float
         }
     | GroupBindMetrics
-        { pOnlyObliviousBinds :: Bool
+        { pOnlyObviousBinds :: Bool
         -- ^ We don't have alternatives for binding
         , pFunctionPercentInBinds :: Float
         -- ^ number of binded functions / number of all functions in DFG
@@ -113,11 +113,11 @@ instance
                     waves | all isJust waves -> Just $ maximum $ catMaybes waves
                     _ -> Nothing
                 }
-    parameters SynthesisState{sTarget, unitWorkloadInFunction} binds@GroupBind{isObliviousBinds, bindGroup} _ =
+    parameters SynthesisState{sTarget, unitWorkloadInFunction} binds@GroupBind{isObviousBinds, bindGroup} _ =
         let dfgFunCount = length $ functions $ mDataFlowGraph sTarget
             bindFunCount = length $ functions binds
          in GroupBindMetrics
-                { pOnlyObliviousBinds = isObliviousBinds
+                { pOnlyObviousBinds = isObviousBinds
                 , pFunctionPercentInBinds = fromIntegral bindFunCount / fromIntegral dfgFunCount
                 , pAvgBinds = avg $ map (fromIntegral . length . snd) $ M.assocs bindGroup
                 , pVarianceBinds = stddev $ map (fromIntegral . length . snd) $ M.assocs bindGroup
@@ -131,10 +131,10 @@ instance
                 let lstAvg = avg lst
                  in sqrt $ avg $ map (\x -> (x - lstAvg) ^ (2 :: Int)) lst
 
-    estimate _ctx _o _d GroupBindMetrics{pOnlyObliviousBinds, pFunctionPercentInBinds, pVarianceBinds} =
+    estimate _ctx _o _d GroupBindMetrics{pOnlyObviousBinds, pFunctionPercentInBinds, pVarianceBinds} =
         sum
             [ 4100
-            , pOnlyObliviousBinds <?> 1000
+            , pOnlyObviousBinds <?> 1000
             , fromInteger $ round pFunctionPercentInBinds * 10
             , fromInteger $ round pVarianceBinds * (-20)
             ]
@@ -189,7 +189,7 @@ isMultiBind SynthesisDecision{metrics}
     | Just GroupBindMetrics{} <- cast metrics :: Maybe BindMetrics = True
 isMultiBind _ = False
 
-isObliviousMultiBind :: SynthesisDecision ctx m -> Bool
-isObliviousMultiBind SynthesisDecision{metrics}
-    | Just GroupBindMetrics{pOnlyObliviousBinds = True} <- cast metrics :: Maybe BindMetrics = True
-isObliviousMultiBind _ = False
+isObviousMultiBind :: SynthesisDecision ctx m -> Bool
+isObviousMultiBind SynthesisDecision{metrics}
+    | Just GroupBindMetrics{pOnlyObviousBinds = True} <- cast metrics :: Maybe BindMetrics = True
+isObviousMultiBind _ = False

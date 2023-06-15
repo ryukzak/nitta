@@ -54,15 +54,15 @@ stateOfTheArtSynthesisIO () tree = do
     l2 <- smartBindSynthesisIO tree
     l3 <- bestThreadIO stepLimit tree
     l4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO tree
-    l5 <- obliviousGroupBindsIO tree >>= tryAllGroupBindsByIO (bestThreadIO stepLimit)
+    l5 <- obviousGroupBindsIO tree >>= tryAllGroupBindsByIO (bestThreadIO stepLimit)
     return $ bestLeaf tree [l1, l2, l3, l4, l5]
 
 -- | Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
     infoM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
-    lastObliviousNode <- obviousBindThreadIO root
-    allBestThreadIO 1 lastObliviousNode
+    lastObviousNode <- obviousBindThreadIO root
+    allBestThreadIO 1 lastObviousNode
 
 smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 smartBindSynthesisIO tree = do
@@ -85,10 +85,10 @@ bestStepIO tree = do
         [] -> error "all step is over"
         _ -> return $ maximumOn (defScore . sDecision) subForest
 
-obliviousGroupBindsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-obliviousGroupBindsIO tree = do
-    binds <- selectSubForestIO isObliviousMultiBind tree
-    maybe (return tree) obliviousGroupBindsIO $ bestDecision binds
+obviousGroupBindsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+obviousGroupBindsIO tree = do
+    binds <- selectSubForestIO isObviousMultiBind tree
+    maybe (return tree) obviousGroupBindsIO $ bestDecision binds
 
 tryAllGroupBindsByIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t -> SynthesisMethod tag v x t
 tryAllGroupBindsByIO method tree = do

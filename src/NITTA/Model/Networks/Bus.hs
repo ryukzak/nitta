@@ -359,8 +359,8 @@ bindsHash BusNetwork{bnPus, bnBinded} binds =
                 )
             $ M.assocs distribution
 
-nubNotObliviousBinds :: UnitTag k => BusNetwork k v x t -> [[(k, F v x)]] -> [[(k, F v x)]]
-nubNotObliviousBinds bn bindss =
+nubNotObviousBinds :: UnitTag k => BusNetwork k v x t -> [[(k, F v x)]] -> [[(k, F v x)]]
+nubNotObviousBinds bn bindss =
     let hashed = map (\binds -> (bindsHash bn binds, binds)) bindss
      in M.elems $ M.fromList hashed
 
@@ -371,25 +371,25 @@ instance
     bindOptions bn@BusNetwork{bnRemains, bnPus} =
         let binds = map optionsFor bnRemains
 
-            -- oblivious mean we have only one option to bind function
-            obliviousBinds = concat $ filter ((== 1) . length) binds
+            -- obvious mean we have only one option to bind function
+            obviousBinds = concat $ filter ((== 1) . length) binds
             singleAssingmentBinds
-                | null obliviousBinds = []
-                | otherwise = [GroupBind True $ binds2bindGroup obliviousBinds]
+                | null obviousBinds = []
+                | otherwise = [GroupBind True $ binds2bindGroup obviousBinds]
 
-            notObliviousBinds :: [[(tag, F v x)]]
-            notObliviousBinds = filter ((> 1) . length) binds
+            notObviousBinds :: [[(tag, F v x)]]
+            notObviousBinds = filter ((> 1) . length) binds
             -- TODO: split them on independent bindGroups. It should
             -- significantly reduce complexity.
             multiBinds :: [Bind tag v x]
             multiBinds
-                | null notObliviousBinds = []
+                | null notObviousBinds = []
                 | otherwise =
                     map (GroupBind False . binds2bindGroup) $
                         filter ((> 1) . length) $
                             map (fixGroupBinding bn) $
-                                nubNotObliviousBinds bn $
-                                    cartesianProduct notObliviousBinds
+                                nubNotObviousBinds bn $
+                                    cartesianProduct notObviousBinds
 
             simpleBinds = concatMap (map $ uncurry SingleBind) binds
          in singleAssingmentBinds <> multiBinds <> simpleBinds
