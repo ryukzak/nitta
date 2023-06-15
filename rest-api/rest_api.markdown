@@ -40,7 +40,7 @@ Typescript interfaces can be finded here: `types.ts`
             "fvHistory": []
         },
         "pu": "pu",
-        "tag": "BindDecisionView"
+        "tag": "SingleBindView"
     },
     "duration": 0,
     "isFinish": false,
@@ -54,7 +54,8 @@ Typescript interfaces can be finded here: `types.ts`
         "pPercentOfBindedInputs": 0.2,
         "pPossibleDeadlock": false,
         "pRestless": 0,
-        "pWave": 2
+        "pWave": 2,
+        "tag": "SingleBindMetrics"
     },
     "score": 1032,
     "sid": "-0-1-3-1"
@@ -836,7 +837,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -850,7 +851,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -869,7 +871,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -883,7 +885,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -895,7 +898,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -909,7 +912,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -985,7 +989,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -999,7 +1003,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1011,7 +1016,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1025,7 +1030,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1037,7 +1043,7 @@ Typescript interfaces can be finded here: `types.ts`
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1051,7 +1057,8 @@ Typescript interfaces can be finded here: `types.ts`
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1359,7 +1366,7 @@ null
             "fvHistory": []
         },
         "pu": "pu",
-        "tag": "BindDecisionView"
+        "tag": "SingleBindView"
     },
     "duration": 0,
     "isFinish": false,
@@ -1373,7 +1380,8 @@ null
         "pPercentOfBindedInputs": 0.2,
         "pPossibleDeadlock": false,
         "pRestless": 0,
-        "pWave": 2
+        "pWave": 2,
+        "tag": "SingleBindMetrics"
     },
     "score": 1032,
     "sid": "-0-1-3-1"
@@ -1745,7 +1753,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1759,7 +1767,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1778,7 +1787,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1792,7 +1801,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1804,7 +1814,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1818,7 +1828,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1894,7 +1905,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1908,7 +1919,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1920,7 +1932,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1934,7 +1946,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -1946,7 +1959,7 @@ null
                 "fvHistory": []
             },
             "pu": "pu",
-            "tag": "BindDecisionView"
+            "tag": "SingleBindView"
         },
         "duration": 0,
         "isFinish": false,
@@ -1960,7 +1973,8 @@ null
             "pPercentOfBindedInputs": 0.2,
             "pPossibleDeadlock": false,
             "pRestless": 0,
-            "pWave": 2
+            "pWave": 2,
+            "tag": "SingleBindMetrics"
         },
         "score": 1032,
         "sid": "-0-1-3-1"
@@ -2154,12 +2168,12 @@ null
 
 ```javascript
 {
-    "durationSuccess": {},
-    "failed": 0,
-    "nodes": 0,
-    "notProcessed": 0,
-    "stepsSuccess": {},
-    "success": 0
+    "nodesFailed": 0,
+    "nodesNotProcessed": 0,
+    "nodesSuccess": 0,
+    "nodesVisited": 0,
+    "synthesisStepsForSuccess": {},
+    "targetProcessDuration": {}
 }
 ```
 

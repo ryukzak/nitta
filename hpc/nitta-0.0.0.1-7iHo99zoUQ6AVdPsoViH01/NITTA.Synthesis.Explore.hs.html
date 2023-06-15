@@ -69,7 +69,7 @@ span.spaces    { background: white }
 <span class="lineno">   50 </span><span class="spaces">            </span><span class="istickedoff">, sDecision = <span class="nottickedoff">Root</span></span>
 <span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">, sSubForestVar</span>
 <span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">, isLeaf = <span class="nottickedoff">isLeaf' sState</span></span>
-<span class="lineno">   53 </span><span class="spaces">            </span><span class="istickedoff">, isComplete = <span class="nottickedoff">isComplete' sState</span></span>
+<span class="lineno">   53 </span><span class="spaces">            </span><span class="istickedoff">, isComplete = isComplete' sState</span>
 <span class="lineno">   54 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">   55 </span>
 <span class="lineno">   56 </span>-- | Get specific by @nId@ node from a synthesis tree.
@@ -165,7 +165,7 @@ span.spaces    { background: white }
 <span class="lineno">  146 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
 <span class="lineno">  147 </span>
 <span class="lineno">  148 </span><span class="decl"><span class="istickedoff">decisionAndContext parent@Tree{sState = ctx} o =</span>
-<span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">[ (SynthesisDecision <span class="nottickedoff">o</span> d <span class="nottickedoff">p</span> e, nodeCtx (Just parent) model)</span>
+<span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">[ (SynthesisDecision <span class="nottickedoff">o</span> d p e, nodeCtx (Just parent) model)</span>
 <span class="lineno">  150 </span><span class="spaces">    </span><span class="istickedoff">| (d, model) &lt;- decisions ctx o</span>
 <span class="lineno">  151 </span><span class="spaces">    </span><span class="istickedoff">, let p = parameters ctx o <span class="nottickedoff">d</span></span>
 <span class="lineno">  152 </span><span class="spaces">          </span><span class="istickedoff">e = M.singleton &quot;default&quot; $ estimate ctx <span class="nottickedoff">o</span> d p</span>
@@ -188,27 +188,39 @@ span.spaces    { background: white }
 <span class="lineno">  169 </span><span class="spaces">            </span><span class="istickedoff">, sOptimizeAccumOptions = optimizeAccumOptions nModel</span>
 <span class="lineno">  170 </span><span class="spaces">            </span><span class="istickedoff">, bindingAlternative =</span>
 <span class="lineno">  171 </span><span class="spaces">                </span><span class="istickedoff">foldl</span>
-<span class="lineno">  172 </span><span class="spaces">                    </span><span class="istickedoff">(\st (Bind f tag) -&gt; M.alter (return . maybe [<span class="nottickedoff">tag</span>] (<span class="nottickedoff">tag</span> :)) f st)</span>
-<span class="lineno">  173 </span><span class="spaces">                    </span><span class="istickedoff">M.empty</span>
-<span class="lineno">  174 </span><span class="spaces">                    </span><span class="istickedoff">sBindOptions</span>
-<span class="lineno">  175 </span><span class="spaces">            </span><span class="istickedoff">, possibleDeadlockBinds =</span>
-<span class="lineno">  176 </span><span class="spaces">                </span><span class="istickedoff">S.fromList</span>
-<span class="lineno">  177 </span><span class="spaces">                    </span><span class="istickedoff">[ f</span>
-<span class="lineno">  178 </span><span class="spaces">                    </span><span class="istickedoff">| (Bind f tag) &lt;- sBindOptions</span>
-<span class="lineno">  179 </span><span class="spaces">                    </span><span class="istickedoff">, Lock{lockBy} &lt;- locks f</span>
-<span class="lineno">  180 </span><span class="spaces">                    </span><span class="istickedoff">, lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)</span>
-<span class="lineno">  181 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
-<span class="lineno">  182 </span><span class="spaces">            </span><span class="istickedoff">, bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs</span>
-<span class="lineno">  183 </span><span class="spaces">            </span><span class="istickedoff">, processWaves</span>
-<span class="lineno">  184 </span><span class="spaces">            </span><span class="istickedoff">, numberOfProcessWaves = length processWaves</span>
-<span class="lineno">  185 </span><span class="spaces">            </span><span class="istickedoff">, numberOfDataflowOptions = length sDataflowOptions</span>
-<span class="lineno">  186 </span><span class="spaces">            </span><span class="istickedoff">, transferableVars =</span>
-<span class="lineno">  187 </span><span class="spaces">                </span><span class="istickedoff">S.unions</span>
-<span class="lineno">  188 </span><span class="spaces">                    </span><span class="istickedoff">[ variables ep</span>
-<span class="lineno">  189 </span><span class="spaces">                    </span><span class="istickedoff">| (DataflowSt _ targets) &lt;- sDataflowOptions</span>
-<span class="lineno">  190 </span><span class="spaces">                    </span><span class="istickedoff">, (_, ep) &lt;- targets</span>
-<span class="lineno">  191 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
-<span class="lineno">  192 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  172 </span><span class="spaces">                    </span><span class="istickedoff">( \st b -&gt; case b of</span>
+<span class="lineno">  173 </span><span class="spaces">                        </span><span class="istickedoff">(SingleBind uTag f) -&gt; M.alter (return . maybe [<span class="nottickedoff">uTag</span>] (<span class="nottickedoff">uTag</span> :)) f st</span>
+<span class="lineno">  174 </span><span class="spaces">                        </span><span class="istickedoff">_ -&gt; st</span>
+<span class="lineno">  175 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
+<span class="lineno">  176 </span><span class="spaces">                    </span><span class="istickedoff">M.empty</span>
+<span class="lineno">  177 </span><span class="spaces">                    </span><span class="istickedoff">sBindOptions</span>
+<span class="lineno">  178 </span><span class="spaces">            </span><span class="istickedoff">, possibleDeadlockBinds =</span>
+<span class="lineno">  179 </span><span class="spaces">                </span><span class="istickedoff">S.fromList</span>
+<span class="lineno">  180 </span><span class="spaces">                    </span><span class="istickedoff">[ f</span>
+<span class="lineno">  181 </span><span class="spaces">                    </span><span class="istickedoff">| (SingleBind uTag f) &lt;- sBindOptions</span>
+<span class="lineno">  182 </span><span class="spaces">                    </span><span class="istickedoff">, Lock{lockBy} &lt;- locks f</span>
+<span class="lineno">  183 </span><span class="spaces">                    </span><span class="istickedoff">, lockBy `S.member` unionsMap variables (bindedFunctions uTag $ mUnit nModel)</span>
+<span class="lineno">  184 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
+<span class="lineno">  185 </span><span class="spaces">            </span><span class="istickedoff">, bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs</span>
+<span class="lineno">  186 </span><span class="spaces">            </span><span class="istickedoff">, processWaves</span>
+<span class="lineno">  187 </span><span class="spaces">            </span><span class="istickedoff">, numberOfProcessWaves = length processWaves</span>
+<span class="lineno">  188 </span><span class="spaces">            </span><span class="istickedoff">, numberOfDataflowOptions = length sDataflowOptions</span>
+<span class="lineno">  189 </span><span class="spaces">            </span><span class="istickedoff">, transferableVars =</span>
+<span class="lineno">  190 </span><span class="spaces">                </span><span class="istickedoff">S.unions</span>
+<span class="lineno">  191 </span><span class="spaces">                    </span><span class="istickedoff">[ variables ep</span>
+<span class="lineno">  192 </span><span class="spaces">                    </span><span class="istickedoff">| (DataflowSt _ targets) &lt;- sDataflowOptions</span>
+<span class="lineno">  193 </span><span class="spaces">                    </span><span class="istickedoff">, (_, ep) &lt;- targets</span>
+<span class="lineno">  194 </span><span class="spaces">                    </span><span class="istickedoff">]</span>
+<span class="lineno">  195 </span><span class="spaces">            </span><span class="istickedoff">, unitWorkloadInFunction =</span>
+<span class="lineno">  196 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff">let</span></span>
+<span class="lineno">  197 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">BusNetwork{bnBinded, bnPus} = mUnit nModel</span></span>
+<span class="lineno">  198 </span><span class="spaces">                 </span><span class="istickedoff"><span class="nottickedoff">in</span></span>
+<span class="lineno">  199 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff">M.fromList</span></span>
+<span class="lineno">  200 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">$ map</span></span>
+<span class="lineno">  201 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">( \uTag -&gt; (uTag, maybe 0 length $ bnBinded M.!? uTag)</span></span>
+<span class="lineno">  202 </span><span class="spaces">                            </span><span class="istickedoff"><span class="nottickedoff">)</span></span>
+<span class="lineno">  203 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff">$ M.keys bnPus</span></span>
+<span class="lineno">  204 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 
 </pre>
 </body>
