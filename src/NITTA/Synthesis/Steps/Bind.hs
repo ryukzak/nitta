@@ -50,16 +50,16 @@ data BindMetrics
         -- ^ How many transactions can be executed with this function?
         , pPossibleDeadlock :: Bool
         -- ^ May this binding cause deadlock?
-        , pNumberOfBindedFunctions :: Float
-        , pPercentOfBindedInputs :: Float
-        -- ^ number of binded input variables / number of all input variables
+        , pNumberOfBoundFunctions :: Float
+        , pPercentOfBoundInputs :: Float
+        -- ^ number of bound input variables / number of all input variables
         , pWave :: Maybe Float
         }
     | GroupBindMetrics
         { pOnlyObviousBinds :: Bool
         -- ^ We don't have alternatives for binding
         , pFunctionPercentInBinds :: Float
-        -- ^ number of binded functions / number of all functions in DFG
+        -- ^ number of bound functions / number of all functions in DFG
         , pAvgBinds :: Float
         -- ^ average number of binds per unit
         , pVarianceBinds :: Float
@@ -102,8 +102,8 @@ instance
                     return $ fromIntegral tcFrom
                 , pOutputNumber = fromIntegral $ length $ S.elems $ outputs f
                 , pPossibleDeadlock = f `S.member` possibleDeadlockBinds
-                , pNumberOfBindedFunctions = fromIntegral $ length $ bindedFunctions tag mUnit
-                , pPercentOfBindedInputs =
+                , pNumberOfBoundFunctions = fromIntegral $ length $ boundFunctions tag mUnit
+                , pPercentOfBoundInputs =
                     let is = inputs f
                         n = fromIntegral $ length $ S.intersection is $ variables mUnit
                         nAll = fromIntegral $ length is
@@ -148,9 +148,9 @@ instance
             , pAlternative
             , pAllowDataFlow
             , pRestless
-            , pNumberOfBindedFunctions
+            , pNumberOfBoundFunctions
             , pWave
-            , pPercentOfBindedInputs
+            , pPercentOfBoundInputs
             , pOutputNumber
             } =
             sum
@@ -158,9 +158,9 @@ instance
                 , pCritical <?> 1000
                 , (pAlternative == 1) <?> 500
                 , pAllowDataFlow * 10
-                , pPercentOfBindedInputs * 50
+                , pPercentOfBoundInputs * 50
                 , -fromMaybe (-1) pWave * 50
-                , -pNumberOfBindedFunctions * 10
+                , -pNumberOfBoundFunctions * 10
                 , -pRestless * 4
                 , pOutputNumber * 2
                 ]

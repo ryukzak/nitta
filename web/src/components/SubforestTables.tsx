@@ -93,8 +93,8 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("rest", (e: Node) => (e.parameters as ISingleBindMetrics).pRestless, 50),
 
           textColumn("newDF", (e: Node) => (e.parameters as ISingleBindMetrics).pAllowDataFlow, 70),
-          textColumn("newBind", (e: Node) => (e.parameters as ISingleBindMetrics).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Node) => (e.parameters as ISingleBindMetrics).pPercentOfBindedInputs, 70),
+          textColumn("newBind", (e: Node) => (e.parameters as ISingleBindMetrics).pNumberOfBoundFunctions, 70),
+          textColumn("|inputs|", (e: Node) => (e.parameters as ISingleBindMetrics).pPercentOfBoundInputs, 70),
           detailColumn(),
         ]}
       />
