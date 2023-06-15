@@ -350,7 +350,7 @@ bindsHash BusNetwork{bnPus, bnBinded} binds =
                                     -- inputs, because they are equal from
                                     -- scheduling point of view
 
-                                    -- TODO: other way to reduce numner of
+                                    -- TODO: other way to reduce number of
                                     -- combinations
                                         map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
                                     else map show fs
