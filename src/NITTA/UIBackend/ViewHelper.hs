@@ -227,8 +227,8 @@ instance ToSample (NodeView tag v x t) where
                             , pOutputNumber = 2
                             , pAllowDataFlow = 1
                             , pPossibleDeadlock = False
-                            , pNumberOfBindedFunctions = 1
-                            , pPercentOfBindedInputs = 0.2
+                            , pNumberOfBoundFunctions = 1
+                            , pPercentOfBoundInputs = 0.2
                             , pWave = Just 2
                             }
                 , decision = SingleBindView (FView "buffer(a) = b = c" []) "pu"

@@ -37,7 +37,7 @@ import Prelude hiding (init)
 
 data Shift v x t = Shift
     { remain :: [F v x]
-    -- ^ list of FU, that will be binded later
+    -- ^ list of FU, that will be bound later
     , target :: Maybe v
     -- ^ current input value, that we want to shift
     , sources :: [v]

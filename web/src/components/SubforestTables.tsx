@@ -55,7 +55,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("type", (e: Node) => e.decision.tag, 160),
           textColumn("description", (e: Node) => showDecision(e.decision)),
 
-          textColumn("oblivious", (e: Node) => String((e.parameters as IGroupBindMetrics).pOnlyObliviousBinds), 75),
+          textColumn("obvious", (e: Node) => String((e.parameters as IGroupBindMetrics).pOnlyObviousBinds), 75),
           textColumn("percent", (e: Node) => String((e.parameters as IGroupBindMetrics).pFunctionPercentInBinds), 75),
           textColumn("avg", (e: Node) => String((e.parameters as IGroupBindMetrics).pAvgBinds), 50),
           textColumn("variance", (e: Node) => String((e.parameters as IGroupBindMetrics).pVarianceBinds), 75),
@@ -93,8 +93,8 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn("rest", (e: Node) => (e.parameters as ISingleBindMetrics).pRestless, 50),
 
           textColumn("newDF", (e: Node) => (e.parameters as ISingleBindMetrics).pAllowDataFlow, 70),
-          textColumn("newBind", (e: Node) => (e.parameters as ISingleBindMetrics).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Node) => (e.parameters as ISingleBindMetrics).pPercentOfBindedInputs, 70),
+          textColumn("newBind", (e: Node) => (e.parameters as ISingleBindMetrics).pNumberOfBoundFunctions, 70),
+          textColumn("|inputs|", (e: Node) => (e.parameters as ISingleBindMetrics).pPercentOfBoundInputs, 70),
           detailColumn(),
         ]}
       />

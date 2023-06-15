@@ -68,12 +68,12 @@ function renderDotOptions(options: DotOptions) {
   return `[${result.join("; ")}]`;
 }
 
-function isFunctionBinded(binded: string[], node: GraphNode): boolean {
-  if (binded.indexOf(node.function) >= 0) {
+function isFunctionBound(bound: string[], node: GraphNode): boolean {
+  if (bound.indexOf(node.function) >= 0) {
     return true;
   }
   for (let e of node.history) {
-    if (binded.indexOf(e) >= 0) return true;
+    if (bound.indexOf(e) >= 0) return true;
   }
   return false;
 }
@@ -89,7 +89,7 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
       " " +
       renderDotOptions({
         label: node.label,
-        style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed",
+        style: isFunctionBound(state.bindeFuns, node) ? "line" : "dashed",
       })
     );
   });

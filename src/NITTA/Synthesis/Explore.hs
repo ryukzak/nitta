@@ -180,7 +180,7 @@ nodeCtx parent nModel =
                     [ f
                     | (SingleBind uTag f) <- sBindOptions
                     , Lock{lockBy} <- locks f
-                    , lockBy `S.member` unionsMap variables (bindedFunctions uTag $ mUnit nModel)
+                    , lockBy `S.member` unionsMap variables (boundFunctions uTag $ mUnit nModel)
                     ]
             , bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs
             , processWaves
@@ -194,11 +194,11 @@ nodeCtx parent nModel =
                     ]
             , unitWorkloadInFunction =
                 let
-                    BusNetwork{bnBinded, bnPus} = mUnit nModel
+                    BusNetwork{bnBound, bnPus} = mUnit nModel
                  in
                     M.fromList
                         $ map
-                            ( \uTag -> (uTag, maybe 0 length $ bnBinded M.!? uTag)
+                            ( \uTag -> (uTag, maybe 0 length $ bnBound M.!? uTag)
                             )
                         $ M.keys bnPus
             }

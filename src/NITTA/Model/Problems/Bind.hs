@@ -25,7 +25,7 @@ import NITTA.Utils.Base (unionsMap)
 
 data Bind tag v x
     = SingleBind tag (F v x)
-    | GroupBind {isObliviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
+    | GroupBind {isObviousBinds :: Bool, bindGroup :: M.Map tag [F v x]}
     deriving (Generic, Eq)
 
 binds2bindGroup :: UnitTag tag => [(tag, F v x)] -> M.Map tag [F v x]
@@ -45,10 +45,10 @@ binds2bindGroup binds =
 
 instance UnitTag tag => Show (Bind tag v x) where
     show (SingleBind uTag f) = "Bind " <> showFAndTag (f, uTag)
-    show (GroupBind{isObliviousBinds, bindGroup}) =
+    show (GroupBind{isObviousBinds, bindGroup}) =
         concat
             [ "Binds "
-            , if isObliviousBinds then "obliviousBinds " else ""
+            , if isObviousBinds then "obviousBinds " else ""
             , S.join "; " (map showFsAndTag $ M.assocs bindGroup)
             ]
 
