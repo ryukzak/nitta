@@ -27,8 +27,6 @@ import Data.Either
 import Data.Maybe (fromJust)
 import Data.String.Interpolate
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import NITTA.Synthesis
-import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static

@@ -14,7 +14,7 @@ module NITTA.Synthesis.Analysis (
 import Control.Concurrent.STM
 import Data.HashMap.Strict qualified as HM
 import GHC.Generics
-import NITTA.Model.TargetSystem (isSynthesisComplete, processDuration)
+import NITTA.Model.TargetSystem (processDuration)
 import NITTA.Synthesis.Types
 
 -- | Metrics of synthesis tree process

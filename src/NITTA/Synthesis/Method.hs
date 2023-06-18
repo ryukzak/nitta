@@ -17,7 +17,7 @@ module NITTA.Synthesis.Method (
     simpleSynthesisIO,
     smartBindSynthesisIO,
     obviousBindThreadIO,
-    topDownScoreSynthesisIO,
+    topDownByScoreSynthesisIO,
     allBestThreadIO,
     stateOfTheArtSynthesisIO,
     allBindsAndRefsIO,
@@ -34,7 +34,6 @@ import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Analysis
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
@@ -50,8 +49,8 @@ the endless synthesis process.
 -}
 stepLimit = 750 :: Int
 
-noSynthesis :: () -> SynthesisMethod tag v x t
-noSynthesis () tree = do
+noSynthesis :: BackendCtx tag v x t -> SynthesisMethod tag v x t
+noSynthesis _ tree = do
     infoM "NITTA.Synthesis" "noSynthesis"
     return tree
 
@@ -148,13 +147,13 @@ bestLeaf tree leafs =
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
 
-topDownScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
-topDownScoreSynthesisIO = topDownScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0
+topDownByScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+topDownByScoreSynthesisIO = topDownByScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0
 
-topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do
+topDownByScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do
     if step > limit
         then do
-            infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - STEP LIMIT REACHED: " <> show (sID currentNode)
+            infoM "NITTA.Synthesis" $ "topDownByScoreSynthesisIO - STEP LIMIT REACHED: " <> show (sID currentNode)
             return currentNode
         else do
             -- currentNode should not be in the heap at this point, but all its children will be
@@ -173,12 +172,12 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
 
             case H.viewHead heapWithSubforest of
                 Nothing -> do
-                    infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - TREE EXHAUSTED: " <> show (sID currentNode)
+                    infoM "NITTA.Synthesis" $ "topDownByScoreSynthesisIO - TREE EXHAUSTED: " <> show (sID currentNode)
                     return currentNode
                 Just (_, nextBestScoreNode) -> do
                     if isComplete nextBestScoreNode
                         then do
-                            infoM "NITTA.Synthesis" $ "topDownScoreSynthesisIO - DONE: " <> show (sID nextBestScoreNode)
+                            infoM "NITTA.Synthesis" $ "topDownByScoreSynthesisIO - DONE: " <> show (sID nextBestScoreNode)
                             return nextBestScoreNode
                         else do
                             let prio = getPriority nextBestScoreNode
@@ -194,7 +193,7 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
                             infoM
                                 "NITTA.Synthesis"
                                 ( printf
-                                    "topDownScoreSynthesisIO: prio=%-15s depth=%-5s score=%-10s drops=%-3s %s -> %s"
+                                    "topDownByScoreSynthesisIO: prio=%-15s depth=%-5s score=%-10s drops=%-3s %s -> %s"
                                     (show prio)
                                     (show depth)
                                     (show score)
@@ -203,7 +202,7 @@ topDownScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode
                                     (show $ sID nextBestScoreNode)
                                 )
 
-                            topDownScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
+                            topDownByScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
 
 {- | Shortcut for constraints in signatures of synthesis method functions.
 This used to be (VarValTime v x t, UnitTag tag). See below for more info.

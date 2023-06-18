@@ -33,14 +33,14 @@ import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
-import NITTA.Model.Networks.Bus 
+import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
+import NITTA.Synthesis (TargetSynthesis (..), mlScoreKeyPrefix, noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem, topDownByScoreSynthesisIO)
 import NITTA.Synthesis.MlBackend.ServerInstance
-import NITTA.Synthesis (TargetSynthesis (..), noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem, topDownScoreSynthesisIO)
 import NITTA.UIBackend
-import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores)
+import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores, outputPath, receivedValues, root)
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
@@ -57,12 +57,8 @@ import Text.Regex
 data SynthesisMethodArg
     = StateOfTheArt
     | TopDownByScore
-    | NoSynthesis 
+    | NoSynthesis
     deriving (Show, Data, Typeable)
-
-synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
-synthesisMethod TopDownByScore = topDownScoreSynthesisIO
-synthesisMethod NoSynthesis = noSynthesis
 
 -- | Command line interface.
 data Nitta = Nitta
@@ -171,7 +167,7 @@ nittaArgs =
                 &= groupname "Synthesis"
         , depth_base =
             1.4
-                &= help "Only for '" ++ show TopDownByScore ++ "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.2)"
+                &= help ("Only for '" <> show TopDownByScore <> "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.4)")
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
         , method =
@@ -246,16 +242,19 @@ main = do
 
             when fsim $ functionalSimulation n received format frontendResult
 
-            prj <- withLazyMlBackendServer $ \serverGetter -> do
-                -- TODO: state monad? rename BackendCtx to something more generic?
-                let ctx =
+            withLazyMlBackendServer $ \serverGetter -> do
+                -- TODO: state monad?
+                -- TODO: rename BackendCtx to something more generic?
+                let ctxWithoutRoot =
                         (def :: BackendCtx tag v x t)
-                            { root = synthesisRoot
-                              , receivedValues = received
-                              , outputPath = output_path
-                              , mlBackendGetter = serverGetter
-                              , nodeScores = nodeScores
+                            { receivedValues = received
+                            , outputPath = output_path
+                            , mlBackendGetter = serverGetter
+                            , nodeScores = nodeScores
                             }
+                    synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
+                    synthesisMethod TopDownByScore = topDownByScoreSynthesisIO depth_base 10000 Nothing
+                    synthesisMethod NoSynthesis = noSynthesis
 
                 (synthesisRoot, prjE) <-
                     synthesizeTargetSystem
@@ -266,10 +265,12 @@ main = do
                             , tDFG = frDataFlow
                             , tReceivedValues = received
                             , tTemplates = S.split ":" templates
-                            , tSynthesisMethod = synthesisMethod method ctx
+                            , tSynthesisMethod = synthesisMethod method $ ctxWithoutRoot
                             , tSimulationCycleN = n
                             , tSourceCodeType = exactFrontendType
                             }
+
+                let ctxWithRoot = ctxWithoutRoot{root = synthesisRoot}
 
                 when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
 
@@ -281,7 +282,7 @@ main = do
                                 Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
                             Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
                     warningIfUnexpectedPort expect port
-                    backendServer port received output_path synthesisRoot
+                    backendServer port ctxWithRoot
                     exitSuccess
         )
         $ parseFX . fromJust

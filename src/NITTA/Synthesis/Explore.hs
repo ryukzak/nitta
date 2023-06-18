@@ -27,6 +27,7 @@ import Data.Map.Strict qualified as M
 import Data.Maybe
 import Data.Set qualified as S
 import Data.Text qualified as T
+import Debug.Trace (trace)
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -122,12 +123,12 @@ subForestIO
                                 then return subForest
                                 else do
                                     mlBackend <- mlBackendGetter ctx
-                                    let mlBackendBaseUrl = baseUrl mlBackend
-                                    case mlBackendBaseUrl of
+                                    let mlBackendBaseUrlMaybe = baseUrl mlBackend
+                                    case mlBackendBaseUrlMaybe of
                                         Nothing -> return subForest
-                                        Just onlineUrl -> do
+                                        Just mlBackendBaseUrl -> do
                                             -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
-                                            foldM (addMlScoreToSubforestSkipErrorsIO onlineUrl) subForest modelNames
+                                            foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
                 )
 
 addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl subForest modelName = do
@@ -147,13 +148,17 @@ addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName = do
     -- +20 shifts "useless node" threshold, since model outputs negative values much more often
     -- FIXME: make models' output consist of mostly >0 values and treat 0 as a "useless node" threshold? training data changes required
     let mlScores = map (+ 20) $ head allInputsScores
-    let scoreKey = mlScoreKeyPrefix <> modelName
+        scoreKey = mlScoreKeyPrefix <> modelName
+
     return $
         map
-            ( \(node@Tree{sDecision = sDes@SynthesisDecision{scores = origScores}}, mlScore) ->
-                node{sDecision = sDes{scores = M.insert scoreKey mlScore origScores}}
-            )
+            (addNewScoreToSubforest scoreKey)
             (zip subForest mlScores)
+
+addNewScoreToSubforest scoreKey (node@Tree{sDecision = sDes@SynthesisDecision{scores = origScores}}, newScore) =
+    node{sDecision = sDes{scores = M.insert scoreKey newScore origScores}}
+addNewScoreToSubforest scoreKey (node@Tree{sDecision = Root}, _) =
+    trace ("adding new score to Root, shouldn't happen, scoreKey: " ++ fromText scoreKey) node
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).

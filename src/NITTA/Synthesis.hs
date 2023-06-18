@@ -96,7 +96,6 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Project (Project (..), collectNittaPath, defProjectTemplates, runTestbench, writeProject)
-import NITTA.Synthesis.Analysis
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Steps

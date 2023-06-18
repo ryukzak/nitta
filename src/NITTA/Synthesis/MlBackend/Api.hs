@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -21,7 +21,7 @@ import Data.String.ToString
 import Data.Text.Encoding qualified as T
 import GHC.Generics
 import NITTA.Synthesis.Types hiding (scores)
-import NITTA.UIBackend.ViewHelper (NodeView)
+import NITTA.UIBackend.ViewHelper (NodeView, VarValTimeJSON)
 import Network.HTTP.Client.Conduit
 import Network.HTTP.Simple
 
@@ -35,14 +35,16 @@ data ScoringInput tag v x t = ScoringInput
     { scoringTarget :: ScoringTarget
     , nodes :: [NodeView tag v x t]
     }
-    deriving (Generic, ToJSON)
+    deriving (Generic)
 
--- instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (ScoringInput tag v x t)
+instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (ScoringInput tag v x t)
 
 newtype PostScoreRequestBody tag v x t = PostScoreRequestBody
     { inputs :: [ScoringInput tag v x t]
     }
-    deriving (Generic, ToJSON)
+    deriving (Generic)
+
+instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (PostScoreRequestBody tag v x t)
 
 newtype MlBackendResponse d = MlBackendResponse
     { responseData :: d
