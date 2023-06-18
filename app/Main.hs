@@ -172,8 +172,8 @@ nittaArgs =
                 &= groupname "Synthesis"
         , method =
             StateOfTheArt
-                &= help "Synthesis method (default: stateoftheart)"
-                &= typ "stateoftheart|topdownbyscore|nosynthesis"
+                &= help "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)"
+                &= typ "NAME"
                 &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
