@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -61,7 +60,11 @@ instance ToJSON d => ToJSON (MlBackendResponse d) where
 
 newtype PostScoreResponseData = PostScoreResponseData
     {scores :: [[Float]]}
-    deriving (Show, Generic, ToJSON, FromJSON)
+    deriving (Show, Generic)
+
+-- TODO: GeneralizedNewtypeDeriving vs DeriveAnyClass conflict? declaring instance manually for now
+instance ToJSON PostScoreResponseData
+instance FromJSON PostScoreResponseData
 
 getDefaultRequestIO baseUrl = do
     parseRequest (toString baseUrl)
