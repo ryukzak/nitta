@@ -42,13 +42,13 @@ _NITTA_START_MAX_RETRIES: int = 5
 @asynccontextmanager
 async def run_nitta(
     example: Path,
-    nitta_exe_path: str = "stack exec nitta --",
+    nitta_run_command: str = "stack exec nitta --",
     nitta_args: str = "",
     nitta_env: Optional[dict] = None,
     given_port: Optional[int] = None,
 ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
     port = given_port or find_random_free_port()
-    cmd = f"{nitta_exe_path} -p={port} {nitta_args} {example}"
+    cmd = f"{nitta_run_command} -p={port} {nitta_args} {example}"
     async with run_nitta_raw(cmd, nitta_env, wait_for_server=True) as proc:
         nitta_baseurl = f"http://localhost:{port}"
         yield proc, nitta_baseurl
@@ -122,10 +122,10 @@ async def run_nitta_raw(
 async def run_example_and_retrieve_tree_data(
     example: Path,
     data_dir: Path = DATA_DIR,
-    nitta_exe_path: str = "stack exec nitta -- ",
+    nitta_run_command: str = "stack exec nitta -- ",
 ) -> pd.DataFrame:
     example_name = os.path.basename(example)
-    async with run_nitta(example, nitta_exe_path) as (_, nitta_baseurl):
+    async with run_nitta(example, nitta_run_command) as (_, nitta_baseurl):
         logger.info(f"Retrieving tree.")
         tree = await retrieve_whole_nitta_tree(nitta_baseurl)
         data_dir.mkdir(exist_ok=True)
@@ -164,7 +164,7 @@ async def run_example_and_sample_tree_parallel(
     n_samples_per_batch=150,
     n_workers: int = 1,
     n_nittas: int = 1,
-    nitta_exe_path: str = "stack exec nitta -- ",
+    nitta_run_command: str = "stack exec nitta -- ",
     results_accum: Optional[List[dict]] = None,
 ):
     """
@@ -191,7 +191,7 @@ async def run_example_and_sample_tree_parallel(
     async with AsyncExitStack() as stack:
         nittas = await gather(
             *[
-                stack.enter_async_context(run_nitta(example, nitta_exe_path))
+                stack.enter_async_context(run_nitta(example, nitta_run_command))
                 for _ in range(n_nittas)
             ]
         )

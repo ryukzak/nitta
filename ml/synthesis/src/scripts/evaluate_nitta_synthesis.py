@@ -20,7 +20,7 @@ from consts import EXAMPLES_DIR
 logger = get_logger(__name__)
 
 _output_dir = "evaluation"
-_nitta_path = "stack exec nitta --"
+_nitta_run_command = "stack exec nitta --"
 _nitta_running_timeout_s = 60
 _evaluated_args = {
     "score": {
@@ -47,7 +47,7 @@ async def _run_config_and_save_results(
 ):
     args_str = " ".join(opt_args for _, _, opt_args in run_config if opt_args)
     async with run_nitta_raw(
-        cmd=f"{_nitta_path} {_const_args} {args_str} {example}",
+        cmd=f"{_nitta_run_command} {_const_args} {args_str} {example}",
         stdout=PIPE,
         stderr=DEVNULL,
     ) as nitta_proc:

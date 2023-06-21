@@ -20,7 +20,7 @@ _DEFAULT_N_SAMPLES = 5000
 _DEFAULT_N_SAMPLES_PER_BATCH = 150
 _DEFAULT_N_WORKERS = 1
 _DEFAULT_N_NITTAS = 1
-_DEFAULT_NITTA_EXE_PATH = "stack exec nitta --"
+_DEFAULT_NITTA_RUN_COMMAND = "stack exec nitta --"
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -67,9 +67,9 @@ if __name__ == "__main__":
         type=int,
     )
     argparser.add_argument(
-        "--nitta-path",
-        help=f"Path to the NITTA executable. Default: '{_DEFAULT_NITTA_EXE_PATH}' is used.",
-        default=_DEFAULT_NITTA_EXE_PATH,
+        "--nitta-run-command",
+        help=f"A command to run NITTA. It may be an absolute path to the NITTA executable. Default: '{_DEFAULT_NITTA_RUN_COMMAND}'.",
+        default=_DEFAULT_NITTA_RUN_COMMAND,
         type=str,
     )
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 n_samples_per_batch=args.n_samples_per_batch,
                 n_workers=args.n_workers,
                 n_nittas=args.n_nittas,
-                nitta_exe_path=args.nitta_path,
+                nitta_run_command=args.nitta_run_command,
                 results_accum=results,
             )
         )
