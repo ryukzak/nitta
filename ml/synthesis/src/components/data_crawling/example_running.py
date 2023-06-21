@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import pickle
+import re
 import signal
 import sys
 from asyncio import gather, sleep
@@ -37,6 +38,7 @@ logger = get_logger(__name__)
 _NITTA_START_WAIT_DELAY_S: int = 2
 _NITTA_START_RETRY_DELAY_S: int = 2
 _NITTA_START_MAX_RETRIES: int = 5
+_PORT_IN_NITTA_CMD_REGEX = re.compile(r"(?<=\s)(-p|--port)(=|\s+)\d+")
 
 
 @asynccontextmanager
@@ -49,7 +51,12 @@ async def run_nitta(
 ) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
     port = given_port or find_random_free_port()
     cmd = f"{nitta_run_command} -p={port} {nitta_args} {example}"
-    async with run_nitta_raw(cmd, nitta_env, wait_for_server=True) as proc:
+    async with run_nitta_raw(
+        cmd,
+        nitta_env,
+        wait_for_server=True,
+        change_port_on_retry=given_port is None,
+    ) as proc:
         nitta_baseurl = f"http://localhost:{port}"
         yield proc, nitta_baseurl
 
@@ -61,12 +68,14 @@ async def run_nitta_raw(
     wait_for_server: bool = False,
     stdout=sys.stdout,
     stderr=sys.stderr,
+    max_retries: int = _NITTA_START_MAX_RETRIES,
+    change_port_on_retry: bool = False,
 ) -> AsyncGenerator[asyncio.subprocess.Process, None]:
     env = os.environ.copy()
     env.update(env or {})
 
     proc = None
-    retries_left = _NITTA_START_MAX_RETRIES
+    retries_left = max_retries
     try:
         while (proc is None or proc.returncode is not None) and retries_left > 0:
             logger.info(f"Starting NITTA, cmd: {cmd}")
@@ -74,6 +83,7 @@ async def run_nitta_raw(
             preexec_fn = (
                 None if os.name == "nt" else os.setsid
             )  # see https://stackoverflow.com/a/4791612
+
             proc = await asyncio.create_subprocess_shell(
                 cmd,
                 cwd=str(ROOT_DIR),
@@ -97,6 +107,15 @@ async def run_nitta_raw(
                     + f"Retrying after a delay of {_NITTA_START_RETRY_DELAY_S} secs (retries left: {retries_left})."
                 )
                 await sleep(_NITTA_START_RETRY_DELAY_S)
+
+                # Sometimes NITTA fails to start because the given port is already in use (even if it was free
+                # just a moment ago), hence we implement a flag that allows us to change the port on retry.
+                # It's a bit hacky to re-write the raw given cmd with a regex, but I can't think of a better way that
+                # will not hurt the ability to give an arbitrary cmd to run.
+                if change_port_on_retry:
+                    new_port = find_random_free_port()
+                    cmd = _PORT_IN_NITTA_CMD_REGEX.sub(f"-p={new_port}", cmd)
+
                 retries_left -= 1
                 proc = None
 
