@@ -1,20 +1,19 @@
 import asyncio
 import itertools
+import logging
 import random
-import re
 import sys
-from asyncio.subprocess import DEVNULL, PIPE
 from pathlib import Path
 from time import perf_counter
 from typing import Iterable, List, Tuple
 
 import pandas as pd
+from aiohttp import ClientSession
 
 from components.common.logging import configure_logging, get_logger
 from components.common.saving import save_df_with_timestamp
-from components.data_crawling.example_running import run_nitta, run_nitta_raw
-from components.data_crawling.node_processing import get_depth
-from components.data_crawling.tree_retrieving import retrieve_single_node
+from components.data_crawling.nitta_running import run_nitta_server
+from components.data_crawling.tree_retrieving import retrieve_tree_info
 from consts import EXAMPLES_DIR
 
 logger = get_logger(__name__)
@@ -29,15 +28,17 @@ _evaluated_args = {
         "model_v2": "--score=ml_v2_exp2",
     },
     "synthesis_method": {
-        "sota": "--synthesis-method=stateOfTheArtSynthesisIO",
-        "top-down-1.2": "--synthesis-method=topDownScoreSynthesisIO --depth-base=1.2",
-        "top-down-1.4": "--synthesis-method=topDownScoreSynthesisIO --depth-base=1.4",
+        "sota": "--method=StateOfTheArt",
+        "top-down-1.2": "--method=TopDownByScore --depth-base=1.2",
+        "top-down-1.4": "--method=TopDownByScore --depth-base=1.4",
     },
 }
 examples = [*sorted(EXAMPLES_DIR.glob("**/*.lua"))]
 # examples = [EXAMPLES_DIR / "fibonacci.lua"]
 _const_args = "-e"
 _measurement_tries = 3
+
+_TIMEOUT_CHECKING_INTERVAL_S = 2
 
 
 async def _run_config_and_save_results(
@@ -46,55 +47,59 @@ async def _run_config_and_save_results(
     example: Path,
 ):
     args_str = " ".join(opt_args for _, _, opt_args in run_config if opt_args)
-    async with run_nitta_raw(
-        cmd=f"{_nitta_run_command} {_const_args} {args_str} {example}",
-        stdout=PIPE,
-        stderr=DEVNULL,
-    ) as nitta_proc:
+    async with run_nitta_server(
+        example=example,
+        nitta_run_command=_nitta_run_command,
+        nitta_args=f"{_const_args} {args_str}",
+    ) as nitta:
         start_time = perf_counter()
 
+        nitta_base_url = None
+        elapsed_time = 0.0
+        while not nitta_base_url and elapsed_time < _nitta_running_timeout_s:
+            try:
+                nitta_base_url = await asyncio.wait_for(
+                    nitta.get_base_url(), timeout=_TIMEOUT_CHECKING_INTERVAL_S
+                )
+            except asyncio.TimeoutError:
+                pass
+            elapsed_time = perf_counter() - start_time
+
+        timeout = elapsed_time >= _nitta_running_timeout_s
         success = False
-        timeout = False
-        steps = 0
-        last_sid = ""
-        explore_regexp = re.compile(
-            r"^\[DEBUG : NITTA\.Synthesis\] explore: (?P<sid>(-\d+)+)"
-        )
+        stats = {}
+        if timeout:
+            logger.info(f"Timeout of {_nitta_running_timeout_s}s reached.")
+        elif nitta_base_url is None:
+            logger.info(
+                f"A error occurred at {elapsed_time:.2f}s, so it's neither a timeout, nor a success."
+            )
+        else:
+            logger.info(
+                f"Synthesis done, NITTA API server started on {nitta_base_url}. "
+                f"Elapsed time: {elapsed_time:.2f}s. Getting tree info..."
+            )
+            async with ClientSession() as session:
+                ti = await retrieve_tree_info(nitta_base_url, session)
 
-        line = await nitta_proc.stdout.readline()
-        while line:
-            decoded_line = line.decode("utf-8")
+            logger.info(f"Got tree info: {ti}")
 
-            explore_match = explore_regexp.match(decoded_line)
-            if explore_match:
-                steps += 1
-                last_sid = explore_match.group("sid")
+            def _mean_from_tree_info_dict(d: dict) -> float:
+                # dicts are like {value: node_count}, we need a weighted mean
+                # {"13": 3, "9": 6} -> (3*13 + 6*9) / (3+6)
+                if sum(d.values()) == 0:
+                    return 0
+                return sum(int(k) * v for k, v in d.items()) / sum(d.values())
 
-            if "synthesis process...ok" in decoded_line:
-                success = True
-                break
-
-            line = None
-            while not line:
-                if (perf_counter() - start_time) > _nitta_running_timeout_s:
-                    logger.info(f"Timed out after {_nitta_running_timeout_s:.0f}s")
-                    timeout = True
-                    break
-                try:
-                    line = await asyncio.wait_for(
-                        nitta_proc.stdout.readline(), timeout=1
-                    )
-                except asyncio.TimeoutError:
-                    pass
-
-        logger.debug(
-            f"Done parsing stdout, success={success}, timeout={timeout}, steps={steps}"
-        )
-
-        elapsed_time = perf_counter() - start_time
-        if last_sid:
-            async with run_nitta(example) as (_, nitta_baseurl):
-                node = await retrieve_single_node(nitta_baseurl, last_sid)
+            success = ti.success > 0
+            stats["time"] = elapsed_time
+            stats["synthesis_steps"] = ti.nodes - ti.not_processed - 1  # -1 for root
+            stats["mean_depth"] = _mean_from_tree_info_dict(ti.steps_success)
+            stats["min_duration"] = min(int(v) for v in ti.duration_success.values())
+            stats["leafs"] = ti.success + ti.failed
+            stats["leaf_success_rate"] = ti.success / stats["leafs"]
+            stats["nodes_total"] = ti.nodes
+            stats["nodes_not_processed"] = ti.not_processed
 
         results.append(
             {
@@ -102,22 +107,7 @@ async def _run_config_and_save_results(
                 "success": int(success),
                 "timeout": int(timeout),
                 **{param_name: opt_name for param_name, opt_name, _ in run_config},
-                **(
-                    {}
-                    if timeout
-                    else {
-                        "time": elapsed_time,
-                        "synthesis_steps": steps,
-                    }
-                ),
-                **(
-                    {}
-                    if not success
-                    else {
-                        "result_depth": get_depth(last_sid),
-                        "duration": node.duration,
-                    }
-                ),
+                **stats,
             }
         )
 
@@ -152,7 +142,7 @@ async def main(results: List[dict]):
 
 
 if __name__ == "__main__":
-    configure_logging()
+    configure_logging(logging.INFO)
 
     results: List[dict] = []
 
