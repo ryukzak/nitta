@@ -8,7 +8,7 @@ from components.common.model_loading import load_model
 from components.common.utils import strip_none_from_tensor_shape
 from components.data_crawling.example_running import (
     run_example_and_retrieve_tree_data,
-    run_nitta,
+    run_nitta_server,
 )
 from components.data_crawling.tree_retrieving import retrieve_whole_nitta_tree
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
@@ -62,19 +62,20 @@ async def test_smoke():
                 assert tree.children is not None, "children should've been loaded"
                 return [c.score for c in tree.children]
 
-            async with run_nitta(EXAMPLES_DIR / "fibonacci.lua") as (_, nitta_baseurl):
-                non_ml_scores = await _get_scores(nitta_baseurl)
+            async with run_nitta_server(EXAMPLES_DIR / "fibonacci.lua") as nitta:
+                non_ml_scores = await _get_scores(await nitta.get_base_url())
 
-            async with run_nitta(
-                EXAMPLES_DIR / "fibonacci.lua", nitta_args=f"--score=does_not_exist"
-            ) as (_, nitta_baseurl):
-                fallback_non_ml_scores = await _get_scores(nitta_baseurl)
+            async with run_nitta_server(
+                EXAMPLES_DIR / "fibonacci.lua",
+                nitta_args=f"--score=does_not_exist --method=NoSynthesis",
+            ) as nitta:
+                fallback_non_ml_scores = await _get_scores(await nitta.get_base_url())
                 assert non_ml_scores == fallback_non_ml_scores
 
-            async with run_nitta(
+            async with run_nitta_server(
                 EXAMPLES_DIR / "fibonacci.lua",
-                nitta_args=f'--score="ml_{model_name}"',
-                nitta_env={EnvVarNames.MODELS_DIR: tmp_model_dir_name},
-            ) as (_, nitta_baseurl):
-                ml_scores = await _get_scores(nitta_baseurl)
+                nitta_args=f'--score="ml_{model_name}"  --method=NoSynthesis',
+                env={EnvVarNames.MODELS_DIR: tmp_model_dir_name},
+            ) as nitta:
+                ml_scores = await _get_scores(await nitta.get_base_url())
                 assert non_ml_scores != ml_scores

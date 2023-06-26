@@ -2,88 +2,90 @@ import asyncio
 import os
 import re
 import signal
-import sys
-from asyncio import sleep
+from asyncio import Lock
+from asyncio.subprocess import PIPE, STDOUT, Process
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Tuple
+from typing import AsyncGenerator, Optional
 
 from components.common.logging import get_logger
-from components.common.port_management import find_random_free_port
 from consts import ROOT_DIR
 
 logger = get_logger(__name__)
+nitta_passthrough_logger = get_logger("nitta_passthrough")
 
-_NITTA_START_WAIT_DELAY_S: int = 2
-_NITTA_START_RETRY_DELAY_S: int = 2
-_NITTA_START_MAX_RETRIES: int = 5
-_PORT_IN_NITTA_CMD_REGEX = re.compile(r"(?<=\s)(-p|--port)(=|\s+)\d+")
+_NITTA_SERVER_START_REGEX = re.compile(
+    r"Running NITTA server at http:\/\/localhost:(?P<port>\d+)"
+)
+
+
+@dataclass
+class NittaRunResult:
+    proc: Process
+
+    _port_reading_lock = Lock()
+    _port: Optional[int] = None
+
+    async def get_port(self) -> int:
+        if self._port is None:
+            logger.debug(f"Parsing NITTA API port for PID {self.proc.pid}")
+            async with self._port_reading_lock:
+                while self._port is None:
+                    assert (
+                        self.proc.stdout is not None
+                    ), "stdout required to read NITTA port"
+                    line_bytes = await self.proc.stdout.readline()
+                    if not line_bytes:
+                        raise RuntimeError(
+                            f"Couldn't find NITTA API server port, EOF reached"
+                        )
+                    line = line_bytes.decode("utf-8").strip()
+                    nitta_passthrough_logger.info(line)
+
+                    match = _NITTA_SERVER_START_REGEX.search(line)
+                    if match:
+                        self._port = int(match.group("port"))
+                        logger.debug(f"Match! NITTA port: {self._port}")
+                        break
+
+        return self._port
+
+    async def get_base_url(self) -> str:
+        return f"http://localhost:{await self.get_port()}"
 
 
 @asynccontextmanager
-async def run_nitta_raw(
-    cmd: str,
+async def run_nitta(
+    full_shell_cmd: str,
     env: Optional[dict] = None,
-    wait_for_server: bool = False,
-    stdout=sys.stdout,
-    stderr=sys.stderr,
-    max_retries: int = _NITTA_START_MAX_RETRIES,
-    change_port_on_retry: bool = False,
-) -> AsyncGenerator[asyncio.subprocess.Process, None]:
+    stdout=PIPE,
+    stderr=STDOUT,
+) -> AsyncGenerator[NittaRunResult, None]:
     env = os.environ.copy()
     env.update(env or {})
 
     proc = None
-    retries_left = max_retries
     try:
-        while (proc is None or proc.returncode is not None) and retries_left > 0:
-            logger.info(f"Starting NITTA, cmd: {cmd}")
+        logger.info(f"Starting NITTA, command: {full_shell_cmd}")
 
-            preexec_fn = (
-                None if os.name == "nt" else os.setsid
-            )  # see https://stackoverflow.com/a/4791612
+        preexec_fn = (
+            None if os.name == "nt" else os.setsid
+        )  # see https://stackoverflow.com/a/4791612
 
-            proc = await asyncio.create_subprocess_shell(
-                cmd,
-                cwd=str(ROOT_DIR),
-                stdout=stdout,
-                stderr=stderr,
-                shell=True,
-                preexec_fn=preexec_fn,
-                env=env,
-            )
+        proc = await asyncio.create_subprocess_shell(
+            full_shell_cmd,
+            cwd=str(ROOT_DIR),
+            stdout=stdout,
+            stderr=stderr,
+            shell=True,
+            preexec_fn=preexec_fn,
+            env=env,
+        )
 
-            logger.info(f"NITTA has been launched, PID {proc.pid}.")
-            if not wait_for_server:
-                break
+        logger.info(f"NITTA has been launched, PID {proc.pid}.")
 
-            logger.info(f"Waiting for {_NITTA_START_WAIT_DELAY_S} secs.")
-            await sleep(_NITTA_START_WAIT_DELAY_S)
-
-            if proc.returncode is not None:
-                logger.warning(
-                    f"Failed to start NITTA (exit code {proc.returncode}). "
-                    + f"Retrying after a delay of {_NITTA_START_RETRY_DELAY_S} secs (retries left: {retries_left})."
-                )
-                await sleep(_NITTA_START_RETRY_DELAY_S)
-
-                # Sometimes NITTA fails to start because the given port is already in use (even if it was free
-                # just a moment ago), hence we implement a flag that allows us to change the port on retry.
-                # It's a bit hacky to re-write the raw given cmd with a regex, but I can't think of a better way that
-                # will not hurt the ability to give an arbitrary cmd to run.
-                if change_port_on_retry:
-                    new_port = find_random_free_port()
-                    cmd = _PORT_IN_NITTA_CMD_REGEX.sub(f"-p={new_port}", cmd)
-
-                retries_left -= 1
-                proc = None
-
-        if proc is None or proc.returncode is not None:
-            raise RuntimeError(
-                f"Failed to start NITTA after {_NITTA_START_MAX_RETRIES - retries_left} retries."
-            )
-
-        yield proc
+        yield NittaRunResult(proc)
     finally:
         if proc is not None and proc.returncode is None:
             pid = proc.pid
@@ -91,30 +93,27 @@ async def run_nitta_raw(
                 pgid = os.getpgid(pid)
                 logger.info(f"Killing shell and NITTA under it, PID {pid}, PGID {pgid}")
                 os.killpg(pgid, signal.SIGTERM)
-                await proc.wait()
+                await proc.communicate()
+                # like wait(), but reading stdout/stderr until EOF first to avoid PIPE-related deadlocks
             except ProcessLookupError:
-                # seemingly, NITTA died just after if check
+                # NITTA died just after the check in the if statement above?
+                # other possible reasons why returncode is None?
                 pass
 
 
 @asynccontextmanager
-async def run_nitta(
+async def run_nitta_server(
     example: Path,
     nitta_run_command: str = "stack exec nitta --",
-    nitta_args: str = "",
-    given_port: Optional[int] = None,
+    nitta_args: str = "--method=NoSynthesis",
     **overridden_kwargs,
-) -> AsyncGenerator[Tuple[asyncio.subprocess.Process, str], None]:
-    port = given_port or find_random_free_port()
-    cmd = f"{nitta_run_command} -p={port} {nitta_args} {example}"
+) -> AsyncGenerator[NittaRunResult, None]:
+    port = 0  # NITTA will choose a random free port and print it to stdout, we'll parse
 
     final_kwargs: dict = dict(
-        cmd=cmd,
-        wait_for_server=True,
-        change_port_on_retry=given_port is None,
+        full_shell_cmd=f"{nitta_run_command} -p={port} {nitta_args} {example}",
     )
     final_kwargs.update(overridden_kwargs)
 
-    async with run_nitta_raw(**final_kwargs) as proc:
-        nitta_baseurl = f"http://localhost:{port}"
-        yield proc, nitta_baseurl
+    async with run_nitta(**final_kwargs) as result:
+        yield result

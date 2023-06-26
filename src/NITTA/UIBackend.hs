@@ -22,7 +22,7 @@ module NITTA.UIBackend (
 ) where
 
 import Control.Exception (SomeException, try)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Data.Either
 import Data.Maybe (fromJust)
 import Data.String.Interpolate
@@ -30,7 +30,7 @@ import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp (defaultSettings, openFreePort, run, runSettingsSocket, setPort)
 import Network.Wai.Middleware.Cors (simpleCors)
 import Servant
 import Servant.Docs hiding (path)
@@ -98,12 +98,24 @@ isLocalPortFree port =
     isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
 
 -- | Run backend server.
-backendServer port ctx = do
-    putStrLn $ "Running NITTA server at http://localhost:" <> show port <> " ..."
-    -- on OS X, if we run system with busy port - application ignore that.
-    -- see: https://nitta.io/nitta-corp/nitta/issues/9
-    isFree <- isLocalPortFree port
-    unless isFree $ error "resource busy (Port already in use)"
-    app <- application ctx
+backendServer givenPort ctx = do
+    when (givenPort > 0) $ do
+        -- on OS X, if we run system with busy port - application ignore that.
+        -- see: https://nitta.io/nitta-corp/nitta/issues/9
+        isFree <- isLocalPortFree givenPort
+        unless isFree $ error "resource busy (Port already in use)"
+
+    (appRunner, realPort) <-
+        if givenPort > 0
+            then return (run givenPort, givenPort)
+            else do
+                (freePort, socket) <- openFreePort
+                let settings = setPort freePort defaultSettings
+                    runner = runSettingsSocket settings socket
+                return (runner, freePort)
+
+    putStrLn $ "Running NITTA server at http://localhost:" <> show realPort <> " ..."
+
+    app <- simpleCors <$> application ctx
     setLocaleEncoding utf8
-    run port $ simpleCors app
+    appRunner app

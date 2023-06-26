@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import pickle
-import re
 from asyncio import gather
 from contextlib import AsyncExitStack
 from pathlib import Path
@@ -17,7 +16,7 @@ from tqdm.std import tqdm as tqdm_instance
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
-from components.data_crawling.nitta_running import run_nitta
+from components.data_crawling.nitta_running import run_nitta_server
 from components.data_crawling.node_processing import get_subtree_size
 from components.data_crawling.tree_processing import (
     assemble_training_data_via_backpropagation_from_leaf,
@@ -40,9 +39,9 @@ async def run_example_and_retrieve_tree_data(
     nitta_run_command: str = "stack exec nitta -- ",
 ) -> pd.DataFrame:
     example_name = os.path.basename(example)
-    async with run_nitta(example, nitta_run_command) as (_, nitta_baseurl):
+    async with run_nitta_server(example, nitta_run_command) as nitta:
         logger.info(f"Retrieving tree.")
-        tree = await retrieve_whole_nitta_tree(nitta_baseurl)
+        tree = await retrieve_whole_nitta_tree(await nitta.get_base_url())
         data_dir.mkdir(exist_ok=True)
 
         tree_dump_fn = data_dir / f"{example_name}.pickle"
@@ -106,11 +105,13 @@ async def run_example_and_sample_tree_parallel(
     async with AsyncExitStack() as stack:
         nittas = await gather(
             *[
-                stack.enter_async_context(run_nitta(example, nitta_run_command))
+                stack.enter_async_context(run_nitta_server(example, nitta_run_command))
                 for _ in range(n_nittas)
             ]
         )
-        nitta_baseurls = [nitta_baseurl for (_, nitta_baseurl) in nittas]
+        nitta_baseurls = list(
+            asyncio.gather(*[nitta.get_base_url() for nitta in nittas])
+        )
         session = await stack.enter_async_context(ClientSession())
 
         logger.info(f"Retrieving tree root...")

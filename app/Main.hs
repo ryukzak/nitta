@@ -46,7 +46,7 @@ import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
 import System.FilePath.Posix
-import System.IO (stdout)
+import System.IO (BufferMode (LineBuffering), hSetBuffering, stdout)
 import System.Log.Formatter
 import System.Log.Handler (setFormatter)
 import System.Log.Handler.Simple
@@ -94,7 +94,7 @@ nittaArgs =
                 &= help "Target system path"
                 &= groupname "Common flags"
         , port =
-            0
+            -1
                 &= help "Run nitta server for UI on specific port (by default - not run)"
                 &= groupname "Common flags"
         , uarch =
@@ -209,9 +209,12 @@ main = do
             method
         ) <-
         getNittaArgs
-    let nodeScores = score
 
     setupLogger verbose extra_verbose
+
+    -- force line buffering (always, not just when stdout is connected to a tty),
+    -- it's critical for successful parsing of NITTA's stdout in python scripts
+    hSetBuffering stdout LineBuffering
 
     toml <- case uarch of
         Nothing -> return Nothing
@@ -250,7 +253,7 @@ main = do
                             { receivedValues = received
                             , outputPath = output_path
                             , mlBackendGetter = serverGetter
-                            , nodeScores = nodeScores
+                            , nodeScores = score
                             }
                     synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
                     synthesisMethod TopDownByScore = topDownByScoreSynthesisIO depth_base 10000 Nothing
@@ -274,7 +277,7 @@ main = do
 
                 when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
 
-                when (port > 0) $ do
+                when (port > -1) $ do
                     bufE <- try $ readFile (apiPath </> "PORT")
                     let expect = case bufE of
                             Right buf -> case readEither buf of
