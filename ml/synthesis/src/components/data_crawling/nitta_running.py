@@ -13,7 +13,7 @@ from components.common.logging import get_logger
 from consts import ROOT_DIR
 
 logger = get_logger(__name__)
-nitta_passthrough_logger = get_logger("nitta_passthrough")
+nitta_passthrough_logger = get_logger("nitta")
 
 _NITTA_SERVER_START_REGEX = re.compile(
     r"Running NITTA server at http:\/\/localhost:(?P<port>\d+)"

@@ -1,0 +1,20 @@
+{
+    "output_dir": "evaluation",
+    "nitta_run_command": "stack exec nitta --",
+    "nitta_run_timeout_s": 60,
+    "measurement_tries": 3,
+    "examples": "all",
+    "constant_args": "-e",
+    "evaluated_args": {
+        "score": {
+            "default": "",
+            "model_v1": "--score=ml_v1",
+            "model_v2": "--score=ml_v2"
+        },
+        "synthesis_method": {
+            "sota": "--method=StateOfTheArt",
+            "top-down-1.2": "--method=TopDownByScore --depth-base=1.2",
+            "top-down-1.4": "--method=TopDownByScore --depth-base=1.4"
+        }
+    }
+}

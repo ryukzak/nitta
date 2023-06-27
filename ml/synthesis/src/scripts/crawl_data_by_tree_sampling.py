@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -9,12 +8,7 @@ from components.common.logging import configure_logging, get_logger
 from components.data_crawling.example_running import (
     run_example_and_sample_tree_parallel,
 )
-from components.data_crawling.sampling_processing import (
-    build_df_and_save_sampling_results,
-    estimate_tree_coverage_based_on_clash_ratio,
-    process_sampling_results,
-)
-from consts import DATA_DIR
+from components.data_crawling.sampling_processing import process_sampling_results
 
 _DEFAULT_N_SAMPLES = 5000
 _DEFAULT_N_SAMPLES_PER_BATCH = 150
