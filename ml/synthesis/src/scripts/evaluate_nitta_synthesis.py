@@ -96,7 +96,7 @@ async def _assemble_stats_dict_after_synthesis(
     stats["time"] = elapsed_time
     stats["synthesis_steps"] = ti.nodes - ti.not_processed - 1  # -1 for root
     stats["mean_depth"] = _mean_from_tree_info_dict(ti.steps_success)
-    stats["min_duration"] = min(int(v) for v in ti.duration_success.values())
+    stats["min_duration"] = min(int(k) for k in ti.duration_success.keys())
     stats["leafs"] = ti.success + ti.failed
     stats["leaf_success_rate"] = ti.success / stats["leafs"]
     stats["nodes_total"] = ti.nodes
