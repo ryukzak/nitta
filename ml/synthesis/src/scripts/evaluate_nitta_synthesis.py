@@ -5,17 +5,18 @@ import logging
 import random
 import sys
 from argparse import ArgumentParser
+from collections import defaultdict
 from dataclasses import dataclass, fields
 from pathlib import Path
+from statistics import mean, stdev
 from time import perf_counter
-from typing import Dict, Iterable, List, Literal, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Literal, Tuple, Union
 
-import pandas as pd
 from aiohttp import ClientSession
 
 from components.common.logging import configure_logging, get_logger
 from components.common.nitta_node import NittaTreeInfo
-from components.common.saving import save_df_with_timestamp
+from components.common.saving import save_dicts_list_to_csv_with_timestamp
 from components.data_crawling.nitta_running import run_nitta_server
 from components.data_crawling.tree_retrieving import retrieve_tree_info
 from consts import EXAMPLES_DIR
@@ -171,7 +172,7 @@ async def _main(results: List[dict], config: EvaluationConfig):
     # "opt" here is a short for "option", "opt_args" correspond to the actual CLI arguments that will be passed to NITTA
 
     examples_paths = (
-        [*sorted(EXAMPLES_DIR.glob("**/*.lua"))]
+        list(EXAMPLES_DIR.glob("**/*.lua"))
         if config.examples == "all"
         else [EXAMPLES_DIR.joinpath(example) for example in config.examples]
     )
@@ -202,24 +203,56 @@ async def _main(results: List[dict], config: EvaluationConfig):
 
 
 def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
-    df = pd.DataFrame(results)
-    index_cols = ["example", *config.evaluated_args.keys()]
-    counter_cols = ["success", "timeout"]
-    df = df.set_index(index_cols, drop=False)
-    df = df.groupby(df.index).agg(
-        {
-            "example": ["sample", "count"],
-            **{col: ["sample"] for col in index_cols if col != "example"},
-            **{col: ["mean", "sum"] for col in counter_cols},
-            **{
-                col: ["mean", "std", "min", "max"]
-                for col in df.columns
-                if col not in index_cols + counter_cols
-            },
-        }
+    key_cols = ["example", *config.evaluated_args.keys()]
+    counter_metrics_cols = ["success", "timeout"]
+    metrics_cols = (
+        [col for col in results[0].keys() if col not in key_cols + counter_metrics_cols]
+        if results
+        else []
     )
-    save_df_with_timestamp(
-        df, config.output_dir, "evaluation", what="evaluation results", index=False
+
+    def keyfunc(run):
+        return tuple(run[k] for k in key_cols)
+
+    aggregated_results: List[dict] = []
+    results.sort(key=keyfunc)
+    for key, runs_group in itertools.groupby(results, keyfunc):
+        metric_to_vals = defaultdict(list)
+        runs_count = 0
+        for run in runs_group:
+            runs_count += 1
+            for metric, value in run.items():
+                if metric not in key_cols:
+                    metric_to_vals[metric].append(value)
+
+        # this dict exists mainly not to confuse mypy
+        aggregators: Dict[str, Callable[[list], Union[float, int]]] = {
+            "sum": sum,
+            "mean": mean,
+            "std": lambda xs: stdev(xs) if len(xs) > 1 else 0,
+            "min": min,
+            "max": max,
+        }
+
+        aggregated_results.append(
+            {
+                **{param: value for param, value in zip(key_cols, key)},
+                "runs": runs_count,
+                **{
+                    # effectively, rate = sum / runs_count, which is the same as mean of 0/1 values
+                    f"{col}_rate": aggregators["mean"](metric_to_vals[col])
+                    for col in counter_metrics_cols
+                },
+                **{
+                    f"{col}_{agg}": aggregators[agg](metric_to_vals[col])
+                    for col in metrics_cols
+                    for agg in ("mean", "std", "min", "max")
+                },
+            }
+        )
+
+    save_dicts_list_to_csv_with_timestamp(
+        aggregated_results, config.output_dir, "evaluation", what="evaluation results"
     )
 
 
