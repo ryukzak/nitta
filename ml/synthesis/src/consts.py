@@ -1,3 +1,8 @@
+"""
+Do not add non-stdlib imports here and be compatible with Python 3.8.
+
+See ml/synthesis/src/scripts/evaluate_nitta_synthesis.py for more info.
+"""
 import os
 from pathlib import Path
 

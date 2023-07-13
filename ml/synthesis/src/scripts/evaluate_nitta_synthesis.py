@@ -1,3 +1,13 @@
+"""
+A script for evaluation of NITTA's synthesis. It runs NITTA with different arguments, measures metrics (like time, 
+synthesis success rate, etc.) and writes aggregated results to a single CSV table for further analysis.
+
+!!! Do not add non-stdlib imports here and be compatible with Python 3.8 !!!
+
+By design, this script can be run WITHOUT any non-stdlib dependencies, so it doesn't require installation, just 
+a compatible Python (3.8+ should be fine). This enables evaluating NITTA without full Python-ML stack installed. So be 
+careful when adding additional imports here or in modules that this script depends on.
+"""
 import asyncio
 import itertools
 import json
@@ -11,14 +21,11 @@ from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
 from typing import Callable, Dict, Iterable, List, Literal, Tuple, Union
-
-from aiohttp import ClientSession
+from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
-from components.common.nitta_node import NittaTreeInfo
 from components.common.saving import save_dicts_list_to_csv_with_timestamp
 from components.data_crawling.nitta_running import run_nitta_server
-from components.data_crawling.tree_retrieving import retrieve_tree_info
 from consts import EXAMPLES_DIR
 
 logger = get_logger(__name__)
@@ -77,13 +84,35 @@ def _build_argparser() -> ArgumentParser:
     return argparser
 
 
+# this class is duplicated because this script should work without non-stdlib dependencies
+@dataclass
+class _NittaTreeInfo:
+    nodes: int
+    success: int
+    failed: int
+    not_processed: int
+    duration_success: Dict[str, int]
+    steps_success: Dict[str, int]
+
+
+def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
+    with urlopen(nitta_base_url + "/treeInfo") as resp:
+        ti_dict = json.loads(resp.read().decode("utf8"))
+
+    # manually handle case differences
+    ti_dict["not_processed"] = ti_dict.pop("notProcessed")
+    ti_dict["duration_success"] = ti_dict.pop("durationSuccess")
+    ti_dict["steps_success"] = ti_dict.pop("stepsSuccess")
+
+    return _NittaTreeInfo(**ti_dict)
+
+
 async def _assemble_stats_dict_after_synthesis(
     nitta_base_url: str, elapsed_time: float
-) -> Tuple[dict, NittaTreeInfo]:
+) -> Tuple[dict, _NittaTreeInfo]:
     stats = {}
 
-    async with ClientSession() as session:
-        ti = await retrieve_tree_info(nitta_base_url, session)
+    ti = _get_tree_info_from_nitta(nitta_base_url)
 
     logger.info(f"Got tree info: {ti}")
 
