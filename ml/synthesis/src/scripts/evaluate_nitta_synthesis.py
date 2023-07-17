@@ -16,7 +16,7 @@ import operator
 import pickle
 import random
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from dataclasses import dataclass, fields
 from datetime import datetime
@@ -73,6 +73,12 @@ def _build_argparser() -> ArgumentParser:
         "config",
         type=Path,
         help="Path to the evaluation JSON config file (see examples in evaluation_configs).",
+    )
+    argparser.add_argument(
+        "--with-ml-backend",
+        action="store_true",
+        help="If specified, keeps a single ML backend server running to reuse it during synthesis evaluation. "
+        + "Otherwise, NITTA will start/stop a new server for each synthesis run.",
     )
     # iterate fields in EvaluationConfig and add them to the argparser if type is in (int, str)
     for field in fields(EvaluationConfig):
@@ -197,7 +203,7 @@ async def _do_a_run_and_save_results(
         logger.info(f"Saved a run result, NITTA runtime - {elapsed_time:.2f}s")
 
 
-async def _main(results: List[dict], config: EvaluationConfig):
+async def _main_in_ctx(results: List[dict], config: EvaluationConfig):
     # this is a list of possible degrees of freedom (its len = number of evaluated parameters)
     search_space_dofs = [
         [(param_name, opt_name, opt_args) for opt_name, opt_args in param_opts.items()]
@@ -233,6 +239,16 @@ async def _main(results: List[dict], config: EvaluationConfig):
             await _do_a_run_and_save_results(results, config, run_info, example)
         except Exception:
             logger.exception("Failed to do a run, skipping and continuing")
+
+
+async def _main(app_args: Namespace, *main_args, **main_kwargs):
+    if app_args.with_ml_backend:
+        from components.common.ml_backend_running import run_ml_backend
+
+        async with run_ml_backend():
+            return await _main_in_ctx(*main_args, **main_kwargs)
+
+    return await _main_in_ctx(*main_args, **main_kwargs)
 
 
 def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
@@ -313,7 +329,7 @@ if __name__ == "__main__":
     global_start = datetime.now()
 
     try:
-        asyncio.run(_main(results, config))
+        asyncio.run(_main(args, results, config))
     except KeyboardInterrupt:
         logger.info("Interrupted by user, saving what we have")
     except Exception:

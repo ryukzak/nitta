@@ -69,7 +69,7 @@ class BackendBaseUrlFile(AbstractContextManager):
                 f"Exiting, so wanted to remove {self.filepath.absolute()}, "
                 f"but it does not exist. Doing nothing."
             )
-            return
+            return None
 
         logger.info(f"Exiting, so removing {self.filepath.absolute()}.")
         os.remove(self.filepath)
