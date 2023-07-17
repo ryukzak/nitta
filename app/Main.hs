@@ -268,7 +268,7 @@ main = do
                             , tDFG = frDataFlow
                             , tReceivedValues = received
                             , tTemplates = S.split ":" templates
-                            , tSynthesisMethod = synthesisMethod method $ ctxWithoutRoot
+                            , tSynthesisMethod = synthesisMethod method ctxWithoutRoot
                             , tSimulationCycleN = n
                             , tSourceCodeType = exactFrontendType
                             }
