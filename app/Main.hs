@@ -256,7 +256,7 @@ main = do
                             , nodeScores = score
                             }
                     synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
-                    synthesisMethod TopDownByScore = topDownByScoreSynthesisIO depth_base 10000 Nothing
+                    synthesisMethod TopDownByScore = topDownByScoreSynthesisIO depth_base 500000 Nothing
                     synthesisMethod NoSynthesis = noSynthesis
 
                 (synthesisRoot, prjE) <-
