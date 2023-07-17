@@ -114,11 +114,15 @@ def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
 async def _assemble_stats_dict_after_synthesis(
     nitta_base_url: str, elapsed_time: float
 ) -> Tuple[dict, _NittaTreeInfo]:
-    stats = {}
+    stats: dict = {}
 
     ti = _get_tree_info_from_nitta(nitta_base_url)
 
     logger.info(f"Got tree info: {ti}")
+
+    if not ti.success > 0:
+        logger.info(f"Synthesis was not successful, skipping stats collection")
+        return stats, ti
 
     def _mean_from_tree_info_dict(d: dict) -> float:
         # dicts are like {value: node_count}, we need a weighted mean
@@ -132,7 +136,7 @@ async def _assemble_stats_dict_after_synthesis(
     stats["mean_depth"] = _mean_from_tree_info_dict(ti.steps_success)
     stats["min_duration"] = min(int(k) for k in ti.duration_success.keys())
     stats["leafs"] = ti.success + ti.failed
-    stats["leaf_success_rate"] = ti.success / stats["leafs"]
+    stats["leaf_success_rate"] = ti.success / (ti.success + ti.failed)
     stats["nodes_total"] = ti.nodes
     stats["nodes_not_processed"] = ti.not_processed
 
@@ -169,14 +173,12 @@ async def _do_a_run_and_save_results(
         stats: dict = {}
         if timeout:
             logger.info(f"Timeout of {config.nitta_run_timeout_s}s reached.")
-        elif nitta_base_url is None:
-            logger.info(
-                f"A error occurred at {elapsed_time:.2f}s, so it's neither a timeout, nor a success."
-            )
         else:
+            assert (
+                nitta_base_url is not None
+            ), "it's not a timeout, so NITTA server should've been started. Control flow bug?"
             logger.info(
-                f"Synthesis done, NITTA API server started on {nitta_base_url}. "
-                f"Elapsed time: {elapsed_time:.2f}s. Getting tree info..."
+                f"Detected a NITTA API server on {nitta_base_url}. Getting tree info..."
             )
             stats, ti = await _assemble_stats_dict_after_synthesis(
                 nitta_base_url, elapsed_time
@@ -192,6 +194,7 @@ async def _do_a_run_and_save_results(
                 **stats,
             }
         )
+        logger.info(f"Saved a run result, NITTA runtime - {elapsed_time:.2f}s")
 
 
 async def _main(results: List[dict], config: EvaluationConfig):
@@ -228,9 +231,6 @@ async def _main(results: List[dict], config: EvaluationConfig):
 
         try:
             await _do_a_run_and_save_results(results, config, run_info, example)
-            elapsed_time = results[-1].get("time")
-            if elapsed_time is not None:
-                logger.info(f"Finished in {elapsed_time:.2f}s")
         except Exception:
             logger.exception("Failed to do a run, skipping and continuing")
 
