@@ -12,15 +12,19 @@ import asyncio
 import itertools
 import json
 import logging
+import operator
+import pickle
 import random
 import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from dataclasses import dataclass, fields
+from datetime import datetime
+from functools import reduce
 from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
-from typing import Callable, Dict, Iterable, List, Literal, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Literal, Set, Tuple, Union
 from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
@@ -232,13 +236,19 @@ async def _main(results: List[dict], config: EvaluationConfig):
 
 
 def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
+    if not results:
+        return
+
+    # dumping raw results just in case something goes wrong while aggregating them
+    with open(Path(config.output_dir).joinpath("latest_results.pickle"), "wb") as f:
+        pickle.dump((results, config), f)
+
     key_cols = ["example", *config.evaluated_args.keys()]
     counter_metrics_cols = ["success", "timeout"]
-    metrics_cols = (
-        [col for col in results[0].keys() if col not in key_cols + counter_metrics_cols]
-        if results
-        else []
+    all_cols: Set[str] = reduce(
+        operator.or_, (set(run.keys()) for run in results), set()
     )
+    metrics_cols = all_cols - set(key_cols) - set(counter_metrics_cols)
 
     def keyfunc(run):
         return tuple(run[k] for k in key_cols)
@@ -254,13 +264,18 @@ def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
                 if metric not in key_cols:
                     metric_to_vals[metric].append(value)
 
+        Aggregator = Callable[[list], Union[float, int]]
+
+        def _zero_if_shorter_than(threshold: int, func: Aggregator) -> Aggregator:
+            return lambda xs: 0 if len(xs) < threshold else func(xs)
+
         # this dict exists mainly not to confuse mypy
-        aggregators: Dict[str, Callable[[list], Union[float, int]]] = {
-            "sum": sum,
-            "mean": mean,
-            "std": lambda xs: stdev(xs) if len(xs) > 1 else 0,
-            "min": min,
-            "max": max,
+        aggregators: Dict[str, Aggregator] = {
+            "sum": _zero_if_shorter_than(1, sum),
+            "mean": _zero_if_shorter_than(1, mean),
+            "std": _zero_if_shorter_than(2, stdev),
+            "min": _zero_if_shorter_than(1, min),
+            "max": _zero_if_shorter_than(1, max),
         }
 
         aggregated_results.append(
@@ -295,6 +310,8 @@ if __name__ == "__main__":
     results: List[dict] = []
     success = True
 
+    global_start = datetime.now()
+
     try:
         asyncio.run(_main(results, config))
     except KeyboardInterrupt:
@@ -303,7 +320,9 @@ if __name__ == "__main__":
         logger.exception("Exception occurred, saving what we have")
         success = False
     finally:
-        logger.info(f"Finished with {len(results)} results")
-        if results:
-            _aggregate_and_save_results(results, config)
+        elapsed = str(datetime.now() - global_start).split(".")[0]
+        logger.info(
+            f"=== Evaluation has been COMPLETED with {len(results)} results in {elapsed} ==="
+        )
+        _aggregate_and_save_results(results, config)
         sys.exit(0 if success else 1)
