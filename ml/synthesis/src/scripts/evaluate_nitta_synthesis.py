@@ -119,16 +119,14 @@ def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
 
 async def _assemble_stats_dict_after_synthesis(
     nitta_base_url: str, elapsed_time: float
-) -> Tuple[dict, _NittaTreeInfo]:
-    stats: dict = {}
-
+) -> Tuple[_NittaTreeInfo, dict]:
     ti = _get_tree_info_from_nitta(nitta_base_url)
 
     logger.info(f"Got tree info: {ti}")
 
     if not ti.success > 0:
         logger.info(f"Synthesis was not successful, skipping stats collection")
-        return stats, ti
+        return ti, {}
 
     def _mean_from_tree_info_dict(d: dict) -> float:
         # dicts are like {value: node_count}, we need a weighted mean
@@ -137,16 +135,16 @@ async def _assemble_stats_dict_after_synthesis(
             return 0
         return sum(int(k) * v for k, v in d.items()) / sum(d.values())
 
-    stats["time"] = elapsed_time
-    stats["synthesis_steps"] = ti.nodes - ti.not_processed - 1  # -1 for root
-    stats["mean_depth"] = _mean_from_tree_info_dict(ti.steps_success)
-    stats["min_duration"] = min(int(k) for k in ti.duration_success.keys())
-    stats["leafs"] = ti.success + ti.failed
-    stats["leaf_success_rate"] = ti.success / (ti.success + ti.failed)
-    stats["nodes_total"] = ti.nodes
-    stats["nodes_not_processed"] = ti.not_processed
-
-    return stats, ti
+    return ti, {
+        "time": elapsed_time,
+        "synthesis_steps": ti.nodes - ti.not_processed - 1,  # -1 for root
+        "mean_depth": _mean_from_tree_info_dict(ti.steps_success),
+        "min_duration": min(int(k) for k in ti.duration_success.keys()),
+        "leafs": ti.success + ti.failed,
+        "leaf_success_rate": ti.success / (ti.success + ti.failed),
+        "nodes_total": ti.nodes,
+        "nodes_not_processed": ti.not_processed,
+    }
 
 
 async def _do_a_run_and_save_results(
@@ -186,7 +184,7 @@ async def _do_a_run_and_save_results(
             logger.info(
                 f"Detected a NITTA API server on {nitta_base_url}. Getting tree info..."
             )
-            stats, ti = await _assemble_stats_dict_after_synthesis(
+            ti, stats = await _assemble_stats_dict_after_synthesis(
                 nitta_base_url, elapsed_time
             )
             success = ti.success > 0
@@ -261,10 +259,18 @@ def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
 
     key_cols = ["example", *config.evaluated_args.keys()]
     counter_metrics_cols = ["success", "timeout"]
-    all_cols: Set[str] = reduce(
-        operator.or_, (set(run.keys()) for run in results), set()
-    )
-    metrics_cols = all_cols - set(key_cols) - set(counter_metrics_cols)
+
+    def select_keys_from_longest_dict(accum: List[str], next_run: dict):
+        if len(next_run) > len(accum):
+            accum = list(next_run.keys())
+        return accum
+
+    all_cols: List[str] = reduce(select_keys_from_longest_dict, results, [])
+    metrics_cols = [
+        col
+        for col in all_cols
+        if col not in key_cols and col not in counter_metrics_cols
+    ]
 
     def keyfunc(run):
         return tuple(run[k] for k in key_cols)
