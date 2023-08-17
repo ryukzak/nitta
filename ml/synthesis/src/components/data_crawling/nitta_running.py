@@ -89,8 +89,8 @@ async def run_nitta(
     stdout=PIPE,
     stderr=STDOUT,
 ) -> AsyncGenerator[NittaRunResult, None]:
-    env = os.environ.copy()
-    env.update(env or {})
+    final_env = os.environ.copy()
+    final_env.update(env or {})
 
     proc = None
     run_result = None
@@ -108,7 +108,7 @@ async def run_nitta(
             stderr=stderr,
             shell=True,
             preexec_fn=preexec_fn,
-            env=env,
+            env=final_env,
         )
 
         logger.info(f"NITTA has been launched, PID {proc.pid}.")
