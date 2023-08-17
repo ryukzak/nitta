@@ -82,13 +82,13 @@ findPythonExecutableIO = do
             findExecutable "python" >>= \case
                 Just executable -> return executable
                 Nothing -> do
-                    let errorMsg = "failed to find python executable"
+                    let errorMsg = "failed to find a python executable"
                     errorM "NITTA.Synthesis.MlBackend" errorMsg
                     throw $ userError errorMsg
 
 -- | Tries to start ML backend server and gathers all required information about it.
 tryStartMlBackendServerIO = do
-    -- not a shell process, because killing ML backend under shell is trickier)
+    -- not a shell process, because killing ML backend under shell is trickier
     -- let's find out python3 executable path
 
     maybeHandles <- catchToMaybeIO $ do
