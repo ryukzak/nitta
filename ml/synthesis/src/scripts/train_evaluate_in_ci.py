@@ -3,8 +3,8 @@ from pathlib import Path
 
 from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import configure_logging, get_logger
-from components.common.model_loading import load_model
-from components.data_crawling.example_running import get_data_for_many_examples_parallel
+from components.common.model_loading import load_model_with_metainfo
+from components.data_crawling.example_running import produce_data_for_examples_parallel
 from components.data_processing.dataset_creation import create_datasets
 from components.data_processing.feature_engineering import preprocess_train_data_df
 from components.model_generation.training import train_and_save_baseline_model
@@ -29,10 +29,11 @@ if __name__ == "__main__":
     else:
         logger.info(f"Used default examples {examples}")
 
-    get_data_for_many_examples_parallel([Path(fn) for fn in examples])
+    # TODO: more fine-grained control over passed n_samples for each example
+    produce_data_for_examples_parallel([Path(fn) for fn in examples], n_samples=5000)
 
     try:
-        model, meta = load_model(model_dir)
+        model, meta = load_model_with_metainfo(model_dir)
         logger.info("Using manually built model")
         is_manual = True
     except FileNotFoundError:

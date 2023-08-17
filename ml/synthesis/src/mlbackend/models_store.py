@@ -7,7 +7,7 @@ from typing import Tuple
 from tensorflow.python.keras import Model
 
 from components.common.logging import get_logger
-from components.common.model_loading import load_model
+from components.common.model_loading import load_model_with_metainfo
 from components.model_generation.model_metainfo import ModelMetainfo
 from consts import MODELS_DIR
 
@@ -29,7 +29,7 @@ class ModelsStore:
             logger.debug(f"Cached model {name} not found, loading")
 
             try:
-                self.models[name] = load_model(self.model_dir / name)
+                self.models[name] = load_model_with_metainfo(self.model_dir / name)
             except FileNotFoundError as e:
                 raise ModelNotFoundError(
                     f"Model {name} not found in root {MODELS_DIR.absolute()}"

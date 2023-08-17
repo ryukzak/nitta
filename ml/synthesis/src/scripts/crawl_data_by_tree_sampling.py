@@ -1,20 +1,16 @@
 import asyncio
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import List
 
 from components.common.logging import configure_logging, get_logger
 from components.data_crawling.example_running import (
-    run_example_and_sample_tree_parallel,
+    DEFAULT_N_NITTAS,
+    DEFAULT_N_SAMPLES,
+    DEFAULT_N_SAMPLES_PER_BATCH,
+    DEFAULT_N_WORKERS,
+    DEFAULT_NITTA_RUN_COMMAND,
+    produce_data_for_example,
 )
-from components.data_crawling.sampling_processing import process_sampling_results
-
-_DEFAULT_N_SAMPLES = 5000
-_DEFAULT_N_SAMPLES_PER_BATCH = 150
-_DEFAULT_N_WORKERS = 1
-_DEFAULT_N_NITTAS = 1
-_DEFAULT_NITTA_RUN_COMMAND = "stack exec nitta --"
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -22,48 +18,48 @@ if __name__ == "__main__":
 
     argparser = ArgumentParser(
         prog="crawl_data_by_tree_sampling.py",
-        description="Gathers training data for provided input file by sampling its synthesis tree.",
+        description="Gathers training data by sampling the synthesis tree of provided target algorithm.",
         epilog="It's recommended to adjust the number of samples to the size of the tree, as well as other parameters "
         + "to your machine's capabilities.",
     )
     argparser.add_argument(
-        "file",
-        help="Path to the input file for NITTA to synthesize.",
+        "input_file",
+        help="Path to the target algorithm description for NITTA to synthesize.",
         type=Path,
     )
     argparser.add_argument(
         "-n",
         "--n-samples",
-        help=f"Number of samples to gather. A sample is a full descent from root to leaf of the synthesis tree. "
-        + f"Default: {_DEFAULT_N_SAMPLES} (adjust to tree size!).",
-        default=_DEFAULT_N_SAMPLES,
+        help=f"Number of samples to gather. A sample is a full descent from root to leaf in the synthesis tree. "
+        + f"Default: {DEFAULT_N_SAMPLES} (adjust to tree size!).",
+        default=DEFAULT_N_SAMPLES,
         type=int,
     )
     argparser.add_argument(
         "-b",
         "--n-samples-per-batch",
-        help=f"Number of samples to gather in a single batch. Default: {_DEFAULT_N_SAMPLES_PER_BATCH}.",
-        default=_DEFAULT_N_SAMPLES_PER_BATCH,
+        help=f"Number of samples in a single batch (batch size). The sampling process is batched for better performance: each worker's one-time job is to (asynchronously) process a whole batch, not an individual sample. Default batch size: {DEFAULT_N_SAMPLES_PER_BATCH}.",
+        default=DEFAULT_N_SAMPLES_PER_BATCH,
         type=int,
     )
     argparser.add_argument(
         "-w",
         "--n-workers",
-        help=f"Number of workers to use for parallel sampling. 1 recommended in most cases. Default: {_DEFAULT_N_WORKERS}.",
-        default=_DEFAULT_N_WORKERS,
+        help=f"Number of worker processes to use for parallel sampling. 1 recommended in most cases. Default: {DEFAULT_N_WORKERS}.",
+        default=DEFAULT_N_WORKERS,
         type=int,
     )
     argparser.add_argument(
         "-i",
         "--n-nittas",
-        help=f"Number of NITTA instances to run. 1 recommended in most cases. Default: {_DEFAULT_N_NITTAS}.",
-        default=_DEFAULT_N_NITTAS,
+        help=f"Number of NITTA instances to run. 1 recommended in most cases. Default: {DEFAULT_N_NITTAS}.",
+        default=DEFAULT_N_NITTAS,
         type=int,
     )
     argparser.add_argument(
         "--nitta-run-command",
-        help=f"A command to run NITTA. It may be an absolute path to the NITTA executable. Default: '{_DEFAULT_NITTA_RUN_COMMAND}'.",
-        default=_DEFAULT_NITTA_RUN_COMMAND,
+        help=f"A command to run NITTA (or a path to the NITTA executable, same thing). Default: '{DEFAULT_NITTA_RUN_COMMAND}'.",
+        default=DEFAULT_NITTA_RUN_COMMAND,
         type=str,
     )
 
@@ -87,50 +83,30 @@ if __name__ == "__main__":
             # "examples/shift.lua",
             # "examples/spi1.lua",
             # "examples/double_receive.lua",
-            args.file,
+            args.input_file,
         ][0]
     )
 
-    if not file_to_run.exists():
-        logger.error(f"Couldn't find file '{file_to_run.absolute()}'.")
-        sys.exit(1)
-
-    samples_notice = (
-        "(adjust to the tree size with -n N_SAMPLES!)"
-        if args.n_samples == _DEFAULT_N_SAMPLES
-        else ""
-    )
-    logger.info(
-        f"Starting sampling of {args.file} with {args.n_samples} samples {samples_notice}"
-    )
-
-    results: List[dict] = []
+    if args.n_samples == DEFAULT_N_SAMPLES:
+        logger.info(
+            f"Sampling till a default number of samples is gathered. Adjust to the synthesis tree size with -n N_SAMPLES!"
+        )
 
     try:
         asyncio.run(
-            run_example_and_sample_tree_parallel(
+            produce_data_for_example(
                 file_to_run,
                 n_samples=args.n_samples,
                 n_samples_per_batch=args.n_samples_per_batch,
                 n_workers=args.n_workers,
                 n_nittas=args.n_nittas,
                 nitta_run_command=args.nitta_run_command,
-                results_accum=results,
             )
         )
-    except KeyboardInterrupt:
-
-        def _no_traceback_excepthook(exc_type, exc_val, traceback):
-            pass
-
-        if sys.excepthook is sys.__excepthook__:
-            sys.excepthook = _no_traceback_excepthook
-
-        if len(results) == 0:
-            raise
-
-        logger.info("Interrupted by user, processing nodes gathered so far.")
-    except Exception:
-        logger.exception("Unexpected error, processing nodes gathered so far.")
-
-    process_sampling_results(file_to_run, results)
+    except (KeyboardInterrupt, SystemExit):
+        # This try/except shouldn't be here! It's a workaround to hide the unwanted traceback that gets printed if you
+        # press Ctrl+C while the script is running.
+        #
+        # The reason is weird: the exception gets re-raised by asyncio.run() when gathered tasks are cancelled (presumably...).
+        # Probably related: https://github.com/python/cpython/issues/93122
+        pass

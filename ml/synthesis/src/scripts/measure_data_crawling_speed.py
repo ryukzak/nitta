@@ -4,7 +4,7 @@ from pathlib import Path
 from time import perf_counter
 
 from components.common.logging import configure_logging, get_logger
-from components.data_crawling.example_running import run_example_and_retrieve_tree_data
+from components.data_crawling.example_running import produce_data_for_example
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -16,5 +16,5 @@ if __name__ == "__main__":
     else:
         logger.info(f"default algorithm: {example}")
     start_time = perf_counter()
-    asyncio.run(run_example_and_retrieve_tree_data(example))
+    asyncio.run(produce_data_for_example(example))
     logger.info(f"Finished in {perf_counter() - start_time:.2f} s")

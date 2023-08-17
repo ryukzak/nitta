@@ -73,13 +73,17 @@ async def _do_nitta_request(
 ) -> TResponse:
     async with session.request(method, nitta_baseurl + path) as resp:
         raw = await resp.json(loads=orjson.loads)
+        # is this a good idea? not too much logging? remove if so
+        logger.debug(f"Parsed a response from NITTA: {method} {path} -> {raw}")
     return response_type.parse_obj(raw)
 
 
 async def retrieve_tree_root(
     nitta_baseurl: str, session: ClientSession
 ) -> NittaNodeInTree:
-    return await _do_nitta_request(nitta_baseurl, session, "/node/-", NittaNodeInTree)
+    node = await _do_nitta_request(nitta_baseurl, session, "/node/-", NittaNode)
+    tree_root = NittaNodeInTree.from_node(node)
+    return tree_root
 
 
 async def retrieve_tree_info(
@@ -93,11 +97,11 @@ async def retrieve_whole_nitta_tree(
 ) -> NittaNodeInTree:
     start_time = time.perf_counter()
     async with ClientSession() as session:
-        root = await retrieve_tree_root(nitta_baseurl, session)
-        await retrieve_subforest(root, session, nitta_baseurl, max_depth)
+        tree = await retrieve_tree_root(nitta_baseurl, session)
+        await retrieve_subforest(tree, session, nitta_baseurl, max_depth)
 
     logger.info(f"Finished tree retrieval in {time.perf_counter() - start_time:.2f} s")
-    return root
+    return tree
 
 
 async def retrieve_random_descending_thread(
@@ -138,6 +142,7 @@ async def retrieve_random_descending_thread(
 
 
 async def retrieve_single_node(nitta_baseurl: str, sid: str) -> NittaNode:
+    # TODO: unify with _do_nitta_request and retrieve_tree_root
     async with ClientSession() as session:
         async with session.get(f"{nitta_baseurl}/node/{sid}") as resp:
             node_raw = await resp.json(loads=orjson.loads)

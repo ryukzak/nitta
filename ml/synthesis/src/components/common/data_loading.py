@@ -12,6 +12,8 @@ logger = get_logger(__name__)
 
 
 def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
-    data_csvs: List[str] = glob(str(data_dir / "*lua*.csv"))
-    logger.info(f"Loading data from {len(data_csvs)} files")
+    # TODO: how to distinguish the right CSVs properly? columns? target columns.
+    data_csvs = glob(str(data_dir / "*lua*.csv"))
+    logger.info(f"Loading all existing training data from {len(data_csvs)} files...")
+
     return pd.concat([pd.read_csv(d) for d in data_csvs]).reset_index(drop=True)

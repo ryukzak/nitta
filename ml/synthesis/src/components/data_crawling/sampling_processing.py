@@ -1,7 +1,7 @@
 import os
 from math import exp, log
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 
@@ -44,14 +44,14 @@ def build_df_and_save_sampling_results(
     return results_df
 
 
-def estimate_tree_coverage_based_on_clash_ratio(
-    clash_ratio: float, n_nodes: int
+def estimate_tree_coverage_based_on_collision_ratio(
+    collision_ratio: float, n_nodes: int
 ) -> Optional[float]:
     """
-    This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on clash ratio.
+    This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on collision ratio.
 
     It's based on the following hypotheses:
-        1) tree coverage is in pure functional (mathematical) dependency on clash ratio
+        1) tree coverage is in pure functional (mathematical) dependency on collision ratio
         2) this dependency is tree-independent and is explained purely by random descent algorithm definition,
            probability theory and statistics.
 
@@ -63,8 +63,8 @@ def estimate_tree_coverage_based_on_clash_ratio(
     UPD: found not suitable for large trees (leading to very small cron value) :(
     More data and runs needed, but I'm out of time.
     """
-    # clash ratio in percents with a small epsilon to avoid division by zero
-    cr = clash_ratio * 100
+    # collision ratio in percents
+    cr = collision_ratio * 100
     n = n_nodes  # number of unique nodes sampled from the tree
     cron = cr / n  # short for "cr over n". like cr, but independent of n.
 
@@ -74,7 +74,7 @@ def estimate_tree_coverage_based_on_clash_ratio(
     # nr - tree coverage, i.e. number of nodes sampled from the tree in this run
 
     # goal - find "approx(cron*nr)", i.e. approximate value of cron*nr
-    # empirical data shows that approximation function depends on cr <> 100% heavily
+    # empirical data shows that approximation function heavily depends on whether cr > 100% or not
 
     # approximation function for cr < 100%, found empirically
     approx_lt100 = -0.019 * log(cron) - 0.0394
@@ -96,24 +96,31 @@ def estimate_tree_coverage_based_on_clash_ratio(
     return approx_nr
 
 
-def process_sampling_results(
+def process_and_save_sampling_results(
     example: Path, results: List[dict], data_dir: Path = DATA_DIR
-):
+) -> Optional[Tuple[pd.DataFrame, dict]]:
     example_name = os.path.basename(example)
+
+    if len(results) == 0:
+        logger.warning(f"No results to process (example {example_name!r}).")
+        return None
+
     results_df = build_df_and_save_sampling_results(results, example_name, data_dir)
 
     n_results = len(results)
     n_unique_sids = len(results_df.index.unique())  # already deduplicated
-    clash_ratio = n_results / n_unique_sids - 1
-    tree_cov = estimate_tree_coverage_based_on_clash_ratio(clash_ratio, n_unique_sids)
+    collision_ratio = n_results / n_unique_sids - 1
+    tree_cov = estimate_tree_coverage_based_on_collision_ratio(
+        collision_ratio, n_unique_sids
+    )
     tree_cov_str = f"{tree_cov * 100:.3f}%" if tree_cov else "unknown :("
     neg_label_share = (results_df.label == -3).sum() / len(results_df)
     logger.info(
-        f"TREE SAMPLING DONE:\n\t"
+        f"GOT TREE SAMPLING RESULTS:\n\t"
         + ",\n\t".join(
             [
                 f" {n_unique_sids} unique nodes",
-                f" clash ratio: {clash_ratio * 100:.3f}%",
+                f" collision ratio: {collision_ratio * 100:.3f}%",
                 f" neg. label: {neg_label_share * 100:.1f}%",
                 f" estimated tree coverage: {tree_cov_str}",
             ]
@@ -124,7 +131,7 @@ def process_sampling_results(
         "example": example_name,
         "n_results": n_results,
         "n_unique_sids": n_unique_sids,
-        "clash_ratio": clash_ratio,
+        "collision_ratio": collision_ratio,
         "tree_coverage": tree_cov,
         "neg_label_share": neg_label_share,
     }

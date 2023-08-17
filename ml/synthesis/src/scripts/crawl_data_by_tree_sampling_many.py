@@ -7,10 +7,10 @@ import pandas as pd
 
 from components.common.logging import configure_logging, get_logger
 from components.common.saving import save_df_with_timestamp
-from components.data_crawling.example_running import (
-    run_example_and_sample_tree_parallel,
+from components.data_crawling.example_running import run_example_and_sample_tree
+from components.data_crawling.sampling_processing import (
+    process_and_save_sampling_results,
 )
-from components.data_crawling.sampling_processing import process_sampling_results
 from consts import DATA_DIR, EXAMPLES_DIR
 
 logger = get_logger(__name__)
@@ -43,19 +43,20 @@ def _run_safe(example: Path):
     logger.info(f"Processing {example}")
     try:
         asyncio.run(
-            run_example_and_sample_tree_parallel(
+            # TODO: replace with produce_data_for_example?
+            run_example_and_sample_tree(
                 example=example,
                 results_accum=results,
                 **kwargs,
             )
         )
-    except Exception as e:
+    except Exception:
         logger.exception(
             f"Encountered exception processing {example}, finishing with {len(results)} results"
         )
 
     if results:
-        _, stats = process_sampling_results(example, results)
+        _, stats = process_and_save_sampling_results(example, results)
         return stats
 
 

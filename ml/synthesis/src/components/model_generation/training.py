@@ -1,14 +1,13 @@
 from pathlib import Path
-from time import strftime
 from typing import Optional, Tuple
 
 import pandas as pd
 from matplotlib import pyplot as plt
 from tensorflow.python.data import Dataset
-from tensorflow.python.keras.models import Model
+from tensorflow.python.keras import Model
 
 from components.common.logging import get_logger
-from components.data_crawling.saving import get_current_time_str
+from components.common.saving import get_current_time_str
 from components.model_generation.model_metainfo import ModelMetainfo
 from components.model_generation.models import create_baseline_model
 from consts import MODELS_DIR

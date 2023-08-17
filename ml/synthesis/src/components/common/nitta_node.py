@@ -55,6 +55,11 @@ class NittaNodeInTree(NittaNode):
     def is_loaded(self) -> bool:
         return self.children is not None
 
+    @staticmethod
+    def from_node(node: NittaNode) -> "NittaNodeInTree":
+        """Helps putting a non-tree node info in a tree context (i.e. adding tree-related attributes to the node object)"""
+        return NittaNodeInTree(**node.dict())  # is it the most efficient way?
+
 
 class NittaTreeInfo(CustomizedBaseModel):
     nodes: int

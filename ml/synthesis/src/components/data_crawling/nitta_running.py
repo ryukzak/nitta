@@ -51,7 +51,9 @@ class NittaRunResult:
                     match = _NITTA_SERVER_START_REGEX.search(line)
                     if match:
                         self._port = int(match.group("port"))
-                        logger.debug(f"Match! NITTA port: {self._port}")
+                        logger.debug(
+                            f"Got a NITTA port regex match, port: {self._port}"
+                        )
                         break
 
         return self._port

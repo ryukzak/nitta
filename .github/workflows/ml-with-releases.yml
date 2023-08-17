@@ -1,12 +1,12 @@
 name: ML Test & Train + GitHub Release
-# Maybe this should be split to several workflows triggered by different events.  
+# Maybe this should be split to several workflows triggered by different events.
 
 on:
   push:
     tags:
       - "?.?.*"
 
-# Filtering only to react to pushes to master branch may be needed here. 
+# Filtering only to react to pushes to master branch may be needed here.
 
 jobs:
   ml-test-train-release:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: fregante/setup-git-user@v1
-      
+
       # To make NITTA Docker workflows faster^H^H^H^H^H^H^H succeed within finite time, this action:
       #   - saves docker build cache in its post run;
       #   - restores the cache if it exists in its pre run.
@@ -51,14 +51,14 @@ jobs:
           else 
             echo "not committing since nothing changed"
           fi
-          
+
       - name: Prepare release
         run: |
           git fetch -f --tags origin ${{ github.ref }}:${{ github.ref }}
 
           NITTA_VERSION="$(git describe)"
           TAG_MESSAGE="$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/*/})"
-          
+
           echo "Preparing release for NITTA v$NITTA_VERSION, contents:"
           mkdir build/release
           echo "$TAG_MESSAGE" | tee build/release/body.txt
