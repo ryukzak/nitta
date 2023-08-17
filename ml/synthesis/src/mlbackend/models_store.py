@@ -30,9 +30,9 @@ class ModelsStore:
 
             try:
                 self.models[name] = load_model_with_metainfo(self.model_dir / name)
-            except FileNotFoundError as e:
+            except (FileNotFoundError, IOError) as e:
                 raise ModelNotFoundError(
-                    f"Model {name} not found in root {MODELS_DIR.absolute()}"
+                    f"Error loading model {name!r} (not found in models dir {MODELS_DIR.absolute()}?)"
                 ) from e
 
         return self.models[name]
