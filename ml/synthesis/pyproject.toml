@@ -20,3 +20,10 @@ select = [
 ]
 src = ["ml/synthesis/src"]
 
+
+[tool.vulture]
+min_confidence = 60
+paths = ["src"]
+sort_by_size = true
+
+# TODO: Vulture whitelist

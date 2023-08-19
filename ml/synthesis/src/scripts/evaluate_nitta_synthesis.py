@@ -212,6 +212,7 @@ async def _main_in_ctx(results: List[dict], config: EvaluationConfig):
     random.shuffle(runs)
     for i, (example, measurement_try, *run_info) in enumerate(runs):
         # run_info: (param_name, opt_name, opt_args)[]
+        del measurement_try  # unused
 
         params_readable_str = ", ".join(f"{param_name}={opt_name}" for param_name, opt_name, _ in run_info)
         logger.info(f">>> >>> >>> Processing {example} ({i+1} / {len(runs)}) >>> {params_readable_str}")
