@@ -16,7 +16,7 @@ _target_columns_set = set(TARGET_COLUMNS)
 
 def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
     all_csvs = list(data_dir.glob("*.csv"))
-    logger.info(f"Found {len(all_csvs)} CSVs in {data_dir}")
+    logger.info(f"Loading all existing training data. Found a total of {len(all_csvs)} CSVs in {data_dir}")
 
     found_csvs: List[Path] = []
     for csv_path in all_csvs:
@@ -24,5 +24,5 @@ def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
             if _target_columns_set.issubset(set(next(csv.reader(f)))):
                 found_csvs.append(csv_path)
 
-    logger.info(f"Loading all existing training data from {len(found_csvs)} files...")
+    logger.info(f"Found training data in {len(found_csvs)} CSVs, loading...")
     return pd.concat([pd.read_csv(d) for d in found_csvs]).reset_index(drop=True)

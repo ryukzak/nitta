@@ -43,6 +43,7 @@ def train_and_save_baseline_model(
     history = model.history.history
 
     # TODO: proper model evaluation on an independent dataset
+    # TODO: fix saving input columns
     metainfo = ModelMetainfo(
         train_mae=history["mae"][-1],
         validation_mae=history["val_mae"][-1],

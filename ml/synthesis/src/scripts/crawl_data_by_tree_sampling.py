@@ -1,4 +1,3 @@
-import asyncio
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from components.data_crawling.example_running import (
     DEFAULT_NITTA_RUN_COMMAND,
     produce_data_for_example,
 )
+from components.utils.asyncio_run_interrupt_wrapper import asyncio_run_safe
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -96,8 +96,7 @@ if __name__ == "__main__":
             "Sampling till a default number of samples is gathered. Adjust to synthesis tree size with -n N_SAMPLES!"
         )
 
-    try:
-        asyncio.run(
+        asyncio_run_safe(
             produce_data_for_example(
                 file_to_run,
                 n_samples=args.n_samples,
@@ -107,11 +106,3 @@ if __name__ == "__main__":
                 nitta_run_command=args.nitta_run_command,
             )
         )
-    except (KeyboardInterrupt, SystemExit):
-        # This try/except shouldn't be here! It's a workaround to hide the unwanted traceback that gets printed if you
-        # press Ctrl+C while the script is running.
-        #
-        # The reason is weird:
-        # the exception gets re-raised by asyncio.run() when gathered tasks are cancelled (presumably...).
-        # Probably related: https://github.com/python/cpython/issues/93122
-        pass

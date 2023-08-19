@@ -1,7 +1,7 @@
-import os
+from dataclasses import dataclass
 from math import exp, log
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import pandas as pd
 
@@ -86,16 +86,31 @@ def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_no
     return approx_nr
 
 
+@dataclass
+class SamplingStats:
+    n_results: int
+    n_unique_sids: int
+    collision_ratio: float
+    tree_coverage: Optional[float]
+    neg_label_share: float
+    # ^ all floats are in [0, 1]
+
+
+@dataclass
+class SamplingResult:
+    example: Path
+    df: pd.DataFrame
+    stats: SamplingStats
+
+
 def process_and_save_sampling_results(
     example: Path, results: List[dict], data_dir: Path = DATA_DIR
-) -> Optional[Tuple[pd.DataFrame, dict]]:
-    example_name = os.path.basename(example)
-
+) -> Optional[SamplingResult]:
     if len(results) == 0:
-        logger.warning(f"No results to process (example {example_name!r}).")
+        logger.warning(f"No results to process (example {example.name!r}).")
         return None
 
-    results_df = build_df_and_save_sampling_results(results, example_name, data_dir)
+    results_df = build_df_and_save_sampling_results(results, example.name, data_dir)
 
     n_results = len(results)
     n_unique_sids = len(results_df.index.unique())  # already deduplicated
@@ -115,13 +130,14 @@ def process_and_save_sampling_results(
         )
     )
 
-    stats = {
-        "example": example_name,
-        "n_results": n_results,
-        "n_unique_sids": n_unique_sids,
-        "collision_ratio": collision_ratio,
-        "tree_coverage": tree_cov,
-        "neg_label_share": neg_label_share,
-    }
-
-    return results_df, stats
+    return SamplingResult(
+        example=example,
+        df=results_df,
+        stats=SamplingStats(
+            n_results=n_results,
+            n_unique_sids=n_unique_sids,
+            collision_ratio=collision_ratio,
+            tree_coverage=tree_cov,
+            neg_label_share=neg_label_share,
+        ),
+    )
