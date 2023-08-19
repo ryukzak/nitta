@@ -76,7 +76,6 @@ async def test_smoke():
                 fallback_non_ml_scores = await _get_scores(await nitta.get_base_url())
                 assert non_ml_scores == fallback_non_ml_scores
 
-            # TODO: fix NITTA not seeing the test model for some reason
             async with run_nitta_server(
                 EXAMPLES_DIR / "fibonacci.lua",
                 nitta_args=f'--score="ml_{model_name}"  --method=NoSynthesis -e',
