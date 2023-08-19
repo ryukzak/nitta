@@ -75,8 +75,12 @@ async def _do_nitta_request(
     return response_type.parse_obj(raw)
 
 
+async def retrieve_single_node(sid: str, nitta_baseurl: str, session: ClientSession) -> NittaNode:
+    return await _do_nitta_request(nitta_baseurl, session, f"/node/{sid}", NittaNode)
+
+
 async def retrieve_tree_root(nitta_baseurl: str, session: ClientSession) -> NittaNodeInTree:
-    node = await _do_nitta_request(nitta_baseurl, session, "/node/-", NittaNode)
+    node = await retrieve_single_node("-", nitta_baseurl, session)
     tree_root = NittaNodeInTree.from_node(node)
     return tree_root
 
@@ -131,11 +135,3 @@ async def retrieve_random_descending_thread(
         )
 
     return node
-
-
-async def retrieve_single_node(nitta_baseurl: str, sid: str) -> NittaNode:
-    # TODO: unify with _do_nitta_request and retrieve_tree_root
-    async with ClientSession() as session:
-        async with session.get(f"{nitta_baseurl}/node/{sid}") as resp:
-            node_raw = await resp.json(loads=orjson.loads)
-    return NittaNode.parse_obj(node_raw)
