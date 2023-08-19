@@ -1,18 +1,28 @@
-from glob import glob
+import csv
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 from pandas import DataFrame
 
 from components.common.logging import get_logger
+from components.data_processing.dataset_creation import TARGET_COLUMNS
 from consts import DATA_DIR
 
 logger = get_logger(__name__)
 
+_target_columns_set = set(TARGET_COLUMNS)
+
 
 def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
-    # TODO: how to distinguish the right CSVs properly? columns? target columns.
-    data_csvs = glob(str(data_dir / "*lua*.csv"))
-    logger.info(f"Loading all existing training data from {len(data_csvs)} files...")
+    all_csvs = list(data_dir.glob("*.csv"))
+    logger.info(f"Found {len(all_csvs)} CSVs in {data_dir}")
 
-    return pd.concat([pd.read_csv(d) for d in data_csvs]).reset_index(drop=True)
+    found_csvs: List[Path] = []
+    for csv_path in all_csvs:
+        with open(csv_path, "r") as f:
+            if _target_columns_set.issubset(set(next(csv.reader(f)))):
+                found_csvs.append(csv_path)
+
+    logger.info(f"Loading all existing training data from {len(found_csvs)} files...")
+    return pd.concat([pd.read_csv(d) for d in found_csvs]).reset_index(drop=True)
