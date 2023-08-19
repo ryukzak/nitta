@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 
 import pandas as pd
 from matplotlib import pyplot as plt
-from tensorflow.python.data import Dataset
+from tensorflow.data import Dataset  # pyright: ignore[reportMissingModuleSource]
 from tensorflow.python.keras import Model
 
 from components.common.logging import get_logger

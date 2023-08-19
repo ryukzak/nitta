@@ -1,17 +1,14 @@
 from typing import List, Optional, Tuple, cast
 
 import pandas as pd
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from tensorflow.data import Dataset  # pyright: ignore[reportMissingModuleSource]
 
 from components.common.logging import get_logger
 
 logger = get_logger(__name__)
 
 TARGET_COLUMNS = ["label"]
-
-# tensorflow's dynamic import system breaks Pyright
-Dataset = tf.data.Dataset
 
 
 def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False):

@@ -64,7 +64,9 @@ class NittaNodeInTree(NittaNode):
 
     def dict(self, **overrides):
         """Customized Pydantic's .dict() to provide convenient defaults for NittaNodeInTree"""
-        return super().dict(**dict(by_alias=True, **overrides))
+        kwargs: dict = dict(by_alias=True)
+        kwargs.update(overrides)
+        return super().dict(**kwargs)
 
 
 class NittaTreeInfo(CustomizedBaseModel):
