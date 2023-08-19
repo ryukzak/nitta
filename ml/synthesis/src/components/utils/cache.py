@@ -1,4 +1,5 @@
-from cachetools import Cache, cached as lib_cached
+from cachetools import Cache
+from cachetools import cached as lib_cached
 
 _DEFAULT_CACHE_SIZE = 10000
 

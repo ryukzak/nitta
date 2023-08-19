@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from starlette.responses import HTMLResponse
 
-from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 from components.data_processing.feature_engineering import (
     df_to_model_columns,
@@ -43,9 +42,7 @@ def get_model_info(model_name: str) -> Response[ModelInfo]:
 
 
 @app.post("/models/{model_name}/score")
-def score_with_model(
-    model_name: str, body: PostScoreRequestBody
-) -> Response[PostScoreResponseData]:
+def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[PostScoreResponseData]:
     """Runs score prediction with model of given name for each input in a given list of inputs."""
     model, meta = models[model_name]
 
@@ -66,12 +63,7 @@ def score_with_model(
                 detail="No target node(s) were found",
             )
 
-        df = pd.DataFrame(
-            [
-                nitta_node_to_df_dict(target_node, siblings=all_siblings)
-                for target_node in target_nodes
-            ]
-        )
+        df = pd.DataFrame([nitta_node_to_df_dict(target_node, siblings=all_siblings) for target_node in target_nodes])
         df = preprocess_train_data_df(df)
         df = df_to_model_columns(df, model_columns=meta.input_columns)
         scores.append(model.predict(df.values).reshape(-1).tolist())
@@ -85,9 +77,7 @@ def score_with_model(
 
 @app.exception_handler(ModelNotFoundError)
 async def model_not_found_exception_handler(request, exc):
-    return await http_exception_handler(
-        request, HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc))
-    )
+    return await http_exception_handler(request, HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)))
 
 
 @app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
@@ -97,19 +87,19 @@ def get_rapidoc_docs():
         <html>
             <head>
                 <meta charset="utf-8">
-                <script 
-                    type="module" 
+                <script
+                    type="module"
                     src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"
                 ></script>
             </head>
             <body>
-                <rapi-doc 
+                <rapi-doc
                     spec-url="{app.openapi_url}"
                     render-style="read"
                     show-header="false"
                     default-schema-tab="schema"
                     theme="light"
                 ></rapi-doc>
-            </body> 
+            </body>
         </html>
     """

@@ -11,9 +11,7 @@ from components.model_generation.model_metainfo import ModelMetainfo
 logger = get_logger(__name__)
 
 
-def load_model_with_metainfo(
-    model_dir: Path, not_for_training: bool = True
-) -> Tuple[Model, ModelMetainfo]:
+def load_model_with_metainfo(model_dir: Path, not_for_training: bool = True) -> Tuple[Model, ModelMetainfo]:
     logger.debug(f"Loading model from {model_dir}...")
 
     model = load_model(

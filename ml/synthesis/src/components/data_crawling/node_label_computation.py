@@ -4,7 +4,6 @@ import pandas as pd
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
 from components.data_crawling.node_processing import get_leaf_metrics
-from components.utils.cache import cached
 
 _METRICS_WEIGHTS = pd.Series(dict(duration=-1, depth=-0.1))
 
@@ -26,12 +25,8 @@ def aggregate_node_labels(labels: pd.Series) -> float:
 
 
 # @cached()  # maximum recursion depth exceeded?! pydantic imcompatibility?
-def compute_node_label(
-    node: NittaNodeInTree, metrics_collector: LeafMetricsCollector
-) -> float:
-    assert (
-        node.is_terminal
-    ), "labels for non-terminal nodes for this function should not be calculated anymore"
+def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsCollector) -> float:
+    assert node.is_terminal, "labels for non-terminal nodes for this function should not be calculated anymore"
 
     if not node.is_finish:
         return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
@@ -45,7 +40,4 @@ def compute_node_label(
     # adding an epsilon to avoid division by zero.
     normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
 
-    return (
-        normalized_metrics.dot(_METRICS_WEIGHTS)
-        + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
-    )
+    return normalized_metrics.dot(_METRICS_WEIGHTS) + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT

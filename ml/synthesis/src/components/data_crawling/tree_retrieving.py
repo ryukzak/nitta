@@ -54,10 +54,7 @@ async def retrieve_subforest(
 
     levels_left_for_child = None if levels_left is None else levels_left - 1
     await asyncio.gather(
-        *[
-            retrieve_subforest(child, session, nitta_baseurl, levels_left_for_child)
-            for child in node.children
-        ]
+        *[retrieve_subforest(child, session, nitta_baseurl, levels_left_for_child) for child in node.children]
     )
 
 
@@ -78,23 +75,17 @@ async def _do_nitta_request(
     return response_type.parse_obj(raw)
 
 
-async def retrieve_tree_root(
-    nitta_baseurl: str, session: ClientSession
-) -> NittaNodeInTree:
+async def retrieve_tree_root(nitta_baseurl: str, session: ClientSession) -> NittaNodeInTree:
     node = await _do_nitta_request(nitta_baseurl, session, "/node/-", NittaNode)
     tree_root = NittaNodeInTree.from_node(node)
     return tree_root
 
 
-async def retrieve_tree_info(
-    nitta_baseurl: str, session: ClientSession
-) -> NittaTreeInfo:
+async def retrieve_tree_info(nitta_baseurl: str, session: ClientSession) -> NittaTreeInfo:
     return await _do_nitta_request(nitta_baseurl, session, "/treeInfo", NittaTreeInfo)
 
 
-async def retrieve_whole_nitta_tree(
-    nitta_baseurl: str, max_depth=None
-) -> NittaNodeInTree:
+async def retrieve_whole_nitta_tree(nitta_baseurl: str, max_depth=None) -> NittaNodeInTree:
     start_time = time.perf_counter()
     async with ClientSession() as session:
         tree = await retrieve_tree_root(nitta_baseurl, session)
@@ -117,17 +108,13 @@ async def retrieve_random_descending_thread(
 
     while not node.is_terminal:
         if not node.is_loaded:
-            await retrieve_children(
-                node, session, nitta_baseurl, ignore_loaded=ignore_dirty_tree
-            )
+            await retrieve_children(node, session, nitta_baseurl, ignore_loaded=ignore_dirty_tree)
         elif not ignore_dirty_tree:
             raise ValueError(f"Node was expected to be not loaded: {node}")
         assert node.children is not None, "children should be loaded by now"
 
         if len(node.children) == 0:
-            logger.warning(
-                f"Non-terminal node {node.sid} has no children, stopping descent"
-            )
+            logger.warning(f"Non-terminal node {node.sid} has no children, stopping descent")
             break
 
         # weight descending probability by score
@@ -136,7 +123,12 @@ async def retrieve_random_descending_thread(
         pivot = shift + 2000
         weights = np.array([child.score for child in node.children])
         weights = ((weights + shift) / pivot) ** 3
-        node = np.random.choice(node.children, p=weights / weights.sum())
+
+        node = np.random.choice(
+            # 1st arg's typing (ArrayLike) doesn't accept pure python lists, but in runtime it's fine
+            node.children,  # type: ignore
+            p=weights / weights.sum(),
+        )
 
     return node
 

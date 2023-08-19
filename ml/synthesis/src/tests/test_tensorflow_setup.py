@@ -1,8 +1,4 @@
-import os
-
 import tensorflow as tf
-
-from components.common.logging import get_logger
 
 
 def test_tensorflow_can_do_computations_without_crashing():

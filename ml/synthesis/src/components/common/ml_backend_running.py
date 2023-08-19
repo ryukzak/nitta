@@ -18,9 +18,7 @@ async def run_ml_backend() -> AsyncGenerator[Tuple[Process, str], None]:
     try:
         executable = sys.executable  # current Python interpreter
         executable_args = ["-m", "mlbackend"]
-        logger.info(
-            f"Starting ML backend server, command: {executable} {' '.join(executable_args)}"
-        )
+        logger.info(f"Starting ML backend server, command: {executable} {' '.join(executable_args)}")
 
         proc = await asyncio.create_subprocess_exec(
             executable,
@@ -32,7 +30,7 @@ async def run_ml_backend() -> AsyncGenerator[Tuple[Process, str], None]:
 
         logger.info(f"ML backend server has been launched, PID {proc.pid}.")
 
-        logger.info(f"Waiting for ML backend server to start...")
+        logger.info("Waiting for ML backend server to start...")
         while not ROOT_DIR.joinpath(ML_BACKEND_BASE_URL_FILEPATH).exists():
             await asyncio.sleep(0.1)
         with ROOT_DIR.joinpath(ML_BACKEND_BASE_URL_FILEPATH).open("r") as f:
@@ -49,7 +47,7 @@ async def run_ml_backend() -> AsyncGenerator[Tuple[Process, str], None]:
                 except Exception:
                     await asyncio.sleep(0.3)
 
-        logger.info(f"ML backend server is ready to serve requests.")
+        logger.info("ML backend server is ready to serve requests.")
 
         yield proc, base_url
     finally:

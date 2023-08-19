@@ -48,8 +48,8 @@ class NittaNode(CustomizedBaseModel):
 
 
 class NittaNodeInTree(NittaNode):
-    children: Optional[List["NittaNodeInTree"]] = Field(default=None, repr=False)
-    parent: Optional["NittaNodeInTree"] = Field(default=None, repr=False)
+    children: Optional[List["NittaNodeInTree"]] = Field(default=None, repr=False, exclude=True)
+    parent: Optional["NittaNodeInTree"] = Field(default=None, repr=False, exclude=True)
 
     @property
     def is_loaded(self) -> bool:
@@ -57,8 +57,14 @@ class NittaNodeInTree(NittaNode):
 
     @staticmethod
     def from_node(node: NittaNode) -> "NittaNodeInTree":
-        """Helps putting a non-tree node info in a tree context (i.e. adding tree-related attributes to the node object)"""
+        """
+        Helps putting a non-tree node info in a tree context (i.e. adding tree-related attributes to the node object)
+        """
         return NittaNodeInTree(**node.dict())  # is it the most efficient way?
+
+    def dict(self, **overrides):
+        """Customized Pydantic's .dict() to provide convenient defaults for NittaNodeInTree"""
+        return super().dict(**dict(by_alias=True, **overrides))
 
 
 class NittaTreeInfo(CustomizedBaseModel):

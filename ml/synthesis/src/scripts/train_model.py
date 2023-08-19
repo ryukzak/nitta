@@ -1,3 +1,7 @@
+from typing import Optional
+
+from pandas import DataFrame
+
 from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import configure_logging, get_logger
 from components.data_processing.dataset_creation import create_datasets
@@ -18,11 +22,11 @@ if __name__ == "__main__":
 
     test_mask = training_data.example.isin(validation_examples)
     train_df = preprocess_train_data_df(training_data[~test_mask])
-    test_df = preprocess_train_data_df(training_data[test_mask])
+    # test_df = preprocess_train_data_df(training_data[test_mask])
 
     # not using test_df from distinct examples (not improving much! not informative?)
     # using random split instead
-    test_df = None
+    test_df: Optional[DataFrame] = None
 
     train_ds, val_ds = create_datasets(train_df, test_df)
 

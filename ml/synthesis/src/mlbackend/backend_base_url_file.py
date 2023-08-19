@@ -17,7 +17,7 @@ class BackendBaseUrlFile(AbstractContextManager):
     """
     A context manager to share a public base url for active backend server instance.
 
-    Manages a file that can be read by server clients (namely, Haskell part of NITTA when it looks for ML backend server):
+    Manages a file that can be read by server clients (namely, Haskell NITTA part when it looks for ML backend server):
         - to determine if a server instance has started successfully and is currently running;
         - to find the server's base URL.
 
@@ -51,9 +51,7 @@ class BackendBaseUrlFile(AbstractContextManager):
         self.port = find_random_free_port()
 
         base_url = self._base_url_fmt.format(port=self.port)
-        logger.info(
-            f"Writing base URL ({base_url}) to file ({self.filepath.absolute()})."
-        )
+        logger.info(f"Writing base URL ({base_url}) to file ({self.filepath.absolute()}).")
         with self.filepath.open("w") as f:
             f.write(base_url + "\n")
         return self
@@ -66,8 +64,7 @@ class BackendBaseUrlFile(AbstractContextManager):
     ) -> bool | None:
         if not self.filepath.exists():
             logger.warning(
-                f"Exiting, so wanted to remove {self.filepath.absolute()}, "
-                f"but it does not exist. Doing nothing."
+                f"Exiting, so wanted to remove {self.filepath.absolute()}, " f"but it does not exist. Doing nothing."
             )
             return None
 

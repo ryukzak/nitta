@@ -34,7 +34,7 @@ _EXAMPLES_TO_CRAWL: Dict[Path, dict] = {
 def _run_safe(example: Path):
     results: List[dict] = []
 
-    kwargs = dict(
+    kwargs: Dict = dict(
         n_samples=5000,
         n_samples_per_batch=20,
     )
@@ -51,21 +51,18 @@ def _run_safe(example: Path):
             )
         )
     except Exception:
-        logger.exception(
-            f"Encountered exception processing {example}, finishing with {len(results)} results"
-        )
+        logger.exception(f"Encountered exception processing {example}, finishing with {len(results)} results")
 
-    if results:
-        _, stats = process_and_save_sampling_results(example, results)
+    processed_results = process_and_save_sampling_results(example, results)
+    if processed_results:
+        _, stats = processed_results
         return stats
 
 
 if __name__ == "__main__":
     configure_logging(base_level=logging.INFO)
 
-    examples = list(_EXAMPLES_TO_CRAWL.keys()) or list(
-        sorted(EXAMPLES_DIR.glob("**/*.lua"))
-    )
+    examples = list(_EXAMPLES_TO_CRAWL.keys()) or list(sorted(EXAMPLES_DIR.glob("**/*.lua")))
 
     examples_str = "\n\t".join(map(str, examples))
     logger.info(f"Processing {len(examples)} examples: \n\t{examples_str}")
@@ -73,13 +70,9 @@ if __name__ == "__main__":
     stats = []
 
     for example in examples:
-        logger.info(
-            f"======================= Processing {example} ======================="
-        )
+        logger.info(f"======================= Processing {example} =======================")
         example_stats = _run_safe(example)
         if example_stats is not None:
             stats.append(example_stats)
 
-    save_df_with_timestamp(
-        pd.DataFrame(stats), DATA_DIR, "stats", what="crawling summary"
-    )
+    save_df_with_timestamp(pd.DataFrame(stats), DATA_DIR, "stats", what="crawling summary")

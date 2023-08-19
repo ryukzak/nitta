@@ -30,7 +30,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "-n",
         "--n-samples",
-        help=f"Number of samples to gather. A sample is a full descent from root to leaf in the synthesis tree. "
+        help="Number of samples to gather. A sample is a full descent from root to leaf in the synthesis tree. "
         + f"Default: {DEFAULT_N_SAMPLES} (adjust to tree size!).",
         default=DEFAULT_N_SAMPLES,
         type=int,
@@ -38,14 +38,17 @@ if __name__ == "__main__":
     argparser.add_argument(
         "-b",
         "--n-samples-per-batch",
-        help=f"Number of samples in a single batch (batch size). The sampling process is batched for better performance: each worker's one-time job is to (asynchronously) process a whole batch, not an individual sample. Default batch size: {DEFAULT_N_SAMPLES_PER_BATCH}.",
+        help="Number of samples in a single batch (batch size). The sampling process is batched for better "
+        + "performance: each worker's one-time job is to (asynchronously) process a whole batch, not an individual "
+        + f"sample. Default batch size: {DEFAULT_N_SAMPLES_PER_BATCH}.",
         default=DEFAULT_N_SAMPLES_PER_BATCH,
         type=int,
     )
     argparser.add_argument(
         "-w",
         "--n-workers",
-        help=f"Number of worker processes to use for parallel sampling. 1 recommended in most cases. Default: {DEFAULT_N_WORKERS}.",
+        help="Number of worker processes to use for parallel sampling. 1 recommended in most cases. "
+        + f"Default: {DEFAULT_N_WORKERS}.",
         default=DEFAULT_N_WORKERS,
         type=int,
     )
@@ -58,7 +61,8 @@ if __name__ == "__main__":
     )
     argparser.add_argument(
         "--nitta-run-command",
-        help=f"A command to run NITTA (or a path to the NITTA executable, same thing). Default: '{DEFAULT_NITTA_RUN_COMMAND}'.",
+        help="A command to run NITTA (or a path to the NITTA executable, same thing). "
+        + f"Default: '{DEFAULT_NITTA_RUN_COMMAND}'.",
         default=DEFAULT_NITTA_RUN_COMMAND,
         type=str,
     )
@@ -89,7 +93,7 @@ if __name__ == "__main__":
 
     if args.n_samples == DEFAULT_N_SAMPLES:
         logger.info(
-            f"Sampling till a default number of samples is gathered. Adjust to the synthesis tree size with -n N_SAMPLES!"
+            "Sampling till a default number of samples is gathered. Adjust to synthesis tree size with -n N_SAMPLES!"
         )
 
     try:
@@ -107,6 +111,7 @@ if __name__ == "__main__":
         # This try/except shouldn't be here! It's a workaround to hide the unwanted traceback that gets printed if you
         # press Ctrl+C while the script is running.
         #
-        # The reason is weird: the exception gets re-raised by asyncio.run() when gathered tasks are cancelled (presumably...).
+        # The reason is weird:
+        # the exception gets re-raised by asyncio.run() when gathered tasks are cancelled (presumably...).
         # Probably related: https://github.com/python/cpython/issues/93122
         pass

@@ -19,9 +19,7 @@ from consts import ROOT_DIR
 
 logger = get_logger(__name__)
 
-_NITTA_SERVER_START_REGEX = re.compile(
-    r"Running NITTA server at http:\/\/localhost:(?P<port>\d+)"
-)
+_NITTA_SERVER_START_REGEX = re.compile(r"Running NITTA server at http:\/\/localhost:(?P<port>\d+)")
 
 
 class NittaRunResult:
@@ -70,7 +68,7 @@ class NittaRunResult:
         if not self._port_found_event.is_set():
             if self.stdout_pipe_reader.done():
                 raise RuntimeError(
-                    f"Couldn't read NITTA API server port, it wasn't read earlier and stdout pipe reader is done"
+                    "Couldn't read NITTA API server port, it wasn't read earlier and stdout pipe reader is done"
                 )
 
             logger.debug(f"Waiting for NITTA API port to be read (PID {self.proc.pid})")
@@ -97,9 +95,7 @@ async def run_nitta(
     try:
         logger.info(f"Starting NITTA, command: {full_shell_cmd}")
 
-        preexec_fn = (
-            None if os.name == "nt" else os.setsid
-        )  # see https://stackoverflow.com/a/4791612
+        preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
 
         proc = await asyncio.create_subprocess_shell(
             full_shell_cmd,

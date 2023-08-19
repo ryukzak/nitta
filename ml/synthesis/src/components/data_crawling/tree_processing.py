@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from sklearn import logger
-
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import (
@@ -40,7 +38,10 @@ logger = get_logger(__name__)
 #
 #       f is computed dynamically based on known d and R, assuming L = 1: f = R^(1/d) (d-th root of R)
 #       R is the parameter that's controlled below.
-#           1 - no decay, 0.01 - very strong decay (to near-zero), 0 - infinite decay (to zero right after the first step).
+#           1 - no decay,
+#           0.01 - very strong decay (to near-zero),
+#           0 - infinite decay (to zero right after the first step).
+
 _PART_OF_LEAF_LABEL_IN_ROOT_LABEL = 0.5
 
 
@@ -55,9 +56,7 @@ def assemble_training_data_via_backpropagation_from_leaf(
     depth_collector = metrics_collector.collectors[LeafMetrics.DEPTH]
     if depth_collector.n > 0:
         current_mean_leaf_depth = depth_collector.compute_mean()
-        label_decay_coefficient = _PART_OF_LEAF_LABEL_IN_ROOT_LABEL ** (
-            1 / current_mean_leaf_depth
-        )
+        label_decay_coefficient = _PART_OF_LEAF_LABEL_IN_ROOT_LABEL ** (1 / current_mean_leaf_depth)
     else:
         # we haven't met a single successful leaf yet, so won't decay anyway
         assert label < 0, "expected only labels for unsuccessful leafs (<0) here"
@@ -66,9 +65,7 @@ def assemble_training_data_via_backpropagation_from_leaf(
     node = leaf
     while node.parent is not None:
         if node.parent.children is None:
-            logger.warning(
-                f"Parent of {node.sid} has None children! Concurrent modification?"
-            )
+            logger.warning(f"Parent of {node.sid} has None children! Concurrent modification?")
         siblings = node.parent.children or []
 
         node_dict = nitta_node_to_df_dict(node, siblings, example_name)

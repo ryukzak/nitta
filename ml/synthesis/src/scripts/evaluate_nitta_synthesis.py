@@ -1,18 +1,17 @@
 """
-A script for evaluation of NITTA's synthesis. It runs NITTA with different arguments, measures metrics (like time, 
+A script for evaluation of NITTA's synthesis. It runs NITTA with different arguments, measures metrics (like time,
 synthesis success rate, etc.) and writes aggregated results to a single CSV table for further analysis.
 
 !!! Do not add non-stdlib imports here and be compatible with Python 3.8 !!!
 
-By design, this script can be run WITHOUT any non-stdlib dependencies, so it doesn't require installation, just 
-a compatible Python (3.8+ should be fine). This enables evaluating NITTA without full Python-ML stack installed. So be 
+By design, this script can be run WITHOUT any non-stdlib dependencies, so it doesn't require installation, just
+a compatible Python (3.8+ should be fine). This enables evaluating NITTA without full Python-ML stack installed. So be
 careful when adding additional imports here or in modules that this script depends on.
 """
 import asyncio
 import itertools
 import json
 import logging
-import operator
 import pickle
 import random
 import sys
@@ -24,7 +23,7 @@ from functools import reduce
 from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
-from typing import Callable, Dict, Iterable, List, Literal, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Literal, Tuple, Union
 from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
@@ -117,15 +116,13 @@ def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
     return _NittaTreeInfo(**ti_dict)
 
 
-async def _assemble_stats_dict_after_synthesis(
-    nitta_base_url: str, elapsed_time: float
-) -> Tuple[_NittaTreeInfo, dict]:
+async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time: float) -> Tuple[_NittaTreeInfo, dict]:
     ti = _get_tree_info_from_nitta(nitta_base_url)
 
     logger.info(f"Got tree info: {ti}")
 
     if not ti.success > 0:
-        logger.info(f"Synthesis was not successful, skipping stats collection")
+        logger.info("Synthesis was not successful, skipping stats collection")
         return ti, {}
 
     def _mean_from_tree_info_dict(d: dict) -> float:
@@ -165,9 +162,7 @@ async def _do_a_run_and_save_results(
         elapsed_time = 0.0
         while not nitta_base_url and elapsed_time < config.nitta_run_timeout_s:
             try:
-                nitta_base_url = await asyncio.wait_for(
-                    nitta.get_base_url(), timeout=_TIMEOUT_CHECKING_INTERVAL_S
-                )
+                nitta_base_url = await asyncio.wait_for(nitta.get_base_url(), timeout=_TIMEOUT_CHECKING_INTERVAL_S)
             except asyncio.TimeoutError:
                 pass
             elapsed_time = perf_counter() - start_time
@@ -181,12 +176,8 @@ async def _do_a_run_and_save_results(
             assert (
                 nitta_base_url is not None
             ), "it's not a timeout, so NITTA server should've been started. Control flow bug?"
-            logger.info(
-                f"Detected a NITTA API server on {nitta_base_url}. Getting tree info..."
-            )
-            ti, stats = await _assemble_stats_dict_after_synthesis(
-                nitta_base_url, elapsed_time
-            )
+            logger.info(f"Detected a NITTA API server on {nitta_base_url}. Getting tree info...")
+            ti, stats = await _assemble_stats_dict_after_synthesis(nitta_base_url, elapsed_time)
             success = ti.success > 0
 
         results.append(
@@ -217,21 +208,13 @@ async def _main_in_ctx(results: List[dict], config: EvaluationConfig):
         else [EXAMPLES_DIR.joinpath(example) for example in config.examples]
     )
 
-    runs = list(
-        itertools.product(
-            examples_paths, range(config.measurement_tries), *search_space_dofs
-        )
-    )
+    runs = list(itertools.product(examples_paths, range(config.measurement_tries), *search_space_dofs))
     random.shuffle(runs)
     for i, (example, measurement_try, *run_info) in enumerate(runs):
         # run_info: (param_name, opt_name, opt_args)[]
 
-        params_readable_str = ", ".join(
-            f"{param_name}={opt_name}" for param_name, opt_name, _ in run_info
-        )
-        logger.info(
-            f">>> >>> >>> Processing {example} ({i+1} / {len(runs)}) >>> {params_readable_str}"
-        )
+        params_readable_str = ", ".join(f"{param_name}={opt_name}" for param_name, opt_name, _ in run_info)
+        logger.info(f">>> >>> >>> Processing {example} ({i+1} / {len(runs)}) >>> {params_readable_str}")
 
         try:
             await _do_a_run_and_save_results(results, config, run_info, example)
@@ -266,11 +249,7 @@ def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
         return accum
 
     all_cols: List[str] = reduce(select_keys_from_longest_dict, results, [])
-    metrics_cols = [
-        col
-        for col in all_cols
-        if col not in key_cols and col not in counter_metrics_cols
-    ]
+    metrics_cols = [col for col in all_cols if col not in key_cols and col not in counter_metrics_cols]
 
     def keyfunc(run):
         return tuple(run[k] for k in key_cols)
@@ -343,8 +322,6 @@ if __name__ == "__main__":
         success = False
     finally:
         elapsed = str(datetime.now() - global_start).split(".")[0]
-        logger.info(
-            f"=== Evaluation has been COMPLETED with {len(results)} results in {elapsed} ==="
-        )
+        logger.info(f"=== Evaluation has been COMPLETED with {len(results)} results in {elapsed} ===")
         _aggregate_and_save_results(results, config)
         sys.exit(0 if success else 1)

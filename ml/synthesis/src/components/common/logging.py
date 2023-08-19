@@ -33,9 +33,4 @@ def configure_logging(base_level: int = logging.DEBUG):
         silence_unwanted_logs()
 
 
-def set_logging_level(module_name: str, level: int):
-    logger = get_logger(module_name)
-    logger.setLevel(level)
-
-
 logger = get_logger(__name__)

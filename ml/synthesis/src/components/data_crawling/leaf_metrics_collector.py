@@ -61,14 +61,10 @@ class LeafMetricsCollector:
         self._cached_distributions = None
 
     def collect_leaf_node(self, node: NittaNode, ignore_unsuccessful: bool = True):
-        assert (
-            node.is_terminal
-        ), "only leaf nodes should be collected for metrics distributions"
+        assert node.is_terminal, "only leaf nodes should be collected for metrics distributions"
 
         if not node.is_finish:
-            assert (
-                ignore_unsuccessful
-            ), "shouldn't collect metrics from unsuccessful synthesis leafs"
+            assert ignore_unsuccessful, "shouldn't collect metrics from unsuccessful synthesis leafs"
             return
 
         duration, depth = get_leaf_metrics(node)
@@ -76,9 +72,7 @@ class LeafMetricsCollector:
         if duration is not None:
             self.collectors[LeafMetrics.DURATION].collect(duration)
         else:
-            logger.warning(
-                f"Tried to collect metrics for node without duration: {node}"
-            )
+            logger.warning(f"Tried to collect metrics for node without duration: {node}")
 
         self.collectors[LeafMetrics.DEPTH].collect(depth)
 

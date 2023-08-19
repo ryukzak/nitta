@@ -1,0 +1,22 @@
+[project]
+name = "nitta-ml-synthesis"
+version = "1.0.0"
+
+
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E",
+    "W",
+    # isort
+    "I"
+]
+src = ["ml/synthesis/src"]
+

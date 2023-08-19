@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
 from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.utils.cache import cached
@@ -8,9 +8,7 @@ from components.utils.cache import cached
 
 def _extract_params_dict(node: NittaNode) -> dict:
     if node.decision_tag in ["BindDecisionView", "DataflowDecisionView"]:
-        assert isinstance(
-            node.parameters, dict
-        ), "parameters must be a dict for Bind and Dataflow decisions"
+        assert isinstance(node.parameters, dict), "parameters must be a dict for Bind and Dataflow decisions"
         result = node.parameters.copy()
         if node.decision_tag == "DataflowDecisionView":
             result["pNotTransferableInputs"] = sum(result["pNotTransferableInputs"])
@@ -22,9 +20,7 @@ def _extract_params_dict(node: NittaNode) -> dict:
         return {"pRefactoringType": node.decision_tag}
 
 
-def _extract_alternative_siblings_dict(
-    node: NittaNode, siblings: Iterable[NittaNode]
-) -> dict:
+def _extract_alternative_siblings_dict(node: NittaNode, siblings: Iterable[NittaNode]) -> dict:
     bindings, refactorings, dataflows = 0, 0, 0
 
     for sibling in siblings:
@@ -38,9 +34,7 @@ def _extract_alternative_siblings_dict(
             # refactorings have arbitrary decision tags
             refactorings += 1
 
-    return dict(
-        alt_bindings=bindings, alt_refactorings=refactorings, alt_dataflows=dataflows
-    )
+    return dict(alt_bindings=bindings, alt_refactorings=refactorings, alt_dataflows=dataflows)
 
 
 def nitta_node_to_df_dict(

@@ -25,9 +25,7 @@ def get_current_time_str():
     return datetime.now().strftime("%y%m%d_%H%M%S")
 
 
-def _prepare_saving(
-    basedir: Union[PathLike, str], basename: str, what: Optional[str] = None
-):
+def _prepare_saving(basedir: Union[PathLike, str], basename: str, what: Optional[str] = None):
     os.makedirs(basedir, exist_ok=True)
     output = os.path.join(basedir, f"{basename}_{get_current_time_str()}.csv")
     logger.info(f"Saving {what + ' ' if what  else ''}to {output}")

@@ -13,15 +13,11 @@ from consts import DATA_DIR
 logger = get_logger(__name__)
 
 
-def build_df_and_save_sampling_results(
-    results: List[dict], example_name: str, data_dir: Path
-) -> pd.DataFrame:
+def build_df_and_save_sampling_results(results: List[dict], example_name: str, data_dir: Path) -> pd.DataFrame:
     """
     Builds a DataFrame from the sampling results and saves it to the `data_dir`.
     """
-    logger.info(
-        f"Building a DataFrame from sampling results ({len(results)} entries)..."
-    )
+    logger.info(f"Building a DataFrame from sampling results ({len(results)} entries)...")
 
     results_df = pd.DataFrame(results)
 
@@ -30,23 +26,17 @@ def build_df_and_save_sampling_results(
     # any way to improve this? seems extremely difficult (parallel executions won't be independent)
 
     results_df = results_df.set_index("sid", drop=True)
-    results_df_labels = results_df.groupby(results_df.index).label.agg(
-        aggregate_node_labels
-    )
+    results_df_labels = results_df.groupby(results_df.index).label.agg(aggregate_node_labels)
 
     results_df = results_df[~results_df.index.duplicated(keep="first")]
     results_df.label = results_df_labels
 
-    save_df_with_timestamp(
-        results_df, data_dir, f"{example_name}.sampling", what="results"
-    )
+    save_df_with_timestamp(results_df, data_dir, f"{example_name}.sampling", what="results")
 
     return results_df
 
 
-def estimate_tree_coverage_based_on_collision_ratio(
-    collision_ratio: float, n_nodes: int
-) -> Optional[float]:
+def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_nodes: int) -> Optional[float]:
     """
     This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on collision ratio.
 
@@ -110,13 +100,11 @@ def process_and_save_sampling_results(
     n_results = len(results)
     n_unique_sids = len(results_df.index.unique())  # already deduplicated
     collision_ratio = n_results / n_unique_sids - 1
-    tree_cov = estimate_tree_coverage_based_on_collision_ratio(
-        collision_ratio, n_unique_sids
-    )
+    tree_cov = estimate_tree_coverage_based_on_collision_ratio(collision_ratio, n_unique_sids)
     tree_cov_str = f"{tree_cov * 100:.3f}%" if tree_cov else "unknown :("
     neg_label_share = (results_df.label == -3).sum() / len(results_df)
     logger.info(
-        f"GOT TREE SAMPLING RESULTS:\n\t"
+        "GOT TREE SAMPLING RESULTS:\n\t"
         + ",\n\t".join(
             [
                 f" {n_unique_sids} unique nodes",

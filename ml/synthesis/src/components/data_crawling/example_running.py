@@ -4,7 +4,7 @@ import os
 from asyncio import gather
 from contextlib import AsyncExitStack
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 from aiohttp import ClientSession
@@ -16,16 +16,9 @@ from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
 from components.data_crawling.nitta_running import NittaRunResult, run_nitta_server
-from components.data_crawling.sampling_processing import (
-    process_and_save_sampling_results,
-)
-from components.data_crawling.tree_processing import (
-    assemble_training_data_via_backpropagation_from_leaf,
-)
-from components.data_crawling.tree_retrieving import (
-    retrieve_random_descending_thread,
-    retrieve_tree_root,
-)
+from components.data_crawling.sampling_processing import process_and_save_sampling_results
+from components.data_crawling.tree_processing import assemble_training_data_via_backpropagation_from_leaf
+from components.data_crawling.tree_retrieving import retrieve_random_descending_thread, retrieve_tree_root
 from components.utils.tqdm_joblib import tqdm_joblib
 from consts import DATA_DIR
 
@@ -48,14 +41,10 @@ async def produce_data_for_example(
     run_example_and_sample_tree does not leak outside this function. It can be safely called straight from main().
     """
     # TODO: rename "example" to "target algorithm" everywhere?
-    logger.info(
-        f"Starting producing model input data from a target algorithm at {example}"
-    )
+    logger.info(f"Starting producing model input data from a target algorithm at {example}")
 
     if not example.exists():
-        logger.error(
-            f"Couldn't find a target algorithm description at '{example.absolute()}'."
-        )
+        logger.error(f"Couldn't find a target algorithm description at '{example.absolute()}'.")
         return None
 
     results: List[dict] = []
@@ -80,7 +69,8 @@ async def produce_data_for_example(
 
 
 def produce_data_for_examples_parallel(examples: List[Path], **runner_kwargs):
-    # TODO: parallelism is now supported "natively" by run_example_and_sample_tree and produce_data_for_examples, remove this
+    # TODO: parallelism is now supported "natively" by run_example_and_sample_tree and produce_data_for_examples,
+    #  so remove this
     def job(example: Path):
         return asyncio.run(produce_data_for_example(example, **runner_kwargs))
 
@@ -125,33 +115,29 @@ async def run_example_and_sample_tree(
 
     async with AsyncExitStack() as stack:
         nittas: List[NittaRunResult] = await gather(
-            *[
-                stack.enter_async_context(run_nitta_server(example, nitta_run_command))
-                for _ in range(n_nittas)
-            ]
+            *[stack.enter_async_context(run_nitta_server(example, nitta_run_command)) for _ in range(n_nittas)]
         )
         nitta_baseurls = list(await gather(*[nitta.get_base_url() for nitta in nittas]))
         session = await stack.enter_async_context(ClientSession())
 
-        logger.info(f"Retrieving tree root...")
+        logger.info("Retrieving tree root...")
         root = await retrieve_tree_root(nitta_baseurls[0], session)
 
         n_batches = n_samples // n_samples_per_batch + 1
 
         logger.info(
-            f"Sampling tree ({n_batches} batches * {n_samples_per_batch} = {n_samples} samples >> {n_workers} workers)..."
+            f"Sampling tree ({n_batches} batches * {n_samples_per_batch} = {n_samples} samples "
+            + f">> {n_workers} workers)..."
         )
 
-        tqdm_args = dict(total=n_samples, desc=f"Tree sampling", unit="samples")
+        tqdm_args: Dict = dict(total=n_samples, desc="Tree sampling", unit="samples")
 
         if n_workers > 1:
             with tqdm_joblib(n_samples_per_batch, **tqdm_args):
                 results_accum.extend(
                     sum(
                         Parallel(n_jobs=n_workers)(
-                            delayed(
-                                _retrieve_and_process_tree_with_sampling_remote_job
-                            )(
+                            delayed(_retrieve_and_process_tree_with_sampling_remote_job)(
                                 nitta_baseurl=nitta_baseurls[i % len(nitta_baseurls)],
                                 root=root,
                                 n_samples=n_samples_per_batch,
@@ -221,9 +207,7 @@ async def _retrieve_and_process_tree_with_sampling(
     """
     for batch_n in range(n_samples // n_samples_per_batch + 1):
         samples_left = (
-            n_samples_per_batch
-            if batch_n < n_samples // n_samples_per_batch
-            else n_samples % n_samples_per_batch
+            n_samples_per_batch if batch_n < n_samples // n_samples_per_batch else n_samples % n_samples_per_batch
         )
         await asyncio.gather(
             *[
@@ -252,10 +236,11 @@ async def _retrieve_and_process_single_tree_sample(
     metrics_collector: LeafMetricsCollector,
     example_name: Optional[str] = None,
 ):
-    leaf = await retrieve_random_descending_thread(
-        root, nitta_baseurl, session, ignore_dirty_tree=True
-    )
+    leaf = await retrieve_random_descending_thread(root, nitta_baseurl, session, ignore_dirty_tree=True)
     metrics_collector.collect_leaf_node(leaf)
     return assemble_training_data_via_backpropagation_from_leaf(
-        results_accum, leaf, metrics_collector, example_name=example_name
+        results_accum,
+        leaf,
+        metrics_collector,
+        example_name=example_name,
     )

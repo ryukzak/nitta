@@ -44,14 +44,10 @@ if __name__ == "__main__":
         preprocessed = preprocess_train_data_df(training_data)
         train_ds, val_ds = create_datasets(preprocessed)
 
-        model, meta = train_and_save_baseline_model(
-            train_ds, val_ds, output_model_name="production"
-        )
+        model, meta = train_and_save_baseline_model(train_ds, val_ds, output_model_name="production")
 
     # TODO: use TF Asset to save metadata
     with (model_dir / "description.txt").open("w") as f:
-        f.write(
-            f"{'Manually' if is_manual else 'Automatically'} trained model for synthesis \n\n"
-        )
+        f.write(f"{'Manually' if is_manual else 'Automatically'} trained model for synthesis \n\n")
         f.write(f"Training MAE: {meta.train_mae:.3f}\n")
         f.write(f"Validation MAE: {meta.validation_mae:.3f}\n")

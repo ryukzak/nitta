@@ -1,6 +1,5 @@
 from glob import glob
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from pandas import DataFrame
