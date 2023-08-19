@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import pandas as pd
 from pandas import DataFrame
 
@@ -18,7 +16,7 @@ def _map_categorical(df, c):
     return pd.concat([df.drop([c.name], axis=1), pd.get_dummies(c, prefix=c.name)], axis=1)
 
 
-def preprocess_train_data_df(df_orig: DataFrame) -> DataFrame:
+def preprocess_input_data_df(df_orig: DataFrame) -> DataFrame:
     df: DataFrame = df_orig.copy()
 
     for bool_column in [
@@ -34,43 +32,16 @@ def preprocess_train_data_df(df_orig: DataFrame) -> DataFrame:
 
     df = _map_categorical(df, df.tag)
     df = df.drop(
+        # drop columns that must be excluded at all times
         ["pWave", "example", "sid", "old_score", "is_terminal", "pRefactoringType"],
         axis="columns",
         errors="ignore",
     )
-    df = df_to_model_columns(df, label=True)
-    df = df.fillna(0)
+    df = df.fillna(0)  # fill NaNs in columns (mostly OHE flags) with 0
     return df
 
 
-# TODO: move that to metainfo of the model, find a way to make input building model-dependent
-#  (pickled module? function name?)
-_BASELINE_MODEL_COLUMNS = [
-    "alt_bindings",
-    "alt_refactorings",
-    "alt_dataflows",
-    "pAllowDataFlow",
-    "pAlternative",
-    "pCritical",
-    "pNumberOfBindedFunctions",
-    "pOutputNumber",
-    "pPercentOfBindedInputs",
-    "pPossibleDeadlock",
-    "pRestless",
-    "pFirstWaveOfTargetUse",
-    "pNotTransferableInputs",
-    "pRestrictedTime",
-    "pWaitTime",
-    "tag_BindDecisionView",
-    "tag_BreakLoopView",
-    "tag_DataflowDecisionView",
-]
-
-
-def df_to_model_columns(df: DataFrame, model_columns: Optional[list[str]] = None, label: bool = False) -> DataFrame:
-    if not model_columns:
-        model_columns = _BASELINE_MODEL_COLUMNS + (["label"] if label else [])
-
-    df = pd.concat([pd.DataFrame(columns=model_columns), df])[model_columns]  # reset columns, fill data if possible
-    df = df.fillna(0)  # fill NaNs in columns (mostly OHE flags) with 0
+def df_to_model_columns(df: DataFrame, input_cols: list[str]) -> DataFrame:
+    df = pd.concat([pd.DataFrame(columns=input_cols), df])[input_cols]  # reset columns, fill data if possible
+    df = df.fillna(0)  # fill NaNs that might've just appeared with 0s
     return df

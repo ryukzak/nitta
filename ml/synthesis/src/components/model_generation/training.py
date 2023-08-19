@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 def train_and_save_baseline_model(
     train_ds: Dataset,
     val_ds: Dataset,
+    input_cols: List[str],
     fitting_kwargs: Optional[dict] = None,
     output_model_name: Optional[str] = None,
     models_dir: Path = MODELS_DIR,
@@ -43,10 +44,10 @@ def train_and_save_baseline_model(
     history = model.history.history
 
     # TODO: proper model evaluation on an independent dataset
-    # TODO: fix saving input columns
     metainfo = ModelMetainfo(
         train_mae=history["mae"][-1],
         validation_mae=history["val_mae"][-1],
+        input_columns=input_cols,
     )
 
     if not output_model_name:

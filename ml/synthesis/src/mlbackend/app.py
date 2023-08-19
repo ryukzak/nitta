@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 from components.data_processing.feature_engineering import (
     df_to_model_columns,
-    preprocess_train_data_df,
+    preprocess_input_data_df,
 )
 from mlbackend.dtos import (
     ModelInfo,
@@ -64,8 +64,8 @@ def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[Po
             )
 
         df = pd.DataFrame([nitta_node_to_df_dict(target_node, siblings=all_siblings) for target_node in target_nodes])
-        df = preprocess_train_data_df(df)
-        df = df_to_model_columns(df, model_columns=meta.input_columns)
+        df = preprocess_input_data_df(df)
+        df = df_to_model_columns(df, meta.input_columns)
         scores.append(model.predict(df.values).reshape(-1).tolist())
 
     return Response(

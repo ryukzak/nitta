@@ -17,7 +17,7 @@ from components.data_crawling.tree_retrieving import (
     retrieve_tree_root,
 )
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
-from components.data_processing.feature_engineering import preprocess_train_data_df
+from components.data_processing.feature_engineering import preprocess_input_data_df
 from components.model_generation.training import train_and_save_baseline_model
 from consts import EXAMPLES_DIR, EnvVarNames
 
@@ -33,15 +33,16 @@ async def test_smoke():
 
             await produce_data_for_example(EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir)
             df = load_all_existing_training_data(tmp_data_dir)
-            assert df[TARGET_COLUMNS].dropna().size > 0, "Labels weren't calculated"
+            assert df[TARGET_COLUMNS].dropna().size > 0, "labels weren't calculated"
 
-            pdf = preprocess_train_data_df(df)
-            tds, vds = create_datasets(pdf)
+            pdf = preprocess_input_data_df(df)
+            tds, vds, input_cols = create_datasets(pdf)
 
             model_name = "test_model"
             train_and_save_baseline_model(
                 tds,
                 vds,
+                input_cols,
                 fitting_kwargs=dict(
                     epochs=1,
                     steps_per_epoch=1,

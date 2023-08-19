@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from components.common.customized_pydantic_model import CustomizedBaseModel
 
@@ -6,4 +6,4 @@ from components.common.customized_pydantic_model import CustomizedBaseModel
 class ModelMetainfo(CustomizedBaseModel):
     train_mae: float
     validation_mae: float
-    input_columns: Optional[List[str]] = None
+    input_columns: List[str]
