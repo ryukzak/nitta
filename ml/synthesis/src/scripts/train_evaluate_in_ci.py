@@ -5,7 +5,7 @@ import asyncio
 from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import configure_logging, get_logger
 from components.common.model_loading import load_model_with_metainfo
-from components.data_crawling.example_running import produce_data_for_many_examples
+from components.data_crawling.data_crawling import crawl_data_from_many_examples
 from components.data_processing.dataset_creation import create_datasets
 from components.data_processing.feature_engineering import preprocess_input_data_df
 from components.model_generation.training import train_and_save_baseline_model
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 if __name__ == "__main__":
     configure_logging()
 
-    asyncio.run(produce_data_for_many_examples())
+    asyncio.run(crawl_data_from_many_examples())
 
     model_dir = MODELS_DIR / "production"
     try:

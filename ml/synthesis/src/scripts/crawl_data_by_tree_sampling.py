@@ -2,13 +2,13 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from components.common.logging import configure_logging, get_logger
-from components.data_crawling.example_running import (
+from components.data_crawling.data_crawling import crawl_data_from_example
+from components.data_crawling.tree_sampling import (
     DEFAULT_N_NITTAS,
     DEFAULT_N_SAMPLES,
     DEFAULT_N_SAMPLES_PER_BATCH,
     DEFAULT_N_WORKERS,
     DEFAULT_NITTA_RUN_COMMAND,
-    produce_data_for_example,
 )
 from components.utils.asyncio_run_interrupt_wrapper import asyncio_run_safe
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         )
 
         asyncio_run_safe(
-            produce_data_for_example(
+            crawl_data_from_example(
                 file_to_run,
                 n_samples=args.n_samples,
                 n_samples_per_batch=args.n_samples_per_batch,

@@ -7,7 +7,8 @@ from aiohttp import ClientSession
 from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import get_logger
 from components.common.model_loading import load_model_with_metainfo
-from components.data_crawling.example_running import produce_data_for_example, run_nitta_server
+from components.data_crawling.data_crawling import crawl_data_from_example
+from components.data_crawling.nitta_running import run_nitta_server
 from components.data_crawling.tree_retrieving import retrieve_children, retrieve_tree_root
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
 from components.data_processing.feature_engineering import preprocess_input_data_df
@@ -25,7 +26,7 @@ async def test_smoke():
             tmp_data_dir = Path(tmp_data_dir_name)
             tmp_models_dir = Path(tmp_model_dir_name)
 
-            await produce_data_for_example(EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir)
+            await crawl_data_from_example(EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir)
             df = load_all_existing_training_data(tmp_data_dir)
             assert df[TARGET_COLUMNS].dropna().size > 0, "labels weren't calculated"
 
