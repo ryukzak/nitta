@@ -1,10 +1,11 @@
+"""
+Copied from https://github.com/louisabraham/tqdm_joblib/tree/d690624655f8e8b7628a39a30f330a7630915c73
+and modified due to the lack of required pbar_update_multiplier functionality in the original.
+"""
 import contextlib
 
 import joblib
 from tqdm.autonotebook import tqdm
-
-# copied from https://github.com/louisabraham/tqdm_joblib/tree/d690624655f8e8b7628a39a30f330a7630915c73
-# and modified due to the lack of required pbar_update_multiplier functionality in the original
 
 
 @contextlib.contextmanager

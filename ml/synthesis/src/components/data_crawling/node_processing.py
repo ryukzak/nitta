@@ -73,6 +73,7 @@ def get_subtree_size(node: NittaNodeInTree) -> int:
     return result + 1
 
 
+# TODO: see what's going on here
 def get_leaf_metrics(node: NittaNode):
     return node.duration, get_depth(node.sid)
 

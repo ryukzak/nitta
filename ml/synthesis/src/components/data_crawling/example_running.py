@@ -116,6 +116,9 @@ async def produce_data_for_many_examples(crawl_config: Optional[CrawlConfig] = N
     save_dicts_list_to_csv_with_timestamp(collected_stats, DATA_DIR, "stats", what="crawling summary")
 
 
+# TODO: split modules in two (produce + run)
+
+
 async def run_example_and_sample_tree(
     example: Path,
     n_samples: int = DEFAULT_N_SAMPLES,

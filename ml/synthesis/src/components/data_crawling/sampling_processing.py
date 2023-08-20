@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from math import exp, log
 from pathlib import Path
 from typing import List, Optional
 
@@ -8,82 +7,10 @@ import pandas as pd
 from components.common.logging import get_logger
 from components.common.saving import save_df_with_timestamp
 from components.data_crawling.node_label_computation import aggregate_node_labels
+from components.data_crawling.tree_sampling_coverage_estimation import estimate_tree_coverage_based_on_collision_ratio
 from consts import DATA_DIR
 
 logger = get_logger(__name__)
-
-
-def build_df_and_save_sampling_results(results: List[dict], example_name: str, data_dir: Path) -> pd.DataFrame:
-    """
-    Builds a DataFrame from the sampling results and saves it to the `data_dir`.
-    """
-    logger.info(f"Building a DataFrame from sampling results ({len(results)} entries)...")
-
-    results_df = pd.DataFrame(results)
-
-    # there may be significant duplication of data in results at this point.
-    # clashing nodes differ only in labels.
-    # any way to improve this? seems extremely difficult (parallel executions won't be independent)
-
-    results_df = results_df.set_index("sid", drop=True)
-    results_df_labels = results_df.groupby(results_df.index).label.agg(aggregate_node_labels)
-
-    results_df = results_df[~results_df.index.duplicated(keep="first")]
-    results_df.label = results_df_labels
-
-    save_df_with_timestamp(results_df, data_dir, f"{example_name}.sampling", what="results")
-
-    return results_df
-
-
-def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_nodes: int) -> Optional[float]:
-    """
-    This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on collision ratio.
-
-    It's based on the following hypotheses:
-        1) tree coverage is in pure functional (mathematical) dependency on collision ratio
-        2) this dependency is tree-independent and is explained purely by random descent algorithm definition,
-           probability theory and statistics.
-
-    All approximation functions and coefficients are derived empirically from a set of sampling runs.
-    All formulas are arbitrarily chosen to mathematically describe empirical data as close as my math skills allow.
-
-    Error is estimated to be up to 10-15%, but it may depend on the tree peculiarities.
-
-    UPD: found not suitable for large trees (leading to very small cron value) :(
-    More data and runs needed, but I'm out of time.
-    """
-    # collision ratio in percents
-    cr = collision_ratio * 100
-    n = n_nodes  # number of unique nodes sampled from the tree
-    cron = cr / n  # short for "cr over n". like cr, but independent of n.
-
-    if cron < 0.02:
-        return None
-
-    # nr - tree coverage, i.e. number of nodes sampled from the tree in this run
-
-    # goal - find "approx(cron*nr)", i.e. approximate value of cron*nr
-    # empirical data shows that approximation function heavily depends on whether cr > 100% or not
-
-    # approximation function for cr < 100%, found empirically
-    approx_lt100 = -0.019 * log(cron) - 0.0394
-
-    # approximation function for cr > 100%, found empirically
-    approx_gt100 = 1.0225 * cron - 0.0288
-
-    # we will blend these two functions with a sigmoid
-    blender_width_coef = 0.02  # found empirically
-    blender_center = 100.0
-    blender_value = 1 / (1 + exp(-blender_width_coef * (cr - blender_center)))
-
-    # blend the two approximation functions (as sigmoid goes 0..1, we go lt100..gt100)
-    approx = approx_lt100 * (1 - blender_value) + approx_gt100 * blender_value
-
-    # approx = cron * nr
-    approx_nr = max(0, min(1, approx / cron))
-
-    return approx_nr
 
 
 @dataclass
@@ -110,7 +37,7 @@ def process_and_save_sampling_results(
         logger.warning(f"No results to process (example {example.name!r}).")
         return None
 
-    results_df = build_df_and_save_sampling_results(results, example.name, data_dir)
+    results_df = _build_df_and_save_sampling_results(results, example.name, data_dir)
 
     n_results = len(results)
     n_unique_sids = len(results_df.index.unique())  # already deduplicated
@@ -141,3 +68,26 @@ def process_and_save_sampling_results(
             neg_label_share=neg_label_share,
         ),
     )
+
+
+def _build_df_and_save_sampling_results(results: List[dict], example_name: str, data_dir: Path) -> pd.DataFrame:
+    """
+    Builds a DataFrame from the sampling results and saves it to the `data_dir`.
+    """
+    logger.info(f"Building a DataFrame from sampling results ({len(results)} entries)...")
+
+    results_df = pd.DataFrame(results)
+
+    # there may be significant duplication of data in results at this point.
+    # clashing nodes differ only in labels.
+    # any way to improve this? seems extremely difficult (parallel executions won't be independent)
+
+    results_df = results_df.set_index("sid", drop=True)
+    results_df_labels = results_df.groupby(results_df.index).label.agg(aggregate_node_labels)
+
+    results_df = results_df[~results_df.index.duplicated(keep="first")]
+    results_df.label = results_df_labels
+
+    save_df_with_timestamp(results_df, data_dir, f"{example_name}.sampling", what="results")
+
+    return results_df
