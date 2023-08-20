@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
-from components.common.nitta_node import NittaNode, NittaNodeInTree
-from components.utils.cache import cached
+from components.common.nitta_node import NittaNode
 
 
 def _extract_params_dict(node: NittaNode) -> dict:
@@ -53,42 +52,9 @@ def nitta_node_to_df_dict(
     )
 
 
-class UnknownSubtreeSize(RuntimeError):
-    pass
-
-
-@cached()
-def get_subtree_size(node: NittaNodeInTree) -> int:
-    if node.children is None:
-        raise UnknownSubtreeSize()
-
-    result = 0
-
-    for child in node.children:
-        child_size = get_subtree_size(child)
-        if child_size is None:
-            raise UnknownSubtreeSize()
-        result += child_size
-
-    return result + 1
-
-
-# TODO: see what's going on here
 def get_leaf_metrics(node: NittaNode):
     return node.duration, get_depth(node.sid)
 
 
 def get_depth(sid: str) -> int:
     return sid.count("-") if sid != "-" else 0
-
-
-# def subtree_leafs_metrics(node: NittaNode) -> Optional[Deque[Tuple[int, int]]]:
-#     """ :returns: deque(tuple(duration, depth)) or None if node is a failed leaf """
-#     if node.is_terminal:
-#         if not node.is_finish:
-#             return None
-#         return deque(((node.duration, get_depth(node)),))
-#     else:
-#         children_metrics = \
-#             (child.subtree_leafs_metrics for child in node.children if child.subtree_leafs_metrics is not None)
-#         return sum(children_metrics, deque())
