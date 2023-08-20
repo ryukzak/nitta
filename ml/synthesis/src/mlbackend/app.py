@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from starlette.responses import HTMLResponse
 
-from components.data_crawling.node_processing import nitta_node_to_df_dict
+from components.data_crawling.node.node_converting import nitta_node_to_df_dict
 from components.data_processing.feature_engineering import df_to_model_columns, preprocess_input_data_df
 from mlbackend.dtos import ModelInfo, PostScoreRequestBody, PostScoreResponseData, Response
 from mlbackend.models_store import ModelNotFoundError, models

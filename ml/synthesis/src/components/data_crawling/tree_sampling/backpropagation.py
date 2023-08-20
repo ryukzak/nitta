@@ -3,8 +3,8 @@ from __future__ import annotations
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetrics, LeafMetricsCollector
-from components.data_crawling.node_label_computation import compute_node_label
-from components.data_crawling.node_processing import nitta_node_to_df_dict
+from components.data_crawling.node.node_converting import nitta_node_to_df_dict
+from components.data_crawling.node.node_label_computation import compute_node_label
 
 logger = get_logger(__name__)
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from components.common.logging import configure_logging, get_logger
 from components.data_crawling.data_crawling import crawl_data_from_example
-from components.data_crawling.tree_sampling import (
+from components.data_crawling.tree_sampling.tree_sampling import (
     DEFAULT_N_NITTAS,
     DEFAULT_N_SAMPLES,
     DEFAULT_N_SAMPLES_PER_BATCH,

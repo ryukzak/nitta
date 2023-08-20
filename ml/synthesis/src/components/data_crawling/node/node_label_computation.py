@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from components.common.nitta_node import NittaNodeInTree
+from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
-from components.data_crawling.node_processing import get_leaf_metrics
 
 _METRICS_WEIGHTS = pd.Series(dict(duration=-1, depth=-0.1))
 
@@ -40,3 +39,11 @@ def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsColl
     normalized_metrics = (metrics - metrics_means) / (metrics_stddevs + 1e-5)
 
     return normalized_metrics.dot(_METRICS_WEIGHTS) + _SUCCESSFUL_SYNTHESIS_LEAF_LABEL_SHIFT
+
+
+def _get_node_depth(sid: str) -> int:
+    return sid.count("-") if sid != "-" else 0
+
+
+def get_leaf_metrics(node: NittaNode):
+    return node.duration, _get_node_depth(node.sid)

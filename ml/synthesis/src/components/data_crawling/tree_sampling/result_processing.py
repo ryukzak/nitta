@@ -7,8 +7,8 @@ import pandas as pd
 
 from components.common.logging import get_logger
 from components.common.saving import save_df_with_timestamp
-from components.data_crawling.node_label_computation import aggregate_node_labels
-from components.data_crawling.tree_sampling_coverage_estimation import estimate_tree_coverage_based_on_collision_ratio
+from components.data_crawling.node.node_label_computation import aggregate_node_labels
+from components.data_crawling.tree_sampling.coverage_estimation import estimate_tree_coverage_based_on_collision_ratio
 from consts import DATA_DIR
 
 logger = get_logger(__name__)

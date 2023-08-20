@@ -1,5 +1,5 @@
 from components.common.nitta_node import NittaNodeInTree
-from components.data_crawling.node_processing import nitta_node_to_df_dict
+from components.data_crawling.node.node_converting import nitta_node_to_df_dict
 
 
 def test_node_to_raw_dict(test_root: NittaNodeInTree, test_root_dict):

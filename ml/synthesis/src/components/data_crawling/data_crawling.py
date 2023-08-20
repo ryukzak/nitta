@@ -7,8 +7,8 @@ from typing import Dict
 
 from components.common.logging import get_logger
 from components.common.saving import save_dicts_list_to_csv_with_timestamp
-from components.data_crawling.sampling_processing import SamplingResult, process_and_save_sampling_results
-from components.data_crawling.tree_sampling import run_synthesis_tree_sampling
+from components.data_crawling.tree_sampling.result_processing import SamplingResult, process_and_save_sampling_results
+from components.data_crawling.tree_sampling.tree_sampling import run_synthesis_tree_sampling
 from consts import DATA_DIR, EXAMPLES_DIR
 
 logger = get_logger(__name__)

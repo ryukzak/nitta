@@ -8,8 +8,8 @@ from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import get_logger
 from components.common.model_loading import load_model_with_metainfo
 from components.data_crawling.data_crawling import crawl_data_from_example
-from components.data_crawling.nitta_running import run_nitta_server
-from components.data_crawling.tree_retrieving import retrieve_children, retrieve_tree_root
+from components.data_crawling.nitta.nitta_running import run_nitta_server
+from components.data_crawling.nitta.tree_retrieving import retrieve_children, retrieve_tree_root
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
 from components.data_processing.feature_engineering import preprocess_input_data_df
 from components.model_generation.training import train_and_save_baseline_model

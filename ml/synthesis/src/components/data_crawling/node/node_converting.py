@@ -5,6 +5,22 @@ from typing import Iterable
 from components.common.nitta_node import NittaNode
 
 
+def nitta_node_to_df_dict(
+    node: NittaNode,
+    siblings: Iterable[NittaNode],
+    example: str | None = None,
+) -> dict:
+    return dict(
+        example=example,
+        sid=node.sid,
+        tag=node.decision_tag,
+        old_score=node.score,
+        is_terminal=node.is_terminal,
+        **_extract_alternative_siblings_dict(node, siblings),
+        **_extract_params_dict(node),
+    )
+
+
 def _extract_params_dict(node: NittaNode) -> dict:
     if node.decision_tag in ["BindDecisionView", "DataflowDecisionView"]:
         assert isinstance(node.parameters, dict), "parameters must be a dict for Bind and Dataflow decisions"
@@ -35,27 +51,3 @@ def _extract_alternative_siblings_dict(node: NittaNode, siblings: Iterable[Nitta
             refactorings += 1
 
     return dict(alt_bindings=bindings, alt_refactorings=refactorings, alt_dataflows=dataflows)
-
-
-def nitta_node_to_df_dict(
-    node: NittaNode,
-    siblings: Iterable[NittaNode],
-    example: str | None = None,
-) -> dict:
-    return dict(
-        example=example,
-        sid=node.sid,
-        tag=node.decision_tag,
-        old_score=node.score,
-        is_terminal=node.is_terminal,
-        **_extract_alternative_siblings_dict(node, siblings),
-        **_extract_params_dict(node),
-    )
-
-
-def get_leaf_metrics(node: NittaNode):
-    return node.duration, get_depth(node.sid)
-
-
-def get_depth(sid: str) -> int:
-    return sid.count("-") if sid != "-" else 0

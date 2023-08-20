@@ -4,7 +4,7 @@ import numpy as np
 
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNode
-from components.data_crawling.node_processing import get_leaf_metrics
+from components.data_crawling.node.node_label_computation import get_leaf_metrics
 
 logger = get_logger(__name__)
 

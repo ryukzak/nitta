@@ -14,9 +14,9 @@ from tqdm.std import tqdm as tqdm_instance
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
 from components.data_crawling.leaf_metrics_collector import LeafMetricsCollector
-from components.data_crawling.nitta_running import NittaRunResult, run_nitta_server
-from components.data_crawling.tree_processing import assemble_training_data_via_backpropagation_from_leaf
-from components.data_crawling.tree_retrieving import retrieve_random_descending_thread, retrieve_tree_root
+from components.data_crawling.nitta.nitta_running import NittaRunResult, run_nitta_server
+from components.data_crawling.nitta.tree_retrieving import retrieve_random_descending_thread, retrieve_tree_root
+from components.data_crawling.tree_sampling.backpropagation import assemble_training_data_via_backpropagation_from_leaf
 from components.utils.tqdm_joblib import tqdm_joblib
 
 logger = get_logger(__name__)

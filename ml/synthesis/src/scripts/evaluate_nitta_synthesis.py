@@ -30,7 +30,7 @@ from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
 from components.common.saving import save_dicts_list_to_csv_with_timestamp
-from components.data_crawling.nitta_running import run_nitta_server
+from components.data_crawling.nitta.nitta_running import run_nitta_server
 from consts import EXAMPLES_DIR
 
 logger = get_logger(__name__)
