@@ -10,6 +10,9 @@ logger = get_logger(__name__)
 
 TARGET_COLUMNS = ["label"]
 
+_DEFAULT_VAL_DS_SPLIT = 0.2
+_MAX_DEFAULT_VAL_DS_SIZE = 100_000
+
 
 def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False):
     df = df.copy()
@@ -35,9 +38,11 @@ def create_datasets(df: pd.DataFrame, val_df: Optional[pd.DataFrame] = None) -> 
         train_df = cast(pd.DataFrame, df.sample(frac=1))
         val_df = cast(pd.DataFrame, val_df.sample(frac=1))
     else:
-        # TODO: if we have lots of training data, len(val_ds) gets large and slows down the training,
-        #  as the same val_ds should be evaluated fully after each epoch
-        train_df, val_df = train_test_split(df.sample(frac=1), test_size=0.2)
+        # If we have lots of training data, a fixed split (20%, for ex.) for val_ds results in a too big len(val_ds).
+        # It slows down the training, as after every epoch the model should be evaluated on a full val_ds.
+        # Thus, we limit the split so that _MAX_DEFAULT_VAL_DS_SIZE is not exceeded.
+        val_ds_split = min(_DEFAULT_VAL_DS_SPLIT, _MAX_DEFAULT_VAL_DS_SIZE / len(df))
+        train_df, val_df = train_test_split(df.sample(frac=1), test_size=val_ds_split)
 
     n = len(df)
     logger.info(f"N:\t{n}")

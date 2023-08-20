@@ -39,7 +39,7 @@ def train_and_save_baseline_model(
     try:
         model.fit(x=train_ds, validation_data=val_ds, **effective_fitting_kwargs)
     except KeyboardInterrupt:
-        logger.info("Training interrupted by user, saving as is")
+        logger.info("\n\n=== Training interrupted by user, saving the model in a current state ===")
 
     history = model.history.history
 
