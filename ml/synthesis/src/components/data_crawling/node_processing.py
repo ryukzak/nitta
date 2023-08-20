@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable
 
 from components.common.nitta_node import NittaNode
 
@@ -12,11 +12,12 @@ def _extract_params_dict(node: NittaNode) -> dict:
         if node.decision_tag == "DataflowDecisionView":
             result["pNotTransferableInputs"] = sum(result["pNotTransferableInputs"])
         return result
-    elif node.decision_tag == "RootView":
+
+    if node.decision_tag == "RootView":
         return {}
-    else:
-        # refactorings, which have arbitrary decision tags
-        return {"pRefactoringType": node.decision_tag}
+
+    # only refactorings left, which have arbitrary decision tags
+    return {"pRefactoringType": node.decision_tag}
 
 
 def _extract_alternative_siblings_dict(node: NittaNode, siblings: Iterable[NittaNode]) -> dict:
@@ -39,7 +40,7 @@ def _extract_alternative_siblings_dict(node: NittaNode, siblings: Iterable[Nitta
 def nitta_node_to_df_dict(
     node: NittaNode,
     siblings: Iterable[NittaNode],
-    example: Optional[str] = None,
+    example: str | None = None,
 ) -> dict:
     return dict(
         example=example,

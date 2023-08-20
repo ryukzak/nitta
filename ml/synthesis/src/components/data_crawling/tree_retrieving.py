@@ -1,4 +1,6 @@
-from typing import Type, TypeVar
+from __future__ import annotations
+
+from typing import TypeVar
 
 import numpy as np
 import orjson
@@ -7,10 +9,8 @@ from aiohttp import ClientSession
 from components.common.customized_pydantic_model import CustomizedBaseModel
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNode, NittaNodeInTree
-from components.common.utils import debounce
 
 logger = get_logger(__name__)
-logger_debug_debounced = debounce(1)(logger.debug)
 
 
 # there used to be a method + dto to retrieve a /treeInfo, but it's wasn't used, so it got removed
@@ -31,8 +31,6 @@ async def retrieve_children(
     async with session.get(f"{nitta_baseurl}/node/{node.sid}/subForest") as resp:
         children_raw = await resp.json(loads=orjson.loads)
 
-    logger_debug_debounced(f"{len(children_raw)} children from {node.sid}")
-
     node.children = []
 
     for child_raw in children_raw:
@@ -48,7 +46,7 @@ async def _do_nitta_request(
     nitta_baseurl: str,
     session: ClientSession,
     path: str,
-    response_type: Type[TResponse],
+    response_type: type[TResponse],
     method: str = "GET",
 ) -> TResponse:
     async with session.request(method, nitta_baseurl + path) as resp:

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import sys
 from asyncio.subprocess import Process
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Tuple
+from typing import AsyncGenerator
 
 from aiohttp import ClientSession
 
@@ -13,7 +15,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def run_ml_backend() -> AsyncGenerator[Tuple[Process, str], None]:
+async def run_ml_backend() -> AsyncGenerator[tuple[Process, str], None]:
     proc = None
     try:
         executable = sys.executable  # current Python interpreter

@@ -88,12 +88,12 @@ if __name__ == "__main__":
             # "examples/spi1.lua",
             # "examples/double_receive.lua",
             args.input_file,
-        ][0]
+        ][0],
     )
 
     if args.n_samples == DEFAULT_N_SAMPLES:
         logger.info(
-            "Sampling till a default number of samples is gathered. Adjust to synthesis tree size with -n N_SAMPLES!"
+            "Sampling till a default number of samples is gathered. Adjust to synthesis tree size with -n N_SAMPLES!",
         )
 
         asyncio_run_safe(
@@ -104,5 +104,5 @@ if __name__ == "__main__":
                 n_workers=args.n_workers,
                 n_nittas=args.n_nittas,
                 nitta_run_command=args.nitta_run_command,
-            )
+            ),
         )

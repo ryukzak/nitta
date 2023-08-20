@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from math import exp, log
-from typing import Optional
 
 
-def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_nodes: int) -> Optional[float]:
+def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_nodes: int) -> float | None:
     """
     This is a bit sketchy yet state-of-the-art ad hoc heuristic estimation of tree coverage based on collision ratio.
 
@@ -46,7 +47,7 @@ def estimate_tree_coverage_based_on_collision_ratio(collision_ratio: float, n_no
     # blend the two approximation functions (as sigmoid goes 0..1, we go lt100..gt100)
     approx = approx_lt100 * (1 - blender_value) + approx_gt100 * blender_value
 
-    # approx = cron * nr
+    # (approx = cron * nr)
     approx_nr = max(0, min(1, approx / cron))
 
     return approx_nr

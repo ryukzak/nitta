@@ -11,7 +11,7 @@ class EnvVarNames:
     MODELS_DIR = "NITTA_ML_SYNTHESIS_MODELS_DIR"
 
 
-ROOT_DIR = Path(".")
+ROOT_DIR = Path()
 EXAMPLES_DIR = Path("examples")
 
 ML_SYNTHESIS_DIR = Path("ml/synthesis")

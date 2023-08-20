@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import csv
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from pandas import DataFrame
@@ -19,9 +20,9 @@ def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
     logger.info("Loading all existing training data.")
     logger.info(f"Found a total of {len(all_csvs)} CSVs in {data_dir}, checking for training data...")
 
-    found_csvs: List[Path] = []
+    found_csvs: list[Path] = []
     for csv_path in all_csvs:
-        with open(csv_path, "r") as f:
+        with csv_path.open("r") as f:
             if _target_columns_set.issubset(set(next(csv.reader(f)))):
                 found_csvs.append(csv_path)
 

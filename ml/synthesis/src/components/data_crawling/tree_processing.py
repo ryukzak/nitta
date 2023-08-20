@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from components.common.logging import get_logger
 from components.common.nitta_node import NittaNodeInTree
-from components.data_crawling.leaf_metrics_collector import (
-    LeafMetrics,
-    LeafMetricsCollector,
-)
+from components.data_crawling.leaf_metrics_collector import LeafMetrics, LeafMetricsCollector
 from components.data_crawling.node_label_computation import compute_node_label
 from components.data_crawling.node_processing import nitta_node_to_df_dict
 
@@ -46,10 +41,10 @@ _PART_OF_LEAF_LABEL_IN_ROOT_LABEL = 0.5
 
 
 def assemble_training_data_via_backpropagation_from_leaf(
-    results_accum: List[dict],
+    results_accum: list[dict],
     leaf: NittaNodeInTree,
     metrics_collector: LeafMetricsCollector,
-    example_name: Optional[str] = None,
+    example_name: str | None = None,
 ):
     label = compute_node_label(leaf, metrics_collector)
 

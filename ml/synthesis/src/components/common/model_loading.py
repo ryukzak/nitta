@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Tuple
 
 from tensorflow.python.keras import Model
 from tensorflow.python.keras.models import load_model  # pyright: ignore[reportMissingImports]
@@ -11,7 +12,7 @@ from components.model_generation.model_metainfo import ModelMetainfo
 logger = get_logger(__name__)
 
 
-def load_model_with_metainfo(model_dir: Path, not_for_training: bool = True) -> Tuple[Model, ModelMetainfo]:
+def load_model_with_metainfo(model_dir: Path, not_for_training: bool = True) -> tuple[Model, ModelMetainfo]:
     logger.debug(f"Loading model from {model_dir}...")
 
     model = load_model(

@@ -16,8 +16,8 @@ def _map_categorical(df, c):
     return pd.concat([df.drop([c.name], axis=1), pd.get_dummies(c, prefix=c.name)], axis=1)
 
 
-def preprocess_input_data_df(df_orig: DataFrame) -> DataFrame:
-    df: DataFrame = df_orig.copy()
+def preprocess_input_data_df(input_df: DataFrame) -> DataFrame:
+    df: DataFrame = input_df.copy()
 
     for bool_column in [
         "is_terminal",

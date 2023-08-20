@@ -1,4 +1,6 @@
-from typing import List, Optional, Tuple, cast
+from __future__ import annotations
+
+from typing import cast
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -19,18 +21,18 @@ def _df_to_dataset(df, shuffle=True, batch_size=16, repeat=False):
 
     # split df into features and labels
     targets = df[TARGET_COLUMNS].copy()
-    df.drop(TARGET_COLUMNS, axis=1, inplace=True)
+    df = df.drop(TARGET_COLUMNS, axis=1)
     inputs = df
-    input_cols = inputs.columns.values.tolist()
+    input_cols = inputs.columns.tolist()
 
-    ds = Dataset.from_tensor_slices((inputs.values, targets.values))
+    ds = Dataset.from_tensor_slices((inputs.to_numpy(), targets.to_numpy()))
     ds = ds.shuffle(buffer_size=10000) if shuffle else ds
     ds = ds.batch(batch_size) if batch_size else ds
     ds = ds.repeat() if repeat else ds
     return ds, input_cols
 
 
-def create_datasets(df: pd.DataFrame, val_df: Optional[pd.DataFrame] = None) -> Tuple[Dataset, Dataset, List[str]]:
+def create_datasets(df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> tuple[Dataset, Dataset, list[str]]:
     # create training and evaluation datasets
     if val_df is not None:
         # making mypy happy with manual casts, pandas' typings are suboptimal here?

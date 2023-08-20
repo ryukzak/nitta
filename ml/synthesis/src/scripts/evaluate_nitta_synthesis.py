@@ -8,6 +8,8 @@ By design, this script can be run WITHOUT any non-stdlib dependencies, so it doe
 a compatible Python (3.8+ should be fine). This enables evaluating NITTA without full Python-ML stack installed. So be
 careful when adding additional imports here or in modules that this script depends on.
 """
+from __future__ import annotations
+
 import asyncio
 import itertools
 import json
@@ -23,7 +25,7 @@ from functools import reduce
 from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
-from typing import Callable, Dict, Iterable, List, Literal, Tuple, Union
+from typing import Callable, Iterable, Iterator, Literal, Union
 from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
@@ -44,9 +46,9 @@ class EvaluationConfig:
     nitta_run_command: str
     nitta_run_timeout_s: int
     measurement_tries: int
-    examples: Union[List[str], Literal["all"]]
+    examples: list[str] | Literal["all"]
     constant_args: str
-    evaluated_args: Dict[str, Dict[str, str]]
+    evaluated_args: dict[str, dict[str, str]]
 
 
 def _build_config(config_path: Path, args) -> EvaluationConfig:
@@ -100,8 +102,8 @@ class _NittaTreeInfo:
     success: int
     failed: int
     not_processed: int
-    duration_success: Dict[str, int]
-    steps_success: Dict[str, int]
+    duration_success: dict[str, int]
+    steps_success: dict[str, int]
 
 
 def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
@@ -116,7 +118,7 @@ def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
     return _NittaTreeInfo(**ti_dict)
 
 
-async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time: float) -> Tuple[_NittaTreeInfo, dict]:
+async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time: float) -> tuple[_NittaTreeInfo, dict]:
     ti = _get_tree_info_from_nitta(nitta_base_url)
 
     logger.info(f"Got tree info: {ti}")
@@ -145,9 +147,9 @@ async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time
 
 
 async def _do_a_run_and_save_results(
-    results: List[dict],
+    results: list[dict],
     config: EvaluationConfig,
-    run_info: Iterable[Tuple[str, str, str]],
+    run_info: Iterable[tuple[str, str, str]],
     example: Path,
 ):
     args_str = " ".join(opt_args for _, _, opt_args in run_info if opt_args)
@@ -187,12 +189,12 @@ async def _do_a_run_and_save_results(
                 "timeout": int(timeout),
                 **{param_name: opt_name for param_name, opt_name, _ in run_info},
                 **stats,
-            }
+            },
         )
         logger.info(f"Saved a run result, NITTA runtime - {elapsed_time:.2f}s")
 
 
-async def _main_in_ctx(results: List[dict], config: EvaluationConfig):
+async def _main_in_ctx(results: list[dict], config: EvaluationConfig):
     # this is a list of possible degrees of freedom (its len = number of evaluated parameters)
     search_space_dofs = [
         [(param_name, opt_name, opt_args) for opt_name, opt_args in param_opts.items()]
@@ -233,46 +235,57 @@ async def _main(app_args: Namespace, *main_args, **main_kwargs):
     return await _main_in_ctx(*main_args, **main_kwargs)
 
 
-def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
+def _select_keys_from_longest_dict(list_of_dicts: list[dict]) -> list[str]:
+    def _reducer(accum: list[str], next_: dict):
+        if len(next_) > len(accum):
+            accum = list(next_.keys())
+        return accum
+
+    return reduce(_reducer, list_of_dicts, [])
+
+
+def _extract_values_of_metrics_and_runs_count(runs_group: Iterator[dict], key_cols: list[str]):
+    metric_to_vals = defaultdict(list)
+    runs_count = 0
+    for run in runs_group:
+        runs_count += 1
+        for metric, value in run.items():
+            if metric not in key_cols:
+                metric_to_vals[metric].append(value)
+    return runs_count, metric_to_vals
+
+
+_Aggregator = Callable[[list], Union[float, int]]
+
+
+def _aggregate_and_save_results(results: list[dict], config: EvaluationConfig):
     if not results:
         return
 
     # dumping raw results just in case something goes wrong while aggregating them
-    with open(Path(config.output_dir).joinpath("latest_results.pickle"), "wb") as f:
+    pickle_output = Path(config.output_dir) / "latest_results.pickle"
+    with pickle_output.open("wb") as f:
         pickle.dump((results, config), f)
 
     key_cols = ["example", *config.evaluated_args.keys()]
     counter_metrics_cols = ["success", "timeout"]
 
-    def select_keys_from_longest_dict(accum: List[str], next_run: dict):
-        if len(next_run) > len(accum):
-            accum = list(next_run.keys())
-        return accum
-
-    all_cols: List[str] = reduce(select_keys_from_longest_dict, results, [])
+    all_cols = _select_keys_from_longest_dict(results)
     metrics_cols = [col for col in all_cols if col not in key_cols and col not in counter_metrics_cols]
 
-    def keyfunc(run):
+    def _sorting_key(run):
         return tuple(run[k] for k in key_cols)
 
-    aggregated_results: List[dict] = []
-    results.sort(key=keyfunc)
-    for key, runs_group in itertools.groupby(results, keyfunc):
-        metric_to_vals = defaultdict(list)
-        runs_count = 0
-        for run in runs_group:
-            runs_count += 1
-            for metric, value in run.items():
-                if metric not in key_cols:
-                    metric_to_vals[metric].append(value)
+    aggregated_results: list[dict] = []
+    results.sort(key=_sorting_key)
+    for key, runs_group in itertools.groupby(results, key=_sorting_key):
+        runs_count, metric_to_vals = _extract_values_of_metrics_and_runs_count(runs_group, key_cols)
 
-        Aggregator = Callable[[list], Union[float, int]]
-
-        def _zero_if_shorter_than(threshold: int, func: Aggregator) -> Aggregator:
+        def _zero_if_shorter_than(threshold: int, func: _Aggregator) -> _Aggregator:
             return lambda xs: 0 if len(xs) < threshold else func(xs)
 
         # this dict exists mainly not to confuse mypy
-        aggregators: Dict[str, Aggregator] = {
+        aggregators: dict[str, _Aggregator] = {
             "sum": _zero_if_shorter_than(1, sum),
             "mean": _zero_if_shorter_than(1, mean),
             "std": _zero_if_shorter_than(2, stdev),
@@ -294,11 +307,14 @@ def _aggregate_and_save_results(results: List[dict], config: EvaluationConfig):
                     for col in metrics_cols
                     for agg in ("mean", "std", "min", "max")
                 },
-            }
+            },
         )
 
     save_dicts_list_to_csv_with_timestamp(
-        aggregated_results, config.output_dir, "evaluation", what="evaluation results"
+        aggregated_results,
+        config.output_dir,
+        "evaluation",
+        what="evaluation results",
     )
 
 
@@ -309,7 +325,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     config = _build_config(args.config, args)
 
-    results: List[dict] = []
+    results: list[dict] = []
     success = True
 
     global_start = datetime.now()

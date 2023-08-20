@@ -37,7 +37,7 @@ def get_model_info(model_name: str) -> Response[ModelInfo]:
             name=model_name,
             train_mae=meta.train_mae,
             validation_mae=meta.validation_mae,
-        )
+        ),
     )
 
 
@@ -63,15 +63,17 @@ def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[Po
                 detail="No target node(s) were found",
             )
 
-        df = pd.DataFrame([nitta_node_to_df_dict(target_node, siblings=all_siblings) for target_node in target_nodes])
-        df = preprocess_input_data_df(df)
-        df = df_to_model_columns(df, meta.input_columns)
-        scores.append(model.predict(df.values).reshape(-1).tolist())
+        input_df = pd.DataFrame(
+            [nitta_node_to_df_dict(target_node, siblings=all_siblings) for target_node in target_nodes],
+        )
+        input_df = preprocess_input_data_df(input_df)
+        input_df = df_to_model_columns(input_df, meta.input_columns)
+        scores.append(model.predict(input_df.values).reshape(-1).tolist())
 
     return Response(
         data=PostScoreResponseData(
             scores=scores,
-        )
+        ),
     )
 
 

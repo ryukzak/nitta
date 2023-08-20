@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from pandas import DataFrame
 
@@ -22,11 +22,11 @@ if __name__ == "__main__":
 
     test_mask = training_data.example.isin(validation_examples)
     train_df = preprocess_input_data_df(training_data[~test_mask])
-    # test_df = preprocess_train_data_df(training_data[test_mask])
+    # test_df = preprocess_train_data_df(training_data[test_mask])  # noqa: ERA001
 
     # not using test_df from distinct examples (not improving much! not informative?)
     # using random split instead
-    test_df: Optional[DataFrame] = None
+    test_df: DataFrame | None = None
 
     train_ds, val_ds, input_cols = create_datasets(train_df, test_df)
 

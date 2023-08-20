@@ -3,6 +3,8 @@ Do not add non-stdlib imports here and be compatible with Python 3.8.
 
 See ml/synthesis/src/scripts/evaluate_nitta_synthesis.py for more info.
 """
+from __future__ import annotations
+
 import asyncio
 import os
 import re
@@ -12,7 +14,7 @@ from asyncio.subprocess import PIPE, STDOUT, Process
 from contextlib import asynccontextmanager
 from logging import Logger
 from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from components.common.logging import get_logger
 from consts import ROOT_DIR
@@ -42,7 +44,7 @@ class NittaRunResult:
             if self.proc.stdout is None:
                 logger.warning(
                     f"NITTA-{self.proc.pid} stdout is None (=no logs or server port will be ever read), "
-                    + "keep that in mind"
+                    + "keep that in mind",
                 )
                 return
 
@@ -68,7 +70,7 @@ class NittaRunResult:
         if not self._port_found_event.is_set():
             if self.stdout_pipe_reader.done():
                 raise RuntimeError(
-                    "Couldn't read NITTA API server port, it wasn't read earlier and stdout pipe reader is done"
+                    "Couldn't read NITTA API server port, it wasn't read earlier and stdout pipe reader is done",
                 )
 
             logger.debug(f"Waiting for NITTA API port to be read (PID {self.proc.pid})")
@@ -83,7 +85,7 @@ class NittaRunResult:
 @asynccontextmanager
 async def run_nitta(
     full_shell_cmd: str,
-    env: Optional[dict] = None,
+    env: dict | None = None,
     stdout=PIPE,
     stderr=STDOUT,
 ) -> AsyncGenerator[NittaRunResult, None]:

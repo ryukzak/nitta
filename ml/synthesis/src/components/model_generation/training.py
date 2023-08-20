@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -18,11 +19,11 @@ logger = get_logger(__name__)
 def train_and_save_baseline_model(
     train_ds: Dataset,
     val_ds: Dataset,
-    input_cols: List[str],
-    fitting_kwargs: Optional[dict] = None,
-    output_model_name: Optional[str] = None,
+    input_cols: list[str],
+    fitting_kwargs: dict | None = None,
+    output_model_name: str | None = None,
     models_dir: Path = MODELS_DIR,
-) -> Tuple[Model, ModelMetainfo]:
+) -> tuple[Model, ModelMetainfo]:
     models_dir.mkdir(exist_ok=True)
 
     sample = next(iter(val_ds))[0][0]

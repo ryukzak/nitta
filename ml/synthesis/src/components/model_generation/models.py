@@ -10,7 +10,7 @@ def create_baseline_model(input_shape) -> Model:
             layers.Dense(64, activation="relu"),
             layers.Dense(32, activation="relu"),
             layers.Dense(1),
-        ]
+        ],
     )
 
     model.compile(

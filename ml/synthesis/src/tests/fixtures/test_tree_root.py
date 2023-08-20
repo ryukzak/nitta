@@ -24,7 +24,7 @@ def test_root():
                 duration=None,
                 sid="-0",
                 children=[],
-            )
+            ),
         ],
     )
 

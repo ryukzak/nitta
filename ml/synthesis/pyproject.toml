@@ -8,16 +8,69 @@ line-length = 120
 [tool.ruff]
 line-length = 120
 select = [
-    # Pyflakes
+    # A set of chosen linter rules is specified here.
+    # See https://beta.ruff.rs/docs/rules/ for more info.
+    # pyflakes (simple obvious errors)
     "F",
-    # Pycodestyle
+    # pycodestyle (style linter, pep8, black-compatible)
     "E",
     "W",
-    # isort
-    "I"
+    # pep8-naming (style linter, pep8 naming conventions)
+    "N",
+    # isort (imports sorting)
+    "I",
+    # mccabe (cyclomatic complexity analyzer to prevent overcomplicated functions)
+    "C90",
+    # pyupgrade (possible syntax upgrades checker)
+    "UP",
+    # eradicate (commented-out code finder for it to be removed)
+    "ERA",
+    # flake8-2020 (errors related to sys.version or sys.version_info, just in case)
+    "YTT",
+    # flake8-annotations (enforces presense of type hints so the codebase is fully typed)
+    # "ANN",  # too burdensome
+    # flake8-async (async-related mistakes/errors)
+    "ASYNC",
+    # flake8-builtins (checks builtin names shadowing, it's better not to)
+    "A",
+    # flake8-commas (to enforce trailing commas)
+    "COM",
+    # flake8-future-annotations (to ensure enabling modern (3.7+) postponed evaluation of type hints)
+    "FA",
+    # flake8-import-conventions (to enforce standartized import aliases like "import pandas as pd")
+    "ICN",
+    # flake8-no-pep420 (to enforce presence of __init__.py in packages)
+    "INP",
+    # flake8-print (to disallow print statements)
+    "T20",
+    # flake8-pytest-style (to improve pytest-related style consistency)
+    "PT",
+    # flake8-quotes (to enforce quotes style)
+    "Q",
+    # flake8-return (checks mistakes related to return values)
+    "RET",
+    # flake8-use-pathlib (to enforce pathlib usage instead of os.path)
+    "PTH",
+    # pandas-vet (pandas-related advices)
+    "PD",
+    # tryceratops (try/except-related advices)
+    "TRY",
+    # ruff-specific advices
+    "RUF",
+]
+ignore = [
+    "E501",  # allow lines longer than 80 symbols (up to 120)
+    "PD901", # allow "df" variable name (it's short and often doesn't require clarification)
+    "RET504", # allow "unnecessary" assignments before return statements as it's often useful for chaning data transformations
+    "TRY003", # allow something like raise ValueError(f"Formatting {this} error message on the spot here"). too strict!
+]
+unfixable = [
+    "ERA001",  # prohibit to "auto-fix" (=remove) commented-out code
 ]
 src = ["ml/synthesis/src"]
 
+[tool.ruff.mccabe]
+max-complexity = 7
 
 [tool.vulture]
 # Vulture is a tool that statically finds unreachable code or unused attributes in Python programs.

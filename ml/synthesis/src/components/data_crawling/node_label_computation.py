@@ -30,7 +30,7 @@ def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsColl
     if not node.is_finish:
         return _UNSUCCESSFUL_SYNTHESIS_LEAF_LABEL
 
-    # (duration, depth)
+    # leaf metrics are (duration, depth)
     metrics = np.array(get_leaf_metrics(node))
     metrics_means, metrics_stddevs = metrics_collector.get_distributions()
 

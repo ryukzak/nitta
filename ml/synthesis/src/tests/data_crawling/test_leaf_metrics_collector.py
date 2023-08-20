@@ -41,11 +41,11 @@ def test_collector_calculates_distributions_correctly():
         collector.get_distributions()
         - np.array(
             [
-                # (duration_mean, depth_mean)
+                # // (duration_mean, depth_mean)
                 [2, 1],
-                # (duration_stddev, depth_stddev)
+                # // (duration_stddev, depth_stddev)
                 [0.81649658092773, 0],
-            ]
+            ],
         )
         < 1e-5
     ).all()

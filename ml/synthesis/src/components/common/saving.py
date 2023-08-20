@@ -6,10 +6,10 @@ See ml/synthesis/src/scripts/evaluate_nitta_synthesis.py for more info.
 from __future__ import annotations
 
 import csv
-import os
 from datetime import datetime
 from os import PathLike
-from typing import TYPE_CHECKING, List, Optional, Union
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from components.common.logging import get_logger
 
@@ -25,18 +25,19 @@ def get_current_time_str():
     return datetime.now().strftime("%y%m%d_%H%M%S")
 
 
-def _prepare_saving(basedir: Union[PathLike, str], basename: str, what: Optional[str] = None):
-    os.makedirs(basedir, exist_ok=True)
-    output = os.path.join(basedir, f"{basename}_{get_current_time_str()}.csv")
+def _prepare_saving(basedir: PathLike | str, basename: str, what: str | None = None) -> Path:
+    basedir = Path(basedir)
+    basedir.mkdir(parents=True, exist_ok=True)
+    output = basedir / f"{basename}_{get_current_time_str()}.csv"
     logger.info(f"Saving {what + ' ' if what  else ''}to {output}")
     return output
 
 
 def save_df_with_timestamp(
     df: DataFrame,
-    basedir: Union[PathLike, str],
+    basedir: PathLike | str,
     basename: str,
-    what: Optional[str] = None,
+    what: str | None = None,
     **kwargs,
 ):
     output = _prepare_saving(basedir, basename, what)
@@ -44,14 +45,14 @@ def save_df_with_timestamp(
 
 
 def save_dicts_list_to_csv_with_timestamp(
-    dicts_list: List[dict],
-    basedir: Union[PathLike, str],
+    dicts_list: list[dict],
+    basedir: PathLike | str,
     basename: str,
-    what: Optional[str] = None,
+    what: str | None = None,
 ):
     output = _prepare_saving(basedir, basename, what)
     fields = [] if not dicts_list else dicts_list[0].keys()
-    with open(output, "w", newline="") as f:
+    with output.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
         writer.writerows(dicts_list)

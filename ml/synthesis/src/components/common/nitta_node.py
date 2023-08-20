@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from __future__ import annotations
 
 from pydantic import Field
 
@@ -11,12 +11,12 @@ class NittaNode(CustomizedBaseModel):
     """`NodeView` from NITTA Haskell sources."""
 
     sid: str = Field(example="-0-4-7-3-4-1-1-0")
-    score: Optional[int]
+    score: int | None
     is_terminal: bool
     is_finish: bool
-    duration: Optional[int]
+    duration: int | None
     # union with str because {parameters: "root"} is currently possible
-    parameters: Union[dict, str] = Field(
+    parameters: dict | str = Field(
         description="SynthesisDecision.metrics from NITTA Haskell sources.",
         example={
             "pAllowDataFlow": 0,
@@ -40,7 +40,7 @@ class NittaNode(CustomizedBaseModel):
     )
 
     @property
-    def decision_tag(self) -> Optional[str]:
+    def decision_tag(self) -> str | None:
         return self.decision.get("tag")
 
     def __hash__(self):
@@ -48,21 +48,21 @@ class NittaNode(CustomizedBaseModel):
 
 
 class NittaNodeInTree(NittaNode):
-    children: Optional[List["NittaNodeInTree"]] = Field(default=None, repr=False, exclude=True)
-    parent: Optional["NittaNodeInTree"] = Field(default=None, repr=False, exclude=True)
+    children: list[NittaNodeInTree] | None = Field(default=None, repr=False, exclude=True)
+    parent: NittaNodeInTree | None = Field(default=None, repr=False, exclude=True)
 
     @property
     def is_loaded(self) -> bool:
         return self.children is not None
 
     @staticmethod
-    def from_node(node: NittaNode) -> "NittaNodeInTree":
+    def from_node(node: NittaNode) -> NittaNodeInTree:
         """
         Helps putting a non-tree node info in a tree context (i.e. adding tree-related attributes to the node object)
         """
         return NittaNodeInTree(**node.dict())  # is it the most efficient way?
 
-    def dict(self, **overrides):
+    def dict(self, **overrides):  # noqa: A003
         """Customized Pydantic's .dict() to provide convenient defaults for NittaNodeInTree"""
         kwargs: dict = dict(by_alias=True)
         kwargs.update(overrides)

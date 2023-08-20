@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 
 from components.common.data_loading import load_all_existing_training_data
@@ -22,7 +24,7 @@ if __name__ == "__main__":
         model, meta = load_model_with_metainfo(model_dir)
         logger.info("Using manually built model")
         is_manual = True
-    except (FileNotFoundError, IOError):
+    except (OSError, FileNotFoundError):
         logger.info("Training model from scratch")
         is_manual = False
 

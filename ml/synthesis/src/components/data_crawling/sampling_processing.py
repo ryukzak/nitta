@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
 
 import pandas as pd
 
@@ -18,7 +19,7 @@ class SamplingStats:
     n_results: int
     n_unique_sids: int
     collision_ratio: float
-    tree_coverage: Optional[float]
+    tree_coverage: float | None
     neg_label_share: float
     # ^ all floats are in [0, 1]
 
@@ -31,8 +32,10 @@ class SamplingResult:
 
 
 def process_and_save_sampling_results(
-    example: Path, results: List[dict], data_dir: Path = DATA_DIR
-) -> Optional[SamplingResult]:
+    example: Path,
+    results: list[dict],
+    data_dir: Path = DATA_DIR,
+) -> SamplingResult | None:
     if len(results) == 0:
         logger.warning(f"No results to process (example {example.name!r}).")
         return None
@@ -53,8 +56,8 @@ def process_and_save_sampling_results(
                 f" collision ratio: {collision_ratio * 100:.3f}%",
                 f" neg. label: {neg_label_share * 100:.1f}%",
                 f" estimated tree coverage: {tree_cov_str}",
-            ]
-        )
+            ],
+        ),
     )
 
     return SamplingResult(
@@ -70,7 +73,7 @@ def process_and_save_sampling_results(
     )
 
 
-def _build_df_and_save_sampling_results(results: List[dict], example_name: str, data_dir: Path) -> pd.DataFrame:
+def _build_df_and_save_sampling_results(results: list[dict], example_name: str, data_dir: Path) -> pd.DataFrame:
     """
     Builds a DataFrame from the sampling results and saves it to the `data_dir`.
     """

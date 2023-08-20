@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from __future__ import annotations
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class SingleMetricCollector:
         self.s1 = 0.0  # sum of values (see link above)
         self.s2 = 0.0  # sum of squared values (see link above)
 
-    def collect(self, value: Union[float, int]):
+    def collect(self, value: float | int):
         self.n += 1
         self.s1 += value
         self.s2 += value * value
@@ -47,7 +47,7 @@ class LeafMetrics:
     DEPTH = "depth"
 
     @classmethod
-    def all(cls):
+    def get_all(cls):
         return (cls.DURATION, cls.DEPTH)
 
 
@@ -55,8 +55,8 @@ class LeafMetricsCollector:
     """Collects leaf nodes, stores their metrics and computes metrics distributions when needed"""
 
     def __init__(self):
-        self.collectors: Dict[str, SingleMetricCollector] = {
-            metric: SingleMetricCollector(metric) for metric in LeafMetrics.all()
+        self.collectors: dict[str, SingleMetricCollector] = {
+            metric: SingleMetricCollector(metric) for metric in LeafMetrics.get_all()
         }
         self._cached_distributions = None
 
@@ -87,6 +87,6 @@ class LeafMetricsCollector:
                 [
                     [c.compute_mean() for c in self.collectors.values()],
                     [c.compute_stddev() for c in self.collectors.values()],
-                ]
+                ],
             )
         return self._cached_distributions

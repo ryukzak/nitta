@@ -1,4 +1,6 @@
-from typing import Generic, List, TypeVar
+from __future__ import annotations
+
+from typing import Generic, TypeVar
 
 from pydantic import Field
 from pydantic.generics import GenericModel
@@ -51,7 +53,7 @@ class ScoringInput(CustomizedBaseModel):
         "You can also pass the value `all` to get scores for all nodes in the `nodes` list.",
         example="-0-4-7-3-4-1-1-0",
     )
-    nodes: List[NittaNode] = Field(
+    nodes: list[NittaNode] = Field(
         description="`NodeView`s of scoring target node and all its siblings (all possible synthesis tree choices "
         "from current parent node).",
     )
@@ -60,12 +62,12 @@ class ScoringInput(CustomizedBaseModel):
 
 
 class PostScoreRequestBody(CustomizedBaseModel):
-    inputs: List[ScoringInput] = Field(description="List of inputs to get score predictions for. ")
+    inputs: list[ScoringInput] = Field(description="List of inputs to get score predictions for. ")
 
 
 # data, not whole body (which can include "data" field and metadata)
 class PostScoreResponseData(CustomizedBaseModel):
-    scores: List[List[float]] = Field(
+    scores: list[list[float]] = Field(
         description="List lists of numeric score predictions. A list per each input in the request body.",
         example=[[0.1, 0.2], [0.4314]],
     )

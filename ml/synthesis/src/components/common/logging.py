@@ -6,8 +6,6 @@ See ml/synthesis/src/scripts/evaluate_nitta_synthesis.py for more info.
 import logging
 from logging import Logger
 
-import matplotlib
-
 
 def get_logger(module_name: str) -> Logger:
     """Fixes stdlib's logging function case and create a unified logger factory."""
@@ -18,7 +16,7 @@ def get_logger(module_name: str) -> Logger:
 
 def silence_unwanted_logs():
     """Silences DEBUG logs of some libs since they're too detailed."""
-    targets = [matplotlib.__name__]
+    targets = ["matplotlib"]
     for target in targets:
         logger.debug(f"Silencing DEBUG logs of {target!r}...")
         logging.getLogger(target).setLevel(logging.INFO)

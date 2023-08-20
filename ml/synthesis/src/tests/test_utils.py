@@ -4,7 +4,7 @@ from components.utils.string import snake_to_lower_camel_case
 
 
 @pytest.mark.parametrize(
-    "inp, out_expected",
+    ("inp", "out_expected"),
     [
         ("", ""),
         ("test", "test"),
