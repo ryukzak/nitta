@@ -24,7 +24,6 @@ def aggregate_node_labels(labels: pd.Series) -> float:
     return _LAMBDA * labels.max() + (1 - _LAMBDA) * labels.mean()
 
 
-# @cached()  # maximum recursion depth exceeded?! pydantic imcompatibility?
 def compute_node_label(node: NittaNodeInTree, metrics_collector: LeafMetricsCollector) -> float:
     assert node.is_terminal, "labels for non-terminal nodes for this function should not be calculated anymore"
 
