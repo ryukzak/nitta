@@ -1,5 +1,3 @@
-import asyncio
-import time
 from typing import Type, TypeVar
 
 import numpy as np
@@ -8,11 +6,15 @@ from aiohttp import ClientSession
 
 from components.common.customized_pydantic_model import CustomizedBaseModel
 from components.common.logging import get_logger
-from components.common.nitta_node import NittaNode, NittaNodeInTree, NittaTreeInfo
+from components.common.nitta_node import NittaNode, NittaNodeInTree
 from components.common.utils import debounce
 
 logger = get_logger(__name__)
 logger_debug_debounced = debounce(1)(logger.debug)
+
+
+# there used to be a method + dto to retrieve a /treeInfo, but it's wasn't used, so it got removed
+# https://github.com/ryukzak/nitta/blob/ff1fa9228489f83d90e7f5ca89151347f42b5d48/ml/synthesis/src/components/data_crawling/tree_retrieving.py#L88
 
 
 async def retrieve_children(
@@ -37,25 +39,6 @@ async def retrieve_children(
         child = NittaNodeInTree.parse_obj(child_raw)
         child.parent = node
         node.children.append(child)
-
-
-async def retrieve_subforest(
-    node: NittaNodeInTree,
-    session: ClientSession,
-    nitta_baseurl: str,
-    levels_left=None,
-):
-    if node.is_terminal or levels_left == -1:
-        node.children = []
-        return
-
-    await retrieve_children(node, session, nitta_baseurl)
-    assert node.children is not None, "children should be loaded by now"
-
-    levels_left_for_child = None if levels_left is None else levels_left - 1
-    await asyncio.gather(
-        *[retrieve_subforest(child, session, nitta_baseurl, levels_left_for_child) for child in node.children]
-    )
 
 
 TResponse = TypeVar("TResponse", bound=CustomizedBaseModel)
@@ -83,20 +66,6 @@ async def retrieve_tree_root(nitta_baseurl: str, session: ClientSession) -> Nitt
     node = await retrieve_single_node("-", nitta_baseurl, session)
     tree_root = NittaNodeInTree.from_node(node)
     return tree_root
-
-
-async def retrieve_tree_info(nitta_baseurl: str, session: ClientSession) -> NittaTreeInfo:
-    return await _do_nitta_request(nitta_baseurl, session, "/treeInfo", NittaTreeInfo)
-
-
-async def retrieve_whole_nitta_tree(nitta_baseurl: str, max_depth=None) -> NittaNodeInTree:
-    start_time = time.perf_counter()
-    async with ClientSession() as session:
-        tree = await retrieve_tree_root(nitta_baseurl, session)
-        await retrieve_subforest(tree, session, nitta_baseurl, max_depth)
-
-    logger.info(f"Finished tree retrieval in {time.perf_counter() - start_time:.2f} s")
-    return tree
 
 
 async def retrieve_random_descending_thread(

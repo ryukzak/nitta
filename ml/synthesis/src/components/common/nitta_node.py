@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from pydantic import Field
 
@@ -67,12 +67,3 @@ class NittaNodeInTree(NittaNode):
         kwargs: dict = dict(by_alias=True)
         kwargs.update(overrides)
         return super().dict(**kwargs)
-
-
-class NittaTreeInfo(CustomizedBaseModel):
-    nodes: int
-    success: int
-    failed: int
-    not_processed: int
-    duration_success: Dict[str, int]
-    steps_success: Dict[str, int]
