@@ -7,5 +7,5 @@ from components.data_crawling.data_crawling import crawl_data_from_many_examples
 logger = get_logger(__name__)
 
 if __name__ == "__main__":
-    configure_logging(base_level=logging.INFO)
+    configure_logging(logging.INFO)
     asyncio.run(crawl_data_from_many_examples())
