@@ -86,7 +86,7 @@ async def crawl_data_from_many_examples(crawl_config: CrawlConfig | None = None)
         logging.info(f"===================== Processing {example} ({i+1} / {len(crawl_config)}) =====================")
         sampling_result = await crawl_data_from_example(example, **kwargs)
         if sampling_result is not None:
-            summary_stats.append({example: example.name, **asdict(sampling_result.stats)})
+            summary_stats.append({"example": example.name, **asdict(sampling_result.stats)})
 
     logger.info(f"Done! Produced crawling summary for {len(summary_stats)} examples.")
-    save_dicts_list_to_csv_with_timestamp(summary_stats, DATA_DIR, "crawling_summary", what="crawling summary")
+    save_dicts_list_to_csv_with_timestamp(summary_stats, DATA_DIR, "_crawling_summary", what="crawling summary")
