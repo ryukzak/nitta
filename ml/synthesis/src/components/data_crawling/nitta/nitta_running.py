@@ -51,13 +51,13 @@ class NittaRunResult:
             while self.proc.returncode is None:
                 line_bytes = await self.proc.stdout.readline()
                 if not line_bytes:
-                    logger.info(f"NITTA-{self.proc.pid} stdout pipe EOF reached")
+                    logger.debug(f"NITTA-{self.proc.pid} stdout pipe EOF reached")
                     break
                 line = line_bytes.decode("utf-8").strip()
                 self._passthrough_logger.info(line)
                 self._check_new_stdout_line_for_server_port(line)
         finally:
-            logger.info(f"NITTA-{self.proc.pid} stdout pipe reader is done")
+            logger.debug(f"NITTA-{self.proc.pid} stdout pipe reader is done")
 
     def _check_new_stdout_line_for_server_port(self, line: str):
         match = _NITTA_SERVER_START_REGEX.search(line)
@@ -122,7 +122,7 @@ async def run_nitta(
                 os.killpg(pgid, signal.SIGTERM)
 
                 if run_result is not None:
-                    logger.info(f"Waiting for NITTA-{pid} stdout pipe reader to finish")
+                    logger.debug(f"Waiting for NITTA-{pid} stdout pipe reader to finish")
                     await run_result.stdout_pipe_reader
 
                 await proc.communicate()
