@@ -105,6 +105,7 @@ async def run_synthesis_tree_sampling(
                 )
         else:
             # set logging level to INFO for tqdm (otherwise DEBUG messages will break tqdm's progress bar)
+            old_logging_level = logging.getLogger().getEffectiveLevel()
             logging.getLogger().setLevel(logging.INFO)
 
             with tqdm(**tqdm_args) as pbar:
@@ -120,7 +121,7 @@ async def run_synthesis_tree_sampling(
                     example_name=example.name,
                 )
 
-            logging.getLogger().setLevel(logging.DEBUG)
+            logging.getLogger().setLevel(old_logging_level)
 
     return results_accum
 
