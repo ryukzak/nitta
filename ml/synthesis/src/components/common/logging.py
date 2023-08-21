@@ -16,9 +16,9 @@ def get_logger(module_name: str) -> Logger:
 
 def silence_unwanted_logs():
     """Silences DEBUG logs of some libs since they're too detailed."""
-    targets = ["matplotlib"]
+    targets = ["matplotlib", "tensorflow"]
     for target in targets:
-        logger.debug(f"Silencing DEBUG logs of {target!r}...")
+        logger.info(f"Silencing unwanted DEBUG logs of {target!r}...")
         logging.getLogger(target).setLevel(logging.INFO)
 
 
