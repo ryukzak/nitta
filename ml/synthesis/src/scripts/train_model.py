@@ -8,8 +8,6 @@ from components.model_generation.training import train_and_save_baseline_model
 
 _DEFAULT_VALIDATION_EXAMPLES = ["pid.lua", "constantFolding.lua"]
 
-# TODO: make it a CLI and merge with train_evaluate_in_ci.py
-
 if __name__ == "__main__":
     logger = get_logger(__name__)
     configure_logging()
@@ -28,5 +26,5 @@ if __name__ == "__main__":
         train_ds,
         val_ds,
         input_cols,
-        fitting_kwargs=dict(validation_steps=3000, epochs=45, steps_per_epoch=3000),
+        fitting_kwargs=dict(validation_steps=3000),
     )

@@ -31,8 +31,8 @@ def train_and_save_baseline_model(
 
     model = create_baseline_model(input_shape=sample.shape)
     effective_fitting_kwargs = dict(
-        epochs=20,
-        steps_per_epoch=2500,
+        epochs=45,
+        steps_per_epoch=3000,
     )
     if fitting_kwargs:
         effective_fitting_kwargs.update(fitting_kwargs)
@@ -41,31 +41,42 @@ def train_and_save_baseline_model(
         model.fit(x=train_ds, validation_data=val_ds, **effective_fitting_kwargs)
     except KeyboardInterrupt:
         logger.info("\n\n=== Training interrupted by user, saving the model in a current state ===")
-
     history = model.history.history
-
-    # TODO: proper model evaluation on an independent dataset
-    metainfo = ModelMetainfo(
-        train_mae=history["mae"][-1],
-        validation_mae=history["val_mae"][-1],
-        input_columns=input_cols,
-    )
 
     if not output_model_name:
         output_model_name = f"model_{get_current_time_str()}"
-
     out_dir = models_dir / output_model_name
+    out_metainfo = out_dir / "metainfo.json"
+    out_history_csv = out_dir / "history.csv"
+    out_history_png = out_dir / "history.png"
+
+    logger.info(f"Saving the MODEL: {out_dir}")
     model.save(out_dir)
-    with (out_dir / "metainfo.json").open("w") as f:
+
+    logger.info("Evaluating the model on the validation dataset...")
+    evaluation_results: dict = model.evaluate(val_ds, return_dict=True)
+    logger.info(f"Evaluation results: {evaluation_results}")
+
+    logger.info(f"Saving the MODEL METAINFO: {out_metainfo}")
+    metainfo = ModelMetainfo(
+        train_mae=history["mae"][-1],
+        validation_mae=evaluation_results["mae"],
+        input_columns=input_cols,
+    )
+    with out_metainfo.open("w") as f:
         f.write(metainfo.json())
 
+    logger.info(f"Saving the MODEL TRAINING HISTORY DATA: {out_history_csv}")
     hist_df = pd.DataFrame(history)
-    hist_df.to_csv(out_dir / "history.csv", index=False)
+    hist_df.to_csv(out_history_csv, index=False)
+
+    logger.info(f"Saving the MODEL TRAINING HISTORY CHART: {out_history_png}")
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     hist_df[["loss", "val_loss"]].plot(ax=ax[0])
     ax[0].grid()
     hist_df[["mae", "val_mae"]].plot(ax=ax[1])
     ax[1].grid()
-    fig.savefig(out_dir / "history.png")
+    fig.savefig(out_history_png)
 
+    logger.info(f"Model training done: {out_dir}")
     return model, metainfo
