@@ -60,7 +60,7 @@ def score_with_model(model_name: str, body: PostScoreRequestBody) -> Response[Po
         )
         input_df = preprocess_input_data_df(input_df)
         input_df = df_to_model_columns(input_df, meta.input_columns)
-        scores.append(model.predict(input_df.values).reshape(-1).tolist())
+        scores.append(model.predict(input_df.to_numpy().astype("float32")).reshape(-1).tolist())
 
     return Response(
         data=PostScoreResponseData(

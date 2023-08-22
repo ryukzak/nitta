@@ -59,7 +59,7 @@ def _split_df_into_targets_and_inputs(df: pd.DataFrame) -> tuple[pd.DataFrame, p
 
 
 def _df_to_dataset(df: pd.DataFrame, targets: pd.DataFrame, shuffle=True, batch_size=16, repeat=False):
-    ds = Dataset.from_tensor_slices((df.to_numpy(), targets.to_numpy()))
+    ds = Dataset.from_tensor_slices((df.to_numpy().astype("float32"), targets.to_numpy().astype("float32")))
     ds = ds.shuffle(buffer_size=10000) if shuffle else ds
     ds = ds.batch(batch_size) if batch_size else ds
     ds = ds.repeat() if repeat else ds
