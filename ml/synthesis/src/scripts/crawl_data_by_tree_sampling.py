@@ -1,3 +1,4 @@
+import asyncio
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -10,7 +11,6 @@ from components.data_crawling.tree_sampling.tree_sampling import (
     DEFAULT_N_WORKERS,
     DEFAULT_NITTA_RUN_COMMAND,
 )
-from components.utils.asyncio_run_interrupt_wrapper import asyncio_run_safe
 
 if __name__ == "__main__":
     logger = get_logger(__name__)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
             "Sampling till a default number of samples is gathered. Adjust to synthesis tree size with -n N_SAMPLES!",
         )
 
-        asyncio_run_safe(
+        asyncio.run(
             crawl_data_from_example(
                 file_to_run,
                 n_samples=args.n_samples,

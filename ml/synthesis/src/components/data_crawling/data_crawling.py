@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from asyncio import CancelledError
 from dataclasses import asdict
 from pathlib import Path
 from typing import Dict
@@ -34,12 +35,12 @@ async def crawl_data_from_example(example: Path, data_dir: Path = DATA_DIR, **ru
             results_accum=results,
             **runner_kwargs,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, CancelledError):
         logger.info("Interrupted by user, processing nodes gathered so far.")
     except Exception:
         logger.exception("Unexpected error, processing nodes gathered so far.")
-
-    return process_and_save_sampling_results(example, results, data_dir)
+    finally:
+        return process_and_save_sampling_results(example, results, data_dir)
 
 
 CrawlConfig = Dict[Path, dict]  # example_filename -> runner_kwargs
