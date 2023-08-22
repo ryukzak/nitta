@@ -31,22 +31,24 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
       resultRenderer={(result) => (
         <Container fluid>
           <Row>
-            <Col md={4}>
+            <Col sm={7} md={6} lg={5}>
               <JsonView src={result.data} />
             </Col>
-            <Col md={4} lg={3}>
-              <MapHistogram
-                data={result.data.durationSuccess}
-                color={CHART_COLOR_PALLETE.blue}
-                name="success nodes with duration"
-              />
-            </Col>
-            <Col md={4} lg={3}>
-              <MapHistogram
-                data={result.data.stepsSuccess}
-                color={CHART_COLOR_PALLETE.orange}
-                name="success nodes with steps"
-              />
+            <Col sm={5} md={5} lg={4}>
+              <Row>
+                <MapHistogram
+                  data={result.data.targetProcessDuration}
+                  color={CHART_COLOR_PALLETE.blue}
+                  name="success nodes with duration"
+                />
+              </Row>
+              <Row>
+                <MapHistogram
+                  data={result.data.synthesisStepsForSuccess}
+                  color={CHART_COLOR_PALLETE.orange}
+                  name="success nodes with steps"
+                />
+              </Row>
             </Col>
           </Row>
         </Container>

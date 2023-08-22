@@ -135,6 +135,7 @@ data SynthesisDecision ctx m where
 
 mlScoreKeyPrefix = "ml_"
 
+defScore :: SynthesisDecision ctx m -> Float
 defScore sDecision =
     let allScores = scores sDecision
         mlScores = M.filterWithKey (\k _ -> mlScoreKeyPrefix `isPrefixOf` k) allScores
@@ -166,7 +167,7 @@ data SynthesisState m tag v x t = SynthesisState
     -- ^ a function set, which binding may cause dead lock
     , bindWaves :: M.Map v Int
     -- ^ if algorithm will be represented as a graph, where nodes -
-    --  variables of not binded functions, edges - casuality, wave is a
+    --  variables of not bound functions, edges - casuality, wave is a
     --  minimal number of a step from an initial node to selected
     , processWaves :: [ProcessWave v x]
     -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
@@ -177,6 +178,8 @@ data SynthesisState m tag v x t = SynthesisState
     , transferableVars :: S.Set v
     -- ^ a variable set, which can be transferred on the current
     --  synthesis step
+    , unitWorkloadInFunction :: M.Map tag Int
+    -- ^ dictionary with number of bound functions for each unit
     }
 
 -- * Utils

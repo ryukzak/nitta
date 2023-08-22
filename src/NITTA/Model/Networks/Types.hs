@@ -12,6 +12,7 @@ Stability   : experimental
 -}
 module NITTA.Model.Networks.Types (
     PU (..),
+    unitType,
     PUClasses,
     IOSynchronization (..),
     PUPrototype (..),
@@ -50,6 +51,7 @@ type PUClasses pu v x t =
     , Controllable pu
     , IOTestBench pu v x
     , Locks pu v
+    , Typeable pu
     )
 
 -- | Existential container for a processor unit .
@@ -61,6 +63,9 @@ data PU v x t where
         , uEnv :: UnitEnv pu
         } ->
         PU v x t
+
+unitType :: PU v x t -> TypeRep
+unitType PU{unit} = typeOf unit
 
 instance Ord v => EndpointProblem (PU v x t) v t where
     endpointOptions PU{diff, unit} =

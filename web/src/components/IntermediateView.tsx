@@ -4,7 +4,7 @@ import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { GraphNode, GraphEdge } from "services/gen/types";
-import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
+import { api, IntermediateGraph, Dataflow, SingleBind, Node } from "services/HaskellApiService";
 import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
@@ -68,12 +68,12 @@ function renderDotOptions(options: DotOptions) {
   return `[${result.join("; ")}]`;
 }
 
-function isFunctionBinded(binded: string[], node: GraphNode): boolean {
-  if (binded.indexOf(node.function) >= 0) {
+function isFunctionBound(bound: string[], node: GraphNode): boolean {
+  if (bound.indexOf(node.function) >= 0) {
     return true;
   }
   for (let e of node.history) {
-    if (binded.indexOf(e) >= 0) return true;
+    if (bound.indexOf(e) >= 0) return true;
   }
   return false;
 }
@@ -89,7 +89,7 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
       " " +
       renderDotOptions({
         label: node.label,
-        style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed",
+        style: isFunctionBound(state.bindeFuns, node) ? "line" : "dashed",
       })
     );
   });
@@ -162,8 +162,8 @@ function makeProcState(nodes: Node[]): ProcessState {
         procState.transferedVars.push(target[1].epRole.contents as string);
       });
     }
-    if (n.decision.tag === "BindDecisionView") {
-      let d = n.decision as Bind;
+    if (n.decision.tag === "SingleBindView") {
+      let d = n.decision as SingleBind;
       procState.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
     }
   });

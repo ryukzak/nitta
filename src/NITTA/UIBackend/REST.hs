@@ -170,7 +170,7 @@ type SynthesisPracticesAPI tag v x t =
                 :> "bestStep"
                 :> Post '[JSON] Sid
              )
-                :<|> ( Description "Make all possible oblivious binds"
+                :<|> ( Description "Make all possible obvious binds"
                         :> "obviousBindThread"
                         :> Post '[JSON] Sid
                      )

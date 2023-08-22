@@ -7,9 +7,12 @@ import {
   ShortNodeView,
   IBreakLoopView,
   IConstantFoldingView,
+  IDataflowDecisionView,
   IOptimizeAccumView,
   IResolveDeadlockView,
   NetworkDesc,
+  ISingleBindView,
+  IGroupBindView,
   UnitDesc,
   Relation,
   TimeConstraint,
@@ -19,7 +22,7 @@ import {
   StepInfoView,
   IAllocationView,
 } from "services/gen/types";
-import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "services/gen/types";
+import { NodeView, DecisionView, IRootView } from "services/gen/types";
 import {
   UnitEndpoints,
   EndpointSt,
@@ -40,7 +43,8 @@ export type Node = NodeView<string, string, number, number>;
 export type Decision = DecisionView;
 export type Root = IRootView;
 
-export type Bind = IBindDecisionView;
+export type SingleBind = ISingleBindView;
+export type GroupBind = IGroupBindView;
 export type Allocation = IAllocationView;
 export type Dataflow = IDataflowDecisionView;
 

@@ -19,7 +19,7 @@ module NITTA.Model.Networks.Bus (
     Instruction (..),
     Ports (..),
     IOPorts (..),
-    bindedFunctions,
+    boundFunctions,
     controlSignalLiteral,
     busNetwork,
 
@@ -63,9 +63,9 @@ import Text.Regex
 data BusNetwork tag v x t = BusNetwork
     { bnName :: tag
     , bnRemains :: [F v x]
-    -- ^ List of functions binded to network, but not binded to any process unit.
-    , bnBinded :: M.Map tag [F v x]
-    -- ^ Map process unit name to list of binded functions.
+    -- ^ List of functions bound to network, but not bound to any process unit.
+    , bnBound :: M.Map tag [F v x]
+    -- ^ Map process unit name to list of bound functions.
     , bnProcess :: Process t (StepInfo v x t)
     -- ^ Network process (bindings and transport instructions)
     , bnPus :: M.Map tag (PU v x t)
@@ -82,7 +82,7 @@ busNetwork name iosync =
     BusNetwork
         { bnName = name
         , bnRemains = []
-        , bnBinded = M.empty
+        , bnBound = M.empty
         , bnProcess = def
         , bnPus = def
         , bnSignalBusWidth = 0
@@ -95,16 +95,16 @@ instance (Default t, IsString tag) => Default (BusNetwork tag v x t) where
     def = busNetwork "defaultBus" ASync
 
 instance Var v => Variables (BusNetwork tag v x t) v where
-    variables BusNetwork{bnBinded} = unionsMap variables $ concat $ M.elems bnBinded
+    variables BusNetwork{bnBound} = unionsMap variables $ concat $ M.elems bnBound
 
-bindedFunctions puTitle BusNetwork{bnBinded}
-    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+boundFunctions puTitle BusNetwork{bnBound}
+    | puTitle `M.member` bnBound = bnBound M.! puTitle
     | otherwise = []
 
 instance Default x => DefaultX (BusNetwork tag v x t) x
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
-    functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
+    functions BusNetwork{bnRemains, bnBound} = bnRemains ++ concat (M.elems bnBound)
 
 instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x t) tag v t where
     dataflowOptions BusNetwork{bnPus, bnProcess} =
@@ -299,35 +299,126 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 
 ----------------------------------------------------------------------
 
+cartesianProduct :: [[a]] -> [[a]]
+cartesianProduct [] = [[]]
+cartesianProduct (xs : xss) = [x : ys | x <- xs, ys <- cartesianProduct xss]
+
+{- | Not all bindings can be applied to unit a the same time. E.g.:
+
+ - @b = reg(a)@
+ - @c = reg(b)@
+
+ Can't be bound to same unit because it require self sending of data.
+
+ In this case, we just throw away conflicted bindings.
+-}
+fixGroupBinding :: (UnitTag tag, VarValTime v x t) => BusNetwork tag v x t -> [(tag, F v x)] -> [(tag, F v x)]
+fixGroupBinding _bn [] = []
+fixGroupBinding bn@BusNetwork{bnPus} (b@(uTag, f) : binds)
+    | Right _ <- tryBind f (bnPus M.! uTag) = b : fixGroupBinding (bindDecision bn $ SingleBind uTag f) binds
+    | otherwise = fixGroupBinding bn binds
+
+mergeFunctionWithSameType = True
+
+{- | GroupBindHash required to find equal from task point of view bindings.
+ E.g. (we have 2 units and 3 functions with the same type):
+ @u1 <- f1, f2, f3; u2 <- _ === u1 <- _; u2 <-  f1, f2, f3@ because all
+ task will performing by one unit and it is not matter which one.
+
+ Corner cases:
+
+ - not all group binding are correct (e.g. self sending)
+
+ - we can't wait that unit is empty
+
+ - Combination like: `u1 <- f1, f2; u2 <- f3 !== u1 <- f1, f3; u2 <- f2` are not
+   equal because we don't take into accout their place in DFG.
+-}
+bindsHash :: UnitTag k => BusNetwork k v x t -> [(k, F v x)] -> S.Set (TypeRep, Int, S.Set String)
+bindsHash BusNetwork{bnPus, bnBound} binds =
+    let distribution = binds2bindGroup binds
+     in S.fromList
+            $ map
+                ( \(tag, fs) ->
+                    let
+                        u = bnPus M.! tag
+                        bound = maybe 0 length $ bnBound M.!? tag
+                        fs' =
+                            S.fromList $
+                                if mergeFunctionWithSameType
+                                    then -- TODO: merge only functions without
+                                    -- inputs, because they are equal from
+                                    -- scheduling point of view
+
+                                    -- TODO: other way to reduce number of
+                                    -- combinations
+                                        map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
+                                    else map show fs
+                     in
+                        (unitType u, bound, fs')
+                )
+            $ M.assocs distribution
+
+nubNotObviousBinds :: UnitTag k => BusNetwork k v x t -> [[(k, F v x)]] -> [[(k, F v x)]]
+nubNotObviousBinds bn bindss =
+    let hashed = map (\binds -> (bindsHash bn binds, binds)) bindss
+     in M.elems $ M.fromList hashed
+
 instance
     (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
-    bindOptions BusNetwork{bnRemains, bnPus} = concatMap optionsFor bnRemains
+    bindOptions bn@BusNetwork{bnRemains, bnPus} =
+        let binds = map optionsFor bnRemains
+
+            -- obvious mean we have only one option to bind function
+            obviousBinds = concat $ filter ((== 1) . length) binds
+            singleAssingmentBinds
+                | null obviousBinds = []
+                | otherwise = [GroupBind True $ binds2bindGroup obviousBinds]
+
+            notObviousBinds :: [[(tag, F v x)]]
+            notObviousBinds = filter ((> 1) . length) binds
+            -- TODO: split them on independent bindGroups. It should
+            -- significantly reduce complexity.
+            multiBinds :: [Bind tag v x]
+            multiBinds
+                | null notObviousBinds = []
+                | otherwise =
+                    map (GroupBind False . binds2bindGroup) $
+                        filter ((> 1) . length) $
+                            map (fixGroupBinding bn) $
+                                nubNotObviousBinds bn $
+                                    cartesianProduct notObviousBinds
+
+            simpleBinds = concatMap (map $ uncurry SingleBind) binds
+         in singleAssingmentBinds <> multiBinds <> simpleBinds
         where
             optionsFor f =
-                [ Bind f puTitle
-                | (puTitle, pu) <- M.assocs bnPus
+                [ (tag, f)
+                | (tag, pu) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
 
-    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBinded, bnRemains} (Bind f tag) =
+    bindDecision bn@BusNetwork{bnProcess, bnPus, bnBound, bnRemains} (SingleBind tag f) =
         bn
             { bnPus = M.adjust (bind f) tag bnPus
-            , bnBinded = registerBinding tag f bnBinded
+            , bnBound = registerBinding tag f bnBound
             , bnProcess = execScheduleWithProcess bn bnProcess $ scheduleFunctionBind f
             , bnRemains = filter (/= f) bnRemains
             }
+    bindDecision bn@BusNetwork{} GroupBind{bindGroup} =
+        foldl bindDecision bn $ concatMap (\(tag, fs) -> map (SingleBind tag) fs) $ M.assocs bindGroup
 
 instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
     breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus
 
-    breakLoopDecision bn@BusNetwork{bnBinded, bnPus} bl@BreakLoop{} =
-        let (puTag, bindedToPU) = fromJust $ L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
-            bindedToPU' = recLoopIn bl : recLoopOut bl : (bindedToPU L.\\ [recLoop bl])
+    breakLoopDecision bn@BusNetwork{bnBound, bnPus} bl@BreakLoop{} =
+        let (puTag, boundToPU) = fromJust $ L.find (elem (recLoop bl) . snd) $ M.assocs bnBound
+            boundToPU' = recLoopIn bl : recLoopOut bl : (boundToPU L.\\ [recLoop bl])
          in bn
                 { bnPus = M.adjust (`breakLoopDecision` bl) puTag bnPus
-                , bnBinded = M.insert puTag bindedToPU' bnBinded
+                , bnBound = M.insert puTag boundToPU' bnBound
                 }
 
 instance (UnitTag tag, VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
@@ -351,7 +442,7 @@ instance (UnitTag tag, VarValTime v x t) => ConstantFoldingProblem (BusNetwork t
             }
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
-    resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
+    resolveDeadlockOptions bn@BusNetwork{bnPus, bnBound} =
         let prepareResolve :: S.Set v -> [ResolveDeadlock v x]
             prepareResolve =
                 map resolveDeadlock
@@ -372,7 +463,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
             selfSending =
                 concatMap
                     (\(tag, fs) -> prepareResolve (unionsMap inputs fs `S.intersection` puOutputs tag))
-                    $ M.assocs bnBinded
+                    $ M.assocs bnBound
 
             allPULocks = map (second locks) $ M.assocs bnPus
 
@@ -407,17 +498,17 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
             maybeSended = M.keysSet var2endpointRole
 
     resolveDeadlockDecision
-        bn@BusNetwork{bnRemains, bnBinded, bnPus, bnProcess}
+        bn@BusNetwork{bnRemains, bnBound, bnPus, bnProcess}
         ref@ResolveDeadlock{newBuffer, changeset} =
             let (tag, _) =
                     fromJust
                         $ L.find
                             (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
-                        $ M.assocs bnBinded
+                        $ M.assocs bnBound
              in bn
                     { bnRemains = newBuffer : patch changeset bnRemains
                     , bnPus = M.adjust (patch changeset) tag bnPus
-                    , bnBinded = M.map (patch changeset) bnBinded
+                    , bnBound = M.map (patch changeset) bnBound
                     , bnProcess = execScheduleWithProcess bn bnProcess $ do
                         scheduleRefactoring (I.singleton $ nextTick bn) ref
                     }

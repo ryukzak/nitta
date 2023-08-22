@@ -32,6 +32,7 @@ import Data.Map.Strict qualified as M
 import Data.Text (Text)
 import Data.Typeable
 import Debug.Trace
+import NITTA.Model.Networks.Bus (BusNetwork)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Synthesis.Explore
@@ -62,14 +63,15 @@ stateOfTheArtSynthesisIO ctx tree = do
     l2 <- smartBindSynthesisIO ctx tree
     l3 <- bestThreadIO ctx stepLimit tree
     l4 <- bestThreadIO ctx stepLimit =<< allBindsAndRefsIO ctx tree
-    return $ bestLeaf tree [l1, l2, l3, l4]
+    l5 <- obviousGroupBindsIO ctx tree >>= tryAllGroupBindsByIO (bestThreadIO ctx stepLimit) ctx
+    return $ bestLeaf tree [l1, l2, l3, l4, l5]
 
 -- | Schedule process by simple synthesis.
 simpleSynthesisIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 simpleSynthesisIO ctx root = do
     infoM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
-    lastObliviousNode <- obviousBindThreadIO ctx root
-    allBestThreadIO ctx 1 lastObliviousNode
+    lastObviousNode <- obviousBindThreadIO ctx root
+    allBestThreadIO ctx 1 lastObviousNode
 
 smartBindSynthesisIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 smartBindSynthesisIO ctx tree = do
@@ -92,14 +94,25 @@ bestStepIO ctx tree = do
         [] -> error "all step is over"
         _ -> return $ maximumOn (defScore . sDecision) subForest
 
+obviousGroupBindsIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+obviousGroupBindsIO ctx tree = do
+    binds <- selectSubForestIO isObviousMultiBind ctx tree
+    maybe (return tree) (obviousGroupBindsIO ctx) $ bestDecision binds
+
+tryAllGroupBindsByIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+tryAllGroupBindsByIO method ctx tree = do
+    bindSubForest <- selectSubForestIO isMultiBind ctx tree
+    leafs <- mapM method bindSubForest
+    return $ bestLeaf tree leafs
+
 obviousBindThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 obviousBindThreadIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     maybe (return tree) (obviousBindThreadIO ctx) $
         L.find
             ( ( \case
-                    Just BindMetrics{pPossibleDeadlock = True} -> False
-                    Just BindMetrics{pAlternative = 1} -> True
+                    Just SingleBindMetrics{pPossibleDeadlock = True} -> False
+                    Just SingleBindMetrics{pAlternative = 1} -> True
                     _ -> False
               )
                 . cast
@@ -110,12 +123,13 @@ obviousBindThreadIO ctx tree = do
 allBindsAndRefsIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 allBindsAndRefsIO ctx tree = do
     subForest <-
-        filter ((\d -> isBind d || isRefactor d) . sDecision)
+        filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
             <$> positiveSubForestIO ctx tree
     case subForest of
         [] -> return tree
         _ -> allBindsAndRefsIO ctx $ minimumOn (defScore . sDecision) subForest
 
+refactorThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 refactorThreadIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     maybe (return tree) (refactorThreadIO ctx) $
@@ -124,7 +138,7 @@ refactorThreadIO ctx tree = do
 smartBindThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
 smartBindThreadIO ctx tree = do
     subForest <-
-        filter ((\d -> isBind d || isRefactor d) . sDecision)
+        filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
             <$> (positiveSubForestIO ctx =<< refactorThreadIO ctx tree)
     case subForest of
         [] -> return tree
@@ -228,3 +242,20 @@ type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, U
 --      predictScoresIO -> ScoringInput -> NodeView
 --
 --      Not sure if it's the right way to do it, but it works for now. Please, validate and fix if needed.
+
+-- * Helpers
+
+selectSubForestIO ::
+    ( SynthesisMethodConstraints tag v x t
+    , m ~ TargetSystem (BusNetwork tag v x t) tag v x t
+    , ctx ~ SynthesisState m tag v x t
+    ) =>
+    (SynthesisDecision ctx m -> Bool) ->
+    BackendCtx tag v x t ->
+    DefTree tag v x t ->
+    IO [DefTree tag v x t]
+selectSubForestIO p ctx tree = filter (p . sDecision) <$> positiveSubForestIO ctx tree
+
+bestDecision :: [DefTree tag v x t] -> Maybe (DefTree tag v x t)
+bestDecision [] = Nothing
+bestDecision xs = Just $ maximumOn (defScore . sDecision) xs

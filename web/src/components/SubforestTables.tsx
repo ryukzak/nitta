@@ -3,7 +3,7 @@ import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
 import { Node, Dataflow } from "services/HaskellApiService";
-import { BindMetrics, AllocationMetrics, DataflowMetrics } from "services/gen/types";
+import { ISingleBindMetrics, IGroupBindMetrics, AllocationMetrics, DataflowMetrics } from "services/gen/types";
 import {
   sidColumn,
   textColumn,
@@ -26,8 +26,9 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   };
   let known = [
     "RootView",
+    "GroupBindView",
     "AllocationView",
-    "BindDecisionView",
+    "SingleBindView",
     "DataflowDecisionView",
     "BreakLoopView",
     "ConstantFoldingView",
@@ -46,39 +47,60 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   return (
     <>
       <Table
+        name="GroupBinding"
+        nodes={nodes.filter((e) => ["GroupBindView"].includes(e.decision.tag))}
+        columns={[
+          sidColumn(appContext.setSid),
+          objectiveColumn(scoresInfo),
+          textColumn("type", (e: Node) => e.decision.tag, 160),
+          textColumn("description", (e: Node) => showDecision(e.decision)),
+
+          textColumn("obvious", (e: Node) => String((e.parameters as IGroupBindMetrics).pOnlyObviousBinds), 75),
+          textColumn("percent", (e: Node) => String((e.parameters as IGroupBindMetrics).pFunctionPercentInBinds), 75),
+          textColumn("avg", (e: Node) => String((e.parameters as IGroupBindMetrics).pAvgBinds), 50),
+          textColumn("variance", (e: Node) => String((e.parameters as IGroupBindMetrics).pVarianceBinds), 75),
+          textColumn("avgLoad", (e: Node) => String((e.parameters as IGroupBindMetrics).pAvgUnitWorkload), 75),
+          textColumn(
+            "varianceLoad",
+            (e: Node) => String((e.parameters as IGroupBindMetrics).pVarianceUnitWorkload),
+            100
+          ),
+
+          detailColumn(),
+        ]}
+      />
+      <Table
         name="Binding"
-        nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
+        nodes={nodes.filter((e: Node) => e.decision.tag === "SingleBindView")}
         columns={[
           sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
 
           textColumn("description", (e: Node) => showDecision(e.decision)),
 
-          textColumn("crit", (e: Node) => String((e.parameters as BindMetrics).pCritical), 50),
-          textColumn("lock", (e: Node) => String((e.parameters as BindMetrics).pPossibleDeadlock), 50),
+          textColumn("crit", (e: Node) => String((e.parameters as ISingleBindMetrics).pCritical), 50),
+          textColumn("lock", (e: Node) => String((e.parameters as ISingleBindMetrics).pPossibleDeadlock), 50),
           textColumn(
             "wave",
             (e: Node) => {
-              let x = (e.parameters as BindMetrics).pWave;
+              let x = (e.parameters as ISingleBindMetrics).pWave;
               return x === undefined || x === null ? "null" : (x as number).toString();
             },
             50
           ),
-          textColumn("outputs", (e: Node) => (e.parameters as BindMetrics).pOutputNumber, 70),
-          textColumn("alt", (e: Node) => (e.parameters as BindMetrics).pAlternative, 50),
-          textColumn("rest", (e: Node) => (e.parameters as BindMetrics).pRestless, 50),
+          textColumn("outputs", (e: Node) => (e.parameters as ISingleBindMetrics).pOutputNumber, 70),
+          textColumn("alt", (e: Node) => (e.parameters as ISingleBindMetrics).pAlternative, 50),
+          textColumn("rest", (e: Node) => (e.parameters as ISingleBindMetrics).pRestless, 50),
 
-          textColumn("newDF", (e: Node) => (e.parameters as BindMetrics).pAllowDataFlow, 70),
-          textColumn("newBind", (e: Node) => (e.parameters as BindMetrics).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Node) => (e.parameters as BindMetrics).pPercentOfBindedInputs, 70),
+          textColumn("newDF", (e: Node) => (e.parameters as ISingleBindMetrics).pAllowDataFlow, 70),
+          textColumn("newBind", (e: Node) => (e.parameters as ISingleBindMetrics).pNumberOfBoundFunctions, 70),
+          textColumn("|inputs|", (e: Node) => (e.parameters as ISingleBindMetrics).pPercentOfBoundInputs, 70),
           detailColumn(),
         ]}
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter(
-          (e) => !["DataflowDecisionView", "BindDecisionView", "AllocationView"].includes(e.decision.tag)
-        )}
+        nodes={nodes.filter((e) => ["BreakLoopView", "ConstantFoldingView", "AllocationView"].includes(e.decision.tag))}
         columns={[
           sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),

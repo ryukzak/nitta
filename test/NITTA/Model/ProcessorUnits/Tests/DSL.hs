@@ -296,13 +296,13 @@ isEpOptionAvailable EndpointSt{epRole = role, epAt = atA} pu =
 assertBindFullness :: (Function f v, WithFunctions pu f, Show f) => PUStatement pu v x t ()
 assertBindFullness = do
     UnitTestState{unit, functs} <- get
-    isOk <- lift $ isFullyBinded unit functs
+    isOk <- lift $ isFullyBound unit functs
     unless isOk $
         lift $
             assertFailure $
-                "Function is not binded to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
+                "Function is not bound to process! expected: " ++ concatMap show functs ++ "; actual: " ++ concatMap show (functions unit)
     where
-        isFullyBinded pu fs = do
+        isFullyBound pu fs = do
             assertBool ("Outputs not equal, expected: " <> show' fOuts <> "; actual: " <> show' outs) $ outs == fOuts
             assertBool ("Inputs not equal, expected: " <> show' fInps <> "; actual: " <> show' inps) $ inps == fInps
             return $ not $ null fu
@@ -437,9 +437,9 @@ synthesis method = do
     put st{unit = sTarget $ sState leaf}
 
 doBind :: T.Text -> F T.Text x -> TSStatement x ()
-doBind tag f = do
+doBind uTag f = do
     st@UnitTestState{unit = ts} <- get
-    let d = Bind f tag
+    let d = SingleBind uTag f
         opts = bindOptions ts
     unless (d `L.elem` opts) $
         lift $

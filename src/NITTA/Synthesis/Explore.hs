@@ -228,15 +228,18 @@ nodeCtx parent nModel =
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
             , bindingAlternative =
                 foldl
-                    (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)
+                    ( \st b -> case b of
+                        (SingleBind uTag f) -> M.alter (return . maybe [uTag] (uTag :)) f st
+                        _ -> st
+                    )
                     M.empty
                     sBindOptions
             , possibleDeadlockBinds =
                 S.fromList
                     [ f
-                    | (Bind f tag) <- sBindOptions
+                    | (SingleBind uTag f) <- sBindOptions
                     , Lock{lockBy} <- locks f
-                    , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
+                    , lockBy `S.member` unionsMap variables (boundFunctions uTag $ mUnit nModel)
                     ]
             , bindWaves = estimateVarWaves (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions)) fs
             , processWaves
@@ -248,4 +251,13 @@ nodeCtx parent nModel =
                     | (DataflowSt _ targets) <- sDataflowOptions
                     , (_, ep) <- targets
                     ]
+            , unitWorkloadInFunction =
+                let
+                    BusNetwork{bnBound, bnPus} = mUnit nModel
+                 in
+                    M.fromList
+                        $ map
+                            ( \uTag -> (uTag, maybe 0 length $ bnBound M.!? uTag)
+                            )
+                        $ M.keys bnPus
             }
