@@ -25,7 +25,7 @@ from functools import reduce
 from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
-from typing import Callable, Iterable, Iterator, Literal, Union
+from typing import Callable, Iterable, Iterator, Literal, Union, cast
 from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
@@ -82,14 +82,15 @@ def _build_argparser() -> ArgumentParser:
         + "Otherwise, NITTA will start/stop a new server for each synthesis run.",
     )
     # iterate fields in EvaluationConfig and add them to the argparser if type is in (int, str)
+    _supported_types = {"int": int, "str": str}
     for field in fields(EvaluationConfig):
-        if field.type in (int, str):
+        if field.type in _supported_types:
             cli_field_name = field.name.replace("_", "-")
             argparser.add_argument(
                 f"--{cli_field_name}",
                 help=f"Overrides the value of {field.name!r} from the config file.",
-                type=field.type,
-                metavar=field.type.__name__.upper(),
+                type=_supported_types[cast(str, field.type)],
+                metavar=field.type.upper(),
                 required=False,
             )
     return argparser
