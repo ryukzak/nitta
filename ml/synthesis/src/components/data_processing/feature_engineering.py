@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 
 
 def _map_bool(c):
+    # TODO: 1 - 0 - -1 mapping
     return c.apply(lambda v: 1 if v is True else (0 if v is False else v))
 
 
@@ -18,25 +19,20 @@ def _map_categorical(df, c):
 
 def preprocess_input_data_df(input_df: DataFrame) -> DataFrame:
     df: DataFrame = input_df.copy()
-
-    for bool_column in [
-        "is_terminal",
-        "pCritical",
-        "pPossibleDeadlock",
-        "pRestrictedTime",
-    ]:
-        if bool_column in df.columns:
-            df[bool_column] = _map_bool(df[bool_column])
-        else:
-            logger.warning(f"Column/parameter {bool_column} not found in provided node info.")
-
-    df = _map_categorical(df, df.tag)
     df = df.drop(
         # drop columns that must be excluded at all times
         ["pWave", "example", "sid", "old_score", "is_terminal", "pRefactoringType"],
         axis="columns",
         errors="ignore",
     )
+    dtypes_dict = df.convert_dtypes().dtypes.to_dict()
+
+    for col, dtype in dtypes_dict.items():
+        if dtype.name == "string":
+            df = _map_categorical(df, df[col])
+        elif dtype.name == "boolean":
+            df[col] = _map_bool(df[col])
+
     df = df.fillna(0)  # fill NaNs in columns (mostly OHE flags) with 0
     return df
 
