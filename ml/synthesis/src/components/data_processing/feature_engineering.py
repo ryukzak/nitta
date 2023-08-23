@@ -9,8 +9,7 @@ logger = get_logger(__name__)
 
 
 def _map_bool(c):
-    # TODO: 1 - 0 - -1 mapping
-    return c.apply(lambda v: 1 if v is True else (0 if v is False else v))
+    return c.apply(lambda v: 1 if v is True else (-1 if v is False else 0))
 
 
 def _map_categorical(df, c):
