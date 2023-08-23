@@ -31,6 +31,7 @@ from urllib.request import urlopen
 from components.common.logging import configure_logging, get_logger
 from components.common.saving import save_dicts_list_to_csv_with_timestamp
 from components.data_crawling.nitta.nitta_running import run_nitta_server
+from components.utils.string import camel_case_to_snake
 from consts import EXAMPLES_DIR
 
 logger = get_logger(__name__)
@@ -96,27 +97,21 @@ def _build_argparser() -> ArgumentParser:
     return argparser
 
 
-# this class is duplicated because this script should work without non-stdlib dependencies
 @dataclass
 class _NittaTreeInfo:
-    nodes: int
-    success: int
-    failed: int
-    not_processed: int
-    duration_success: dict[str, int]
-    steps_success: dict[str, int]
+    nodes_visited: int
+    nodes_success: int
+    nodes_failed: int
+    nodes_not_processed: int
+    target_process_duration: dict[str, int]
+    synthesis_steps_for_success: dict[str, int]
 
 
 def _get_tree_info_from_nitta(nitta_base_url: str) -> _NittaTreeInfo:
     with urlopen(nitta_base_url + "/treeInfo") as resp:
         ti_dict = json.loads(resp.read().decode("utf8"))
 
-    # manually handle case differences
-    ti_dict["not_processed"] = ti_dict.pop("notProcessed")
-    ti_dict["duration_success"] = ti_dict.pop("durationSuccess")
-    ti_dict["steps_success"] = ti_dict.pop("stepsSuccess")
-
-    return _NittaTreeInfo(**ti_dict)
+    return _NittaTreeInfo(**{camel_case_to_snake(k): v for k, v in ti_dict.items()})
 
 
 async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time: float) -> tuple[_NittaTreeInfo, dict]:
@@ -124,7 +119,7 @@ async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time
 
     logger.info(f"Got tree info: {ti}")
 
-    if not ti.success > 0:
+    if not ti.nodes_success > 0:
         logger.info("Synthesis was not successful, skipping stats collection")
         return ti, {}
 
@@ -137,13 +132,13 @@ async def _assemble_stats_dict_after_synthesis(nitta_base_url: str, elapsed_time
 
     return ti, {
         "time": elapsed_time,
-        "synthesis_steps": ti.nodes - ti.not_processed - 1,  # -1 for root
-        "mean_depth": _mean_from_tree_info_dict(ti.steps_success),
-        "min_duration": min(int(k) for k in ti.duration_success.keys()),
-        "leafs": ti.success + ti.failed,
-        "leaf_success_rate": ti.success / (ti.success + ti.failed),
-        "nodes_total": ti.nodes,
-        "nodes_not_processed": ti.not_processed,
+        "synthesis_steps": ti.nodes_visited - ti.nodes_not_processed - 1,  # -1 for root
+        "mean_depth": _mean_from_tree_info_dict(ti.synthesis_steps_for_success),
+        "min_duration": min(int(k) for k in ti.target_process_duration.keys()),
+        "leafs": ti.nodes_success + ti.nodes_failed,
+        "leaf_success_rate": ti.nodes_success / (ti.nodes_success + ti.nodes_failed),
+        "nodes_total": ti.nodes_visited,
+        "nodes_not_processed": ti.nodes_not_processed,
     }
 
 
@@ -181,7 +176,7 @@ async def _do_a_run_and_save_results(
             ), "it's not a timeout, so NITTA server should've been started. Control flow bug?"
             logger.info(f"Detected a NITTA API server on {nitta_base_url}. Getting tree info...")
             ti, stats = await _assemble_stats_dict_after_synthesis(nitta_base_url, elapsed_time)
-            success = ti.success > 0
+            success = ti.nodes_success > 0
 
         results.append(
             {
@@ -224,6 +219,8 @@ async def _main_in_ctx(results: list[dict], config: EvaluationConfig):
             await _do_a_run_and_save_results(results, config, run_info, example)
         except Exception:
             logger.exception("Failed to do a run, skipping and continuing")
+
+    return len(runs)
 
 
 async def _main(app_args: Namespace, *main_args, **main_kwargs):
@@ -331,8 +328,9 @@ if __name__ == "__main__":
 
     global_start = datetime.now()
 
+    total_runs = None
     try:
-        asyncio.run(_main(args, results, config))
+        total_runs = asyncio.run(_main(args, results, config))
     except KeyboardInterrupt:
         logger.info("Interrupted by user, saving what we have")
     except Exception:
@@ -341,5 +339,11 @@ if __name__ == "__main__":
     finally:
         elapsed = str(datetime.now() - global_start).split(".")[0]
         logger.info(f"=== Evaluation has been COMPLETED with {len(results)} results in {elapsed} ===")
+
+        if total_runs is not None:
+            runs_with_errors = total_runs - len(results)
+            if runs_with_errors > 0:
+                logger.info(f"Total runs count: {total_runs}, runs with errors: {runs_with_errors}")
+
         _aggregate_and_save_results(results, config)
         sys.exit(0 if success else 1)
