@@ -45,7 +45,7 @@ def create_datasets(main_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -
     input_columns = train_df_inputs.columns.tolist()
     logger.info(f"Input columns: {input_columns}")
 
-    train_ds = _df_to_dataset(train_df_inputs, train_df_targets, batch_size=128, repeat=True)
+    train_ds = _df_to_dataset(train_df_inputs, train_df_targets, batch_size=64, repeat=True)
     val_ds = _df_to_dataset(val_df_inputs, val_df_targets)
     del train_df_inputs, val_df_inputs
 

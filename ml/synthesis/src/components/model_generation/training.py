@@ -31,8 +31,8 @@ def train_and_save_baseline_model(
 
     model = create_baseline_model(input_shape=sample.shape)
     effective_fitting_kwargs = dict(
-        epochs=45,
-        steps_per_epoch=3000,
+        epochs=30,
+        steps_per_epoch=1500,
     )
     if fitting_kwargs:
         effective_fitting_kwargs.update(fitting_kwargs)
