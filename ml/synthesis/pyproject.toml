@@ -34,6 +34,12 @@ pandas-stubs = "2.0.2.*"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "DEBUG"
+testpaths = ["src/tests"]
+
 [tool.black]
 line-length = 120
 
@@ -99,7 +105,7 @@ ignore = [
 unfixable = [
     "ERA001",  # prohibit to "auto-fix" (=remove) commented-out code
 ]
-src = ["ml/synthesis/src"]
+src = ["src"]
 
 [tool.ruff.mccabe]
 max-complexity = 7
