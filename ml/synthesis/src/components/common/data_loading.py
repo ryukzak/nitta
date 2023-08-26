@@ -26,5 +26,8 @@ def load_all_existing_training_data(data_dir: Path = DATA_DIR) -> DataFrame:
             if _target_columns_set.issubset(set(next(csv.reader(f)))):
                 found_csvs.append(csv_path)
 
+    if not found_csvs:
+        raise FileNotFoundError("No training data found. Launch data crawling before training.")
+
     logger.info(f"Found valid training data in {len(found_csvs)} CSVs, loading...")
     return pd.concat([pd.read_csv(d) for d in found_csvs]).reset_index(drop=True)
