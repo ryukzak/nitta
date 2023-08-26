@@ -11,10 +11,36 @@ class EnvVarNames:
     MODELS_DIR = "NITTA_ML_SYNTHESIS_MODELS_DIR"
 
 
-ROOT_DIR = Path()
-EXAMPLES_DIR = Path("examples")
+_examples_dir_name = "examples"
 
-ML_SYNTHESIS_DIR = Path("ml/synthesis")
+
+def _find_root_dir():
+    """
+    Implements dynamic repo root finding if the current working dir is suddenly not it.
+
+    This makes life easier since it's impossible to configure some tools the other way or without other nasty hacks.
+
+    For example, a VS code test explorer extension at the moment of writing does not allow to specify tests cwd and
+    pytest's --rootdir (used for grabbing config) independently, hence the runtime tests cwd is <root>/ml/synthesis.
+
+    Happens because of this:
+    https://github.com/kondratyev-nv/vscode-python-test-adapter/issues/198#issuecomment-708671658
+
+    Other option would be to move pyproject.toml to repo root, but it seems completely wrong. File an issue?
+    """
+
+    candidate = Path().resolve()
+    while not (candidate / _examples_dir_name).exists() and candidate.parent != candidate:
+        candidate = candidate.parent
+
+    return candidate if (candidate / _examples_dir_name).exists() else Path()
+
+
+ROOT_DIR = _find_root_dir()
+
+EXAMPLES_DIR = ROOT_DIR / _examples_dir_name
+
+ML_SYNTHESIS_DIR = ROOT_DIR / "ml" / "synthesis"
 DATA_DIR = ML_SYNTHESIS_DIR / "data"
 
 _models_dir_env = os.environ.get(EnvVarNames.MODELS_DIR)
