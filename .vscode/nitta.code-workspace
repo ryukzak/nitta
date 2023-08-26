@@ -43,7 +43,11 @@
     "testing.gutterEnabled": false,
 
     // setting $LANG to "en_US.UTF-8" or something causes problems with some programs
-    "terminal.integrated.detectLocale": "off"
+    "terminal.integrated.detectLocale": "off",
+
+    "[toml]": {
+      "editor.defaultFormatter": "tamasfe.even-better-toml"
+    }
   },
   "extensions": {
     "recommendations": [
@@ -52,7 +56,9 @@
       // a simple extension to have a separate TODO/FIXME comments list at hand
       "Gruntfuggly.todo-tree",
       // a more feature-rich git integration (blame, commit history, etc.)
-      "eamodio.gitlens"
+      "eamodio.gitlens",
+      // TOML editing (syntax highlighting, formatting, etc.)
+      "tamasfe.even-better-toml"
     ]
   }
 }

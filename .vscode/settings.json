@@ -8,6 +8,9 @@
     "ml": true,
     "web": true
   },
+  "[haskell]": {
+    "editor.defaultFormatter": "haskell.haskell"
+  },
   "haskell.manageHLS": "GHCup",
   "haskell.formattingProvider": "fourmolu",
   "haskell.plugin.rename.config.crossModule": true
