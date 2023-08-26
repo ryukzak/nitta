@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    // main Haskell support extension (syntax highlighting, hlint, fourmolu, types, imports, etc.)
+    "haskell.haskell",
+    // Haskell debug adapter
+    "phoityne.phoityne-vscode"
+  ]
+}

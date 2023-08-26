@@ -1,0 +1,4 @@
+{
+  // TODO: add recommended extension set for web development and their config to web/.vscode/settings.json
+  "recommendations": ["esbenp.prettier-vscode"]
+}

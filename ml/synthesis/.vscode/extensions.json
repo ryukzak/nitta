@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "ms-python.black-formatter",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "matangover.mypy",
+    "tamasfe.even-better-toml",
+    "charliermarsh.ruff",
+
+    // A test viewer that is arguably easier to use than the ms-python.python's one is suggested.
+    // It provides a simple list of most important tests, no need to click through the tree.
+    // Parametrized tests don't flood the view in the list mode as well.
+    "littlefoxteam.vscode-python-test-adapter"
+  ]
+}

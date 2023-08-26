@@ -1,0 +1,58 @@
+{
+  "folders": [
+    {
+      "path": "..",
+      "name": "root"
+    },
+    {
+      "path": "../web",
+      "name": "web"
+    },
+    {
+      "path": "../ml/synthesis",
+      "name": "ml/synthesis"
+    }
+  ],
+  "settings": {
+    // only project-wide settings should be set here
+    // each workspace folder has its own .vscode/settings.json with its own relevant settings (python/web/haskell)
+
+    // editor and IDE-related
+    "editor.rulers": [120],
+    "editor.inlineSuggest.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "debug.console.wordWrap": false,
+    "git.enableSmartCommit": true,
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "gitlens.currentLine.enabled": false,
+    "debug.inlineValues": "on",
+    "workbench.editorAssociations": {
+      "*.csv": "gc-excelviewer-csv-editor"
+    },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.idea": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true
+    },
+    "testing.followRunningTest": false,
+    "testing.gutterEnabled": false,
+
+    // setting $LANG to "en_US.UTF-8" or something causes problems with some programs
+    "terminal.integrated.detectLocale": "off"
+  },
+  "extensions": {
+    "recommendations": [
+      // convenient CSV table viewer for synthesis evaluation results/summaries
+      "GrapeCity.gc-excelviewer",
+      // a simple extension to have a separate TODO/FIXME comments list at hand
+      "Gruntfuggly.todo-tree",
+      // a more feature-rich git integration (blame, commit history, etc.)
+      "eamodio.gitlens"
+    ]
+  }
+}
