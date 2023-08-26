@@ -8,4 +8,6 @@ from tests.fixtures.test_tree_root import test_root, test_root_dict
     test_root_dict,
 )
 
-silence_unwanted_logs()
+
+def pytest_sessionstart(session):
+    silence_unwanted_logs()
