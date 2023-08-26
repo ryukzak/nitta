@@ -14,17 +14,17 @@ from components.data_processing.dataset_creation import TARGET_COLUMNS, create_d
 from components.data_processing.feature_engineering import preprocess_input_data_df
 from components.model_generation.training import train_and_save_baseline_model
 from components.utils.tensorflow import strip_none_from_tensor_shape
-from consts import EXAMPLES_DIR, EnvVarNames
+from consts import EXAMPLES_DIR, ML_BACKEND_BASE_URL_FILEPATH, ROOT_DIR, EnvVarNames
 
 logger = get_logger(__name__)
 
 
 async def test_smoke():
     with TemporaryDirectory() as tmp_data_dir_name:
-        with TemporaryDirectory() as tmp_model_dir_name:
+        with TemporaryDirectory() as tmp_models_dir_name:
             # -- model generation pipeline --
             tmp_data_dir = Path(tmp_data_dir_name)
-            tmp_models_dir = Path(tmp_model_dir_name)
+            tmp_models_dir = Path(tmp_models_dir_name)
 
             await crawl_data_from_example(EXAMPLES_DIR / "fibonacci.lua", data_dir=tmp_data_dir)
             df = load_all_existing_training_data(tmp_data_dir)
@@ -64,6 +64,12 @@ async def test_smoke():
             async with run_nitta_server(EXAMPLES_DIR / "fibonacci.lua") as nitta:
                 non_ml_scores = await _get_scores(await nitta.get_base_url())
 
+            base_url_file = ROOT_DIR / ML_BACKEND_BASE_URL_FILEPATH
+            assert not base_url_file.exists(), (
+                f"Unexpected {base_url_file.resolve().as_posix()!r} exists, so this test will fail. Is something"
+                + " running there? Remove it and re-run the test. Not doing it automatically not to break stuff."
+            )
+
             async with run_nitta_server(
                 EXAMPLES_DIR / "fibonacci.lua",
                 nitta_args="--score=does_not_exist --method=NoSynthesis",
@@ -74,7 +80,7 @@ async def test_smoke():
             async with run_nitta_server(
                 EXAMPLES_DIR / "fibonacci.lua",
                 nitta_args=f'--score="ml_{model_name}"  --method=NoSynthesis -e',
-                env={EnvVarNames.MODELS_DIR: tmp_model_dir_name},
+                env={EnvVarNames.MODELS_DIR: tmp_models_dir.resolve()},
             ) as nitta:
                 ml_scores = await _get_scores(await nitta.get_base_url())
                 assert non_ml_scores != ml_scores

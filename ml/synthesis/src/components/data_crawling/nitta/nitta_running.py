@@ -96,6 +96,8 @@ async def run_nitta(
     run_result = None
     try:
         logger.info(f"Starting NITTA, command: {full_shell_cmd}")
+        if env:
+            logger.debug(f"Environment overrides: {env}")
 
         preexec_fn = None if os.name == "nt" else os.setsid  # see https://stackoverflow.com/a/4791612
 
