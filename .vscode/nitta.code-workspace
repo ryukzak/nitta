@@ -47,6 +47,11 @@
 
     "[toml]": {
       "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[markdown]": {
+      "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "editor.formatOnPaste": true,
+      "editor.formatOnSave": true
     }
   },
   "extensions": {
@@ -58,7 +63,9 @@
       // a more feature-rich git integration (blame, commit history, etc.)
       "eamodio.gitlens",
       // TOML editing (syntax highlighting, formatting, etc.)
-      "tamasfe.even-better-toml"
+      "tamasfe.even-better-toml",
+      // Markdown linting
+      "davidanson.vscode-markdownlint"
     ]
   }
 }
