@@ -52,6 +52,12 @@
       "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
       "editor.formatOnPaste": true,
       "editor.formatOnSave": true
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
     }
   },
   "extensions": {
@@ -65,7 +71,11 @@
       // TOML editing (syntax highlighting, formatting, etc.)
       "tamasfe.even-better-toml",
       // Markdown linting
-      "davidanson.vscode-markdownlint"
+      "davidanson.vscode-markdownlint",
+      // Prettier code formatter.
+      // Used the most for .tsx formatting in the web folder.
+      // Included in the root workspace for project-wide JSON formatting (vscode formatter is weird).
+      "esbenp.prettier-vscode"
     ]
   }
 }
