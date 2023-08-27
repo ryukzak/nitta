@@ -6,6 +6,4 @@ diff-friendly-import-export: true # 'false' uses Ormolu-style lists
 respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
 newlines-between-decls: 1 # number of newlines between top-level declarations
-
-# this will be available only since fourmolu-0.12.0.0, see https://github.com/ryukzak/nitta/issues/242
 single-constraint-parens: never # always | never | auto (preserve as is) - whether to style optional parentheses around single constraints
