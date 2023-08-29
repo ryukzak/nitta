@@ -172,7 +172,18 @@ At the moment of writing (2023), this is arguably the fastest and most convenien
 
 To get started with it, install or open [VS Code](https://code.visualstudio.com/) and get the [extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh). Then follow the [official VS Code docs](https://code.visualstudio.com/docs/remote/ssh), but keep an eye on this text too: it will be required to create an SSH config, see below for some container-specific info on that.
 
-After you connect to the remote, go to "File > Open Workspace from File" and open the `/app/.vscode/nitta.code-workspace`. Trust it, install all recommended extensions, [configure git](#git-configuration) and, for the basics, that's it! You should be good to go.
+After you connect to the remote:
+
+- go to "File > Open Workspace from File",
+- open the `/app/.vscode/nitta.code-workspace`,
+- trust it,
+- install all recommended extensions,
+- check that the right Python interpreter is set in all subroots (do the `Select Interpeter` via `Ctrl+Shift+P` and use the one from pyenv),
+- [configure Git](#git-configuration),
+- reload the window,
+- check that extensions work (type resolvers, autoformatters, etc., in haskell/python/tsx).
+
+For the basics, that's it! You should be good to go.
 
 #### Creating an SSH config
 
@@ -238,7 +249,7 @@ Set the correct path to the key in the config and that's it. Test with `ssh ndc`
 
 #### Git configuration
 
-You'll need to configure Git inside the container to use it:
+You'll need to [configure Git](https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git) inside the container to use it:
 
 ```bash
 git config --global user.name "Mona Lisa"
