@@ -45,6 +45,12 @@
     // setting $LANG to "en_US.UTF-8" or something causes problems with some programs
     "terminal.integrated.detectLocale": "off",
 
+    // this must be set at workspace level a bunch of weird errors doesn't show up right away in the dev container
+    // or the Python extension doesn't do weird stuff like activating extensions
+    "python.defaultInterpreterPath": "~/.pyenv/shims/python",
+    // this should be already activated as pyenv's shims are in PATH
+    "python.terminal.activateEnvironment": false,
+    "python.terminal.activateEnvInCurrentTerminal": false,
     "[toml]": {
       "editor.defaultFormatter": "tamasfe.even-better-toml"
     },
