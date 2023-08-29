@@ -51,6 +51,9 @@
     // this should be already activated as pyenv's shims are in PATH
     "python.terminal.activateEnvironment": false,
     "python.terminal.activateEnvInCurrentTerminal": false,
+    // disable mypy by default (overriden in ml/synthesis) so it doesn't spit out false positives from being run in wrong folders
+    "mypy.enabled": false,
+
     "[toml]": {
       "editor.defaultFormatter": "tamasfe.even-better-toml"
     },
