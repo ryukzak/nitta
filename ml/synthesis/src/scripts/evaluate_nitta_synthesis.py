@@ -25,7 +25,7 @@ from functools import reduce
 from pathlib import Path
 from statistics import mean, stdev
 from time import perf_counter
-from typing import Callable, Iterable, Iterator, Literal, Union, cast
+from typing import Callable, Iterable, Iterator, Literal, cast
 from urllib.request import urlopen
 
 from components.common.logging import configure_logging, get_logger
@@ -253,7 +253,7 @@ def _extract_values_of_metrics_and_runs_count(runs_group: Iterator[dict], key_co
     return runs_count, metric_to_vals
 
 
-_Aggregator = Callable[[list], Union[float, int]]
+_Aggregator = Callable[[list], (float | None)]
 
 
 def _aggregate_and_save_results(results: list[dict], config: EvaluationConfig):
@@ -279,16 +279,16 @@ def _aggregate_and_save_results(results: list[dict], config: EvaluationConfig):
     for key, runs_group in itertools.groupby(results, key=_sorting_key):
         runs_count, metric_to_vals = _extract_values_of_metrics_and_runs_count(runs_group, key_cols)
 
-        def _zero_if_shorter_than(threshold: int, func: _Aggregator) -> _Aggregator:
-            return lambda xs: 0 if len(xs) < threshold else func(xs)
+        def _none_if_shorter_than(threshold: int, func: _Aggregator) -> _Aggregator:
+            return lambda xs: None if len(xs) < threshold else func(xs)
 
         # this dict exists mainly not to confuse mypy
         aggregators: dict[str, _Aggregator] = {
-            "sum": _zero_if_shorter_than(1, sum),
-            "mean": _zero_if_shorter_than(1, mean),
-            "std": _zero_if_shorter_than(2, stdev),
-            "min": _zero_if_shorter_than(1, min),
-            "max": _zero_if_shorter_than(1, max),
+            "sum": _none_if_shorter_than(1, sum),
+            "mean": _none_if_shorter_than(1, mean),
+            "std": _none_if_shorter_than(2, stdev),
+            "min": _none_if_shorter_than(1, min),
+            "max": _none_if_shorter_than(1, max),
         }
 
         aggregated_results.append(
