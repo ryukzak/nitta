@@ -20,7 +20,7 @@ def test_root():
                 is_terminal=True,
                 is_finish=True,
                 parameters={"a": 1, "b": 2},
-                decision=dict(tag="BindDecisionView"),
+                decision=dict(tag="SingleBindView"),
                 duration=None,
                 sid="-0",
                 children=[],
