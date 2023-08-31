@@ -12,7 +12,7 @@ from components.data_crawling.nitta.nitta_running import run_nitta_server
 from components.data_crawling.nitta.tree_retrieving import retrieve_children, retrieve_tree_root
 from components.data_processing.dataset_creation import TARGET_COLUMNS, create_datasets
 from components.data_processing.feature_engineering import preprocess_input_data_df
-from components.model_generation.training import train_and_save_baseline_model
+from components.model_generation.training import train_and_save_model_on_given_data
 from components.utils.tensorflow import strip_none_from_tensor_shape
 from consts import EXAMPLES_DIR, ML_BACKEND_BASE_URL_FILEPATH, ROOT_DIR, EnvVarNames
 
@@ -34,7 +34,7 @@ async def test_smoke():
             tds, vds, input_cols = create_datasets(pdf)
 
             model_name = "test_model"
-            train_and_save_baseline_model(
+            train_and_save_model_on_given_data(
                 tds,
                 vds,
                 input_cols,

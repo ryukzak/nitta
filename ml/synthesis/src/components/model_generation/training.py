@@ -7,8 +7,12 @@ from matplotlib import pyplot as plt
 from tensorflow.data import Dataset  # pyright: ignore[reportMissingModuleSource]
 from tensorflow.python.keras import Model
 
+from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import get_logger
 from components.common.saving import get_current_time_str
+from components.data_crawling.data_crawling import MANUAL_FULL_CRAWL_CONFIG_VALIDATION_EXAMPLES
+from components.data_processing.dataset_creation import create_datasets
+from components.data_processing.feature_engineering import preprocess_input_data_df
 from components.model_generation.model_metainfo import ModelMetainfo
 from components.model_generation.models import create_baseline_model
 from consts import MODELS_DIR
@@ -16,7 +20,24 @@ from consts import MODELS_DIR
 logger = get_logger(__name__)
 
 
-def train_and_save_baseline_model(
+def train_and_save_model(
+    model_name: str | None = None,
+    val_examples: list[str] = MANUAL_FULL_CRAWL_CONFIG_VALIDATION_EXAMPLES,
+):
+    logger.info("Training a new model using all available training data")
+
+    training_data = load_all_existing_training_data()
+
+    val_mask = training_data.example.isin(val_examples)
+    train_df = preprocess_input_data_df(training_data[~val_mask])
+    val_df = preprocess_input_data_df(training_data[val_mask])
+
+    train_ds, val_ds, input_cols = create_datasets(train_df, val_df)
+
+    return train_and_save_model_on_given_data(train_ds, val_ds, input_cols, output_model_name=model_name)
+
+
+def train_and_save_model_on_given_data(
     train_ds: Dataset,
     val_ds: Dataset,
     input_cols: list[str],
@@ -33,6 +54,7 @@ def train_and_save_baseline_model(
     effective_fitting_kwargs = dict(
         epochs=30,
         steps_per_epoch=1500,
+        validation_steps=3000,
     )
     if fitting_kwargs:
         effective_fitting_kwargs.update(fitting_kwargs)

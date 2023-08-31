@@ -56,6 +56,7 @@ MANUAL_FULL_CRAWL_CONFIG: CrawlConfig = {
     EXAMPLES_DIR / "generated/cyclic5.lua": dict(n_samples_per_batch=59, n_samples=12933),
     EXAMPLES_DIR / "generated/vars.lua": dict(n_samples_per_batch=27, n_samples=10452),
 }
+MANUAL_FULL_CRAWL_CONFIG_VALIDATION_EXAMPLES = ["pid.lua", "constantFolding.lua"]
 """
 Those examples are manually chosen to have:
 1) ~400k training data rows per example
