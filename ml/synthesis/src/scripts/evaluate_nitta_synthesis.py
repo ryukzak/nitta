@@ -17,9 +17,9 @@ import logging
 import pickle
 import random
 import sys
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, BooleanOptionalAction
 from collections import defaultdict
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
@@ -49,6 +49,12 @@ class EvaluationConfig:
     measurement_tries: int
     examples: list[str] | Literal["all"]
     constant_args: str
+    with_ml_backend: bool = field(
+        metadata=dict(
+            help="If specified, keeps a single ML backend server running to reuse it during synthesis evaluation. "
+            + "Otherwise, NITTA will start/stop a new server for each synthesis run.",
+        ),
+    )
     evaluated_args: dict[str, dict[str, str]]
 
 
@@ -76,23 +82,22 @@ def _build_argparser() -> ArgumentParser:
         type=Path,
         help="Path to the evaluation JSON config file (see examples in evaluation_configs).",
     )
-    argparser.add_argument(
-        "--with-ml-backend",
-        action="store_true",
-        help="If specified, keeps a single ML backend server running to reuse it during synthesis evaluation. "
-        + "Otherwise, NITTA will start/stop a new server for each synthesis run.",
-    )
-    # iterate fields in EvaluationConfig and add them to the argparser if type is in (int, str)
-    _supported_types = {"int": int, "str": str}
-    for field in fields(EvaluationConfig):
-        if field.type in _supported_types:
-            cli_field_name = field.name.replace("_", "-")
+    # iterate fields in EvaluationConfig and add them to the argparser if type is supported
+    _supported_types: dict[str, dict] = {
+        "int": dict(type=int),
+        "str": dict(type=str),
+        "bool": dict(action=BooleanOptionalAction),
+    }
+    for fld in fields(EvaluationConfig):
+        if fld.type in _supported_types:
+            cli_field_name = fld.name.replace("_", "-")
+            default_help = f"Overrides the value of {fld.name!r} from the config file."
             argparser.add_argument(
                 f"--{cli_field_name}",
-                help=f"Overrides the value of {field.name!r} from the config file.",
-                type=_supported_types[cast(str, field.type)],
-                metavar=field.type.upper(),
+                help=fld.metadata.get("help", default_help),
+                metavar=fld.type.upper(),
                 required=False,
+                **_supported_types.get(cast(str, fld.type), {}),
             )
     return argparser
 
@@ -190,7 +195,7 @@ async def _do_a_run_and_save_results(
         logger.info(f"Saved a run result, NITTA runtime - {elapsed_time:.2f}s")
 
 
-async def _main_in_ctx(results: list[dict], config: EvaluationConfig):
+async def _do_the_runs(results: list[dict], config: EvaluationConfig):
     # this is a list of possible degrees of freedom (its len = number of evaluated parameters)
     search_space_dofs = [
         [(param_name, opt_name, opt_args) for opt_name, opt_args in param_opts.items()]
@@ -223,14 +228,14 @@ async def _main_in_ctx(results: list[dict], config: EvaluationConfig):
     return len(runs)
 
 
-async def _main(app_args: Namespace, *main_args, **main_kwargs):
-    if app_args.with_ml_backend:
+async def _prepare_and_do_the_runs(*, config: EvaluationConfig, **other_kwargs):
+    if config.with_ml_backend:
         from components.common.ml_backend_running import run_ml_backend
 
         async with run_ml_backend():
-            return await _main_in_ctx(*main_args, **main_kwargs)
+            return await _do_the_runs(config=config, **other_kwargs)
 
-    return await _main_in_ctx(*main_args, **main_kwargs)
+    return await _do_the_runs(config=config, **other_kwargs)
 
 
 def _select_keys_from_longest_dict(list_of_dicts: list[dict]) -> list[str]:
@@ -316,13 +321,7 @@ def _aggregate_and_save_results(results: list[dict], config: EvaluationConfig):
     )
 
 
-if __name__ == "__main__":
-    configure_logging(logging.INFO)
-
-    argparser = _build_argparser()
-    args = argparser.parse_args()
-    config = _build_config(args.config, args)
-
+def evaluate_nitta_synthesis(config: EvaluationConfig):
     results: list[dict] = []
     success = True
 
@@ -330,7 +329,7 @@ if __name__ == "__main__":
 
     total_runs = None
     try:
-        total_runs = asyncio.run(_main(args, results, config))
+        total_runs = asyncio.run(_prepare_and_do_the_runs(results=results, config=config))
     except KeyboardInterrupt:
         logger.info("Interrupted by user, saving what we have")
     except Exception:
@@ -346,4 +345,17 @@ if __name__ == "__main__":
                 logger.info(f"Total runs count: {total_runs}, runs with errors: {runs_with_errors}")
 
         _aggregate_and_save_results(results, config)
-        sys.exit(0 if success else 1)
+
+        return success
+
+
+if __name__ == "__main__":
+    configure_logging(logging.INFO)
+
+    argparser = _build_argparser()
+    args = argparser.parse_args()
+    config = _build_config(args.config, args)
+
+    success = evaluate_nitta_synthesis(config)
+
+    sys.exit(0 if success else 1)

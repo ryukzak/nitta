@@ -5,6 +5,7 @@
   "measurement_tries": 3,
   "examples": "all",
   "constant_args": "-e",
+  "with_ml_backend": true,
   "evaluated_args": {
     "score": {
       "mlGN_model_description": "--score=ml_model_dir"
