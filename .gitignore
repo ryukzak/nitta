@@ -23,4 +23,4 @@ hie.yaml
 **/build
 **/*.spec
 **/.ml_backend_base_url
-evaluation
+/evaluation
