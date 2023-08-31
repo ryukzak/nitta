@@ -124,7 +124,7 @@ Examine the container startup output in the console. Try using the environment y
 
 #### Stopping and restarting the container
 
-You can stop the attached container with `exit` or `Ctrl+D` and start it again in a detached state with `docker start nitta-dev-container`.
+You can stop the attached container with `exit` or `Ctrl+D` / `⌘D` and start it again in a detached state with `docker start nitta-dev-container`.
 
 Start the container in the beginning of each development session.
 
@@ -178,7 +178,10 @@ After you connect to the remote:
 - open the `/app/.vscode/nitta.code-workspace`,
 - trust it,
 - install all recommended extensions,
-- check that the right Python interpreter is set in all subroots (do the `Select Interpeter` via `Ctrl+Shift+P` and use the one from pyenv),
+- check that the right Python interpreter is set in all subroots:
+  - do the `Select Interpeter` via `Ctrl+Shift+P` / `⇧⌘P`,
+  - select the interpreter at workspace level,
+  - choose "⚙️ Use Python from `python.defaultInterpreterPath` setting",
 - [configure Git](#git-configuration),
 - reload the window,
 - check that extensions work (type resolvers, autoformatters, etc., in haskell/python/tsx).
@@ -197,7 +200,7 @@ First, find or create your `~/.ssh/config` file.
 >
 > **VS Code-specific notes**
 >
-> It's easier to manage the config directly from VS Code. Press `Ctrl+P` and type `>remote-ssh` to see available commands provided by the extension. "Open SSH Configuration File" is the one you need.
+> It's easier to manage the config directly from VS Code. Press `Ctrl+Shift+P` / `⇧⌘P` and type `remote-ssh` to see available commands provided by the extension. "Open SSH Configuration File" is the one you need.
 
 Add this to the config:
 
