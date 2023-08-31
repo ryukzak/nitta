@@ -93,6 +93,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
     BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
     BOOTSTRAP_HASKELL_GHC_VERSION=${GLOBAL_GHC_VER} \
     BOOTSTRAP_HASKELL_STACK_VERSION=${STACK_VER} \
+    BOOTSTRAP_HASKELL_INSTALL_HLS=1 \
     # DO NOT prepend ghcup's binaries dir to PATH in ~/.bashrc
     # we'll do it later manually in a way that includes non-interactive ssh shells (required for development with vscode)
     # BOOTSTRAP_HASKELL_ADJUST_BASHRC=1 \
