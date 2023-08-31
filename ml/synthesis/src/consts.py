@@ -39,9 +39,11 @@ def _find_root_dir():
 ROOT_DIR = _find_root_dir()
 
 EXAMPLES_DIR = ROOT_DIR / _examples_dir_name
+EVALUATIONS_DIR = ROOT_DIR / "evaluation"
 
 ML_SYNTHESIS_DIR = ROOT_DIR / "ml" / "synthesis"
 DATA_DIR = ML_SYNTHESIS_DIR / "data"
+EVALUATION_CONFIGS_DIR = ML_SYNTHESIS_DIR / "src" / "scripts" / "evaluation_configs"
 
 _models_dir_env = os.environ.get(EnvVarNames.MODELS_DIR)
 MODELS_DIR = Path(_models_dir_env) if _models_dir_env else ML_SYNTHESIS_DIR / "models"

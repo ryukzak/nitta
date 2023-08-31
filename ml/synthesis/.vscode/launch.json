@@ -60,6 +60,16 @@
       "request": "launch",
       "cwd": "${workspaceRoot}",
       "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: train_evaluate_in_ci",
+      "module": "scripts.train_evaluate_in_ci",
+      // FIXME: remove when https://github.com/microsoft/debugpy/issues/1251 is fixed
+      "pythonArgs": ["-Xfrozen_modules=off"],
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
     }
   ]
 }
