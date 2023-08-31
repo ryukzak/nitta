@@ -19,7 +19,7 @@ import random
 import sys
 from argparse import ArgumentParser, BooleanOptionalAction
 from collections import defaultdict
-from dataclasses import dataclass, field, fields
+from dataclasses import MISSING, dataclass, field, fields
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
@@ -32,7 +32,7 @@ from components.common.logging import configure_logging, get_logger
 from components.common.saving import save_dicts_list_to_csv_with_timestamp
 from components.data_crawling.nitta.nitta_running import run_nitta_server
 from components.utils.string import camel_case_to_snake
-from consts import EXAMPLES_DIR
+from consts import EVALUATIONS_DIR, EXAMPLES_DIR
 
 logger = get_logger(__name__)
 
@@ -43,26 +43,33 @@ _TIMEOUT_CHECKING_INTERVAL_S = 2
 @dataclass
 class EvaluationConfig:
     # raw values from the config file / CLI args
-    output_dir: str
-    nitta_run_command: str
-    nitta_run_timeout_s: int
-    measurement_tries: int
-    examples: list[str] | Literal["all"]
-    constant_args: str
+    evaluated_args: dict[str, dict[str, str]]
+    output_dir: Path = field(default=EVALUATIONS_DIR, metadata=dict(help="Directory to save results to."))
+    nitta_run_command: str = field(default="stack exec nitta --", metadata=dict(help="Command to run NITTA."))
+    nitta_run_timeout_s: int = field(default=60, metadata=dict(help="Timeout for a single NITTA synthesis run."))
+    measurement_tries: int = field(
+        default=3,
+        metadata=dict(help="How many times to measure each run options combination."),
+    )
+    examples: list[str] | Literal["all"] = field(default="all", metadata=dict(help="Examples to evaluate on."))
+    constant_args: str = field(
+        default="-e",
+        metadata=dict(help="Additional arguments that are passed to NITTA during all runs."),
+    )
     with_ml_backend: bool = field(
+        default=True,
         metadata=dict(
-            help="If specified, keeps a single ML backend server running to reuse it during synthesis evaluation. "
-            + "Otherwise, NITTA will start/stop a new server for each synthesis run.",
+            help="Whether to run and keep a single ML backend server for reuse during all NITTA runs. "
+            + "If False, NITTA will start/stop a new server for each run.",
         ),
     )
-    evaluated_args: dict[str, dict[str, str]]
 
 
-def _build_config(config_path: Path, args) -> EvaluationConfig:
+def read_evaluation_config_from_json(config_path: Path, **overrides) -> EvaluationConfig:
     with config_path.open() as f:
         config = json.load(f)
 
-    for arg, value in vars(args).items():
+    for arg, value in overrides.items():
         if arg in config and value is not None:
             config[arg] = value
 
@@ -82,9 +89,11 @@ def _build_argparser() -> ArgumentParser:
         type=Path,
         help="Path to the evaluation JSON config file (see examples in evaluation_configs).",
     )
+
     # iterate fields in EvaluationConfig and add them to the argparser if type is supported
     _supported_types: dict[str, dict] = {
         "int": dict(type=int),
+        "Path": dict(type=Path),
         "str": dict(type=str),
         "bool": dict(action=BooleanOptionalAction),
     }
@@ -92,13 +101,19 @@ def _build_argparser() -> ArgumentParser:
         if fld.type in _supported_types:
             cli_field_name = fld.name.replace("_", "-")
             default_help = f"Overrides the value of {fld.name!r} from the config file."
+
+            default_in_help = ""
+            if fld.default is not MISSING:
+                default_in_help = f' Default: "{fld.default}"'
+
             argparser.add_argument(
                 f"--{cli_field_name}",
-                help=fld.metadata.get("help", default_help),
+                help=fld.metadata.get("help", default_help) + default_in_help,
                 metavar=fld.type.upper(),
                 required=False,
                 **_supported_types.get(cast(str, fld.type), {}),
             )
+
     return argparser
 
 
@@ -354,7 +369,7 @@ if __name__ == "__main__":
 
     argparser = _build_argparser()
     args = argparser.parse_args()
-    config = _build_config(args.config, args)
+    config = read_evaluation_config_from_json(args.config, **vars(args))
 
     success = evaluate_nitta_synthesis(config)
 
