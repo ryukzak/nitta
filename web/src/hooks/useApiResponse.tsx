@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { UseApiRequestResult } from "./useApiRequest";
 
 export function useApiResponse<TResponseResult, TResult>(
   { response }: UseApiRequestResult<TResponseResult>,
   toResult: (result: TResponseResult) => TResult,
-  defaultResult: TResult
+  defaultResult: TResult,
 ): TResult {
   const [result, setResult] = useState(defaultResult);
   useEffect(() => {
