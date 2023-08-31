@@ -132,7 +132,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
     -- ^ source code format type
     }
 
-instance (SynthesisMethodConstraints tag v x t) => Default (TargetSynthesis tag v x t) where
+instance SynthesisMethodConstraints tag v x t => Default (TargetSynthesis tag v x t) where
     def =
         TargetSynthesis
             { tName = undefined

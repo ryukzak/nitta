@@ -56,7 +56,7 @@ noSynthesis _ tree = do
     return tree
 
 -- | The most complex synthesis method, which embedded all another. That all.
-stateOfTheArtSynthesisIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+stateOfTheArtSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 stateOfTheArtSynthesisIO ctx tree = do
     infoM "NITTA.Synthesis" $ "stateOfTheArtSynthesisIO: " <> show (sID tree)
     l1 <- simpleSynthesisIO ctx tree
@@ -67,19 +67,19 @@ stateOfTheArtSynthesisIO ctx tree = do
     return $ bestLeaf tree [l1, l2, l3, l4, l5]
 
 -- | Schedule process by simple synthesis.
-simpleSynthesisIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+simpleSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 simpleSynthesisIO ctx root = do
     infoM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
     lastObviousNode <- obviousBindThreadIO ctx root
     allBestThreadIO ctx 1 lastObviousNode
 
-smartBindSynthesisIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+smartBindSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 smartBindSynthesisIO ctx tree = do
     infoM "NITTA.Synthesis" $ "smartBindSynthesisIO: " <> show (sID tree)
     tree' <- smartBindThreadIO ctx tree
     allBestThreadIO ctx 1 tree'
 
-bestThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
+bestThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
 bestThreadIO _ 0 node = return $ trace "bestThreadIO've reached the step limit!" node
 bestThreadIO ctx limit tree = do
     subForest <- positiveSubForestIO ctx tree
@@ -87,25 +87,25 @@ bestThreadIO ctx limit tree = do
         [] -> return tree
         _ -> bestThreadIO ctx (limit - 1) $ maximumOn (defScore . sDecision) subForest
 
-bestStepIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+bestStepIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 bestStepIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     case subForest of
         [] -> error "all step is over"
         _ -> return $ maximumOn (defScore . sDecision) subForest
 
-obviousGroupBindsIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+obviousGroupBindsIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 obviousGroupBindsIO ctx tree = do
     binds <- selectSubForestIO isObviousMultiBind ctx tree
     maybe (return tree) (obviousGroupBindsIO ctx) $ bestDecision binds
 
-tryAllGroupBindsByIO :: (SynthesisMethodConstraints tag v x t) => SynthesisMethod tag v x t -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+tryAllGroupBindsByIO :: SynthesisMethodConstraints tag v x t => SynthesisMethod tag v x t -> BackendCtx tag v x t -> SynthesisMethod tag v x t
 tryAllGroupBindsByIO method ctx tree = do
     bindSubForest <- selectSubForestIO isMultiBind ctx tree
     leafs <- mapM method bindSubForest
     return $ bestLeaf tree leafs
 
-obviousBindThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+obviousBindThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 obviousBindThreadIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     maybe (return tree) (obviousBindThreadIO ctx) $
@@ -120,7 +120,7 @@ obviousBindThreadIO ctx tree = do
             )
             subForest
 
-allBindsAndRefsIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+allBindsAndRefsIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 allBindsAndRefsIO ctx tree = do
     subForest <-
         filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
@@ -129,13 +129,13 @@ allBindsAndRefsIO ctx tree = do
         [] -> return tree
         _ -> allBindsAndRefsIO ctx $ minimumOn (defScore . sDecision) subForest
 
-refactorThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+refactorThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 refactorThreadIO ctx tree = do
     subForest <- positiveSubForestIO ctx tree
     maybe (return tree) (refactorThreadIO ctx) $
         L.find (isRefactor . sDecision) subForest
 
-smartBindThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> SynthesisMethod tag v x t
+smartBindThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
 smartBindThreadIO ctx tree = do
     subForest <-
         filter ((\d -> isSingleBind d || isRefactor d) . sDecision)
@@ -144,14 +144,14 @@ smartBindThreadIO ctx tree = do
         [] -> return tree
         _ -> smartBindThreadIO ctx $ maximumOn (defScore . sDecision) subForest
 
-allBestThreadIO :: (SynthesisMethodConstraints tag v x t) => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
+allBestThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
 allBestThreadIO ctx (0 :: Int) tree = bestThreadIO ctx stepLimit tree
 allBestThreadIO ctx n tree = do
     subForest <- positiveSubForestIO ctx tree
     leafs <- mapM (allBestThreadIO ctx (n - 1)) subForest
     return $ bestLeaf tree leafs
 
-bestLeaf :: (SynthesisMethodConstraints tag v x t) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
+bestLeaf :: SynthesisMethodConstraints tag v x t => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
 bestLeaf tree leafs =
     let successLeafs = filter (\node -> isComplete node && isLeaf node) leafs
      in case successLeafs of
@@ -161,7 +161,7 @@ bestLeaf tree leafs =
                     (\Tree{sState = SynthesisState{sTarget}} -> (processDuration sTarget, puSize sTarget))
                     successLeafs
 
-topDownByScoreSynthesisIO :: (SynthesisMethodConstraints tag v x t) => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+topDownByScoreSynthesisIO :: SynthesisMethodConstraints tag v x t => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
 topDownByScoreSynthesisIO = topDownByScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0
 
 topDownByScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do
