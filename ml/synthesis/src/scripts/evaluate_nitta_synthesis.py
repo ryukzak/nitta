@@ -280,6 +280,8 @@ def _aggregate_and_save_results(results: list[dict], config: EvaluationConfig):
     if not results:
         return
 
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+
     # dumping raw results just in case something goes wrong while aggregating them
     pickle_output = Path(config.output_dir) / "latest_results.pickle"
     with pickle_output.open("wb") as f:
