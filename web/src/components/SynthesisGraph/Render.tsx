@@ -1,8 +1,8 @@
-import { AxiosResponse, AxiosError } from "axios";
-import React, { FC, useContext, useState, useEffect } from "react";
-import Tree from "react-d3-tree";
-import { SynthesisTree, api, Sid, reLastSid, sidSeparator } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "app/AppContext";
+import { AxiosError, AxiosResponse } from "axios";
+import React, { FC, useContext, useEffect, useState } from "react";
+import Tree from "react-d3-tree";
+import { Sid, SynthesisTree, api, reLastSid, sidSeparator } from "services/HaskellApiService";
 
 type Node = {
   name: string;

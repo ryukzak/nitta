@@ -1,11 +1,11 @@
-import React, { useContext, useState, FC } from "react";
-import { Popover, OverlayTrigger, Button } from "react-bootstrap";
+import React, { FC, useContext, useState } from "react";
+import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { synthesize, api, reLastSid, sidSeparator } from "services/HaskellApiService";
+import { api, reLastSid, sidSeparator, synthesize } from "services/HaskellApiService";
 
-import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 import { AppContext, IAppContext } from "app/AppContext";
+import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 
 export const SynthesisGraph: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;

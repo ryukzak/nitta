@@ -1,16 +1,16 @@
 import React, { Component } from "react";
-import { Route, Switch, Redirect } from "react-router-dom";
+import { Redirect, Route, Switch } from "react-router-dom";
 
-import { IAppContext, AppContextProvider } from "./AppContext";
-import { AppNavbar } from "./AppNavbar";
 import { Sid, sidSeparator } from "services/HaskellApiService";
+import { AppContextProvider, IAppContext } from "./AppContext";
+import { AppNavbar } from "./AppNavbar";
 
 import { SynthesisGraph } from "components/SynthesisGraph";
+import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";
+import { ProcessScreen } from "screens/ProcessScreen";
 import { SubforestScreen } from "screens/SubforestScreen";
 import { TestBenchScreen } from "screens/TestBenchScreen";
-import { ProcessScreen } from "screens/ProcessScreen";
-import { DebugScreen } from "screens/DebugScreen";
 
 export interface IAppProps {}
 

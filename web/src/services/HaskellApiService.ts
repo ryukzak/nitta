@@ -1,38 +1,39 @@
-import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { IAppContext } from "app/AppContext";
+import { AxiosError, AxiosPromise, AxiosResponse } from "axios";
 
 import jsAPI from "services/gen/rest_api";
 import {
-  TreeView,
-  ShortNodeView,
+  DecisionView,
+  EndpointSt,
+  GraphEdge,
+  GraphStructure,
+  IAllocationView,
   IBreakLoopView,
   IConstantFoldingView,
   IDataflowDecisionView,
+  IGroupBindView,
   IOptimizeAccumView,
   IResolveDeadlockView,
-  NetworkDesc,
+  IRootView,
   ISingleBindView,
-  IGroupBindView,
-  UnitDesc,
-  Relation,
-  TimeConstraint,
-  TreeInfo,
-  Process,
-  Step,
-  StepInfoView,
-  IAllocationView,
-} from "services/gen/types";
-import { NodeView, DecisionView, IRootView } from "services/gen/types";
-import {
-  UnitEndpoints,
-  EndpointSt,
   ISource,
   ITarget,
-  GraphStructure,
-  GraphEdge,
+  Interval,
+  MicroarchitectureDesc,
+  NetworkDesc,
+  NodeView,
+  Process,
+  Relation,
+  ShortNodeView,
+  Step,
+  StepInfoView,
   TestbenchReport,
+  TimeConstraint,
+  TreeInfo,
+  TreeView,
+  UnitDesc,
+  UnitEndpoints,
 } from "services/gen/types";
-import { Interval, MicroarchitectureDesc } from "services/gen/types";
 
 export type Sid = string;
 export const sidSeparator = "-";

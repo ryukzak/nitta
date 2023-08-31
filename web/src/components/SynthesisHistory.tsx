@@ -1,9 +1,9 @@
-import { AxiosResponse, AxiosError } from "axios";
-import React, { useEffect, useState, ReactElement, useContext, FC } from "react";
+import { AxiosError, AxiosResponse } from "axios";
+import React, { FC, ReactElement, useContext, useEffect, useState } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, Node, Sid } from "services/HaskellApiService";
+import { Node, Sid, api } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
 
 type Row = { original: Node; index: number };

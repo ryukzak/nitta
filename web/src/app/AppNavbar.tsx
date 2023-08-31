@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Navbar, Nav } from "react-bootstrap";
+import { Nav, Navbar } from "react-bootstrap";
 import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
 import "./AppNavbar.scss";

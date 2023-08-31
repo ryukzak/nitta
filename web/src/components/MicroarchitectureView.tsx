@@ -1,10 +1,16 @@
-import React, { useContext, useMemo, FC, useCallback } from "react";
-import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
+import React, { FC, useCallback, useContext, useMemo } from "react";
+import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, MicroarchitectureData, NetworkData, UnitData } from "services/HaskellApiService";
-import { UnitEndpointsData, EndpointOptionData } from "services/HaskellApiService";
+import {
+  EndpointOptionData,
+  MicroarchitectureData,
+  NetworkData,
+  UnitData,
+  UnitEndpointsData,
+  api,
+} from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";
