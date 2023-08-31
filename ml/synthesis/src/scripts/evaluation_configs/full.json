@@ -8,8 +8,7 @@
   "evaluated_args": {
     "score": {
       "default": "",
-      "model_v1": "--score=ml_v1",
-      "model_v2": "--score=ml_v2"
+      "ml": "--score=ml_production"
     },
     "synthesis_method": {
       "sota": "--method=StateOfTheArt",
