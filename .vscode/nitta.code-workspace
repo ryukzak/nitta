@@ -54,6 +54,9 @@
     // disable mypy by default (overriden in ml/synthesis) so it doesn't spit out false positives from being run in wrong folders
     "mypy.enabled": false,
 
+    // the Haskell extension doesn't install HLS otherwise for some weird reason
+    "haskell.manageHLS": "GHCup",
+
     "[toml]": {
       "editor.defaultFormatter": "tamasfe.even-better-toml"
     },
