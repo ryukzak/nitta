@@ -115,11 +115,11 @@ Examine the container startup output in the console. Try using the environment y
 - ssh into the container from another shell session (see the startup output for the command to execute it in the repo root)
 - run some commands (for example, `htop`, `stack test --fast`)
 - try using NITTA in the container:
-  - build it: `stack build --copy-bins`
-  - build the web UI: `nitta-api-gen && yarn --cwd=web install && yarn --cwd=web build`
-  - run the web UI: `nitta -v -p=8080 examples/counter.lua`
-  - forward the port to your host system with additional `-NL 8080:localhost:8080` flags to `ssh`
-  - open the web UI in your host system's browser
+    - build it: `stack build --copy-bins`
+    - build the web UI: `nitta-api-gen && yarn --cwd=web install && yarn --cwd=web build`
+    - run the web UI: `nitta -v -p=8080 examples/counter.lua`
+    - forward the port to your host system with additional `-NL 8080:localhost:8080` flags to `ssh`
+    - open the web UI in your host system's browser
 - prepare to see what's next in the "How to use" section below
 
 #### Stopping and restarting the container
@@ -141,15 +141,15 @@ If you need a shell access, depending on a state of things, you can use:
 The container is expected to be:
 
 - long-lived:
-  - it's suggested to start/stop the container instead of recreating
-  - attach/ssh into it to change its state interactively like you would do with a VM
-  - state is preserved between container restarts
-  - state in some important directories (`/home/devuser` and `/app`) is preserved even between container recreations to keep things safe and/or speed them up (shouldn't be necessary in most cases as you shouldn't recreate the container)
+    - it's suggested to start/stop the container instead of recreating
+    - attach/ssh into it to change its state interactively like you would do with a VM
+    - state is preserved between container restarts
+    - state in some important directories (`/home/devuser` and `/app`) is preserved even between container recreations to keep things safe and/or speed them up (shouldn't be necessary in most cases as you shouldn't recreate the container)
 - always running when you're working on NITTA:
-  - use SSH remote development in IDEs for a decent development experience
-  - run the container in background:
-    - `docker start nitta-dev-container`
-    - if you use Docker Desktop and chose to start the Docker Engine manually, you can use the Docker Desktop GUI client to start the container right after the engine
+    - use SSH remote development in IDEs for a decent development experience
+    - run the container in background:
+        - `docker start nitta-dev-container`
+        - if you use Docker Desktop and chose to start the Docker Engine manually, you can use the Docker Desktop GUI client to start the container right after the engine
 
 The steps below should give you an idea of what to do next to finally start writing and testing the code.
 
@@ -179,9 +179,9 @@ After you connect to the remote:
 - trust it,
 - install all recommended extensions,
 - check that the right Python interpreter is set in all subroots:
-  - do the `Select Interpeter` via `Ctrl+Shift+P` / `⇧⌘P`,
-  - select the interpreter at workspace level,
-  - choose "⚙️ Use Python from `python.defaultInterpreterPath` setting",
+    - do the `Select Interpeter` via `Ctrl+Shift+P` / `⇧⌘P`,
+    - select the interpreter at workspace level,
+    - choose "⚙️ Use Python from `python.defaultInterpreterPath` setting",
 - [configure Git](#git-configuration),
 - reload the window,
 - check that extensions work (type resolvers, autoformatters, etc., in haskell/python/tsx).
