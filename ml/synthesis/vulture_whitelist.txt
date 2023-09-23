@@ -3,3 +3,4 @@ alias_generator  # unused variable (src/components/common/customized_pydantic_mo
 tree_coverage  # unused variable (src/components/data_crawling/sampling_processing.py:21)
 data  # unused variable (src/mlbackend/dtos.py:13)
 Config  # unused class (src/components/common/customized_pydantic_model.py:7)
+pytest_sessionstart  # unused function (src/tests/conftest.py:12)
