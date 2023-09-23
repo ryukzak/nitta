@@ -9,7 +9,7 @@ from components.common.model_loading import load_model_with_metainfo
 from components.data_crawling.data_crawling import crawl_data_from_many_examples
 from components.evaluation.rating import rate_evaluations
 from components.model_generation.training import train_and_save_model
-from consts import EVALUATION_CONFIGS_DIR, EVALUATIONS_DIR, MODELS_DIR
+from consts import EVALUATION_CONFIGS_DIR, EVALUATIONS_DIR, MODELS_DIR, ROOT_DIR
 from scripts.evaluate_nitta_synthesis import (
     evaluate_nitta_synthesis,
     read_evaluation_config_from_json,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     rating_df = None
     if not args.skip_evaluation:
-        config = read_evaluation_config_from_json(EVALUATION_CONFIGS_DIR / "ci.json")
+        config = read_evaluation_config_from_json(EVALUATION_CONFIGS_DIR / "full.json")
         config.output_dir = EVALUATIONS_DIR / "ci"
         if config.output_dir.exists():
             shutil.rmtree(config.output_dir)
@@ -65,16 +65,18 @@ if __name__ == "__main__":
         evaluate_nitta_synthesis(config)
         rating_df = rate_evaluations(list(config.output_dir.glob("evaluation_*.csv")))
 
-    with (model_dir / "description.txt").open("w") as f:
-        f.write(f"{'Manually' if is_manual else 'Automatically'} trained model for synthesis \n\n")
-        f.write(f"Training MAE: {meta.train_mae:.3f}\n")
-        f.write(f"Validation MAE: {meta.validation_mae:.3f}\n")
+    with (ROOT_DIR / "train_eval_description.txt").open("w") as f:
         if rating_df is not None:
-            f.write("\n---\n")
-            # "tabulate" package is required for to_markdown()
             # preformat df for a decent appearance in markdown
+            # "tabulate" package is required for this
             rating_df = rating_df.reset_index().drop("evaluation", axis=1)
             table = rating_df.to_markdown(tablefmt="github", index=False)
-            f.write(f"Synthesis evaluation rating: \n{table}")
+            f.write(f"Synthesis evaluation rating: \n{table}\n\n")
 
-    logger.info(f"Done! Model saved to {model_dir}. Training history (+PNG chart), description and metainfo included.")
+        training_kind = "manually" if is_manual else "automatically"
+        f.write(
+            f"ML model for synthesis is trained {training_kind} "
+            + f"(train/val MAE: {meta.train_mae:.3f}/{meta.validation_mae:.3f}).\n",
+        )
+
+    logger.info(f"Done! Model saved to {model_dir}. Training history (+PNG chart) and metainfo included.")

@@ -4,11 +4,11 @@
 # 
 # The following build stages structure is chosen:
 #
-#     ubuntu:22.04 <-- dependencies <-- build <-- ml-script
+#     ubuntu:22.04 <-- dependencies <-- build <-- ci-ml
 #                           ^--- development <-- development-gpu
 #
 #     - "build" builds just NITTA itself
-#     - "ml-script" adds and prepares ML-related stuff
+#     - "ci-ml" adds and prepares ML-related stuff
 #     - "development" is a base stage for development containers
 #
 # During development it's useful to add a bind mount at /app to the repo root. 
@@ -372,9 +372,17 @@ WORKDIR /app
 # -----------------------------
 
 
-FROM build AS ml-script
+FROM build AS ci-ml
+
+ENV PYTHONPATH=/app/ml/synthesis/src
+
+WORKDIR /app/ml/synthesis
+RUN poetry install --no-root --compile
+WORKDIR /app
 
 COPY --chown=devuser:devuser examples examples/
 COPY --chown=devuser:devuser ml ml/
-ENV PYTHONPATH=/app/ml/synthesis/src
-ENTRYPOINT ["python"]
+COPY --chown=devuser:devuser hdl hdl/
+COPY --chown=devuser:devuser templates templates/
+
+CMD ["python", "-m", "scripts.train_evaluate_in_ci"]
