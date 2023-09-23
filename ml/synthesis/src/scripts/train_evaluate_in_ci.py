@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     rating_df = None
     if not args.skip_evaluation:
-        config = read_evaluation_config_from_json(EVALUATION_CONFIGS_DIR / "full.json")
+        config = read_evaluation_config_from_json(EVALUATION_CONFIGS_DIR / "ci.json")
         config.output_dir = EVALUATIONS_DIR / "ci"
         if config.output_dir.exists():
             shutil.rmtree(config.output_dir)
