@@ -163,16 +163,35 @@ nittaArgs =
             []
                 &= name "s"
                 &= typ "NAME"
-                &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
+                &= help
+                    ( concat
+                        [ "Name of the synthesis tree node score to additionally evaluate."
+                        , " Can be included multiple times (-s score1 -s score2)."
+                        , " Scores like "
+                        , mlScoreKeyPrefix
+                        , "<model_name> will enable ML scoring."
+                        ]
+                    )
                 &= groupname "Synthesis"
         , depth_base =
             1.4
-                &= help ("Only for '" <> show TopDownByScore <> "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.4)")
+                &= help
+                    ( concat
+                        [ "Only for '" <> show TopDownByScore <> "' synthesis: a [1; +inf)"
+                        , " value to be an exponential base of the depth priority coefficient"
+                        , " (default: 1.4)"
+                        ]
+                    )
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
         , method =
             StateOfTheArt
-                &= help "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)"
+                &= help
+                    ( concat
+                        [ "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)."
+                        , " `nosynthesis` required to run UI without synthesis on the start."
+                        ]
+                    )
                 &= typ "NAME"
                 &= groupname "Synthesis"
         }
