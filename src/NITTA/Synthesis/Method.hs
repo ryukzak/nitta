@@ -51,7 +51,7 @@ the endless synthesis process.
 stepLimit = 750 :: Int
 
 noSynthesis :: BackendCtx tag v x t -> SynthesisMethod tag v x t
-noSynthesis _ tree = do
+noSynthesis _ctx tree = do
     infoM "NITTA.Synthesis" "noSynthesis"
     return tree
 

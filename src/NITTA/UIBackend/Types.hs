@@ -26,4 +26,11 @@ data BackendCtx tag v x t = BackendCtx
     }
 
 instance Default (BackendCtx tag v x t) where
-    def = BackendCtx (error "root of a default (missing) BackendCtx was accessed") def def def def
+    def =
+        BackendCtx
+            { root = error "root of a default (missing) BackendCtx was accessed"
+            , receivedValues = def
+            , outputPath = def
+            , mlBackendGetter = def
+            , nodeScores = def
+            }

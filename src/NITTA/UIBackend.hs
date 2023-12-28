@@ -22,7 +22,7 @@ module NITTA.UIBackend (
 ) where
 
 import Control.Exception (SomeException, try)
-import Control.Monad (unless, when)
+import Control.Monad (unless)
 import Data.Either
 import Data.Maybe (fromJust)
 import Data.String.Interpolate
@@ -98,24 +98,22 @@ isLocalPortFree port =
     isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
 
 -- | Run backend server.
-backendServer givenPort ctx = do
-    when (givenPort > 0) $ do
-        -- on OS X, if we run system with busy port - application ignore that.
-        -- see: https://nitta.io/nitta-corp/nitta/issues/9
+backendServer givenPort ctx
+    | givenPort > 0 = do
         isFree <- isLocalPortFree givenPort
         unless isFree $ error "resource busy (Port already in use)"
 
-    (appRunner, realPort) <-
-        if givenPort > 0
-            then return (run givenPort, givenPort)
-            else do
-                (freePort, socket) <- openFreePort
-                let settings = setPort freePort defaultSettings
-                    runner = runSettingsSocket settings socket
-                return (runner, freePort)
+        putStrLn $ "Running NITTA server at http://localhost:" <> show givenPort <> " ..."
+        app <- simpleCors <$> application ctx
+        setLocaleEncoding utf8
+        run givenPort app
+    | otherwise = do
+        (freePort, socket) <- openFreePort
 
-    putStrLn $ "Running NITTA server at http://localhost:" <> show realPort <> " ..."
+        let settings = setPort freePort defaultSettings
+            appRunner = runSettingsSocket settings socket
 
-    app <- simpleCors <$> application ctx
-    setLocaleEncoding utf8
-    appRunner app
+        putStrLn $ "Running NITTA server at http://localhost:" <> show freePort <> " ..."
+        app <- simpleCors <$> application ctx
+        setLocaleEncoding utf8
+        appRunner app

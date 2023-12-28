@@ -43,6 +43,13 @@ packages:
       size: 1430
   original:
     hackage: ginger-0.10.4.0
+- completed:
+    hackage: weeder-2.4.1@sha256:c770961b5f2d32f21eb9499954758eaf68044fc488439e2e6acf4fe1757f00d5,1959
+    pantry-tree:
+      sha256: 26b9aa41d2fa2555e5699004e34fae3d39a8163310e39ef46789180bf176cc40
+      size: 439
+  original:
+    hackage: weeder-2.4.1
 snapshots:
 - completed:
     sha256: 5a59b2a405b3aba3c00188453be172b85893cab8ebc352b1ef58b0eae5d248a2
