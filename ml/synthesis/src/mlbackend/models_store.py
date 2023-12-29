@@ -3,7 +3,7 @@ from __future__ import annotations
 from os import PathLike
 from pathlib import Path
 
-from tensorflow.python.keras import Model
+from tensorflow.keras import Model
 
 from components.common.logging import get_logger
 from components.common.model_loading import load_model_with_metainfo

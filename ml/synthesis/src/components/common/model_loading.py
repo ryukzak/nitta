@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tensorflow.python.keras import Model
-from tensorflow.python.keras.models import load_model  # pyright: ignore[reportMissingImports]
+from tensorflow.keras import Model
+from tensorflow.keras.models import load_model  # pyright: ignore[reportMissingImports]
 
 from components.common.logging import get_logger
 from components.model_generation.model_metainfo import ModelMetainfo
