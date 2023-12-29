@@ -31,29 +31,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Cache haskell-stack
-        uses: actions/cache@v3.2.5
+      - uses: actions/cache@v3
+        name: Cache ~/.stack
+        id: cache
         with:
-          path: |
-            ~/.stack
-            .stack-work
-            /home/runner/.local/bin
-          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-
+          lookup-only: true
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v2.4.3
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: haskell-actions/setup@v2
         with:
           enable-stack: true
-          stack-no-global: true
           stack-version: "latest"
+          stack-no-global: true
 
-      - name: Build nitta backend dependencies and doctest
+      - name: Install nitta and dev dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           stack build --haddock --test --only-dependencies
-          stack install doctest
-
-      - name: Install weeder
-        run: stack install weeder-2.4.1
+          stack install doctest weeder
 
   nitta:
     runs-on: ubuntu-latest
@@ -62,69 +62,76 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Cache haskell-stack
-        uses: actions/cache@v3.2.5
+        ############################################################
+        ## Caches
+
+      - uses: actions/cache@v3
+        name: Cache ~/.stack
         with:
-          path: |
-            ~/.stack
-            .stack-work
-            /home/runner/.local/bin
-          key: ${{ runner.os }}-haskell-stack-${{ hashFiles('**/stack.yaml', '**/package.yaml') }}
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-
+
+      - uses: actions/cache@v3
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-
+
+      - uses: actions/cache@v3
+        name: Cache nitta exe
+        with:
+          path: ~/.local/bin
+          key: ${{ runner.os }}-nitta-exe-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-exe-
+
+      - uses: actions/cache@v3
+        name: Cache nitta-api-gen
+        with:
+          path: ./web/src/services/gen
+          key: ${{ runner.os }}-nitta-api-gen-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-api-gen-
+
+        ############################################################
+        ## Setup dev tools
 
       - name: Install haskell-stack
-        uses: haskell/actions/setup@v2.3.3
+        uses: haskell-actions/setup@v2
         with:
           enable-stack: true
-          stack-no-global: true
           stack-version: "latest"
+          stack-no-global: true
+
+      - name: "Set up HLint"
+        uses: haskell-actions/hlint-setup@v2.4.8
+        with:
+          version: "3.6.1"
+
       - name: Install Icarus Verilog
         run: sudo apt-get install iverilog
 
-      - name: Build & test nitta backend
-        run: stack build --haddock --no-haddock-deps --test --keep-going --test-suite-timeout 600 --copy-bins --coverage
+        ############################################################
+        ## nitta checks
 
-      - name: Generate test coverage report
-        run: stack hpc report nitta
+      - name: Build & test nitta
+        run: make build test
 
-      - name: Check examples by doctest
-        run: find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+      - name: Check nitta lint and format
+        run: make lint
+
+      - name: Make production build
+        run: make build-prod
 
       - name: Generate backend API
         run: stack exec nitta-api-gen -- -v
 
-      - name: Cache node_modules
-        uses: actions/cache@v3.2.5
-        with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-
-      - name: Build nitta frontend dependencies
-        working-directory: ./web
-        run: yarn install
-
-      - name: Build frontend
-        working-directory: ./web
-        timeout-minutes: 5
-        run: yarn build
-
-      - name: Run weeder
-        run: weeder
-
-      - uses: abatilo/actions-poetry@v2
-        with:
-          poetry-version: 1.6.1
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-          cache: poetry
-      - name: Install Python dependencies
-        working-directory: ./ml/synthesis
-        run: poetry install --no-root
-      - name: Run Python tests
-        working-directory: ./ml/synthesis
-        run: |
-          export PYTHONPATH=$(pwd)/src:$PYTHONPATH
-          poetry run pytest
+        ############################################################
+        ## nitta publish docs & reports
 
       - name: Copy doc to GH_PAGES_DIR
         run: |
@@ -132,7 +139,7 @@ jobs:
           cp -r $(stack path --dist-dir)/doc/html/nitta "$_"
 
       - name: Copy test coverage to GH_PAGES_DIR
-        run: cp -r $(stack path --local-hpc-root)/combined/custom ${{ env.GH_PAGES_DIR }}/hpc
+        run: cp -r $(stack path --local-hpc-root)/combined/all ${{ env.GH_PAGES_DIR }}/hpc
 
       - name: Copy API doc to GH_PAGES_DIR
         run: |
@@ -149,6 +156,100 @@ jobs:
           folder: ${{ env.GH_PAGES_DIR }}
           branch: gh-pages
 
+  nitta-frontend:
+    runs-on: ubuntu-latest
+    needs: nitta
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+
+        ############################################################
+        ## Caches
+
+      - name: Get yarn cache directory path
+        working-directory: ./web
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - uses: actions/cache@v3
+        name: Cache nitta-api-gen
+        with:
+          path: ./web/src/services/gen
+          key: ${{ runner.os }}-nitta-api-gen-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-api-gen-
+
+        ############################################################
+        ## nitta ui checks
+
+      - name: Build nitta frontend
+        timeout-minutes: 15
+        run: |
+          yarn --cwd web install
+          make ui-build
+
+  nitta-ml:
+    runs-on: ubuntu-latest
+    needs: nitta
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+
+        ############################################################
+        ## Caches
+
+      - uses: actions/cache@v3
+        name: Cache nitta exe
+        with:
+          path: ~/.local/bin
+          key: ${{ runner.os }}-nitta-exe-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-exe-
+
+      - uses: actions/cache@v3
+        name: Cache nitta-api-gen
+        with:
+          path: ./web/src/services/gen
+          key: ${{ runner.os }}-nitta-api-gen-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-api-gen-
+
+        ############################################################
+        ## Setup dev tools
+
+      - uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.6.1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          cache: poetry
+
+      - name: Install Python dependencies
+        working-directory: ./ml/synthesis
+        run: poetry install --no-root
+
+        ############################################################
+        ## nitta ml checks
+
+      - name: Run Python tests
+        working-directory: ./ml/synthesis
+        env:
+          NITTA_RUN_COMMAND: nitta
+        run: |
+          export PYTHONPATH=$(pwd)/src:$PYTHONPATH
+
+          poetry run pytest
+
   verilog-formatting:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -163,31 +264,15 @@ jobs:
           cat make_hdl.log
           test "$(grep -ci error make_hdl.log)" -eq 0
 
-  haskell-lint:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: "Set up HLint"
-        uses: haskell/actions/hlint-setup@v2.3.3
-        with:
-          version: "3.5"
-
-      - name: "Run HLint"
-        uses: haskell/actions/hlint-run@v2.3.3
-        with:
-          path: .
-          fail-on: suggestion
-
   haskell-formatting:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check formatting
-        uses: fourmolu/fourmolu-action@v8 # fourmolu-0.12.0.0
+      - uses: haskell-actions/run-fourmolu@v9
+        with:
+          version: "0.14.1.0"
 
   typescript-formatting:
     timeout-minutes: 5

@@ -144,6 +144,10 @@ async def run_nitta_server(
 ) -> AsyncGenerator[NittaRunResult, None]:
     port = 0  # NITTA will choose a random free port and print it to stdout, we'll parse
 
+    if new_nitta_cmd := os.environ.get("NITTA_RUN_COMMAND"):
+        logger.warn(f"Using NITTA_RUN_COMMAND env var: {new_nitta_cmd}")
+        nitta_run_command = new_nitta_cmd
+
     final_kwargs: dict = dict(
         full_shell_cmd=f"{nitta_run_command} -p={port} {nitta_args} {example}",
     )
