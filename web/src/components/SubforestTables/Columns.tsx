@@ -136,9 +136,23 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
       }
 
       return (
-        <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
-          {row.original.score}
-        </div>
+        <OverlayTrigger
+          trigger={["hover", "focus"]}
+          key={row.original.sid}
+          placement="left"
+          overlay={
+            <Popover id={`popover-positioned-left`}>
+              <Popover.Title>Scores</Popover.Title>
+              <Popover.Content>
+                <pre>{JSON.stringify(row.original.scores, undefined, 2)}</pre>
+              </Popover.Content>
+            </Popover>
+          }
+        >
+          <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
+            {row.original.score}
+          </div>
+        </OverlayTrigger>
       );
     },
   };
