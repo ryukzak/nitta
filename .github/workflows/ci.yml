@@ -180,6 +180,14 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - uses: actions/cache@v3
+        name: Cache nitta exe
+        with:
+          path: ~/.local/bin
+          key: ${{ runner.os }}-nitta-exe-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-nitta-exe-
+
+      - uses: actions/cache@v3
         name: Cache nitta-api-gen
         with:
           path: ./web/src/services/gen
