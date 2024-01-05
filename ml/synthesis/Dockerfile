@@ -308,7 +308,7 @@ USER root
 
 # ---- check if expected tensorflow version matches requirements.txt ----
 # this should be in sync with version in requirements.txt
-ARG TENSORFLOW_VER=2.12.*
+ARG TENSORFLOW_VER=2.13.*
 # those should be in sync with TENSORFLOW_VER, taken from https://www.tensorflow.org/install/source#gpu
 # cuDNN version must correspond to chosen tensorflow version, but we also need to specify minor version.
 # you can get it from "Available libcudnn8 versions" output below.
