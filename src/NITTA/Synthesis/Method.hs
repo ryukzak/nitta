@@ -25,7 +25,6 @@ module NITTA.Synthesis.Method (
     SynthesisMethodConstraints,
 ) where
 
-import Data.Aeson (ToJSON)
 import Data.Heap qualified as H
 import Data.List qualified as L
 import Data.Map.Strict qualified as M
@@ -39,7 +38,6 @@ import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
 import NITTA.UIBackend.Types
-import NITTA.UIBackend.ViewHelper
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 import System.Log.Logger
@@ -217,11 +215,6 @@ topDownByScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNo
                                 )
 
                             topDownByScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
-
-{- | Shortcut for constraints in signatures of synthesis method functions.
-This used to be (VarValTime v x t, UnitTag tag). See below for more info.
--}
-type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
 
 -- FIXME: Validate the type above, its usages and meaning in the context of changes described below.
 --

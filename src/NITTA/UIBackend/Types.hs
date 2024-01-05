@@ -23,6 +23,8 @@ data BackendCtx tag v x t = BackendCtx
     , outputPath :: String
     , mlBackendGetter :: IO MlBackendServer
     , nodeScores :: [T.Text]
+    -- ^ list of node scores name. Used for ML backend mostly, but can be used
+    -- for any "hardcoded" scoring function.
     }
 
 instance Default (BackendCtx tag v x t) where

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -30,6 +31,7 @@ module NITTA.Synthesis.Types (
     Tree (..),
     SynthesisDecision (..),
     SynthesisState (..),
+    SynthesisMethodConstraints,
     Sid (..),
     DefTree,
     SynthesisMethod,
@@ -57,6 +59,7 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.Problems.ViewHelper
+import NITTA.Model.ProcessorUnits.Types (UnitTag)
 import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.UIBackend.ViewHelperCls
@@ -71,6 +74,11 @@ type DefTree tag v x t =
 receives a node and explores it deeply by IO.
 -}
 type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
+
+{- | Shortcut for constraints in signatures of synthesis method functions.
+This used to be (VarValTime v x t, UnitTag tag). See below for more info.
+-}
+type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
 
 {- | Synthesis node ID. ID is a relative path, encoded as a sequence of an option
 index.
