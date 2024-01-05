@@ -122,7 +122,7 @@ RUN echo "GHCUP: $(ghcup --version)" \
 USER root
 
 # -- frontend --
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash \
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash \
     && apt-get install nodejs -yq \
     && node --version \
     && npm --version \
