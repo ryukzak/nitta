@@ -55,9 +55,11 @@ benchmark-report:
 ############################################################
 
 ui-build:
+	stack exec nitta-api-gen -- -v
 	yarn --cwd web run build
 
 ui-run:
+	stack exec nitta-api-gen -- -v
 	yarn --cwd web start
 
 ui-format:
