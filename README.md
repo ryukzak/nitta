@@ -37,7 +37,7 @@ Project CI chat (telegram): <https://t.me/nitta_ci>
 
 See: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Setup development environment
+## Set up development environment
 
 You have at least two options here:
 
