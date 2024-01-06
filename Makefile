@@ -6,7 +6,7 @@ PYTHONPATH = ml/synthesis/src
 POETRY = poetry -C $(POETRYPATH)
 PYTHON = PYTHONPATH=$(PYTHONPATH) $(POETRY) run python3
 ML_MODEL_PATH = ml/synthesis/models
-ML_MODEL = $(shell ls ml/synthesis/models -t | grep model | head -n 1)
+ML_MODEL = $(shell ls -t ml/synthesis/models | grep model | head -n 1)
 
 .PHONY: all build run test format clean
 
@@ -23,7 +23,7 @@ build:
 		--test --no-run-tests
 
 build-prod:
-	stack build --ghc-options="-O2" nitta:nitta
+	stack build --ghc-options="-O2"
 
 test:
 	stack build --coverage --test $(HS_O)
@@ -90,6 +90,26 @@ ml-lint:
 	cd $(POETRYPATH) && poetry run vulture
 
 ml-nitta:
-	echo $(ML_MODEL)
+	echo 'Model:' $(ML_MODEL)
 	$(POETRY) shell
-	MODELS_DIR=$(ML_MODEL_PATH) PYTHONPATH=$(PYTHONPATH) stack exec nitta -- examples/teacup.lua -s $(ML_MODEL) -p=8080 -d=1.2
+	MODELS_DIR=$(ML_MODEL_PATH) PYTHONPATH=$(PYTHONPATH) stack exec nitta -- examples/teacup.lua -s ml_$(ML_MODEL) -p=8080
+
+############################################################
+## docker development image
+############################################################
+
+docker-dev-build:
+	docker build \
+		--target development \
+		-f ml/synthesis/Dockerfile \
+		-t nitta-dev \
+		.
+
+docker-dev-run:
+	docker run \
+		--name=nitta-dev-container \
+		-p 31032:22 \
+		-v="$(PWD):/app" \
+		-v="nitta-devuser-home:/home/devuser" \
+		-it \
+		nitta-dev
