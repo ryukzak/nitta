@@ -41,10 +41,10 @@ See: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 You have at least two options here:
 
-1. Run it inside the docker container with VS Code by this [manual](/ml/synthesis/README.md).
-2. Run everything locally.
+1. Set it up automatically as a docker container using this [manual](/ml/synthesis/README.md) and develop in VS Code.
+2. Set it up locally by hand. May be less problematic in some cases.
 
-In this document, we will focus on the local developments.
+In this document, we will focus on the local setup.
 
 ### Mac OS X
 
