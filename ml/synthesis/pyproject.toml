@@ -19,6 +19,7 @@ uvicorn = { extras = ["standard"], version = "^0.23.2" }
 pandas = { version = "2.0.2", extras = ["performance"] }
 tabulate = "^0.9.0"
 
+# source: https://github.com/python-poetry/poetry/issues/8271#issuecomment-1696053565
 tensorflow = {version = "^2.13.1" }
 tensorflow-macos = { version = "^2.13.1", platform = "darwin", markers = "platform_machine=='arm64'" }
 tensorflow-intel = { version = "^2.13.1", platform = "windows" }
@@ -27,12 +28,6 @@ tensorflow-cpu = [
     { version = "^2.13.1", platform = "darwin", markers = "platform_machine!='arm64' and platform_machine!='aarch64'" },
 ]
 tensorflow-cpu-aws = { version = "^2.13.1", platform = "linux", markers = "platform_machine=='arm64' or platform_machine=='aarch64'" }
-
-# tensorflow = "2.13.1"
-# tensorflow-cpu-aws = { version = "^2.13.1", platform = "linux" }
-# tensorflow-intel = { version = "^2.13.1", platform = "win32" }
-# tensorflow-macos = { platform = "darwin", version = "^2.13.1" }
-# tensorflow-metal = { platform = "darwin", version = "^1.1.0" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
