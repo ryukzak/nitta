@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from components.common.logging import get_logger
-from consts import ROOT_DIR
+from consts import ROOT_DIR, NITTA_RUN_COMMAND_OVERRIDE
 
 logger = get_logger(__name__)
 
@@ -144,8 +144,8 @@ async def run_nitta_server(
 ) -> AsyncGenerator[NittaRunResult, None]:
     port = 0  # NITTA will choose a random free port and print it to stdout, we'll parse
 
-    if new_nitta_cmd := os.environ.get("NITTA_RUN_COMMAND"):
-        logger.warning(f"Using NITTA_RUN_COMMAND env var: {new_nitta_cmd}")
+    if new_nitta_cmd := NITTA_RUN_COMMAND_OVERRIDE:
+        logger.warning(f"Using NITTA_RUN_COMMAND_OVERRIDE env var: {new_nitta_cmd}")
         nitta_run_command = new_nitta_cmd
 
     final_kwargs: dict = dict(

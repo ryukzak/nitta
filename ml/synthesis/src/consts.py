@@ -49,3 +49,6 @@ _models_dir_env = os.environ.get(EnvVarNames.MODELS_DIR)
 MODELS_DIR = Path(_models_dir_env) if _models_dir_env else ML_SYNTHESIS_DIR / "models"
 
 ML_BACKEND_BASE_URL_FILEPATH = ".ml_backend_base_url"
+
+# high priority env var which overrides command provided in the config file
+NITTA_RUN_COMMAND_OVERRIDE = os.environ.get("NITTA_RUN_COMMAND", None)

@@ -252,7 +252,7 @@ jobs:
       - name: Run Python tests
         working-directory: ./ml/synthesis
         env:
-          NITTA_RUN_COMMAND: nitta
+          NITTA_RUN_COMMAND_OVERRIDE: nitta
         run: |
           export PYTHONPATH=$(pwd)/src:$PYTHONPATH
 

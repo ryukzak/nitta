@@ -5,8 +5,10 @@ POETRYPATH = ml/synthesis
 PYTHONPATH = ml/synthesis/src
 POETRY = poetry -C $(POETRYPATH)
 PYTHON = PYTHONPATH=$(PYTHONPATH) $(POETRY) run python3
+
+ML_CRAWL_DATA_PATH = ml/synthesis/data
 ML_MODEL_PATH = ml/synthesis/models
-ML_MODEL = $(shell ls -t ml/synthesis/models | grep model | head -n 1)
+ML_MODEL = $(shell ls -t $(ML_MODEL_PATH) | grep model | head -n 1)
 
 .PHONY: all build run test format clean
 
@@ -73,10 +75,10 @@ ui-format-check:
 ############################################################
 
 ml-crawl-data:
-	$(PYTHON) $(PYTHONPATH)/scripts/crawl_data_by_tree_sampling_many.py
+	$(PYTHON) -m scripts.crawl_data_by_tree_sampling_many
 
 ml-train-model:
-	$(PYTHON) $(PYTHONPATH)/scripts/train_model.py
+	$(PYTHON) -m scripts.train_model
 
 ml-format:
 	$(POETRY) run black $(PYTHONPATH)
@@ -90,9 +92,12 @@ ml-lint:
 	cd $(POETRYPATH) && poetry run vulture
 
 ml-nitta:
-	echo 'Model:' $(ML_MODEL)
+	echo 'Model for Synthesis: ' $(ML_MODEL)
 	$(POETRY) shell
 	MODELS_DIR=$(ML_MODEL_PATH) PYTHONPATH=$(PYTHONPATH) stack exec nitta -- examples/teacup.lua -s ml_$(ML_MODEL) -p=8080
+
+ml-clean:
+	rm -rfv $(ML_CRAWL_DATA_PATH) $(ML_MODEL_PATH)
 
 ############################################################
 ## docker development image

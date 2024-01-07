@@ -9,7 +9,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.MlBackend.Api (
+module NITTA.Synthesis.MlBackend.Client (
     ScoringInput (..),
     ScoringTarget (..),
     predictScoresIO,

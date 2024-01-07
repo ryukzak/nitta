@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -90,7 +90,7 @@ library
       NITTA.Synthesis.Analysis
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
-      NITTA.Synthesis.MlBackend.Api
+      NITTA.Synthesis.MlBackend.Client
       NITTA.Synthesis.MlBackend.FixedCache
       NITTA.Synthesis.MlBackend.ServerInstance
       NITTA.Synthesis.Steps

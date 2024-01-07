@@ -37,7 +37,7 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.MlBackend.Api
+import NITTA.Synthesis.MlBackend.Client
 import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
 import NITTA.UIBackend.Types
