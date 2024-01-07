@@ -19,18 +19,27 @@ uvicorn = { extras = ["standard"], version = "^0.23.2" }
 pandas = { version = "2.0.2", extras = ["performance"] }
 tabulate = "^0.9.0"
 
+# === TENSORFLOW SECTION ===
+#
+# When changing the TF version, don't forget to update the TENSORFLOW_VER in ml/synthesis/Dockerfile!
+#
+# There's an issue between poetry and tensorflow metadata since >=2.11
+# related to https://github.com/python-poetry/poetry/issues/8271
+# this should be a temporary workaround
 # source: https://github.com/python-poetry/poetry/issues/8271#issuecomment-1696053565
-#
-# Don't forget to update TENSORFLOW_VER in ml/synthesis/Dockerfile!
-#
 tensorflow = "^2.13.1"
 tensorflow-macos = { version = "^2.13.1", platform = "darwin", markers = "platform_machine=='arm64'" }
-tensorflow-intel = { version = "^2.13.1", platform = "windows" }
+tensorflow-intel = { version = "^2.13.1", platform = "win32" }
 tensorflow-cpu = [
     { version = "^2.13.1", platform = "linux", markers = "platform_machine!='arm64' and platform_machine!='aarch64'" },
     { version = "^2.13.1", platform = "darwin", markers = "platform_machine!='arm64' and platform_machine!='aarch64'" },
 ]
 tensorflow-cpu-aws = { version = "^2.13.1", platform = "linux", markers = "platform_machine=='arm64' or platform_machine=='aarch64'" }
+tensorflow-io-gcs-filesystem = [
+    { version = ">= 0.23.1", markers = "platform_machine!='arm64' or platform_system!='Darwin'" },
+    { version = "< 0.32.0", markers = "platform_system == 'Windows'" },
+]
+# === END OF TENSORFLOW SECTION ===
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
