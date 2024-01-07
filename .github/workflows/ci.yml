@@ -74,14 +74,6 @@ jobs:
             ${{ runner.os }}-stack-global-
 
       - uses: actions/cache@v3
-        name: Cache .stack-work
-        with:
-          path: .stack-work
-          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
-          restore-keys: |
-            ${{ runner.os }}-stack-work-
-
-      - uses: actions/cache@v3
         name: Cache nitta exe
         with:
           path: ~/.local/bin
