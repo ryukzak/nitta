@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from components.common.logging import get_logger
-from consts import ROOT_DIR, NITTA_RUN_COMMAND_OVERRIDE
+from consts import NITTA_RUN_COMMAND_OVERRIDE, ROOT_DIR
 
 logger = get_logger(__name__)
 
