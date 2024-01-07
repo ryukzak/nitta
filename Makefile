@@ -99,7 +99,7 @@ ml-nitta:
 	MODELS_DIR=$(ML_MODEL_PATH) PYTHONPATH=$(PYTHONPATH) stack exec nitta -- examples/teacup.lua -s ml_$(ML_MODEL) -p=8080
 
 ml-clean:
-	rm -rfv $(ML_CRAWL_DATA_PATH) $(ML_MODEL_PATH)
+	rm -rfv $(ML_CRAWL_DATA_PATH) $(ML_MODEL_PATH) .ml_backend_base_url
 
 ############################################################
 ## docker development image
