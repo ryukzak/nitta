@@ -118,6 +118,7 @@ see [Makefile](Makefile) as a source of up-to-date command examples. Most genera
 - `PYTHONPATH`: Specifies the Python path for Poetry.
 - `POETRY`: Command to run Poetry within the specified configuration.
 - `PYTHON`: Command to run Python using Poetry.
+- `ML_CRAWL_DATA_PATH`: Path to store data sets for ML training.
 - `ML_MODEL_PATH`: Path to the machine learning model directory.
 - `ML_MODEL`: Identifies the latest machine learning model in the `ML_MODEL_PATH`.
 
@@ -148,6 +149,15 @@ see [Makefile](Makefile) as a source of up-to-date command examples. Most genera
 - `ml-format-check`: Checks machine learning code formatting.
 - `ml-lint`: Lints machine learning code using Ruff, MyPy, and Vulture.
 - `ml-nitta`: Runs the machine learning model with Nitta.
+
+### Docker image for development
+
+see details in: <./ml/synthesis/README.md>
+
+- `docker-dev-build`: make dev image for your platform (~15 GB).
+- `docker-dev-build-with-gpu`: make dev image for your platform with GPU support (~25 GB).
+- `docker-dev-run`: run dev image without GPU support.
+- `docker-dev-run-with-gpu`: run dev image with GPU support.
 
 ## CLI Hints
 

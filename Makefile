@@ -10,6 +10,8 @@ ML_CRAWL_DATA_PATH = ml/synthesis/data
 ML_MODEL_PATH = ml/synthesis/models
 ML_MODEL = $(shell ls -t $(ML_MODEL_PATH) | grep model | head -n 1)
 
+PLATFORM := $(shell uname -s)
+
 .PHONY: all build run test format clean
 
 all: format build test lint
@@ -103,16 +105,62 @@ ml-clean:
 ## docker development image
 ############################################################
 
-docker-dev-build:
+
+docker-dev-build-for-linux-win:
+	docker build \
+		--target development \
+		-f ml/synthesis/Dockerfile \
+		--build-arg HOST_UID=$(id -u) \
+		--build-arg HOST_GID=$(id -g) \
+		-t nitta-dev \
+		.
+
+docker-dev-build-for-mac:
 	docker build \
 		--target development \
 		-f ml/synthesis/Dockerfile \
 		-t nitta-dev \
 		.
 
+docker-dev-build:
+	echo Platform: $(PLATFORM)
+ifeq ($(PLATFORM),Darwin)
+	make docker-dev-build-for-mac
+else
+	make docker-dev-build-for-linux-win
+endif
+
+
+docker-dev-build-with-gpu-for-linux-win:
+	docker build \
+		--target development-gpu \
+		-f ml/synthesis/Dockerfile \
+		--build-arg HOST_UID=$(id -u) \
+		--build-arg HOST_GID=$(id -g) \
+		-t nitta-dev \
+		.
+
+docker-dev-build-with-gpu:
+	echo Platform: $(PLATFORM)
+ifeq ($(PLATFORM),Darwin)
+	echo "GPU is not supported on Mac, use `docker-dev-build`"
+else
+	make docker-dev-build-with-gpu-for-linux-win
+endif
+
 docker-dev-run:
 	docker run \
 		--name=nitta-dev-container \
+		-p 31032:22 \
+		-v="$(PWD):/app" \
+		-v="nitta-devuser-home:/home/devuser" \
+		-it \
+		nitta-dev
+
+docker-dev-run-with-gpu:
+	docker run \
+		--name=nitta-dev-container \
+		--gpus=all \
 		-p 31032:22 \
 		-v="$(PWD):/app" \
 		-v="nitta-devuser-home:/home/devuser" \
