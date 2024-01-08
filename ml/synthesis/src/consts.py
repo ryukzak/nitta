@@ -11,6 +11,7 @@ class EnvVarNames:
     MODELS_DIR = "NITTA_ML_SYNTHESIS_MODELS_DIR"
     NITTA_RUN_COMMAND_OVERRIDE = "NITTA_RUN_COMMAND_OVERRIDE"
 
+
 _examples_dir_name = "examples"
 
 
