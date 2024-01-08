@@ -25,7 +25,6 @@ module NITTA.Synthesis.Method (
     SynthesisMethodConstraints,
 ) where
 
-import Data.Aeson (ToJSON)
 import Data.Heap qualified as H
 import Data.List qualified as L
 import Data.Map.Strict qualified as M
@@ -39,7 +38,6 @@ import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Steps
 import NITTA.Synthesis.Types
 import NITTA.UIBackend.Types
-import NITTA.UIBackend.ViewHelper
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 import System.Log.Logger
@@ -51,7 +49,7 @@ the endless synthesis process.
 stepLimit = 750 :: Int
 
 noSynthesis :: BackendCtx tag v x t -> SynthesisMethod tag v x t
-noSynthesis _ tree = do
+noSynthesis _ctx tree = do
     infoM "NITTA.Synthesis" "noSynthesis"
     return tree
 
@@ -217,31 +215,6 @@ topDownByScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNo
                                 )
 
                             topDownByScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode
-
-{- | Shortcut for constraints in signatures of synthesis method functions.
-This used to be (VarValTime v x t, UnitTag tag). See below for more info.
--}
-type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
-
--- FIXME: Validate the type above, its usages and meaning in the context of changes described below.
---
---      Ilya Burakov is not sure why signatures of synthesis method functions were explicitly defined
---      (not inferred) and why they are what they are, but introduction of JSON body formatting
---      for ML backend node scoring requests in NITTA.Synthesis.Explore module forced to add JSON-related
---      constraints to them.
---
---      Also, it has spilled to Default interface in NITTA.Synthesis. See usages of
---      SynthesisMethodConstraints for all related changes.
---
---      Effectvely, those constraints were added:
---          - ToJSONKey v, ToJSON v, ToJSON x, ToJSON t (via ValValTime -> ValValTimeJSON)
---          - ToJSON tag (explicitly)
---
---      Related chain of dependencies:
---      stateOfTheArtSynthesisIO -> bestThreadIO (or others) -> positiveSubForestIO -> subForestIO ->
---      predictScoresIO -> ScoringInput -> NodeView
---
---      Not sure if it's the right way to do it, but it works for now. Please, validate and fix if needed.
 
 -- * Helpers
 

@@ -15,6 +15,7 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.Default
+import Data.Functor ((<&>))
 import Data.Maybe
 import Data.String
 import Data.String.ToString
@@ -54,37 +55,33 @@ readMlBackendBaseUrlFileIO =
             return Nothing
 
 -- | Synchonously waits until ML backend server base URL file becomes available (with timeout)
-waitForMlBackendBaseUrlIO retriesLeft = do
-    if retriesLeft <= 0
-        then return Nothing
-        else do
-            let secondsPerRetry = 3 :: Int
+waitForMlBackendBaseUrlIO retriesLeft
+    | retriesLeft <= 0 = return Nothing
+    | otherwise = do
+        let secondsPerRetry = 3 :: Int
 
-            debugM
-                "NITTA.Synthesis.MlBackend"
-                ( "waiting "
-                    <> show (secondsPerRetry * retriesLeft)
-                    <> " second(s) more until ML backend server base URL is available..."
-                )
+        debugM
+            "NITTA.Synthesis.MlBackend"
+            ( "waiting "
+                <> show (secondsPerRetry * retriesLeft)
+                <> " second(s) more until ML backend server base URL is available..."
+            )
 
-            threadDelay $ secondsPerRetry * 1000000
+        threadDelay $ secondsPerRetry * 1000000
 
-            readMlBackendBaseUrlFileIO >>= \case
-                Just baseUrl -> do
-                    threadDelay 5000000 -- wait 5 more seconds to ensure that server is ready to accept connections
-                    return $ Just baseUrl
-                Nothing -> waitForMlBackendBaseUrlIO (retriesLeft - 1)
+        readMlBackendBaseUrlFileIO >>= \case
+            Just baseUrl -> do
+                threadDelay 5000000 -- wait 5 more seconds to ensure that server is ready to accept connections
+                return $ Just baseUrl
+            Nothing -> waitForMlBackendBaseUrlIO (retriesLeft - 1)
 
 findPythonExecutableIO = do
-    findExecutable "python3" >>= \case
-        Just executable -> return executable
-        Nothing -> do
-            findExecutable "python" >>= \case
-                Just executable -> return executable
-                Nothing -> do
-                    let errorMsg = "failed to find a python executable"
-                    errorM "NITTA.Synthesis.MlBackend" errorMsg
-                    throw $ userError errorMsg
+    (mapM findExecutable ["python3", "python"] <&> catMaybes) >>= \case
+        executable : _ -> return executable
+        [] -> do
+            let errorMsg = "failed to find a python executable"
+            errorM "NITTA.Synthesis.MlBackend" errorMsg
+            throw $ userError errorMsg
 
 -- | Tries to start ML backend server and gathers all required information about it.
 tryStartMlBackendServerIO = do
@@ -98,8 +95,8 @@ tryStartMlBackendServerIO = do
         createProcess (proc executable args)
 
     maybeDynamicBaseUrl <- case maybeHandles of
-        Nothing -> return Nothing
         Just _ -> waitForMlBackendBaseUrlIO 10
+        Nothing -> return Nothing
 
     when (isNothing maybeDynamicBaseUrl) $ do
         errorM "NITTA.Synthesis.MlBackend" "failed to start ML backend server"
@@ -110,25 +107,24 @@ tryStartMlBackendServerIO = do
 withLazyMlBackendServer action =
     bracket
         -- resource initialization action, produces lazy server getter with enabled memoization
-        ( let startupAction = do
-                maybeExistingBaseUrl <- readMlBackendBaseUrlFileIO
-                case maybeExistingBaseUrl of
-                    -- if ML backend server base URL file already exists, then we assume that server is already running
-                    Just existingBaseUrl -> do
-                        debugM
-                            "NITTA.Synthesis.MlBackend"
-                            ( "ML backend server base URL was found ("
-                                <> toString existingBaseUrl
-                                <> "), skipping server startup"
-                            )
-                        return MlBackendServer{baseUrl = Just existingBaseUrl, handles = Nothing}
-                    -- coulnd't find existing base URL, trying to start the server
-                    Nothing -> tryStartMlBackendServerIO
-           in do
-                -- cache is used to memoize server startup results and produce lazy getter
-                cache <- newCache
-                let serverGetter = fetch cache startupAction
-                return (serverGetter, cache)
+        ( do
+            let startupAction = do
+                    readMlBackendBaseUrlFileIO >>= \case
+                        -- if ML backend server base URL file already exists, then we assume that server is already running
+                        Just existingBaseUrl -> do
+                            debugM
+                                "NITTA.Synthesis.MlBackend"
+                                ( "ML backend server base URL was found ("
+                                    <> toString existingBaseUrl
+                                    <> "), skipping server startup"
+                                )
+                            return MlBackendServer{baseUrl = Just existingBaseUrl, handles = Nothing}
+                        -- coulnd't find existing base URL, trying to start the server
+                        Nothing -> tryStartMlBackendServerIO
+            -- cache is used to memoize server startup results and produce lazy getter
+            cache <- newCache
+            let serverGetter = fetch cache startupAction
+            return (serverGetter, cache)
         )
         -- resource cleanup action
         ( \(_, Cache mServerVar) -> do

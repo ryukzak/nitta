@@ -54,8 +54,6 @@ import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 import Servant.Docs
 
-type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
-
 -- Synthesis tree
 
 data TreeView a = TreeNodeView

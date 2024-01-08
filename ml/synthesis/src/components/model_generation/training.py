@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from matplotlib import pyplot as plt
 from tensorflow.data import Dataset  # pyright: ignore[reportMissingModuleSource]
-from tensorflow.python.keras import Model
+from tensorflow.keras import Model
 
 from components.common.data_loading import load_all_existing_training_data
 from components.common.logging import get_logger

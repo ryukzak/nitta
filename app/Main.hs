@@ -23,7 +23,6 @@ import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
-
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -163,16 +162,31 @@ nittaArgs =
             []
                 &= name "s"
                 &= typ "NAME"
-                &= help ("Name of the synthesis tree node score to additionally evaluate. Can be included multiple times (-s score1 -s score2). Scores like " <> mlScoreKeyPrefix <> "<model_name> will enable ML scoring.")
+                &= help
+                    ( "Name of the synthesis tree node score to additionally evaluate."
+                        <> " Can be included multiple times (-s score1 -s score2)."
+                        <> " Scores like "
+                        <> mlScoreKeyPrefix
+                        <> "<model_name> will enable ML scoring."
+                    )
                 &= groupname "Synthesis"
         , depth_base =
             1.4
-                &= help ("Only for '" <> show TopDownByScore <> "' synthesis: a [1; +inf) value to be an exponential base of the depth priority coefficient (default: 1.4)")
+                &= help
+                    ( "Only for '"
+                        <> show TopDownByScore
+                        <> "' synthesis: a [1; +inf)"
+                        <> " value to be an exponential base of the depth priority coefficient"
+                        <> " (default: 1.4)"
+                    )
                 &= typ "FLOAT"
                 &= groupname "Synthesis"
         , method =
             StateOfTheArt
-                &= help "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)"
+                &= help
+                    ( "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)."
+                        <> " `nosynthesis` required to run UI without synthesis on the start."
+                    )
                 &= typ "NAME"
                 &= groupname "Synthesis"
         }
@@ -255,9 +269,10 @@ main = do
                             , mlBackendGetter = serverGetter
                             , nodeScores = score
                             }
-                    synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
-                    synthesisMethod TopDownByScore = topDownByScoreSynthesisIO depth_base 500000 Nothing
-                    synthesisMethod NoSynthesis = noSynthesis
+                    synthesisMethod = case method of
+                        StateOfTheArt -> stateOfTheArtSynthesisIO
+                        TopDownByScore -> topDownByScoreSynthesisIO depth_base 500000 Nothing
+                        NoSynthesis -> noSynthesis
 
                 (synthesisRoot, prjE) <-
                     synthesizeTargetSystem
@@ -268,7 +283,7 @@ main = do
                             , tDFG = frDataFlow
                             , tReceivedValues = received
                             , tTemplates = S.split ":" templates
-                            , tSynthesisMethod = synthesisMethod method ctxWithoutRoot
+                            , tSynthesisMethod = synthesisMethod ctxWithoutRoot
                             , tSimulationCycleN = n
                             , tSourceCodeType = exactFrontendType
                             }
@@ -279,12 +294,12 @@ main = do
 
                 when (port > -1) $ do
                     bufE <- try $ readFile (apiPath </> "PORT")
-                    let expect = case bufE of
+                    let expectPort = case bufE of
                             Right buf -> case readEither buf of
                                 Right p -> p
                                 Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
                             Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                    warningIfUnexpectedPort expect port
+                    when (expectPort /= port) $ warningUnexpectedPort expectPort port
                     backendServer port ctxWithRoot
                     exitSuccess
         )
@@ -338,16 +353,15 @@ putLog "json" records = BS.putStrLn $ log2json records
 putLog "csv" records = BS.putStr $ log2csv records
 putLog t _ = error $ "not supported output format option: " <> t
 
-warningIfUnexpectedPort expect port =
-    when (expect /= port) $
-        warningM "NITTA.UI" $
-            concat
-                [ "WARNING: expected backend port: "
-                , show expect
-                , " actual: "
-                , show port
-                , " (maybe you need regenerate API by nitta-api-gen)"
-                ]
+warningUnexpectedPort expect port =
+    warningM "NITTA.UI" $
+        concat
+            [ "WARNING: expected backend port: "
+            , show expect
+            , " actual: "
+            , show port
+            , " (maybe you need regenerate API by nitta-api-gen)"
+            ]
 
 defMicroarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO

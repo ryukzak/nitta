@@ -34,7 +34,7 @@ defaultFmt = T.pack "%.3f"
 
 prettyLog traceVars hms = map prettyHM hms
     where
-        prettyHM hm = HM.fromList $ map (fromMaybe undefined) $ filter isJust $ map prettyX $ HM.toList hm
+        prettyHM hm = HM.fromList $ mapMaybe prettyX $ HM.toList hm
         prettyX (v0, x) = do
             -- variables names end on #0, #1..., so we trim this suffix
             let v = takeWhile (/= '#') $ toString v0

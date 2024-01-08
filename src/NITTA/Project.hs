@@ -171,7 +171,7 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
             copyFile source target
 
         libraryFiles Project{pName, pUnit} =
-            L.nub $ concatMap (args "") [hardware pName pUnit]
+            L.nub $ args "" $ hardware pName pUnit
             where
                 args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
                 args p (Aggregate Nothing subInstances) = concatMap (args p) subInstances

@@ -122,7 +122,7 @@ RUN echo "GHCUP: $(ghcup --version)" \
 USER root
 
 # -- frontend --
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash \
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash \
     && apt-get install nodejs -yq \
     && node --version \
     && npm --version \
@@ -306,11 +306,12 @@ FROM development as development-gpu
 USER root
 
 
-# ---- check if expected tensorflow version matches requirements.txt ----
-# this should be in sync with version in requirements.txt
-ARG TENSORFLOW_VER=2.12.*
-# those should be in sync with TENSORFLOW_VER, taken from https://www.tensorflow.org/install/source#gpu
-# cuDNN version must correspond to chosen tensorflow version, but we also need to specify minor version.
+# ---- check if expected tensorflow version matches pyproject.toml ----
+# TENSORFLOW_VER should be in sync with version in pyproject.toml
+ARG TENSORFLOW_VER=^2.13.1
+# CUDNN_VER and CUDA_VER should be correct for given TENSORFLOW_VER
+# lookup table: https://www.tensorflow.org/install/source#gpu
+# CUDNN_VER must be a FULL libcudnn8 version (8.6 -> 8.6.0.163)
 # you can get it from "Available libcudnn8 versions" output below.
 ARG CUDNN_VER=8.6.0.163
 ARG CUDA_VER=11.8
@@ -332,7 +333,7 @@ RUN apt-get install -yq wget \
 RUN apt-get install -yq cuda-toolkit-$CUDA_VER
 
 # -- installing cuDNN required for tensorflow-gpu --
-RUN echo "Available libcudnn8 versions (for reference if changing cuDNN version):" \
+RUN echo "Available libcudnn8 versions (for reference if changing the cuDNN version):" \
     && apt-cache madison libcudnn8 \
     && apt-get install -yq libcudnn8=$CUDNN_VER-1+cuda$CUDA_VER
 

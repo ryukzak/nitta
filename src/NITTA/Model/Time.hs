@@ -13,6 +13,7 @@ Stability   : experimental
 -}
 module NITTA.Model.Time (
     VarValTime,
+    VarValTimeJSON,
     Time,
     TimeConstraint (..),
     TaggedTime (..),
@@ -27,6 +28,8 @@ import Numeric.Interval.NonEmpty
 
 -- | Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
 type VarValTime v x t = (Var v, Val x, Time t)
+
+type VarValTimeJSON v x t = (VarValTime v x t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
 
 -- | Shortcut for time type constrain.
 type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t)

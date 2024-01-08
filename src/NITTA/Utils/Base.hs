@@ -26,6 +26,7 @@ import Data.Set (elems, unions)
 import Data.String
 import Data.String.ToString
 import Data.Text qualified as T
+import System.Log.Logger (warningM)
 
 unionsMap f lst = unions $ map f lst
 
@@ -45,4 +46,10 @@ showText v = T.pack $ show v
 
 vsToStringList vs = map toString $ elems vs
 
-catchToMaybeIO action = catch (action <&> Just) (\(_ :: IOException) -> return Nothing)
+catchToMaybeIO action =
+    catch
+        (action <&> Just)
+        ( \(e :: IOException) -> do
+            warningM "NITTA" ("IO Exception: " <> show e)
+            return Nothing
+        )

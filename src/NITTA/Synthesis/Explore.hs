@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -36,7 +37,7 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.MlBackend.Api
+import NITTA.Synthesis.MlBackend.Client
 import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
 import NITTA.UIBackend.Types
@@ -62,14 +63,14 @@ rootSynthesisTreeSTM model = do
             }
 
 -- | Get specific by @nId@ node from a synthesis tree.
-getTreeIO _ tree (Sid []) = return tree
+getTreeIO _ctx tree (Sid []) = return tree
 getTreeIO ctx tree (Sid (i : is)) = do
     subForest <- subForestIO ctx tree
     unless (i < length subForest) $ error "getTreeIO - wrong Sid"
     getTreeIO ctx (subForest !! i) (Sid is)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO _ _ (Sid []) = return []
+getTreePathIO _ctx _tree (Sid []) = return []
 getTreePathIO ctx tree (Sid (i : is)) = do
     h <- getTreeIO ctx tree $ Sid [i]
     t <- getTreePathIO ctx h $ Sid is
@@ -79,12 +80,8 @@ getTreePathIO ctx tree (Sid (i : is)) = do
 call.
 -}
 subForestIO
-    ctx
-    tree@Tree
-        { sSubForestVar
-        , sID
-        , sDecision
-        } = do
+    BackendCtx{nodeScores, mlBackendGetter}
+    tree@Tree{sSubForestVar} = do
         (firstTime, subForest) <-
             atomically $
                 tryReadTMVar sSubForestVar >>= \case
@@ -93,43 +90,38 @@ subForestIO
                         subForest <- exploreSubForestVar tree
                         putTMVar sSubForestVar subForest
                         return (True, subForest)
-        when firstTime $ do
-            debugM "NITTA.Synthesis" $
-                "explore: "
-                    <> show sID
-                    <> " score: "
-                    <> ( case sDecision of
-                            SynthesisDecision{scores} -> show scores
-                            _ -> "-"
-                       )
-                    <> " decision: "
-                    <> ( case sDecision of
-                            SynthesisDecision{decision} -> show decision
-                            _ -> "-"
-                       )
+
+        when firstTime $ traceProcessedNode tree
 
         -- FIXME: ML scores are evaluated here every time subForestIO is called. how to cache it like the default score? IO in STM isn't possible.
         -- also it looks inelegant, is there a way to refactor it?
-        if null subForest
-            then return subForest
-            else
-                ( let nodeScores' = nodeScores ctx
-                   in if null nodeScores'
-                        then return subForest
-                        else do
-                            let mlScoreKeys = filter (\name -> mlScoreKeyPrefix `T.isPrefixOf` name) nodeScores'
-                            let modelNames = map (fromJust . T.stripPrefix mlScoreKeyPrefix) mlScoreKeys
-                            if null modelNames
-                                then return subForest
-                                else do
-                                    mlBackend <- mlBackendGetter ctx
-                                    let mlBackendBaseUrlMaybe = baseUrl mlBackend
-                                    case mlBackendBaseUrlMaybe of
-                                        Nothing -> return subForest
-                                        Just mlBackendBaseUrl -> do
-                                            -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
-                                            foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
-                )
+        let modelNames = mapMaybe (T.stripPrefix mlScoreKeyPrefix) nodeScores
+        if
+            | null subForest -> return subForest
+            | null nodeScores -> return subForest
+            | null modelNames -> return subForest
+            | otherwise -> do
+                MlBackendServer{baseUrl} <- mlBackendGetter
+                case baseUrl of
+                    Nothing -> return subForest
+                    Just mlBackendBaseUrl -> do
+                        -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
+                        foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
+        where
+            traceProcessedNode Tree{sID, sDecision} =
+                debugM "NITTA.Synthesis" $
+                    "explore: "
+                        <> show sID
+                        <> " score: "
+                        <> ( case sDecision of
+                                SynthesisDecision{scores} -> show scores
+                                _ -> "-"
+                           )
+                        <> " decision: "
+                        <> ( case sDecision of
+                                SynthesisDecision{decision} -> show decision
+                                _ -> "-"
+                           )
 
 addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl subForest modelName = do
     addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName
