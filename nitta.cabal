@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -90,6 +90,9 @@ library
       NITTA.Synthesis.Analysis
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
+      NITTA.Synthesis.MlBackend.Client
+      NITTA.Synthesis.MlBackend.FixedCache
+      NITTA.Synthesis.MlBackend.ServerInstance
       NITTA.Synthesis.Steps
       NITTA.Synthesis.Steps.Allocation
       NITTA.Synthesis.Steps.Bind
@@ -102,6 +105,7 @@ library
       NITTA.UIBackend
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
+      NITTA.UIBackend.Types
       NITTA.UIBackend.ViewHelper
       NITTA.UIBackend.ViewHelperCls
       NITTA.UIBackend.VisJS
@@ -142,9 +146,11 @@ library
     , filepath
     , ginger
     , hashable
+    , heap
     , hslogger
     , htoml
     , http-api-data
+    , http-conduit
     , hxt
     , intervals
     , language-lua
@@ -203,6 +209,7 @@ executable nitta
     , data-default
     , filepath
     , ginger
+    , heap
     , hslogger
     , htoml
     , intervals
@@ -250,6 +257,7 @@ executable nitta-api-gen
     , directory
     , filepath
     , ginger
+    , heap
     , hslogger
     , htoml
     , intervals
@@ -328,6 +336,7 @@ test-suite nitta-test
     , genvalidity
     , genvalidity-property
     , ginger
+    , heap
     , htoml
     , hxt
     , intervals

@@ -30,7 +30,7 @@ import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Application.Static
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp (defaultSettings, openFreePort, run, runSettingsSocket, setPort)
 import Network.Wai.Middleware.Cors (simpleCors)
 import Servant
 import Servant.Docs hiding (path)
@@ -79,7 +79,7 @@ fileOrIndex pieces = do
             ssLookupFile frontendAppSettings $ fromJust $ toPieces ["index.html"]
         _ -> return res
 
-application receivedValues synthesisRoot outputPath = do
+application ctx = do
     return $
         serve
             ( Proxy ::
@@ -89,7 +89,7 @@ application receivedValues synthesisRoot outputPath = do
                         :<|> Raw
                     )
             )
-            ( synthesisServer BackendCtx{root = synthesisRoot, receivedValues, outputPath}
+            ( synthesisServer ctx
                 :<|> throwError err301{errHeaders = [("Location", "index.html")]}
                 :<|> serveDirectoryWith frontendAppSettings{ssLookupFile = fileOrIndex}
             )
@@ -98,12 +98,22 @@ isLocalPortFree port =
     isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
 
 -- | Run backend server.
-backendServer port receivedValues outputPath synthesisRoot = do
-    putStrLn $ "Running NITTA server at http://localhost:" <> show port <> " ..."
-    -- on OS X, if we run system with busy port - application ignore that.
-    -- see: https://nitta.io/nitta-corp/nitta/issues/9
-    isFree <- isLocalPortFree port
-    unless isFree $ error "resource busy (Port already in use)"
-    app <- application receivedValues synthesisRoot outputPath
-    setLocaleEncoding utf8
-    run port $ simpleCors app
+backendServer givenPort ctx
+    | givenPort > 0 = do
+        isFree <- isLocalPortFree givenPort
+        unless isFree $ error "resource busy (Port already in use)"
+
+        putStrLn $ "Running NITTA server at http://localhost:" <> show givenPort <> " ..."
+        app <- simpleCors <$> application ctx
+        setLocaleEncoding utf8
+        run givenPort app
+    | otherwise = do
+        (freePort, socket) <- openFreePort
+
+        let settings = setPort freePort defaultSettings
+            appRunner = runSettingsSocket settings socket
+
+        putStrLn $ "Running NITTA server at http://localhost:" <> show freePort <> " ..."
+        app <- simpleCors <$> application ctx
+        setLocaleEncoding utf8
+        appRunner app

@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -20,10 +21,14 @@ module NITTA.Synthesis.Explore (
 ) where
 
 import Control.Concurrent.STM
-import Control.Monad (forM, unless, when)
+import Control.Exception
+import Control.Monad (foldM, forM, unless, when)
 import Data.Default
 import Data.Map.Strict qualified as M
+import Data.Maybe
 import Data.Set qualified as S
+import Data.Text qualified as T
+import Debug.Trace (trace)
 import NITTA.Intermediate.Analysis (buildProcessWaves, estimateVarWaves)
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -32,9 +37,13 @@ import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Steps ()
+import NITTA.Synthesis.MlBackend.Client
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.Synthesis.Types
+import NITTA.UIBackend.Types
+import NITTA.UIBackend.ViewHelper
 import NITTA.Utils
+import Network.HTTP.Simple
 import System.Log.Logger
 
 -- | Make synthesis tree
@@ -54,28 +63,25 @@ rootSynthesisTreeSTM model = do
             }
 
 -- | Get specific by @nId@ node from a synthesis tree.
-getTreeIO tree (Sid []) = return tree
-getTreeIO tree (Sid (i : is)) = do
-    subForest <- subForestIO tree
+getTreeIO _ctx tree (Sid []) = return tree
+getTreeIO ctx tree (Sid (i : is)) = do
+    subForest <- subForestIO ctx tree
     unless (i < length subForest) $ error "getTreeIO - wrong Sid"
-    getTreeIO (subForest !! i) (Sid is)
+    getTreeIO ctx (subForest !! i) (Sid is)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO _ (Sid []) = return []
-getTreePathIO tree (Sid (i : is)) = do
-    h <- getTreeIO tree $ Sid [i]
-    t <- getTreePathIO h $ Sid is
+getTreePathIO _ctx _tree (Sid []) = return []
+getTreePathIO ctx tree (Sid (i : is)) = do
+    h <- getTreeIO ctx tree $ Sid [i]
+    t <- getTreePathIO ctx h $ Sid is
     return $ h : t
 
 {- | Get all available edges for the node. Edges calculated only for the first
 call.
 -}
 subForestIO
-    tree@Tree
-        { sSubForestVar
-        , sID
-        , sDecision
-        } = do
+    BackendCtx{nodeScores, mlBackendGetter}
+    tree@Tree{sSubForestVar} = do
         (firstTime, subForest) <-
             atomically $
                 tryReadTMVar sSubForestVar >>= \case
@@ -84,27 +90,72 @@ subForestIO
                         subForest <- exploreSubForestVar tree
                         putTMVar sSubForestVar subForest
                         return (True, subForest)
-        when firstTime $ do
-            debugM "NITTA.Synthesis" $
-                "explore: "
-                    <> show sID
-                    <> " score: "
-                    <> ( case sDecision of
-                            SynthesisDecision{scores} -> show scores
-                            _ -> "-"
-                       )
-                    <> " decision: "
-                    <> ( case sDecision of
-                            SynthesisDecision{decision} -> show decision
-                            _ -> "-"
-                       )
 
-        return subForest
+        when firstTime $ traceProcessedNode tree
+
+        -- FIXME: ML scores are evaluated here every time subForestIO is called. how to cache it like the default score? IO in STM isn't possible.
+        -- also it looks inelegant, is there a way to refactor it?
+        let modelNames = mapMaybe (T.stripPrefix mlScoreKeyPrefix) nodeScores
+        if
+            | null subForest -> return subForest
+            | null nodeScores -> return subForest
+            | null modelNames -> return subForest
+            | otherwise -> do
+                MlBackendServer{baseUrl} <- mlBackendGetter
+                case baseUrl of
+                    Nothing -> return subForest
+                    Just mlBackendBaseUrl -> do
+                        -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
+                        foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
+        where
+            traceProcessedNode Tree{sID, sDecision} =
+                debugM "NITTA.Synthesis" $
+                    "explore: "
+                        <> show sID
+                        <> " score: "
+                        <> ( case sDecision of
+                                SynthesisDecision{scores} -> show scores
+                                _ -> "-"
+                           )
+                        <> " decision: "
+                        <> ( case sDecision of
+                                SynthesisDecision{decision} -> show decision
+                                _ -> "-"
+                           )
+
+addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl subForest modelName = do
+    addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName
+        `catch` \e -> do
+            errorM "NITTA.Synthesis" $
+                "ML backend error: "
+                    <> ( case e of
+                            JSONConversionException _ resp _ -> show resp
+                            _ -> show e
+                       )
+            return subForest
+
+addMlScoreToSubforestIO mlBackendBaseUrl subForest modelName = do
+    let input = ScoringInput{scoringTarget = ScoringTargetAll, nodes = [view node | node <- subForest]}
+    allInputsScores <- predictScoresIO modelName mlBackendBaseUrl [input]
+    -- +20 shifts "useless node" threshold, since model outputs negative values much more often
+    -- FIXME: make models' output consist of mostly >0 values and treat 0 as a "useless node" threshold? training data changes required
+    let mlScores = map (+ 20) $ head allInputsScores
+        scoreKey = mlScoreKeyPrefix <> modelName
+
+    return $
+        map
+            (addNewScoreToSubforest scoreKey)
+            (zip subForest mlScores)
+
+addNewScoreToSubforest scoreKey (node@Tree{sDecision = sDes@SynthesisDecision{scores = origScores}}, newScore) =
+    node{sDecision = sDes{scores = M.insert scoreKey newScore origScores}}
+addNewScoreToSubforest scoreKey (node@Tree{sDecision = Root}, _) =
+    trace ("adding new score to Root, shouldn't happen, scoreKey: " ++ fromText scoreKey) node
 
 {- | For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).
 -}
-positiveSubForestIO tree = filter ((> 0) . defScore . sDecision) <$> subForestIO tree
+positiveSubForestIO ctx tree = filter ((> 0) . defScore . sDecision) <$> subForestIO ctx tree
 
 isLeaf'
     SynthesisState

@@ -63,6 +63,7 @@ class
     , Bits x
     , Validity x
     , FixedPointCompatible x
+    , ToJSON x
     ) =>
     Val x
     where

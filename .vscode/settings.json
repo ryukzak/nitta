@@ -1,0 +1,17 @@
+{
+  "files.exclude": {
+    "**/*.hie": true,
+    "**/.stack-work": true,
+
+    // those are excluded to other workspace folders:
+    // see relevant settings there in .vscode/settings.json
+    "ml": true,
+    "web": true
+  },
+  "[haskell]": {
+    "editor.defaultFormatter": "haskell.haskell"
+  },
+  "haskell.manageHLS": "GHCup",
+  "haskell.formattingProvider": "fourmolu",
+  "haskell.plugin.rename.config.crossModule": true
+}

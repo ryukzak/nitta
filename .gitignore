@@ -13,7 +13,6 @@ TAGS
 *.prof
 hdl/gen/*
 gen/*
-.vscode/*
 web/api.txt
 .#*
 .tasty-rerun-log
@@ -21,3 +20,7 @@ hie.yaml
 *.hie
 .idea/
 *.iml
+**/build
+**/*.spec
+**/.ml_backend_base_url
+/evaluation

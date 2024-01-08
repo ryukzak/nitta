@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import React, { useEffect, useState, useContext, FC } from "react";
+import React, { FC, useContext, useEffect, useState } from "react";
 
 import { api } from "services/HaskellApiService";
 import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "services/gen/types";
@@ -78,7 +78,7 @@ export const ProcessScreen: FC = () => {
                 </div>
               ) : (
                 ""
-              )
+              ),
             )}
           </div>
           <hr />
@@ -92,7 +92,7 @@ export const ProcessScreen: FC = () => {
           <div className="squeeze downRelation">bottom related:</div>
           <div className="x-scrollable">
             {highlight.down.map((e) =>
-              pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
+              pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : "",
             )}
           </div>
         </div>

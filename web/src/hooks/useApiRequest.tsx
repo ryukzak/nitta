@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
 import { AxiosResponse } from "axios";
+import { useCallback, useEffect, useState } from "react";
 
 interface UseApiRequestArgs<TResult> {
   requester: () => Promise<AxiosResponse<TResult>>;

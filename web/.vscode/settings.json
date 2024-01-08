@@ -1,0 +1,6 @@
+{
+  // the markdownlint extension currently doesn't find config in the root workspace folder
+  "markdownlint.config": {
+    "extends": "../.markdownlint.yaml"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "folders": [
+    {
+      "path": "..",
+      "name": "root"
+    },
+    {
+      "path": "../web",
+      "name": "web"
+    },
+    {
+      "path": "../ml/synthesis",
+      "name": "ml/synthesis"
+    }
+  ],
+  "settings": {
+    // only project-wide settings should be set here
+    // each workspace folder has its own .vscode/settings.json with its own relevant settings (python/web/haskell)
+
+    // editor and IDE-related
+    "editor.rulers": [120],
+    "editor.inlineSuggest.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "debug.console.wordWrap": false,
+    "git.enableSmartCommit": true,
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "gitlens.currentLine.enabled": false,
+    "debug.inlineValues": "on",
+    "workbench.editorAssociations": {
+      "*.csv": "gc-excelviewer-csv-editor"
+    },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.idea": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true
+    },
+    "testing.followRunningTest": false,
+    "testing.gutterEnabled": false,
+
+    // setting $LANG to "en_US.UTF-8" or something causes problems with some programs
+    "terminal.integrated.detectLocale": "off",
+
+    // this must be set at workspace level a bunch of weird errors doesn't show up right away in the dev container
+    // or the Python extension doesn't do weird stuff like activating extensions
+    "python.defaultInterpreterPath": "~/.pyenv/shims/python",
+    // this should be already activated as pyenv's shims are in PATH
+    "python.terminal.activateEnvironment": false,
+    "python.terminal.activateEnvInCurrentTerminal": false,
+    // disable mypy by default (overriden in ml/synthesis) so it doesn't spit out false positives from being run in wrong folders
+    "mypy.enabled": false,
+
+    // the Haskell extension doesn't install HLS otherwise for some weird reason
+    "haskell.manageHLS": "GHCup",
+
+    "[toml]": {
+      "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[markdown]": {
+      "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "editor.formatOnPaste": true,
+      "editor.formatOnSave": true
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      // convenient CSV table viewer for synthesis evaluation results/summaries
+      "GrapeCity.gc-excelviewer",
+      // a simple extension to have a separate TODO/FIXME comments list at hand
+      "Gruntfuggly.todo-tree",
+      // a more feature-rich git integration (blame, commit history, etc.)
+      "eamodio.gitlens",
+      // TOML editing (syntax highlighting, formatting, etc.)
+      "tamasfe.even-better-toml",
+      // Markdown linting
+      "davidanson.vscode-markdownlint",
+      // Prettier code formatter.
+      // Used the most for .tsx formatting in the web folder.
+      // Included in the root workspace for project-wide JSON formatting (vscode formatter is weird).
+      "esbenp.prettier-vscode"
+    ]
+  }
+}

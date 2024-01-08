@@ -1,6 +1,6 @@
-import React, { useContext, FC } from "react";
-import { DropdownButton, Dropdown } from "react-bootstrap";
-import { synthesize, api } from "services/HaskellApiService";
+import React, { FC, useContext } from "react";
+import { Dropdown, DropdownButton } from "react-bootstrap";
+import { api, synthesize } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
 
 import "./AppNavbar.scss";

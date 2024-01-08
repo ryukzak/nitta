@@ -1,0 +1,188 @@
+[tool.poetry]
+name = "nitta-ml-synthesis"
+version = "1.0.0"
+description = ""
+authors = ["iburakov <speedwatson@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.*"
+aiohttp = "^3.8.5"
+matplotlib = "^3.7.2"
+requests = "^2.31.0"
+joblib = "^1.3.2"
+tqdm = "^4.66.1"
+orjson = "^3.9.5"
+scikit-learn = "^1.3.0"
+fastapi = "^0.101.1"
+uvicorn = { extras = ["standard"], version = "^0.23.2" }
+pandas = { version = "2.0.2", extras = ["performance"] }
+tabulate = "^0.9.0"
+
+# === TENSORFLOW SECTION ===
+#
+# When changing the TF version, don't forget to update the TENSORFLOW_VER in ml/synthesis/Dockerfile!
+#
+# There's an issue between poetry and tensorflow metadata since >=2.11
+# related to https://github.com/python-poetry/poetry/issues/8271
+# this should be a temporary workaround
+# source: https://github.com/python-poetry/poetry/issues/8271#issuecomment-1696053565
+tensorflow = "^2.13.1"
+tensorflow-macos = { version = "^2.13.1", platform = "darwin", markers = "platform_machine=='arm64'" }
+tensorflow-intel = { version = "^2.13.1", platform = "win32" }
+tensorflow-cpu = [
+    { version = "^2.13.1", platform = "linux", markers = "platform_machine!='arm64' and platform_machine!='aarch64'" },
+    { version = "^2.13.1", platform = "darwin", markers = "platform_machine!='arm64' and platform_machine!='aarch64'" },
+]
+tensorflow-cpu-aws = { version = "^2.13.1", platform = "linux", markers = "platform_machine=='arm64' or platform_machine=='aarch64'" }
+tensorflow-io-gcs-filesystem = [
+    { version = ">= 0.23.1", markers = "platform_machine!='arm64' or platform_system!='Darwin'" },
+    { version = "< 0.32.0", markers = "platform_system == 'Windows'" },
+]
+# === END OF TENSORFLOW SECTION ===
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.1"
+black = "^23.7.0"
+mypy = "^1.5.1"
+ruff = "^0.0.285"
+vulture = "^2.9.1"
+types-tensorflow = "^2.12.0.6"
+types-tqdm = "^4.66.0.1"
+pandas-stubs = "2.0.2.*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "DEBUG"
+testpaths = ["src/tests"]
+
+
+[tool.black]
+line-length = 120
+
+
+[tool.mypy]
+files = ["src"]
+plugins = ["numpy.typing.mypy_plugin"]
+show_column_numbers = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+# it's better to disable untyped modules on a per-module basis
+module = ["matplotlib.*", "joblib.*", "sklearn.*"]
+ignore_missing_imports = true
+
+
+[tool.ruff]
+line-length = 120
+select = [
+    # A set of chosen linter rules is specified here.
+    # See https://beta.ruff.rs/docs/rules/ for more info.
+    # pyflakes (simple obvious errors)
+    "F",
+    # pycodestyle (style linter, pep8, black-compatible)
+    "E",
+    "W",
+    # pep8-naming (style linter, pep8 naming conventions)
+    "N",
+    # isort (imports sorting)
+    "I",
+    # mccabe (cyclomatic complexity analyzer to prevent overcomplicated functions)
+    "C90",
+    # pyupgrade (possible syntax upgrades checker)
+    "UP",
+    # eradicate (commented-out code finder for it to be removed)
+    "ERA",
+    # flake8-2020 (errors related to sys.version or sys.version_info, just in case)
+    "YTT",
+    # flake8-annotations (enforces presense of type hints so the codebase is fully typed)
+    # "ANN",  # too burdensome
+    # flake8-async (async-related mistakes/errors)
+    "ASYNC",
+    # flake8-builtins (checks builtin names shadowing, it's better not to)
+    "A",
+    # flake8-commas (to enforce trailing commas)
+    "COM",
+    # flake8-future-annotations (to ensure enabling modern (3.7+) postponed evaluation of type hints)
+    "FA",
+    # flake8-import-conventions (to enforce standartized import aliases like "import pandas as pd")
+    "ICN",
+    # flake8-no-pep420 (to enforce presence of __init__.py in packages)
+    "INP",
+    # flake8-print (to disallow print statements)
+    "T20",
+    # flake8-pytest-style (to improve pytest-related style consistency)
+    "PT",
+    # flake8-quotes (to enforce quotes style)
+    "Q",
+    # flake8-return (checks mistakes related to return values)
+    "RET",
+    # flake8-use-pathlib (to enforce pathlib usage instead of os.path)
+    "PTH",
+    # pandas-vet (pandas-related advices)
+    "PD",
+    # tryceratops (try/except-related advices)
+    "TRY",
+    # ruff-specific advices
+    "RUF",
+]
+ignore = [
+    "E501",   # allow lines longer than 80 symbols (up to 120)
+    "PD901",  # allow "df" variable name (it's short and often doesn't require clarification)
+    "RET504", # allow "unnecessary" assignments before return statements as it's often useful for chaning data transformations
+    "TRY003", # allow something like raise ValueError(f"Formatting {this} error message on the spot here"). too strict!
+]
+unfixable = [
+    "ERA001", # prohibit to "auto-fix" (=remove) commented-out code
+]
+src = ["src"]
+
+[tool.ruff.mccabe]
+max-complexity = 7
+
+
+[tool.vulture]
+# Vulture is a tool that statically finds unreachable code or unused attributes in Python programs.
+# Doing it without running the code in a language as dynamic as Python is non-trivial.
+# Hence, Vulture has some notion of "confidence", but imho it's pretty weird, since obvious unused global functions are 
+# given 60% confidence anyway just because they're functions (I guess?). Confidence depends on object's type, among other things.
+min_confidence = 60
+# 60% confidence threshold yields a lot of false positives, but 70% threshold yields a lot of false negatives.
+# The only way to get a good result is to use a 60% with a whitelist, adding false positives to it as they appear:
+#   1) Initialize a whitelist (once per project): 
+#           /app/ml/synthesis$ vulture --make-whitelist > vulture_whitelist.txt
+#
+#           !!! CWD MUST BE `ml/synthesis` FOR THIS TOOL !!!
+#
+#   2) During development, run vulture and review the results. This config in pyproject.toml is picked up, so 
+#      vulture_whitelist.txt is picked up too (it's specified in the `paths` below) and false positives are ignored:
+#           /app/ml/synthesis$ vulture
+#   3) When all the new true positives are fixed, add remaining false positives to the whitelist: 
+#           /app/ml/synthesis$ vulture --make-whitelist >> vulture_whitelist.txt
+#   4) Keep in mind that if some false positives tend to appear again (like FastAPI's `@app`-decorated functions),
+#      they better be added to the ignore list below, not to the whitelist.
+paths = ["src", "vulture_whitelist.txt"]
+ignore_decorators = [
+    # FastAPI
+    "@app.get",
+    "@app.post",
+    "@app.put",
+    "@app.delete",
+    "@app.patch",
+    "@app.exception_handler",
+]
+ignore_names = [
+    # __exit__(...) method arguments
+    "__exc_type",
+    "__exc_value",
+    "__traceback",
+]
+sort_by_size = true

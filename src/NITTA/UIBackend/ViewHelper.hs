@@ -29,6 +29,7 @@ module NITTA.UIBackend.ViewHelper (
     ShortNodeView,
     NodeView,
     StepInfoView (..),
+    VarValTimeJSON,
 ) where
 
 import Control.Concurrent.STM
@@ -45,14 +46,13 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Project.TestBench
-import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
+import NITTA.Synthesis.Steps
+import NITTA.Synthesis.Types
 import NITTA.UIBackend.ViewHelperCls
 import NITTA.Utils.Base
 import Numeric.Interval.NonEmpty
 import Servant.Docs
-
-type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
 
 -- Synthesis tree
 
@@ -177,6 +177,7 @@ data NodeView tag v x t = NodeView
     , parameters :: Value
     , decision :: DecisionView
     , score :: Float
+    , scores :: Value
     }
     deriving (Generic)
 
@@ -201,9 +202,15 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
                     sDecision
             , score =
                 ( \case
-                    -- TODO: show all avaialable scores
+                    -- TODO: add support for "scores" field in UI, remove that field (or rename to default_score/effective_score?)
                     sd@SynthesisDecision{} -> defScore sd
                     _ -> 0
+                )
+                    sDecision
+            , scores =
+                ( \case
+                    SynthesisDecision{scores} -> toJSON scores
+                    _ -> object ["default" .= (0 :: Float)]
                 )
                     sDecision
             }
@@ -233,6 +240,7 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision = SingleBindView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032
+                , scores = object ["default" .= (1032 :: Float)]
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -254,6 +262,7 @@ instance ToSample (NodeView tag v x t) where
                             [("PU2", EndpointSt{epRole = Target "a2", epAt = 1 ... 1})]
                         }
                 , score = 1999
+                , scores = object ["default" .= (1999 :: Float)]
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 6]
@@ -263,6 +272,7 @@ instance ToSample (NodeView tag v x t) where
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , score = 5000
+                , scores = object ["default" .= (5000 :: Float)]
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -276,6 +286,7 @@ instance ToSample (NodeView tag v x t) where
                         , new = [FView "a + b + d = e" []]
                         }
                 , score = 1999
+                , scores = object ["default" .= (1999 :: Float)]
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -289,6 +300,7 @@ instance ToSample (NodeView tag v x t) where
                         , cRefNew = [FView "r = 3" []]
                         }
                 , score = 1999
+                , scores = object ["default" .= (1999 :: Float)]
                 }
             , NodeView
                 { sid = showText $ Sid [0, 1, 3, 1, 5]
@@ -308,6 +320,7 @@ instance ToSample (NodeView tag v x t) where
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
                 , score = 1999
+                , scores = object ["default" .= (1999 :: Float)]
                 }
             ]
 

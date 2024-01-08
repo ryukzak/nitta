@@ -1,0 +1,140 @@
+name: ML Test & Train + GitHub Release
+
+# That's a very long and heavy workflow intended only to be run when a new NITTA release should be made.
+# It's triggered by pushing a new version-like tag (v0.1.15, for example).
+# Expected runtime: ~4-5 hours.
+
+# The project's Docker environment is used (it's heavy, 10+ GB, layers don't fit in the CI cache)
+# Actions summary:
+# - Build released NITTA binaries and web frontend
+# - Crawl fresh ML training data (with the latest synthesis node parameters and tree structure)
+# - Train a fresh ML model on the crawled data
+# - Evaluate and rate the overall NITTA sythesis performance in different modes
+# - Prepare release assets and generate a release description based on the git tag message and evaluation results
+# - Publish the release to GitHub
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+# Filtering only to react to pushes to the master branch may be needed here.
+
+jobs:
+  ml-test-train-release:
+    # On ubuntu-latest, job fails with 143 exit code and github runner forceful termination. (?!)
+    # See https://github.com/actions/runner-images/discussions/7188.
+    runs-on: ubuntu-20.04
+
+    permissions:
+      # needed for runforesight/workflow-telemetry-action@v1
+      actions: read
+      # pushing rm of manually trained model (?)
+      contents: write
+      # defaults
+      packages: read
+
+    steps:
+      - name: Maximize available disk space
+        # We don't have enough disk space without this.
+        # Based on https://github.com/easimon/maximize-build-space/blob/master/action.yml
+        # Not using the full action since a custom LVM breaks stuff for some reason.
+        # Just removing some unused tools is enough for now.
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+
+          echo "Removing unwanted built-in stuff..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Increase swap space
+        # The job can fail with out-of-memory errors during synthesis evaluation without this.
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
+          echo "Swap space:"
+          free -h
+
+      - uses: actions/checkout@v3
+      - uses: fregante/setup-git-user@v1
+
+      - name: Enable workflow telemetry collection
+        uses: runforesight/workflow-telemetry-action@v1
+
+      - name: Build NITTA binaries and dependencies
+        run: |
+          docker build --target build -f ml/synthesis/Dockerfile --tag nitta-build .
+          docker create --name nitta-build-container nitta-build
+          mkdir -p build/nitta-dist/web
+          docker cp nitta-build-container:/app/web/build build/nitta-dist/web
+          docker cp nitta-build-container:/app/build/nitta/nitta build/nitta-dist
+          docker rm -v nitta-build-container
+
+      - name: Log available disk space
+        run: |
+          df -h
+          # 11 GB of free space on /dev/root is enough at the time of writing
+
+      - name: Smoke test ML for synthesis
+        run: |
+          docker build --target ci-ml -f ml/synthesis/Dockerfile --tag nitta-ci-ml:latest .
+          docker run nitta-ci-ml python -m pytest -c=ml/synthesis/pyproject.toml
+
+      - name: Train and/or evaluate ML model
+        run: |
+          docker run --name model-trainer nitta-ci-ml
+          mkdir -p build/model-synthesis
+          docker cp model-trainer:/app/ml/synthesis/models/production build/model-synthesis
+          docker cp model-trainer:/app/train_eval_description.txt build
+          docker cp model-trainer:/app/evaluation/ci/ build/evaluation
+
+      - name: Check the manual model is deleted if it was committed
+        run: |
+          git rm -r ml/synthesis/models/production --ignore-unmatch
+          if [[ $(git status --short -uno) ]]; then
+            git commit -m "Delete manually trained ML model"
+            git push origin HEAD:master
+          else 
+            echo "not committing since nothing changed"
+          fi
+
+      - name: Prepare release
+        run: |
+          git fetch -f --tags origin ${{ github.ref }}:${{ github.ref }}
+
+          NITTA_VERSION="$(git describe)"
+          TAG_MESSAGE="$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/*/})"
+
+          mkdir release_assets
+          cp build/evaluation/*.csv release_assets
+
+          echo "Preparing release for NITTA $NITTA_VERSION, release body text:"
+          echo "$TAG_MESSAGE" | tee release_text.txt
+          printf "\n---\n" | tee -a release_text.txt
+          cat build/train_eval_description.txt | tee -a release_text.txt
+
+          cp -r examples build/nitta-dist
+          cp -r hdl build/nitta-dist
+          cp -r templates build/nitta-dist
+          # FIXME: remove runtime NITTA dependency from ./web/src/services/gen/PORT, yarn dev's proxy can be used now
+
+          tar -czvf "release_assets/nitta-$NITTA_VERSION-linux-amd64.tar.gz" -C build/nitta-dist .
+          zip -j -r "release_assets/model-synthesis.zip" build/model-synthesis
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_text.txt
+          files: |
+            release_assets/*

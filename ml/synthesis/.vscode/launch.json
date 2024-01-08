@@ -1,0 +1,75 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    // --- PYTHON SCRIPT TEMPLATE ---
+    // {
+    //   "name": "[ML] Python: script_name",
+    //   "module": "scripts.script_name",
+    //   "args": [],
+    //   "type": "python",
+    //   "request": "launch",
+    //   "cwd": "${workspaceRoot}",
+    //   "justMyCode": true
+    // },
+    {
+      "name": "[ML] Python: Current File",
+      "program": "${file}",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: mlbackend",
+      "module": "mlbackend",
+      // FIXME: remove when https://github.com/microsoft/debugpy/issues/1251 is fixed
+      "pythonArgs": ["-Xfrozen_modules=off"],
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: crawl_data_by_tree_sampling",
+      "module": "scripts.crawl_data_by_tree_sampling",
+      "args": ["examples/generated/physics3.lua"],
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: evaluate_nitta_synthesis",
+      "module": "scripts.evaluate_nitta_synthesis",
+      "args": [
+        "--with-ml-backend",
+        "ml/synthesis/src/scripts/evaluation_configs/default.json"
+      ],
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: train_model",
+      "module": "scripts.train_model",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    },
+    {
+      "name": "[ML] Python: train_evaluate_in_ci",
+      "module": "scripts.train_evaluate_in_ci",
+      // FIXME: remove when https://github.com/microsoft/debugpy/issues/1251 is fixed
+      "pythonArgs": ["-Xfrozen_modules=off"],
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "justMyCode": true
+    }
+  ]
+}

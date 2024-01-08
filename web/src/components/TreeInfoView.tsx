@@ -1,12 +1,12 @@
-import React, { useContext, FC, useCallback } from "react";
+import React, { FC, useCallback, useContext } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api } from "services/HaskellApiService";
-import { useApiRequest } from "hooks/useApiRequest";
-import { RequestResult } from "components/utils/RequestResult";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
+import { RequestResult } from "components/utils/RequestResult";
+import { useApiRequest } from "hooks/useApiRequest";
+import { api } from "services/HaskellApiService";
 import { CHART_COLOR_PALLETE } from "utils/color";
 
 import "components/Graphviz.scss";

@@ -24,6 +24,8 @@
 - ignore: { name: "Eta reduce" }
 - ignore: { name: "Use tuple-section" }
 - ignore: { name: "Use zipWith" }
+- ignore: { name: "Move concatMap out" }
+- ignore: { name: "Redundant <&>" }
 
 - ignore: { within: "NITTA.Intermediate.Simulation.Tests", name: "Fuse mapM_/map" }
 - ignore: { within: "NITTA.Intermediate.Value.Tests", name: "Evaluate" }

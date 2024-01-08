@@ -1,0 +1,25 @@
+{
+  "python.globalModuleInstallation": true,
+  "python.analysis.autoImportCompletions": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true
+  },
+  "[python]": {
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "black-formatter.importStrategy": "fromEnvironment",
+  "mypy.runUsingActiveInterpreter": true,
+  "mypy.enabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["-v"],
+
+  // the markdownlint extension currently doesn't find config in the root workspace folder
+  "markdownlint.config": {
+    "extends": "../../.markdownlint.yaml"
+  }
+}

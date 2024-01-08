@@ -1,21 +1,24 @@
 import React, { ReactElement } from "react";
 
-import { Popover, OverlayTrigger } from "react-bootstrap";
+import { OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
+import { Column } from "react-table";
 import {
   Allocation,
-  GroupBind,
-  SingleBind,
-  Dataflow,
   BreakLoop,
-  OptimizeAccum,
   ConstantFolding,
+  Dataflow,
+  EndpointDecision,
+  GroupBind,
+  Node,
+  OptimizeAccum,
   ResolveDeadlock,
+  SingleBind,
+  Target,
+  sidSeparator,
 } from "services/HaskellApiService";
-import { Node, sidSeparator, EndpointDecision, Target } from "services/HaskellApiService";
-import { Interval, FView, DecisionView } from "services/gen/types";
-import { Column } from "react-table";
+import { DecisionView, FView, Interval } from "services/gen/types";
 import { Color } from "utils/color";
 
 const style = {
@@ -51,7 +54,7 @@ export function textColumn(
   columnName: string,
   f: (e: Node) => string | number | Interval<number> | ReactElement,
   maxWidth?: number,
-  wrap?: boolean
+  wrap?: boolean,
 ) {
   let textColStyle = style;
   if (wrap) textColStyle = { ...style, ...{ whiteSpace: "unset" } };
@@ -88,7 +91,7 @@ export function detailColumn() {
                         - {k}: {JSON.stringify(e.parameters[k])}
                         <br />
                       </div>
-                    )
+                    ),
                   )}
                 </pre>
               </Popover.Content>
@@ -99,7 +102,7 @@ export function detailColumn() {
         </OverlayTrigger>
       );
     },
-    25
+    25,
   );
 }
 
@@ -133,9 +136,23 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
       }
 
       return (
-        <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
-          {row.original.score}
-        </div>
+        <OverlayTrigger
+          trigger={["hover", "focus"]}
+          key={row.original.sid}
+          placement="left"
+          overlay={
+            <Popover id={`popover-positioned-left`}>
+              <Popover.Title>Scores</Popover.Title>
+              <Popover.Content>
+                <pre>{JSON.stringify(row.original.scores, undefined, 2)}</pre>
+              </Popover.Content>
+            </Popover>
+          }
+        >
+          <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
+            {row.original.score}
+          </div>
+        </OverlayTrigger>
       );
     },
   };

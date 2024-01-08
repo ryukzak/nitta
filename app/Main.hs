@@ -23,7 +23,6 @@ import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
-
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -37,14 +36,16 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
-import NITTA.Synthesis (TargetSynthesis (..), noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem)
+import NITTA.Synthesis (TargetSynthesis (..), mlScoreKeyPrefix, noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem, topDownByScoreSynthesisIO)
+import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend
+import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores, outputPath, receivedValues, root)
 import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
 import System.FilePath.Posix
-import System.IO (stdout)
+import System.IO (BufferMode (LineBuffering), hSetBuffering, stdout)
 import System.Log.Formatter
 import System.Log.Handler (setFormatter)
 import System.Log.Handler.Simple
@@ -54,11 +55,9 @@ import Text.Regex
 
 data SynthesisMethodArg
     = StateOfTheArt
+    | TopDownByScore
     | NoSynthesis
     deriving (Show, Data, Typeable)
-
-synthesisMethod StateOfTheArt = stateOfTheArtSynthesisIO
-synthesisMethod NoSynthesis = noSynthesis
 
 -- | Command line interface.
 data Nitta = Nitta
@@ -77,6 +76,8 @@ data Nitta = Nitta
     , output_path :: FilePath
     , format :: String
     , frontend_language :: Maybe FrontendType
+    , score :: [T.Text]
+    , depth_base :: Float
     , method :: SynthesisMethodArg
     }
     deriving (Show, Data, Typeable)
@@ -92,7 +93,7 @@ nittaArgs =
                 &= help "Target system path"
                 &= groupname "Common flags"
         , port =
-            0
+            -1
                 &= help "Run nitta server for UI on specific port (by default - not run)"
                 &= groupname "Common flags"
         , uarch =
@@ -157,10 +158,36 @@ nittaArgs =
                 &= help "Language used to source algorithm description. (default: decision by file extension)"
                 &= typ "Lua|XMILE"
                 &= groupname "Target system configuration"
+        , score =
+            []
+                &= name "s"
+                &= typ "NAME"
+                &= help
+                    ( "Name of the synthesis tree node score to additionally evaluate."
+                        <> " Can be included multiple times (-s score1 -s score2)."
+                        <> " Scores like "
+                        <> mlScoreKeyPrefix
+                        <> "<model_name> will enable ML scoring."
+                    )
+                &= groupname "Synthesis"
+        , depth_base =
+            1.4
+                &= help
+                    ( "Only for '"
+                        <> show TopDownByScore
+                        <> "' synthesis: a [1; +inf)"
+                        <> " value to be an exponential base of the depth priority coefficient"
+                        <> " (default: 1.4)"
+                    )
+                &= typ "FLOAT"
+                &= groupname "Synthesis"
         , method =
             StateOfTheArt
-                &= help "Synthesis method (default: stateoftheart)"
-                &= typ "stateoftheart|nosynthesis"
+                &= help
+                    ( "Synthesis method (stateoftheart|topdownbyscore|nosynthesis, default: stateoftheart)."
+                        <> " `nosynthesis` required to run UI without synthesis on the start."
+                    )
+                &= typ "NAME"
                 &= groupname "Synthesis"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - tool for hard real-time CGRA processors")
@@ -191,10 +218,17 @@ main = do
             output_path
             format
             frontend_language
+            score
+            depth_base
             method
         ) <-
         getNittaArgs
+
     setupLogger verbose extra_verbose
+
+    -- force line buffering (always, not just when stdout is connected to a tty),
+    -- it's critical for successful parsing of NITTA's stdout in python scripts
+    hSetBuffering stdout LineBuffering
 
     toml <- case uarch of
         Nothing -> return Nothing
@@ -225,32 +259,49 @@ main = do
 
             when fsim $ functionalSimulation n received format frontendResult
 
-            (synthesisRoot, prjE) <-
-                synthesizeTargetSystem
-                    (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
-                        { tName = "main"
-                        , tPath = output_path
-                        , tMicroArch = ma
-                        , tDFG = frDataFlow
-                        , tReceivedValues = received
-                        , tTemplates = S.split ":" templates
-                        , tSynthesisMethod = synthesisMethod method ()
-                        , tSimulationCycleN = n
-                        , tSourceCodeType = exactFrontendType
-                        }
+            withLazyMlBackendServer $ \serverGetter -> do
+                -- TODO: state monad?
+                -- TODO: rename BackendCtx to something more generic?
+                let ctxWithoutRoot =
+                        (def :: BackendCtx tag v x t)
+                            { receivedValues = received
+                            , outputPath = output_path
+                            , mlBackendGetter = serverGetter
+                            , nodeScores = score
+                            }
+                    synthesisMethod = case method of
+                        StateOfTheArt -> stateOfTheArtSynthesisIO
+                        TopDownByScore -> topDownByScoreSynthesisIO depth_base 500000 Nothing
+                        NoSynthesis -> noSynthesis
 
-            when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+                (synthesisRoot, prjE) <-
+                    synthesizeTargetSystem
+                        (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
+                            { tName = "main"
+                            , tPath = output_path
+                            , tMicroArch = ma
+                            , tDFG = frDataFlow
+                            , tReceivedValues = received
+                            , tTemplates = S.split ":" templates
+                            , tSynthesisMethod = synthesisMethod ctxWithoutRoot
+                            , tSimulationCycleN = n
+                            , tSourceCodeType = exactFrontendType
+                            }
 
-            when (port > 0) $ do
-                bufE <- try $ readFile (apiPath </> "PORT")
-                let expect = case bufE of
-                        Right buf -> case readEither buf of
-                            Right p -> p
-                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
-                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                warningIfUnexpectedPort expect port
-                backendServer port received output_path synthesisRoot
-                exitSuccess
+                let ctxWithRoot = ctxWithoutRoot{root = synthesisRoot}
+
+                when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+
+                when (port > -1) $ do
+                    bufE <- try $ readFile (apiPath </> "PORT")
+                    let expectPort = case bufE of
+                            Right buf -> case readEither buf of
+                                Right p -> p
+                                Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                            Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
+                    when (expectPort /= port) $ warningUnexpectedPort expectPort port
+                    backendServer port ctxWithRoot
+                    exitSuccess
         )
         $ parseFX . fromJust
         $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
@@ -302,16 +353,15 @@ putLog "json" records = BS.putStrLn $ log2json records
 putLog "csv" records = BS.putStr $ log2csv records
 putLog t _ = error $ "not supported output format option: " <> t
 
-warningIfUnexpectedPort expect port =
-    when (expect /= port) $
-        warningM "NITTA.UI" $
-            concat
-                [ "WARNING: expected backend port: "
-                , show expect
-                , " actual: "
-                , show port
-                , " (maybe you need regenerate API by nitta-api-gen)"
-                ]
+warningUnexpectedPort expect port =
+    warningM "NITTA.UI" $
+        concat
+            [ "WARNING: expected backend port: "
+            , show expect
+            , " actual: "
+            , show port
+            , " (maybe you need regenerate API by nitta-api-gen)"
+            ]
 
 defMicroarch ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (framWithSize 16) FramIO

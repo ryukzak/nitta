@@ -132,7 +132,7 @@ data TargetSynthesis tag v x t = TargetSynthesis
     -- ^ source code format type
     }
 
-instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) where
+instance SynthesisMethodConstraints tag v x t => Default (TargetSynthesis tag v x t) where
     def =
         TargetSynthesis
             { tName = undefined
@@ -140,7 +140,7 @@ instance (UnitTag tag, VarValTime v x t) => Default (TargetSynthesis tag v x t) 
             , tSourceCode = Nothing
             , tDFG = undefined
             , tReceivedValues = def
-            , tSynthesisMethod = stateOfTheArtSynthesisIO ()
+            , tSynthesisMethod = stateOfTheArtSynthesisIO def
             , tLibPath = "hdl"
             , tTemplates = defProjectTemplates
             , tPath = joinPath ["gen"]

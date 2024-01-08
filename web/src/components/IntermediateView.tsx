@@ -1,11 +1,19 @@
-import React, { useContext, FC, useCallback } from "react";
-import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
+import React, { FC, useCallback, useContext } from "react";
+import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { GraphNode, GraphEdge } from "services/gen/types";
-import { api, IntermediateGraph, Dataflow, SingleBind, Node } from "services/HaskellApiService";
-import { UnitEndpointsData, EndpointOptionData, EndpointDecision } from "services/HaskellApiService";
+import { GraphEdge, GraphNode } from "services/gen/types";
+import {
+  api,
+  Dataflow,
+  EndpointDecision,
+  EndpointOptionData,
+  IntermediateGraph,
+  Node,
+  SingleBind,
+  UnitEndpointsData,
+} from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
 
 import "components/Graphviz.scss";

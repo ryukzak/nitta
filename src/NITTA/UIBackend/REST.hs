@@ -41,6 +41,7 @@ import NITTA.Project.TestBench
 import NITTA.Synthesis
 import NITTA.Synthesis.Analysis
 import NITTA.UIBackend.Timeline
+import NITTA.UIBackend.Types
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
 import NITTA.Utils
@@ -49,14 +50,6 @@ import Servant
 import Servant.Docs
 import System.Directory
 import System.FilePath
-
-data BackendCtx tag v x t = BackendCtx
-    { root :: DefTree tag v x t
-    -- ^ root synthesis node
-    , receivedValues :: [(v, [x])]
-    -- ^ lists of received by IO values
-    , outputPath :: String
-    }
 
 type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
@@ -103,10 +96,10 @@ type SynthesisTreeNavigationAPI tag v x t =
                      )
            )
 
-synthesisTreeNavigation BackendCtx{root} sid =
-    liftIO (map view <$> getTreePathIO root sid)
-        :<|> liftIO (fmap view . sParent . sState <$> getTreeIO root sid)
-        :<|> liftIO (map view <$> (subForestIO =<< getTreeIO root sid))
+synthesisTreeNavigation ctx@BackendCtx{root} sid =
+    liftIO (map view <$> getTreePathIO ctx root sid)
+        :<|> liftIO (fmap view . sParent . sState <$> getTreeIO ctx root sid)
+        :<|> liftIO (map view <$> (subForestIO ctx =<< getTreeIO ctx root sid))
 
 type NodeInspectionAPI tag v x t =
     Summary "Synthesis node inspection"
@@ -144,13 +137,13 @@ type NodeInspectionAPI tag v x t =
            )
 
 nodeInspection ctx@BackendCtx{root} sid =
-    liftIO (view <$> getTreeIO root sid)
-        :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
-        :<|> liftIO (processTimelines . process . targetUnit <$> getTreeIO root sid)
-        :<|> liftIO (view . process . targetUnit <$> getTreeIO root sid)
-        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetUnit <$> getTreeIO root sid))
+    liftIO (view <$> getTreeIO ctx root sid)
+        :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO ctx root sid)
+        :<|> liftIO (processTimelines . process . targetUnit <$> getTreeIO ctx root sid)
+        :<|> liftIO (view . process . targetUnit <$> getTreeIO ctx root sid)
+        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetUnit <$> getTreeIO ctx root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
-        :<|> liftIO (microarchitectureDesc . targetUnit <$> getTreeIO root sid)
+        :<|> liftIO (microarchitectureDesc . targetUnit <$> getTreeIO ctx root sid)
         :<|> debug ctx sid
 
 type SynthesisMethodsAPI tag v x t =
@@ -166,10 +159,10 @@ type SynthesisMethodsAPI tag v x t =
                 :<|> "smartBindSynthesisIO" :> Post '[JSON] Sid
            )
 
-synthesisMethods BackendCtx{root} sid =
-    liftIO (sID <$> (stateOfTheArtSynthesisIO () =<< getTreeIO root sid))
-        :<|> liftIO (sID <$> (simpleSynthesisIO =<< getTreeIO root sid))
-        :<|> liftIO (sID <$> (smartBindSynthesisIO =<< getTreeIO root sid))
+synthesisMethods ctx@BackendCtx{root} sid =
+    liftIO (sID <$> (stateOfTheArtSynthesisIO ctx =<< getTreeIO ctx root sid))
+        :<|> liftIO (sID <$> (simpleSynthesisIO ctx =<< getTreeIO ctx root sid))
+        :<|> liftIO (sID <$> (smartBindSynthesisIO ctx =<< getTreeIO ctx root sid))
 
 type SynthesisPracticesAPI tag v x t =
     Summary "SynthesisPractice is a set of small elements of the synthesis process."
@@ -194,11 +187,11 @@ type SynthesisPracticesAPI tag v x t =
                      )
            )
 
-synthesisPractices BackendCtx{root} sid =
-    liftIO (sID <$> (bestStepIO =<< getTreeIO root sid))
-        :<|> liftIO (sID <$> (obviousBindThreadIO =<< getTreeIO root sid))
-        :<|> liftIO (sID <$> (allBindsAndRefsIO =<< getTreeIO root sid))
-        :<|> (\deep -> liftIO (sID <$> (allBestThreadIO deep =<< getTreeIO root sid)))
+synthesisPractices ctx@BackendCtx{root} sid =
+    liftIO (sID <$> (bestStepIO ctx =<< getTreeIO ctx root sid))
+        :<|> liftIO (sID <$> (obviousBindThreadIO ctx =<< getTreeIO ctx root sid))
+        :<|> liftIO (sID <$> (allBindsAndRefsIO ctx =<< getTreeIO ctx root sid))
+        :<|> (\deep -> liftIO (sID <$> (allBestThreadIO ctx deep =<< getTreeIO ctx root sid)))
 
 type TestBenchAPI v x =
     Summary "Get the report of testbench execution for the current node."
@@ -207,8 +200,8 @@ type TestBenchAPI v x =
         :> QueryParam' '[Required] "loopsNumber" Int
         :> Post '[JSON] (TestbenchReport v x)
 
-testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
-    tree <- getTreeIO root sid
+testBench ctx@BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
+    tree <- getTreeIO ctx root sid
     pInProjectNittaPath <- either (error . T.unpack) id <$> collectNittaPath defProjectTemplates
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
     pwd <- getCurrentDirectory
@@ -276,8 +269,8 @@ type DebugAPI tag v t =
         \(see NITTA.UIBackend.REST.Debug)"
         :> Get '[JSON] (Debug tag v t)
 
-debug BackendCtx{root} sid = liftIO $ do
-    tree <- getTreeIO root sid
+debug ctx@BackendCtx{root} sid = liftIO $ do
+    tree <- getTreeIO ctx root sid
     let dbgFunctionLocks = map (\f -> (f, locks f)) $ functions $ targetUnit tree
         already = transferred $ targetUnit tree
     return

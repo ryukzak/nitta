@@ -1,10 +1,10 @@
-import { AxiosResponse, AxiosError } from "axios";
-import React, { useContext, useState, useEffect, FC } from "react";
-import "react-table/react-table.css";
+import { AxiosError, AxiosResponse } from "axios";
 import { Graphviz } from "graphviz-react";
+import React, { FC, useContext, useEffect, useState } from "react";
+import "react-table/react-table.css";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { api, ProcessData, StepData, RelationData } from "services/HaskellApiService";
+import { ProcessData, RelationData, StepData, api } from "services/HaskellApiService";
 
 import "components/Graphviz.scss";
 

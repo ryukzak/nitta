@@ -2,18 +2,18 @@ import React, { FC, useContext, useMemo } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "app/AppContext";
-import { Node, Dataflow } from "services/HaskellApiService";
-import { ISingleBindMetrics, IGroupBindMetrics, AllocationMetrics, DataflowMetrics } from "services/gen/types";
 import {
+  ScoresInfo,
+  decisionColumn,
+  detailColumn,
+  objectiveColumn,
+  parametersColumn,
+  showDecision,
   sidColumn,
   textColumn,
-  objectiveColumn,
-  decisionColumn,
-  parametersColumn,
-  detailColumn,
-  showDecision,
-  ScoresInfo,
 } from "components/SubforestTables/Columns";
+import { Dataflow, Node } from "services/HaskellApiService";
+import { AllocationMetrics, DataflowMetrics, IGroupBindMetrics, ISingleBindMetrics } from "services/gen/types";
 
 type SubforestTablesProps = {
   nodes: Node[];
@@ -63,7 +63,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn(
             "varianceLoad",
             (e: Node) => String((e.parameters as IGroupBindMetrics).pVarianceUnitWorkload),
-            100
+            100,
           ),
 
           detailColumn(),
@@ -86,7 +86,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
               let x = (e.parameters as ISingleBindMetrics).pWave;
               return x === undefined || x === null ? "null" : (x as number).toString();
             },
-            50
+            50,
           ),
           textColumn("outputs", (e: Node) => (e.parameters as ISingleBindMetrics).pOutputNumber, 70),
           textColumn("alt", (e: Node) => (e.parameters as ISingleBindMetrics).pAlternative, 50),
@@ -136,13 +136,13 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
           textColumn(
             "not transferable input",
             (e: Node) => JSON.stringify((e.parameters as DataflowMetrics).pNotTransferableInputs),
-            60
+            60,
           ),
           textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime), 60),
           textColumn(
             "first wave of target use",
             (e: Node) => String((e.parameters as DataflowMetrics).pFirstWaveOfTargetUse),
-            60
+            60,
           ),
           detailColumn(),
         ]}

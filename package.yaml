@@ -57,6 +57,7 @@ dependencies:
   - boxes
   - bytestring
   - containers
+  - heap
   - data-default
   - filepath
   - ginger
@@ -102,6 +103,7 @@ library:
     - warp
     - hxt
     - parsec
+    - http-conduit
 
 executables:
   nitta:
