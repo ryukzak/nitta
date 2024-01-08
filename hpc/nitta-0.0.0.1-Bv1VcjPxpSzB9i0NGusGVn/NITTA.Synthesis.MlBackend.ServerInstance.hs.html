@@ -1,0 +1,165 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{- |
+<span class="lineno">    2 </span>Module      : NITTA.Synthesis.MlBackend.ServerInstance
+<span class="lineno">    3 </span>Description : ML backend server instance management
+<span class="lineno">    4 </span>Copyright   : (c) Ilya Burakov, 2023
+<span class="lineno">    5 </span>License     : BSD3
+<span class="lineno">    6 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">    7 </span>Stability   : experimental
+<span class="lineno">    8 </span>-}
+<span class="lineno">    9 </span>module NITTA.Synthesis.MlBackend.ServerInstance (
+<span class="lineno">   10 </span>    MlBackendServer (..),
+<span class="lineno">   11 </span>    withLazyMlBackendServer,
+<span class="lineno">   12 </span>) where
+<span class="lineno">   13 </span>
+<span class="lineno">   14 </span>import Control.Concurrent
+<span class="lineno">   15 </span>import Control.Exception
+<span class="lineno">   16 </span>import Control.Monad
+<span class="lineno">   17 </span>import Data.Default
+<span class="lineno">   18 </span>import Data.Functor ((&lt;&amp;&gt;))
+<span class="lineno">   19 </span>import Data.Maybe
+<span class="lineno">   20 </span>import Data.String
+<span class="lineno">   21 </span>import Data.String.ToString
+<span class="lineno">   22 </span>import Data.Text qualified as T
+<span class="lineno">   23 </span>import GHC.IO.Handle
+<span class="lineno">   24 </span>import NITTA.Synthesis.MlBackend.FixedCache
+<span class="lineno">   25 </span>import NITTA.Utils.Base
+<span class="lineno">   26 </span>import System.Directory
+<span class="lineno">   27 </span>import System.IO
+<span class="lineno">   28 </span>import System.Log.Logger
+<span class="lineno">   29 </span>import System.Process
+<span class="lineno">   30 </span>
+<span class="lineno">   31 </span>data MlBackendServer = MlBackendServer
+<span class="lineno">   32 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">baseUrl</span></span></span> :: Maybe T.Text
+<span class="lineno">   33 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">handles</span></span></span> :: Maybe (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
+<span class="lineno">   34 </span>    }
+<span class="lineno">   35 </span>
+<span class="lineno">   36 </span>instance Default MlBackendServer where
+<span class="lineno">   37 </span>    <span class="decl"><span class="nottickedoff">def = MlBackendServer Nothing Nothing</span></span>
+<span class="lineno">   38 </span>
+<span class="lineno">   39 </span>-- | Reads ML backend server base URL from file (non-blocking).
+<span class="lineno">   40 </span>readMlBackendBaseUrlFileIO :: IO (Maybe T.Text)
+<span class="lineno">   41 </span><span class="decl"><span class="nottickedoff">readMlBackendBaseUrlFileIO =</span>
+<span class="lineno">   42 </span><span class="spaces">    </span><span class="nottickedoff">do</span>
+<span class="lineno">   43 </span><span class="spaces">        </span><span class="nottickedoff">let baseUrlFilePath = &quot;.ml_backend_base_url&quot;</span>
+<span class="lineno">   44 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   45 </span><span class="spaces">        </span><span class="nottickedoff">debugM &quot;NITTA.Synthesis.MlBackend&quot; &quot;reading ML backend base URL from file&quot;</span>
+<span class="lineno">   46 </span><span class="spaces">        </span><span class="nottickedoff">withFile</span>
+<span class="lineno">   47 </span><span class="spaces">            </span><span class="nottickedoff">baseUrlFilePath</span>
+<span class="lineno">   48 </span><span class="spaces">            </span><span class="nottickedoff">ReadMode</span>
+<span class="lineno">   49 </span><span class="spaces">            </span><span class="nottickedoff">( \file -&gt; do</span>
+<span class="lineno">   50 </span><span class="spaces">                </span><span class="nottickedoff">baseUrl &lt;- hGetLine file</span>
+<span class="lineno">   51 </span><span class="spaces">                </span><span class="nottickedoff">return $ Just $ fromString baseUrl</span>
+<span class="lineno">   52 </span><span class="spaces">            </span><span class="nottickedoff">)</span>
+<span class="lineno">   53 </span><span class="spaces">        </span><span class="nottickedoff">`catch` \(_ :: IOException) -&gt; do</span>
+<span class="lineno">   54 </span><span class="spaces">            </span><span class="nottickedoff">debugM &quot;NITTA.Synthesis.MlBackend&quot; &quot;failed to read ML backend base URL from file&quot;</span>
+<span class="lineno">   55 </span><span class="spaces">            </span><span class="nottickedoff">return Nothing</span></span>
+<span class="lineno">   56 </span>
+<span class="lineno">   57 </span>-- | Synchonously waits until ML backend server base URL file becomes available (with timeout)
+<span class="lineno">   58 </span><span class="decl"><span class="nottickedoff">waitForMlBackendBaseUrlIO retriesLeft</span>
+<span class="lineno">   59 </span><span class="spaces">    </span><span class="nottickedoff">| retriesLeft &lt;= 0 = return Nothing</span>
+<span class="lineno">   60 </span><span class="spaces">    </span><span class="nottickedoff">| otherwise = do</span>
+<span class="lineno">   61 </span><span class="spaces">        </span><span class="nottickedoff">let secondsPerRetry = 3 :: Int</span>
+<span class="lineno">   62 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   63 </span><span class="spaces">        </span><span class="nottickedoff">debugM</span>
+<span class="lineno">   64 </span><span class="spaces">            </span><span class="nottickedoff">&quot;NITTA.Synthesis.MlBackend&quot;</span>
+<span class="lineno">   65 </span><span class="spaces">            </span><span class="nottickedoff">( &quot;waiting &quot;</span>
+<span class="lineno">   66 </span><span class="spaces">                </span><span class="nottickedoff">&lt;&gt; show (secondsPerRetry * retriesLeft)</span>
+<span class="lineno">   67 </span><span class="spaces">                </span><span class="nottickedoff">&lt;&gt; &quot; second(s) more until ML backend server base URL is available...&quot;</span>
+<span class="lineno">   68 </span><span class="spaces">            </span><span class="nottickedoff">)</span>
+<span class="lineno">   69 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   70 </span><span class="spaces">        </span><span class="nottickedoff">threadDelay $ secondsPerRetry * 1000000</span>
+<span class="lineno">   71 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   72 </span><span class="spaces">        </span><span class="nottickedoff">readMlBackendBaseUrlFileIO &gt;&gt;= \case</span>
+<span class="lineno">   73 </span><span class="spaces">            </span><span class="nottickedoff">Just baseUrl -&gt; do</span>
+<span class="lineno">   74 </span><span class="spaces">                </span><span class="nottickedoff">threadDelay 5000000 -- wait 5 more seconds to ensure that server is ready to accept connections</span>
+<span class="lineno">   75 </span><span class="spaces">                </span><span class="nottickedoff">return $ Just baseUrl</span>
+<span class="lineno">   76 </span><span class="spaces">            </span><span class="nottickedoff">Nothing -&gt; waitForMlBackendBaseUrlIO (retriesLeft - 1)</span></span>
+<span class="lineno">   77 </span>
+<span class="lineno">   78 </span><span class="decl"><span class="nottickedoff">findPythonExecutableIO = do</span>
+<span class="lineno">   79 </span><span class="spaces">    </span><span class="nottickedoff">(mapM findExecutable [&quot;python3&quot;, &quot;python&quot;] &lt;&amp;&gt; catMaybes) &gt;&gt;= \case</span>
+<span class="lineno">   80 </span><span class="spaces">        </span><span class="nottickedoff">executable : _ -&gt; return executable</span>
+<span class="lineno">   81 </span><span class="spaces">        </span><span class="nottickedoff">[] -&gt; do</span>
+<span class="lineno">   82 </span><span class="spaces">            </span><span class="nottickedoff">let errorMsg = &quot;failed to find a python executable&quot;</span>
+<span class="lineno">   83 </span><span class="spaces">            </span><span class="nottickedoff">errorM &quot;NITTA.Synthesis.MlBackend&quot; errorMsg</span>
+<span class="lineno">   84 </span><span class="spaces">            </span><span class="nottickedoff">throw $ userError errorMsg</span></span>
+<span class="lineno">   85 </span>
+<span class="lineno">   86 </span>-- | Tries to start ML backend server and gathers all required information about it.
+<span class="lineno">   87 </span><span class="decl"><span class="nottickedoff">tryStartMlBackendServerIO = do</span>
+<span class="lineno">   88 </span><span class="spaces">    </span><span class="nottickedoff">-- not a shell process, because killing ML backend under shell is trickier</span>
+<span class="lineno">   89 </span><span class="spaces">    </span><span class="nottickedoff">-- let's find out python3 executable path</span>
+<span class="lineno">   90 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   91 </span><span class="spaces">    </span><span class="nottickedoff">maybeHandles &lt;- catchToMaybeIO $ do</span>
+<span class="lineno">   92 </span><span class="spaces">        </span><span class="nottickedoff">executable &lt;- findPythonExecutableIO</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="nottickedoff">let args = [&quot;-m&quot;, &quot;mlbackend&quot;]</span>
+<span class="lineno">   94 </span><span class="spaces">        </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis.MlBackend&quot; $ &quot;Starting ML backend server, executable: &quot; &lt;&gt; executable &lt;&gt; &quot;, args: &quot; &lt;&gt; show args</span>
+<span class="lineno">   95 </span><span class="spaces">        </span><span class="nottickedoff">createProcess (proc executable args)</span>
+<span class="lineno">   96 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   97 </span><span class="spaces">    </span><span class="nottickedoff">maybeDynamicBaseUrl &lt;- case maybeHandles of</span>
+<span class="lineno">   98 </span><span class="spaces">        </span><span class="nottickedoff">Just _ -&gt; waitForMlBackendBaseUrlIO 10</span>
+<span class="lineno">   99 </span><span class="spaces">        </span><span class="nottickedoff">Nothing -&gt; return Nothing</span>
+<span class="lineno">  100 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">  101 </span><span class="spaces">    </span><span class="nottickedoff">when (isNothing maybeDynamicBaseUrl) $ do</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="nottickedoff">errorM &quot;NITTA.Synthesis.MlBackend&quot; &quot;failed to start ML backend server&quot;</span>
+<span class="lineno">  103 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">  104 </span><span class="spaces">    </span><span class="nottickedoff">return MlBackendServer{baseUrl = maybeDynamicBaseUrl, handles = maybeHandles}</span></span>
+<span class="lineno">  105 </span>
+<span class="lineno">  106 </span>-- | Makes ML backend server available with lazy initialization, memoization and proper cleanup.
+<span class="lineno">  107 </span><span class="decl"><span class="nottickedoff">withLazyMlBackendServer action =</span>
+<span class="lineno">  108 </span><span class="spaces">    </span><span class="nottickedoff">bracket</span>
+<span class="lineno">  109 </span><span class="spaces">        </span><span class="nottickedoff">-- resource initialization action, produces lazy server getter with enabled memoization</span>
+<span class="lineno">  110 </span><span class="spaces">        </span><span class="nottickedoff">( do</span>
+<span class="lineno">  111 </span><span class="spaces">            </span><span class="nottickedoff">let startupAction = do</span>
+<span class="lineno">  112 </span><span class="spaces">                    </span><span class="nottickedoff">readMlBackendBaseUrlFileIO &gt;&gt;= \case</span>
+<span class="lineno">  113 </span><span class="spaces">                        </span><span class="nottickedoff">-- if ML backend server base URL file already exists, then we assume that server is already running</span>
+<span class="lineno">  114 </span><span class="spaces">                        </span><span class="nottickedoff">Just existingBaseUrl -&gt; do</span>
+<span class="lineno">  115 </span><span class="spaces">                            </span><span class="nottickedoff">debugM</span>
+<span class="lineno">  116 </span><span class="spaces">                                </span><span class="nottickedoff">&quot;NITTA.Synthesis.MlBackend&quot;</span>
+<span class="lineno">  117 </span><span class="spaces">                                </span><span class="nottickedoff">( &quot;ML backend server base URL was found (&quot;</span>
+<span class="lineno">  118 </span><span class="spaces">                                    </span><span class="nottickedoff">&lt;&gt; toString existingBaseUrl</span>
+<span class="lineno">  119 </span><span class="spaces">                                    </span><span class="nottickedoff">&lt;&gt; &quot;), skipping server startup&quot;</span>
+<span class="lineno">  120 </span><span class="spaces">                                </span><span class="nottickedoff">)</span>
+<span class="lineno">  121 </span><span class="spaces">                            </span><span class="nottickedoff">return MlBackendServer{baseUrl = Just existingBaseUrl, handles = Nothing}</span>
+<span class="lineno">  122 </span><span class="spaces">                        </span><span class="nottickedoff">-- coulnd't find existing base URL, trying to start the server</span>
+<span class="lineno">  123 </span><span class="spaces">                        </span><span class="nottickedoff">Nothing -&gt; tryStartMlBackendServerIO</span>
+<span class="lineno">  124 </span><span class="spaces">            </span><span class="nottickedoff">-- cache is used to memoize server startup results and produce lazy getter</span>
+<span class="lineno">  125 </span><span class="spaces">            </span><span class="nottickedoff">cache &lt;- newCache</span>
+<span class="lineno">  126 </span><span class="spaces">            </span><span class="nottickedoff">let serverGetter = fetch cache startupAction</span>
+<span class="lineno">  127 </span><span class="spaces">            </span><span class="nottickedoff">return (serverGetter, cache)</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="nottickedoff">)</span>
+<span class="lineno">  129 </span><span class="spaces">        </span><span class="nottickedoff">-- resource cleanup action</span>
+<span class="lineno">  130 </span><span class="spaces">        </span><span class="nottickedoff">( \(_, Cache mServerVar) -&gt; do</span>
+<span class="lineno">  131 </span><span class="spaces">            </span><span class="nottickedoff">tryReadMVar mServerVar &gt;&gt;= \case</span>
+<span class="lineno">  132 </span><span class="spaces">                </span><span class="nottickedoff">-- server was started</span>
+<span class="lineno">  133 </span><span class="spaces">                </span><span class="nottickedoff">Just (Just MlBackendServer{handles = Just serverProcessHandles@(_, _, _, procHandle)}) -&gt; do</span>
+<span class="lineno">  134 </span><span class="spaces">                    </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis.MlBackend&quot; &quot;Stopping automatically started ML backend server&quot;</span>
+<span class="lineno">  135 </span><span class="spaces">                    </span><span class="nottickedoff">cleanupProcess serverProcessHandles</span>
+<span class="lineno">  136 </span><span class="spaces">                    </span><span class="nottickedoff">_ &lt;- waitForProcess procHandle</span>
+<span class="lineno">  137 </span><span class="spaces">                    </span><span class="nottickedoff">return ()</span>
+<span class="lineno">  138 </span><span class="spaces">                </span><span class="nottickedoff">-- server was not started</span>
+<span class="lineno">  139 </span><span class="spaces">                </span><span class="nottickedoff">_ -&gt; debugM &quot;NITTA.Synthesis.MlBackend&quot; &quot;ML backend server was not started automatically, so nothing to stop&quot;</span>
+<span class="lineno">  140 </span><span class="spaces">        </span><span class="nottickedoff">)</span>
+<span class="lineno">  141 </span><span class="spaces">        </span><span class="nottickedoff">-- resource usage action (not exposing Cache object to it)</span>
+<span class="lineno">  142 </span><span class="spaces">        </span><span class="nottickedoff">(\(serverGetter, _) -&gt; action serverGetter)</span></span>
+
+</pre>
+</body>
+</html>

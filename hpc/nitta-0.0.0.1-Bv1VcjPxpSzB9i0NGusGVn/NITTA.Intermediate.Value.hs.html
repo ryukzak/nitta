@@ -1,0 +1,521 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE DataKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE FunctionalDependencies #-}
+<span class="lineno">    3 </span>{-# LANGUAGE KindSignatures #-}
+<span class="lineno">    4 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    5 </span>{-# LANGUAGE QuasiQuotes #-}
+<span class="lineno">    6 </span>{-# LANGUAGE TypeOperators #-}
+<span class="lineno">    7 </span>
+<span class="lineno">    8 </span>{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>{- |
+<span class="lineno">   11 </span>Module      : NITTA.Intermediate.Value
+<span class="lineno">   12 </span>Description : Processed value representation
+<span class="lineno">   13 </span>Copyright   : (c) Aleksandr Penskoi, 2020
+<span class="lineno">   14 </span>License     : BSD3
+<span class="lineno">   15 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   16 </span>Stability   : experimental
+<span class="lineno">   17 </span>-}
+<span class="lineno">   18 </span>module NITTA.Intermediate.Value (
+<span class="lineno">   19 </span>    -- * Type classes
+<span class="lineno">   20 </span>    Val (..),
+<span class="lineno">   21 </span>    DefaultX (..),
+<span class="lineno">   22 </span>    FixedPointCompatible (..),
+<span class="lineno">   23 </span>    scalingFactor,
+<span class="lineno">   24 </span>    minMaxRaw,
+<span class="lineno">   25 </span>
+<span class="lineno">   26 </span>    -- * Compositional type
+<span class="lineno">   27 </span>    Attr (..),
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>    -- * Value types
+<span class="lineno">   30 </span>    IntX (..),
+<span class="lineno">   31 </span>    FX (..),
+<span class="lineno">   32 </span>) where
+<span class="lineno">   33 </span>
+<span class="lineno">   34 </span>import Control.Applicative
+<span class="lineno">   35 </span>import Data.Aeson
+<span class="lineno">   36 </span>import Data.Bits
+<span class="lineno">   37 </span>import Data.Default
+<span class="lineno">   38 </span>import Data.Maybe
+<span class="lineno">   39 </span>import Data.Proxy
+<span class="lineno">   40 </span>import Data.Ratio
+<span class="lineno">   41 </span>import Data.String.Interpolate
+<span class="lineno">   42 </span>import Data.Text qualified as T
+<span class="lineno">   43 </span>import Data.Typeable
+<span class="lineno">   44 </span>import Data.Validity hiding (invalid)
+<span class="lineno">   45 </span>import GHC.Generics
+<span class="lineno">   46 </span>import GHC.TypeLits
+<span class="lineno">   47 </span>import NITTA.Utils.Base
+<span class="lineno">   48 </span>import Numeric
+<span class="lineno">   49 </span>import Text.Printf
+<span class="lineno">   50 </span>import Text.Regex
+<span class="lineno">   51 </span>
+<span class="lineno">   52 </span>-- | Type class for representation of processing values. A value should include two parts: data and attribute.
+<span class="lineno">   53 </span>class
+<span class="lineno">   54 </span>    ( Typeable x
+<span class="lineno">   55 </span>    , Show x
+<span class="lineno">   56 </span>    , Read x
+<span class="lineno">   57 </span>    , PrintfArg x
+<span class="lineno">   58 </span>    , Default x
+<span class="lineno">   59 </span>    , Integral x
+<span class="lineno">   60 </span>    , Enum x
+<span class="lineno">   61 </span>    , Eq x
+<span class="lineno">   62 </span>    , Num x
+<span class="lineno">   63 </span>    , Bits x
+<span class="lineno">   64 </span>    , Validity x
+<span class="lineno">   65 </span>    , FixedPointCompatible x
+<span class="lineno">   66 </span>    , ToJSON x
+<span class="lineno">   67 </span>    ) =&gt;
+<span class="lineno">   68 </span>    Val x
+<span class="lineno">   69 </span>    where
+<span class="lineno">   70 </span>    -- | data bus width
+<span class="lineno">   71 </span>    dataWidth :: x -&gt; Int
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span>    -- | attribute bus width
+<span class="lineno">   74 </span>    attrWidth :: x -&gt; Int
+<span class="lineno">   75 </span>    <span class="decl"><span class="istickedoff">attrWidth _ = 4</span></span>
+<span class="lineno">   76 </span>
+<span class="lineno">   77 </span>    -- | raw representation of data (@Integer@)
+<span class="lineno">   78 </span>    rawData :: x -&gt; Integer
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>    -- | raw representation of attributes (@Integer@)
+<span class="lineno">   81 </span>    rawAttr :: x -&gt; Integer
+<span class="lineno">   82 </span>
+<span class="lineno">   83 </span>    -- | construct a value from raw data and attributes
+<span class="lineno">   84 </span>    fromRaw :: Integer -&gt; Integer -&gt; x
+<span class="lineno">   85 </span>
+<span class="lineno">   86 </span>    -- | convert a value to Verilog literal with data
+<span class="lineno">   87 </span>    dataLiteral :: x -&gt; T.Text
+<span class="lineno">   88 </span>
+<span class="lineno">   89 </span>    -- | convert a value to Verilog literal with attributes
+<span class="lineno">   90 </span>    attrLiteral :: x -&gt; T.Text
+<span class="lineno">   91 </span>    <span class="decl"><span class="istickedoff">attrLiteral x = showText (attrWidth <span class="nottickedoff">x</span>) &lt;&gt; &quot;'d0000&quot;</span></span>
+<span class="lineno">   92 </span>
+<span class="lineno">   93 </span>    -- | helper functions to work with values in Verilog (trace and assert)
+<span class="lineno">   94 </span>    verilogHelper :: x -&gt; T.Text
+<span class="lineno">   95 </span>    <span class="decl"><span class="istickedoff">verilogHelper x =</span>
+<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">   97 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">task traceWithAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">   98 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer cycle;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">   99 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer tick;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  100 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] actualData;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  101 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] actualAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  102 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">begin</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  103 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;%0d:%0d\t&quot;, cycle, tick);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  104 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;actual: %d %d\t&quot;, actualData, actualAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  105 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$display();</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  106 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">end</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">endtask // traceWithAttr</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  108 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">task assertWithAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  110 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer cycle;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  111 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer tick;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  112 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] actualData;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  113 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] actualAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  114 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] expectData;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  115 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] expectAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  116 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [256*8-1:0] var; // string</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  117 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">begin</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  118 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;%0d:%0d\t&quot;, cycle, tick);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  119 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;actual: %d %d\t&quot;, actualData, actualAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  120 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;expect: %d %d\t&quot;, expectData, expectAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  121 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;var: %0s\t&quot;, var);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  122 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">if ( actualData != expectData || actualAttr != expectAttr</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  123 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|| ( actualData === 'dx &amp;&amp; !actualAttr[0] )</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  124 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) $write(&quot;FAIL&quot;);</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  125 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$display();</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  126 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">end</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  127 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">endtask // assertWithAttr</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  129 </span>
+<span class="lineno">  130 </span>    -- | RE for extraction assertion data from a testbench log
+<span class="lineno">  131 </span>    verilogAssertRE :: x -&gt; Regex
+<span class="lineno">  132 </span>    <span class="decl"><span class="nottickedoff">verilogAssertRE _ =</span>
+<span class="lineno">  133 </span><span class="spaces">        </span><span class="nottickedoff">mkRegex $</span>
+<span class="lineno">  134 </span><span class="spaces">            </span><span class="nottickedoff">concat</span>
+<span class="lineno">  135 </span><span class="spaces">                </span><span class="nottickedoff">[ &quot;([[:digit:]]+):([[:digit:]]+)[\t ]+&quot;</span>
+<span class="lineno">  136 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;actual:[\t ]+(-?[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+&quot;</span>
+<span class="lineno">  137 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;expect:[\t ]+(-?[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+&quot;</span>
+<span class="lineno">  138 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;var: ([^ \t\n]+)&quot;</span>
+<span class="lineno">  139 </span><span class="spaces">                </span><span class="nottickedoff">]</span></span>
+<span class="lineno">  140 </span>
+<span class="lineno">  141 </span>-- | Minimal and maximal raw value.
+<span class="lineno">  142 </span><span class="decl"><span class="istickedoff">minMaxRaw x =</span>
+<span class="lineno">  143 </span><span class="spaces">    </span><span class="istickedoff">let n = dataWidth <span class="nottickedoff">x</span></span>
+<span class="lineno">  144 </span><span class="spaces">     </span><span class="istickedoff">in minMaxRaw' n</span></span>
+<span class="lineno">  145 </span>
+<span class="lineno">  146 </span><span class="decl"><span class="istickedoff">minMaxRaw' n =</span>
+<span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">let maxRaw = 2 ^ (n - 1) - 1</span>
+<span class="lineno">  148 </span><span class="spaces">        </span><span class="istickedoff">minRaw = negate (maxRaw + 1)</span>
+<span class="lineno">  149 </span><span class="spaces">     </span><span class="istickedoff">in (minRaw, maxRaw)</span></span>
+<span class="lineno">  150 </span>
+<span class="lineno">  151 </span><span class="decl"><span class="istickedoff">invalidRaw x = snd (minMaxRaw <span class="nottickedoff">x</span>) + 1</span></span>
+<span class="lineno">  152 </span>
+<span class="lineno">  153 </span><span class="decl"><span class="istickedoff">crop x</span>
+<span class="lineno">  154 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">abs x == x</span> = x .&amp;. valueMask <span class="nottickedoff">x</span></span>
+<span class="lineno">  155 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">x .|. complement (valueMask x)</span></span></span>
+<span class="lineno">  156 </span>
+<span class="lineno">  157 </span>valueMask :: Val x =&gt; x -&gt; x
+<span class="lineno">  158 </span><span class="decl"><span class="istickedoff">valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth <span class="nottickedoff">x</span> - 1) - 1) <span class="nottickedoff">0</span></span></span>
+<span class="lineno">  159 </span>
+<span class="lineno">  160 </span>-- TODO: try to avoid this class
+<span class="lineno">  161 </span>class Default x =&gt; DefaultX u x | u -&gt; x where
+<span class="lineno">  162 </span>    defX :: u -&gt; x
+<span class="lineno">  163 </span>    <span class="decl"><span class="nottickedoff">defX _ = def</span></span>
+<span class="lineno">  164 </span>
+<span class="lineno">  165 </span>{- | Type class for values, which contain information about fractional part of
+<span class="lineno">  166 </span>value (for fixed point arithmetics).
+<span class="lineno">  167 </span>-}
+<span class="lineno">  168 </span>class FixedPointCompatible a where
+<span class="lineno">  169 </span>    scalingFactorPower :: a -&gt; Integer
+<span class="lineno">  170 </span>    fractionalBitSize :: a -&gt; Int
+<span class="lineno">  171 </span>
+<span class="lineno">  172 </span><span class="decl"><span class="istickedoff">scalingFactor x = 2 ** fromIntegral (scalingFactorPower <span class="nottickedoff">x</span>)</span></span>
+<span class="lineno">  173 </span>
+<span class="lineno">  174 </span>-- | All values with attributes.
+<span class="lineno">  175 </span>data Attr x = Attr {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">value</span></span></span> :: x, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">invalid</span></span></span> :: Bool} deriving (<span class="decl"><span class="istickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  176 </span>
+<span class="lineno">  177 </span>instance Validity x =&gt; Validity (Attr x) where
+<span class="lineno">  178 </span>    <span class="decl"><span class="nottickedoff">validate Attr{value} = validate value</span></span>
+<span class="lineno">  179 </span>
+<span class="lineno">  180 </span><span class="decl"><span class="istickedoff">setInvalidAttr Attr{value, invalid} = Attr{value, invalid = invalid || isInvalid value}</span></span>
+<span class="lineno">  181 </span>
+<span class="lineno">  182 </span>instance Functor Attr where
+<span class="lineno">  183 </span>    <span class="decl"><span class="istickedoff">fmap f Attr{value, invalid} = Attr{value = f value, invalid}</span></span>
+<span class="lineno">  184 </span>
+<span class="lineno">  185 </span>instance Applicative Attr where
+<span class="lineno">  186 </span>    <span class="decl"><span class="istickedoff">pure x = Attr{value = x, invalid = False}</span></span>
+<span class="lineno">  187 </span>
+<span class="lineno">  188 </span>    <span class="decl"><span class="istickedoff">liftA2 f Attr{value = x, invalid = x'} Attr{value = y, invalid = y'} =</span>
+<span class="lineno">  189 </span><span class="spaces">        </span><span class="istickedoff">let value = f x y</span>
+<span class="lineno">  190 </span><span class="spaces">         </span><span class="istickedoff">in Attr{value, invalid = x' || y'}</span></span>
+<span class="lineno">  191 </span>
+<span class="lineno">  192 </span>instance Show x =&gt; Show (Attr x) where
+<span class="lineno">  193 </span>    <span class="decl"><span class="istickedoff">show Attr{invalid = True} = &quot;NaN&quot;</span>
+<span class="lineno">  194 </span><span class="spaces">    </span><span class="istickedoff">show Attr{value, invalid = False} = show value</span></span>
+<span class="lineno">  195 </span>
+<span class="lineno">  196 </span>instance Read x =&gt; Read (Attr x) where
+<span class="lineno">  197 </span>    <span class="decl"><span class="istickedoff">readsPrec d r = case readsPrec <span class="nottickedoff">d</span> r of</span>
+<span class="lineno">  198 </span><span class="spaces">        </span><span class="istickedoff">[(x, r')] -&gt; [(pure x, r')]</span>
+<span class="lineno">  199 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;can not read IntX from: &quot; ++ r</span></span></span>
+<span class="lineno">  200 </span>
+<span class="lineno">  201 </span>instance PrintfArg x =&gt; PrintfArg (Attr x) where
+<span class="lineno">  202 </span>    <span class="decl"><span class="nottickedoff">formatArg Attr{value} = formatArg value</span></span>
+<span class="lineno">  203 </span>
+<span class="lineno">  204 </span>instance Default x =&gt; Default (Attr x) where
+<span class="lineno">  205 </span>    <span class="decl"><span class="istickedoff">def = pure def</span></span>
+<span class="lineno">  206 </span>
+<span class="lineno">  207 </span>instance (Enum x, Validity x) =&gt; Enum (Attr x) where
+<span class="lineno">  208 </span>    <span class="decl"><span class="istickedoff">toEnum = setInvalidAttr . pure . <span class="nottickedoff">toEnum</span></span></span>
+<span class="lineno">  209 </span>    <span class="decl"><span class="istickedoff">fromEnum Attr{value} = fromEnum value</span></span>
+<span class="lineno">  210 </span>
+<span class="lineno">  211 </span>instance (Num x, Validity x) =&gt; Num (Attr x) where
+<span class="lineno">  212 </span>    <span class="decl"><span class="istickedoff">a + b = setInvalidAttr $ liftA2 (+) a b</span></span>
+<span class="lineno">  213 </span>    <span class="decl"><span class="istickedoff">a * b = setInvalidAttr $ liftA2 (*) a b</span></span>
+<span class="lineno">  214 </span>    <span class="decl"><span class="istickedoff">abs = setInvalidAttr . fmap abs</span></span>
+<span class="lineno">  215 </span>    <span class="decl"><span class="nottickedoff">signum = setInvalidAttr . fmap signum</span></span>
+<span class="lineno">  216 </span>    <span class="decl"><span class="istickedoff">fromInteger = setInvalidAttr . pure . fromInteger</span></span>
+<span class="lineno">  217 </span>    <span class="decl"><span class="istickedoff">negate = setInvalidAttr . fmap negate</span></span>
+<span class="lineno">  218 </span>
+<span class="lineno">  219 </span>instance (Real x, Validity x) =&gt; Real (Attr x) where
+<span class="lineno">  220 </span>    <span class="decl"><span class="nottickedoff">toRational Attr{value} = toRational value</span></span>
+<span class="lineno">  221 </span>
+<span class="lineno">  222 </span>instance Val x =&gt; Integral (Attr x) where
+<span class="lineno">  223 </span>    <span class="decl"><span class="nottickedoff">toInteger Attr{value} = toInteger value</span></span>
+<span class="lineno">  224 </span>    <span class="decl"><span class="istickedoff">Attr{value = a} `quotRem` Attr{value = b} =</span>
+<span class="lineno">  225 </span><span class="spaces">        </span><span class="istickedoff">let (minB, maxB) = minMaxRaw' (dataWidth <span class="nottickedoff">b</span> `shiftR` 1)</span>
+<span class="lineno">  226 </span><span class="spaces">            </span><span class="istickedoff">(a', b') =</span>
+<span class="lineno">  227 </span><span class="spaces">                </span><span class="istickedoff">if b == 0 || b &lt; minB || maxB &lt; b</span>
+<span class="lineno">  228 </span><span class="spaces">                    </span><span class="istickedoff">then (fromRaw (invalidRaw <span class="nottickedoff">b</span>) <span class="nottickedoff">def</span>, fromRaw (invalidRaw <span class="nottickedoff">b</span>) <span class="nottickedoff">def</span>)</span>
+<span class="lineno">  229 </span><span class="spaces">                    </span><span class="istickedoff">else a `quotRem` b</span>
+<span class="lineno">  230 </span><span class="spaces">         </span><span class="istickedoff">in (setInvalidAttr $ pure a', setInvalidAttr $ pure b')</span></span>
+<span class="lineno">  231 </span>
+<span class="lineno">  232 </span>instance (Bits x, Validity x) =&gt; Bits (Attr x) where
+<span class="lineno">  233 </span>    <span class="decl"><span class="nottickedoff">a .&amp;. b = setInvalidAttr $ liftA2 (.&amp;.) a b</span></span>
+<span class="lineno">  234 </span>    <span class="decl"><span class="nottickedoff">a .|. b = setInvalidAttr $ liftA2 (.|.) a b</span></span>
+<span class="lineno">  235 </span>    <span class="decl"><span class="nottickedoff">xor a b = setInvalidAttr $ liftA2 xor a b</span></span>
+<span class="lineno">  236 </span>    <span class="decl"><span class="nottickedoff">complement = setInvalidAttr . fmap complement</span></span>
+<span class="lineno">  237 </span>    <span class="decl"><span class="istickedoff">shift Attr{value} ix = setInvalidAttr $ pure $ shift value ix</span></span>
+<span class="lineno">  238 </span>    <span class="decl"><span class="nottickedoff">rotate Attr{value} ix = setInvalidAttr $ pure $ rotate value ix</span></span>
+<span class="lineno">  239 </span>    <span class="decl"><span class="nottickedoff">bitSize Attr{value} = fromMaybe undefined $ bitSizeMaybe value</span></span>
+<span class="lineno">  240 </span>    <span class="decl"><span class="nottickedoff">bitSizeMaybe Attr{value} = bitSizeMaybe value</span></span>
+<span class="lineno">  241 </span>    <span class="decl"><span class="nottickedoff">isSigned Attr{value} = isSigned value</span></span>
+<span class="lineno">  242 </span>    <span class="decl"><span class="nottickedoff">testBit Attr{value} = testBit value</span></span>
+<span class="lineno">  243 </span>    <span class="decl"><span class="nottickedoff">bit ix = pure $ bit ix</span></span>
+<span class="lineno">  244 </span>    <span class="decl"><span class="nottickedoff">popCount Attr{value} = popCount value</span></span>
+<span class="lineno">  245 </span>
+<span class="lineno">  246 </span>instance Val x =&gt; Val (Attr x) where
+<span class="lineno">  247 </span>    <span class="decl"><span class="istickedoff">dataWidth Attr{value} = dataWidth <span class="nottickedoff">value</span></span></span>
+<span class="lineno">  248 </span>
+<span class="lineno">  249 </span>    <span class="decl"><span class="istickedoff">rawData Attr{value} = rawData value</span></span>
+<span class="lineno">  250 </span>    <span class="decl"><span class="istickedoff">rawAttr Attr{invalid = True} = 1</span>
+<span class="lineno">  251 </span><span class="spaces">    </span><span class="istickedoff">rawAttr Attr{invalid = False} = 0</span></span>
+<span class="lineno">  252 </span>
+<span class="lineno">  253 </span>    <span class="decl"><span class="nottickedoff">fromRaw x a = setInvalidAttr $ pure $ fromRaw x a</span></span>
+<span class="lineno">  254 </span>
+<span class="lineno">  255 </span>    <span class="decl"><span class="istickedoff">dataLiteral Attr{value, invalid = True} = showText (dataWidth <span class="nottickedoff">value</span>) &lt;&gt; &quot;'dx&quot;</span>
+<span class="lineno">  256 </span><span class="spaces">    </span><span class="istickedoff">dataLiteral Attr{value} = dataLiteral value</span></span>
+<span class="lineno">  257 </span>    <span class="decl"><span class="istickedoff">attrLiteral x@Attr{invalid} =</span>
+<span class="lineno">  258 </span><span class="spaces">        </span><span class="istickedoff">showText (attrWidth <span class="nottickedoff">x</span>) &lt;&gt; &quot;'b000&quot; &lt;&gt; if invalid then &quot;1&quot; else &quot;0&quot;</span></span>
+<span class="lineno">  259 </span>
+<span class="lineno">  260 </span>    <span class="decl"><span class="istickedoff">verilogHelper Attr{value} = verilogHelper <span class="nottickedoff">value</span></span></span>
+<span class="lineno">  261 </span>    <span class="decl"><span class="nottickedoff">verilogAssertRE Attr{value} = verilogAssertRE value</span></span>
+<span class="lineno">  262 </span>
+<span class="lineno">  263 </span>instance FixedPointCompatible x =&gt; FixedPointCompatible (Attr x) where
+<span class="lineno">  264 </span>    <span class="decl"><span class="nottickedoff">scalingFactorPower Attr{value} = scalingFactorPower value</span></span>
+<span class="lineno">  265 </span>    <span class="decl"><span class="istickedoff">fractionalBitSize Attr{value} = fractionalBitSize <span class="nottickedoff">value</span></span></span>
+<span class="lineno">  266 </span>
+<span class="lineno">  267 </span>instance ToJSON x =&gt; ToJSON (Attr x) where
+<span class="lineno">  268 </span>    <span class="decl"><span class="nottickedoff">toJSON Attr{value} = toJSON value</span></span>
+<span class="lineno">  269 </span>
+<span class="lineno">  270 </span>-- * Integer
+<span class="lineno">  271 </span>
+<span class="lineno">  272 </span>instance FixedPointCompatible Int where
+<span class="lineno">  273 </span>    <span class="decl"><span class="nottickedoff">scalingFactorPower _ = 0</span></span>
+<span class="lineno">  274 </span>    <span class="decl"><span class="istickedoff">fractionalBitSize _ = 0</span></span>
+<span class="lineno">  275 </span>
+<span class="lineno">  276 </span>instance Val Int where
+<span class="lineno">  277 </span>    <span class="decl"><span class="istickedoff">dataWidth x = finiteBitSize <span class="nottickedoff">x</span></span></span>
+<span class="lineno">  278 </span>
+<span class="lineno">  279 </span>    <span class="decl"><span class="istickedoff">rawData x = fromIntegral x</span></span>
+<span class="lineno">  280 </span>    <span class="decl"><span class="istickedoff">rawAttr _ = 0</span></span>
+<span class="lineno">  281 </span>    <span class="decl"><span class="nottickedoff">fromRaw x _ = fromEnum x</span></span>
+<span class="lineno">  282 </span>
+<span class="lineno">  283 </span>    <span class="decl"><span class="istickedoff">dataLiteral = showText</span></span>
+<span class="lineno">  284 </span>
+<span class="lineno">  285 </span>-- | Integer number with specific bit width.
+<span class="lineno">  286 </span>newtype IntX (w :: Nat) = IntX {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">intX</span></span></span> :: Integer}
+<span class="lineno">  287 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="istickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  288 </span>
+<span class="lineno">  289 </span>instance KnownNat m =&gt; Validity (IntX m) where
+<span class="lineno">  290 </span>    <span class="decl"><span class="istickedoff">validate x@(IntX raw) =</span>
+<span class="lineno">  291 </span><span class="spaces">        </span><span class="istickedoff">let (minRaw, maxRaw) = minMaxRaw <span class="nottickedoff">x</span></span>
+<span class="lineno">  292 </span><span class="spaces">         </span><span class="istickedoff">in check (minRaw &lt;= raw &amp;&amp; raw &lt;= maxRaw) <span class="nottickedoff">&quot;value is not out of range&quot;</span></span></span>
+<span class="lineno">  293 </span>
+<span class="lineno">  294 </span>instance Read (IntX w) where
+<span class="lineno">  295 </span>    <span class="decl"><span class="istickedoff">readsPrec d r = case readsPrec <span class="nottickedoff">d</span> r of</span>
+<span class="lineno">  296 </span><span class="spaces">        </span><span class="istickedoff">[(x, r')] -&gt; [(IntX x, r')]</span>
+<span class="lineno">  297 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;can not read IntX from: &quot; ++ r</span></span></span>
+<span class="lineno">  298 </span>
+<span class="lineno">  299 </span>instance PrintfArg (IntX w) where
+<span class="lineno">  300 </span>    <span class="decl"><span class="nottickedoff">formatArg (IntX x) = formatInteger x</span></span>
+<span class="lineno">  301 </span>
+<span class="lineno">  302 </span>instance Default (IntX w) where
+<span class="lineno">  303 </span>    <span class="decl"><span class="istickedoff">def = IntX 0</span></span>
+<span class="lineno">  304 </span>
+<span class="lineno">  305 </span>instance Enum (IntX w) where
+<span class="lineno">  306 </span>    <span class="decl"><span class="istickedoff">toEnum = IntX . toInteger</span></span>
+<span class="lineno">  307 </span>    <span class="decl"><span class="istickedoff">fromEnum (IntX x) = fromInteger x</span></span>
+<span class="lineno">  308 </span>
+<span class="lineno">  309 </span>instance Num (IntX w) where
+<span class="lineno">  310 </span>    <span class="decl"><span class="istickedoff">(IntX a) + (IntX b) = IntX (a + b)</span></span>
+<span class="lineno">  311 </span>    <span class="decl"><span class="istickedoff">(IntX a) * (IntX b) = IntX (a * b)</span></span>
+<span class="lineno">  312 </span>    <span class="decl"><span class="istickedoff">abs (IntX a) = IntX $ abs a</span></span>
+<span class="lineno">  313 </span>    <span class="decl"><span class="nottickedoff">signum (IntX a) = IntX $ signum a</span></span>
+<span class="lineno">  314 </span>    <span class="decl"><span class="istickedoff">fromInteger a = IntX $ fromInteger a</span></span>
+<span class="lineno">  315 </span>    <span class="decl"><span class="istickedoff">negate (IntX a) = IntX $ negate a</span></span>
+<span class="lineno">  316 </span>
+<span class="lineno">  317 </span>instance Real (IntX w) where
+<span class="lineno">  318 </span>    <span class="decl"><span class="nottickedoff">toRational (IntX x) = toRational x</span></span>
+<span class="lineno">  319 </span>
+<span class="lineno">  320 </span>instance Integral (IntX w) where
+<span class="lineno">  321 </span>    <span class="decl"><span class="nottickedoff">toInteger (IntX x) = toInteger x</span></span>
+<span class="lineno">  322 </span>    <span class="decl"><span class="istickedoff">(IntX a) `quotRem` (IntX b) =</span>
+<span class="lineno">  323 </span><span class="spaces">        </span><span class="istickedoff">let (a', b') = a `quotRem` b</span>
+<span class="lineno">  324 </span><span class="spaces">         </span><span class="istickedoff">in (IntX a', IntX b')</span></span>
+<span class="lineno">  325 </span>
+<span class="lineno">  326 </span>instance KnownNat w =&gt; Bits (IntX w) where
+<span class="lineno">  327 </span>    <span class="decl"><span class="istickedoff">(IntX a) .&amp;. (IntX b) = IntX (a .&amp;. b)</span></span>
+<span class="lineno">  328 </span>    <span class="decl"><span class="nottickedoff">(IntX a) .|. (IntX b) = IntX (a .|. b)</span></span>
+<span class="lineno">  329 </span>    <span class="decl"><span class="nottickedoff">(IntX a) `xor` (IntX b) = IntX (a `xor` b)</span></span>
+<span class="lineno">  330 </span>    <span class="decl"><span class="nottickedoff">complement (IntX a) = IntX $ complement a</span></span>
+<span class="lineno">  331 </span>    <span class="decl"><span class="istickedoff">shift (IntX a) ix = crop $ IntX $ shift a ix</span></span>
+<span class="lineno">  332 </span>    <span class="decl"><span class="nottickedoff">rotate (IntX a) ix = crop $ IntX $ rotate a ix</span></span>
+<span class="lineno">  333 </span>
+<span class="lineno">  334 </span>    <span class="decl"><span class="nottickedoff">bitSize (IntX a) = fromMaybe undefined $ bitSizeMaybe a</span></span>
+<span class="lineno">  335 </span>    <span class="decl"><span class="nottickedoff">bitSizeMaybe (IntX a) = bitSizeMaybe a</span></span>
+<span class="lineno">  336 </span>    <span class="decl"><span class="nottickedoff">isSigned (IntX a) = isSigned a</span></span>
+<span class="lineno">  337 </span>    <span class="decl"><span class="nottickedoff">testBit (IntX a) = testBit a</span></span>
+<span class="lineno">  338 </span>    <span class="decl"><span class="nottickedoff">bit ix = IntX $ bit ix</span></span>
+<span class="lineno">  339 </span>    <span class="decl"><span class="nottickedoff">popCount (IntX a) = popCount a</span></span>
+<span class="lineno">  340 </span>
+<span class="lineno">  341 </span>instance KnownNat w =&gt; Val (IntX w) where
+<span class="lineno">  342 </span>    <span class="decl"><span class="istickedoff">dataWidth _ = fromInteger $ natVal <span class="nottickedoff">(Proxy :: Proxy w)</span></span></span>
+<span class="lineno">  343 </span>
+<span class="lineno">  344 </span>    <span class="decl"><span class="istickedoff">rawData (IntX x) = fromIntegral x</span></span>
+<span class="lineno">  345 </span>    <span class="decl"><span class="istickedoff">rawAttr x = if <span class="tickonlyfalse">isInvalid x</span> then <span class="nottickedoff">1</span> else 0</span></span>
+<span class="lineno">  346 </span>
+<span class="lineno">  347 </span>    <span class="decl"><span class="istickedoff">fromRaw x _ = IntX x</span></span>
+<span class="lineno">  348 </span>
+<span class="lineno">  349 </span>    <span class="decl"><span class="istickedoff">dataLiteral (IntX x) = showText x</span></span>
+<span class="lineno">  350 </span>
+<span class="lineno">  351 </span>instance FixedPointCompatible (IntX w) where
+<span class="lineno">  352 </span>    <span class="decl"><span class="nottickedoff">scalingFactorPower _ = 0</span></span>
+<span class="lineno">  353 </span>    <span class="decl"><span class="istickedoff">fractionalBitSize _ = 0</span></span>
+<span class="lineno">  354 </span>
+<span class="lineno">  355 </span>instance ToJSON (IntX w) where
+<span class="lineno">  356 </span>    <span class="decl"><span class="nottickedoff">toJSON (IntX x) = toJSON x</span></span>
+<span class="lineno">  357 </span>
+<span class="lineno">  358 </span>-- * Fixed point
+<span class="lineno">  359 </span>
+<span class="lineno">  360 </span>{- | Number with fixed point. FX m b where
+<span class="lineno">  361 </span>
+<span class="lineno">  362 </span>- m the number of magnitude or integer bits
+<span class="lineno">  363 </span>- b the total number of bits
+<span class="lineno">  364 </span>
+<span class="lineno">  365 </span>fxm.b: The &quot;fx&quot; prefix is similar to the above, but uses the word length as
+<span class="lineno">  366 </span>the second item in the dotted pair. For example, fx1.16 describes a number
+<span class="lineno">  367 </span>with 1 magnitude bit and 15 fractional bits in a 16 bit word.
+<span class="lineno">  368 </span>-}
+<span class="lineno">  369 </span>newtype FX (m :: Nat) (b :: Nat) = FX {<span class="istickedoff"><span class="decl"><span class="istickedoff">rawFX</span></span></span> :: Integer}
+<span class="lineno">  370 </span>    deriving (<span class="decl"><span class="istickedoff"><span class="decl"><span class="istickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>, Generic)
+<span class="lineno">  371 </span>
+<span class="lineno">  372 </span>instance (KnownNat b, KnownNat m) =&gt; Validity (FX m b) where
+<span class="lineno">  373 </span>    <span class="decl"><span class="istickedoff">validate t@(FX raw) =</span>
+<span class="lineno">  374 </span><span class="spaces">        </span><span class="istickedoff">let (minRaw, maxRaw) = minMaxRaw <span class="nottickedoff">t</span></span>
+<span class="lineno">  375 </span><span class="spaces">         </span><span class="istickedoff">in check (minRaw &lt;= raw &amp;&amp; raw &lt;= maxRaw) <span class="nottickedoff">&quot;value is not out of range&quot;</span></span></span>
+<span class="lineno">  376 </span>
+<span class="lineno">  377 </span>instance (KnownNat m, KnownNat b) =&gt; Read (FX m b) where
+<span class="lineno">  378 </span>    <span class="decl"><span class="istickedoff">readsPrec d r =</span>
+<span class="lineno">  379 </span><span class="spaces">        </span><span class="istickedoff">let x = case readsPrec <span class="nottickedoff">d</span> r of</span>
+<span class="lineno">  380 </span><span class="spaces">                </span><span class="istickedoff">[(x' :: Double, &quot;&quot;)] -&gt; x'</span>
+<span class="lineno">  381 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;can not read FX from: &quot; ++ r</span></span>
+<span class="lineno">  382 </span><span class="spaces">            </span><span class="istickedoff">result = FX $ round (x * scalingFactor <span class="nottickedoff">result</span>)</span>
+<span class="lineno">  383 </span><span class="spaces">         </span><span class="istickedoff">in [(result, &quot;&quot;)]</span></span>
+<span class="lineno">  384 </span>
+<span class="lineno">  385 </span>instance (KnownNat m, KnownNat b) =&gt; PrintfArg (FX m b) where
+<span class="lineno">  386 </span>    <span class="decl"><span class="nottickedoff">formatArg (FX x) = formatInteger x</span></span>
+<span class="lineno">  387 </span>
+<span class="lineno">  388 </span>instance (KnownNat m, KnownNat b) =&gt; Show (FX m b) where
+<span class="lineno">  389 </span>    <span class="decl"><span class="istickedoff">show t@(FX x) = showFFloat (Just 6) (fromIntegral x / scalingFactor <span class="nottickedoff">t</span> :: Double) &quot;&quot;</span></span>
+<span class="lineno">  390 </span>
+<span class="lineno">  391 </span>instance Default (FX m b) where
+<span class="lineno">  392 </span>    <span class="decl"><span class="istickedoff">def = FX 0</span></span>
+<span class="lineno">  393 </span>
+<span class="lineno">  394 </span>instance (KnownNat m, KnownNat b) =&gt; Enum (FX m b) where
+<span class="lineno">  395 </span>    <span class="decl"><span class="istickedoff">toEnum x =</span>
+<span class="lineno">  396 </span><span class="spaces">        </span><span class="istickedoff">let res = FX $ toInteger (x * truncate (scalingFactor <span class="nottickedoff">res</span> :: Double))</span>
+<span class="lineno">  397 </span><span class="spaces">         </span><span class="istickedoff">in res</span></span>
+<span class="lineno">  398 </span>    <span class="decl"><span class="istickedoff">fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor <span class="nottickedoff">t</span> :: Double)</span></span>
+<span class="lineno">  399 </span>
+<span class="lineno">  400 </span>instance (KnownNat m, KnownNat b) =&gt; Num (FX m b) where
+<span class="lineno">  401 </span>    <span class="decl"><span class="istickedoff">(FX a) + (FX b) = FX (a + b)</span></span>
+<span class="lineno">  402 </span>    <span class="decl"><span class="istickedoff">t@(FX a) * (FX b) = FX ((a * b) `shiftR` fromInteger (scalingFactorPower <span class="nottickedoff">t</span>))</span></span>
+<span class="lineno">  403 </span>    <span class="decl"><span class="istickedoff">abs (FX a) = FX $ abs a</span></span>
+<span class="lineno">  404 </span>    <span class="decl"><span class="istickedoff">signum (FX a) = fromInteger $ signum a</span></span>
+<span class="lineno">  405 </span>    <span class="decl"><span class="istickedoff">fromInteger x = FX $ shiftL x $ fromInteger $ scalingFactorPower <span class="nottickedoff">(def :: FX m b)</span></span></span>
+<span class="lineno">  406 </span>    <span class="decl"><span class="istickedoff">negate (FX a) = FX $ negate a</span></span>
+<span class="lineno">  407 </span>
+<span class="lineno">  408 </span>instance (KnownNat m, KnownNat b) =&gt; Integral (FX m b) where
+<span class="lineno">  409 </span>    <span class="decl"><span class="istickedoff">toInteger t = toInteger $ fromEnum t</span></span>
+<span class="lineno">  410 </span>    <span class="decl"><span class="istickedoff">t@(FX a) `quotRem` (FX b) =</span>
+<span class="lineno">  411 </span><span class="spaces">        </span><span class="istickedoff">let (a', b') = a `quotRem` b</span>
+<span class="lineno">  412 </span><span class="spaces">            </span><span class="istickedoff">sf = scalingFactor <span class="nottickedoff">t</span></span>
+<span class="lineno">  413 </span><span class="spaces">         </span><span class="istickedoff">in (FX $ truncate (fromIntegral a' * sf :: Double), FX b')</span></span>
+<span class="lineno">  414 </span>
+<span class="lineno">  415 </span>instance (KnownNat m, KnownNat b) =&gt; Bits (FX m b) where
+<span class="lineno">  416 </span>    <span class="decl"><span class="nottickedoff">(FX a) .&amp;. (FX b) = FX (a .&amp;. b)</span></span>
+<span class="lineno">  417 </span>    <span class="decl"><span class="nottickedoff">(FX a) .|. (FX b) = FX (a .|. b)</span></span>
+<span class="lineno">  418 </span>    <span class="decl"><span class="nottickedoff">(FX a) `xor` (FX b) = FX (a `xor` b)</span></span>
+<span class="lineno">  419 </span>    <span class="decl"><span class="nottickedoff">complement (FX a) = FX $ complement a</span></span>
+<span class="lineno">  420 </span>    <span class="decl"><span class="nottickedoff">shift (FX a) ix = crop $ FX $ shift a ix</span></span>
+<span class="lineno">  421 </span>    <span class="decl"><span class="nottickedoff">rotate (FX a) ix = crop $ FX $ rotate a ix</span></span>
+<span class="lineno">  422 </span>    <span class="decl"><span class="nottickedoff">bitSize = dataWidth</span></span>
+<span class="lineno">  423 </span>    <span class="decl"><span class="nottickedoff">bitSizeMaybe = Just . dataWidth</span></span>
+<span class="lineno">  424 </span>    <span class="decl"><span class="nottickedoff">isSigned (FX a) = isSigned a</span></span>
+<span class="lineno">  425 </span>    <span class="decl"><span class="nottickedoff">testBit (FX a) = testBit a</span></span>
+<span class="lineno">  426 </span>    <span class="decl"><span class="nottickedoff">bit ix = FX $ bit ix</span></span>
+<span class="lineno">  427 </span>    <span class="decl"><span class="nottickedoff">popCount (FX a) = popCount a</span></span>
+<span class="lineno">  428 </span>
+<span class="lineno">  429 </span>instance (KnownNat m, KnownNat b) =&gt; Val (FX m b) where
+<span class="lineno">  430 </span>    <span class="decl"><span class="istickedoff">dataWidth _ = fromInteger $ natVal <span class="nottickedoff">(Proxy :: Proxy b)</span></span></span>
+<span class="lineno">  431 </span>
+<span class="lineno">  432 </span>    <span class="decl"><span class="istickedoff">rawData (FX x) = x</span></span>
+<span class="lineno">  433 </span>    <span class="decl"><span class="istickedoff">rawAttr x = if <span class="tickonlyfalse">isInvalid x</span> then <span class="nottickedoff">1</span> else 0</span></span>
+<span class="lineno">  434 </span>    <span class="decl"><span class="nottickedoff">fromRaw x _ = FX x</span></span>
+<span class="lineno">  435 </span>
+<span class="lineno">  436 </span>    <span class="decl"><span class="istickedoff">dataLiteral (FX x) = showText x</span></span>
+<span class="lineno">  437 </span>    <span class="decl"><span class="istickedoff">attrLiteral x = showText (attrWidth <span class="nottickedoff">x</span>) &lt;&gt; &quot;'d000&quot; &lt;&gt; showText (rawAttr x)</span></span>
+<span class="lineno">  438 </span>
+<span class="lineno">  439 </span>    <span class="decl"><span class="istickedoff">verilogHelper x =</span>
+<span class="lineno">  440 </span><span class="spaces">        </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  441 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">task traceWithAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  442 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer cycle;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  443 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer tick;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  444 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] actualData;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  445 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] actualAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  446 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">begin</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  447 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;%0d:%0d\t&quot;, cycle, tick);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  448 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;actual: %.3f %d\t&quot;, fxtor(actualData), actualAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  449 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$display();</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  450 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">end</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  451 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">endtask // traceWithAttr</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  452 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  453 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">task assertWithAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  454 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer cycle;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  455 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input integer tick;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  456 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] actualData;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  457 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] actualAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  458 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ dataWidth x }-1:0] expectData;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  459 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [#{ attrWidth x }-1:0] expectAttr;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  460 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">input [256*8-1:0] var; // string</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  461 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">begin</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  462 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;%0d:%0d\t&quot;, cycle, tick);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  463 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;actual: %.3f %d \t&quot;, fxtor(actualData), actualAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  464 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;expect: %.3f %d \t&quot;, fxtor(expectData), expectAttr);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  465 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$write(&quot;var: %0s\t&quot;, var);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  466 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">if ( actualData !== expectData || actualAttr != expectAttr ) $write(&quot;FAIL&quot;);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  467 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">$display();</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  468 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">end</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  469 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">endtask // assertWithAttr</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  470 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  471 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">function real fxtor(input integer x);</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  472 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">begin</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  473 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">fxtor = $itor(x) / $itor(1 &lt;&lt; #{ scalingFactorPower x });</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  474 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">end</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  475 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">endfunction // fxtor</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  476 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  477 </span>
+<span class="lineno">  478 </span>    <span class="decl"><span class="nottickedoff">verilogAssertRE _ =</span>
+<span class="lineno">  479 </span><span class="spaces">        </span><span class="nottickedoff">mkRegex $</span>
+<span class="lineno">  480 </span><span class="spaces">            </span><span class="nottickedoff">concat</span>
+<span class="lineno">  481 </span><span class="spaces">                </span><span class="nottickedoff">[ &quot;([[:digit:]]+):([[:digit:]]+)[\t ]&quot;</span>
+<span class="lineno">  482 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;actual:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+&quot;</span>
+<span class="lineno">  483 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;expect:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+&quot;</span>
+<span class="lineno">  484 </span><span class="spaces">                </span><span class="nottickedoff">, &quot;var: ([^ \t\n]+)&quot;</span>
+<span class="lineno">  485 </span><span class="spaces">                </span><span class="nottickedoff">]</span></span>
+<span class="lineno">  486 </span>
+<span class="lineno">  487 </span>instance (KnownNat m, KnownNat b) =&gt; FixedPointCompatible (FX m b) where
+<span class="lineno">  488 </span>    <span class="decl"><span class="istickedoff">fractionalBitSize x = dataWidth <span class="nottickedoff">x</span> - fromInteger (natVal <span class="nottickedoff">(Proxy :: Proxy m)</span>)</span></span>
+<span class="lineno">  489 </span>    <span class="decl"><span class="istickedoff">scalingFactorPower _ =</span>
+<span class="lineno">  490 </span><span class="spaces">        </span><span class="istickedoff">let m = natVal <span class="nottickedoff">(Proxy :: Proxy m)</span></span>
+<span class="lineno">  491 </span><span class="spaces">            </span><span class="istickedoff">b = natVal <span class="nottickedoff">(Proxy :: Proxy b)</span></span>
+<span class="lineno">  492 </span><span class="spaces">         </span><span class="istickedoff">in b - m</span></span>
+<span class="lineno">  493 </span>
+<span class="lineno">  494 </span>instance (KnownNat m, KnownNat b) =&gt; Real (FX m b) where
+<span class="lineno">  495 </span>    <span class="decl"><span class="istickedoff">toRational x@FX{rawFX} = rawFX % 2 ^ scalingFactorPower <span class="nottickedoff">x</span></span></span>
+<span class="lineno">  496 </span>
+<span class="lineno">  497 </span>instance (KnownNat m, KnownNat b) =&gt; ToJSON (FX m b) where
+<span class="lineno">  498 </span>    <span class="decl"><span class="nottickedoff">toJSON x@FX{} = toJSON (read $ show x :: Double)</span></span>
+
+</pre>
+</body>
+</html>

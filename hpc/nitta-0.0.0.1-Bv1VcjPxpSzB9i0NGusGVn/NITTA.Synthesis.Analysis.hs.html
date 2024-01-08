@@ -1,0 +1,117 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{- |
+<span class="lineno">    2 </span>Module      : NITTA.Synthesis.Analysis
+<span class="lineno">    3 </span>Description : Analysis synthesis proccess.
+<span class="lineno">    4 </span>Copyright   : (c) Daniil Prohorov, 2021
+<span class="lineno">    5 </span>License     : BSD3
+<span class="lineno">    6 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">    7 </span>Stability   : experimental
+<span class="lineno">    8 </span>-}
+<span class="lineno">    9 </span>module NITTA.Synthesis.Analysis (
+<span class="lineno">   10 </span>    getTreeInfo,
+<span class="lineno">   11 </span>    TreeInfo (..),
+<span class="lineno">   12 </span>) where
+<span class="lineno">   13 </span>
+<span class="lineno">   14 </span>import Control.Concurrent.STM
+<span class="lineno">   15 </span>import Data.HashMap.Strict qualified as HM
+<span class="lineno">   16 </span>import Data.Maybe (isJust)
+<span class="lineno">   17 </span>import GHC.Generics
+<span class="lineno">   18 </span>import NITTA.Model.ProcessorUnits.Types (NextTick)
+<span class="lineno">   19 </span>import NITTA.Model.TargetSystem (TargetSystem, processDuration)
+<span class="lineno">   20 </span>import NITTA.Model.Time (VarValTime)
+<span class="lineno">   21 </span>import NITTA.Synthesis.Types
+<span class="lineno">   22 </span>
+<span class="lineno">   23 </span>-- | Metrics of synthesis tree process
+<span class="lineno">   24 </span>data TreeInfo = TreeInfo
+<span class="lineno">   25 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodesVisited</span></span></span> :: !Int
+<span class="lineno">   26 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodesSuccess</span></span></span> :: !Int
+<span class="lineno">   27 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodesFailed</span></span></span> :: !Int
+<span class="lineno">   28 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodesNotProcessed</span></span></span> :: !Int
+<span class="lineno">   29 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">targetProcessDuration</span></span></span> :: HM.HashMap Int Int
+<span class="lineno">   30 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">synthesisStepsForSuccess</span></span></span> :: HM.HashMap Int Int
+<span class="lineno">   31 </span>    }
+<span class="lineno">   32 </span>    deriving (Generic, <span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">   33 </span>
+<span class="lineno">   34 </span>instance Semigroup TreeInfo where
+<span class="lineno">   35 </span>    <span class="decl"><span class="nottickedoff">a &lt;&gt; b =</span>
+<span class="lineno">   36 </span><span class="spaces">        </span><span class="nottickedoff">let ab = [a, b]</span>
+<span class="lineno">   37 </span><span class="spaces">            </span><span class="nottickedoff">durationSuccessList = map targetProcessDuration ab</span>
+<span class="lineno">   38 </span><span class="spaces">            </span><span class="nottickedoff">stepsSuccessList = map synthesisStepsForSuccess ab</span>
+<span class="lineno">   39 </span><span class="spaces">         </span><span class="nottickedoff">in TreeInfo</span>
+<span class="lineno">   40 </span><span class="spaces">                </span><span class="nottickedoff">{ nodesVisited = sum $ map nodesVisited ab</span>
+<span class="lineno">   41 </span><span class="spaces">                </span><span class="nottickedoff">, nodesSuccess = sum $ map nodesSuccess ab</span>
+<span class="lineno">   42 </span><span class="spaces">                </span><span class="nottickedoff">, nodesFailed = sum $ map nodesFailed ab</span>
+<span class="lineno">   43 </span><span class="spaces">                </span><span class="nottickedoff">, nodesNotProcessed = sum $ map nodesNotProcessed ab</span>
+<span class="lineno">   44 </span><span class="spaces">                </span><span class="nottickedoff">, targetProcessDuration = if not $ null durationSuccessList then foldr1 (HM.unionWith (+)) durationSuccessList else HM.empty</span>
+<span class="lineno">   45 </span><span class="spaces">                </span><span class="nottickedoff">, synthesisStepsForSuccess = if not $ null stepsSuccessList then foldr1 (HM.unionWith (+)) stepsSuccessList else HM.empty</span>
+<span class="lineno">   46 </span><span class="spaces">                </span><span class="nottickedoff">}</span></span>
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>instance Monoid TreeInfo where
+<span class="lineno">   49 </span>    <span class="decl"><span class="nottickedoff">mempty =</span>
+<span class="lineno">   50 </span><span class="spaces">        </span><span class="nottickedoff">TreeInfo</span>
+<span class="lineno">   51 </span><span class="spaces">            </span><span class="nottickedoff">{ nodesVisited = 0</span>
+<span class="lineno">   52 </span><span class="spaces">            </span><span class="nottickedoff">, nodesSuccess = 0</span>
+<span class="lineno">   53 </span><span class="spaces">            </span><span class="nottickedoff">, nodesFailed = 0</span>
+<span class="lineno">   54 </span><span class="spaces">            </span><span class="nottickedoff">, nodesNotProcessed = 0</span>
+<span class="lineno">   55 </span><span class="spaces">            </span><span class="nottickedoff">, targetProcessDuration = HM.empty</span>
+<span class="lineno">   56 </span><span class="spaces">            </span><span class="nottickedoff">, synthesisStepsForSuccess = HM.empty</span>
+<span class="lineno">   57 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>getTreeInfo ::
+<span class="lineno">   60 </span>    (VarValTime v x t, NextTick u t) =&gt;
+<span class="lineno">   61 </span>    Tree (TargetSystem u tag v x t) tag v x t -&gt;
+<span class="lineno">   62 </span>    IO TreeInfo
+<span class="lineno">   63 </span><span class="decl"><span class="nottickedoff">getTreeInfo tree@Tree{sID = Sid sid, sSubForestVar} = do</span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="nottickedoff">subForestM &lt;- atomically $ tryReadTMVar sSubForestVar</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="nottickedoff">let isProcessed = isJust subForestM</span>
+<span class="lineno">   66 </span><span class="spaces">    </span><span class="nottickedoff">TreeInfo</span>
+<span class="lineno">   67 </span><span class="spaces">        </span><span class="nottickedoff">{ nodesVisited</span>
+<span class="lineno">   68 </span><span class="spaces">        </span><span class="nottickedoff">, nodesSuccess</span>
+<span class="lineno">   69 </span><span class="spaces">        </span><span class="nottickedoff">, nodesFailed</span>
+<span class="lineno">   70 </span><span class="spaces">        </span><span class="nottickedoff">, targetProcessDuration</span>
+<span class="lineno">   71 </span><span class="spaces">        </span><span class="nottickedoff">, synthesisStepsForSuccess</span>
+<span class="lineno">   72 </span><span class="spaces">        </span><span class="nottickedoff">, nodesNotProcessed</span>
+<span class="lineno">   73 </span><span class="spaces">        </span><span class="nottickedoff">} &lt;-</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="nottickedoff">maybe (return mempty) (fmap mconcat . mapM getTreeInfo) subForestM</span>
+<span class="lineno">   75 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   76 </span><span class="spaces">    </span><span class="nottickedoff">let (isSuccess, isFail)</span>
+<span class="lineno">   77 </span><span class="spaces">            </span><span class="nottickedoff">| isLeaf tree = if isComplete tree then (True, False) else (False, True)</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="nottickedoff">| otherwise = (False, False)</span>
+<span class="lineno">   79 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   80 </span><span class="spaces">    </span><span class="nottickedoff">let duration = fromEnum $ processDuration $ sTarget $ sState tree</span>
+<span class="lineno">   81 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   82 </span><span class="spaces">    </span><span class="nottickedoff">let registerIfSuccess stat value</span>
+<span class="lineno">   83 </span><span class="spaces">            </span><span class="nottickedoff">| not isSuccess = stat</span>
+<span class="lineno">   84 </span><span class="spaces">            </span><span class="nottickedoff">| otherwise = HM.alter (Just . maybe 1 (+ 1)) value stat</span>
+<span class="lineno">   85 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">   86 </span><span class="spaces">    </span><span class="nottickedoff">return $</span>
+<span class="lineno">   87 </span><span class="spaces">        </span><span class="nottickedoff">TreeInfo</span>
+<span class="lineno">   88 </span><span class="spaces">            </span><span class="nottickedoff">{ nodesVisited = nodesVisited + 1</span>
+<span class="lineno">   89 </span><span class="spaces">            </span><span class="nottickedoff">, nodesSuccess = nodesSuccess + if isSuccess then 1 else 0</span>
+<span class="lineno">   90 </span><span class="spaces">            </span><span class="nottickedoff">, nodesFailed = nodesFailed + if isFail then 1 else 0</span>
+<span class="lineno">   91 </span><span class="spaces">            </span><span class="nottickedoff">, nodesNotProcessed = nodesNotProcessed + if isProcessed then 0 else 1</span>
+<span class="lineno">   92 </span><span class="spaces">            </span><span class="nottickedoff">, targetProcessDuration = registerIfSuccess targetProcessDuration duration</span>
+<span class="lineno">   93 </span><span class="spaces">            </span><span class="nottickedoff">, synthesisStepsForSuccess = registerIfSuccess synthesisStepsForSuccess $ length sid</span>
+<span class="lineno">   94 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+
+</pre>
+</body>
+</html>

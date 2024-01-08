@@ -1,0 +1,107 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE InstanceSigs #-}
+<span class="lineno">    2 </span>{-# LANGUAGE OverloadedStrings #-}
+<span class="lineno">    3 </span>
+<span class="lineno">    4 </span>{- |
+<span class="lineno">    5 </span>Module      : NITTA.Synthesis.MlBackend.Api
+<span class="lineno">    6 </span>Description : ML backend API client (DTOs, request wrappers)
+<span class="lineno">    7 </span>Copyright   : (c) Ilya Burakov, 2023
+<span class="lineno">    8 </span>License     : BSD3
+<span class="lineno">    9 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   10 </span>Stability   : experimental
+<span class="lineno">   11 </span>-}
+<span class="lineno">   12 </span>module NITTA.Synthesis.MlBackend.Client (
+<span class="lineno">   13 </span>    ScoringInput (..),
+<span class="lineno">   14 </span>    ScoringTarget (..),
+<span class="lineno">   15 </span>    predictScoresIO,
+<span class="lineno">   16 </span>) where
+<span class="lineno">   17 </span>
+<span class="lineno">   18 </span>import Data.Aeson
+<span class="lineno">   19 </span>import Data.String.ToString
+<span class="lineno">   20 </span>import Data.Text.Encoding qualified as T
+<span class="lineno">   21 </span>import GHC.Generics
+<span class="lineno">   22 </span>import NITTA.Synthesis.Types hiding (scores)
+<span class="lineno">   23 </span>import NITTA.UIBackend.ViewHelper (NodeView, VarValTimeJSON)
+<span class="lineno">   24 </span>import Network.HTTP.Client.Conduit
+<span class="lineno">   25 </span>import Network.HTTP.Simple
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>data ScoringTarget = ScoringTargetSid Sid | ScoringTargetAll
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>instance ToJSON ScoringTarget where
+<span class="lineno">   30 </span>    <span class="decl"><span class="nottickedoff">toJSON (ScoringTargetSid sid) = toJSON sid</span>
+<span class="lineno">   31 </span><span class="spaces">    </span><span class="nottickedoff">toJSON ScoringTargetAll = toJSON (&quot;all&quot; :: String)</span></span>
+<span class="lineno">   32 </span>
+<span class="lineno">   33 </span>data ScoringInput tag v x t = ScoringInput
+<span class="lineno">   34 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">scoringTarget</span></span></span> :: ScoringTarget
+<span class="lineno">   35 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodes</span></span></span> :: [NodeView tag v x t]
+<span class="lineno">   36 </span>    }
+<span class="lineno">   37 </span>    deriving (Generic)
+<span class="lineno">   38 </span>
+<span class="lineno">   39 </span>instance (VarValTimeJSON v x t, ToJSON tag) =&gt; ToJSON (ScoringInput tag v x t)
+<span class="lineno">   40 </span>
+<span class="lineno">   41 </span>newtype PostScoreRequestBody tag v x t = PostScoreRequestBody
+<span class="lineno">   42 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">inputs</span></span></span> :: [ScoringInput tag v x t]
+<span class="lineno">   43 </span>    }
+<span class="lineno">   44 </span>    deriving (Generic)
+<span class="lineno">   45 </span>
+<span class="lineno">   46 </span>instance (VarValTimeJSON v x t, ToJSON tag) =&gt; ToJSON (PostScoreRequestBody tag v x t)
+<span class="lineno">   47 </span>
+<span class="lineno">   48 </span>newtype MlBackendResponse d = MlBackendResponse
+<span class="lineno">   49 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">responseData</span></span></span> :: d
+<span class="lineno">   50 </span>    }
+<span class="lineno">   51 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
+<span class="lineno">   52 </span>
+<span class="lineno">   53 </span>instance FromJSON d =&gt; FromJSON (MlBackendResponse d) where
+<span class="lineno">   54 </span>    <span class="decl"><span class="nottickedoff">parseJSON = withObject &quot;MlBackendResponse&quot; $ \obj -&gt;</span>
+<span class="lineno">   55 </span><span class="spaces">        </span><span class="nottickedoff">MlBackendResponse &lt;$&gt; obj .: &quot;data&quot;</span></span> -- we are using the parameter's FromJSON
+<span class="lineno">   56 </span>
+<span class="lineno">   57 </span>instance ToJSON d =&gt; ToJSON (MlBackendResponse d) where
+<span class="lineno">   58 </span>    toJSON :: MlBackendResponse d -&gt; Value
+<span class="lineno">   59 </span>    <span class="decl"><span class="nottickedoff">toJSON (MlBackendResponse{responseData}) = object [&quot;data&quot; .= responseData]</span></span>
+<span class="lineno">   60 </span>
+<span class="lineno">   61 </span>newtype PostScoreResponseData = PostScoreResponseData
+<span class="lineno">   62 </span>    {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">scores</span></span></span> :: [[Float]]}
+<span class="lineno">   63 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, Generic)
+<span class="lineno">   64 </span>
+<span class="lineno">   65 </span>-- TODO: GeneralizedNewtypeDeriving vs DeriveAnyClass conflict? declaring instance manually for now
+<span class="lineno">   66 </span>instance ToJSON PostScoreResponseData
+<span class="lineno">   67 </span>instance FromJSON PostScoreResponseData
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span><span class="decl"><span class="nottickedoff">getDefaultRequestIO baseUrl = do</span>
+<span class="lineno">   70 </span><span class="spaces">    </span><span class="nottickedoff">parseRequest (toString baseUrl)</span></span>
+<span class="lineno">   71 </span>
+<span class="lineno">   72 </span><span class="decl"><span class="nottickedoff">getScoreRequestIO baseUrl modelName scoringInputs =</span>
+<span class="lineno">   73 </span><span class="spaces">    </span><span class="nottickedoff">let path = T.encodeUtf8 $ &quot;/models/&quot; &lt;&gt; modelName &lt;&gt; &quot;/score&quot;</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="nottickedoff">body = PostScoreRequestBody{inputs = scoringInputs}</span>
+<span class="lineno">   75 </span><span class="spaces">     </span><span class="nottickedoff">in do</span>
+<span class="lineno">   76 </span><span class="spaces">            </span><span class="nottickedoff">setRequestMethod &quot;POST&quot;</span>
+<span class="lineno">   77 </span><span class="spaces">                </span><span class="nottickedoff">. setRequestPath path</span>
+<span class="lineno">   78 </span><span class="spaces">                </span><span class="nottickedoff">. setRequestBodyJSON body</span>
+<span class="lineno">   79 </span><span class="spaces">                </span><span class="nottickedoff">&lt;$&gt; getDefaultRequestIO baseUrl</span></span>
+<span class="lineno">   80 </span>
+<span class="lineno">   81 </span><span class="decl"><span class="nottickedoff">predictScoresIO modelName baseUrl inputs = do</span>
+<span class="lineno">   82 </span><span class="spaces">    </span><span class="nottickedoff">request &lt;- getScoreRequestIO baseUrl modelName inputs</span>
+<span class="lineno">   83 </span><span class="spaces">    </span><span class="nottickedoff">response &lt;- httpJSON request</span>
+<span class="lineno">   84 </span><span class="spaces">    </span><span class="nottickedoff">return $ scores $ responseData $ getResponseBody response</span></span>
+
+</pre>
+</body>
+</html>

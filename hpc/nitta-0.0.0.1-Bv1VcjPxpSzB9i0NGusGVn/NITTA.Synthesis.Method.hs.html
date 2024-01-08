@@ -1,0 +1,257 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE ConstraintKinds #-}
+<span class="lineno">    2 </span>{-# LANGUAGE PartialTypeSignatures #-}
+<span class="lineno">    3 </span>{-# LANGUAGE TypeFamilies #-}
+<span class="lineno">    4 </span>
+<span class="lineno">    5 </span>{- |
+<span class="lineno">    6 </span>Module      : NITTA.Synthesis.Method
+<span class="lineno">    7 </span>Description : Synthesis method implementation.
+<span class="lineno">    8 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">    9 </span>License     : BSD3
+<span class="lineno">   10 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">   11 </span>Stability   : experimental
+<span class="lineno">   12 </span>-}
+<span class="lineno">   13 </span>module NITTA.Synthesis.Method (
+<span class="lineno">   14 </span>    DefTree,
+<span class="lineno">   15 </span>    SynthesisMethod,
+<span class="lineno">   16 </span>    noSynthesis,
+<span class="lineno">   17 </span>    simpleSynthesisIO,
+<span class="lineno">   18 </span>    smartBindSynthesisIO,
+<span class="lineno">   19 </span>    obviousBindThreadIO,
+<span class="lineno">   20 </span>    topDownByScoreSynthesisIO,
+<span class="lineno">   21 </span>    allBestThreadIO,
+<span class="lineno">   22 </span>    stateOfTheArtSynthesisIO,
+<span class="lineno">   23 </span>    allBindsAndRefsIO,
+<span class="lineno">   24 </span>    bestStepIO,
+<span class="lineno">   25 </span>    SynthesisMethodConstraints,
+<span class="lineno">   26 </span>) where
+<span class="lineno">   27 </span>
+<span class="lineno">   28 </span>import Data.Heap qualified as H
+<span class="lineno">   29 </span>import Data.List qualified as L
+<span class="lineno">   30 </span>import Data.Map.Strict qualified as M
+<span class="lineno">   31 </span>import Data.Text (Text)
+<span class="lineno">   32 </span>import Data.Typeable
+<span class="lineno">   33 </span>import Debug.Trace
+<span class="lineno">   34 </span>import NITTA.Model.Networks.Bus (BusNetwork)
+<span class="lineno">   35 </span>import NITTA.Model.ProcessorUnits
+<span class="lineno">   36 </span>import NITTA.Model.TargetSystem
+<span class="lineno">   37 </span>import NITTA.Synthesis.Explore
+<span class="lineno">   38 </span>import NITTA.Synthesis.Steps
+<span class="lineno">   39 </span>import NITTA.Synthesis.Types
+<span class="lineno">   40 </span>import NITTA.UIBackend.Types
+<span class="lineno">   41 </span>import NITTA.Utils (maximumOn, minimumOn)
+<span class="lineno">   42 </span>import Safe
+<span class="lineno">   43 </span>import System.Log.Logger
+<span class="lineno">   44 </span>import Text.Printf (printf)
+<span class="lineno">   45 </span>
+<span class="lineno">   46 </span>{- | The constant, which restricts the maximum number of synthesis steps. Avoids
+<span class="lineno">   47 </span>the endless synthesis process.
+<span class="lineno">   48 </span>-}
+<span class="lineno">   49 </span><span class="decl"><span class="istickedoff">stepLimit = 750 :: Int</span></span>
+<span class="lineno">   50 </span>
+<span class="lineno">   51 </span>noSynthesis :: BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   52 </span><span class="decl"><span class="nottickedoff">noSynthesis _ctx tree = do</span>
+<span class="lineno">   53 </span><span class="spaces">    </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis&quot; &quot;noSynthesis&quot;</span>
+<span class="lineno">   54 </span><span class="spaces">    </span><span class="nottickedoff">return tree</span></span>
+<span class="lineno">   55 </span>
+<span class="lineno">   56 </span>-- | The most complex synthesis method, which embedded all another. That all.
+<span class="lineno">   57 </span>stateOfTheArtSynthesisIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   58 </span><span class="decl"><span class="istickedoff">stateOfTheArtSynthesisIO ctx tree = do</span>
+<span class="lineno">   59 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;stateOfTheArtSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
+<span class="lineno">   60 </span><span class="spaces">    </span><span class="istickedoff">l1 &lt;- simpleSynthesisIO ctx tree</span>
+<span class="lineno">   61 </span><span class="spaces">    </span><span class="istickedoff">l2 &lt;- smartBindSynthesisIO ctx tree</span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">l3 &lt;- bestThreadIO ctx stepLimit tree</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">l4 &lt;- bestThreadIO ctx stepLimit =&lt;&lt; allBindsAndRefsIO ctx tree</span>
+<span class="lineno">   64 </span><span class="spaces">    </span><span class="istickedoff">l5 &lt;- obviousGroupBindsIO ctx tree &gt;&gt;= tryAllGroupBindsByIO (bestThreadIO ctx stepLimit) ctx</span>
+<span class="lineno">   65 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf <span class="nottickedoff">tree</span> [l1, l2, l3, l4, l5]</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span>-- | Schedule process by simple synthesis.
+<span class="lineno">   68 </span>simpleSynthesisIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   69 </span><span class="decl"><span class="istickedoff">simpleSynthesisIO ctx root = do</span>
+<span class="lineno">   70 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;simpleSynthesisIO: &quot; &lt;&gt; show (sID root)</span></span>
+<span class="lineno">   71 </span><span class="spaces">    </span><span class="istickedoff">lastObviousNode &lt;- obviousBindThreadIO ctx root</span>
+<span class="lineno">   72 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO ctx 1 lastObviousNode</span></span>
+<span class="lineno">   73 </span>
+<span class="lineno">   74 </span>smartBindSynthesisIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   75 </span><span class="decl"><span class="istickedoff">smartBindSynthesisIO ctx tree = do</span>
+<span class="lineno">   76 </span><span class="spaces">    </span><span class="istickedoff">infoM &quot;NITTA.Synthesis&quot; $ <span class="nottickedoff">&quot;smartBindSynthesisIO: &quot; &lt;&gt; show (sID tree)</span></span>
+<span class="lineno">   77 </span><span class="spaces">    </span><span class="istickedoff">tree' &lt;- smartBindThreadIO ctx tree</span>
+<span class="lineno">   78 </span><span class="spaces">    </span><span class="istickedoff">allBestThreadIO ctx 1 tree'</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>bestThreadIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; Int -&gt; SynthesisMethod tag v x t
+<span class="lineno">   81 </span><span class="decl"><span class="istickedoff">bestThreadIO _ 0 node = <span class="nottickedoff">return $ trace &quot;bestThreadIO've reached the step limit!&quot; node</span></span>
+<span class="lineno">   82 </span><span class="spaces"></span><span class="istickedoff">bestThreadIO ctx limit tree = do</span>
+<span class="lineno">   83 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO ctx tree</span>
+<span class="lineno">   84 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">   86 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; bestThreadIO ctx (limit - 1) $ maximumOn (defScore . sDecision) subForest</span></span>
+<span class="lineno">   87 </span>
+<span class="lineno">   88 </span>bestStepIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   89 </span><span class="decl"><span class="nottickedoff">bestStepIO ctx tree = do</span>
+<span class="lineno">   90 </span><span class="spaces">    </span><span class="nottickedoff">subForest &lt;- positiveSubForestIO ctx tree</span>
+<span class="lineno">   91 </span><span class="spaces">    </span><span class="nottickedoff">case subForest of</span>
+<span class="lineno">   92 </span><span class="spaces">        </span><span class="nottickedoff">[] -&gt; error &quot;all step is over&quot;</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="nottickedoff">_ -&gt; return $ maximumOn (defScore . sDecision) subForest</span></span>
+<span class="lineno">   94 </span>
+<span class="lineno">   95 </span>obviousGroupBindsIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">   96 </span><span class="decl"><span class="istickedoff">obviousGroupBindsIO ctx tree = do</span>
+<span class="lineno">   97 </span><span class="spaces">    </span><span class="istickedoff">binds &lt;- selectSubForestIO isObviousMultiBind ctx tree</span>
+<span class="lineno">   98 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) (obviousGroupBindsIO ctx) $ bestDecision binds</span></span>
+<span class="lineno">   99 </span>
+<span class="lineno">  100 </span>tryAllGroupBindsByIO :: SynthesisMethodConstraints tag v x t =&gt; SynthesisMethod tag v x t -&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  101 </span><span class="decl"><span class="istickedoff">tryAllGroupBindsByIO method ctx tree = do</span>
+<span class="lineno">  102 </span><span class="spaces">    </span><span class="istickedoff">bindSubForest &lt;- selectSubForestIO isMultiBind ctx tree</span>
+<span class="lineno">  103 </span><span class="spaces">    </span><span class="istickedoff">leafs &lt;- mapM method bindSubForest</span>
+<span class="lineno">  104 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf tree leafs</span></span>
+<span class="lineno">  105 </span>
+<span class="lineno">  106 </span>obviousBindThreadIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  107 </span><span class="decl"><span class="istickedoff">obviousBindThreadIO ctx tree = do</span>
+<span class="lineno">  108 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO ctx tree</span>
+<span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) <span class="nottickedoff">(obviousBindThreadIO ctx)</span> $</span>
+<span class="lineno">  110 </span><span class="spaces">        </span><span class="istickedoff">L.find</span>
+<span class="lineno">  111 </span><span class="spaces">            </span><span class="istickedoff">( ( \case</span>
+<span class="lineno">  112 </span><span class="spaces">                    </span><span class="istickedoff">Just SingleBindMetrics{pPossibleDeadlock = True} -&gt; <span class="nottickedoff">False</span></span>
+<span class="lineno">  113 </span><span class="spaces">                    </span><span class="istickedoff">Just SingleBindMetrics{pAlternative = 1} -&gt; <span class="nottickedoff">True</span></span>
+<span class="lineno">  114 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
+<span class="lineno">  115 </span><span class="spaces">              </span><span class="istickedoff">)</span>
+<span class="lineno">  116 </span><span class="spaces">                </span><span class="istickedoff">. cast</span>
+<span class="lineno">  117 </span><span class="spaces">                </span><span class="istickedoff">. <span class="nottickedoff">sDecision</span></span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">)</span>
+<span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">subForest</span></span>
+<span class="lineno">  120 </span>
+<span class="lineno">  121 </span>allBindsAndRefsIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  122 </span><span class="decl"><span class="istickedoff">allBindsAndRefsIO ctx tree = do</span>
+<span class="lineno">  123 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;-</span>
+<span class="lineno">  124 </span><span class="spaces">        </span><span class="istickedoff">filter ((\d -&gt; isSingleBind d || isRefactor d) . sDecision)</span>
+<span class="lineno">  125 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; positiveSubForestIO ctx tree</span>
+<span class="lineno">  126 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">  127 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; allBindsAndRefsIO ctx $ minimumOn (defScore . sDecision) subForest</span></span>
+<span class="lineno">  129 </span>
+<span class="lineno">  130 </span>refactorThreadIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  131 </span><span class="decl"><span class="istickedoff">refactorThreadIO ctx tree = do</span>
+<span class="lineno">  132 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO ctx tree</span>
+<span class="lineno">  133 </span><span class="spaces">    </span><span class="istickedoff">maybe (return tree) (refactorThreadIO ctx) $</span>
+<span class="lineno">  134 </span><span class="spaces">        </span><span class="istickedoff">L.find (isRefactor . sDecision) subForest</span></span>
+<span class="lineno">  135 </span>
+<span class="lineno">  136 </span>smartBindThreadIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  137 </span><span class="decl"><span class="istickedoff">smartBindThreadIO ctx tree = do</span>
+<span class="lineno">  138 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;-</span>
+<span class="lineno">  139 </span><span class="spaces">        </span><span class="istickedoff">filter ((\d -&gt; isSingleBind d || isRefactor d) . sDecision)</span>
+<span class="lineno">  140 </span><span class="spaces">            </span><span class="istickedoff">&lt;$&gt; (positiveSubForestIO ctx =&lt;&lt; refactorThreadIO ctx tree)</span>
+<span class="lineno">  141 </span><span class="spaces">    </span><span class="istickedoff">case subForest of</span>
+<span class="lineno">  142 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; return tree</span>
+<span class="lineno">  143 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; smartBindThreadIO ctx $ maximumOn (defScore . sDecision) subForest</span></span>
+<span class="lineno">  144 </span>
+<span class="lineno">  145 </span>allBestThreadIO :: SynthesisMethodConstraints tag v x t =&gt; BackendCtx tag v x t -&gt; Int -&gt; SynthesisMethod tag v x t
+<span class="lineno">  146 </span><span class="decl"><span class="istickedoff">allBestThreadIO ctx (0 :: Int) tree = bestThreadIO ctx stepLimit tree</span>
+<span class="lineno">  147 </span><span class="spaces"></span><span class="istickedoff">allBestThreadIO ctx n tree = do</span>
+<span class="lineno">  148 </span><span class="spaces">    </span><span class="istickedoff">subForest &lt;- positiveSubForestIO ctx tree</span>
+<span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">leafs &lt;- mapM (allBestThreadIO ctx (n - 1)) subForest</span>
+<span class="lineno">  150 </span><span class="spaces">    </span><span class="istickedoff">return $ bestLeaf tree leafs</span></span>
+<span class="lineno">  151 </span>
+<span class="lineno">  152 </span>bestLeaf :: SynthesisMethodConstraints tag v x t =&gt; DefTree tag v x t -&gt; [DefTree tag v x t] -&gt; DefTree tag v x t
+<span class="lineno">  153 </span><span class="decl"><span class="istickedoff">bestLeaf tree leafs =</span>
+<span class="lineno">  154 </span><span class="spaces">    </span><span class="istickedoff">let successLeafs = filter (\node -&gt; isComplete node &amp;&amp; isLeaf node) leafs</span>
+<span class="lineno">  155 </span><span class="spaces">     </span><span class="istickedoff">in case successLeafs of</span>
+<span class="lineno">  156 </span><span class="spaces">            </span><span class="istickedoff">[] -&gt; headDef tree leafs</span>
+<span class="lineno">  157 </span><span class="spaces">            </span><span class="istickedoff">_ : _ -&gt;</span>
+<span class="lineno">  158 </span><span class="spaces">                </span><span class="istickedoff">minimumOn</span>
+<span class="lineno">  159 </span><span class="spaces">                    </span><span class="istickedoff">(\Tree{sState = SynthesisState{sTarget}} -&gt; (processDuration sTarget, puSize sTarget))</span>
+<span class="lineno">  160 </span><span class="spaces">                    </span><span class="istickedoff">successLeafs</span></span>
+<span class="lineno">  161 </span>
+<span class="lineno">  162 </span>topDownByScoreSynthesisIO :: SynthesisMethodConstraints tag v x t =&gt; Float -&gt; Int -&gt; Maybe Text -&gt; BackendCtx tag v x t -&gt; SynthesisMethod tag v x t
+<span class="lineno">  163 </span><span class="decl"><span class="nottickedoff">topDownByScoreSynthesisIO = topDownByScoreSynthesisIO' (H.empty :: H.MaxPrioHeap Float (DefTree tag v x t)) 0</span></span>
+<span class="lineno">  164 </span>
+<span class="lineno">  165 </span><span class="decl"><span class="nottickedoff">topDownByScoreSynthesisIO' heap step depthCoeffBase limit scoreKey ctx currentNode = do</span>
+<span class="lineno">  166 </span><span class="spaces">    </span><span class="nottickedoff">if step &gt; limit</span>
+<span class="lineno">  167 </span><span class="spaces">        </span><span class="nottickedoff">then do</span>
+<span class="lineno">  168 </span><span class="spaces">            </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis&quot; $ &quot;topDownByScoreSynthesisIO - STEP LIMIT REACHED: &quot; &lt;&gt; show (sID currentNode)</span>
+<span class="lineno">  169 </span><span class="spaces">            </span><span class="nottickedoff">return currentNode</span>
+<span class="lineno">  170 </span><span class="spaces">        </span><span class="nottickedoff">else do</span>
+<span class="lineno">  171 </span><span class="spaces">            </span><span class="nottickedoff">-- currentNode should not be in the heap at this point, but all its children will be</span>
+<span class="lineno">  172 </span><span class="spaces">            </span><span class="nottickedoff">subForest &lt;- positiveSubForestIO ctx currentNode</span>
+<span class="lineno">  173 </span><span class="spaces">            </span><span class="nottickedoff">let getNodeDepth node = (\(Sid sidParts) -&gt; length sidParts) $ sID node</span>
+<span class="lineno">  174 </span><span class="spaces">                </span><span class="nottickedoff">-- priority calculation should prefer nodes that are closer to the leafs</span>
+<span class="lineno">  175 </span><span class="spaces">                </span><span class="nottickedoff">depthCoeff = depthCoeffBase ** fromIntegral (getNodeDepth currentNode)</span>
+<span class="lineno">  176 </span><span class="spaces">                </span><span class="nottickedoff">getScore node = case scoreKey of</span>
+<span class="lineno">  177 </span><span class="spaces">                    </span><span class="nottickedoff">Nothing -&gt; defScore . sDecision $ node</span>
+<span class="lineno">  178 </span><span class="spaces">                    </span><span class="nottickedoff">Just key -&gt; scores (sDecision node) M.! key</span>
+<span class="lineno">  179 </span><span class="spaces">                </span><span class="nottickedoff">getPriority node = depthCoeff * getScore node</span>
+<span class="lineno">  180 </span><span class="spaces">                </span><span class="nottickedoff">-- heapWithSubforest = foldl (\acc child -&gt; H.insert (getPriority child, child) acc) heap subForest</span>
+<span class="lineno">  181 </span><span class="spaces">                </span><span class="nottickedoff">-- the version above (fold + insert) takes 1.7x more time than below (fromList + union)</span>
+<span class="lineno">  182 </span><span class="spaces">                </span><span class="nottickedoff">subForestOnlyHeap = H.fromList [(getPriority child, child) | child &lt;- subForest]</span>
+<span class="lineno">  183 </span><span class="spaces">                </span><span class="nottickedoff">heapWithSubforest = H.union heap subForestOnlyHeap</span>
+<span class="lineno">  184 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">  185 </span><span class="spaces">            </span><span class="nottickedoff">case H.viewHead heapWithSubforest of</span>
+<span class="lineno">  186 </span><span class="spaces">                </span><span class="nottickedoff">Nothing -&gt; do</span>
+<span class="lineno">  187 </span><span class="spaces">                    </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis&quot; $ &quot;topDownByScoreSynthesisIO - TREE EXHAUSTED: &quot; &lt;&gt; show (sID currentNode)</span>
+<span class="lineno">  188 </span><span class="spaces">                    </span><span class="nottickedoff">return currentNode</span>
+<span class="lineno">  189 </span><span class="spaces">                </span><span class="nottickedoff">Just (_, nextBestScoreNode) -&gt; do</span>
+<span class="lineno">  190 </span><span class="spaces">                    </span><span class="nottickedoff">if isComplete nextBestScoreNode</span>
+<span class="lineno">  191 </span><span class="spaces">                        </span><span class="nottickedoff">then do</span>
+<span class="lineno">  192 </span><span class="spaces">                            </span><span class="nottickedoff">infoM &quot;NITTA.Synthesis&quot; $ &quot;topDownByScoreSynthesisIO - DONE: &quot; &lt;&gt; show (sID nextBestScoreNode)</span>
+<span class="lineno">  193 </span><span class="spaces">                            </span><span class="nottickedoff">return nextBestScoreNode</span>
+<span class="lineno">  194 </span><span class="spaces">                        </span><span class="nottickedoff">else do</span>
+<span class="lineno">  195 </span><span class="spaces">                            </span><span class="nottickedoff">let prio = getPriority nextBestScoreNode</span>
+<span class="lineno">  196 </span><span class="spaces">                                </span><span class="nottickedoff">depth = getNodeDepth nextBestScoreNode</span>
+<span class="lineno">  197 </span><span class="spaces">                                </span><span class="nottickedoff">score = getScore nextBestScoreNode</span>
+<span class="lineno">  198 </span><span class="spaces">                                </span><span class="nottickedoff">-- the more steps we make, the more aggressively we drop nodes to find new ones</span>
+<span class="lineno">  199 </span><span class="spaces">                                </span><span class="nottickedoff">aggressiveness = 0.5 :: Float -- [0.0; +inf)</span>
+<span class="lineno">  200 </span><span class="spaces">                                </span><span class="nottickedoff">maxDrops = 5</span>
+<span class="lineno">  201 </span><span class="spaces">                                </span><span class="nottickedoff">aggressiveDropPerSteps = 2500.0</span>
+<span class="lineno">  202 </span><span class="spaces">                                </span><span class="nottickedoff">aggressiveDropCount = min (maxDrops - 1) $ fromIntegral step / aggressiveDropPerSteps * aggressiveness</span>
+<span class="lineno">  203 </span><span class="spaces">                                </span><span class="nottickedoff">dropCount = round $ 1 + aggressiveDropCount * aggressiveness</span>
+<span class="lineno">  204 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">  205 </span><span class="spaces">                            </span><span class="nottickedoff">infoM</span>
+<span class="lineno">  206 </span><span class="spaces">                                </span><span class="nottickedoff">&quot;NITTA.Synthesis&quot;</span>
+<span class="lineno">  207 </span><span class="spaces">                                </span><span class="nottickedoff">( printf</span>
+<span class="lineno">  208 </span><span class="spaces">                                    </span><span class="nottickedoff">&quot;topDownByScoreSynthesisIO: prio=%-15s depth=%-5s score=%-10s drops=%-3s %s -&gt; %s&quot;</span>
+<span class="lineno">  209 </span><span class="spaces">                                    </span><span class="nottickedoff">(show prio)</span>
+<span class="lineno">  210 </span><span class="spaces">                                    </span><span class="nottickedoff">(show depth)</span>
+<span class="lineno">  211 </span><span class="spaces">                                    </span><span class="nottickedoff">(show score)</span>
+<span class="lineno">  212 </span><span class="spaces">                                    </span><span class="nottickedoff">(show dropCount)</span>
+<span class="lineno">  213 </span><span class="spaces">                                    </span><span class="nottickedoff">(show $ sID currentNode)</span>
+<span class="lineno">  214 </span><span class="spaces">                                    </span><span class="nottickedoff">(show $ sID nextBestScoreNode)</span>
+<span class="lineno">  215 </span><span class="spaces">                                </span><span class="nottickedoff">)</span>
+<span class="lineno">  216 </span><span class="spaces"></span><span class="nottickedoff"></span>
+<span class="lineno">  217 </span><span class="spaces">                            </span><span class="nottickedoff">topDownByScoreSynthesisIO' (H.drop dropCount heapWithSubforest) (step + 1) depthCoeffBase limit scoreKey ctx nextBestScoreNode</span></span>
+<span class="lineno">  218 </span>
+<span class="lineno">  219 </span>-- * Helpers
+<span class="lineno">  220 </span>
+<span class="lineno">  221 </span>selectSubForestIO ::
+<span class="lineno">  222 </span>    ( SynthesisMethodConstraints tag v x t
+<span class="lineno">  223 </span>    , m ~ TargetSystem (BusNetwork tag v x t) tag v x t
+<span class="lineno">  224 </span>    , ctx ~ SynthesisState m tag v x t
+<span class="lineno">  225 </span>    ) =&gt;
+<span class="lineno">  226 </span>    (SynthesisDecision ctx m -&gt; Bool) -&gt;
+<span class="lineno">  227 </span>    BackendCtx tag v x t -&gt;
+<span class="lineno">  228 </span>    DefTree tag v x t -&gt;
+<span class="lineno">  229 </span>    IO [DefTree tag v x t]
+<span class="lineno">  230 </span><span class="decl"><span class="istickedoff">selectSubForestIO p ctx tree = filter (p . sDecision) &lt;$&gt; positiveSubForestIO ctx tree</span></span>
+<span class="lineno">  231 </span>
+<span class="lineno">  232 </span>bestDecision :: [DefTree tag v x t] -&gt; Maybe (DefTree tag v x t)
+<span class="lineno">  233 </span><span class="decl"><span class="istickedoff">bestDecision [] = Nothing</span>
+<span class="lineno">  234 </span><span class="spaces"></span><span class="istickedoff">bestDecision xs = Just $ maximumOn <span class="nottickedoff">(defScore . sDecision)</span> xs</span></span>
+
+</pre>
+</body>
+</html>

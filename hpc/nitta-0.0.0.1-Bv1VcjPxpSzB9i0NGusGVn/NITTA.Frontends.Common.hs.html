@@ -53,7 +53,7 @@ span.spaces    { background: white }
 <span class="lineno">   34 </span>
 <span class="lineno">   35 </span><span class="decl"><span class="istickedoff">prettyLog traceVars hms = map prettyHM hms</span>
 <span class="lineno">   36 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">   37 </span><span class="spaces">        </span><span class="istickedoff">prettyHM hm = HM.fromList $ map (fromMaybe <span class="nottickedoff">undefined</span>) $ filter isJust $ map prettyX $ HM.toList hm</span>
+<span class="lineno">   37 </span><span class="spaces">        </span><span class="istickedoff">prettyHM hm = HM.fromList $ mapMaybe prettyX $ HM.toList hm</span>
 <span class="lineno">   38 </span><span class="spaces">        </span><span class="istickedoff">prettyX (v0, x) = do</span>
 <span class="lineno">   39 </span><span class="spaces">            </span><span class="istickedoff">-- variables names end on #0, #1..., so we trim this suffix</span>
 <span class="lineno">   40 </span><span class="spaces">            </span><span class="istickedoff">let v = takeWhile (/= '#') $ toString v0</span>

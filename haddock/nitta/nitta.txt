@@ -149,6 +149,27 @@ snippetClkGen :: Text
 snippetDumpFile :: Text -> Text
 
 
+-- | Taken as is from Control.Concurrent.Cache of io-memoize package, but
+--   with expoted Cache constructor, so we can use it in pattern matching.
+--   
+--   This was necessary not to rewrite similar functionality. Linter errors
+--   were fixed as well.
+module NITTA.Synthesis.MlBackend.FixedCache
+
+-- | A thread-safe write-once cache. If you need more functionality, (e.g.
+--   multiple write, cache clearing) use an <a>MVar</a> instead.
+newtype Cache a
+Cache :: MVar (Maybe a) -> Cache a
+
+-- | Create an empty cache.
+newCache :: IO (Cache a)
+
+-- | Fetch the value stored in the cache, or call the supplied fallback and
+--   store the result, if the cache is empty.
+fetch :: Cache a -> IO a -> IO a
+instance GHC.Classes.Eq (NITTA.Synthesis.MlBackend.FixedCache.Cache a)
+
+
 module NITTA.UIBackend.ViewHelperCls
 
 -- | Type class of helpers required for autogeneration of ToJSON and
@@ -167,13 +188,26 @@ fromText :: IsString a => Text -> a
 showText :: Show a => a -> Text
 readText :: Read a => Text -> a
 vsToStringList :: ToString a => Set a -> [String]
+catchToMaybeIO :: IO a -> IO (Maybe a)
+
+
+module NITTA.Synthesis.MlBackend.ServerInstance
+data MlBackendServer
+MlBackendServer :: Maybe Text -> Maybe (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle) -> MlBackendServer
+[baseUrl] :: MlBackendServer -> Maybe Text
+[handles] :: MlBackendServer -> Maybe (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
+
+-- | Makes ML backend server available with lazy initialization,
+--   memoization and proper cleanup.
+withLazyMlBackendServer :: (IO MlBackendServer -> IO c) -> IO c
+instance Data.Default.Class.Default NITTA.Synthesis.MlBackend.ServerInstance.MlBackendServer
 
 
 module NITTA.Intermediate.Value
 
 -- | Type class for representation of processing values. A value should
 --   include two parts: data and attribute.
-class (Typeable x, Show x, Read x, PrintfArg x, Default x, Integral x, Enum x, Eq x, Num x, Bits x, Validity x, FixedPointCompatible x) => Val x
+class (Typeable x, Show x, Read x, PrintfArg x, Default x, Integral x, Enum x, Eq x, Num x, Bits x, Validity x, FixedPointCompatible x, ToJSON x) => Val x
 
 -- | data bus width
 dataWidth :: Val x => x -> Int
@@ -537,6 +571,7 @@ module NITTA.Model.Time
 -- | Shortcut for variable (<tt>v</tt>), value (<tt>x</tt>) and time
 --   (<tt>t</tt>) type constrains.
 type VarValTime v x t = (Var v, Val x, Time t)
+type VarValTimeJSON v x t = (VarValTime v x t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
 
 -- | Shortcut for time type constrain.
 type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t)
@@ -3066,6 +3101,11 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag
 -- | dictionary with number of bound functions for each unit
 [unitWorkloadInFunction] :: SynthesisState m tag v x t -> Map tag Int
 
+-- | Shortcut for constraints in signatures of synthesis method functions.
+--   This used to be (VarValTime v x t, UnitTag tag). See below for more
+--   info.
+type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
+
 -- | Synthesis node ID. ID is a relative path, encoded as a sequence of an
 --   option index.
 newtype Sid
@@ -3081,6 +3121,7 @@ type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
 targetUnit :: Tree (TargetSystem c tag v x t) tag v x t -> c
 targetDFG :: Tree (TargetSystem u tag v x t) tag v x t -> DataFlowGraph v x
 defScore :: SynthesisDecision ctx m -> Float
+mlScoreKeyPrefix :: IsString a => a
 instance GHC.Show.Show NITTA.Synthesis.Types.Sid
 instance GHC.Read.Read NITTA.Synthesis.Types.Sid
 instance Data.Default.Class.Default NITTA.Synthesis.Types.Sid
@@ -3088,6 +3129,24 @@ instance GHC.Base.Semigroup NITTA.Synthesis.Types.Sid
 instance GHC.Base.Monoid NITTA.Synthesis.Types.Sid
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Types.Sid
 instance Web.Internal.HttpApiData.FromHttpApiData NITTA.Synthesis.Types.Sid
+
+
+module NITTA.UIBackend.Types
+data BackendCtx tag v x t
+BackendCtx :: DefTree tag v x t -> [(v, [x])] -> String -> IO MlBackendServer -> [Text] -> BackendCtx tag v x t
+
+-- | root synthesis node
+[root] :: BackendCtx tag v x t -> DefTree tag v x t
+
+-- | lists of received by IO values
+[receivedValues] :: BackendCtx tag v x t -> [(v, [x])]
+[outputPath] :: BackendCtx tag v x t -> String
+[mlBackendGetter] :: BackendCtx tag v x t -> IO MlBackendServer
+
+-- | list of node scores name. Used for ML backend mostly, but can be used
+--   for any "hardcoded" scoring function.
+[nodeScores] :: BackendCtx tag v x t -> [Text]
+instance Data.Default.Class.Default (NITTA.UIBackend.Types.BackendCtx tag v x t)
 
 
 module NITTA.Synthesis.Analysis
@@ -3239,24 +3298,95 @@ module NITTA.Synthesis.Steps
 isRefactor :: SynthesisDecision ctx m -> Bool
 
 
+-- | We can not autogenerate ToJSON implementation for some types, so we
+--   add helper types for doing that automatically. Why do we need to
+--   generate <a>ToJSON</a> automatically? We don't want to achieve
+--   consistency between client and server manually.
+module NITTA.UIBackend.ViewHelper
+
+-- | Helper for JSON serialization
+data FView
+FView :: Text -> [Text] -> FView
+[fvFun] :: FView -> Text
+[fvHistory] :: FView -> [Text]
+
+-- | Type class of helpers required for autogeneration of ToJSON and
+--   typescript types.
+class Viewable t v | t -> v
+view :: Viewable t v => t -> v
+viewNodeTree :: (Enum b, Num b, NextTick u b) => Tree (TargetSystem u tag v x t) tag v x t -> IO (TreeView ShortNodeView)
+data TreeView a
+data ShortNodeView
+data NodeView tag v x t
+newtype StepInfoView
+StepInfoView :: Text -> StepInfoView
+type VarValTimeJSON v x t = (VarValTime v x t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
+instance GHC.Show.Show a => GHC.Show.Show (NITTA.UIBackend.ViewHelper.TreeView a)
+instance GHC.Generics.Generic (NITTA.UIBackend.ViewHelper.TreeView a)
+instance GHC.Show.Show NITTA.UIBackend.ViewHelper.ShortNodeView
+instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.ShortNodeView
+instance GHC.Show.Show NITTA.UIBackend.ViewHelper.NodeInfo
+instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.NodeInfo
+instance GHC.Generics.Generic (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
+instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.StepInfoView
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.ProcessorUnits.Types.StepInfo v x t) NITTA.UIBackend.ViewHelper.StepInfoView
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.UIBackend.ViewHelper.StepInfoView
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.ProcessorUnits.Types.Process t (NITTA.Model.ProcessorUnits.Types.StepInfo v x t)) (NITTA.Model.ProcessorUnits.Types.Process t NITTA.UIBackend.ViewHelper.StepInfoView)
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTimeJSON v x t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Synthesis.Types.DefTree tag v x t) (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
+instance (NITTA.Model.Time.VarValTimeJSON v x t, Data.Aeson.Types.ToJSON.ToJSON tag) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
+instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
+instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.TreeView NITTA.UIBackend.ViewHelper.ShortNodeView)
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.UIBackend.ViewHelper.ShortNodeView
+instance Data.Aeson.Types.ToJSON.ToJSON a => Data.Aeson.Types.ToJSON.ToJSON (NITTA.UIBackend.ViewHelper.TreeView a)
+instance Servant.Docs.Internal.ToSample GHC.Num.Integer.Integer
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Analysis.TreeInfo
+instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Analysis.TreeInfo
+instance (Data.Aeson.Types.ToJSON.ToJSONKey v, Data.Aeson.Types.ToJSON.ToJSON v, Data.Aeson.Types.ToJSON.ToJSON x) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Project.TestBench.TestbenchReport v x)
+instance Servant.Docs.Internal.ToSample (NITTA.Project.TestBench.TestbenchReport GHC.Base.String GHC.Types.Int)
+
+
+module NITTA.Synthesis.MlBackend.Client
+data ScoringInput tag v x t
+ScoringInput :: ScoringTarget -> [NodeView tag v x t] -> ScoringInput tag v x t
+[scoringTarget] :: ScoringInput tag v x t -> ScoringTarget
+[nodes] :: ScoringInput tag v x t -> [NodeView tag v x t]
+data ScoringTarget
+ScoringTargetSid :: Sid -> ScoringTarget
+ScoringTargetAll :: ScoringTarget
+predictScoresIO :: forall {m} {v} {x} {t} {a} {tag}. (IsString v, Suffix v, Hashable v, Val x, Bounded t, ToJSONKey v, MonadThrow m, ToString v, ToString a, MonadIO m, Typeable v, Typeable t, Show t, Default t, Integral t, Ord v, ToJSON v, ToJSON t, ToJSON tag) => Text -> a -> [ScoringInput tag v x t] -> m [[Float]]
+instance GHC.Generics.Generic (NITTA.Synthesis.MlBackend.Client.ScoringInput tag v x t)
+instance GHC.Generics.Generic (NITTA.Synthesis.MlBackend.Client.PostScoreRequestBody tag v x t)
+instance GHC.Generics.Generic (NITTA.Synthesis.MlBackend.Client.MlBackendResponse d)
+instance GHC.Show.Show d => GHC.Show.Show (NITTA.Synthesis.MlBackend.Client.MlBackendResponse d)
+instance GHC.Generics.Generic NITTA.Synthesis.MlBackend.Client.PostScoreResponseData
+instance GHC.Show.Show NITTA.Synthesis.MlBackend.Client.PostScoreResponseData
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.MlBackend.Client.PostScoreResponseData
+instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Synthesis.MlBackend.Client.PostScoreResponseData
+instance Data.Aeson.Types.FromJSON.FromJSON d => Data.Aeson.Types.FromJSON.FromJSON (NITTA.Synthesis.MlBackend.Client.MlBackendResponse d)
+instance Data.Aeson.Types.ToJSON.ToJSON d => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Synthesis.MlBackend.Client.MlBackendResponse d)
+instance (NITTA.Model.Time.VarValTimeJSON v x t, Data.Aeson.Types.ToJSON.ToJSON tag) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Synthesis.MlBackend.Client.PostScoreRequestBody tag v x t)
+instance (NITTA.Model.Time.VarValTimeJSON v x t, Data.Aeson.Types.ToJSON.ToJSON tag) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Synthesis.MlBackend.Client.ScoringInput tag v x t)
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.MlBackend.Client.ScoringTarget
+
+
 module NITTA.Synthesis.Explore
 
 -- | Make synthesis tree
 synthesisTreeRootIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => TargetSystem (BusNetwork tag v x t) tag v x t -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 
 -- | Get specific by <tt>nId</tt> node from a synthesis tree.
-getTreeIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+getTreeIO :: (UnitTag tag, Hashable v, Suffix v, Val x, Bounded t, ToJSONKey v, Show t, Default t, Integral t, ToJSON v, ToJSON t, ToJSON tag, Typeable v, Typeable t, Ord v, ToString v, IsString v) => BackendCtx tag v x t -> Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO (Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
 
 -- | Get list of all nodes from root to selected.
-getTreePathIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+getTreePathIO :: (UnitTag tag, Hashable v, Suffix v, Val x, Bounded t, ToJSONKey v, Show t, Default t, Integral t, ToJSON v, ToJSON t, ToJSON tag, Typeable v, Typeable t, Ord v, ToString v, IsString v) => BackendCtx tag v x t -> Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> Sid -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 
 -- | Get all available edges for the node. Edges calculated only for the
 --   first call.
-subForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+subForestIO :: (UnitTag tag, Hashable v, Suffix v, Val x, Bounded t, ToJSONKey v, ToJSON v, ToJSON t, ToJSON tag, Show t, Default t, Integral t, Typeable v, Typeable t, Ord v, ToString v, IsString v) => BackendCtx tag v x t -> Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 
 -- | For synthesis method is more usefull, because throw away all useless
 --   trees in subForest (objective function value less than zero).
-positiveSubForestIO :: (UnitTag tag, Val x, Bounded t, Hashable v, Suffix v, Show t, Default t, Integral t, Typeable t, Typeable v, Ord v, ToString v, IsString v) => Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
+positiveSubForestIO :: (UnitTag tag, Hashable v, Suffix v, Val x, Bounded t, ToJSONKey v, Show t, Default t, Integral t, ToJSON v, ToJSON t, ToJSON tag, Typeable v, Typeable t, Ord v, ToString v, IsString v) => BackendCtx tag v x t -> Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t -> IO [Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t]
 
 
 module NITTA.Synthesis.Method
@@ -3267,19 +3397,25 @@ type DefTree tag v x t = Tree (TargetSystem (BusNetwork tag v x t) tag v x t) ta
 -- | The synthesis method is a function, which manipulates a synthesis
 --   tree. It receives a node and explores it deeply by IO.
 type SynthesisMethod tag v x t = DefTree tag v x t -> IO (DefTree tag v x t)
-noSynthesis :: () -> SynthesisMethod tag v x t
+noSynthesis :: BackendCtx tag v x t -> SynthesisMethod tag v x t
 
 -- | Schedule process by simple synthesis.
-simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
+simpleSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+smartBindSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+obviousBindThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+topDownByScoreSynthesisIO :: SynthesisMethodConstraints tag v x t => Float -> Int -> Maybe Text -> BackendCtx tag v x t -> SynthesisMethod tag v x t
+allBestThreadIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> Int -> SynthesisMethod tag v x t
 
 -- | The most complex synthesis method, which embedded all another. That
 --   all.
-stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => () -> SynthesisMethod tag v x t
-allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+stateOfTheArtSynthesisIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+allBindsAndRefsIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+bestStepIO :: SynthesisMethodConstraints tag v x t => BackendCtx tag v x t -> SynthesisMethod tag v x t
+
+-- | Shortcut for constraints in signatures of synthesis method functions.
+--   This used to be (VarValTime v x t, UnitTag tag). See below for more
+--   info.
+type SynthesisMethodConstraints tag v x t = (VarValTimeJSON v x t, ToJSON tag, UnitTag tag)
 
 
 -- | TargetSynthesis is an entry point for synthesis process.
@@ -3391,54 +3527,8 @@ TargetSynthesis :: String -> BusNetwork tag v x t -> Maybe Text -> DataFlowGraph
 [tSourceCodeType] :: TargetSynthesis tag v x t -> FrontendType
 runTargetSynthesis :: (Bounded t, Suffix v1, Hashable v1, UnitTag tag, Val p, Default t, Show t, Integral t, Typeable t, Typeable v1, Ord v1, ToString v1, IsString v1) => TargetSynthesis tag v1 p t -> IO (Either String (TestbenchReport v1 p))
 synthesizeTargetSystem :: (UnitTag tag, VarValTime v x t) => TargetSynthesis tag v x t -> IO (DefTree tag v x t, Either String (Project (BusNetwork tag v x t) v x))
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
+instance NITTA.Synthesis.Types.SynthesisMethodConstraints tag v x t => Data.Default.Class.Default (NITTA.Synthesis.TargetSynthesis tag v x t)
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Synthesis.TargetSynthesis tag v x t) v x t
-
-
--- | We can not autogenerate ToJSON implementation for some types, so we
---   add helper types for doing that automatically. Why do we need to
---   generate <a>ToJSON</a> automatically? We don't want to achieve
---   consistency between client and server manually.
-module NITTA.UIBackend.ViewHelper
-
--- | Helper for JSON serialization
-data FView
-FView :: Text -> [Text] -> FView
-[fvFun] :: FView -> Text
-[fvHistory] :: FView -> [Text]
-
--- | Type class of helpers required for autogeneration of ToJSON and
---   typescript types.
-class Viewable t v | t -> v
-view :: Viewable t v => t -> v
-viewNodeTree :: (Enum b, Num b, NextTick u b) => Tree (TargetSystem u tag v x t) tag v x t -> IO (TreeView ShortNodeView)
-data TreeView a
-data ShortNodeView
-data NodeView tag v x t
-newtype StepInfoView
-StepInfoView :: Text -> StepInfoView
-instance GHC.Show.Show a => GHC.Show.Show (NITTA.UIBackend.ViewHelper.TreeView a)
-instance GHC.Generics.Generic (NITTA.UIBackend.ViewHelper.TreeView a)
-instance GHC.Show.Show NITTA.UIBackend.ViewHelper.ShortNodeView
-instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.ShortNodeView
-instance GHC.Show.Show NITTA.UIBackend.ViewHelper.NodeInfo
-instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.NodeInfo
-instance GHC.Generics.Generic (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
-instance GHC.Generics.Generic NITTA.UIBackend.ViewHelper.StepInfoView
-instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.ProcessorUnits.Types.StepInfo v x t) NITTA.UIBackend.ViewHelper.StepInfoView
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.UIBackend.ViewHelper.StepInfoView
-instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.ProcessorUnits.Types.Process t (NITTA.Model.ProcessorUnits.Types.StepInfo v x t)) (NITTA.Model.ProcessorUnits.Types.Process t NITTA.UIBackend.ViewHelper.StepInfoView)
-instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.UIBackend.ViewHelper.VarValTimeJSON v x t) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Synthesis.Types.DefTree tag v x t) (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
-instance (NITTA.UIBackend.ViewHelper.VarValTimeJSON v x t, Data.Aeson.Types.ToJSON.ToJSON tag) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
-instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.NodeView tag v x t)
-instance Servant.Docs.Internal.ToSample (NITTA.UIBackend.ViewHelper.TreeView NITTA.UIBackend.ViewHelper.ShortNodeView)
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.UIBackend.ViewHelper.ShortNodeView
-instance Data.Aeson.Types.ToJSON.ToJSON a => Data.Aeson.Types.ToJSON.ToJSON (NITTA.UIBackend.ViewHelper.TreeView a)
-instance Servant.Docs.Internal.ToSample GHC.Num.Integer.Integer
-instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Analysis.TreeInfo
-instance Servant.Docs.Internal.ToSample NITTA.Synthesis.Analysis.TreeInfo
-instance (Data.Aeson.Types.ToJSON.ToJSONKey v, Data.Aeson.Types.ToJSON.ToJSON v, Data.Aeson.Types.ToJSON.ToJSON x) => Data.Aeson.Types.ToJSON.ToJSON (NITTA.Project.TestBench.TestbenchReport v x)
-instance Servant.Docs.Internal.ToSample (NITTA.Project.TestBench.TestbenchReport GHC.Base.String GHC.Types.Int)
 
 
 module NITTA.Model.Microarchitecture.Types
@@ -3466,16 +3556,21 @@ instance Data.Aeson.Types.ToJSON.ToJSON tag => Data.Aeson.Types.ToJSON.ToJSON (N
 
 module NITTA.UIBackend.REST
 type SynthesisAPI tag v x t = (Description "Get whole synthesis tree" :> "synthesisTree" :> Get '[JSON] (TreeView ShortNodeView)) :<|> (Description "Get synthesis tree info" :> "treeInfo" :> Get '[JSON] TreeInfo) :<|> ("node" :> Capture "sid" Sid :> (SynthesisTreeNavigationAPI tag v x t :<|> NodeInspectionAPI tag v x t :<|> TestBenchAPI v x :<|> SynthesisMethodsAPI tag v x t :<|> SynthesisPracticesAPI tag v x t))
-synthesisServer :: (UnitTag tag, Bounded b, Hashable v, Suffix v, Val x, ToJSONKey v, ToJSON v, ToJSON x, ToJSON b, Label v, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, Show b, Default b, Integral b, Typeable b, Typeable v, Ord v, ToString v, IsString v) => BackendCtx tag v x b -> m (TreeView ShortNodeView) :<|> (m TreeInfo :<|> (Sid -> (m [NodeView tag v x b] :<|> (m (Maybe (NodeView tag v x b)) :<|> m [NodeView tag v x b])) :<|> ((m (NodeView tag v x b) :<|> (m (GraphStructure GraphEdge) :<|> (m (ProcessTimelines b) :<|> (m (Process b StepInfoView) :<|> ((tag -> m (Process b StepInfoView)) :<|> (m [UnitEndpoints tag v b] :<|> (m (MicroarchitectureDesc tag) :<|> m (Debug tag v b)))))))) :<|> ((String -> Int -> m (TestbenchReport v x)) :<|> ((m Sid :<|> (m Sid :<|> m Sid)) :<|> (m Sid :<|> (m Sid :<|> (m Sid :<|> (Int -> m Sid)))))))))
+synthesisServer :: (UnitTag tag2, Bounded b, Hashable v, Suffix v, Val x, ToJSONKey v, Label v, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, MonadIO m, Show b, Default b, Integral b, ToJSON v, ToJSON b, ToJSON tag2, Typeable b, Typeable v, Ord v, ToString v, IsString v) => BackendCtx tag2 v x b -> m (TreeView ShortNodeView) :<|> (m TreeInfo :<|> (Sid -> (m [NodeView tag2 v x b] :<|> (m (Maybe (NodeView tag2 v x b)) :<|> m [NodeView tag2 v x b])) :<|> ((m (NodeView tag2 v x b) :<|> (m (GraphStructure GraphEdge) :<|> (m (ProcessTimelines b) :<|> (m (Process b StepInfoView) :<|> ((tag2 -> m (Process b StepInfoView)) :<|> (m [UnitEndpoints tag2 v b] :<|> (m (MicroarchitectureDesc tag2) :<|> m (Debug tag2 v b)))))))) :<|> ((String -> Int -> m (TestbenchReport v x)) :<|> ((m Sid :<|> (m Sid :<|> m Sid)) :<|> (m Sid :<|> (m Sid :<|> (m Sid :<|> (Int -> m Sid)))))))))
 data BackendCtx tag v x t
-BackendCtx :: DefTree tag v x t -> [(v, [x])] -> String -> BackendCtx tag v x t
+BackendCtx :: DefTree tag v x t -> [(v, [x])] -> String -> IO MlBackendServer -> [Text] -> BackendCtx tag v x t
 
 -- | root synthesis node
-[$sel:root:BackendCtx] :: BackendCtx tag v x t -> DefTree tag v x t
+[root] :: BackendCtx tag v x t -> DefTree tag v x t
 
 -- | lists of received by IO values
-[$sel:receivedValues:BackendCtx] :: BackendCtx tag v x t -> [(v, [x])]
-[$sel:outputPath:BackendCtx] :: BackendCtx tag v x t -> String
+[receivedValues] :: BackendCtx tag v x t -> [(v, [x])]
+[outputPath] :: BackendCtx tag v x t -> String
+[mlBackendGetter] :: BackendCtx tag v x t -> IO MlBackendServer
+
+-- | list of node scores name. Used for ML backend mostly, but can be used
+--   for any "hardcoded" scoring function.
+[nodeScores] :: BackendCtx tag v x t -> [Text]
 data UnitEndpoints tag v t
 UnitEndpoints :: tag -> [EndpointSt v (TimeConstraint t)] -> UnitEndpoints tag v t
 [$sel:unitTag:UnitEndpoints] :: UnitEndpoints tag v t -> tag
@@ -3503,7 +3598,7 @@ instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => Servant.Docs.Internal.T
 module NITTA.UIBackend
 
 -- | Run backend server.
-backendServer :: (Suffix w, Hashable w, Val w, Bounded w, ToJSONKey w, ToJSON w, ToJSON w, ToJSON w, ToJSON w, FromHttpApiData w, UnitTag w, Label w, ToString w, IsString w, Typeable w, Typeable w, Show w, Default w, Integral w, Ord w) => Int -> [(w, [w])] -> String -> DefTree w w w w -> IO ()
+backendServer :: (Suffix w, Hashable w, Val w, Bounded w, ToJSONKey w, FromHttpApiData w, UnitTag w, Label w, ToString w, IsString w, Typeable w, Typeable w, Show w, Default w, Integral w, Ord w, ToJSON w, ToJSON w, ToJSON w) => Int -> BackendCtx w w w w -> IO ()
 prepareJSAPI :: Interpolatable 'True p Text => p -> FilePath -> IO ()
 restDocs :: Show a => a -> String
 apiPath :: FilePath

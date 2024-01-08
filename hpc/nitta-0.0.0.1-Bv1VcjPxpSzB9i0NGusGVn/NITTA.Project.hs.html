@@ -190,7 +190,7 @@ span.spaces    { background: white }
 <span class="lineno">  171 </span><span class="spaces">            </span><span class="istickedoff">copyFile source target</span>
 <span class="lineno">  172 </span><span class="spaces"></span><span class="istickedoff"></span>
 <span class="lineno">  173 </span><span class="spaces">        </span><span class="istickedoff">libraryFiles Project{pName, pUnit} =</span>
-<span class="lineno">  174 </span><span class="spaces">            </span><span class="istickedoff">L.nub $ concatMap (args <span class="nottickedoff">&quot;&quot;</span>) [hardware <span class="nottickedoff">pName</span> pUnit]</span>
+<span class="lineno">  174 </span><span class="spaces">            </span><span class="istickedoff">L.nub $ args <span class="nottickedoff">&quot;&quot;</span> $ hardware <span class="nottickedoff">pName</span> pUnit</span>
 <span class="lineno">  175 </span><span class="spaces">            </span><span class="istickedoff">where</span>
 <span class="lineno">  176 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate (Just p') subInstances) = concatMap (args $ <span class="nottickedoff">joinPath [p, p']</span>) subInstances</span>
 <span class="lineno">  177 </span><span class="spaces">                </span><span class="istickedoff">args p (Aggregate Nothing subInstances) = concatMap (args <span class="nottickedoff">p</span>) subInstances</span>

@@ -58,6 +58,9 @@ Typescript interfaces can be finded here: `types.ts`
         "tag": "SingleBindMetrics"
     },
     "score": 1032,
+    "scores": {
+        "default": 1032
+    },
     "sid": "-0-1-3-1"
 }
 ```
@@ -113,6 +116,9 @@ Typescript interfaces can be finded here: `types.ts`
         "pWaitTime": 1
     },
     "score": 1999,
+    "scores": {
+        "default": 1999
+    },
     "sid": "-0-1-3-1-5"
 }
 ```
@@ -135,6 +141,9 @@ Typescript interfaces can be finded here: `types.ts`
     "isTerminal": false,
     "parameters": [],
     "score": 5000,
+    "scores": {
+        "default": 5000
+    },
     "sid": "-0-1-3-1-6"
 }
 ```
@@ -167,6 +176,9 @@ Typescript interfaces can be finded here: `types.ts`
     "isTerminal": false,
     "parameters": [],
     "score": 1999,
+    "scores": {
+        "default": 1999
+    },
     "sid": "-0-1-3-1-5"
 }
 ```
@@ -203,6 +215,9 @@ Typescript interfaces can be finded here: `types.ts`
     "isTerminal": false,
     "parameters": [],
     "score": 1999,
+    "scores": {
+        "default": 1999
+    },
     "sid": "-0-1-3-1-5"
 }
 ```
@@ -855,6 +870,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]
@@ -889,6 +907,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -916,6 +937,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]
@@ -973,6 +997,9 @@ Typescript interfaces can be finded here: `types.ts`
             "pWaitTime": 1
         },
         "score": 1999,
+        "scores": {
+            "default": 1999
+        },
         "sid": "-0-1-3-1-5"
     }
 ]
@@ -1007,6 +1034,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -1034,6 +1064,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -1061,6 +1094,9 @@ Typescript interfaces can be finded here: `types.ts`
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]
@@ -1384,6 +1420,9 @@ null
         "tag": "SingleBindMetrics"
     },
     "score": 1032,
+    "scores": {
+        "default": 1032
+    },
     "sid": "-0-1-3-1"
 }
 ```
@@ -1439,6 +1478,9 @@ null
         "pWaitTime": 1
     },
     "score": 1999,
+    "scores": {
+        "default": 1999
+    },
     "sid": "-0-1-3-1-5"
 }
 ```
@@ -1461,6 +1503,9 @@ null
     "isTerminal": false,
     "parameters": [],
     "score": 5000,
+    "scores": {
+        "default": 5000
+    },
     "sid": "-0-1-3-1-6"
 }
 ```
@@ -1493,6 +1538,9 @@ null
     "isTerminal": false,
     "parameters": [],
     "score": 1999,
+    "scores": {
+        "default": 1999
+    },
     "sid": "-0-1-3-1-5"
 }
 ```
@@ -1771,6 +1819,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]
@@ -1805,6 +1856,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -1832,6 +1886,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]
@@ -1889,6 +1946,9 @@ null
             "pWaitTime": 1
         },
         "score": 1999,
+        "scores": {
+            "default": 1999
+        },
         "sid": "-0-1-3-1-5"
     }
 ]
@@ -1923,6 +1983,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -1950,6 +2013,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     },
     {
@@ -1977,6 +2043,9 @@ null
             "tag": "SingleBindMetrics"
         },
         "score": 1032,
+        "scores": {
+            "default": 1032
+        },
         "sid": "-0-1-3-1"
     }
 ]

@@ -1,0 +1,61 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{- |
+<span class="lineno">    2 </span>Module      : NITTA.UIBackend.Types
+<span class="lineno">    3 </span>Description : Types for UI backend.
+<span class="lineno">    4 </span>Copyright   : (c) Aleksandr Penskoi, 2021
+<span class="lineno">    5 </span>License     : BSD3
+<span class="lineno">    6 </span>Maintainer  : aleksandr.penskoi@gmail.com
+<span class="lineno">    7 </span>Stability   : experimental
+<span class="lineno">    8 </span>-}
+<span class="lineno">    9 </span>module NITTA.UIBackend.Types (
+<span class="lineno">   10 </span>    BackendCtx (..),
+<span class="lineno">   11 </span>) where
+<span class="lineno">   12 </span>
+<span class="lineno">   13 </span>import Data.Default
+<span class="lineno">   14 </span>import Data.Text qualified as T
+<span class="lineno">   15 </span>import NITTA.Synthesis.MlBackend.ServerInstance
+<span class="lineno">   16 </span>import NITTA.Synthesis.Types
+<span class="lineno">   17 </span>
+<span class="lineno">   18 </span>data BackendCtx tag v x t = BackendCtx
+<span class="lineno">   19 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">root</span></span></span> :: DefTree tag v x t
+<span class="lineno">   20 </span>    -- ^ root synthesis node
+<span class="lineno">   21 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">receivedValues</span></span></span> :: [(v, [x])]
+<span class="lineno">   22 </span>    -- ^ lists of received by IO values
+<span class="lineno">   23 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">outputPath</span></span></span> :: String
+<span class="lineno">   24 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">mlBackendGetter</span></span></span> :: IO MlBackendServer
+<span class="lineno">   25 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodeScores</span></span></span> :: [T.Text]
+<span class="lineno">   26 </span>    -- ^ list of node scores name. Used for ML backend mostly, but can be used
+<span class="lineno">   27 </span>    -- for any &quot;hardcoded&quot; scoring function.
+<span class="lineno">   28 </span>    }
+<span class="lineno">   29 </span>
+<span class="lineno">   30 </span>instance Default (BackendCtx tag v x t) where
+<span class="lineno">   31 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">   32 </span><span class="spaces">        </span><span class="istickedoff">BackendCtx</span>
+<span class="lineno">   33 </span><span class="spaces">            </span><span class="istickedoff">{ root = <span class="nottickedoff">error &quot;root of a default (missing) BackendCtx was accessed&quot;</span></span>
+<span class="lineno">   34 </span><span class="spaces">            </span><span class="istickedoff">, receivedValues = <span class="nottickedoff">def</span></span>
+<span class="lineno">   35 </span><span class="spaces">            </span><span class="istickedoff">, outputPath = <span class="nottickedoff">def</span></span>
+<span class="lineno">   36 </span><span class="spaces">            </span><span class="istickedoff">, mlBackendGetter = <span class="nottickedoff">def</span></span>
+<span class="lineno">   37 </span><span class="spaces">            </span><span class="istickedoff">, nodeScores = def</span>
+<span class="lineno">   38 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+
+</pre>
+</body>
+</html>

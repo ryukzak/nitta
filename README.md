@@ -37,7 +37,14 @@ Project CI chat (telegram): <https://t.me/nitta_ci>
 
 See: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Setup development environment
+## Set up development environment
+
+You have at least two options here:
+
+1. Set it up automatically as a docker container using this [manual](/ml/synthesis/README.md) and develop in VS Code.
+2. Set it up locally by hand. May be less problematic in some cases.
+
+In this document, we will focus on the local setup.
 
 ### Mac OS X
 
@@ -94,102 +101,111 @@ sudo apt-get install npm yarn
 npm install --global tern prettier yarn
 ```
 
-## Build
+### For machine learning base synthesis (optional)
 
-Inside the project path
+1. Install python package manager: [poetry](https://python-poetry.org/docs/).
+2. Install python dependencies: `cd ml/synthesis; poetry install`
 
-### Build backend
+## How to Build, Test, Format, Lint & Run
+
+see [Makefile](Makefile) as a source of up-to-date command examples. Most general command are represnted as a make targets.
+
+### Configuration
+
+- `HS_SRC_DIR`: Defines the source code directories for Haskell.
+- `HS_O`: Specifies options for Haskell compilation.
+- `POETRYPATH`: Defines the path to the Poetry configuration.
+- `PYTHONPATH`: Specifies the Python path for Poetry.
+- `POETRY`: Command to run Poetry within the specified configuration.
+- `PYTHON`: Command to run Python using Poetry.
+- `ML_CRAWL_DATA_PATH`: Path to store data sets for ML training.
+- `ML_MODEL_PATH`: Path to the machine learning model directory.
+- `ML_MODEL`: Identifies the latest machine learning model in the `ML_MODEL_PATH`.
+
+### nitta (the core of the tool)
+
+- `build`: Builds the Haskell project using Stack with various options with haddock docs.
+- `build-prod`: Builds the Haskell project with optimized GHC options.
+- `test`: Builds and runs Haskell tests with coverage.
+- `format`: Formats Haskell source code using Fourmolu.
+- `format-check`: Checks Haskell source code formatting.
+- `lint`: Lints Haskell code using HLint and Weeder.
+- `clean`: Cleans the Haskell project with Stack.
+- `benchmark`: Runs a benchmark for the Haskell project.
+- `benchmark-report`: Compares and generates a benchmark report.
+
+### UI (to see what actually happening due to synthesis process)
+
+- `ui-build`: Builds the UI component using Yarn.
+- `ui-run`: Runs the UI component using Yarn.
+- `ui-format`: Formats UI source code using Prettier.
+- `ui-format-check`: Checks UI source code formatting.
+
+### Machine Learning based Synthesis
+
+- `ml-crawl-data`: Crawls data for the machine learning model.
+- `ml-train-model`: Trains the machine learning model.
+- `ml-format`: Formats machine learning code using Black.
+- `ml-format-check`: Checks machine learning code formatting.
+- `ml-lint`: Lints machine learning code using Ruff, MyPy, and Vulture.
+- `ml-nitta`: Runs the machine learning model with Nitta.
+
+### Docker image for development
+
+see details in: <./ml/synthesis/README.md>
+
+- `docker-dev-build`: make dev image for your platform (~15 GB).
+- `docker-dev-build-with-gpu`: make dev image for your platform with GPU support (~25 GB).
+- `docker-dev-run`: run dev image without GPU support.
+- `docker-dev-run-with-gpu`: run dev image with GPU support.
+
+## CLI Hints
 
 ``` console
-stack build
-```
+# Build nitta
+$ stack build --fast
 
-### Build frontend
 
-``` console
-stack exec nitta-api-gen
-yarn --cwd web install
-yarn --cwd web run build
-```
+# Build frontend
+$ stack exec nitta-api-gen
+$ yarn --cwd web install
+$ yarn --cwd web run build
 
-### Build documentation
 
-``` console
-stack build --haddock # for nitta CAD
-stack exec nitta-api-gen # for REST API description
-```
-
-For the fast rebuild, the project adds `--fast` flag.
-
-### Testing
-
-``` console
-$ stack build --test
-nitta-0.0.0.1: unregistering (dependencies changed)
-nitta> configure (lib + exe + test)
-Configuring nitta-0.0.0.1...
-nitta> build (lib + exe + test)
-Preprocessing library for nitta-0.0.0.1..
-Building library for nitta-0.0.0.1..
-[ 1 of 56] Compiling NITTA.Intermediate.Value
-[ 2 of 56] Compiling NITTA.Intermediate.Variable
-...
-  NITTA.Utils.Tests
-    values2dump:                                                 OK
-    endpoint role equality:                                      OK
-
-All 190 tests passed (27.89s)
-
-nitta> Test suite nitta-test passed
-Completed 2 action(s).
-```
-
-Run specified test or group:
-
-```shell
+# Run specific test
 $ stack test --test-arguments '-p "pattern for the test name"'
-...
-```
 
-### Other
-
-``` console
-# build only one target
-$ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
-
-# rerun only failed test, if all test passed - run all test
-$ stack build nitta:nitta-test --fast --test --test-arguments --rerun
-
-# run only specific tests in one thread
+# Run only specific tests in one thread
 stack build --test --fast --ta '-p "Divider PU" --num-threads 1'
 
-# show profiler report
-$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
+# Rerun only failed test, if all test passed - run all test
+$ stack build nitta:nitta-test --fast --test --test-arguments --rerun
 
-# show stack trace if application raise an error
-$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -xc
-
-# run doctest for all files
+# Run doctest for all files
 $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
-# in case:
-# src/NITTA/Model/ProcessorUnits/Multiplier.hs:311:1: error:
-#     Ambiguous module name ‘Data.String.Interpolate’:
-#       it was found in multiple packages:
-#       interpolate-0.2.1 string-interpolate-0.3.1.0
-#     |
-# 311 | import Data.String.Interpolate
-#     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-$ stack exec ghc-pkg unregister interpolate -- --force
-
-# run fourmolu for all files
-$ find . -name '*.hs' | xargs fourmolu -m inplace
-
-# show modules dependency
-$ graphmod -q -p src | pbcopy
 
 # generate haddock for tests
 stack exec ghc-pkg unregister interpolate -- --force
 stack exec -- haddock test/**/*.hs -odocs -h
+
+
+# Build only one target and run with UI
+$ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
+
+# Run UI without synthesis
+$ stack exec nitta -- examples/teacup.lua -p=8080 --method=nosynthesis
+
+
+# Show profiler report
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
+
+
+# Show stack trace if application raise an error
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -xc
+
+
+# Show modules dependency
+$ graphmod -q -p src | pbcopy
 ```
 
 ## Usage
@@ -201,42 +217,49 @@ nitta v0.0.0.1 - tool for hard real-time CGRA processors
 nitta [OPTIONS] FILE
 
 Target system configuration:
-         --uarch=PATH                        Microarchitecture configuration
-                                             file
-  -a     --auto-uarch                        Use empty microarchitecture and
-                                             allocate PUs during synthesis
-                                             process.
-  -t     --type=fxM.B                        Overrides data type specified in
-                                             config file
-         --io-sync=sync|async|onboard        Overrides IO synchronization
-                                             mode specified in config file
-         --templates=PATH[:PATH]             Target platform templates
-                                             (default:
-                                             'templates/Icarus:templates/DE0-Nano')
-         --frontend-language=Lua|XMILE       Language used to source
-                                             algorithm description. (default:
-                                             decision by file extension)
+         --uarch=PATH                   Microarchitecture configuration file
+  -a     --auto-uarch                   Use empty microarchitecture and
+                                        allocate PUs during synthesis process.
+  -t     --type=fxM.B                   Overrides data type specified in
+                                        config file
+         --io-sync=sync|async|onboard   Overrides IO synchronization mode
+                                        specified in config file
+         --templates=PATH[:PATH]        Target platform templates (default:
+                                        'templates/Icarus:templates/DE0-Nano')
+         --frontend-language=Lua|XMILE  Language used to source algorithm
+                                        description. (default: decision by file
+                                        extension)
 Common flags:
-  -p     --port=INT                          Run nitta server for UI on
-                                             specific port (by default - not
-                                             run)
-  -o     --output-path=PATH                  Target system path
+  -p     --port=INT                     Run nitta server for UI on specific
+                                        port (by default - not run)
+  -o     --output-path=PATH             Target system path
 Simulation:
-  -n=INT                                     Number of simulation cycles
-  -f     --fsim                              Functional simulation with trace
-  -l     --lsim                              Logical (HDL) simulation with
-                                             trace
-         --format=md|json|csv                Simulation output format
-                                             (default: 'md')
+  -n=INT                                Number of simulation cycles
+  -f     --fsim                         Functional simulation with trace
+  -l     --lsim                         Logical (HDL) simulation with trace
+         --format=md|json|csv           Simulation output format (default:
+                                        'md')
 Other:
-  -v     --verbose                           Verbose
-  -e     --extra-verbose                     Extra verbose
-  -?     --help                              Display help message
-  -V     --version                           Print version information
-         --numeric-version                   Print just the version number
+  -v     --verbose                      Verbose
+  -e     --extra-verbose                Extra verbose
+  -?     --help                         Display help message
+  -V     --version                      Print version information
+         --numeric-version              Print just the version number
 Synthesis:
-  -m     --method=stateoftheart|nosynthesis  Synthesis method (default:
-                                             stateoftheart)
+  -s     --score=NAME                   Name of the synthesis tree node score
+                                        to additionally evaluate. Can be
+                                        included multiple times (-s score1 -s
+                                        score2). Scores like ml_<model_name>
+                                        will enable ML scoring.
+  -d     --depth-base=FLOAT             Only for 'TopDownByScore' synthesis:
+                                        a [1; +inf) value to be an exponential
+                                        base of the depth priority coefficient
+                                        (default: 1.4)
+  -m     --method=NAME                  Synthesis method
+                                        (stateoftheart|topdownbyscore|nosynthesis,
+                                        default: stateoftheart). `nosynthesis`
+                                        required to run UI without synthesis on
+                                        the start.                                        
 ```
 
 ### Logical simulation for a specific algorithm
@@ -277,12 +300,3 @@ $ stack exec nitta -- examples/teacup.lua -v --lsim -t=fx24.32
 | 9      | 169.875     | 1.000   |
 | 10     | 168.750     | 1.125   |
 ```
-
-### Run with user interface
-
-``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080 --method=nosynthesis
-Running NITTA server at http://localhost:8080 ...
-```
-
-by default UI open already synthesised algorithm. By adding `--method=nosynthesis` we prevent automatical synthesis.
