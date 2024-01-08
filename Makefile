@@ -110,8 +110,8 @@ docker-dev-build-for-linux-win:
 	docker build \
 		--target development \
 		-f ml/synthesis/Dockerfile \
-		--build-arg HOST_UID=$(id -u) \
-		--build-arg HOST_GID=$(id -g) \
+		--build-arg HOST_UID=$(shell id -u) \
+		--build-arg HOST_GID=$(shell id -g) \
 		-t nitta-dev \
 		.
 
