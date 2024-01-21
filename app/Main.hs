@@ -240,8 +240,6 @@ main = do
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
-                -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
-                -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
                 ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
