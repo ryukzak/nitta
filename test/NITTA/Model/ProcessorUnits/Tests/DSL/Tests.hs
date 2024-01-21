@@ -204,8 +204,11 @@ tests =
                     , constant 2 ["!2#0"]
                     , constant 1 ["!1#0"]
                     ]
+                    -- FIXME: https://github.com/ryukzak/nitta/issues/196
+                    -- should be:
+                    -- [ constant 3 ["_0#d"] ]
                     [ constant 3 ["_0#d"]
-                    , constant 2 ["!2#0"] -- FIXME: Do we actually need this?
+                    , constant 2 ["!2#0"]
                     , constant 1 ["!1#0"]
                     ]
                     >>= \r -> assertRefactor r
