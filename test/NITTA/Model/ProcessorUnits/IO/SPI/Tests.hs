@@ -31,8 +31,6 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
 import Test.Tasty.TH
 
--- TODO:  https://github.com/ryukzak/nitta/issues/122
-
 test_multiple_receives =
     [ testCase "receive two variables" $
         void $

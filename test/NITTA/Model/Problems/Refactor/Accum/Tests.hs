@@ -114,8 +114,9 @@ tests =
                 funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Minus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
              in
                 [func1, func2, func3] `refactorTo` [funcRes]
-                -- issue: https://nitta.io/nitta-corp/nitta/-/issues/75
-                -- , testCase "Complex items sum refactor" $ let
+                -- TODO: https://github.com/ryukzak/nitta/issues/264
+                -- , testCase "Complex items sum refactor" $
+                --     let
                 --         -- Start algorithm:
                 --         -- tmp1, tmp2 = a + b
                 --         -- tmp3, tmp4 = c + d
@@ -131,21 +132,21 @@ tests =
                 --         func4 = acc [Push Plus (I "two"), Push Plus (I "tmp2"), Push Plus (I "tmp4"), Pull (O $ S.fromList ["res2"])]
                 --         func5 = acc [Push Plus (I "res1"), Push Plus (I "res2"), Pull (O $ S.fromList ["res"])]
 
-                --         funcRes = acc
-                --             [ Push Plus (I "one")
-                --             , Push Plus (I "a")
-                --             , Push Plus (I "b")
-                --             , Push Plus (I "c")
-                --             , Push Plus (I "d")
-                --             , Push Plus (I "two")
-                --             , Push Plus (I "a")
-                --             , Push Plus (I "b")
-                --             , Push Plus (I "c")
-                --             , Push Plus (I "d")
-                --             , Pull (O $ S.fromList ["res"])] :: F String Int
-                --         df = fsToDataFlowGraph ([func1, func2, func3, func4, func5] :: [F String Int])
-                --         dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-                --         option = head $ refactorOptions df
-                --         dfRefactored = refactorDecision df option
-                --     in dfRefactored @?= dfRes
+                --         funcRes =
+                --             acc
+                --                 [ Push Plus (I "one")
+                --                 , Push Plus (I "a")
+                --                 , Push Plus (I "b")
+                --                 , Push Plus (I "c")
+                --                 , Push Plus (I "d")
+                --                 , Push Plus (I "two")
+                --                 , Push Plus (I "a")
+                --                 , Push Plus (I "b")
+                --                 , Push Plus (I "c")
+                --                 , Push Plus (I "d")
+                --                 , Pull (O $ S.fromList ["res"])
+                --                 ] ::
+                --                 F String Int
+                --      in
+                --         [func1, func2, func3, func4, func5] `refactorTo` [funcRes]
         ]
