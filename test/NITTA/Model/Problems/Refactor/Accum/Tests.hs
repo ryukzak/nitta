@@ -114,39 +114,62 @@ tests =
                 funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Minus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
              in
                 [func1, func2, func3] `refactorTo` [funcRes]
-                -- TODO: https://github.com/ryukzak/nitta/issues/264
-                -- , testCase "Complex items sum refactor" $
-                --     let
-                --         -- Start algorithm:
-                --         -- tmp1, tmp2 = a + b
-                --         -- tmp3, tmp4 = c + d
-                --         -- res1 = one + tmp1 + tmp3
-                --         -- res2 = two + tmp2 + tmp4
-                --         -- res = res1 + res2
+        , -- TODO: https://github.com/ryukzak/nitta/issues/264
+          -- , testCase "Complex items sum refactor" $
+          --     let
+          --         -- Start algorithm:
+          --         -- tmp1, tmp2 = a + b
+          --         -- tmp3, tmp4 = c + d
+          --         -- res1 = one + tmp1 + tmp3
+          --         -- res2 = two + tmp2 + tmp4
+          --         -- res = res1 + res2
 
-                --         -- Result algorithm:
-                --         -- res = one + a + b + c + d + two + a + b + c + d
-                --         func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1", "tmp2"])]
-                --         func2 = acc [Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["tmp3", "tmp4"])]
-                --         func3 = acc [Push Plus (I "one"), Push Plus (I "tmp1"), Push Plus (I "tmp3"), Pull (O $ S.fromList ["res1"])]
-                --         func4 = acc [Push Plus (I "two"), Push Plus (I "tmp2"), Push Plus (I "tmp4"), Pull (O $ S.fromList ["res2"])]
-                --         func5 = acc [Push Plus (I "res1"), Push Plus (I "res2"), Pull (O $ S.fromList ["res"])]
+          --         -- Result algorithm:
+          --         -- res = one + a + b + c + d + two + a + b + c + d
+          --         func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1", "tmp2"])]
+          --         func2 = acc [Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["tmp3", "tmp4"])]
+          --         func3 = acc [Push Plus (I "one"), Push Plus (I "tmp1"), Push Plus (I "tmp3"), Pull (O $ S.fromList ["res1"])]
+          --         func4 = acc [Push Plus (I "two"), Push Plus (I "tmp2"), Push Plus (I "tmp4"), Pull (O $ S.fromList ["res2"])]
+          --         func5 = acc [Push Plus (I "res1"), Push Plus (I "res2"), Pull (O $ S.fromList ["res"])]
 
-                --         funcRes =
-                --             acc
-                --                 [ Push Plus (I "one")
-                --                 , Push Plus (I "a")
-                --                 , Push Plus (I "b")
-                --                 , Push Plus (I "c")
-                --                 , Push Plus (I "d")
-                --                 , Push Plus (I "two")
-                --                 , Push Plus (I "a")
-                --                 , Push Plus (I "b")
-                --                 , Push Plus (I "c")
-                --                 , Push Plus (I "d")
-                --                 , Pull (O $ S.fromList ["res"])
-                --                 ] ::
-                --                 F String Int
-                --      in
-                --         [func1, func2, func3, func4, func5] `refactorTo` [funcRes]
+          --         funcRes =
+          --             acc
+          --                 [ Push Plus (I "one")
+          --                 , Push Plus (I "a")
+          --                 , Push Plus (I "b")
+          --                 , Push Plus (I "c")
+          --                 , Push Plus (I "d")
+          --                 , Push Plus (I "two")
+          --                 , Push Plus (I "a")
+          --                 , Push Plus (I "b")
+          --                 , Push Plus (I "c")
+          --                 , Push Plus (I "d")
+          --                 , Pull (O $ S.fromList ["res"])
+          --                 ] ::
+          --                 F String Int
+          --      in
+          --         [func1, func2, func3, func4, func5] `refactorTo` [funcRes]
+          testCase "constantFolding commutativity operations" $
+            let
+                -- Start algorithm A:
+                -- local v = 1 + 2 + 3
+                -- local res = i + v + 3
+                --
+                -- Start algorithm B:
+                -- local v = 1 + 2 + 3
+                -- local res = 3 + i + v
+                --
+                -- Result algorithm:
+                -- res = a + b - c - d
+                c1 = constant 1 ["c1"]
+                c2 = constant 2 ["c2"]
+                c3 = constant 3 ["c3"]
+                func1 = acc [Push Plus (I "c1"), Push Plus (I "c2"), Push Plus (I "c3"), Pull (O $ S.fromList ["v"])]
+                func2A = acc [Push Plus (I "i"), Push Plus (I "v"), Push Plus (I "c3"), Pull (O $ S.fromList ["res"])]
+                func2B = acc [Push Plus (I "i"), Push Plus (I "v"), Push Plus (I "c3"), Pull (O $ S.fromList ["res"])]
+                funcRes = acc [Push Plus (I "i"), Push Plus (I "c1"), Push Plus (I "c2"), Push Plus (I "c3"), Push Plus (I "c3"), Pull (O $ S.fromList ["res"])]
+             in
+                do
+                    [c1, c2, c3, func1, func2A] `refactorTo` [funcRes, c1, c2, c3]
+                    [c1, c2, c3, func1, func2B] `refactorTo` [funcRes, c1, c2, c3]
         ]
