@@ -447,35 +447,36 @@ span.spaces    { background: white }
 <span class="lineno">  428 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;add&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add (fromText a) (fromText b) $ output c</span>
 <span class="lineno">  429 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;sub&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub (fromText a) (fromText b) $ output c</span>
 <span class="lineno">  430 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;multiply&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  431 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)</span>
-<span class="lineno">  432 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;neg&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o</span>
-<span class="lineno">  433 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;receive&quot;, fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o</span>
-<span class="lineno">  434 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftL&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c</span>
-<span class="lineno">  435 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftR&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c</span>
-<span class="lineno">  436 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;loop&quot;, fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c</span>
-<span class="lineno">  437 </span><span class="spaces">        </span><span class="istickedoff">function2nitta f = <span class="nottickedoff">error $ &quot;function not found: &quot; &lt;&gt; show f</span></span>
-<span class="lineno">  438 </span><span class="spaces">        </span><span class="istickedoff">output v =</span>
-<span class="lineno">  439 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup v algVars of</span>
-<span class="lineno">  440 </span><span class="spaces">                </span><span class="istickedoff">Just names -&gt; map fromText names</span>
-<span class="lineno">  441 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;variable not found : &quot; &lt;&gt; show v &lt;&gt; &quot;, buffer : &quot; &lt;&gt; show algLatestLuaValueInstance</span></span></span>
-<span class="lineno">  442 </span>
-<span class="lineno">  443 </span>translateLua :: (Var v, Val x) =&gt; T.Text -&gt; FrontendResult v x
-<span class="lineno">  444 </span><span class="decl"><span class="istickedoff">translateLua src =</span>
-<span class="lineno">  445 </span><span class="spaces">    </span><span class="istickedoff">let syntaxTree = getLuaBlockFromSources src</span>
-<span class="lineno">  446 </span><span class="spaces">        </span><span class="istickedoff">luaAlgBuilder = buildAlg syntaxTree</span>
-<span class="lineno">  447 </span><span class="spaces">        </span><span class="istickedoff">frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder</span>
-<span class="lineno">  448 </span><span class="spaces">     </span><span class="istickedoff">in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, <span class="nottickedoff">frTrace</span>, frPrettyLog = prettyLog frTrace}</span>
-<span class="lineno">  449 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  450 </span><span class="spaces">        </span><span class="istickedoff">getAllTraceFuncs algBuilder =</span>
-<span class="lineno">  451 </span><span class="spaces">            </span><span class="istickedoff">let traceFuncs = algTraceFuncs algBuilder</span>
-<span class="lineno">  452 </span><span class="spaces">                </span><span class="istickedoff">startupArgNames =</span>
-<span class="lineno">  453 </span><span class="spaces">                    </span><span class="istickedoff">map</span>
-<span class="lineno">  454 </span><span class="spaces">                        </span><span class="istickedoff">(\(_idx, (varName, _initValue)) -&gt; varName)</span>
-<span class="lineno">  455 </span><span class="spaces">                        </span><span class="istickedoff">$ HM.toList</span>
-<span class="lineno">  456 </span><span class="spaces">                        </span><span class="istickedoff">$ algStartupArgs algBuilder</span>
-<span class="lineno">  457 </span><span class="spaces">             </span><span class="istickedoff">in map (\name -&gt; ([name &lt;&gt; &quot;^0&quot;], Nothing)) startupArgNames &lt;&gt; traceFuncs</span></span>
-<span class="lineno">  458 </span>
-<span class="lineno">  459 </span><span class="decl"><span class="istickedoff">getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) &lt;- traceFuncs, var &lt;- vars]</span></span>
+<span class="lineno">  431 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) []</span>
+<span class="lineno">  432 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)</span>
+<span class="lineno">  433 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;neg&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o</span>
+<span class="lineno">  434 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;receive&quot;, fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o</span>
+<span class="lineno">  435 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftL&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c</span>
+<span class="lineno">  436 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftR&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c</span>
+<span class="lineno">  437 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;loop&quot;, fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c</span>
+<span class="lineno">  438 </span><span class="spaces">        </span><span class="istickedoff">function2nitta f = <span class="nottickedoff">error $ &quot;function not found: &quot; &lt;&gt; show f</span></span>
+<span class="lineno">  439 </span><span class="spaces">        </span><span class="istickedoff">output v =</span>
+<span class="lineno">  440 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup v algVars of</span>
+<span class="lineno">  441 </span><span class="spaces">                </span><span class="istickedoff">Just names -&gt; map fromText names</span>
+<span class="lineno">  442 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;variable not found : &quot; &lt;&gt; show v &lt;&gt; &quot;, buffer : &quot; &lt;&gt; show algLatestLuaValueInstance</span></span></span>
+<span class="lineno">  443 </span>
+<span class="lineno">  444 </span>translateLua :: (Var v, Val x) =&gt; T.Text -&gt; FrontendResult v x
+<span class="lineno">  445 </span><span class="decl"><span class="istickedoff">translateLua src =</span>
+<span class="lineno">  446 </span><span class="spaces">    </span><span class="istickedoff">let syntaxTree = getLuaBlockFromSources src</span>
+<span class="lineno">  447 </span><span class="spaces">        </span><span class="istickedoff">luaAlgBuilder = buildAlg syntaxTree</span>
+<span class="lineno">  448 </span><span class="spaces">        </span><span class="istickedoff">frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder</span>
+<span class="lineno">  449 </span><span class="spaces">     </span><span class="istickedoff">in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, <span class="nottickedoff">frTrace</span>, frPrettyLog = prettyLog frTrace}</span>
+<span class="lineno">  450 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  451 </span><span class="spaces">        </span><span class="istickedoff">getAllTraceFuncs algBuilder =</span>
+<span class="lineno">  452 </span><span class="spaces">            </span><span class="istickedoff">let traceFuncs = algTraceFuncs algBuilder</span>
+<span class="lineno">  453 </span><span class="spaces">                </span><span class="istickedoff">startupArgNames =</span>
+<span class="lineno">  454 </span><span class="spaces">                    </span><span class="istickedoff">map</span>
+<span class="lineno">  455 </span><span class="spaces">                        </span><span class="istickedoff">(\(_idx, (varName, _initValue)) -&gt; varName)</span>
+<span class="lineno">  456 </span><span class="spaces">                        </span><span class="istickedoff">$ HM.toList</span>
+<span class="lineno">  457 </span><span class="spaces">                        </span><span class="istickedoff">$ algStartupArgs algBuilder</span>
+<span class="lineno">  458 </span><span class="spaces">             </span><span class="istickedoff">in map (\name -&gt; ([name &lt;&gt; &quot;^0&quot;], Nothing)) startupArgNames &lt;&gt; traceFuncs</span></span>
+<span class="lineno">  459 </span>
+<span class="lineno">  460 </span><span class="decl"><span class="istickedoff">getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) &lt;- traceFuncs, var &lt;- vars]</span></span>
 
 </pre>
 </body>
