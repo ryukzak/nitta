@@ -137,10 +137,19 @@ tests =
             [ division "a" "b" ["c"] ["d"]
             ]
         , luaTestCase
-            "one division"
+            "one division explicit"
             [__i|
                 function f(a)
                     a, _b = a / 2
+                    f(a)
+                end
+                f(1024)
+            |]
+        , luaTestCase
+            "one division implicit"
+            [__i|
+                function f(a)
+                    a = a / 2
                     f(a)
                 end
                 f(1024)
