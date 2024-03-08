@@ -3,20 +3,26 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module NITTA.Model.Microarchitecture.Config (
+    MicroarchitectureConf (type', ioSync'),
+    parseConfig,
     mkMicroarchitecture,
 ) where
 
 import Data.Aeson (
-    FromJSON (parseJSON),
     Options (sumEncoding),
     SumEncoding (TaggedObject, contentsFieldName, tagFieldName),
-    ToJSON (toJSON),
     defaultOptions,
     genericParseJSON,
     genericToJSON,
  )
 import Data.Default (Default (def))
-import Data.HashMap.Internal.Strict (HashMap)
+import Data.Yaml (
+    decodeFileThrow,
+    (.:),
+    Value (Object),
+    FromJSON (parseJSON),
+    ToJSON (toJSON),
+ )
 import Data.Text qualified as T
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
@@ -30,7 +36,6 @@ import NITTA.Model.Networks.Bus (
  )
 import NITTA.Model.Networks.Types (IOSynchronization)
 import NITTA.Model.ProcessorUnits qualified as PU
-import NITTA.Utils (getFromToml)
 
 data PUConf
     = Accum
@@ -86,16 +91,28 @@ data NetworkConf = NetworkConf
 instance FromJSON NetworkConf
 instance ToJSON NetworkConf
 
-newtype MicroarchitectureConf = MicroarchitectureConf
-    { networks :: [NetworkConf]
+data MicroarchitectureConf = MicroarchitectureConf
+    { type' :: T.Text
+    , ioSync' :: IOSynchronization
+    , networks :: [NetworkConf]
     }
     deriving (Generic, Show)
 
-instance FromJSON MicroarchitectureConf
+instance FromJSON MicroarchitectureConf where 
+    parseJSON (Object v) = do
+        type' <- v .: "type"
+        ioSync' <- v .: "ioSync"
+        networks <- v .: "networks"
+        return MicroarchitectureConf { type' = type', ioSync' = ioSync', networks = networks }
+    parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
-mkMicroarchitecture :: (Val v, Var x, ToJSON a, ToJSON x) => IOSynchronization -> HashMap T.Text a -> BusNetwork T.Text x v Int
-mkMicroarchitecture ioSync toml =
+parseConfig :: FilePath -> IO MicroarchitectureConf
+parseConfig path = do 
+    decodeFileThrow path :: IO MicroarchitectureConf
+
+mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
+mkMicroarchitecture conf =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
@@ -125,8 +142,8 @@ mkMicroarchitecture ioSync toml =
                                     , master_sclk = PU.OutputPortTag sclk
                                     , master_cs = PU.OutputPortTag cs
                                     }
-        nets = networks (getFromToml toml :: MicroarchitectureConf)
-        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name ioSync) (build net)
+        nets = networks conf
+        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name $ ioSync' conf) (build net)
      in case nets of
             [n] -> mkNetwork n
             _ -> error "multi-networks are not currently supported"
