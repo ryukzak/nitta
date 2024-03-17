@@ -226,10 +226,9 @@ main = do
     -- force line buffering (always, not just when stdout is connected to a tty),
     -- it's critical for successful parsing of NITTA's stdout in python scripts
     hSetBuffering stdout LineBuffering
-   
     conf <- case uarch of
-      Nothing -> return Nothing
-      Just path -> return . Just =<< parseConfig path
+        Nothing -> return Nothing
+        Just path -> return . Just =<< parseConfig path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
