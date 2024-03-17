@@ -226,8 +226,10 @@ main = do
     -- force line buffering (always, not just when stdout is connected to a tty),
     -- it's critical for successful parsing of NITTA's stdout in python scripts
     hSetBuffering stdout LineBuffering
-
-    conf <- parseConfig $ fromJust uarch
+   
+    conf <- case uarch of
+      Nothing -> return Nothing
+      Just path -> return . Just =<< parseConfig path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
@@ -236,17 +238,17 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync_ = fromJust $ io_sync <|> Just (ioSync' conf) <|> Just Sync
-                confMa = Just (mkMicroarchitecture conf)
+                ioSync = fromJust $ io_sync <|> (Just . ioSync' =<< conf) <|> Just Sync
+                confMa = Just . mkMicroarchitecture =<< conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
                     | auto_uarch && isJust confMa =
                         error $
                             "auto_uarch flag means that an empty uarch with default prototypes will be used. "
                                 <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync_
+                    | auto_uarch = microarchWithProtos ioSync
                     | isJust confMa = fromJust confMa
-                    | otherwise = defMicroarch ioSync_
+                    | otherwise = defMicroarch ioSync
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -297,7 +299,7 @@ main = do
                     exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> Just (T.unpack $ type' conf) <|> Just "fx32.32"
+        $ type_ <|> (Just . T.unpack . type' =<< conf) <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
