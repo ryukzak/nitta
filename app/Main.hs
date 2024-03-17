@@ -228,7 +228,7 @@ main = do
     hSetBuffering stdout LineBuffering
     conf <- case uarch of
         Nothing -> return Nothing
-        Just path -> return . Just =<< parseConfig path
+        Just path -> Just <$> parseConfig path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
@@ -237,8 +237,8 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> (Just . ioSync' =<< conf) <|> Just Sync
-                confMa = Just . mkMicroarchitecture =<< conf
+                ioSync = fromJust $ io_sync <|> ioSync' <$> conf <|> Just Sync
+                confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
                     | auto_uarch && isJust confMa =
@@ -298,7 +298,7 @@ main = do
                     exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> (Just . T.unpack . type' =<< conf) <|> Just "fx32.32"
+        $ type_ <|> T.unpack . type' <$> conf <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
