@@ -46,7 +46,7 @@ data Conf = Conf
     , signals :: M.HashMap T.Text T.Text
     }
     deriving (Generic, Show)
-    
+
 instance FromJSON Conf
 instance ToJSON Conf
 

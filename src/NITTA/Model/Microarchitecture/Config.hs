@@ -16,14 +16,14 @@ import Data.Aeson (
     genericToJSON,
  )
 import Data.Default (Default (def))
+import Data.Text qualified as T
 import Data.Yaml (
-    decodeFileThrow,
-    (.:),
-    Value (Object),
     FromJSON (parseJSON),
     ToJSON (toJSON),
+    Value (Object),
+    decodeFileThrow,
+    (.:),
  )
-import Data.Text qualified as T
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
 import NITTA.Intermediate.Variable (Var)
@@ -98,17 +98,17 @@ data MicroarchitectureConf = MicroarchitectureConf
     }
     deriving (Generic, Show)
 
-instance FromJSON MicroarchitectureConf where 
+instance FromJSON MicroarchitectureConf where
     parseJSON (Object v) = do
         type' <- v .: "type"
         ioSync' <- v .: "ioSync"
         networks <- v .: "networks"
-        return MicroarchitectureConf { type' = type', ioSync' = ioSync', networks = networks }
+        return MicroarchitectureConf{type' = type', ioSync' = ioSync', networks = networks}
     parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
 parseConfig :: FilePath -> IO MicroarchitectureConf
-parseConfig path = do 
+parseConfig path = do
     decodeFileThrow path :: IO MicroarchitectureConf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
