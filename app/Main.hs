@@ -237,7 +237,7 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> ioSync' <$> conf <|> Just Sync
+                ioSync = fromJust $ io_sync <|> valueIoSync <$> conf <|> Just Sync
                 confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
@@ -298,7 +298,7 @@ main = do
                     exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> T.unpack . type' <$> conf <|> Just "fx32.32"
+        $ type_ <|> T.unpack . valueType <$> conf <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"

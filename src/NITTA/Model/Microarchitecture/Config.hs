@@ -3,7 +3,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module NITTA.Model.Microarchitecture.Config (
-    MicroarchitectureConf (type', ioSync'),
+    MicroarchitectureConf (valueType, valueIoSync),
     parseConfig,
     mkMicroarchitecture,
 ) where
@@ -92,18 +92,18 @@ instance FromJSON NetworkConf
 instance ToJSON NetworkConf
 
 data MicroarchitectureConf = MicroarchitectureConf
-    { type' :: T.Text
-    , ioSync' :: IOSynchronization
+    { valueType :: T.Text
+    , valueIoSync :: IOSynchronization
     , networks :: [NetworkConf]
     }
     deriving (Generic, Show)
 
 instance FromJSON MicroarchitectureConf where
     parseJSON (Object v) = do
-        type' <- v .: "type"
-        ioSync' <- v .: "ioSync"
+        valueType <- v .: "type"
+        valueIoSync <- v .: "ioSync"
         networks <- v .: "networks"
-        return MicroarchitectureConf{type' = type', ioSync' = ioSync', networks = networks}
+        return MicroarchitectureConf{valueType, valueIoSync, networks}
     parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
@@ -143,7 +143,7 @@ mkMicroarchitecture conf =
                                     , master_cs = PU.OutputPortTag cs
                                     }
         nets = networks conf
-        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name $ ioSync' conf) (build net)
+        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name $ valueIoSync conf) (build net)
      in case nets of
             [n] -> mkNetwork n
             _ -> error "multi-networks are not currently supported"
