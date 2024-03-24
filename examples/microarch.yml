@@ -1,7 +1,7 @@
 type: fx32.32
 ioSync: Sync
 networks:
-  - name: net1
+  net1:
     pus:
       - type: SPI
         name: spi

@@ -24,6 +24,10 @@ import Data.Yaml (
     decodeFileThrow,
     (.:),
  )
+import Data.Map as M (
+    Map,
+    toList
+ )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
 import NITTA.Intermediate.Variable (Var)
@@ -82,8 +86,7 @@ instance FromJSON PUConf where
     parseJSON = genericParseJSON puConfJsonOptions
 
 data NetworkConf = NetworkConf
-    { name :: T.Text
-    , pus :: [PUConf]
+    { pus :: [PUConf]
     , protos :: [PUConf]
     }
     deriving (Generic, Show)
@@ -94,7 +97,7 @@ instance ToJSON NetworkConf
 data MicroarchitectureConf = MicroarchitectureConf
     { valueType :: T.Text
     , valueIoSync :: IOSynchronization
-    , networks :: [NetworkConf]
+    , networks :: Map T.Text NetworkConf
     }
     deriving (Generic, Show)
 
@@ -143,7 +146,7 @@ mkMicroarchitecture conf =
                                     , master_cs = PU.OutputPortTag cs
                                     }
         nets = networks conf
-        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name $ valueIoSync conf) (build net)
-     in case nets of
-            [n] -> mkNetwork n
+        mkNetwork name net = modifyNetwork (busNetwork name $ valueIoSync conf) (build net)
+     in case M.toList nets of
+            [(name, net)] -> mkNetwork name net
             _ -> error "multi-networks are not currently supported"
