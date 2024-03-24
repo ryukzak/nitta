@@ -1,0 +1,7 @@
+template:
+  nittaPath: "."
+  ignore:
+    - 'template.yml'
+signals:
+  rst: rst
+  clk: clk

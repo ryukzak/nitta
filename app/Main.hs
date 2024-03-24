@@ -40,7 +40,6 @@ import NITTA.Synthesis (TargetSynthesis (..), mlScoreKeyPrefix, noSynthesis, sta
 import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend
 import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores, outputPath, receivedValues, root)
-import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
@@ -199,8 +198,6 @@ nittaArgs =
 getNittaArgs :: IO Nitta
 getNittaArgs = cmdArgs nittaArgs
 
-fromConf toml s = getFromTomlSection s =<< toml
-
 main = do
     ( Nitta
             filename
@@ -229,10 +226,9 @@ main = do
     -- force line buffering (always, not just when stdout is connected to a tty),
     -- it's critical for successful parsing of NITTA's stdout in python scripts
     hSetBuffering stdout LineBuffering
-
-    toml <- case uarch of
+    conf <- case uarch of
         Nothing -> return Nothing
-        Just path -> Just . getToml <$> T.readFile path
+        Just path -> Just <$> parseConfig path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
@@ -241,8 +237,8 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
-                confMa = toml >>= Just . mkMicroarchitecture ioSync
+                ioSync = fromJust $ io_sync <|> valueIoSync <$> conf <|> Just Sync
+                confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
                     | auto_uarch && isJust confMa =
@@ -302,7 +298,7 @@ main = do
                     exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
+        $ type_ <|> T.unpack . valueType <$> conf <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
