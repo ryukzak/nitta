@@ -16,6 +16,10 @@ import Data.Aeson (
     genericToJSON,
  )
 import Data.Default (Default (def))
+import Data.Map as M (
+    Map,
+    toList,
+ )
 import Data.Text qualified as T
 import Data.Yaml (
     FromJSON (parseJSON),
@@ -23,10 +27,6 @@ import Data.Yaml (
     Value (Object),
     decodeFileThrow,
     (.:),
- )
-import Data.Map as M (
-    Map,
-    toList,
  )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
