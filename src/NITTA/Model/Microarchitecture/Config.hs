@@ -26,7 +26,7 @@ import Data.Yaml (
  )
 import Data.Map as M (
     Map,
-    toList
+    toList,
  )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
