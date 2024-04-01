@@ -41,6 +41,16 @@ import NITTA.Model.Networks.Bus (
 import NITTA.Model.Networks.Types (IOSynchronization)
 import NITTA.Model.ProcessorUnits qualified as PU
 
+data PULibrary = PULibrary
+    { isSlave :: Bool
+    , bufferSize :: Maybe Int
+    , bounceFilter :: Int
+    }
+    deriving (Generic, Show)
+
+instance FromJSON PULibrary
+instance ToJSON PULibrary
+
 data PUConf
     = Accum
         { name :: T.Text
@@ -64,9 +74,6 @@ data PUConf
         , miso :: T.Text
         , sclk :: T.Text
         , cs :: T.Text
-        , isSlave :: Bool
-        , bufferSize :: Maybe Int
-        , bounceFilter :: Int
         }
     | Shift
         { name :: T.Text
@@ -97,6 +104,7 @@ instance ToJSON NetworkConf
 data MicroarchitectureConf = MicroarchitectureConf
     { valueType :: T.Text
     , valueIoSync :: IOSynchronization
+    , puLibrary :: PULibrary
     , networks :: Map T.Text NetworkConf
     }
     deriving (Generic, Show)
@@ -105,8 +113,9 @@ instance FromJSON MicroarchitectureConf where
     parseJSON (Object v) = do
         valueType <- v .: "type"
         valueIoSync <- v .: "ioSync"
+        puLibrary <- v .: "puLibrary"
         networks <- v .: "networks"
-        return MicroarchitectureConf{valueType, valueIoSync, networks}
+        return MicroarchitectureConf{valueType, valueIoSync, puLibrary, networks}
     parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
@@ -119,6 +128,9 @@ mkMicroarchitecture conf =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
+        isSlave_ = isSlave . puLibrary $ conf
+        bufferSize_ = bufferSize . puLibrary $ conf
+        bounceFilter_ = bounceFilter . puLibrary $ conf
         build NetworkConf{pus, protos} = do
             mapM_ (configure False) pus
             mapM_ (configure True) protos
@@ -128,9 +140,9 @@ mkMicroarchitecture conf =
                 configure proto Multiplier{name, mock} = addPU proto name (PU.multiplier mock) PU.MultiplierIO
                 configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
                 configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
-                configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
-                    addPU proto name (PU.anySPI bounceFilter bufferSize) $
-                        if isSlave
+                configure proto SPI{name, mosi, miso, sclk, cs} =
+                    addPU proto name (PU.anySPI bounceFilter_ bufferSize_) $
+                        if isSlave_
                             then
                                 PU.SPISlave
                                     { slave_mosi = PU.InputPortTag mosi
