@@ -58,11 +58,9 @@ data PUConf
     | Divider
         { name :: T.Text
         , pipeline :: Int
-        , mock :: Bool
         }
     | Multiplier
         { name :: T.Text
-        , mock :: Bool
         }
     | Fram
         { name :: T.Text
@@ -102,7 +100,8 @@ instance FromJSON NetworkConf
 instance ToJSON NetworkConf
 
 data MicroarchitectureConf = MicroarchitectureConf
-    { valueType :: T.Text
+    { mock :: Bool
+    , valueType :: T.Text
     , valueIoSync :: IOSynchronization
     , puLibrary :: PULibrary
     , networks :: Map T.Text NetworkConf
@@ -111,11 +110,12 @@ data MicroarchitectureConf = MicroarchitectureConf
 
 instance FromJSON MicroarchitectureConf where
     parseJSON (Object v) = do
+        mock <- v .: "mock"
         valueType <- v .: "type"
         valueIoSync <- v .: "ioSync"
         puLibrary <- v .: "puLibrary"
         networks <- v .: "networks"
-        return MicroarchitectureConf{valueType, valueIoSync, puLibrary, networks}
+        return MicroarchitectureConf{mock, valueType, valueIoSync, puLibrary, networks}
     parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
@@ -128,6 +128,7 @@ mkMicroarchitecture conf =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
+        mock_ = mock conf
         isSlave_ = isSlave . puLibrary $ conf
         bufferSize_ = bufferSize . puLibrary $ conf
         bounceFilter_ = bounceFilter . puLibrary $ conf
@@ -136,8 +137,8 @@ mkMicroarchitecture conf =
             mapM_ (configure True) protos
             where
                 configure proto Accum{name} = addPU proto name def PU.AccumIO
-                configure proto Divider{name, pipeline, mock} = addPU proto name (PU.divider pipeline mock) PU.DividerIO
-                configure proto Multiplier{name, mock} = addPU proto name (PU.multiplier mock) PU.MultiplierIO
+                configure proto Divider{name, pipeline} = addPU proto name (PU.divider pipeline mock_) PU.DividerIO
+                configure proto Multiplier{name} = addPU proto name (PU.multiplier mock_) PU.MultiplierIO
                 configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
                 configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
                 configure proto SPI{name, mosi, miso, sclk, cs} =

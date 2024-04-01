@@ -1,5 +1,10 @@
+mock: true
 type: fx32.32
 ioSync: Sync
+puLibrary:
+  isSlave: true
+  bufferSize: 6
+  bounceFilter: 0
 networks:
   net1:
     pus:
@@ -9,9 +14,6 @@ networks:
         miso: miso
         sclk: sclk
         cs: cs
-        isSlave: true
-        bufferSize: 6
-        bounceFilter: 0  
     protos:
       - type: Fram
         name: fram{x} # If you want a PU can be allocated only once, remove {x} from the PU name.
@@ -21,12 +23,10 @@ networks:
         sRight: true
       - type: Multiplier
         name: mul{x}
-        mock: true
       - type: Accum
         name: accum{x}
         isInt: true
       - type: Divider
         name: div{x}
-        mock: true
         pipeline: 4
 
