@@ -8,25 +8,25 @@ puLibrary:
 networks:
   net1:
     pus:
-      - type: SPI
-        name: spi
+      spi:
+        type: SPI
         mosi: mosi
         miso: miso
         sclk: sclk
         cs: cs
     protos:
-      - type: Fram
-        name: fram{x} # If you want a PU can be allocated only once, remove {x} from the PU name.
+      fram{x}: # If you want a PU can be allocated only once, remove {x} from the PU name.
+        type: Fram
         size: 32
-      - type: Shift
-        name: shift{x}
+      shift{x}:
+        type: Shift
         sRight: true
-      - type: Multiplier
-        name: mul{x}
-      - type: Accum
-        name: accum{x}
+      mul{x}:
+        type: Multiplier
+      accum{x}:
+        type: Accum
         isInt: true
-      - type: Divider
-        name: div{x}
+      div{x}:
+        type: Divider
         pipeline: 4
 

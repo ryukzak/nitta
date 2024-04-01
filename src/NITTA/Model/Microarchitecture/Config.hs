@@ -53,29 +53,21 @@ instance ToJSON PULibrary
 
 data PUConf
     = Accum
-        { name :: T.Text
-        }
     | Divider
-        { name :: T.Text
-        , pipeline :: Int
+        { pipeline :: Int
         }
     | Multiplier
-        { name :: T.Text
-        }
     | Fram
-        { name :: T.Text
-        , size :: Int
+        { size :: Int
         }
     | SPI
-        { name :: T.Text
-        , mosi :: T.Text
+        { mosi :: T.Text
         , miso :: T.Text
         , sclk :: T.Text
         , cs :: T.Text
         }
     | Shift
-        { name :: T.Text
-        , sRight :: Maybe Bool
+        { sRight :: Maybe Bool
         }
     deriving (Generic, Show)
 
@@ -91,8 +83,8 @@ instance FromJSON PUConf where
     parseJSON = genericParseJSON puConfJsonOptions
 
 data NetworkConf = NetworkConf
-    { pus :: [PUConf]
-    , protos :: [PUConf]
+    { pus :: Map T.Text PUConf
+    , protos :: Map T.Text PUConf
     }
     deriving (Generic, Show)
 
@@ -124,24 +116,24 @@ parseConfig path = do
     decodeFileThrow path :: IO MicroarchitectureConf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
-mkMicroarchitecture conf =
+mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks} =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
-        mock_ = mock conf
-        isSlave_ = isSlave . puLibrary $ conf
-        bufferSize_ = bufferSize . puLibrary $ conf
-        bounceFilter_ = bounceFilter . puLibrary $ conf
+        isSlave_ = isSlave puLibrary
+        bufferSize_ = bufferSize puLibrary
+        bounceFilter_ = bounceFilter puLibrary
         build NetworkConf{pus, protos} = do
-            mapM_ (configure False) pus
-            mapM_ (configure True) protos
+            mapM_ (configure_ False) $ M.toList pus
+            mapM_ (configure_ True) $ M.toList protos
             where
-                configure proto Accum{name} = addPU proto name def PU.AccumIO
-                configure proto Divider{name, pipeline} = addPU proto name (PU.divider pipeline mock_) PU.DividerIO
-                configure proto Multiplier{name} = addPU proto name (PU.multiplier mock_) PU.MultiplierIO
-                configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
-                configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
-                configure proto SPI{name, mosi, miso, sclk, cs} =
+                configure_ proto (name, pu) = configure proto name pu
+                configure proto name Accum = addPU proto name def PU.AccumIO
+                configure proto name Divider{pipeline} = addPU proto name (PU.divider pipeline mock) PU.DividerIO
+                configure proto name Multiplier = addPU proto name (PU.multiplier mock) PU.MultiplierIO
+                configure proto name Fram{size} = addPU proto name (PU.framWithSize size) PU.FramIO
+                configure proto name Shift{sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
+                configure proto name SPI{mosi, miso, sclk, cs} =
                     addPU proto name (PU.anySPI bounceFilter_ bufferSize_) $
                         if isSlave_
                             then
@@ -158,8 +150,7 @@ mkMicroarchitecture conf =
                                     , master_sclk = PU.OutputPortTag sclk
                                     , master_cs = PU.OutputPortTag cs
                                     }
-        nets = networks conf
-        mkNetwork name net = modifyNetwork (busNetwork name $ valueIoSync conf) (build net)
-     in case M.toList nets of
+        mkNetwork name net = modifyNetwork (busNetwork name $ valueIoSync) (build net)
+     in case M.toList networks of
             [(name, net)] -> mkNetwork name net
             _ -> error "multi-networks are not currently supported"
