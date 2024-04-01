@@ -150,7 +150,7 @@ mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks
                                     , master_sclk = PU.OutputPortTag sclk
                                     , master_cs = PU.OutputPortTag cs
                                     }
-        mkNetwork name net = modifyNetwork (busNetwork name $ valueIoSync) (build net)
+        mkNetwork name net = modifyNetwork (busNetwork name valueIoSync) (build net)
      in case M.toList networks of
             [(name, net)] -> mkNetwork name net
             _ -> error "multi-networks are not currently supported"
