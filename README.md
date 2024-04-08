@@ -101,6 +101,28 @@ sudo apt-get install npm yarn
 npm install --global tern prettier yarn
 ```
 
+### WSL2
+
+Install [GHCUP](https://www.haskell.org/ghcup/).
+
+``` console
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+```
+
+Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+
+``` console
+sudo apt-get install iverilog
+sudo apt-get install gtkwave
+```
+
+Install [npm](https://github.com/npm/cli) and required developer tools for UI.
+
+``` console
+sudo apt-get install npm yarn
+npm install --global tern prettier yarn
+```
+
 ### For machine learning base synthesis (optional)
 
 1. Install python package manager: [poetry](https://python-poetry.org/docs/).
