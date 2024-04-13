@@ -20,6 +20,7 @@ import Data.Map as M (
     Map,
     toList,
  )
+import Data.Maybe (fromMaybe)
 import Data.Text qualified as T
 import Data.Yaml (
     FromJSON (parseJSON),
@@ -83,8 +84,8 @@ instance FromJSON PUConf where
     parseJSON = genericParseJSON puConfJsonOptions
 
 data NetworkConf = NetworkConf
-    { pus :: Map T.Text PUConf
-    , protos :: Map T.Text PUConf
+    { pus :: Maybe (Map T.Text PUConf)
+    , protos :: Maybe (Map T.Text PUConf)
     }
     deriving (Generic, Show)
 
@@ -124,8 +125,8 @@ mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks
         bufferSize_ = bufferSize puLibrary
         bounceFilter_ = bounceFilter puLibrary
         build NetworkConf{pus, protos} = do
-            mapM_ (configure_ False) $ M.toList pus
-            mapM_ (configure_ True) $ M.toList protos
+            mapM_ (configure_ False) $ M.toList $ fromMaybe def pus
+            mapM_ (configure_ True) $ M.toList $ fromMaybe def protos
             where
                 configure_ proto (name, pu) = configure proto name pu
                 configure proto name Accum = addPU proto name def PU.AccumIO
