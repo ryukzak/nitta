@@ -61,8 +61,8 @@ data SynthesisMethodArg
 -- | Command line interface.
 data Nitta = Nitta
     { filename :: FilePath
-    , uarch :: Maybe FilePath
-    , auto_uarch :: Bool
+    , march :: Maybe FilePath
+    , auto_march :: Bool
     , type_ :: Maybe String
     , io_sync :: Maybe IOSynchronization
     , port :: Int
@@ -95,17 +95,17 @@ nittaArgs =
             -1
                 &= help "Run nitta server for UI on specific port (by default - not run)"
                 &= groupname "Common flags"
-        , uarch =
+        , march =
             Nothing
                 &= typ "PATH"
                 &= help "Microarchitecture configuration file"
                 &= explicit
-                &= name "uarch"
+                &= name "march"
                 &= groupname "Target system configuration"
-        , auto_uarch =
+        , auto_march =
             False
                 &= help "Use empty microarchitecture and allocate PUs during synthesis process."
-                &= name "auto-uarch"
+                &= name "auto-march"
                 &= groupname "Target system configuration"
         , type_ =
             Nothing
@@ -201,8 +201,8 @@ getNittaArgs = cmdArgs nittaArgs
 main = do
     ( Nitta
             filename
-            uarch
-            auto_uarch
+            march
+            auto_march
             type_
             io_sync
             port
@@ -226,7 +226,7 @@ main = do
     -- force line buffering (always, not just when stdout is connected to a tty),
     -- it's critical for successful parsing of NITTA's stdout in python scripts
     hSetBuffering stdout LineBuffering
-    conf <- case uarch of
+    conf <- case march of
         Nothing -> return Nothing
         Just path -> Just <$> parseConfig path
         
@@ -245,11 +245,11 @@ main = do
                 confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
-                    | auto_uarch && isJust confMa =
+                    | auto_march && isJust confMa =
                         error $
-                            "auto_uarch flag means that an empty uarch with default prototypes will be used. "
-                                <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync_
+                            "auto_march flag means that an empty march with default prototypes will be used. "
+                                <> "Remove march flag or specify prototypes list in config file and remove auto_march."
+                    | auto_march = microarchWithProtos ioSync_
                     | isJust confMa = fromJust confMa
                     | otherwise = defMicroarch ioSync_
 
