@@ -32,7 +32,7 @@ import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
-import NITTA.Model.Networks.Bus
+import NITTA.Model.Networks.Bus hiding (ioSync)
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
@@ -237,7 +237,7 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> valueIoSync <$> conf <|> Just Sync
+                ioSync_ = fromJust $ io_sync <|> ioSync <$> conf <|> Just Sync
                 confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
@@ -245,9 +245,9 @@ main = do
                         error $
                             "auto_uarch flag means that an empty uarch with default prototypes will be used. "
                                 <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync
+                    | auto_uarch = microarchWithProtos ioSync_
                     | isJust confMa = fromJust confMa
-                    | otherwise = defMicroarch ioSync
+                    | otherwise = defMicroarch ioSync_
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 

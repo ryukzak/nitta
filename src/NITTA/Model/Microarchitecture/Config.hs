@@ -3,7 +3,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module NITTA.Model.Microarchitecture.Config (
-    MicroarchitectureConf (valueType, valueIoSync),
+    MicroarchitectureConf (valueType, ioSync),
     parseConfig,
     mkMicroarchitecture,
 ) where
@@ -25,9 +25,7 @@ import Data.Text qualified as T
 import Data.Yaml (
     FromJSON (parseJSON),
     ToJSON (toJSON),
-    Value (Object),
     decodeFileThrow,
-    (.:),
  )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
@@ -41,16 +39,6 @@ import NITTA.Model.Networks.Bus (
  )
 import NITTA.Model.Networks.Types (IOSynchronization)
 import NITTA.Model.ProcessorUnits qualified as PU
-
-data PULibrary = PULibrary
-    { isSlave :: Bool
-    , bufferSize :: Maybe Int
-    , bounceFilter :: Int
-    }
-    deriving (Generic, Show)
-
-instance FromJSON PULibrary
-instance ToJSON PULibrary
 
 data PUConf
     = Accum
@@ -66,6 +54,9 @@ data PUConf
         , miso :: T.Text
         , sclk :: T.Text
         , cs :: T.Text
+        , isSlave :: Bool
+        , bufferSize :: Maybe Int
+        , bounceFilter :: Int
         }
     | Shift
         { sRight :: Maybe Bool
@@ -94,22 +85,13 @@ instance ToJSON NetworkConf
 
 data MicroarchitectureConf = MicroarchitectureConf
     { mock :: Bool
+    , ioSync :: IOSynchronization
     , valueType :: T.Text
-    , valueIoSync :: IOSynchronization
-    , puLibrary :: PULibrary
     , networks :: Map T.Text NetworkConf
     }
     deriving (Generic, Show)
 
 instance FromJSON MicroarchitectureConf where
-    parseJSON (Object v) = do
-        mock <- v .: "mock"
-        valueType <- v .: "type"
-        valueIoSync <- v .: "ioSync"
-        puLibrary <- v .: "puLibrary"
-        networks <- v .: "networks"
-        return MicroarchitectureConf{mock, valueType, valueIoSync, puLibrary, networks}
-    parseJSON v = fail $ show v
 instance ToJSON MicroarchitectureConf
 
 parseConfig :: FilePath -> IO MicroarchitectureConf
@@ -117,13 +99,10 @@ parseConfig path = do
     decodeFileThrow path :: IO MicroarchitectureConf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
-mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks} =
+mkMicroarchitecture MicroarchitectureConf{mock, ioSync, networks} =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
-        isSlave_ = isSlave puLibrary
-        bufferSize_ = bufferSize puLibrary
-        bounceFilter_ = bounceFilter puLibrary
         build NetworkConf{pus, protos} = do
             mapM_ (configure_ False) $ M.toList $ fromMaybe def pus
             mapM_ (configure_ True) $ M.toList $ fromMaybe def protos
@@ -134,9 +113,9 @@ mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks
                 configure proto name Multiplier = addPU proto name (PU.multiplier mock) PU.MultiplierIO
                 configure proto name Fram{size} = addPU proto name (PU.framWithSize size) PU.FramIO
                 configure proto name Shift{sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
-                configure proto name SPI{mosi, miso, sclk, cs} =
-                    addPU proto name (PU.anySPI bounceFilter_ bufferSize_) $
-                        if isSlave_
+                configure proto name SPI{mosi, miso, sclk, cs, isSlave, bufferSize, bounceFilter} =
+                    addPU proto name (PU.anySPI bounceFilter bufferSize) $
+                        if isSlave
                             then
                                 PU.SPISlave
                                     { slave_mosi = PU.InputPortTag mosi
@@ -151,7 +130,7 @@ mkMicroarchitecture MicroarchitectureConf{mock, valueIoSync, puLibrary, networks
                                     , master_sclk = PU.OutputPortTag sclk
                                     , master_cs = PU.OutputPortTag cs
                                     }
-        mkNetwork name net = modifyNetwork (busNetwork name valueIoSync) (build net)
+        mkNetwork name net = modifyNetwork (busNetwork name ioSync) (build net)
      in case M.toList networks of
             [(name, net)] -> mkNetwork name net
             _ -> error "multi-networks are not currently supported"
