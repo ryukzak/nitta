@@ -5,6 +5,7 @@
 module NITTA.Model.Microarchitecture.Config (
     MicroarchitectureConf (valueType, ioSync),
     parseConfig,
+    saveConfig,
     mkMicroarchitecture,
 ) where
 
@@ -26,6 +27,7 @@ import Data.Yaml (
     FromJSON (parseJSON),
     ToJSON (toJSON),
     decodeFileThrow,
+    encodeFile
  )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
@@ -98,6 +100,10 @@ instance ToJSON MicroarchitectureConf
 parseConfig :: FilePath -> IO MicroarchitectureConf
 parseConfig path = do
     decodeFileThrow path :: IO MicroarchitectureConf
+
+saveConfig :: FilePath -> MicroarchitectureConf -> IO ()
+saveConfig path conf = do
+    encodeFile (path <> "/microarch.yml") conf 
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
 mkMicroarchitecture MicroarchitectureConf{mock, ioSync, library, networks} =

@@ -229,6 +229,10 @@ main = do
     conf <- case uarch of
         Nothing -> return Nothing
         Just path -> Just <$> parseConfig path
+        
+    case conf of 
+      Nothing -> return ()
+      Just conf_ -> saveConfig output_path conf_
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
