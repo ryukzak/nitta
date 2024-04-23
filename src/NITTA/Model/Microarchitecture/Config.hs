@@ -87,6 +87,7 @@ data MicroarchitectureConf = MicroarchitectureConf
     { mock :: Bool
     , ioSync :: IOSynchronization
     , valueType :: T.Text
+    , library :: Maybe (Map T.Text PUConf)
     , networks :: Map T.Text NetworkConf
     }
     deriving (Generic, Show)
@@ -99,13 +100,14 @@ parseConfig path = do
     decodeFileThrow path :: IO MicroarchitectureConf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
-mkMicroarchitecture MicroarchitectureConf{mock, ioSync, networks} =
+mkMicroarchitecture MicroarchitectureConf{mock, ioSync, library, networks} =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
         build NetworkConf{pus, protos} = do
             mapM_ (configure_ False) $ M.toList $ fromMaybe def pus
             mapM_ (configure_ True) $ M.toList $ fromMaybe def protos
+            mapM_ (configure_ True) $ M.toList $ fromMaybe def library
             where
                 configure_ proto (name, pu) = configure proto name pu
                 configure proto name Accum = addPU proto name def PU.AccumIO
