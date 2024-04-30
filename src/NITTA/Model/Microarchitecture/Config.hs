@@ -3,7 +3,9 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module NITTA.Model.Microarchitecture.Config (
-    MicroarchitectureConf (valueType, ioSync),
+    MicroarchitectureConf (..),
+    NetworkConf (..),
+    PUConf (..),
     parseConfig,
     saveConfig,
     mkMicroarchitecture,
@@ -103,7 +105,7 @@ parseConfig path = do
 
 saveConfig :: FilePath -> MicroarchitectureConf -> IO ()
 saveConfig path conf = do
-    encodeFile (path <> "/microarch.yml") conf 
+    encodeFile (path <> "/microarch.yml") conf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
 mkMicroarchitecture MicroarchitectureConf{mock, ioSync, library, networks} =

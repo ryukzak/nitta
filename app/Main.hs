@@ -21,6 +21,7 @@ import Control.Exception
 import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
+import Data.Foldable (forM_)
 import Data.Maybe
 import Data.Proxy
 import Data.String.Utils qualified as S
@@ -230,9 +231,7 @@ main = do
         Nothing -> return Nothing
         Just path -> Just <$> parseConfig path
         
-    case conf of 
-      Nothing -> return ()
-      Just conf_ -> saveConfig output_path conf_
+    forM_ conf $ saveConfig output_path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 

@@ -285,6 +285,7 @@ test-suite nitta-test
       NITTA.Intermediate.Simulation.Tests
       NITTA.Intermediate.Tests.Functions
       NITTA.Intermediate.Value.Tests
+      NITTA.Model.Config.Tests
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests

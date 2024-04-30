@@ -217,8 +217,8 @@ nitta v0.0.0.1 - tool for hard real-time CGRA processors
 nitta [OPTIONS] FILE
 
 Target system configuration:
-         --uarch=PATH                   Microarchitecture configuration file
-  -a     --auto-uarch                   Use empty microarchitecture and
+         --march=PATH                   Microarchitecture configuration file
+  -a     --auto-march                   Use empty microarchitecture and
                                         allocate PUs during synthesis process.
   -t     --type=fxM.B                   Overrides data type specified in
                                         config file

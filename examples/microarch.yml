@@ -7,7 +7,6 @@ library:
     size: 32
   accum{x}:
     type: Accum
-    isInt: true
 networks:
   net1:
     pus:
