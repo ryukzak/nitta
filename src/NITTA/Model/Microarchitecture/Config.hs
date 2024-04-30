@@ -24,7 +24,8 @@ import Data.Map as M (
     toList,
  )
 import Data.Maybe (fromMaybe)
-import Data.Text qualified as T
+import Data.Text
+ qualified as T
 import Data.Yaml (
     FromJSON (parseJSON),
     ToJSON (toJSON),
@@ -43,6 +44,7 @@ import NITTA.Model.Networks.Bus (
  )
 import NITTA.Model.Networks.Types (IOSynchronization)
 import NITTA.Model.ProcessorUnits qualified as PU
+import System.Directory (createDirectoryIfMissing)
 
 data PUConf
     = Accum
@@ -105,6 +107,7 @@ parseConfig path = do
 
 saveConfig :: FilePath -> MicroarchitectureConf -> IO ()
 saveConfig path conf = do
+    createDirectoryIfMissing True path
     encodeFile (path <> "/microarch.yml") conf
 
 mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
