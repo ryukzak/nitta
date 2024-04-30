@@ -189,7 +189,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
         | any (allowToProcess f) (M.elems bnPus) = Right net{bnRemains = f : bnRemains}
         -- TODO:
         -- There are several issues that need to be addressed: see https://github.com/ryukzak/nitta/pull/195#discussion_r853486450
-        -- 1) Now the binding of functions to the network is hardcoded, that prevents use of an empty uarch at the start
+        -- 1) Now the binding of functions to the network is hardcoded, that prevents use of an empty march at the start
         -- 2) If Allocation options are independent of the bnRemains, then they are present in all synthesis states, which means no leaves in the synthesis tree
         | any (\PUPrototype{pProto} -> allowToProcess f pProto) (M.elems bnPUPrototypes) = Right net{bnRemains = f : bnRemains}
     tryBind f BusNetwork{bnPus} =
