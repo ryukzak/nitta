@@ -230,7 +230,7 @@ main = do
     conf <- case march of
         Nothing -> return Nothing
         Just path -> Just <$> parseConfig path
-    
+
     forM_ conf $ saveConfig output_path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
