@@ -24,13 +24,12 @@ import Data.Map as M (
     toList,
  )
 import Data.Maybe (fromMaybe)
-import Data.Text
- qualified as T
+import Data.Text qualified as T
 import Data.Yaml (
     FromJSON (parseJSON),
     ToJSON (toJSON),
     decodeFileThrow,
-    encodeFile
+    encodeFile,
  )
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
@@ -98,7 +97,7 @@ data MicroarchitectureConf = MicroarchitectureConf
     }
     deriving (Generic, Show)
 
-instance FromJSON MicroarchitectureConf where
+instance FromJSON MicroarchitectureConf
 instance ToJSON MicroarchitectureConf
 
 parseConfig :: FilePath -> IO MicroarchitectureConf

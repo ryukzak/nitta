@@ -14,8 +14,8 @@ module NITTA.Model.Config.Tests (
     tests,
 ) where
 
-import Data.Maybe
 import Data.Map as M
+import Data.Maybe
 import Data.Text qualified as T
 import NITTA.Model.Microarchitecture.Config as Conf
 import Test.Tasty (testGroup)
@@ -32,9 +32,9 @@ tests =
                 nets = networks conf
                 net = fromJust $ M.lookup (T.pack "net1") nets
                 spi = fromJust $ M.lookup (T.pack "spi") (fromJust $ pus net)
-                proros_ = fromJust $ protos net 
-                shift = fromJust $ M.lookup (T.pack "shift{x}") proros_
-                div_ = fromJust $ M.lookup (T.pack "div{x}") proros_
+                protos_ = fromJust $ protos net
+                shift = fromJust $ M.lookup (T.pack "shift{x}") protos_
+                div_ = fromJust $ M.lookup (T.pack "div{x}") protos_
                 
               "Sync" @=? show (ioSync conf)
               True @=? mock conf
