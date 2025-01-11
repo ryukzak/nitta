@@ -70,6 +70,7 @@ basic _proxy = defineNetwork "net1" ASync $ do
     add "shift" ShiftIO
     add "accum" AccumIO
     add "mul" MultiplierIO
+    add "lut" LUTIO
     add "div" DividerIO
 
 march = basic pInt
@@ -111,6 +112,7 @@ microarch ioSync' ioUnit =
                 add "shift" ShiftIO
                 add "accum" AccumIO
                 add "mul" MultiplierIO
+                add "lut" LUTIO
                 add "div" DividerIO
             )
             `withSPI` ioUnit
