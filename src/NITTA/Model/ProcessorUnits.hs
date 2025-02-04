@@ -139,4 +139,4 @@ import NITTA.Model.ProcessorUnits.Fram
 import NITTA.Model.ProcessorUnits.IO.SPI
 import NITTA.Model.ProcessorUnits.Multiplier
 import NITTA.Model.ProcessorUnits.Shift
-import NITTA.Model.ProcessorUnits.LUT hiding (oe) -- todo why?
+import NITTA.Model.ProcessorUnits.LUT

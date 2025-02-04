@@ -8,12 +8,11 @@
 module NITTA.Model.ProcessorUnits.LUT (
     LUT(..),
     lut,
-    Ports (..),
+    Ports(LUTPorts),
     IOPorts (..),
 ) where
 
-import Data.Map (Map)
-import qualified Data.Map as Map
+
 import qualified NITTA.Intermediate.Functions as F hiding (remain)
 import Data.Typeable (Typeable)
 import NITTA.Intermediate.Types
@@ -40,7 +39,6 @@ data LUT v x t = LUT
     {remain :: [F v x]
     , targets :: [v]
     , sources :: [v]
-    , lutTable  :: Map [Boolean] Boolean
     , currentWork :: Maybe (F v x)
     , process_  :: Process t (StepInfo v x t)
     } deriving (Typeable)
@@ -51,19 +49,17 @@ lut =
         { remain = []
         , targets = []
         , sources = []
-        , lutTable = Map.empty
         , currentWork = Nothing
         , process_ = def
         }
 
 instance VarValTime v x t => Pretty (LUT v x t) where
-    pretty LUT{remain, targets, sources, lutTable, currentWork, process_} =
+    pretty LUT{remain, targets, sources, currentWork, process_} =
         [__i|
             LUT:
                 remain: #{ remain }
                 targets: #{ map toString targets }
                 sources: #{ map toString sources }
-                lutTable: #{ lutTable }
                 currentWork: #{ currentWork }
                 #{ nest 4 $ pretty process_ }
             |]
@@ -73,12 +69,14 @@ instance Default (Microcode (LUT v x t)) where
         Microcode
             { wrSignal = False
             , oeSignal = False
+            , selSignal = []
             }
 
 instance Connected (LUT v x t) where
     data Ports (LUT v x t) = LUTPorts
         { wr :: SignalTag
         , oe :: SignalTag
+        , sel :: [SignalTag]
         }
         deriving (Show)
 
@@ -97,37 +95,35 @@ instance Controllable (LUT v x t) where
           wrSignal :: Bool
         , -- \| Downloading from mUnit signal.
           oeSignal :: Bool
+        , -- \| Function selector signal.
+          selSignal :: [Bool] --todo should replace with func?
         }
         deriving (Show, Eq, Ord)
 
     zipSignalTagsAndValues LUTPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
-        ]
+        -- , (sel, [Bool] selSignal)
+        ] ++ zip sel (map Bool selSignal)
 
     usedPortTags LUTPorts{wr, oe} = [wr, oe]
 
-    takePortTags (wr : oe : _) _ = LUTPorts wr oe
-    takePortTags _ _ = error "can not take port tags, tags are over"
+    takePortTags (wr : oe : sel ) _ = LUTPorts wr oe sel
+    takePortTags _ _  = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
     decodeInstruction Load = def{wrSignal = True}
     decodeInstruction Out = def{oeSignal = True}
 
 
-softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
+--softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
 
 instance Val x => TargetSystemComponent (LUT v x t) where
 
     hardware _tag _pu = FromLibrary "pu_lut.v"
     moduleName _title _pu = T.pack "pu_lut"
 
-    software tag softlut@LUT{} = 
-        Immediate
-            (toString $ softwareFile tag softlut)
-            $ T.unlines
-            $ map (\(ins, out) -> T.pack (show ins) <> T.pack " -> " <> T.pack (show out))
-            $ Map.toList (lutTable softlut)
+    software _ _ = Empty
     hardwareInstance
         tag
         _pu
@@ -175,9 +171,7 @@ instance Val x => TargetSystemComponent (LUT v x t) where
 
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
     tryBind f pu@LUT{remain}
-        | Just f' <- castF f =
-            case f' of
-                F.LUT{} -> Right pu{remain = f : remain}
+        | Just F.LUT{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by LUT: " ++ show f
     process = process_
 

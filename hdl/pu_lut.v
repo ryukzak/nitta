@@ -3,6 +3,7 @@ module pu_lut
         parameter DATA_WIDTH = 1,
         parameter LUT_DUMP = "dump/lut.hex"
     ) (
+    input wire clk,
     input wire [ADDR_WIDTH-1:0] addr,
     output reg [DATA_WIDTH-1:0] data
     );
@@ -10,7 +11,7 @@ module pu_lut
 
     initial $readmemb(LUT_DUMP, memory);
 
-    always @(*) begin
+    always @(posedge clk) begin
         data = memory[addr];
     end
 endmodule
