@@ -55,9 +55,6 @@ module NITTA.Intermediate.Types (
     reverseDiff,
     module NITTA.Intermediate.Value,
     module NITTA.Intermediate.Variable,
-    Boolean(..),
-    toBoolean, 
-    fromBoolean
 ) where
 
 import Data.Aeson
@@ -449,20 +446,3 @@ reverseDiff Changeset{changeI, changeO} =
                 , b <- S.elems bs
                 ]
         }
-
--- | Boolean data type
-data Boolean = Zero | One deriving (Eq, Show, Typeable)
-instance Ord Boolean where
-    compare One Zero = GT
-    compare Zero One = LT
-    compare _ _ = EQ
-
-toBoolean :: (Num a, Eq a) => a -> Boolean
-toBoolean x = if x == 0 then Zero else One
-
-fromBoolean :: Num a => Boolean -> a
-fromBoolean Zero = 0
-fromBoolean One = 1
-
-instance Patch (M.Map [Boolean] Boolean) (Boolean, Boolean) where
-    patch (old, new) table = M.mapKeys (map (\x -> if x == old then new else x)) table

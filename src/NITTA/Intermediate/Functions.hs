@@ -59,15 +59,15 @@ module NITTA.Intermediate.Functions (
     brokenBuffer,
     LogicFunction (..),
     LUT(..),
-    andLut, 
-    orLut, 
-    notLut,
-    lessThan,
-    lessThanOrEqual,
-    equal,
-    greaterThanOrEqual,
-    greaterThan,
-    notEqual
+    -- andLut, 
+    -- orLut, 
+    -- notLut,
+    -- lessThan,
+    -- lessThanOrEqual,
+    -- equal,
+    -- greaterThanOrEqual,
+    -- greaterThan,
+    -- notEqual
 ) where
 
 import Data.Bits qualified as B
@@ -504,7 +504,7 @@ instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
 
 
 -- Look Up Table
-data LUT v x = LUT (Map [Boolean] Boolean) [I v] (O v) deriving (Typeable, Eq)
+data LUT v x = LUT (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
 
 instance Var v => Patch (LUT v x) (v, v) where
     patch (old, new) (LUT table ins out) =
@@ -524,33 +524,26 @@ instance Var v => Function (LUT v x) v where
 
 instance (Var v, Num x, Eq x) => FunctionSimulation (LUT v x) v x where
     simulate cntx (LUT table ins (O output)) =
-        let inputValues = map (\(I v) -> toBoolean $ cntx `getCntx` v) ins
-            result = M.findWithDefault Zero inputValues table
-        in [(v, fromBoolean result) | v <- S.elems output]
+        let inputValues = map (\(I v) -> cntx `getCntx` v == 1) ins
+            result = M.findWithDefault False inputValues table
+        in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
 
-lut :: (Var v, Val x) => Map [Boolean] Boolean -> [v] -> v -> F v x
-lut table ins output = packF $ LUT table (map I ins) (O $ S.singleton output)
+-- lut :: (Var v, Val x) => [( [Bool], Bool)] -> [v] -> v -> F v x
+-- lut table ins output = packF $ LUT (M.fromList table) (map I ins) (O $ S.singleton output)
 
-andLut a b c = lut (M.fromList [([Zero, Zero], Zero), ([Zero, One], Zero), ([One, Zero], Zero), ([One, One], One)]) [a, b] c
+-- andLut a b c = lut  [ ([f, f], f)
+--                     , ([f, t], f)
+--                     , ([t, f], f)
+--                     , ([t, t], t)
+--                     ] [a, b] c
+--   where (t, f) = (True, False)
 
-orLut a b c = lut (M.fromList [([Zero, Zero], Zero), ([Zero, One], One), ([One, Zero], One), ([One, One], One)]) [a, b] c
+-- orLut a b c = lut  [([f, f], f), 
+--                     ([f, t], t), 
+--                     ([t, f], t), 
+--                     ([t, t], t)
+--                     ] [a, b] c where (t, f) = (True, False)
 
-notLut a b = lut (M.fromList [([Zero], One), ([One], Zero)]) [a] b
-
-lessThan :: (Var v, Val x) => v -> v -> [v] -> F v x
-lessThan a b c = packF $ LUT (M.fromList [([Zero, Zero], Zero), ([Zero, One], One), ([One, Zero], Zero), ([One, One], Zero)]) [I a, I b] $ O $ S.fromList c
-
-lessThanOrEqual :: (Var v, Val x) => v -> v -> [v] -> F v x
-lessThanOrEqual a b c = packF $ LUT (M.fromList [([Zero, Zero], One), ([Zero, One], One), ([One, Zero], Zero), ([One, One], One)]) [I a, I b] $ O $ S.fromList c
-
-equal :: (Var v, Val x) => v -> v -> [v] -> F v x
-equal a b c = packF $ LUT (M.fromList [([Zero, Zero], One), ([Zero, One], Zero), ([One, Zero], Zero), ([One, One], One)]) [I a, I b] $ O $ S.fromList c
-
-greaterThanOrEqual :: (Var v, Val x) => v -> v -> [v] -> F v x
-greaterThanOrEqual a b c = packF $ LUT (M.fromList [([Zero, Zero], One), ([Zero, One], Zero), ([One, Zero], One), ([One, One], One)]) [I a, I b] $ O $ S.fromList c
-
-greaterThan :: (Var v, Val x) => v -> v -> [v] -> F v x
-greaterThan a b c = packF $ LUT (M.fromList [([Zero, Zero], Zero), ([Zero, One], Zero), ([One, Zero], One), ([One, One], Zero)]) [I a, I b] $ O $ S.fromList c
-
-notEqual :: (Var v, Val x) => v -> v -> [v] -> F v x
-notEqual a b c = packF $ LUT (M.fromList [([Zero, Zero], Zero), ([Zero, One], One), ([One, Zero], One), ([One, One], Zero)]) [I a, I b] $ O $ S.fromList c
+-- notLut a b = lut[([f], t), 
+--                  ([t], f)
+--                 ] [a] b where (t, f) = (True, False)
