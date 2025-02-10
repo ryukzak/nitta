@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 {- |
 Module      : NITTA.Intermediate.Simulation.Tests
 Description :
@@ -49,7 +51,7 @@ simulationTests =
                     a = add "a1" "b1" ["c"]
                 M.fromList [("a1", 0), ("b1", 0), ("b2", 0), ("c", 1)] @=? action [l1, l2, a]
             ]
-        , simulationTestCase
+        , simulationTestCase @Int
             "fibonacci sequence"
             7
             def
@@ -58,7 +60,7 @@ simulationTests =
             , add "a1" "b1" ["c"]
             ]
             ("a1", [0, 1, 1, 2, 3, 5, 8])
-        , simulationTestCase
+        , simulationTestCase @Int
             "send and receive"
             5
             [ ("a", [1, 2, 3, 4, 5])
@@ -78,12 +80,14 @@ tests =
         ]
 
 simulationTestCase ::
+    forall x.
+    Val x =>
     HasCallStack =>
     String ->
     Int ->
-    [(String, [Int])] ->
-    [F String Int] ->
-    (String, [Int]) ->
+    [(String, [x])] ->
+    [F String x] ->
+    (String, [x]) ->
     TestTree
 simulationTestCase name n received alg (v, expect) =
     testCase name $
