@@ -17,6 +17,7 @@ not acceptable. This module defines type of that tweaks.
 module NITTA.Model.Problems.Refactor (
     module NITTA.Model.Problems.Refactor.BreakLoop,
     module NITTA.Model.Problems.Refactor.OptimizeAccum,
+    module NITTA.Model.Problems.Refactor.OptimizeLut,
     module NITTA.Model.Problems.Refactor.ResolveDeadlock,
     module NITTA.Model.Problems.Refactor.ConstantFolding,
 ) where
@@ -24,4 +25,5 @@ module NITTA.Model.Problems.Refactor (
 import NITTA.Model.Problems.Refactor.BreakLoop
 import NITTA.Model.Problems.Refactor.ConstantFolding
 import NITTA.Model.Problems.Refactor.OptimizeAccum
+import NITTA.Model.Problems.Refactor.OptimizeLut
 import NITTA.Model.Problems.Refactor.ResolveDeadlock

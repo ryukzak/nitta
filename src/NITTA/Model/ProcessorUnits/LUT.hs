@@ -13,7 +13,7 @@ module NITTA.Model.ProcessorUnits.LUT (
 ) where
 
 
-import qualified NITTA.Intermediate.Functions as F hiding (remain)
+import qualified NITTA.Intermediate.Functions as F
 import Data.Typeable (Typeable)
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
@@ -96,15 +96,15 @@ instance Controllable (LUT v x t) where
         , -- \| Downloading from mUnit signal.
           oeSignal :: Bool
         , -- \| Function selector signal.
-          selSignal :: [Bool] --todo should replace with func?
+          selSignal :: [Bool]
         }
         deriving (Show, Eq, Ord)
 
     zipSignalTagsAndValues LUTPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
-        -- , (sel, [Bool] selSignal)
-        ] ++ zip sel (map Bool selSignal)
+        ] 
+        ++ zip sel (map Bool selSignal)
 
     usedPortTags LUTPorts{wr, oe} = [wr, oe]
 
@@ -128,7 +128,9 @@ instance Val x => TargetSystemComponent (LUT v x t) where
         tag
         _pu
         UnitEnv
-            { ctrlPorts = Just LUTPorts{}
+            { 
+            sigClk
+            , ctrlPorts = Just LUTPorts{..}
             , valueIn = Just dataIn
             , valueOut = Just dataOut
             } =
@@ -136,10 +138,15 @@ instance Val x => TargetSystemComponent (LUT v x t) where
             pu_lut \#
                     ( .ADDR_WIDTH( #{ attrWidth (def :: x) } )
                     , .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                    , .SEL_WIDTH( #{ attrWidth (def :: x) } )
                     , .LUT_DUMP( "{{ impl.paths.nest }}/#{"dump/lut.hex"}" )
                     ) #{ tag }
-                ( .addr( #{ dataIn } )
+                ( .clk( #{ sigClk } )
+                , .addr( #{ dataIn } )
                 , .data( #{ dataOut } )
+                , .wr( #{ wr } )
+                , .oe( #{ oe } )
+                , .sel( #{ sel } )
                 );
         |] -- todo fix path LUT_DUMP with toString $ softwareFile tag lut
     hardwareInstance _title _pu _env = error "internal error"
@@ -172,6 +179,9 @@ instance Val x => TargetSystemComponent (LUT v x t) where
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
     tryBind f pu@LUT{remain}
         | Just F.LUT{} <- castF f = Right pu{remain = f : remain}
+        | Just F.LogicAnd{} <- castF f = Right pu{remain = f : remain}
+        | Just F.LogicOr{} <- castF f = Right pu{remain = f : remain}
+        | Just F.LogicNot{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by LUT: " ++ show f
     process = process_
 
@@ -239,6 +249,7 @@ instance BreakLoopProblem (LUT v x t) v x
 
 instance ConstantFoldingProblem (LUT v x t) v x
 instance OptimizeAccumProblem (LUT v x t) v x
+instance OptimizeLutProblem (LUT v x t) v x
 instance ResolveDeadlockProblem (LUT v x t) v x
 
 instance Var v => Locks (LUT v x t) v where
@@ -249,3 +260,7 @@ instance IOTestBench (LUT v x t) v x
 instance Default x => DefaultX (LUT v x t) x
 instance Time t => Default (LUT v x t) where
     def = lut
+
+-- instance Ord v => Function (LUT v x t) v where
+--     inputs = S.fromList . sources --S.fromList . lutInputs
+--     outputs = S.fromList . targets --S.singleton . lutOutput

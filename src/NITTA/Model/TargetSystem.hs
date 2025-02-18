@@ -89,6 +89,18 @@ instance
             , mUnit = optimizeAccumDecision mUnit d
             }
 
+instance
+    (Var v, Val x, OptimizeLutProblem u v x) =>
+    OptimizeLutProblem (TargetSystem u tag v x t) v x
+    where
+    optimizeLutOptions TargetSystem{mUnit} = optimizeLutOptions mUnit
+
+    optimizeLutDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = optimizeLutDecision mDataFlowGraph d
+            , mUnit = optimizeLutDecision mUnit d
+            }
+
 instance (Var v, Val x, ConstantFoldingProblem u v x) => ConstantFoldingProblem (TargetSystem u tag v x t) v x where
     constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit
 
