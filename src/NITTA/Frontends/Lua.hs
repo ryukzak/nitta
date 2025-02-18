@@ -176,6 +176,8 @@ parseRightExp fOut@(x : _) (Binop op a b) = do
         getBinopFuncName Sub = "sub"
         getBinopFuncName Mul = "multiply"
         getBinopFuncName Div = "divide"
+        getBinopFuncName And = "and"
+        getBinopFuncName Or = "or"
         -- getBinopFuncName LT  = "lessThan"
         -- getBinopFuncName LTE = "lessThanOrEqual"
         -- getBinopFuncName EQ  = "equal"
@@ -442,6 +444,8 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c
         function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
         function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
+        function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
         -- function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.lessThan (fromText a) (fromText b) (output c)
         -- function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.lessThanOrEqual (fromText a) (fromText b) $ output c
         -- function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.equal (fromText a) (fromText b) $ output c

@@ -82,6 +82,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     mkBreakLoop,
     mkConstantFolding,
     mkOptimizeAccum,
+    mkOptimizeLut,
     mkResolveDeadlock,
 
     -- * Asserts for PU and target system
@@ -497,6 +498,13 @@ instance (Var v, Val x, OptimizeAccumProblem u v x) => Refactor u (OptimizeAccum
 
 mkOptimizeAccum :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (OptimizeAccum v x)
 mkOptimizeAccum old new = return $ OptimizeAccum old new
+
+instance (Var v, Val x, OptimizeLutProblem u v x) => Refactor u (OptimizeLut v x) where
+    refactorAvail ref = refactorAvail' ref optimizeLutOptions
+    refactor ref = refactor' ref optimizeLutOptions optimizeLutDecision
+
+mkOptimizeLut :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (OptimizeLut v x)
+mkOptimizeLut old new = return $ OptimizeLut old new
 
 instance (Var v, Val x, ResolveDeadlockProblem u v x) => Refactor u (ResolveDeadlock v x) where
     refactorAvail ref = refactorAvail' ref resolveDeadlockOptions
