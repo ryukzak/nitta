@@ -9,22 +9,6 @@ env:
   GH_PAGES_DIR: gh-pages
 
 jobs:
-  notify-about-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send msg on push
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: html
-          args: |
-            Repository: <strong>${{ github.event.repository.full_name }}</strong>
-            Ref: <strong>${{ github.ref }}</strong>
-            Event: <strong>${{ github.event_name }}</strong>
-            Info:  ${{ github.event.pull_request.title }}
-            ${{ github.event.pull_request.html_url }}
-
   nitta-haskell-deps:
     runs-on: ubuntu-latest
     timeout-minutes: 60
