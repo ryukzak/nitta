@@ -42,6 +42,7 @@ type PUClasses pu v x t =
     , BreakLoopProblem pu v x
     , ConstantFoldingProblem pu v x
     , OptimizeAccumProblem pu v x
+    , OptimizeLutProblem pu v x
     , ResolveDeadlockProblem pu v x
     , ProcessorUnit pu v x t
     , Show (Instruction pu)
@@ -87,6 +88,11 @@ instance OptimizeAccumProblem (PU v x t) v x where
     optimizeAccumOptions PU{unit} = optimizeAccumOptions unit
     optimizeAccumDecision PU{diff, unit, uEnv} d =
         PU{diff, unit = optimizeAccumDecision unit d, uEnv}
+
+instance OptimizeLutProblem (PU v x t) v x where
+    optimizeLutOptions PU{unit} = optimizeLutOptions unit
+    optimizeLutDecision PU{diff, unit, uEnv} d =
+        PU{diff, unit = optimizeLutDecision unit d, uEnv}
 
 instance ResolveDeadlockProblem (PU v x t) v x where
     resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit

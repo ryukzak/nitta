@@ -20,6 +20,7 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 import Data.Default
 import Data.Text qualified as T
 import NITTA.Model.ProcessorUnits.Tests.Providers
+import NITTA.Intermediate.Functions qualified as F
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -30,14 +31,14 @@ tests =
             "buffer function"
             u
             [("a", 42)]
-            [buffer "a" ["b"]]
+            [F.buffer "a" ["b"]]
         , puCoSimTestCase
             "constant function"
             u
             []
-            [constant 11 ["ovj"]]
+            [F.constant 11 ["ovj"]]
         , unitTestCase "test BreakLoop" u2 $ do
-            assign $ loop 10 "b" ["a"]
+            assign $ F.loop 10 "b" ["a"]
             setValue "b" 64
             mkBreakLoop 10 "b" ["a"] >>= \r -> refactor r
             decideAt 1 1 $ provide ["a"]
@@ -48,7 +49,7 @@ tests =
             "loop function"
             u
             [("b", 42)]
-            [loop 10 "b" ["a"]]
+            [F.loop 10 "b" ["a"]]
         , -- TODO: not available, because needed self transaction
           -- , unitCoSimulationTestCase "loop_reg" u []
           --     [ buffer "a" ["b"]
@@ -60,12 +61,12 @@ tests =
             "buffer function with Attr"
             u2
             [("a", Attr 42 True)]
-            [buffer "a" ["b"]]
+            [F.buffer "a" ["b"]]
         , puCoSimTestCase
             "constant function with Attr"
             u2
             []
-            [constant (Attr 42 True) ["a"]]
+            [F.constant (Attr 42 True) ["a"]]
         , puCoSimProp "co simulation properties with attr" u2 fsGen
         ]
     where
@@ -73,7 +74,7 @@ tests =
         u2 = def :: Fram T.Text (Attr (IntX 32)) Int
         fsGen =
             algGen
-                [ fmap packF (arbitrary :: Gen (Constant _ _))
-                , fmap packF (arbitrary :: Gen (Loop _ _))
-                , fmap packF (arbitrary :: Gen (Buffer _ _))
+                [ fmap packF (arbitrary :: Gen (F.Constant _ _))
+                , fmap packF (arbitrary :: Gen (F.Loop _ _))
+                , fmap packF (arbitrary :: Gen (F.Buffer _ _))
                 ]

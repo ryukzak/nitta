@@ -165,6 +165,7 @@ isLeaf'
         , sBreakLoopOptions = []
         , sResolveDeadlockOptions = []
         , sOptimizeAccumOptions = []
+        , sOptimizeLutOptions = []
         , sConstantFoldingOptions = []
         } = True
 isLeaf' _ = False
@@ -182,6 +183,7 @@ exploreSubForestVar parent@Tree{sID, sState} =
                     ++ map (decisionAndContext parent) (sBreakLoopOptions sState)
                     ++ map (decisionAndContext parent) (sResolveDeadlockOptions sState)
                     ++ map (decisionAndContext parent) (sOptimizeAccumOptions sState)
+                    ++ map (decisionAndContext parent) (sOptimizeLutOptions sState)
                     ++ map (decisionAndContext parent) (sConstantFoldingOptions sState)
                 )
      in forM (zip [0 ..] edges) $ \(i, (desc, ctx')) -> do
@@ -218,6 +220,7 @@ nodeCtx parent nModel =
             , sBreakLoopOptions = breakLoopOptions nModel
             , sConstantFoldingOptions = constantFoldingOptions nModel
             , sOptimizeAccumOptions = optimizeAccumOptions nModel
+            , sOptimizeLutOptions = optimizeLutOptions nModel
             , bindingAlternative =
                 foldl
                     ( \st b -> case b of

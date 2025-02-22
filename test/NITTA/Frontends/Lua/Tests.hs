@@ -207,11 +207,11 @@ case_lua_two_name_for_same_constant =
                 sum(0)
             |]
         dfg =
-            [ constant 1 ["!1#2", "t^0#0", "t^0#1"] :: F T.Text Int
-            , add "a^0#0" "t^0#0" ["_2#loop"]
-            , add "_2#loop" "t^0#1" ["_1#loop"]
-            , add "_1#loop" "!1#2" ["_0#loop"]
-            , loop 0 "_0#loop" ["a^0#0"]
+            [ F.constant 1 ["!1#2", "t^0#0", "t^0#1"] :: F T.Text Int
+            , F.add "a^0#0" "t^0#0" ["_2#loop"]
+            , F.add "_2#loop" "t^0#1" ["_1#loop"]
+            , F.add "_1#loop" "!1#2" ["_0#loop"]
+            , F.loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (frDataFlow $ translateLua src) @?= dfg
 
@@ -226,7 +226,7 @@ case_lua_negative_operator =
             |]
         dfg =
             [ F.neg "a^0#0" ["b^0#0"] :: F T.Text Int
-            , loop 0 "b^0#0" ["a^0#0"]
+            , F.loop 0 "b^0#0" ["a^0#0"]
             ]
      in functions (frDataFlow $ translateLua src) @?= dfg
 
@@ -253,11 +253,11 @@ case_lua_constant_declatation =
                 sum(0)
             |]
         dfg =
-            [ constant 2 ["t^0#0"] :: F T.Text Int
-            , constant (-1) ["r^0#0"]
-            , add "a^0#0" "t^0#0" ["_1#loop"]
-            , add "_1#loop" "r^0#0" ["_0#loop"]
-            , loop 0 "_0#loop" ["a^0#0"]
+            [ F.constant 2 ["t^0#0"] :: F T.Text Int
+            , F.constant (-1) ["r^0#0"]
+            , F.add "a^0#0" "t^0#0" ["_1#loop"]
+            , F.add "_1#loop" "r^0#0" ["_0#loop"]
+            , F.loop 0 "_0#loop" ["a^0#0"]
             ]
      in functions (frDataFlow $ translateLua src) @?= dfg
 
@@ -271,12 +271,12 @@ case_lua_complex_assignment =
                 sum(0, 0)
             |]
         dfg =
-            [ constant 2 ["!2#0"] :: F T.Text Int
-            , add "b^0#0" "!2#0" ["a&^0#0"]
-            , constant 1 ["!1#0"]
-            , add "a^0#0" "!1#0" ["b&^0#0"]
-            , loop 0 "a&^0#0" ["a^0#0"]
-            , loop 0 "b&^0#0" ["b^0#0"]
+            [ F.constant 2 ["!2#0"] :: F T.Text Int
+            , F.add "b^0#0" "!2#0" ["a&^0#0"]
+            , F.constant 1 ["!1#0"]
+            , F.add "a^0#0" "!1#0" ["b&^0#0"]
+            , F.loop 0 "a&^0#0" ["a^0#0"]
+            , F.loop 0 "b&^0#0" ["b^0#0"]
             ]
      in functions (frDataFlow $ translateLua src) @?= dfg
 
