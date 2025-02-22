@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DataKinds #-}
 
 module NITTA.Model.ProcessorUnits.LUT (
     LUT(..),
@@ -30,10 +31,12 @@ import Numeric.Interval.NonEmpty
 import Data.Foldable as DF ( Foldable(null), find )
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Data.List ((\\), partition)
+import Data.List ((\\), partition, nub, unfoldr)
+import Data.Char (intToDigit)
 import Control.Monad (when)
 import Data.Text qualified as T
 import NITTA.Model.Problems
+import Control.Monad (replicateM)
 
 data LUT v x t = LUT
     {remain :: [F v x]
@@ -64,19 +67,22 @@ instance VarValTime v x t => Pretty (LUT v x t) where
                 #{ nest 4 $ pretty process_ }
             |]
 
+instance VarValTime v x t => Show (LUT v x t) where
+    show = show . pretty
+
 instance Default (Microcode (LUT v x t)) where
     def =
         Microcode
-            { wrSignal = False
-            , oeSignal = False
-            , selSignal = []
+            { oeSignal = False
+            , wrSignal = False
+            , selSignal = False
             }
 
 instance Connected (LUT v x t) where
     data Ports (LUT v x t) = LUTPorts
-        { wr :: SignalTag
-        , oe :: SignalTag
-        , sel :: [SignalTag]
+        { oe :: SignalTag
+        , wr :: SignalTag
+        , sel :: SignalTag -- todo [SignalTag] ?
         }
         deriving (Show)
 
@@ -91,39 +97,85 @@ instance Controllable (LUT v x t) where
         deriving (Show)
 
     data Microcode (LUT v x t) = Microcode
-        { -- \| Write to mUnit signal.
-          wrSignal :: Bool
+        { oeSignal :: Bool
         , -- \| Downloading from mUnit signal.
-          oeSignal :: Bool
+         wrSignal :: Bool
         , -- \| Function selector signal.
-          selSignal :: [Bool]
+        selSignal :: Bool
         }
         deriving (Show, Eq, Ord)
 
     zipSignalTagsAndValues LUTPorts{..} Microcode{..} =
-        [ (wr, Bool wrSignal)
-        , (oe, Bool oeSignal)
-        ] 
-        ++ zip sel (map Bool selSignal)
+        [ (oe, Bool oeSignal)
+        , (wr, Bool wrSignal)
+        , (sel, Bool selSignal)
+        ]
 
-    usedPortTags LUTPorts{wr, oe} = [wr, oe]
+    usedPortTags LUTPorts{oe, wr, sel} = [oe, wr, sel]
 
-    takePortTags (wr : oe : sel ) _ = LUTPorts wr oe sel
+    
+    takePortTags (oe : wr : sel : _) _ = LUTPorts oe wr sel
     takePortTags _ _  = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
     decodeInstruction Load = def{wrSignal = True}
     decodeInstruction Out = def{oeSignal = True}
 
+softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
 
---softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
 
-instance Val x => TargetSystemComponent (LUT v x t) where
+instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
 
-    hardware _tag _pu = FromLibrary "pu_lut.v"
     moduleName _title _pu = T.pack "pu_lut"
+    hardware _tag _pu = FromLibrary "pu_lut.v"
 
-    software _ _ = Empty
+    software tag lut@LUT{..} =
+        let
+            functions = _process lut
+
+            _process LUT{process_ = Process{steps}} =
+                [f | Step _ _ (IntermediateStep f) <- steps]
+
+            truthTables = nub $ map dummyTruthTable functions
+
+            selectorSize = ceiling (logBase 2 (fromIntegral $ length truthTables))
+            maxInputSize = 2
+            outputSize = 1
+
+            indexedTables = zip [0 ..] truthTables
+            memoryDump = unlines $ concatMap tableToMemory indexedTables
+            tableToMemory (index, table) = map (formatEntry index) table
+
+            formatEntry index (inputs, output) =
+                toBinary index selectorSize ++ "_" ++ toBinaryList inputs maxInputSize ++
+                 "_" ++ toBinary output outputSize
+            
+            toBinary value size = replicate (size - length bin) '0' ++ bin
+                where bin = showIntAtBase' value
+            toBinaryList inputs size =
+                let bin = concatMap show inputs
+                in replicate (size - length bin) '0' ++ bin
+
+            dummyTruthTable _ = [
+                ([0, 0], 0), 
+                ([0, 1], 1),
+                ([1, 0], 1),
+                ([1, 1], 1)
+                ]
+
+            showIntAtBase' :: Int -> String
+            showIntAtBase' 0 = "0"
+            showIntAtBase' n = reverse $ unfoldr (\x -> if x == 0 
+                then Nothing else Just (intToDigit (x `mod` 2), x `div` 2)) n
+
+        in Aggregate 
+            (Just $ toString mn)
+            [Immediate (toString mn <> "_lut.dump") $ T.pack memoryDump]
+        where
+            mn = moduleName tag lut
+
+
+
     hardwareInstance
         tag
         _pu
@@ -131,35 +183,39 @@ instance Val x => TargetSystemComponent (LUT v x t) where
             { 
             sigClk
             , ctrlPorts = Just LUTPorts{..}
-            , valueIn = Just dataIn
-            , valueOut = Just dataOut
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
             } =
         [__i|
             pu_lut \#
                     ( .ADDR_WIDTH( #{ attrWidth (def :: x) } )
                     , .DATA_WIDTH( #{ dataWidth (def :: x) } )
                     , .SEL_WIDTH( #{ attrWidth (def :: x) } )
-                    , .LUT_DUMP( "{{ impl.paths.nest }}/#{"dump/lut.hex"}" )
+                    , .LUT_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag _pu }" )
                     ) #{ tag }
                 ( .clk( #{ sigClk } )
-                , .addr( #{ dataIn } )
-                , .data( #{ dataOut } )
-                , .wr( #{ wr } )
-                , .oe( #{ oe } )
-                , .sel( #{ sel } )
+
+                , .signal_oe( #{ oe } )
+                , .signal_wr( #{ wr } )
+                , .signal_sel( #{ sel } )
+
+                , .data_in( #{ dataIn } )
+                , .attr_in( #{ attrIn } )
+                , .data_out( #{ dataOut } )
+                , .attr_out( #{ attrOut } )
                 );
-        |] -- todo fix path LUT_DUMP with toString $ softwareFile tag lut
+        |]
     hardwareInstance _title _pu _env = error "internal error"
 
--- instance VarValTime v x t => Testable (Multiplier v x t) v x where
+-- instance VarValTime v x t => Testable (LUT v x t) v x where
 --     testBenchImplementation prj@Project{pName, pUnit} =
---         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
+--         Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
 --             snippetTestBench
 --                 prj
 --                 SnippetTestBenchConf
 --                     { -- List of control signals. It is needed to initialize
 --                       -- registers with the same names.
---                       tbcSignals = ["oe", "wr"]
+--                       tbcSignals = map T.pack ["oe", "wr", "sel"]
 --                     , -- A processor unit connects to the environment by signal
 --                       -- lines. In 'NITTA.Project.TestBench.tbcPorts'
 --                       -- describes IDs signal lines of testbench. In
@@ -167,8 +223,10 @@ instance Val x => TargetSystemComponent (LUT v x t) where
 --                       -- abstract numbers are translate to source code.
 --                       tbcPorts =
 --                         LUTPorts
---                             { oe = SignalTag "oe"
---                             , wr = SignalTag "wr"
+--                             { oe = SignalTag $ T.pack "oe"
+--                             , wr = SignalTag $ T.pack "wr"
+--                             , sel = SignalTag $ T.pack "sel"
+--                             -- , sel = [SignalTag $ T.pack "sel"]
 --                             }
 --                     , -- Map microcode to registers in the testbench.
 --                       tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
@@ -252,15 +310,22 @@ instance OptimizeAccumProblem (LUT v x t) v x
 instance OptimizeLutProblem (LUT v x t) v x
 instance ResolveDeadlockProblem (LUT v x t) v x
 
+-- instance Var v => Locks (LUT v x t) v where
+--     locks _ = []
+
 instance Var v => Locks (LUT v x t) v where
-    -- FIXME:
-    locks _ = []
+    locks LUT{remain, sources, targets} =
+        [ Lock{lockBy, locked}
+        | locked <- sources
+        , lockBy <- targets
+        ]
+            ++ [ Lock{lockBy, locked}
+               | locked <- concatMap (S.elems . variables) remain
+               , lockBy <- sources ++ targets
+               ]
+            ++ concatMap locks remain
 
 instance IOTestBench (LUT v x t) v x
 instance Default x => DefaultX (LUT v x t) x
 instance Time t => Default (LUT v x t) where
     def = lut
-
--- instance Ord v => Function (LUT v x t) v where
---     inputs = S.fromList . sources --S.fromList . lutInputs
---     outputs = S.fromList . targets --S.singleton . lutOutput

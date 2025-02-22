@@ -13,6 +13,7 @@ module NITTA.Intermediate.Tests.Functions () where
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
+import Data.Map qualified as M
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import Test.QuickCheck
@@ -59,3 +60,26 @@ instance Arbitrary (IntX m) where
 
 instance Arbitrary x => Arbitrary (Attr x) where
     arbitrary = Attr <$> arbitrary <*> arbitrary
+
+instance Arbitrary x => Arbitrary (LUT T.Text x) where
+    arbitrary = suchThat generateUniqueVars uniqueVars
+      where
+        generateUniqueVars = LUT <$> arbitraryTable <*> inputVarsGen <*> outputVarGen
+
+        arbitraryTable = do
+            keys <- resize maxLenght $ listOf1 (vectorOf maxLenght arbitrary)
+            values <- vectorOf (length keys) arbitrary
+            return $ M.fromList $ zip keys values
+
+        inputVarsGen = resize maxLenght $ listOf1 inputVarGen
+
+        outputVarGen = outputVarsGen
+
+instance Arbitrary x => Arbitrary (LogicFunction T.Text x) where
+    arbitrary = oneof [ genLogicAnd, genLogicOr, genLogicNot ]
+      where
+        genLogicAnd = LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+        genLogicOr = LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+        genLogicNot = LogicNot <$> inputVarGen <*> outputVarsGen
+
+

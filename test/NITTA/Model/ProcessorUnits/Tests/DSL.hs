@@ -698,6 +698,7 @@ traceRefactor = do
     lift $ putListLn "breakLoopOptions: " $ breakLoopOptions mUnit
     lift $ putListLn "constantFoldingOptions: " $ constantFoldingOptions mUnit
     lift $ putListLn "optimizeAccumOptions: " $ optimizeAccumOptions mUnit
+    lift $ putListLn "optimizeLutOptions: " $ optimizeLutOptions mUnit
     lift $ putListLn "resolveDeadlockOptions: " $ resolveDeadlockOptions mUnit
 
 putListLn name opts = do
