@@ -13,6 +13,7 @@ import {
   GroupBind,
   Node,
   OptimizeAccum,
+  OptimizeLut,
   ResolveDeadlock,
   SingleBind,
   Target,
@@ -165,6 +166,7 @@ export function showDecision(decision: DecisionView): ReactElement {
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
   else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
   else if (decision.tag === "OptimizeAccumView") return showOptimizeAccum(decision);
+  else if (decision.tag === "OptimizeLutView") return showOptimizeLut(decision);
   else if (decision.tag === "ResolveDeadlockView") return showResolveDeadlock(decision);
   else if (decision.tag === "AllocationView") return showAllocation(decision);
   else throw new Error("Unkown decision type: " + decision.tag);
@@ -244,6 +246,19 @@ export function showOptimizeAccum(d: OptimizeAccum): ReactElement {
       <Icon.ArrowDown />
       <br />
       {d.new.map((e: FView) => e.fvFun).join(", ")}
+      <br />
+    </div>
+  );
+}
+
+export function showOptimizeLut(d: OptimizeLut): ReactElement {
+  return (
+    <div>
+      {d.lOld.map((e: FView) => e.fvFun).join("\n")}
+      <br />
+      <Icon.ArrowDown />
+      <br />
+      {d.lNew.map((e: FView) => e.fvFun).join(", ")}
       <br />
     </div>
   );
