@@ -530,7 +530,7 @@ data LUT v x = LUT (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
 
 instance Var v => Patch (LUT v x) (v, v) where
     patch (old, new) (LUT table ins out) =
-        LUT table (patch (old, new) ins) (patch (old, new) out)
+        LUT table (patch (old, new) ins) (patch (old, new) out) 
 
 instance Var v => Locks (LUT v x) v where
     locks (LUT {}) = []

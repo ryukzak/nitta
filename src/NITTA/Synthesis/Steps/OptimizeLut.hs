@@ -42,4 +42,4 @@ instance
 
     parameters SynthesisState{} OptimizeLut{} _ = OptimizeLutMetrics
 
-    estimate _ctx _o _d OptimizeLutMetrics = 5000
+    estimate _ctx _o _d OptimizeLutMetrics = 6000
