@@ -33,6 +33,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
     "BreakLoopView",
     "ConstantFoldingView",
     "OptimizeAccumView",
+    "OptimizeLutView",
     "ResolveDeadlockView",
   ];
 
@@ -100,7 +101,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter((e) => ["BreakLoopView", "ConstantFoldingView", "AllocationView"].includes(e.decision.tag))}
+        nodes={nodes.filter((e) => ["BreakLoopView", "ConstantFoldingView", "AllocationView", "OptimizeAccumView", "OptimizeLutView"].includes(e.decision.tag))}
         columns={[
           sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),

@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -64,6 +64,7 @@ library
       NITTA.Model.Problems.Refactor.BreakLoop
       NITTA.Model.Problems.Refactor.ConstantFolding
       NITTA.Model.Problems.Refactor.OptimizeAccum
+      NITTA.Model.Problems.Refactor.OptimizeLut
       NITTA.Model.Problems.Refactor.ResolveDeadlock
       NITTA.Model.Problems.ViewHelper
       NITTA.Model.ProcessIntegrity
@@ -75,6 +76,7 @@ library
       NITTA.Model.ProcessorUnits.IO.I2C
       NITTA.Model.ProcessorUnits.IO.SimpleIO
       NITTA.Model.ProcessorUnits.IO.SPI
+      NITTA.Model.ProcessorUnits.LUT
       NITTA.Model.ProcessorUnits.Multiplier
       NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
@@ -100,6 +102,7 @@ library
       NITTA.Synthesis.Steps.ConstantFolding
       NITTA.Synthesis.Steps.Dataflow
       NITTA.Synthesis.Steps.OptimizeAccum
+      NITTA.Synthesis.Steps.OptimizeLut
       NITTA.Synthesis.Steps.ResolveDeadlock
       NITTA.Synthesis.Types
       NITTA.UIBackend

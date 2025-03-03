@@ -12,6 +12,7 @@ module NITTA.Synthesis.Steps (
     module NITTA.Synthesis.Steps.Dataflow,
     module NITTA.Synthesis.Steps.BreakLoop,
     module NITTA.Synthesis.Steps.OptimizeAccum,
+    module NITTA.Synthesis.Steps.OptimizeLut,
     module NITTA.Synthesis.Steps.ResolveDeadlock,
     module NITTA.Synthesis.Steps.ConstantFolding,
     isRefactor,
@@ -25,12 +26,15 @@ import NITTA.Synthesis.Steps.BreakLoop
 import NITTA.Synthesis.Steps.ConstantFolding
 import NITTA.Synthesis.Steps.Dataflow
 import NITTA.Synthesis.Steps.OptimizeAccum
+import NITTA.Synthesis.Steps.OptimizeLut
 import NITTA.Synthesis.Steps.ResolveDeadlock
 import NITTA.Synthesis.Types (SynthesisDecision (SynthesisDecision, metrics))
+import Debug.Trace
 
 isRefactor SynthesisDecision{metrics}
-    | isJust (cast metrics :: Maybe BreakLoopMetrics) = True
-    | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = True
-    | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = True
-    | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = True
+    | isJust (cast metrics :: Maybe BreakLoopMetrics) = trace "BreakLoopMetrics" $ True
+    | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = trace "OptimizeAccumMetrics" $ True
+    | isJust (cast metrics :: Maybe OptimizeLutMetrics) = trace "OptimizeLutMetrics" $ True
+    | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = trace "ResolveDeadlockMetrics" $ True
+    | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = trace "ConstantFoldingMetrics" $ True
 isRefactor _ = False
