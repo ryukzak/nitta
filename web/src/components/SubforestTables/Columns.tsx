@@ -218,10 +218,20 @@ export function showBreakLoop(decision: BreakLoop): ReactElement {
 export function showConstantFolding(d: ConstantFolding): ReactElement {
   return (
     <div>
-      {d.cRefOld.map((e: FView) => <> {e.fvFun} <br/></>)}
+      {d.cRefOld.map((e: FView) => (
+        <>
+          {" "}
+          {e.fvFun} <br />
+        </>
+      ))}
       <Icon.ArrowDown />
       <br />
-      {d.cRefNew.map((e: FView) => <> {e.fvFun} <br/></>)}
+      {d.cRefNew.map((e: FView) => (
+        <>
+          {" "}
+          {e.fvFun} <br />
+        </>
+      ))}
     </div>
   );
 }
