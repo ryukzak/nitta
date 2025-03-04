@@ -12,6 +12,7 @@ import {
   IntermediateGraph,
   Node,
   SingleBind,
+  GroupBind,
   UnitEndpointsData,
 } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
@@ -173,6 +174,15 @@ function makeProcState(nodes: Node[]): ProcessState {
     if (n.decision.tag === "SingleBindView") {
       let d = n.decision as SingleBind;
       procState.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
+    }
+
+    if (n.decision.tag === "GroupBindView") {
+      let groupBind = n.decision as GroupBind;
+      Object.values(groupBind.bindGroup).forEach((functions) => {
+        functions?.forEach((func) => {
+          procState.bindeFuns.push(func.fvFun, ...func.fvHistory);
+        });
+      });
     }
   });
   return procState;

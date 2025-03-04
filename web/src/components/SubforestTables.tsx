@@ -100,7 +100,9 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
       <Table
         name="Refactor"
-        nodes={nodes.filter((e) => ["BreakLoopView", "ConstantFoldingView", "AllocationView"].includes(e.decision.tag))}
+        nodes={nodes.filter((e) =>
+          ["BreakLoopView", "ConstantFoldingView", "AllocationView", "ResolveDeadlockView"].includes(e.decision.tag),
+        )}
         columns={[
           sidColumn(appContext.setSid),
           objectiveColumn(scoresInfo),
