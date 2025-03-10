@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 
 {- |
 Module      : NITTA.Intermediate.Simulation.Tests
@@ -71,6 +71,24 @@ simulationTests =
             , send "c"
             ]
             ("c", [11, 12, 13, 14, 15])
+        , simulationTestCase @(FX 32 32)
+            "fibonacci sequence for FX"
+            7
+            def
+            [ loop FX{rawFX = 0} "b2" ["a1"]
+            , loop FX{rawFX = 1} "c" ["b1", "b2"]
+            , add "a1" "b1" ["c"]
+            ]
+            ("a1", [FX{rawFX = 0}, FX{rawFX = 1}, FX{rawFX = 1}, FX{rawFX = 2}, FX{rawFX = 3}, FX{rawFX = 5}, FX{rawFX = 8}])
+        , simulationTestCase @MyFloat
+            "division for Float"
+            7
+            def
+            [ loop 2 "c" ["a"]
+            , constant 2 ["b"]
+            , floatDivision "a" "b" ["c"]
+            ]
+            ("a", [2, 1, 0.5, 0.25, 0.125, 0.0625, 0.03125])
         , testGroup
             "logic operations"
             [ simulationTestCase @Int

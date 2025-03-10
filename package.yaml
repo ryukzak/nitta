@@ -50,6 +50,7 @@ default-extensions:
   - FlexibleInstances
   - TupleSections
   - UndecidableInstances
+  - TypeApplications
 
 dependencies:
   - MissingH
