@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -128,6 +128,7 @@ library
       FlexibleInstances
       TupleSections
       UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       HStringTemplate
@@ -198,6 +199,7 @@ executable nitta
       FlexibleInstances
       TupleSections
       UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
@@ -243,6 +245,7 @@ executable nitta-api-gen
       FlexibleInstances
       TupleSections
       UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
@@ -319,6 +322,7 @@ test-suite nitta-test
       FlexibleInstances
       TupleSections
       UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH
