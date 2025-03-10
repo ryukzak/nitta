@@ -122,17 +122,18 @@ library
   hs-source-dirs:
     src
   default-extensions:
-    DeriveDataTypeable
-    DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
-    FlexibleContexts
-    FlexibleInstances
-    TupleSections
-    UndecidableInstances
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
     HStringTemplate,
@@ -192,17 +193,18 @@ executable nitta
   hs-source-dirs:
     app
   default-extensions:
-    DeriveDataTypeable
-    DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
-    FlexibleContexts
-    FlexibleInstances
-    TupleSections
-    UndecidableInstances
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
     MissingH,
@@ -237,17 +239,18 @@ executable nitta-api-gen
   hs-source-dirs:
     app
   default-extensions:
-    DeriveDataTypeable
-    DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
-    FlexibleContexts
-    FlexibleInstances
-    TupleSections
-    UndecidableInstances
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
     MissingH,
@@ -316,17 +319,18 @@ test-suite nitta-test
   hs-source-dirs:
     test
   default-extensions:
-    DeriveDataTypeable
-    DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
-    FlexibleContexts
-    FlexibleInstances
-    TupleSections
-    UndecidableInstances
+      DeriveDataTypeable
+      DeriveGeneric
+      ImportQualifiedPost
+      LambdaCase
+      NamedFieldPuns
+      ScopedTypeVariables
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      TupleSections
+      UndecidableInstances
+      TypeApplications
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
     MissingH,

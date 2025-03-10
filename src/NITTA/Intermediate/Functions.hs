@@ -25,6 +25,8 @@ module NITTA.Intermediate.Functions (
     add,
     Division (..),
     division,
+    FloatDivision (..),
+    floatDivision,
     Multiply (..),
     multiply,
     ShiftLR (..),
@@ -333,6 +335,39 @@ instance (Var v, Val x) => FunctionSimulation (Division v x) v x where
             qx = fromRaw (rawData dx * 2 ^ scalingFactorPower dx `div` rawData nx) def
             rx = dx `mod` nx
          in [(v, qx) | v <- S.elems qs] ++ [(v, rx) | v <- S.elems rs]
+
+data FloatDivision v x = FloatDivision
+    { denom, numer :: I v
+    , quotient :: O v
+    }
+    deriving (Typeable, Eq)
+instance Label (FloatDivision v x) where label FloatDivision{} = "./."
+instance Var v => Show (FloatDivision v x) where
+    show FloatDivision{denom, numer, quotient} =
+        show numer <> " ./. " <> show denom <> " = " <> show quotient
+
+floatDivision :: (Var v, Val x) => v -> v -> [v] -> F v x
+floatDivision d n q =
+    packF $
+        FloatDivision
+            { denom = I d
+            , numer = I n
+            , quotient = O $ fromList q
+            }
+
+instance Var v => Function (FloatDivision v x) v where
+    inputs FloatDivision{denom, numer} = variables denom `union` variables numer
+    outputs FloatDivision{quotient} = variables quotient
+instance Var v => Patch (FloatDivision v x) (v, v) where
+    patch diff (FloatDivision a b c) = FloatDivision (patch diff a) (patch diff b) (patch diff c)
+instance Var v => Locks (FloatDivision v x) v where
+    locks = inputsLockOutputs
+instance (Var v, FloatPointCompatible x) => FunctionSimulation (FloatDivision v x) v x where
+    simulate cntx FloatDivision{denom = I d, numer = I n, quotient = O qs} =
+        let dx = cntx `getCntx` d
+            nx = cntx `getCntx` n
+            qx = dx ./. nx
+         in [(v, qx) | v <- elems qs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
 instance Label (Neg v x) where label Neg{} = "neg"
