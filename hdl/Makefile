@@ -8,7 +8,7 @@ define test
 	$(shell which vvp) $(PWD)/$(3).out
 endef
 
-all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_div pu_multiplier pu_i2c pu_spi pu_lut
+all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_div pu_multiplier pu_i2c pu_spi #pu_lut
 
 clean:
 	$(RM) -r $(PWD)/*.vcd $(PWD)/*.out

@@ -1,9 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 {- |
 Module      : NITTA.Intermediate.Functions
@@ -58,16 +57,15 @@ module NITTA.Intermediate.Functions (
     -- * Internal
     BrokenBuffer (..),
     brokenBuffer,
-    LUT(..),
+    Lut (..),
 
     -- * Logic
     LogicFunction (..),
     logicAnd,
     logicOr,
-    logicNot
-
-    -- andLut, 
-    -- orLut, 
+    logicNot,
+    -- andLut,
+    -- orLut,
     -- notLut,
     -- lessThan,
     -- lessThanOrEqual,
@@ -77,19 +75,19 @@ module NITTA.Intermediate.Functions (
     -- notEqual
 ) where
 
+import Data.Bits (complement, (.&.), (.|.))
 import Data.Bits qualified as B
+import Data.Data (Data)
 import Data.Default
 import Data.HashMap.Strict qualified as HM
+import Data.Map (Map)
+import Data.Map qualified as M
 import Data.Set (elems, fromList, union)
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
-import Data.Data (Data)
-import Data.Bits (complement, (.&.), (.|.))
-import qualified Data.Set as S
-import Data.Map (Map)
-import qualified Data.Map as M
 
 {- | Loop -- function for transfer data between computational cycles.
 Let see the simple example with the following implementation of the
@@ -485,10 +483,10 @@ logicNot :: (Var v, Val x) => v -> [v] -> F v x
 logicNot a c = packF $ LogicNot (I a) $ O $ fromList c
 instance Label (LogicFunction v x) where
     label LogicAnd{} = "AND"
-    label LogicOr{}  = "OR"
+    label LogicOr{} = "OR"
     label LogicNot{} = "NOT"
 
-instance (Var v) => Patch (LogicFunction v x) (v, v) where
+instance Var v => Patch (LogicFunction v x) (v, v) where
     patch diff (LogicAnd a b c) = LogicAnd (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicOr a b c) = LogicOr (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicNot a b) = LogicNot (patch diff a) (patch diff b)
@@ -511,61 +509,61 @@ instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
             y = x1 .&. x2
-        in [(v, y) | v <- S.elems o]
+         in [(v, y) | v <- S.elems o]
     simulate cntx (LogicOr (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
             y = x1 .|. x2
-        in [(v, y) | v <- S.elems o]
+         in [(v, y) | v <- S.elems o]
     simulate cntx (LogicNot (I a) (O o)) =
         let x1 = cntx `getCntx` a
             y = complement x1
-        in [(v, y) | v <- S.elems o]
+         in [(v, y) | v <- S.elems o]
 
 instance Var v => Locks (LogicFunction v x) v where
     locks = inputsLockOutputs
 
 -- Look Up Table
-data LUT v x = LUT (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
+data Lut v x = Lut (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
 
-instance Var v => Patch (LUT v x) (v, v) where
-    patch (old, new) (LUT table ins out) =
-        LUT table (patch (old, new) ins) (patch (old, new) out) 
+instance Var v => Patch (Lut v x) (v, v) where
+    patch (old, new) (Lut table ins out) =
+        Lut table (patch (old, new) ins) (patch (old, new) out)
 
-instance Var v => Locks (LUT v x) v where
-    locks (LUT {}) = []
+instance Var v => Locks (Lut v x) v where
+    locks (Lut{}) = []
 
-instance Label (LUT v x) where
-    label (LUT {}) = "LUT"
-instance Var v => Show (LUT v x) where
-    show (LUT table ins output) = "LUT " <> show table <> " " <> show ins <> " = " <> show output
+instance Label (Lut v x) where
+    label (Lut{}) = "Lut"
+instance Var v => Show (Lut v x) where
+    show (Lut table ins output) = "Lut " <> show table <> " " <> show ins <> " = " <> show output
 
-instance Var v => Function (LUT v x) v where
-    inputs (LUT _ ins _) = S.unions $ map variables ins
-    outputs (LUT _ _ output) = variables output
+instance Var v => Function (Lut v x) v where
+    inputs (Lut _ ins _) = S.unions $ map variables ins
+    outputs (Lut _ _ output) = variables output
 
-instance (Var v, Num x, Eq x) => FunctionSimulation (LUT v x) v x where
-    simulate cntx (LUT table ins (O output)) =
+instance (Var v, Num x, Eq x) => FunctionSimulation (Lut v x) v x where
+    simulate cntx (Lut table ins (O output)) =
         let inputValues = map (\(I v) -> cntx `getCntx` v == 1) ins
             result = M.findWithDefault False inputValues table -- todo add default value
-        in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
+         in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
 
--- lut :: (Var v, Val x) => [( [Bool], Bool)] -> [v] -> v -> F v x
--- lut table ins output = packF $ LUT (M.fromList table) (map I ins) (O $ S.singleton output)
+-- Lut :: (Var v, Val x) => [( [Bool], Bool)] -> [v] -> v -> F v x
+-- Lut table ins output = packF $ Lut (M.fromList table) (map I ins) (O $ S.singleton output)
 
--- andLut a b c = lut  [ ([f, f], f)
+-- andLut a b c = Lut  [ ([f, f], f)
 --                     , ([f, t], f)
 --                     , ([t, f], f)
 --                     , ([t, t], t)
 --                     ] [a, b] c
 --   where (t, f) = (True, False)
 
--- orLut a b c = lut  [([f, f], f), 
---                     ([f, t], t), 
---                     ([t, f], t), 
+-- orLut a b c = Lut  [([f, f], f),
+--                     ([f, t], t),
+--                     ([t, f], t),
 --                     ([t, t], t)
 --                     ] [a, b] c where (t, f) = (True, False)
 
--- notLut a b = lut[([f], t), 
+-- notLut a b = Lut[([f], t),
 --                  ([t], f)
 --                 ] [a] b where (t, f) = (True, False)

@@ -137,6 +137,6 @@ import NITTA.Model.ProcessorUnits.Broken
 import NITTA.Model.ProcessorUnits.Divider
 import NITTA.Model.ProcessorUnits.Fram
 import NITTA.Model.ProcessorUnits.IO.SPI
+import NITTA.Model.ProcessorUnits.LUT
 import NITTA.Model.ProcessorUnits.Multiplier
 import NITTA.Model.ProcessorUnits.Shift
-import NITTA.Model.ProcessorUnits.LUT

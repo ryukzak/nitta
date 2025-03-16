@@ -17,7 +17,7 @@ module NITTA.Model.ProcessorUnits.Tests.Providers (
     finitePUSynthesisProp,
     puCoSimProp,
     module NITTA.Model.ProcessorUnits,
-    module F,
+    module NITTA.Intermediate.Functions,
     module NITTA.Intermediate.Types,
     module NITTA.Intermediate.Tests.Functions,
     module NITTA.Model.ProcessorUnits.Tests.DSL,
@@ -29,7 +29,7 @@ import Data.CallStack
 import Data.Data
 import Data.Default
 import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F
+import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Tests.Functions ()
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Types

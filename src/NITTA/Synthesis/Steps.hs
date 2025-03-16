@@ -29,12 +29,11 @@ import NITTA.Synthesis.Steps.OptimizeAccum
 import NITTA.Synthesis.Steps.OptimizeLut
 import NITTA.Synthesis.Steps.ResolveDeadlock
 import NITTA.Synthesis.Types (SynthesisDecision (SynthesisDecision, metrics))
-import Debug.Trace
 
 isRefactor SynthesisDecision{metrics}
-    | isJust (cast metrics :: Maybe BreakLoopMetrics) = trace "BreakLoopMetrics" $ True
-    | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = trace "OptimizeAccumMetrics" $ True
-    | isJust (cast metrics :: Maybe OptimizeLutMetrics) = trace "OptimizeLutMetrics" $ True
-    | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = trace "ResolveDeadlockMetrics" $ True
-    | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = trace "ConstantFoldingMetrics" $ True
+    | isJust (cast metrics :: Maybe BreakLoopMetrics) = True
+    | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = True
+    | isJust (cast metrics :: Maybe OptimizeLutMetrics) = True
+    | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = True
+    | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = True
 isRefactor _ = False

@@ -19,8 +19,8 @@ module NITTA.Model.ProcessorUnits.Fram.Tests (
 
 import Data.Default
 import Data.Text qualified as T
-import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Intermediate.Functions qualified as F
+import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
