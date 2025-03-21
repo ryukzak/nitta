@@ -178,11 +178,11 @@ parseRightExp fOut@(x : _) (Binop op a b) = do
         getBinopFuncName Div = "divide"
         getBinopFuncName And = "and"
         getBinopFuncName Or = "or"
-        -- getBinopFuncName LT  = "lessThan"
-        -- getBinopFuncName LTE = "lessThanOrEqual"
-        -- getBinopFuncName EQ  = "equal"
-        -- getBinopFuncName GTE = "greaterThanOrEqual"
-        -- getBinopFuncName GT  = "greaterThan"
+        getBinopFuncName LT = "lessThan"
+        getBinopFuncName LTE = "lessThanOrEqual"
+        getBinopFuncName EQ = "equal"
+        getBinopFuncName GTE = "greaterThanOrEqual"
+        getBinopFuncName GT = "greaterThan"
         -- getBinopFuncName NEQ = "notEqual"
         getBinopFuncName o = error $ "unknown binop: " <> show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
@@ -447,11 +447,11 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
-        -- function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.lessThan (fromText a) (fromText b) (output c)
-        -- function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.lessThanOrEqual (fromText a) (fromText b) $ output c
-        -- function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.equal (fromText a) (fromText b) $ output c
-        -- function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.greaterThanOrEqual (fromText a) (fromText b) $ output c
-        -- function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.greaterThan (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.LT (fromText a) (fromText b) (output c)
+        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.LTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.EQ (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.GTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.GT (fromText a) (fromText b) $ output c
         -- function2nitta LuaStatement{fName = "notEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.notEqual (fromText a) (fromText b) $ output c
         function2nitta f = error $ "function not found: " <> show f
         output v =

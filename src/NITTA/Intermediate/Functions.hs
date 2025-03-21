@@ -61,6 +61,8 @@ module NITTA.Intermediate.Functions (
 
     -- * Logic
     LogicFunction (..),
+    Op (..),
+    logicCompare,
     logicAnd,
     logicOr,
     logicNot,
@@ -88,6 +90,7 @@ import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
+import Prelude hiding (EQ, GT, LT)
 
 {- | Loop -- function for transfer data between computational cycles.
 Let see the simple example with the following implementation of the
@@ -469,9 +472,13 @@ data LogicFunction v x
     = LogicAnd (I v) (I v) (O v)
     | LogicOr (I v) (I v) (O v)
     | LogicNot (I v) (O v)
+    | LogicCompare Op (I v) (I v) (O v)
     deriving (Typeable, Eq)
 
 deriving instance (Data v, Data (I v), Data (O v), Data x) => Data (LogicFunction v x)
+
+data Op = EQ | LT | LTE | GT | GTE
+    deriving (Typeable, Eq, Show, Data)
 
 logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
 logicAnd a b c = packF $ LogicAnd (I a) (I b) $ O $ fromList c
@@ -481,30 +488,38 @@ logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ fromList c
 
 logicNot :: (Var v, Val x) => v -> [v] -> F v x
 logicNot a c = packF $ LogicNot (I a) $ O $ fromList c
+
+logicCompare :: (Var v, Val x) => Op -> v -> v -> [v] -> F v x
+logicCompare op a b c = packF $ LogicCompare op (I a) (I b) $ O $ fromList c
 instance Label (LogicFunction v x) where
-    label LogicAnd{} = "AND"
-    label LogicOr{} = "OR"
-    label LogicNot{} = "NOT"
+    label LogicAnd{} = "and"
+    label LogicOr{} = "or"
+    label LogicNot{} = "not"
+    label (LogicCompare op _ _ _) = show op
 
 instance Var v => Patch (LogicFunction v x) (v, v) where
     patch diff (LogicAnd a b c) = LogicAnd (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicOr a b c) = LogicOr (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicNot a b) = LogicNot (patch diff a) (patch diff b)
+    patch diff (LogicCompare op a b c) = LogicCompare op (patch diff a) (patch diff b) (patch diff c)
 
 instance Var v => Show (LogicFunction v x) where
-    show (LogicAnd a b o) = show a <> " AND " <> show b <> " = " <> show o
-    show (LogicOr a b o) = show a <> " OR " <> show b <> " = " <> show o
-    show (LogicNot a o) = "NOT " <> show a <> " = " <> show o
+    show (LogicAnd a b o) = show a <> " and " <> show b <> " = " <> show o
+    show (LogicOr a b o) = show a <> " or " <> show b <> " = " <> show o
+    show (LogicNot a o) = "not " <> show a <> " = " <> show o
+    show (LogicCompare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
 
 instance Var v => Function (LogicFunction v x) v where
     inputs (LogicOr a b _) = variables a `S.union` variables b
     inputs (LogicAnd a b _) = variables a `S.union` variables b
     inputs (LogicNot a _) = variables a
+    inputs (LogicCompare _ a b _) = variables a `S.union` variables b
     outputs (LogicOr _ _ o) = variables o
     outputs (LogicAnd _ _ o) = variables o
     outputs (LogicNot _ o) = variables o
+    outputs (LogicCompare _ _ _ o) = variables o
 
-instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
+instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
@@ -519,6 +534,19 @@ instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
         let x1 = cntx `getCntx` a
             y = complement x1
          in [(v, y) | v <- S.elems o]
+    simulate cntx (LogicCompare op (I a) (I b) (O o)) =
+        let x1 = cntx `getCntx` a
+            x2 = cntx `getCntx` b
+            y = if op2func op x1 x2 then trueValue else falseValue
+         in [(v, y) | v <- S.elems o]
+        where
+            op2func EQ = (==)
+            op2func LT = (<)
+            op2func LTE = (<=)
+            op2func GT = (>)
+            op2func GTE = (>=)
+            trueValue = B.bit 0
+            falseValue = B.zeroBits
 
 instance Var v => Locks (LogicFunction v x) v where
     locks = inputsLockOutputs
