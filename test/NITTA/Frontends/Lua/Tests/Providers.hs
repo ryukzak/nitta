@@ -33,10 +33,11 @@ import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
+import NITTA.Frontends (Translatable)
 
 traceLuaSimulationTestCase ::
     forall x.
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     Proxy x ->
     String ->
     T.Text ->
@@ -53,7 +54,7 @@ luaTestCase :: HasCallStack => String -> T.Text -> TestTree
 luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pAttrIntX32 name def
 
 typedLuaTestCase ::
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->
@@ -62,7 +63,7 @@ typedLuaTestCase ::
 typedLuaTestCase arch proxy name = typedIOLuaTestCase arch proxy name def
 
 typedIOLuaTestCase ::
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->

@@ -32,12 +32,14 @@ import NITTA.Synthesis
 import NITTA.Utils
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
+import NITTA.Frontends (Translatable)
 
 -- | Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
     ( HasCallStack
     , Val x
     , Integral x
+    , Translatable x
     ) =>
     String ->
     BusNetwork T.Text T.Text x Int ->

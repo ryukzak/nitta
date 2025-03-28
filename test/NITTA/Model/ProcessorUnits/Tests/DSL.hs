@@ -2,6 +2,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -151,6 +152,7 @@ import System.Directory
 import System.FilePath
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
+import NITTA.Frontends (Translatable)
 
 {- | Unit test state. Be aware internal implementation is not fully consistent
  and can be replaced by a type family with PU and target system instances.
@@ -386,7 +388,7 @@ assertPUCoSimulation = do
                 initialCntx = S.fromList (map fst cntx)
              in requiredVars == initialCntx
 
-assignLua :: T.Text -> TSStatement x ()
+assignLua :: Translatable x => T.Text -> TSStatement x ()
 assignLua src = do
     assertEmptyDataFlow
     st@UnitTestState{unit = TargetSystem{mUnit}} <- get
