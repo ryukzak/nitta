@@ -47,7 +47,7 @@ data OutputDesc
     | Remain
     deriving (Show, Eq)
 
-data Divider v x t = Divider
+data FixedPointCompatible x => Divider v x t = Divider
     { jobs :: [Job v x t]
     , remains :: [F v x]
     , process_ :: Process t (StepInfo v x t)
@@ -55,7 +55,7 @@ data Divider v x t = Divider
     , mock :: Bool
     }
 
-instance (Show v, Show t) => Show (Divider v x t) where
+instance (Show v, Show t, FixedPointCompatible x) => Show (Divider v x t) where
     show Divider{jobs} = show jobs
 
 divider pipeline mock =
@@ -67,12 +67,12 @@ divider pipeline mock =
         , mock
         }
 
-instance Time t => Default (Divider v x t) where
+instance (Time t, FixedPointCompatible x) => Default (Divider v x t) where
     def = divider 4 True
 
-instance Default x => DefaultX (Divider v x t) x
+instance (Default x, FixedPointCompatible x) => DefaultX (Divider v x t) x
 
-instance Ord t => WithFunctions (Divider v x t) (F v x) where
+instance (Ord t, FixedPointCompatible x) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{process_, remains, jobs} =
         functions process_
             ++ remains
@@ -101,7 +101,7 @@ isWaitArguments _ = False
 isWaitResults WaitResults{} = True
 isWaitResults _ = False
 
-instance VarValTime v x t => ProcessorUnit (Divider v x t) v x t where
+instance (VarValTime v x t, FixedPointCompatible x) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
             Right pu{remains = f : remains}
@@ -109,7 +109,7 @@ instance VarValTime v x t => ProcessorUnit (Divider v x t) v x t where
     process = process_
     parallelismType _ = Pipeline
 
-instance (Var v, Time t) => Locks (Divider v x t) v where
+instance (Var v, Time t, FixedPointCompatible x) => Locks (Divider v x t) v where
     locks Divider{jobs, remains} = L.nub $ byArguments ++ byResults
         where
             byArguments
@@ -164,7 +164,7 @@ firstWaitResults jobs =
             then Nothing
             else Just $ minimumOn readyAt jobs'
 
-instance VarValTime v x t => EndpointProblem (Divider v x t) v t where
+instance (VarValTime v x t, FixedPointCompatible x) => EndpointProblem (Divider v x t) v t where
     endpointOptions pu@Divider{remains, jobs} =
         let executeNewFunction
                 | any isWaitArguments jobs = []
@@ -282,7 +282,7 @@ instance IOConnected (Divider v x t) where
     data IOPorts (Divider v x t) = DividerIO
         deriving (Show)
 
-instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
+instance (Val x, Show t, FixedPointCompatible x) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
     hardware _tag Divider{mock} =
@@ -327,7 +327,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
 
 instance IOTestBench (Divider v x t) v x
 
-instance VarValTime v x t => Testable (Divider v x t) v x where
+instance (VarValTime v x t, FixedPointCompatible x) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench
