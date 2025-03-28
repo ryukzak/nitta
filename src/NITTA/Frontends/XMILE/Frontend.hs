@@ -15,6 +15,7 @@ module NITTA.Frontends.XMILE.Frontend (
     translateXMILE,
     FrontendResult (..),
     TraceVar (..),
+    TranslatableXMILE (..),
 ) where
 
 import Control.Monad.State
@@ -29,6 +30,7 @@ import NITTA.Frontends.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions qualified as F
 import NITTA.Utils.Base
+import NITTA.Intermediate.Types (Val, Var, F, FixedPointCompatible)
 
 data XMILEAlgBuilder v x = XMILEAlgBuilder
     { algDataFlowGraph :: DataFlowGraph v x
@@ -42,6 +44,22 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
 
 deltaTimeVarName = T.pack "time_delta"
 
+class Val x => TranslatableXMILE x where
+    xmileStat2function :: Var v => XMDuop -> (v, v, [v]) -> F v x
+
+instance (FixedPointCompatible x, Val x) => TranslatableXMILE x where
+    xmileStat2function op (l, r, t) = case op of
+        Add -> F.add l r t
+        Sub -> F.sub l r t
+        Mul -> F.multiply l r t
+        Div -> F.division l r t []
+
+instance TranslatableXMILE Float where
+        xmileStat2function op (l, r, t) = case op of
+            Div -> F.floatDivision l r t
+            _ -> error "not implemented yet"
+
+translateXMILE :: (Var v, TranslatableXMILE x) => T.Text -> FrontendResult v x
 translateXMILE src =
     let xmContent = XMILE.parseDocument $ T.unpack src
         builder = processXMILEGraph xmContent
@@ -51,6 +69,7 @@ translateXMILE src =
         algTraceVars' :: XMILEAlgBuilder T.Text Int -> [TraceVar]
         algTraceVars' = algTraceVars
 
+processXMILEGraph :: (Var v, TranslatableXMILE x) => Content -> XMILEAlgBuilder v x
 processXMILEGraph xmContent = flip execState emptyBuilder $ do
     getDefaultValuesAndUsages xmContent
     createDataFlowGraph xmContent
@@ -152,7 +171,7 @@ createDataFlowGraph xmContent = do
                                     st
                                         { algDataFlowGraph =
                                             addFuncToDataFlowGraph
-                                                (F.multiply (fromText dtUniqueName) (fromText flowUniqueName) [fromText skaledFlowName])
+                                                (xmileStat2function Mul (fromText dtUniqueName,fromText flowUniqueName, [fromText skaledFlowName]))
                                                 algDataFlowGraph
                                         }
                                 )
@@ -202,11 +221,7 @@ createDataFlowGraph xmContent = do
                         tmpName = map fromText tmpNameText
 
                     st@XMILEAlgBuilder{algDataFlowGraph = graph} <- get
-                    case op of
-                        Add -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName tmpName) graph}
-                        Sub -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName tmpName) graph}
-                        Mul -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName tmpName) graph}
-                        Div -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName []) graph}
+                    put st{algDataFlowGraph = addFuncToDataFlowGraph (xmileStat2function op (leftName, rightName, tmpName)) graph}
                     return (head tmpName, tempNameIndex'' + 1)
                     where
                         getTempName _ name True = getAllOutGraphNodes name
