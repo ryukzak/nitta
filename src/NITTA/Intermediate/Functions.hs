@@ -278,7 +278,7 @@ instance (Var v, Num x) => FunctionSimulation (Sub v x) v x where
             y = x1 - x2
          in [(v, y) | v <- S.elems vs]
 
-data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
+data FixedPointCompatible x => Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance Var v => Show (Multiply v x) where
     show (Multiply a b c) =
@@ -300,7 +300,7 @@ instance (Var v, Num x) => FunctionSimulation (Multiply v x) v x where
             y = x1 * x2
          in [(v, y) | v <- S.elems vs]
 
-data Division v x = Division
+data Integral x => Division v x = Division
     { denom, numer :: I v
     , quotient, remain :: O v
     }
@@ -311,7 +311,7 @@ instance Var v => Show (Division v x) where
         let q = show numer <> " / " <> show denom <> " = " <> show quotient
             r = show numer <> " mod " <> show denom <> " = " <> show remain
          in q <> "; " <> r
-division :: (Var v, Val x) => v -> v -> [v] -> [v] -> F v x
+division :: (Var v, Val x, Integral x) => v -> v -> [v] -> [v] -> F v x
 division d n q r =
     packF $
         Division
@@ -336,17 +336,17 @@ instance (Var v, Val x) => FunctionSimulation (Division v x) v x where
             rx = dx `mod` nx
          in [(v, qx) | v <- S.elems qs] ++ [(v, rx) | v <- S.elems rs]
 
-data FloatDivision v x = FloatDivision
+data Fractional x => FloatDivision v x = FloatDivision
     { denom, numer :: I v
     , quotient :: O v
     }
     deriving (Typeable, Eq)
-instance Label (FloatDivision v x) where label FloatDivision{} = "./."
+instance Label (FloatDivision v x) where label FloatDivision{} = "/"
 instance Var v => Show (FloatDivision v x) where
     show FloatDivision{denom, numer, quotient} =
-        show numer <> " ./. " <> show denom <> " = " <> show quotient
+        show numer <> " / " <> show denom <> " = " <> show quotient
 
-floatDivision :: (Var v, Val x) => v -> v -> [v] -> F v x
+floatDivision :: (Var v, Val x, Fractional x) => v -> v -> [v] -> F v x
 floatDivision d n q =
     packF $
         FloatDivision
@@ -362,11 +362,11 @@ instance Var v => Patch (FloatDivision v x) (v, v) where
     patch diff (FloatDivision a b c) = FloatDivision (patch diff a) (patch diff b) (patch diff c)
 instance Var v => Locks (FloatDivision v x) v where
     locks = inputsLockOutputs
-instance (Var v, FloatPointCompatible x) => FunctionSimulation (FloatDivision v x) v x where
+instance (Var v, Fractional x) => FunctionSimulation (FloatDivision v x) v x where
     simulate cntx FloatDivision{denom = I d, numer = I n, quotient = O qs} =
         let dx = cntx `getCntx` d
             nx = cntx `getCntx` n
-            qx = dx ./. nx
+            qx = dx / nx
          in [(v, qx) | v <- elems qs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
@@ -421,9 +421,9 @@ instance Var v => Show (ShiftLR v x) where
     show (ShiftR s i os) = show i <> " >> " <> show s <> " = " <> show os
 instance Var v => Label (ShiftLR v x) where label = show
 
-shiftL :: (Var v, Val x) => Int -> v -> [v] -> F v x
+shiftL :: (Var v, Val x, B.Bits x) => Int -> v -> [v] -> F v x
 shiftL s i o = packF $ ShiftL s (I i) $ O $ S.fromList o
-shiftR :: (Var v, Val x) => Int -> v -> [v] -> F v x
+shiftR :: (Var v, Val x, B.Bits x) => Int -> v -> [v] -> F v x
 shiftR s i o = packF $ ShiftR s (I i) $ O $ S.fromList o
 
 instance Var v => Function (ShiftLR v x) v where

@@ -80,7 +80,7 @@ simulationTests =
             , add "a1" "b1" ["c"]
             ]
             ("a1", [FX{rawFX = 0}, FX{rawFX = 1}, FX{rawFX = 1}, FX{rawFX = 2}, FX{rawFX = 3}, FX{rawFX = 5}, FX{rawFX = 8}])
-        , simulationTestCase @MyFloat
+        , simulationTestCase @Float
             "division for Float"
             7
             def

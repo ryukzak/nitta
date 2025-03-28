@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -21,7 +20,6 @@ module NITTA.Intermediate.Value (
     Val (..),
     DefaultX (..),
     FixedPointCompatible (..),
-    FloatPointCompatible (..),
     scalingFactor,
     minMaxRaw,
 
@@ -31,7 +29,6 @@ module NITTA.Intermediate.Value (
     -- * Value types
     IntX (..),
     FX (..),
-    MyFloat (..),
 ) where
 
 import Control.Applicative
@@ -60,15 +57,11 @@ class
     , Read x
     , PrintfArg x
     , Default x
-    , Integral x
-    , Enum x
-    , Eq x
+    -- , Eq x
     , Num x
-    , Bits x
     , Validity x
-    , FixedPointCompatible x
-    , FloatPointCompatible x
     , ToJSON x
+    , Real x
     ) =>
     Val x
     where
@@ -170,9 +163,9 @@ class Default x => DefaultX u x | u -> x where
 {- | Type class for values, which contain information about fractional part of
 value (for fixed point arithmetics).
 -}
-class FixedPointCompatible a where
-    scalingFactorPower :: a -> Integer
-    fractionalBitSize :: a -> Int
+class (Integral x, Bits x) => FixedPointCompatible x where
+    scalingFactorPower :: x -> Integer
+    fractionalBitSize :: x -> Int
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
@@ -224,7 +217,7 @@ instance (Num x, Validity x) => Num (Attr x) where
 instance (Real x, Validity x) => Real (Attr x) where
     toRational Attr{value} = toRational value
 
-instance Val x => Integral (Attr x) where
+instance (Integral x, Val x) => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
         let (minB, maxB) = minMaxRaw' (dataWidth b `shiftR` 1)
@@ -265,12 +258,9 @@ instance Val x => Val (Attr x) where
     verilogHelper Attr{value} = verilogHelper value
     verilogAssertRE Attr{value} = verilogAssertRE value
 
-instance FixedPointCompatible x => FixedPointCompatible (Attr x) where
+instance (FixedPointCompatible x, Val x) => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
     fractionalBitSize Attr{value} = fractionalBitSize value
-
-instance FloatPointCompatible x => FloatPointCompatible (Attr x) where
-    (./.) Attr{value = x, invalid = a} Attr{value = y, invalid = b} = Attr{value = x ./. y, invalid = a || b}
 
 instance ToJSON x => ToJSON (Attr x) where
     toJSON Attr{value} = toJSON value
@@ -281,9 +271,6 @@ instance FixedPointCompatible Int where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
 
-instance FloatPointCompatible Int where
-    x ./. y = x `div` y
-
 instance Val Int where
     dataWidth x = finiteBitSize x
 
@@ -293,45 +280,49 @@ instance Val Int where
 
     dataLiteral = showText
 
-newtype MyFloat = MyFloat {float :: Float} deriving (Show, Read, Eq, Ord, Num, PrintfArg, Default, Validity, Enum, ToJSON, Fractional, RealFrac, Real)
-
-instance Val MyFloat where
+instance Val Float where
     dataWidth _ = 4
 
-    rawData (MyFloat x) = toInteger $ castFloatToWord32 x
+    rawData x = toInteger $ castFloatToWord32 x
     rawAttr _ = 0
-    fromRaw x _ = MyFloat $ castWord32ToFloat $ fromInteger x
+    fromRaw x _ = castWord32ToFloat $ fromInteger x
 
     dataLiteral = showText
 
-class FloatPointCompatible a where
-    (./.) :: a -> a -> a
+    verilogHelper x =
+        [__i|
+            task traceWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %d %d\t", actualData, actualAttr);
+                    $display();
+                end
+            endtask // traceWithAttr
 
-instance FloatPointCompatible MyFloat where
-    (MyFloat x) ./. (MyFloat y) = MyFloat{float = x / y}
-
-instance Integral MyFloat where
-    quotRem = error "Using quotrem on Float value"
-    toInteger = floor
-
-instance Bits MyFloat where
-    (.&.) _ _ = error "Using (.&.) on Float value"
-    (.|.) _ _ = error "Using (.|.) on Float value"
-    xor   _ _ = error "Using xor on Float value"
-    complement _ = error "Using complement on Float value"
-    shift _ _ = error "Using shift on Float value"
-    rotate _ _ = error "Using rotate on Float value"
-    bitSize _ = 32
-    bitSizeMaybe _ = Just 32
-    isSigned _ = True
-    testBit MyFloat{float} a = testBit (castFloatToWord32 float) a
-    bit _ = error "Using bit on Float value"
-    popCount _ = error "Using popCount on Float value"
-
-
-instance FixedPointCompatible MyFloat where
-    scalingFactorPower _ = error "Using scalingFactorPower on Float value"
-    fractionalBitSize _ = error "Using fractionalBitSize on Float value"
+            task assertWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                input [#{ dataWidth x }-1:0] expectData;
+                input [#{ attrWidth x }-1:0] expectAttr;
+                input [256*8-1:0] var; // string
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %.3f %.3f\t", actualData, actualAttr);
+                    $write("expect: %.3f %.3f\t", expectData, expectAttr);
+                    $write("var: %0s\t", var);
+                    if ( actualData != expectData || actualAttr != expectAttr
+                        || ( actualData === 'dx && !actualAttr[0] )
+                        ) $write("FAIL");
+                    $display();
+                end
+            endtask // assertWithAttr
+        |]
 
 -- | Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
@@ -399,12 +390,9 @@ instance KnownNat w => Val (IntX w) where
 
     dataLiteral (IntX x) = showText x
 
-instance FixedPointCompatible (IntX w) where
+instance KnownNat w => FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
-
-instance FloatPointCompatible (IntX w) where
-    (IntX a) ./. (IntX b) = IntX $ a `div` b
 
 instance ToJSON (IntX w) where
     toJSON (IntX x) = toJSON x
@@ -552,9 +540,6 @@ instance (KnownNat m, KnownNat b) => FixedPointCompatible (FX m b) where
         let m = natVal (Proxy :: Proxy m)
             b = natVal (Proxy :: Proxy b)
          in b - m
-
-instance FloatPointCompatible (FX m b) where
-    (FX x) ./. (FX y) = FX $ x `div` y
 
 instance (KnownNat m, KnownNat b) => Real (FX m b) where
     toRational x@FX{rawFX} = rawFX % 2 ^ scalingFactorPower x
