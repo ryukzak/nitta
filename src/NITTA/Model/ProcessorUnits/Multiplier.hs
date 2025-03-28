@@ -353,7 +353,7 @@ import Prettyprinter
 {- | It is a PU model state representation, which describes each state of
 synthesis model for that PU.
 -}
-data Multiplier v x t = Multiplier
+data FixedPointCompatible x => Multiplier v x t = Multiplier
     { remain :: [F v x]
     {- ^ List of the assigned but not processed functions. To execute a
     function:
@@ -388,7 +388,7 @@ data Multiplier v x t = Multiplier
     -}
     }
 
-instance VarValTime v x t => Pretty (Multiplier v x t) where
+instance (VarValTime v x t, FixedPointCompatible x) => Pretty (Multiplier v x t) where
     pretty Multiplier{remain, targets, sources, currentWork, process_, isMocked} =
         [__i|
             Multiplier:
@@ -415,16 +415,16 @@ multiplier mock =
         }
 
 -- | Default initial state of multiplier PU model.
-instance Time t => Default (Multiplier v x t) where
+instance (Time t, FixedPointCompatible x) => Default (Multiplier v x t) where
     def = multiplier True
 
-instance Default x => DefaultX (Multiplier v x t) x
+instance (Default x, FixedPointCompatible x) => DefaultX (Multiplier v x t) x
 
 {- | This class is allowed to extract all bound functions. It has a very simple
 implementation: we take process description (all planned functions), and
 function in progress, if it is.
 -}
-instance Ord t => WithFunctions (Multiplier v x t) (F v x) where
+instance (Ord t, FixedPointCompatible x) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{process_, remain, currentWork} =
         functions process_
             ++ remain
@@ -437,7 +437,7 @@ instance Ord t => WithFunctions (Multiplier v x t) (F v x) where
 - dependencies of all remain functions from the currently evaluated function
   (if it is).
 -}
-instance Var v => Locks (Multiplier v x t) v where
+instance (Var v, FixedPointCompatible x) => Locks (Multiplier v x t) v where
     locks Multiplier{remain, sources, targets} =
         [ Lock{lockBy, locked}
         | locked <- sources
@@ -476,7 +476,7 @@ From the CAD point of view, bind looks like:
 
 Binding can be done either gradually due synthesis process at the start.
 -}
-instance VarValTime v x t => ProcessorUnit (Multiplier v x t) v x t where
+instance (VarValTime v x t, FixedPointCompatible x) => ProcessorUnit (Multiplier v x t) v x t where
     tryBind f pu@Multiplier{remain}
         | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
@@ -534,7 +534,7 @@ It includes three cases:
   find the selected function, 'execute' it, and do a recursive call with the
   same decision.
 -}
-instance VarValTime v x t => EndpointProblem (Multiplier v x t) v t where
+instance (VarValTime v x t, FixedPointCompatible x) => EndpointProblem (Multiplier v x t) v t where
     endpointOptions pu@Multiplier{targets}
         | not $ null targets =
             let at = nextTick pu ... maxBound
@@ -673,7 +673,7 @@ instance IOConnected (Multiplier v x t) where
 
 - Hardware instance in the upper structure element.
 -}
-instance VarValTime v x t => TargetSystemComponent (Multiplier v x t) where
+instance (VarValTime v x t, FixedPointCompatible x) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
     hardware _tag Multiplier{isMocked} =
@@ -730,7 +730,7 @@ process. You can see tests in @test/Spec.hs@. Testbench contains:
 - The sequence of bus state checks in which we compare actual values with the
   results of the functional simulation.
 -}
-instance VarValTime v x t => Testable (Multiplier v x t) v x where
+instance (VarValTime v x t, FixedPointCompatible x) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench

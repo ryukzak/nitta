@@ -19,7 +19,7 @@ import Data.Default (Default (def))
 import Data.HashMap.Internal.Strict (HashMap)
 import Data.Text qualified as T
 import GHC.Generics (Generic)
-import NITTA.Intermediate.Value (Val)
+import NITTA.Intermediate.Value (Val, FixedPointCompatible)
 import NITTA.Intermediate.Variable (Var)
 import NITTA.Model.Networks.Bus (
     BusNetwork,
@@ -103,7 +103,7 @@ newtype MicroarchitectureConf = MicroarchitectureConf
 instance FromJSON MicroarchitectureConf
 instance ToJSON MicroarchitectureConf
 
-mkMicroarchitecture :: (Val v, Var x, ToJSON a, ToJSON x) => IOSynchronization -> HashMap T.Text a -> BusNetwork T.Text x v Int
+mkMicroarchitecture :: (Val x, Var v, ToJSON a, ToJSON v, FixedPointCompatible x) => IOSynchronization -> HashMap T.Text a -> BusNetwork T.Text v x Int
 mkMicroarchitecture ioSync toml =
     let addPU proto
             | proto = addCustomPrototype
