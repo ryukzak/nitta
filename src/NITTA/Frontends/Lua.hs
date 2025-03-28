@@ -3,6 +3,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-incomplete-uni-patterns #-}
 
 {- |
@@ -81,7 +83,7 @@ module NITTA.Frontends.Lua (
     translateLua,
     FrontendResult (..),
     TraceVar (..),
-
+    TranslatableLua (..),
     -- * Internal
     LuaAlgBuilder (..),
     LuaStatement (..),
@@ -430,44 +432,39 @@ findStartupFunction _ = error "can't find startup function in lua source code"
 
 getLuaBlockFromSources src = either (\e -> error $ "Exception while parsing Lua sources: " <> show e) id $ parseText chunk src
 
-alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do
-    mapM addToGraph algGraph
-    where
-        addToGraph item = do
-            graph <- get
-            put (addFuncToDataFlowGraph (function2nitta item) graph)
-            return $ fromString ""
-        function2nitta LuaStatement{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer (fromText i) $ output o
-        function2nitta LuaStatement{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer (fromText i) $ output o
-        function2nitta LuaStatement{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x $ output o
-        function2nitta LuaStatement{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send (fromText i)
-        function2nitta LuaStatement{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "divide", fIn = [d, n], fOut = [q], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) []
-        function2nitta LuaStatement{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)
-        function2nitta LuaStatement{fName = "floatDivide", fIn = [d, n], fOut = [q], fValues = [], fInt = []} = F.floatDivision (fromText d) (fromText n) (output q)
-        function2nitta LuaStatement{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o
-        function2nitta LuaStatement{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o
-        function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c
-        function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
-        function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
-        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpLt (fromText a) (fromText b) (output c)
-        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpLte (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpEq (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGte (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGt (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
-        function2nitta LuaStatement{fName = "if_mux", fIn = [cond, b, a], fOut = [c], fValues = [], fInt = []} = F.mux [fromText a, fromText b] (fromText cond) $ output c
-        function2nitta f = error $ "function not found: " <> show f
-        output v =
-            case HM.lookup v algVars of
-                Just names -> map fromText names
-                _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
+class Val x => TranslatableLua x where
+    luaStat2function :: Var v => LuaStatement x -> (LuaValueInstance -> [v]) -> F v x
 
-translateLua :: (Var v, Val x) => T.Text -> FrontendResult v x
+instance (FixedPointCompatible x, Val x) => TranslatableLua x where
+    luaStat2function LuaStatement{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []}       output = F.buffer (fromText i) $ output o
+    luaStat2function LuaStatement{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} output = F.brokenBuffer (fromText i) $ output o
+    luaStat2function LuaStatement{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []}     output = F.constant x $ output o
+    luaStat2function LuaStatement{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []}          _ = F.send (fromText i)
+    luaStat2function LuaStatement{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []}       output = F.add (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "sub", fIn = [a, b], fOut = [c], fValues = [], fInt = []}       output = F.sub (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "multiply", fIn = [a, b], fOut = [c], fValues = [], fInt = []}  output = F.multiply (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "divide", fIn = [d, n], fOut = [q], fValues = [], fInt = []}    output = F.division (fromText d) (fromText n) (output q) []
+    luaStat2function LuaStatement{fName = "divide", fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} output = F.division (fromText d) (fromText n) (output q) (output r)
+    luaStat2function LuaStatement{fName = "neg", fIn = [i], fOut = [o], fValues = [], fInt = []}          output = F.neg (fromText i) $ output o
+    luaStat2function LuaStatement{fName = "receive", fIn = [], fOut = [o], fValues = [], fInt = []}       output = F.receive $ output o
+    luaStat2function LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]}      output = F.shiftL s (fromText a) $ output c
+    luaStat2function LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]}      output = F.shiftR s (fromText a) $ output c
+    luaStat2function LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []}        output = F.loop x (fromText a) $ output c
+    luaStat2function LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []}  output = F.cmp F.CmpLt (fromText a) (fromText b) (output c)
+    luaStat2function LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} output = F.cmp F.CmpLte (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []}     output = F.cmp F.CmpEq (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} output = F.cmp F.CmpGte (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} output = F.cmp F.CmpGt (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} output = F.logicAnd (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} output = F.logicOr (fromText a) (fromText b) $ output c
+    luaStat2function LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} output = F.logicNot (fromText a) $ output c
+    luaStat2function f _ = error $ "function not found: " <> show f
+
+instance TranslatableLua Float where
+    luaStat2function LuaStatement{fName = "floatDivide", fIn = [d, n], fOut = [q], fValues = [], fInt = []} output = F.floatDivision (fromText d) (fromText n) (output q)
+    luaStat2function f _ = error $ "function not found: " <> show f
+
+translateLua :: (Var v, TranslatableLua x) => T.Text -> FrontendResult v x
 translateLua src =
     let syntaxTree = getLuaBlockFromSources src
         luaAlgBuilder = buildAlg syntaxTree
@@ -482,5 +479,18 @@ translateLua src =
                         $ HM.toList
                         $ algStartupArgs algBuilder
              in map (\name -> ([name <> "^0"], Nothing)) startupArgNames <> traceFuncs
+
+        alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do
+            mapM addToGraph algGraph
+            where
+                addToGraph item = do
+                    graph <- get
+                    put (addFuncToDataFlowGraph (luaStat2function item output) graph)
+                    return $ fromString ""
+                
+                output v =
+                    case HM.lookup v algVars of
+                        Just names -> map fromText names
+                        _ -> error $ "variable not found : " <> show v <> ", buffer : " <> show algLatestLuaValueInstance
 
 getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) <- traceFuncs, var <- vars]
