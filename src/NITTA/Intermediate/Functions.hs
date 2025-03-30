@@ -81,11 +81,9 @@ import Data.Map qualified as M
 import Data.Set (elems, fromList, union)
 import Data.Set qualified as S
 import Data.Typeable
-import Debug.Trace
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
-import Prelude hiding (EQ, GT, LT)
 
 {- | Loop -- function for transfer data between computational cycles.
 Let see the simple example with the following implementation of the
@@ -585,11 +583,10 @@ data Mux v x = Mux [I v] [I v] (O v) deriving (Typeable, Eq)
 
 instance Var v => Patch (Mux v x) (v, v) where
     patch (old, new) (Mux ins sel out) =
-        trace "mux 2" $
-            Mux (patch (old, new) ins) sel (patch (old, new) out)
+        Mux (patch (old, new) ins) sel (patch (old, new) out)
 
 instance Var v => Locks (Mux v x) v where
-    locks (Mux{}) = trace "mux 6" $ []
+    locks (Mux{}) = []
 
 instance Label (Mux v x) where
     label (Mux{}) = "Mux"
@@ -598,25 +595,22 @@ instance Var v => Show (Mux v x) where
 
 instance Var v => Function (Mux v x) v where
     inputs (Mux ins cond _) =
-        trace ("mux 3: " ++ show ins ++ show cond) $
-            let res = S.unions $ map variables (ins ++ cond)
-             in res
-    outputs (Mux _ _ output) = trace "mux 4" $ variables output
+        S.unions $ map variables (ins ++ cond)
+    outputs (Mux _ _ output) = variables output
 
 instance (Var v, B.Bits x) => FunctionSimulation (Mux v x) v x where
     simulate cntx (Mux ins sels (O outs)) =
-        trace "mux 1" $
-            let
-                selVars = map (\(I v) -> v) sels
-                selValues = map (getCntx cntx) selVars
-                activeIndices = [i | (i, val) <- zip [0 ..] selValues, val == B.bit 1]
-                selectedIndex = case activeIndices of
-                    [] -> 0
-                    (i : _) -> i
-                inputVars = map (\(I v) -> v) ins
-                selectedValue = getCntx cntx (inputVars !! selectedIndex)
-             in
-                [(outVar, selectedValue) | outVar <- S.elems outs]
+        let
+            selVars = map (\(I v) -> v) sels
+            selValues = map (getCntx cntx) selVars
+            activeIndices = [i | (i, val) <- zip [0 ..] selValues, val == B.bit 1]
+            selectedIndex = case activeIndices of
+                [] -> 0
+                (i : _) -> i
+            inputVars = map (\(I v) -> v) ins
+            selectedValue = getCntx cntx (inputVars !! selectedIndex)
+         in
+            [(outVar, selectedValue) | outVar <- S.elems outs]
 
 mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
-mux a b c d = trace "mux 5" $ packF $ Mux [I a, I b] [I c] $ O $ fromList d
+mux a b c d = packF $ Mux [I a, I b] [I c] $ O $ fromList d

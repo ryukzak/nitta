@@ -16,7 +16,6 @@ where
 
 import Control.Monad (when)
 
--- import Data.Char (intToDigit)
 import Data.Default (Default, def)
 import Data.Foldable as DF (Foldable (null), find)
 import Data.List (partition, (\\))
@@ -321,9 +320,6 @@ instance OptimizeAccumProblem (LUT v x t) v x
 instance OptimizeLutProblem (LUT v x t) v x
 
 instance ResolveDeadlockProblem (LUT v x t) v x
-
--- instance Var v => Locks (LUT v x t) v where
---     locks _ = []
 
 instance Var v => Locks (LUT v x t) v where
     locks LUT{remain, sources, targets} =
