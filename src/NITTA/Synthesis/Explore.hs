@@ -97,16 +97,16 @@ subForestIO
         -- also it looks inelegant, is there a way to refactor it?
         let modelNames = mapMaybe (T.stripPrefix mlScoreKeyPrefix) nodeScores
         if
-            | null subForest -> return subForest
-            | null nodeScores -> return subForest
-            | null modelNames -> return subForest
-            | otherwise -> do
-                MlBackendServer{baseUrl} <- mlBackendGetter
-                case baseUrl of
-                    Nothing -> return subForest
-                    Just mlBackendBaseUrl -> do
-                        -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
-                        foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
+                | null subForest -> return subForest
+                | null nodeScores -> return subForest
+                | null modelNames -> return subForest
+                | otherwise -> do
+                    MlBackendServer{baseUrl} <- mlBackendGetter
+                    case baseUrl of
+                        Nothing -> return subForest
+                        Just mlBackendBaseUrl -> do
+                            -- (addMlScoreToSubforestSkipErrorsIO subForestAccum modelName) gets called for each modelName
+                            foldM (addMlScoreToSubforestSkipErrorsIO mlBackendBaseUrl) subForest modelNames
         where
             traceProcessedNode Tree{sID, sDecision} =
                 debugM "NITTA.Synthesis" $

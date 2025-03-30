@@ -61,20 +61,14 @@ module NITTA.Intermediate.Functions (
 
     -- * Logic
     LogicFunction (..),
-    Op (..),
-    logicCompare,
     logicAnd,
     logicOr,
     logicNot,
-    -- andLut,
-    -- orLut,
-    -- notLut,
-    -- lessThan,
-    -- lessThanOrEqual,
-    -- equal,
-    -- greaterThanOrEqual,
-    -- greaterThan,
-    -- notEqual
+    LogicCompare (..),
+    Op (..),
+    logicCompare,
+    Mux (..),
+    mux,
 ) where
 
 import Data.Bits (complement, (.&.), (.|.))
@@ -87,6 +81,7 @@ import Data.Map qualified as M
 import Data.Set (elems, fromList, union)
 import Data.Set qualified as S
 import Data.Typeable
+import Debug.Trace
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
@@ -472,12 +467,11 @@ data LogicFunction v x
     = LogicAnd (I v) (I v) (O v)
     | LogicOr (I v) (I v) (O v)
     | LogicNot (I v) (O v)
-    | LogicCompare Op (I v) (I v) (O v)
     deriving (Typeable, Eq)
 
 deriving instance (Data v, Data (I v), Data (O v), Data x) => Data (LogicFunction v x)
 
-data Op = EQ | LT | LTE | GT | GTE
+data Op = CEQ | CLT | CLTE | CGT | CGTE
     deriving (Typeable, Eq, Show, Data)
 
 logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
@@ -489,37 +483,29 @@ logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ fromList c
 logicNot :: (Var v, Val x) => v -> [v] -> F v x
 logicNot a c = packF $ LogicNot (I a) $ O $ fromList c
 
-logicCompare :: (Var v, Val x) => Op -> v -> v -> [v] -> F v x
-logicCompare op a b c = packF $ LogicCompare op (I a) (I b) $ O $ fromList c
 instance Label (LogicFunction v x) where
     label LogicAnd{} = "and"
     label LogicOr{} = "or"
     label LogicNot{} = "not"
-    label (LogicCompare op _ _ _) = show op
 
 instance Var v => Patch (LogicFunction v x) (v, v) where
     patch diff (LogicAnd a b c) = LogicAnd (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicOr a b c) = LogicOr (patch diff a) (patch diff b) (patch diff c)
     patch diff (LogicNot a b) = LogicNot (patch diff a) (patch diff b)
-    patch diff (LogicCompare op a b c) = LogicCompare op (patch diff a) (patch diff b) (patch diff c)
 
 instance Var v => Show (LogicFunction v x) where
     show (LogicAnd a b o) = show a <> " and " <> show b <> " = " <> show o
     show (LogicOr a b o) = show a <> " or " <> show b <> " = " <> show o
     show (LogicNot a o) = "not " <> show a <> " = " <> show o
-    show (LogicCompare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
 
 instance Var v => Function (LogicFunction v x) v where
     inputs (LogicOr a b _) = variables a `S.union` variables b
     inputs (LogicAnd a b _) = variables a `S.union` variables b
     inputs (LogicNot a _) = variables a
-    inputs (LogicCompare _ a b _) = variables a `S.union` variables b
     outputs (LogicOr _ _ o) = variables o
     outputs (LogicAnd _ _ o) = variables o
     outputs (LogicNot _ o) = variables o
-    outputs (LogicCompare _ _ _ o) = variables o
-
-instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicFunction v x) v x where
+instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
@@ -534,22 +520,41 @@ instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicFunction v x) v x 
         let x1 = cntx `getCntx` a
             y = complement x1
          in [(v, y) | v <- S.elems o]
+
+instance Var v => Locks (LogicFunction v x) v where
+    locks = inputsLockOutputs
+
+data LogicCompare v x = LogicCompare Op (I v) (I v) (O v) deriving (Typeable, Eq)
+instance Label (LogicCompare v x) where
+    label (LogicCompare op _ _ _) = show op
+instance Var v => Patch (LogicCompare v x) (v, v) where
+    patch diff (LogicCompare op a b c) = LogicCompare op (patch diff a) (patch diff b) (patch diff c)
+
+instance Var v => Show (LogicCompare v x) where
+    show (LogicCompare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
+
+instance Var v => Function (LogicCompare v x) v where
+    inputs (LogicCompare _ a b _) = variables a `S.union` variables b
+    outputs (LogicCompare _ _ _ o) = variables o
+instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicCompare v x) v x where
     simulate cntx (LogicCompare op (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
             y = if op2func op x1 x2 then trueValue else falseValue
          in [(v, y) | v <- S.elems o]
         where
-            op2func EQ = (==)
-            op2func LT = (<)
-            op2func LTE = (<=)
-            op2func GT = (>)
-            op2func GTE = (>=)
-            trueValue = B.bit 0
-            falseValue = B.zeroBits
-
-instance Var v => Locks (LogicFunction v x) v where
+            op2func CEQ = (==)
+            op2func CLT = (<)
+            op2func CLTE = (<=)
+            op2func CGT = (>)
+            op2func CGTE = (>=)
+            trueValue = B.bit 1
+            falseValue = B.bit 0
+instance Var v => Locks (LogicCompare v x) v where
     locks = inputsLockOutputs
+
+logicCompare :: (Var v, Val x) => Op -> v -> v -> [v] -> F v x
+logicCompare op a b c = packF $ LogicCompare op (I a) (I b) $ O $ fromList c
 
 -- Look Up Table
 data Lut v x = Lut (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
@@ -576,22 +581,42 @@ instance (Var v, Num x, Eq x) => FunctionSimulation (Lut v x) v x where
             result = M.findWithDefault False inputValues table -- todo add default value
          in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
 
--- Lut :: (Var v, Val x) => [( [Bool], Bool)] -> [v] -> v -> F v x
--- Lut table ins output = packF $ Lut (M.fromList table) (map I ins) (O $ S.singleton output)
+data Mux v x = Mux [I v] [I v] (O v) deriving (Typeable, Eq)
 
--- andLut a b c = Lut  [ ([f, f], f)
---                     , ([f, t], f)
---                     , ([t, f], f)
---                     , ([t, t], t)
---                     ] [a, b] c
---   where (t, f) = (True, False)
+instance Var v => Patch (Mux v x) (v, v) where
+    patch (old, new) (Mux ins sel out) =
+        trace "mux 2" $
+            Mux (patch (old, new) ins) sel (patch (old, new) out)
 
--- orLut a b c = Lut  [([f, f], f),
---                     ([f, t], t),
---                     ([t, f], t),
---                     ([t, t], t)
---                     ] [a, b] c where (t, f) = (True, False)
+instance Var v => Locks (Mux v x) v where
+    locks (Mux{}) = trace "mux 6" $ []
 
--- notLut a b = Lut[([f], t),
---                  ([t], f)
---                 ] [a] b where (t, f) = (True, False)
+instance Label (Mux v x) where
+    label (Mux{}) = "Mux"
+instance Var v => Show (Mux v x) where
+    show (Mux ins sel output) = "Mux " <> show ins <> " " <> show sel <> " = " <> show output
+
+instance Var v => Function (Mux v x) v where
+    inputs (Mux ins cond _) =
+        trace ("mux 3: " ++ show ins ++ show cond) $
+            let res = S.unions $ map variables (ins ++ cond)
+             in res
+    outputs (Mux _ _ output) = trace "mux 4" $ variables output
+
+instance (Var v, B.Bits x) => FunctionSimulation (Mux v x) v x where
+    simulate cntx (Mux ins sels (O outs)) =
+        trace "mux 1" $
+            let
+                selVars = map (\(I v) -> v) sels
+                selValues = map (getCntx cntx) selVars
+                activeIndices = [i | (i, val) <- zip [0 ..] selValues, val == B.bit 1]
+                selectedIndex = case activeIndices of
+                    [] -> 0
+                    (i : _) -> i
+                inputVars = map (\(I v) -> v) ins
+                selectedValue = getCntx cntx (inputVars !! selectedIndex)
+             in
+                [(outVar, selectedValue) | outVar <- S.elems outs]
+
+mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
+mux a b c d = trace "mux 5" $ packF $ Mux [I a, I b] [I c] $ O $ fromList d

@@ -241,7 +241,7 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
 
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
     tryBind f pu@LUT{remain}
-        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain}
+        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain} -- check
         | Just F.LogicAnd{} <- castF f = Right pu{remain = f : remain}
         | Just F.LogicOr{} <- castF f = Right pu{remain = f : remain}
         | Just F.LogicNot{} <- castF f = Right pu{remain = f : remain}

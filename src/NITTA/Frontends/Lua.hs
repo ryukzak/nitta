@@ -305,6 +305,10 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
         parseTraceArg (String s) = s
         parseTraceArg (PrefixExp (PEVar (VarName (Name name)))) = name
         parseTraceArg _ = undefined
+-- processStatement _fn (If [(exp, block)] Nothing) = do
+--     varName <- parseExpArg "if" exp
+--     luaAlgBuilder@LuaAlgBuilder{algGraph} <- get
+--     put luaAlgBuilder{algGraph = LuaStatement{fIn = [varName], fOut = [], fValues = [], fName = "if", fInt = []} : algGraph}
 processStatement _ _stat = error $ "unknown statement: " <> show _stat
 
 addFunction funcName [i] fOut | toString funcName == "buffer" = do
@@ -316,6 +320,8 @@ addFunction funcName [i] _ | toString funcName == "send" = do
     put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
     addVariable [] fOut [] "receive" []
+addFunction "mux" [cond, a, b] [c] = do
+    addVariable [cond, a, b] [c] [] "mux" []
 addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
 
 addConstant (Number _valueType valueString) = do
@@ -447,11 +453,13 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
-        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.LT (fromText a) (fromText b) (output c)
-        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.LTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.EQ (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.GTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.GT (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CLT (fromText a) (fromText b) (output c)
+        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CLTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CEQ (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CGTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CGT (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "mux", fIn = [cond, a, b], fOut = [c], fValues = [], fInt = []} = F.mux (fromText a) (fromText b) (fromText cond) $ output c
+        -- function2nitta LuaStatement{fName = "if", fIn = [a, b, c], fOut = [d], fValues = [], fInt = []} = F.mux (fromText a) (fromText b) (fromText c) $ output d -- todo
         -- function2nitta LuaStatement{fName = "notEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.notEqual (fromText a) (fromText b) $ output c
         function2nitta f = error $ "function not found: " <> show f
         output v =

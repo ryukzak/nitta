@@ -23,7 +23,6 @@ import Data.List qualified as L
 import Data.Map qualified as M
 import Data.Maybe
 import Data.Set qualified as S
-import Debug.Trace
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -45,29 +44,21 @@ class OptimizeLutProblem u v x | u -> v x where
 
 instance (Var v, Val x) => OptimizeLutProblem [F v x] v x where
     optimizeLutOptions fs =
-        trace ("optimizeLutOptions: input functions = " ++ show fs) $
-            let supportedFunctions = filter isSupportedByLut fs
+        let supportedFunctions = filter isSupportedByLut fs
 
-                rNew =
-                    if not (null supportedFunctions)
-                        && isOptimizationNeeded supportedFunctions
-                        then optimizeCluster supportedFunctions fs
-                        else []
-                result =
-                    [ OptimizeLut{rOld = supportedFunctions, rNew}
-                    | not (null rNew) && S.fromList supportedFunctions /= S.fromList rNew
-                    ]
-             in trace
-                    ( "optimizeLutOptions: supportedFunctions = "
-                        ++ show supportedFunctions
-                        ++ "\nresult: "
-                        ++ show result
-                    )
-                    result
+            rNew =
+                if not (null supportedFunctions)
+                    && isOptimizationNeeded supportedFunctions
+                    then optimizeCluster supportedFunctions fs
+                    else []
+            result =
+                [ OptimizeLut{rOld = supportedFunctions, rNew}
+                | not (null rNew) && S.fromList supportedFunctions /= S.fromList rNew
+                ]
+         in result
 
-    optimizeLutDecision fs OptimizeLut{rOld, rNew} = do
-        let r = deleteExtraLuts $ (fs L.\\ rOld) <> rNew
-        trace ("optimizeLutDecision: " ++ show r) r
+    optimizeLutDecision fs OptimizeLut{rOld, rNew} =
+        deleteExtraLuts $ (fs L.\\ rOld) <> rNew
 
 deleteExtraLuts fs =
     L.nub
@@ -83,18 +74,16 @@ isOptimizationNeeded fs = countLuts fs > 1 || hasLogicFunctions fs
         hasLogicFunctions fns = any isLogicFunction fns
 
         isLogicFunction f = case castF f of
-            Just LogicAnd{} -> trace "isLogicFunction: LogicAnd" True
-            Just LogicOr{} -> trace "isLogicFunction: LogicOr" True
-            Just LogicNot{} -> trace "isLogicFunction: LogicNot" True
+            Just LogicAnd{} -> True
+            Just LogicOr{} -> True
+            Just LogicNot{} -> True
             _ -> False
 
         isLut f = case castF f of
-            Just lut@(Lut{}) -> trace ("isLut passed: " ++ show lut) True
+            Just (Lut{}) -> True
             _ -> False
 
-        countLuts f = do
-            let res = length $ filter isLut f
-            trace ("countLuts = " ++ show res) res
+        countLuts f = length $ filter isLut f
 
 isSupportedByLut f
     | Just LogicAnd{} <- castF f = True
@@ -104,7 +93,7 @@ isSupportedByLut f
 
 optimizeCluster allFunctions _ =
     let clusters = findMergeClusters allFunctions
-        mergedLuts = trace ("clusters = " ++ show clusters) mapMaybe mergeCluster clusters
+        mergedLuts = mapMaybe mergeCluster clusters
 
         singleFunctions = filter (\f -> isSupportedByLut f && S.size (outputs f) > 1) allFunctions
         singleLuts = mapMaybe convertToLUT singleFunctions

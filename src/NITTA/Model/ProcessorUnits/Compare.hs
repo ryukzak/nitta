@@ -14,7 +14,6 @@ import Data.Default (Default, def)
 import Data.List (partition, (\\))
 import Data.Set qualified as S
 import Data.String.ToString
-import GHC.Generics
 import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
@@ -24,6 +23,7 @@ import Data.Foldable
 import Data.Maybe
 import Data.String.Interpolate
 import Data.Text qualified as T
+import Debug.Trace
 import NITTA.Model.Problems
 import NITTA.Model.Time
 import NITTA.Project
@@ -44,86 +44,83 @@ data Compare v x t = Compare
 
 compare :: Time t => Compare v x t
 compare =
-    Compare
-        { remain = []
-        , targets = []
-        , sources = []
-        , currentWork = Nothing
-        , process_ = def
-        , cmpOp = Nothing
-        }
+    trace "D14" $
+        Compare
+            { remain = []
+            , targets = []
+            , sources = []
+            , currentWork = Nothing
+            , process_ = def
+            , cmpOp = Nothing
+            }
 
 instance VarValTime v x t => ProcessorUnit (Compare v x t) v x t where
     tryBind f pu@Compare{remain}
         | Just F.LogicCompare{} <- castF f =
-            Right
-                pu
-                    { remain = f : remain
-                    }
+            trace "D1" $
+                Right
+                    pu
+                        { remain = trace ("f = " ++ show f) $ f : remain
+                        }
         | otherwise = Left "Unsupported function type for Compare"
 
     process = process_
 
 instance Connected (Compare v x t) where
     data Ports (Compare v x t) = ComparePorts
-        { wrPort :: SignalTag
-        , oePort :: SignalTag
+        { oePort :: SignalTag
+        , wrPort :: SignalTag
         , opSelPort :: [SignalTag]
         }
-        deriving (Show, Generic)
+        deriving (Show)
+
+supportedOpsNum = 5
+selWidth = ceiling (logBase 2 (fromIntegral supportedOpsNum))
 
 instance Controllable (Compare v x t) where
     data Instruction (Compare v x t)
         = Load F.Op
         | Out
-        deriving (Show, Generic)
+        deriving (Show)
 
     data Microcode (Compare v x t) = Microcode
-        { wr :: Bool
-        , oe :: Bool
-        , opSel :: [Bool]
+        { oe :: Bool
+        , wr :: Bool
+        , opSel :: Int -- todo to enum
         }
-        deriving (Show, Eq, Generic)
+        deriving (Show, Eq)
 
     zipSignalTagsAndValues ComparePorts{..} Microcode{..} =
-        [ (wrPort, Bool wr)
-        , (oePort, Bool oe)
-        ]
-            ++ zip opSelPort (map Bool opSel)
+        trace "DD1" $
+            [ (oePort, Bool oe)
+            , (wrPort, Bool wr)
+            ]
+                ++ zipWith (\tag idx -> (tag, Bool (idx == opSel))) opSelPort [0 ..]
+    usedPortTags ComparePorts{oePort, wrPort, opSelPort} = trace "D2" $ oePort : wrPort : opSelPort
 
-    usedPortTags ComparePorts{wrPort, oePort, opSelPort} = wrPort : oePort : opSelPort
-
-    takePortTags (oe : wr : sel) _ = ComparePorts oe wr sel
+    takePortTags (oe : wr : xs) _ = trace "D3" $ ComparePorts oe wr sel
+        where
+            sel = take selWidth xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Var v => Locks (Compare v x t) v where
-    locks Compare{remain, sources, targets} =
-        [ Lock{lockBy, locked}
-        | locked <- sources
-        , lockBy <- targets
-        ]
-            ++ [ Lock{lockBy, locked}
-               | locked <- concatMap (S.elems . variables) remain
-               , lockBy <- sources ++ targets
-               ]
-            ++ concatMap locks remain
-
+    locks _ = []
 instance Default (Microcode (Compare v x t)) where
     def =
         Microcode
             { wr = False
             , oe = False
-            , opSel = [False, False, False, False, False]
+            , opSel = 0
             }
 
 instance UnambiguouslyDecode (Compare v x t) where
     decodeInstruction Out = def{oe = True}
-    decodeInstruction (Load op) = case op of
-        F.EQ -> def{opSel = [True, False, False, False, False], wr = True}
-        F.LT -> def{opSel = [False, True, False, False, False], wr = True}
-        F.LTE -> def{opSel = [False, False, True, False, False], wr = True}
-        F.GT -> def{opSel = [False, False, False, True, False], wr = True}
-        F.GTE -> def{opSel = [False, False, False, False, True], wr = True}
+    decodeInstruction (Load op) = trace "D5" $ case op of
+        F.CEQ -> def{opSel = 0, wr = True}
+        F.CLT -> def{opSel = 1, wr = True}
+        F.CLTE -> def{opSel = 2, wr = True}
+        F.CGT -> def{opSel = 3, wr = True}
+        F.CGTE -> def{opSel = 4, wr = True}
 
 instance Default x => DefaultX (Compare v x t) x
 
@@ -133,20 +130,34 @@ instance Time t => Default (Compare v x t) where
 instance VarValTime v x t => EndpointProblem (Compare v x t) v t where
     endpointOptions pu@Compare{targets}
         | not $ null targets =
-            let at = nextTick pu ... maxBound
-                duration = 1 ... maxBound
-             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
+            trace "D6" $
+                let at = nextTick pu ... maxBound
+                    duration = 1 ... maxBound
+                 in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
     endpointOptions Compare{sources, currentWork = Just f, process_}
         | not $ null sources =
-            let doneAt = inputsPushedAt process_ f + 3
-                at = max doneAt (nextTick process_) ... maxBound
-                duration = 1 ... maxBound
-             in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
-    endpointOptions pu@Compare{remain} = concatMap (endpointOptions . execution pu) remain
+            trace "D7" $
+                let doneAt = inputsPushedAt process_ f + 3
+                    at = max doneAt (nextTick process_) ... maxBound
+                    duration = 1 ... maxBound
+                 in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
+    endpointOptions pu@Compare{remain} = trace "D8:" $ concatMap (\f -> trace ("  f = " ++ show f) $ (endpointOptions . execution pu) f) remain
+
+    -- endpointOptions pu@Compare{remain}
+    --     | null remain = []
+    --     | otherwise =
+    --         concatMap
+    --             ( \f ->
+    --                 if f `elem` remain
+    --                     then endpointOptions (execution pu f)
+    --                     else error "Function not in remain"
+    --             )
+    --             remain
+    -- endpointOptions pu@Compare{remain} = trace "D8:" $ concatMap (\f -> trace ("  f = " ++ show f) $ (endpointOptions . execution pu) f) remain
 
     endpointDecision pu@Compare{targets, cmpOp} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
-        , ([_], targets') <- partition (== v) targets
+        , ([_], targets') <- trace "D9" $ partition (== v) targets
         , --  Computation process planning is carried out.
           let process_' = execSchedule pu $ do
                 -- this is required for correct work of automatically generated tests,
@@ -161,7 +172,7 @@ instance VarValTime v x t => EndpointProblem (Compare v x t) v t where
                 }
     endpointDecision pu@Compare{targets = [], sources, currentWork = Just f, process_} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
-        , let sources' = sources \\ S.elems v
+        , let sources' = trace "D10" $ sources \\ S.elems v
         , sources' /= sources
         , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
         , -- Compututation process planning is carring on.
@@ -180,19 +191,20 @@ instance VarValTime v x t => EndpointProblem (Compare v x t) v t where
                 }
     endpointDecision pu@Compare{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-        , Just f <- find (\f -> v `S.member` variables f) remain =
+        , Just f <- trace "D11" $ find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     endpointDecision pu d = error [i|incorrect decision #{ d } for #{ pretty pu }|]
 
 execution pu@Compare{targets = [], sources = [], remain} f
     | Just (F.LogicCompare op (I a) (I b) (O c)) <- castF f =
-        pu
-            { targets = [a, b]
-            , currentWork = Just f
-            , sources = S.elems c
-            , remain = remain \\ [f]
-            , cmpOp = Just op
-            }
+        trace ("Executing " ++ show f) $
+            pu
+                { targets = [a, b]
+                , currentWork = Just f
+                , sources = S.elems c
+                , remain = filter (/= f) remain -- remain \\ [f]
+                , cmpOp = Just op
+                }
 execution _ f =
     error $
         "Compare: internal execution error. Expected LogicCompare, got: " ++ show f
@@ -237,14 +249,18 @@ instance TargetSystemComponent (Compare v x t) where
             { sigClk
             , ctrlPorts = Just ComparePorts{}
             , valueIn = Just (dataIn, attrIn)
-            , valueOut = Just (dataOut, _)
+            , valueOut = Just (dataOut, attrOut)
             } =
             [__i|pu_compare #{ tag } (
             .clk(#{ sigClk }),
-            .a(#{ dataIn }),
-            .b(#{ attrIn }),
-            .op(#{ attrIn }),
-            .result(#{ dataOut })
+            .oe(#{ dataIn }),
+            .wr(#{ attrIn }),
+            .opSel(#{ attrIn }),
+
+            , .data_in( #{ dataIn } )
+            , .attr_in( #{ attrIn } )
+            , .data_out( #{ dataOut } )
+            , .attr_out( #{ attrOut } )
             );
         |]
     hardwareInstance _title _pu _env = error "internal error"
