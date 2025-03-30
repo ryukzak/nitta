@@ -16,9 +16,11 @@ where
 
 import Control.Monad (when)
 
+import Data.Bits (Bits (testBit))
 import Data.Default (Default, def)
 import Data.Foldable as DF (Foldable (null), find)
 import Data.List (partition, (\\))
+import Data.Map qualified as M
 import Data.Maybe
 import Data.Set qualified as S
 import Data.String.Interpolate
@@ -74,20 +76,24 @@ instance Default (Microcode (LUT v x t)) where
         Microcode
             { oeSignal = False
             , wrSignal = False
-            , selSignal = False
+            , selSignal = Nothing
             }
 
 instance Connected (LUT v x t) where
     data Ports (LUT v x t) = LUTPorts
         { oe :: SignalTag
         , wr :: SignalTag
-        , sel :: SignalTag -- todo [SignalTag] ?
+        , sel :: [SignalTag]
         }
         deriving (Show)
 
 instance IOConnected (LUT v x t) where
     data IOPorts (LUT v x t) = LUTIO
         deriving (Show)
+
+supportedLOpsNum :: Integer
+supportedLOpsNum = 1 -- todo should be calculated from LUT size
+selWidth = ceiling (logBase 2 (fromIntegral supportedLOpsNum) :: Double) :: Int
 
 instance Controllable (LUT v x t) where
     data Instruction (LUT v x t)
@@ -100,19 +106,30 @@ instance Controllable (LUT v x t) where
         , -- \| Downloading from mUnit signal.
           wrSignal :: Bool
         , -- \| Function selector signal.
-          selSignal :: Bool
+          selSignal :: Maybe Int
         }
         deriving (Show, Eq, Ord)
 
     zipSignalTagsAndValues LUTPorts{..} Microcode{..} =
         [ (oe, Bool oeSignal)
         , (wr, Bool wrSignal)
-        , (sel, Bool selSignal)
         ]
+            ++ sel'
+        where
+            sel' =
+                map
+                    ( \(linkId, ix) ->
+                        ( linkId
+                        , maybe Undef (Bool . (`testBit` ix)) selSignal
+                        )
+                    )
+                    $ zip (reverse sel) [0 ..]
 
-    usedPortTags LUTPorts{oe, wr, sel} = [oe, wr, sel]
+    usedPortTags LUTPorts{oe, wr, sel} = oe : wr : sel
 
-    takePortTags (oe : wr : sel : _) _ = LUTPorts oe wr sel
+    takePortTags (oe : wr : xs) _ = LUTPorts oe wr sel
+        where
+            sel = take selWidth xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
@@ -125,61 +142,25 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
     moduleName _title _pu = T.pack "pu_lut"
     hardware _tag _pu = FromLibrary "pu_lut.v"
 
-    software _ _ = Empty
+    software tag pu@LUT{currentWork} =
+        case currentWork of -- todo should fix for several functions
+            Just f
+                | Just (F.Lut lutMap _ (O _)) <- castF f ->
+                    let
+                        entries =
+                            map
+                                ( \(inp, out) ->
+                                    boolToBits inp <> [if out then '1' else '0']
+                                )
+                                (M.toList lutMap)
 
-    --   software tag lut@LUT {..} =
-    -- let functions = _process lut
-
-    --     _process LUT {process_ = Process {steps}} =
-    --       [f | Step _ _ (IntermediateStep f) <- steps]
-
-    --     truthTables = map dummyTruthTable functions
-
-    --     selectorSize = ceiling (logBase 2 (fromIntegral $ length truthTables))
-    --     maxInputSize = 2
-    --     outputSize = 1
-
-    --     indexedTables = zip [0 ..] truthTables
-    --     memoryDump = unlines $ concatMap tableToMemory indexedTables
-    --     tableToMemory (index, table) = map (formatEntry index) table
-
-    --     formatEntry index (inputs, output) =
-    --       toBinary index selectorSize
-    --         ++ "_"
-    --         ++ toBinaryList inputs maxInputSize
-    --         ++ "_"
-    --         ++ toBinary output outputSize
-
-    --     toBinary value size = replicate (size - length bin) '0' ++ bin
-    --       where
-    --         bin = showIntAtBase' value
-    --     toBinaryList inputs size =
-    --       let bin = concatMap show inputs
-    --        in replicate (size - length bin) '0' ++ bin
-
-    --     dummyTruthTable _ =
-    --       [ ([0, 0], 0),
-    --         ([0, 1], 1),
-    --         ([1, 0], 1),
-    --         ([1, 1], 1)
-    --       ]
-
-    --     showIntAtBase' :: Int -> String
-    --     showIntAtBase' 0 = "0"
-    --     showIntAtBase' n =
-    --       reverse $
-    --         unfoldr
-    --           ( \x ->
-    --               if x == 0
-    --                 then Nothing
-    --                 else Just (intToDigit (x `mod` 2), x `div` 2)
-    --           )
-    --           n
-    --  in Aggregate
-    --       (Just $ toString mn)
-    --       [Immediate (toString mn <> "_lut.dump") $ T.pack memoryDump]
-    -- where
-    --   mn = moduleName tag lut
+                        memoryDump = T.unlines $ map T.pack entries
+                     in
+                        Immediate (toString $ softwareFile tag pu) memoryDump
+            _ -> Empty
+        where
+            boolToBits :: [Bool] -> String
+            boolToBits = map (\b -> if b then '1' else '0')
 
     hardwareInstance
         tag
@@ -210,33 +191,6 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
                 );
         |]
     hardwareInstance _title _pu _env = error "internal error"
-
--- instance VarValTime v x t => Testable (LUT v x t) v x where
---     testBenchImplementation prj@Project{pName, pUnit} =
---         Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
---             snippetTestBench
---                 prj
---                 SnippetTestBenchConf
---                     { -- List of control signals. It is needed to initialize
---                       -- registers with the same names.
---                       tbcSignals = map T.pack ["oe", "wr", "sel"]
---                     , -- A processor unit connects to the environment by signal
---                       -- lines. In 'NITTA.Project.TestBench.tbcPorts'
---                       -- describes IDs signal lines of testbench. In
---                       -- 'NITTA.Project.TestBench.tbcSignalConnect' how
---                       -- abstract numbers are translate to source code.
---                       tbcPorts =
---                         LUTPorts
---                             { oe = SignalTag $ T.pack "oe"
---                             , wr = SignalTag $ T.pack "wr"
---                             , sel = SignalTag $ T.pack "sel"
---                             -- , sel = [SignalTag $ T.pack "sel"]
---                             }
---                     , -- Map microcode to registers in the testbench.
---                       tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
---                         [i|oe <= #{bool2verilog oeSignal};|]
---                             <> [i| wr <= #{bool2verilog wrSignal};|]
---                     }
 
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
     tryBind f pu@LUT{remain}
@@ -297,7 +251,7 @@ instance VarValTime v x t => EndpointProblem (LUT v x t) v t where
             pu
                 { sources = sources'
                 , process_ = process_'
-                , currentWork = if null sources' then Nothing else Just f
+                , currentWork = Just f
                 }
     endpointDecision pu@LUT{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
