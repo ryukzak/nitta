@@ -167,10 +167,10 @@ instance Var v => Locks (Multiplexer v x t) v where
         | locked <- sources
         , lockBy <- targets ++ muxSels
         ]
-instance TargetSystemComponent (Multiplexer v x t) where
+instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
     moduleName _ _ = T.pack "pu_multiplexer"
 
-    hardware _tag _pu = FromLibrary "multiplexer.v"
+    hardware _tag _pu = FromLibrary "pu_multiplexer.v"
     software _ _ = Empty
 
     hardwareInstance
@@ -178,16 +178,24 @@ instance TargetSystemComponent (Multiplexer v x t) where
         _pu
         UnitEnv
             { sigClk
-            , ctrlPorts = Just MultiplexerPorts{}
+            , ctrlPorts = Just MultiplexerPorts{..}
             , valueIn = Just (dataIn, attrIn)
-            , valueOut = Just (dataOut, _)
+            , valueOut = Just (dataOut, attrOut)
             } =
             [__i|
-        pu_multiplexer #{ tag } (
+        pu_multiplexer pu_compare\#
+                ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                ) #{ tag } (
             .clk(#{ sigClk }),
-            .data_in(#{ dataIn }),
-            .sel(#{ attrIn }),
-            .out(#{ dataOut })
+            .data_active(#{ dataInPort }),
+            .sel_active(#{ selPort }),
+            .out_active(#{ outPort }),
+
+            .data_in( #{ dataIn } ),
+            .attr_in( #{ attrIn } ),
+            .data_out(#{ dataOut })
+            .attr_out(#{ attrOut })
         );|]
     hardwareInstance _title _pu _env = error "internal error"
 

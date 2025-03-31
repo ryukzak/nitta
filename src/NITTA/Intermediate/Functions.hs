@@ -469,7 +469,7 @@ data LogicFunction v x
 
 deriving instance (Data v, Data (I v), Data (O v), Data x) => Data (LogicFunction v x)
 
-data Op = CEQ | CLT | CLTE | CGT | CGTE
+data Op = CMP_EQ | CMP_LT | CMP_LTE | CMP_GT | CMP_GTE
     deriving (Typeable, Eq, Show, Data)
 
 logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
@@ -541,11 +541,11 @@ instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicCompare v x) v x w
             y = if op2func op x1 x2 then trueValue else falseValue
          in [(v, y) | v <- S.elems o]
         where
-            op2func CEQ = (==)
-            op2func CLT = (<)
-            op2func CLTE = (<=)
-            op2func CGT = (>)
-            op2func CGTE = (>=)
+            op2func CMP_EQ = (==)
+            op2func CMP_LT = (<)
+            op2func CMP_LTE = (<=)
+            op2func CMP_GT = (>)
+            op2func CMP_GTE = (>=)
             trueValue = B.bit 1
             falseValue = B.bit 0
 instance Var v => Locks (LogicCompare v x) v where

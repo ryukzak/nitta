@@ -453,11 +453,11 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
-        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CLT (fromText a) (fromText b) (output c)
-        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CLTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CEQ (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CGTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CGT (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_LT (fromText a) (fromText b) (output c)
+        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_LTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_EQ (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_GTE (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_GT (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "mux", fIn = [cond, a, b], fOut = [c], fValues = [], fInt = []} = F.mux (fromText a) (fromText b) (fromText cond) $ output c
         -- function2nitta LuaStatement{fName = "if", fIn = [a, b, c], fOut = [d], fValues = [], fInt = []} = F.mux (fromText a) (fromText b) (fromText c) $ output d -- todo
         -- function2nitta LuaStatement{fName = "notEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.notEqual (fromText a) (fromText b) $ output c

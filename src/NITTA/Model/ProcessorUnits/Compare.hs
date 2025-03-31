@@ -113,11 +113,11 @@ instance Default (Microcode (Compare v x t)) where
 instance UnambiguouslyDecode (Compare v x t) where
     decodeInstruction Out = def{oe = True}
     decodeInstruction (Load op) = case op of
-        F.CEQ -> def{opSel = 0, wr = True}
-        F.CLT -> def{opSel = 1, wr = True}
-        F.CLTE -> def{opSel = 2, wr = True}
-        F.CGT -> def{opSel = 3, wr = True}
-        F.CGTE -> def{opSel = 4, wr = True}
+        F.CMP_EQ -> def{opSel = 0, wr = True}
+        F.CMP_LT -> def{opSel = 1, wr = True}
+        F.CMP_LTE -> def{opSel = 2, wr = True}
+        F.CMP_GT -> def{opSel = 3, wr = True}
+        F.CMP_GTE -> def{opSel = 4, wr = True}
 
 instance Default x => DefaultX (Compare v x t) x
 
@@ -219,25 +219,29 @@ instance ResolveDeadlockProblem (Compare v x t) v x
 
 instance IOTestBench (Compare v x t) v x
 
-instance TargetSystemComponent (Compare v x t) where
-    moduleName _ _ = T.pack "compare_unit"
+instance VarValTime v x t => TargetSystemComponent (Compare v x t) where
+    moduleName _ _ = T.pack "pu_compare"
     software _ _ = Empty
-    hardware _tag _pu = FromLibrary "compare_unit.v"
+    hardware _tag _pu = FromLibrary "pu_compare.v"
 
     hardwareInstance
         tag
         _pu
         UnitEnv
             { sigClk
-            , ctrlPorts = Just ComparePorts{}
+            , ctrlPorts = Just ComparePorts{..}
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            [__i|pu_compare #{ tag } (
+            [__i|
+                pu_compare\#
+                ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                ) #{ tag } (
             .clk(#{ sigClk }),
-            .oe(#{ dataIn }),
-            .wr(#{ attrIn }),
-            .opSel(#{ attrIn }),
+            .oe(#{ oePort }),
+            .wr(#{ wrPort }),
+            .opSel(#{ opSelPort }),
 
             , .data_in( #{ dataIn } )
             , .attr_in( #{ attrIn } )
