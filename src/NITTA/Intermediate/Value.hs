@@ -57,7 +57,6 @@ class
     , Read x
     , PrintfArg x
     , Default x
-    -- , Eq x
     , Num x
     , Validity x
     , ToJSON x

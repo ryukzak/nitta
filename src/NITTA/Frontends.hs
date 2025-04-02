@@ -39,6 +39,7 @@ identifyFrontendType fileName frontendType = fromMaybe identifyByExtension front
                 ".lua" -> Lua
                 ".xmile" -> XMILE
                 ext -> error $ "unknown file extensions: " <> ext <> " for " <> fileName
+
 translate :: (Var v, Translatable x) => FrontendType -> T.Text -> FrontendResult v x
 translate Lua = translateLua
 translate XMILE = translateXMILE
