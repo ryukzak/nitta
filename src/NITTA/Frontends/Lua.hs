@@ -190,6 +190,10 @@ parseRightExp fOut (Unop Neg (Number numType name)) = parseRightExp fOut (Number
 parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
     varName <- parseExpArg fOut expr
     addVariable [varName] [fOut] [] "neg" []
+parseRightExp fOut (Unop Not (Number numType name)) = parseRightExp fOut (Number numType ("not" <> name))
+parseRightExp [fOut] (Unop Not expr@(PrefixExp _)) = do
+    varName <- parseExpArg fOut expr
+    addVariable [varName] [fOut] [] "not" []
 parseRightExp
     [fOut]
     ( PrefixExp
