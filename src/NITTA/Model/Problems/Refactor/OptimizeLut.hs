@@ -186,17 +186,11 @@ topSort g =
             then []
             else map fst ready ++ topSort [(x, ys L.\\ map fst ready) | (x, ys) <- notReady]
 
-groupWhile :: (a -> a -> Bool) -> [a] -> [[a]]
-groupWhile f (x : xs) =
-    let (group, rest) = span (f x) xs
-     in (x : group) : groupWhile f rest
-groupWhile _ [] = []
-
 findMergeClusters :: Var v => [F v x] -> [[F v x]]
 findMergeClusters fs =
     let deps = buildDependencyGraph fs
         sorted = reverse $ topSort deps
-        clusters = groupWhile sharesDependency sorted
+        clusters = groupChains sorted
      in clusters
     where
         buildDependencyGraph fns =
@@ -205,6 +199,16 @@ findMergeClusters fs =
             ]
 
         sharesDependency f g =
-            let fOutputs = outputs f
-                gInputs = NITTA.Intermediate.Types.inputs g
-             in not (S.null (fOutputs `S.intersection` gInputs))
+            not $ S.null (outputs f `S.intersection` inputs g)
+
+        groupChains [] = []
+        groupChains (x : xs) =
+            let (chain, rest) = collectChain [x] xs
+             in chain : groupChains rest
+            where
+                collectChain acc' [] = (acc', [])
+                collectChain acc' (y : ys)
+                    | sharesDependency (last acc') y
+                        && isSingleOutputChain (acc' ++ [y]) =
+                        collectChain (acc' ++ [y]) ys
+                    | otherwise = (acc', y : ys)
