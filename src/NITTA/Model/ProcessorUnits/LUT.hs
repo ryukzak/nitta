@@ -43,6 +43,7 @@ data LUT v x t = LUT
     , targets :: [v]
     , sources :: [v]
     , currentWork :: Maybe (F v x)
+    , lutFunctions :: [F v x]
     , process_ :: Process t (StepInfo v x t)
     }
     deriving (Typeable)
@@ -53,6 +54,7 @@ lut =
         { remain = []
         , targets = []
         , sources = []
+        , lutFunctions = []
         , currentWork = Nothing
         , process_ = def
         }
@@ -142,25 +144,36 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
     moduleName _title _pu = T.pack "pu_lut"
     hardware _tag _pu = FromLibrary "pu_lut.v"
 
-    software tag pu@LUT{currentWork} =
-        case currentWork of -- todo should fix for several functions
-            Just f
-                | Just (F.Lut lutMap _ (O _)) <- castF f ->
-                    let
-                        entries =
-                            map
-                                ( \(inp, out) ->
-                                    boolToBits inp <> [if out then '1' else '0']
-                                )
-                                (M.toList lutMap)
-
-                        memoryDump = T.unlines $ map T.pack entries
-                     in
-                        Immediate (toString $ softwareFile tag pu) memoryDump
-            _ -> Empty
+    software tag pu@LUT{lutFunctions} =
+        let
+            selWidth' = calcSelWidth (length lutFunctions)
+            entries = concatMap (getLutEntries selWidth') (zip [0 ..] lutFunctions)
+            maxAddrLen = maximum (map (length . fst) entries)
+            memoryDump = T.unlines $ map (T.pack . padEntry maxAddrLen) entries
+         in
+            Immediate (toString $ softwareFile tag pu) memoryDump
         where
-            boolToBits :: [Bool] -> String
+            calcSelWidth n = max 1 $ ceiling (logBase (2 :: Double) (fromIntegral $ max 1 n))
+
+            getLutEntries selWidth' (funcIdx, f)
+                | Just (F.Lut lutMap _ (O _)) <- castF f =
+                    let
+                        selBits = intToBits selWidth' funcIdx
+                     in
+                        map
+                            ( \(inp, out) ->
+                                ( boolToBits (selBits ++ inp)
+                                , if out then '1' else '0'
+                                )
+                            )
+                            (M.toList lutMap)
+                | otherwise = []
+
+            intToBits :: Int -> Int -> [Bool]
+            intToBits wdth n = [testBit n i' | i' <- [wdth - 1, wdth - 2 .. 0]]
+
             boolToBits = map (\b -> if b then '1' else '0')
+            padEntry len (addr, out) = addr ++ replicate (len - length addr) '0' ++ [out]
 
     hardwareInstance
         tag
@@ -193,11 +206,11 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
     hardwareInstance _title _pu _env = error "internal error"
 
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
-    tryBind f pu@LUT{remain}
-        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain} -- check
-        | Just F.LogicAnd{} <- castF f = Right pu{remain = f : remain}
-        | Just F.LogicOr{} <- castF f = Right pu{remain = f : remain}
-        | Just F.LogicNot{} <- castF f = Right pu{remain = f : remain}
+    tryBind f pu@LUT{remain, lutFunctions}
+        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain, lutFunctions = f : lutFunctions} -- check
+        | Just F.LogicAnd{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
+        | Just F.LogicOr{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
+        | Just F.LogicNot{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
         | otherwise = Left $ "The function is unsupported by LUT: " ++ show f
     process = process_
 
