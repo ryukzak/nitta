@@ -71,6 +71,88 @@ simulationTests =
             , send "c"
             ]
             ("c", [11, 12, 13, 14, 15])
+        , testGroup
+            "logic operations"
+            [ simulationTestCase @Int
+                "AND operation"
+                4
+                [ ("a", [1, 1, 0, 0])
+                , ("b", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicAnd "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 0, 0, 0])
+            , simulationTestCase @Int
+                "OR operation"
+                4
+                [ ("a", [1, 1, 0, 0])
+                , ("b", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicOr "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 1, 1, 0])
+            , simulationTestCase @Int
+                "NOT operation"
+                4
+                [ ("a", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , logicNot "a" ["c"]
+                , send "c"
+                ]
+                ("c", [0, 1, 0, 1])
+            , simulationTestCase @Int
+                "lessThan comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_LT "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 0, 0])
+            , simulationTestCase @Int
+                "mux selector"
+                4
+                [ ("cond", [1, 0, 1, 0])
+                , ("a", [10, 20, 30, 40])
+                , ("b", [50, 60, 70, 80])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , receive ["cond"]
+                , mux "a" "b" "cond" ["c"]
+                , send "c"
+                ]
+                ("c", [10, 60, 30, 80])
+            ]
+        , testGroup
+            "combined logic scenarios"
+            [ simulationTestCase @Int
+                "complex expression: (a AND b) OR (NOT c)"
+                4
+                [ ("a", [1, 1, 0, 0])
+                , ("b", [1, 0, 1, 0])
+                , ("c", [0, 1, 0, 1])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , receive ["c"]
+                , logicAnd "a" "b" ["tmp"]
+                , logicNot "c" ["not_c"]
+                , logicOr "tmp" "not_c" ["result"]
+                , send "result"
+                ]
+                ("result", [1, 0, 1, 0])
+            ]
         ]
 
 tests =

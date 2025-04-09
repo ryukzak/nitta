@@ -71,7 +71,7 @@ module NITTA.Intermediate.Functions (
     mux,
 ) where
 
-import Data.Bits (complement, (.&.), (.|.))
+import Data.Bits ((.&.), (.|.))
 import Data.Bits qualified as B
 import Data.Data (Data)
 import Data.Default
@@ -503,7 +503,7 @@ instance Var v => Function (LogicFunction v x) v where
     outputs (LogicOr _ _ o) = variables o
     outputs (LogicAnd _ _ o) = variables o
     outputs (LogicNot _ o) = variables o
-instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
+instance (Var v, B.Bits x, Num x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
@@ -516,7 +516,7 @@ instance (Var v, B.Bits x) => FunctionSimulation (LogicFunction v x) v x where
          in [(v, y) | v <- S.elems o]
     simulate cntx (LogicNot (I a) (O o)) =
         let x1 = cntx `getCntx` a
-            y = complement x1
+            y = if x1 /= 0 then 0 else 1
          in [(v, y) | v <- S.elems o]
 
 instance Var v => Locks (LogicFunction v x) v where
@@ -534,11 +534,11 @@ instance Var v => Show (LogicCompare v x) where
 instance Var v => Function (LogicCompare v x) v where
     inputs (LogicCompare _ a b _) = variables a `S.union` variables b
     outputs (LogicCompare _ _ _ o) = variables o
-instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicCompare v x) v x where
+instance (Var v, Ord x, Num x) => FunctionSimulation (LogicCompare v x) v x where
     simulate cntx (LogicCompare op (I a) (I b) (O o)) =
         let x1 = cntx `getCntx` a
             x2 = cntx `getCntx` b
-            y = if op2func op x1 x2 then trueValue else falseValue
+            y = if op2func op x1 x2 then 1 else 0
          in [(v, y) | v <- S.elems o]
         where
             op2func CMP_EQ = (==)
@@ -546,8 +546,6 @@ instance (Var v, B.Bits x, Ord x) => FunctionSimulation (LogicCompare v x) v x w
             op2func CMP_LTE = (<=)
             op2func CMP_GT = (>)
             op2func CMP_GTE = (>=)
-            trueValue = B.bit 1
-            falseValue = B.bit 0
 instance Var v => Locks (LogicCompare v x) v where
     locks = inputsLockOutputs
 
@@ -598,19 +596,16 @@ instance Var v => Function (Mux v x) v where
         S.unions $ map variables (ins ++ cond)
     outputs (Mux _ _ output) = variables output
 
-instance (Var v, B.Bits x) => FunctionSimulation (Mux v x) v x where
-    simulate cntx (Mux ins sels (O outs)) =
+instance (Var v, B.Bits x, Num x) => FunctionSimulation (Mux v x) v x where
+    simulate cntx (Mux ins [I sel] (O outs)) =
         let
-            selVars = map (\(I v) -> v) sels
-            selValues = map (getCntx cntx) selVars
-            activeIndices = [i | (i, val) <- zip [0 ..] selValues, val == B.bit 1]
-            selectedIndex = case activeIndices of
-                [] -> 0
-                (i : _) -> i
+            selValue = getCntx cntx sel
+            selectedIndex = if selValue /= 0 then 0 else 1
             inputVars = map (\(I v) -> v) ins
             selectedValue = getCntx cntx (inputVars !! selectedIndex)
          in
             [(outVar, selectedValue) | outVar <- S.elems outs]
+    simulate _ _ = error "Mux requires exactly one selector"
 
 mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
 mux a b c d = packF $ Mux [I a, I b] [I c] $ O $ fromList d
