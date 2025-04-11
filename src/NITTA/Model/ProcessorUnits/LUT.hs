@@ -27,6 +27,7 @@ import Data.String.Interpolate
 import Data.String.ToString
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
+import Debug.Trace
 import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -44,7 +45,7 @@ data LUT v x t = LUT
     , sources :: [v]
     , currentWork :: Maybe (F v x)
     , lutFunctions :: [F v x]
-    , process_ :: Process t (StepInfo v x t)
+    , process_ :: Process t (StepInfo v x t) -- add LUT size
     }
     deriving (Typeable)
 
@@ -60,13 +61,14 @@ lut =
         }
 
 instance VarValTime v x t => Pretty (LUT v x t) where
-    pretty LUT{remain, targets, sources, currentWork, process_} =
+    pretty LUT{remain, targets, sources, currentWork, lutFunctions, process_} =
         [__i|
             LUT:
                 remain: #{ remain }
                 targets: #{ map toString targets }
                 sources: #{ map toString sources }
                 currentWork: #{ currentWork }
+                lutFunctions: #{ lutFunctions }
                 #{ nest 4 $ pretty process_ }
             |]
 
@@ -93,11 +95,14 @@ instance IOConnected (LUT v x t) where
     data IOPorts (LUT v x t) = LUTIO
         deriving (Show)
 
-supportedLOpsNum :: Integer
-supportedLOpsNum = 1 -- todo should be calculated from LUT size
-selWidth = ceiling (logBase 2 (fromIntegral supportedLOpsNum) :: Double) :: Int
+-- supportedLOpsNum :: Integer
+-- supportedLOpsNum = 1 -- todo should be calculated from LUT size
+-- selWidth = ceiling (logBase 2 (fromIntegral supportedLOpsNum) :: Double) :: Int
+selWidth :: LUT v x t -> Int
+selWidth l = calcSelWidth (length (lutFunctions l))
+calcSelWidth n = max 1 $ ceiling (logBase (2 :: Double) (fromIntegral $ max 1 n))
 
-instance Controllable (LUT v x t) where
+instance VarValTime v x t => Controllable (LUT v x t) where
     data Instruction (LUT v x t)
         = Load
         | Out
@@ -129,9 +134,9 @@ instance Controllable (LUT v x t) where
 
     usedPortTags LUTPorts{oe, wr, sel} = oe : wr : sel
 
-    takePortTags (oe : wr : xs) _ = LUTPorts oe wr sel
+    takePortTags (oe : wr : xs) l = LUTPorts oe wr sel
         where
-            sel = take selWidth xs
+            sel = trace ("takePortTags: " ++ show l) $ take (selWidth l) xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
@@ -153,8 +158,6 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
          in
             Immediate (toString $ softwareFile tag pu) memoryDump
         where
-            calcSelWidth n = max 1 $ ceiling (logBase (2 :: Double) (fromIntegral $ max 1 n))
-
             getLutEntries selWidth' (funcIdx, f)
                 | Just (F.Lut lutMap _ (O _)) <- castF f =
                     let
@@ -184,18 +187,20 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            [__i|
+            trace
+                ("takePortTags 2: " ++ show _pu)
+                [__i|
             pu_lut \#
                     ( .ADDR_WIDTH( #{ attrWidth (def :: x) } )
                     , .DATA_WIDTH( #{ dataWidth (def :: x) } )
-                    , .SEL_WIDTH( #{ attrWidth (def :: x) } )
+                    , .SEL_WIDTH( #{ (selWidth _pu)} )
                     , .LUT_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag _pu }" )
                     ) #{ tag }
                 ( .clk( #{ sigClk } )
 
                 , .signal_oe( #{ oe } )
                 , .signal_wr( #{ wr } )
-                , .signal_sel( #{ sel } )
+                , .signal_sel( { #{ T.intercalate (T.pack ", ") $ map showText sel } } )
 
                 , .data_in( #{ dataIn } )
                 , .attr_in( #{ attrIn } )

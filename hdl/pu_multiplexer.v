@@ -1,50 +1,33 @@
-module pu_multiplexer
-    #( parameter DATA_WIDTH = 32
-    , parameter SEL_BITS    = 2
-    )
-    ( input  wire                  clk
-    , input  wire                  rst
+module pu_multiplexer #(
+    parameter DATA_WIDTH = 32,
+    parameter ATTR_WIDTH = 4,
+    parameter SEL_WIDTH = 1
+)(
+    input wire clk,
+    input wire data_active,
+    input wire sel_active,
+    input wire out_active,
     
-    , input  wire                  signal_wr
-    , input  wire [DATA_WIDTH-1:0] data_in
-    , input  wire                  signal_oe
+    input wire [DATA_WIDTH-1:0] data_in,
+    input wire [ATTR_WIDTH-1:0] attr_in,
+    output reg [DATA_WIDTH-1:0] data_out,
+    output reg [ATTR_WIDTH-1:0] attr_out
+);
+    reg [DATA_WIDTH-1:0] buffer [0:(2**SEL_WIDTH)-1];
+    reg [SEL_WIDTH-1:0] sel_reg;
 
-    , output reg  [DATA_WIDTH-1:0] data_out
-    , output reg  [SEL_BITS-1:0]   sel_out
-    );
-
-reg [DATA_WIDTH-1:0] data_buffer [0:(2**SEL_BITS)-1];
-reg [SEL_BITS-1:0]   current_sel;
-reg                   wr_phase;
-
-
-always @(posedge clk) begin
-    if (rst) begin
-        current_sel <= 0;
-        wr_phase <= 0;
-        for (integer i = 0; i < 2**SEL_BITS; i = i + 1)
-            data_buffer[i] <= 0;
-    end else begin
-        if (signal_wr) begin
-            if (wr_phase == 0) begin
-                current_sel <= data_in[SEL_BITS-1:0];
-                wr_phase <= 1;
-            end else begin
-                data_buffer[current_sel] <= data_in;
-                wr_phase <= 0;
-            end
+    always @(posedge clk) begin
+        if (data_active) begin
+            buffer[sel_reg] <= data_in;
+        end
+        
+        if (sel_active) begin
+            sel_reg <= data_in[SEL_WIDTH-1:0];
         end
     end
-end
 
-always @(posedge clk) begin
-    if (signal_oe) begin
-        data_out <= data_buffer[current_sel];
-        sel_out <= current_sel;
-    end else begin
-        data_out <= {DATA_WIDTH{1'bz}};
-        sel_out <= {SEL_BITS{1'bz}};
+    always @(posedge clk) begin
+        if (~out_active) { attr_out, data_out } <= 0;
+        else { attr_out, data_out } <= buffer[sel_reg];
     end
-end
-
 endmodule

@@ -64,6 +64,8 @@ multiplexer =
         , process_ = def
         }
 
+selWidth :: Int
+selWidth = 1 -- todo should fix
 instance VarValTime v x t => ProcessorUnit (Multiplexer v x t) v x t where
     tryBind f pu@Multiplexer{remain}
         | Just F.Mux{} <- castF f =
@@ -183,9 +185,10 @@ instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
             , valueOut = Just (dataOut, attrOut)
             } =
             [__i|
-        pu_multiplexer pu_compare\#
+        pu_multiplexer \#
                 ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                 , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                , .SEL_WIDTH( #{ selWidth } )
                 ) #{ tag } (
             .clk(#{ sigClk }),
             .data_active(#{ dataInPort }),
@@ -194,7 +197,7 @@ instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
 
             .data_in( #{ dataIn } ),
             .attr_in( #{ attrIn } ),
-            .data_out(#{ dataOut })
+            .data_out(#{ dataOut }),
             .attr_out(#{ attrOut })
         );|]
     hardwareInstance _title _pu _env = error "internal error"

@@ -1,57 +1,67 @@
 module pu_compare
     #( parameter DATA_WIDTH = 32
     , parameter ATTR_WIDTH = 4
+    , parameter SEL_WIDTH = 3
     )
-    ( input  wire                  clk
-    , input  wire                  rst
+    ( input  wire   clk
+    , input  wire   rst
+
+    , input  wire   wr
+    , input  wire   oe
     
-    , input  wire                  signal_wr
     , input  wire [DATA_WIDTH-1:0] data_in
     , input  wire [ATTR_WIDTH-1:0] attr_in
-    , input  wire                  signal_oe
-
-    , output wire [DATA_WIDTH-1:0] data_out
-    , output wire [ATTR_WIDTH-1:0] attr_out
+    , input  wire [SEL_WIDTH-1:0] op_sel
+    
+    , output reg [DATA_WIDTH-1:0] data_out
+    , output reg [ATTR_WIDTH-1:0] attr_out
     );
 
 reg [DATA_WIDTH-1:0] arg [0:1];
-reg arg_sel;
-reg operation;
+reg [1:0] arg_sel;
+reg [2:0] operation;
 
-localparam 
+localparam
     CMP_EQ  = 3'b000,
     CMP_LT  = 3'b001,
     CMP_LTE = 3'b010,
     CMP_GT  = 3'b011,
     CMP_GTE = 3'b100;
 
+always @(posedge clk)
+  if ( rst ) begin
+    operation <= 0;
+    arg_sel <= 0;
+    arg[0] <= 0;
+    arg[1] <= 0;
+  end
+
 always @(posedge clk) begin
-    if (rst) begin
-        arg[0] <= 0;
-        arg[1] <= 0;
-        arg_sel <= 0;
-    end else if (signal_wr) begin
+    if (wr) begin
         arg[arg_sel] <= data_in;
-        operation <= attr_in[2:0];
-        arg_sel <= !arg_sel;
+        operation <= op_sel;
+        arg_sel <= arg_sel + 1;
     end
 end
 
 reg [DATA_WIDTH-1:0] result;
 always @(posedge clk) begin
-    if (arg_sel) begin
+    if (arg_sel == 2) begin
         case(operation)
-            CMP_EQ:  result <= (arg[0] == arg[1]);
-            CMP_LT:  result <= (arg[0] < arg[1]);
+            CMP_EQ: result <= (arg[0] == arg[1]);
+            CMP_LT: result <= (arg[0] < arg[1]);
             CMP_LTE: result <= (arg[0] <= arg[1]);
-            CMP_GT:  result <= (arg[0] > arg[1]);
+            CMP_GT: result <= (arg[0] > arg[1]) ? 1 : 0;
             CMP_GTE: result <= (arg[0] >= arg[1]);
             default: result <= 0;
         endcase
+        arg_sel <= 0;
     end
 end
-
-assign data_out = signal_oe ? result : {DATA_WIDTH{1'bz}};
-assign attr_out = { {ATTR_WIDTH-1{1'b0}}, signal_oe };
-
+always @(posedge clk) begin
+    if ( ~oe ) { attr_out, data_out } <= 0;
+    else begin
+        { attr_out, data_out } <= result; 
+    end
+end
 endmodule

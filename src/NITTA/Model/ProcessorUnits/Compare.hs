@@ -229,19 +229,22 @@ instance VarValTime v x t => TargetSystemComponent (Compare v x t) where
         _pu
         UnitEnv
             { sigClk
+            , sigRst
             , ctrlPorts = Just ComparePorts{..}
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
             [__i|
-                pu_compare\#
+            pu_compare \#
                 ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                 , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                , .SEL_WIDTH( #{ selWidth } )
                 ) #{ tag } (
             .clk(#{ sigClk }),
+            .rst( #{ sigRst } ),
             .oe(#{ oePort }),
             .wr(#{ wrPort }),
-            .opSel(#{ opSelPort }),
+            .op_sel({ #{ T.intercalate (T.pack ", ") $ map showText opSelPort } })
 
             , .data_in( #{ dataIn } )
             , .attr_in( #{ attrIn } )
@@ -256,3 +259,27 @@ instance Ord t => WithFunctions (Compare v x t) (F v x) where
         functions process_
             ++ remain
             ++ maybeToList currentWork
+
+instance VarValTime v x t => Testable (Compare v x t) v x where
+    testBenchImplementation prj@Project{pName, pUnit} =
+        let tbcSignalsConst = [T.pack "oe", T.pack "wr", T.pack $ "[" ++ show (selWidth - 1) ++ ":0] op_sel"]
+            showMicrocode Microcode{oe, wr, opSel} =
+                [i|oe <= #{ bool2verilog oe };|]
+                    <> [i| wr <= #{ bool2verilog wr };|]
+                    <> [i| opSel <= #{ show opSel };|]
+         in Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
+                snippetTestBench
+                    prj
+                    SnippetTestBenchConf
+                        { tbcSignals = tbcSignalsConst
+                        , tbcPorts =
+                            ComparePorts
+                                { oePort = SignalTag (T.pack "oe")
+                                , wrPort = SignalTag (T.pack "wr")
+                                , opSelPort =
+                                    [ (SignalTag . T.pack) ("op_sel[" <> show p <> "]")
+                                    | p <- [selWidth - 1, selWidth - 2 .. 0]
+                                    ]
+                                }
+                        , tbcMC2verilogLiteral = showMicrocode
+                        }
