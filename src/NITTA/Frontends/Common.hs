@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 Module      : NITTA.Frontends.Common
 Description : Common types and functions for all frontend implementations
@@ -9,6 +11,7 @@ Stability   : experimental
 module NITTA.Frontends.Common (
     FrontendResult (..),
     TraceVar (..),
+    Translatable (..),
     prettyLog,
     getTraceVarFormat,
 ) where
@@ -19,6 +22,9 @@ import Data.Maybe
 import Data.String.ToString
 import Data.Text qualified as T
 import NITTA.Intermediate.DataFlow
+import NITTA.Intermediate.Functions qualified as F
+import NITTA.Intermediate.Types
+import NITTA.Utils.Base
 import Text.Printf
 
 data FrontendResult v x = FrontendResult
@@ -48,3 +54,28 @@ prettyLog traceVars hms = map prettyHM hms
 
 getTraceVarFormat Nothing = defaultFmt
 getTraceVarFormat (Just fmt) = fmt
+
+class Val x => Translatable x where
+    stat2function :: Var v => T.Text -> [T.Text] -> [[v]] -> [x] -> [Int] -> F v x
+
+instance (FixedPointCompatible x, Val x) => Translatable x where
+    stat2function "buffer" [i] [o] [] [] = F.buffer (fromText i) o
+    stat2function "brokenBuffer" [i] [o] [] [] = F.brokenBuffer (fromText i) o
+    stat2function "constant" [] [o] [x] [] = F.constant x o
+    stat2function "send" [i] [] [] [] = F.send (fromText i)
+    stat2function "add" [a, b] [c] [] [] = F.add (fromText a) (fromText b) c
+    stat2function "sub" [a, b] [c] [] [] = F.sub (fromText a) (fromText b) c
+    stat2function "multiply" [a, b] [c] [] [] = F.multiply (fromText a) (fromText b) c
+    stat2function "divide" [d, n] [q] [] [] = F.division (fromText d) (fromText n) q []
+    stat2function "divide" [d, n] [q, r] [] [] = F.division (fromText d) (fromText n) q r
+    stat2function "neg" [i] [o] [] [] = F.neg (fromText i) o
+    stat2function "receive" [] [o] [] [] = F.receive o
+    stat2function "shiftL" [a] [c] [] [s] = F.shiftL s (fromText a) c
+    stat2function "shiftR" [a] [c] [] [s] = F.shiftR s (fromText a) c
+    stat2function "loop" [a] [c] [x] [] = F.loop x (fromText a) c
+    stat2function f _ _ _ _ = error $ "function not found: " <> show f
+
+instance Translatable Float where
+    -- FIXME: add other functions
+    stat2function "divide" [d, n] [q] [] [] = F.floatDivision (fromText d) (fromText n) q
+    stat2function f _ _ _ _ = error $ "function not found: " <> show f
