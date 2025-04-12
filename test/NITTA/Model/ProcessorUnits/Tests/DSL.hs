@@ -129,6 +129,7 @@ import Data.String.ToString
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Typeable
+import NITTA.Frontends (Translatable)
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Analysis (buildProcessWaves)
 import NITTA.Intermediate.DataFlow
@@ -152,7 +153,6 @@ import System.Directory
 import System.FilePath
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
-import NITTA.Frontends (Translatable)
 
 {- | Unit test state. Be aware internal implementation is not fully consistent
  and can be replaced by a type family with PU and target system instances.

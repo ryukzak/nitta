@@ -19,7 +19,7 @@ import Data.Default (Default (def))
 import Data.HashMap.Internal.Strict (HashMap)
 import Data.Text qualified as T
 import GHC.Generics (Generic)
-import NITTA.Intermediate.Value (Val, FixedPointCompatible)
+import NITTA.Intermediate.Value (FixedPointCompatible, Val)
 import NITTA.Intermediate.Variable (Var)
 import NITTA.Model.Networks.Bus (
     BusNetwork,

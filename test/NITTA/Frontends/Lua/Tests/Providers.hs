@@ -24,6 +24,7 @@ import Data.CallStack
 import Data.Default
 import Data.Proxy
 import Data.Text qualified as T
+import NITTA.Frontends (Translatable)
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -33,7 +34,6 @@ import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.Tests.Microarchitecture
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
-import NITTA.Frontends (Translatable)
 
 traceLuaSimulationTestCase ::
     forall x.

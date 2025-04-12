@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+
 {- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
@@ -20,14 +21,12 @@ module NITTA.Frontends (
 
 import Data.Data
 import Data.Maybe
+import Data.Text qualified as T
 import NITTA.Frontends.Common
 import NITTA.Frontends.Lua
 import NITTA.Frontends.XMILE.Frontend
-import System.FilePath
-import Data.Text qualified as T
 import NITTA.Intermediate.Variable (Var)
-
-type Translatable a = (TranslatableLua a, TranslatableXMILE a)
+import System.FilePath
 
 data FrontendType = Lua | XMILE
     deriving (Show, Data)

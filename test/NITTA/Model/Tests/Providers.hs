@@ -21,6 +21,7 @@ module NITTA.Model.Tests.Providers (
 import Data.CallStack
 import Data.Default
 import Data.Text as T
+import NITTA.Frontends (Translatable)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -32,7 +33,6 @@ import NITTA.Synthesis
 import NITTA.Utils
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
-import NITTA.Frontends (Translatable)
 
 -- | Execute co-simulation test for the specific microarchitecture and algorithm
 nittaCoSimTestCase ::
