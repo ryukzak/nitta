@@ -1,9 +1,9 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-incomplete-uni-patterns #-}
 
@@ -84,6 +84,7 @@ module NITTA.Frontends.Lua (
     FrontendResult (..),
     TraceVar (..),
     TranslatableLua (..),
+
     -- * Internal
     LuaAlgBuilder (..),
     LuaStatement (..),

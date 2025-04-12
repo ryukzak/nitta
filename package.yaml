@@ -49,8 +49,8 @@ default-extensions:
   - FlexibleContexts
   - FlexibleInstances
   - TupleSections
-  - UndecidableInstances
   - TypeApplications
+  - UndecidableInstances
 
 dependencies:
   - MissingH
