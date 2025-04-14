@@ -112,7 +112,7 @@ nittaArgs =
             Nothing
                 &= name "t"
                 &= typ "fxM.B"
-                &= help "Overrides data type specified in config file"
+                &= help "Overrides data type specified in config file. M - integer part, B - fractional part. Default: fx32.32"
                 &= groupname "Target system configuration"
         , io_sync =
             Nothing
@@ -237,7 +237,8 @@ main = do
     let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
-    ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
+    ( \(SomeNat (m :: Proxy m), SomeNat (b :: Proxy b)) -> do
+            when (natVal m > natVal b) $ error "Wrong type, M should less or equal to B in fx<M>.<B>"
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
