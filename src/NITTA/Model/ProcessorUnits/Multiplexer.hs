@@ -10,8 +10,10 @@ module NITTA.Model.ProcessorUnits.Multiplexer (
     IOPorts (..),
 ) where
 
+import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
+import Data.Maybe (maybeToList)
 import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
@@ -65,7 +67,7 @@ multiplexer =
         }
 
 selWidth :: Int
-selWidth = 1 -- todo should fix
+selWidth = 4 -- todo should fix
 instance VarValTime v x t => ProcessorUnit (Multiplexer v x t) v x t where
     tryBind f pu@Multiplexer{remain}
         | Just F.Mux{} <- castF f =
@@ -112,9 +114,10 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
         | not (null targets) || not (null muxSels) =
             let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
-             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) (targets ++ muxSels)
+             in -- in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) (targets ++ muxSels)
+                [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
         | not $ null sources =
-            let doneAt = nextTick (process_ pu) + 2
+            let doneAt = nextTick (process_ pu) + 5
                 at = doneAt ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
@@ -137,14 +140,18 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
                     , process_ = process_'
                     , targets = targets
                     }
-    endpointDecision pu@Multiplexer{sources} d@EndpointSt{epRole = Source vs, epAt}
+    endpointDecision pu@Multiplexer{sources, currentWork = Just f} d@EndpointSt{epRole = Source vs, epAt}
         | not $ null sources =
-            let process_' = execSchedule pu $ do
+            let sources' = sources \\ S.elems vs
+                process_' = execSchedule pu $ do
                     scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
-                sources' = sources \\ S.elems vs
+                    when (null sources') $ do
+                        let a = inf $ stepsInterval $ relatedEndpoints (process_ pu) (variables f)
+                        scheduleFunctionFinish_ [] f (a ... sup epAt)
              in pu
                     { sources = sources'
                     , process_ = process_'
+                    , currentWork = if null sources' then Nothing else Just f
                     }
     endpointDecision pu@Multiplexer{targets = [], sources = [], muxSels = [], remain} d
         | let v = oneOf $ variables d
@@ -156,7 +163,7 @@ execution pu@Multiplexer{targets = [], sources = [], muxSels = [], remain} f
     | Just (F.Mux a b (O c)) <- castF f =
         pu
             { sources = S.elems c
-            , muxSels = map (\(I v) -> v) b
+            , muxSels = map (\(I v) -> v) [b]
             , targets = map (\(I v) -> v) a
             , remain = filter (/= f) remain
             , currentWork = Just f
@@ -180,6 +187,7 @@ instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
         _pu
         UnitEnv
             { sigClk
+            , sigRst
             , ctrlPorts = Just MultiplexerPorts{..}
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
@@ -188,9 +196,10 @@ instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
         pu_multiplexer \#
                 ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                 , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
-                , .SEL_WIDTH( #{ selWidth } )
+                , .SEL_WIDTH( #{ selWidth} )
                 ) #{ tag } (
             .clk(#{ sigClk }),
+            .rst(#{ sigRst }),
             .data_active(#{ dataInPort }),
             .sel_active(#{ selPort }),
             .out_active(#{ outPort }),
@@ -227,6 +236,31 @@ instance Default (Microcode (Multiplexer v x t)) where
             }
 
 instance UnambiguouslyDecode (Multiplexer v x t) where
-    decodeInstruction Out = def{outActive = True}
-    decodeInstruction LoadInput = def{dataInActive = True}
-    decodeInstruction LoadSel = def{selActive = True}
+    decodeInstruction Out = def{outActive = True, selActive = False, dataInActive = False}
+    decodeInstruction LoadInput = def{dataInActive = True, outActive = False, selActive = False}
+    decodeInstruction LoadSel = def{selActive = True, outActive = False, dataInActive = False}
+
+instance VarValTime v x t => WithFunctions (Multiplexer v x t) (F v x) where
+    functions Multiplexer{process_, remain, currentWork} =
+        functions process_ ++ remain ++ maybeToList currentWork
+
+instance VarValTime v x t => Testable (Multiplexer v x t) v x where
+    testBenchImplementation prj@Project{pName, pUnit} =
+        let tbcSignalsConst = map T.pack ["data_active", "sel_active", "out_active"]
+            showMicrocode MuxMicrocode{..} =
+                [i|data_active <= #{ bool2verilog dataInActive };|]
+                    <> [i| sel_active <= #{ bool2verilog selActive };|]
+                    <> [i| out_active <= #{ bool2verilog outActive };|]
+         in Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
+                snippetTestBench
+                    prj
+                    SnippetTestBenchConf
+                        { tbcSignals = tbcSignalsConst
+                        , tbcPorts =
+                            MultiplexerPorts
+                                { dataInPort = SignalTag (T.pack "data_active")
+                                , selPort = SignalTag (T.pack "sel_active")
+                                , outPort = SignalTag (T.pack "out_active")
+                                }
+                        , tbcMC2verilogLiteral = showMicrocode
+                        }

@@ -1,4 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
 
 {- |
  Module      : NITTA.Intermediate.Tests.Functions
@@ -10,12 +12,18 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
+import Control.Monad (forM, when)
+import Data.HashMap.Strict qualified as HM
+import Data.List (nub, (\\))
 import Data.Map qualified as M
+import Data.Maybe (listToMaybe)
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
+import NITTA.Intermediate.Types (packF)
 import Test.QuickCheck
 
 maxLenght = 8
@@ -81,3 +89,70 @@ instance Arbitrary x => Arbitrary (LogicFunction T.Text x) where
             genLogicAnd = LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
             genLogicOr = LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
             genLogicNot = LogicNot <$> inputVarGen <*> outputVarsGen
+
+instance Arbitrary x => Arbitrary (LogicCompare T.Text x) where
+    arbitrary = suchThat generateUniqueVars uniqueVars
+        where
+            generateUniqueVars = do
+                op <- elements [CMP_EQ, CMP_LT, CMP_LTE, CMP_GT, CMP_GTE]
+                a <- inputVarGen
+                b <- inputVarGen
+                LogicCompare op a b <$> outputVarsGen
+
+instance (Arbitrary x, Var T.Text) => Arbitrary (Cntx T.Text x) where
+    arbitrary = do
+        inputVars <- vectorOf 16 inputVarGen
+        let keys = map (\(I v) -> v) inputVars
+        values <- mapM (const arbitrary) keys
+        let cycleCntxMap = HM.fromList (zip keys values)
+        let process = [CycleCntx cycleCntxMap]
+
+        -- receivedVars <- listOf inputVarGen
+        -- let receivedKeys = map (\(I v) -> v) receivedVars
+        -- receivedValues <- forM receivedKeys $ \k -> (k,) <$> listOf arbitrary
+        let received = M.fromList [] -- receivedValues
+        return $
+            Cntx
+                { cntxProcess = process
+                , cntxReceived = received
+                , cntxCycleNumber = 0
+                }
+
+instance Arbitrary (Mux T.Text Int) where
+    arbitrary =
+        Mux
+            <$> vectorOf 15 inputVarGen
+            <*> inputVarGen
+            <*> outputVarsGen
+
+instance Arbitrary (Mux T.Text Int, Cntx T.Text Int) where
+    arbitrary = do
+        mux@(Mux ins sel outs) <- arbitrary
+
+        let inputVars = [v | I v <- ins]
+            selVar = case sel of I v -> v
+            outputVars = case outs of O vs -> S.toList vs
+            allVars = nub $ inputVars ++ [selVar] ++ outputVars
+
+        initialValues <- forM allVars $ \v -> do
+            Positive x <- arbitrary
+            return (v, x)
+
+        let dataCount = length inputVars
+        selValue <-
+            if dataCount > 0
+                then choose (0, dataCount - 1)
+                else pure 0
+
+        let cntx =
+                Cntx
+                    { cntxProcess = [CycleCntx $ HM.fromList $ (selVar, selValue) : initialValues]
+                    , cntxReceived = M.empty
+                    , cntxCycleNumber = 0
+                    }
+
+        return (mux, cntx)
+        where
+            getPositive x = abs x + 1
+            muxDataInputs (Mux ins _ _) = ins
+            muxSel (Mux _ sel _) = sel

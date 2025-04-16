@@ -19,7 +19,7 @@ import Control.Monad (when)
 import Data.Bits (Bits (testBit))
 import Data.Default (Default, def)
 import Data.Foldable as DF (Foldable (null), find)
-import Data.List (partition, (\\))
+import Data.List (elemIndex, partition, (\\))
 import Data.Map qualified as M
 import Data.Maybe
 import Data.Set qualified as S
@@ -27,7 +27,6 @@ import Data.String.Interpolate
 import Data.String.ToString
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
-import Debug.Trace
 import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -45,6 +44,8 @@ data LUT v x t = LUT
     , sources :: [v]
     , currentWork :: Maybe (F v x)
     , lutFunctions :: [F v x]
+    , selBitNum :: Int
+    , maxNumArgs :: Int
     , process_ :: Process t (StepInfo v x t) -- add LUT size
     }
     deriving (Typeable)
@@ -57,6 +58,8 @@ lut =
         , sources = []
         , lutFunctions = []
         , currentWork = Nothing
+        , selBitNum = 4
+        , maxNumArgs = 16
         , process_ = def
         }
 
@@ -95,16 +98,16 @@ instance IOConnected (LUT v x t) where
     data IOPorts (LUT v x t) = LUTIO
         deriving (Show)
 
--- supportedLOpsNum :: Integer
--- supportedLOpsNum = 1 -- todo should be calculated from LUT size
--- selWidth = ceiling (logBase 2 (fromIntegral supportedLOpsNum) :: Double) :: Int
 selWidth :: LUT v x t -> Int
 selWidth l = calcSelWidth (length (lutFunctions l))
 calcSelWidth n = max 1 $ ceiling (logBase (2 :: Double) (fromIntegral $ max 1 n))
 
-instance VarValTime v x t => Controllable (LUT v x t) where
+getFunctionIndex :: LUT v x t -> Maybe Int
+getFunctionIndex LUT{currentWork, lutFunctions} = currentWork >>= \cw -> elemIndex cw lutFunctions
+
+instance Controllable (LUT v x t) where
     data Instruction (LUT v x t)
-        = Load
+        = Load (Maybe Int)
         | Out
         deriving (Show)
 
@@ -136,32 +139,42 @@ instance VarValTime v x t => Controllable (LUT v x t) where
 
     takePortTags (oe : wr : xs) l = LUTPorts oe wr sel
         where
-            sel = trace ("takePortTags: " ++ show l) $ take (selWidth l) xs
+            sel = take (selBitNum l) xs
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
-    decodeInstruction Load = def{wrSignal = True}
+    decodeInstruction (Load op) = def{wrSignal = True, selSignal = op}
     decodeInstruction Out = def{oeSignal = True}
 
 softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
 
+-- need to fix for 2 non-overlapping graphs, example:
+-- function logicf(a, b, c1, c2, c3)
+--     local r1 = b and a
+--     local r3 = c1 and c2 or c3
+--     logicf(r1, a, r3, c2, c3)
+-- end
+maxArgsLen LUT{lutFunctions} =
+    if null lutFunctions
+        then 0
+        else maximum [S.size (inputs f) | F f _ <- lutFunctions]
+
+maxAddrLen pu = maxArgsLen pu + selBitNum pu
 instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
     moduleName _title _pu = T.pack "pu_lut"
     hardware _tag _pu = FromLibrary "pu_lut.v"
 
-    software tag pu@LUT{lutFunctions} =
+    software tag pu@LUT{lutFunctions, selBitNum} =
         let
-            selWidth' = calcSelWidth (length lutFunctions)
-            entries = concatMap (getLutEntries selWidth') (zip [0 ..] lutFunctions)
-            maxAddrLen = maximum (map (length . fst) entries)
-            memoryDump = T.unlines $ map (T.pack . padEntry maxAddrLen) entries
+            entries = concatMap getLutEntries (zip [0 ..] lutFunctions)
+            memoryDump = T.unlines $ map (T.pack . padEntry (maxAddrLen pu)) entries
          in
             Immediate (toString $ softwareFile tag pu) memoryDump
         where
-            getLutEntries selWidth' (funcIdx, f)
+            getLutEntries (funcIdx, f)
                 | Just (F.Lut lutMap _ (O _)) <- castF f =
                     let
-                        selBits = intToBits selWidth' funcIdx
+                        selBits = intToBits selBitNum funcIdx
                      in
                         map
                             ( \(inp, out) ->
@@ -187,13 +200,12 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
             , valueIn = Just (dataIn, attrIn)
             , valueOut = Just (dataOut, attrOut)
             } =
-            trace
-                ("takePortTags 2: " ++ show _pu)
-                [__i|
+            [__i|
             pu_lut \#
-                    ( .ADDR_WIDTH( #{ attrWidth (def :: x) } )
+                    ( .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                     , .DATA_WIDTH( #{ dataWidth (def :: x) } )
-                    , .SEL_WIDTH( #{ (selWidth _pu)} )
+                    , .SEL_WIDTH( #{ (selBitNum _pu)} )
+                    , .MAX_NUM_ARGS( #{ maxArgsLen _pu } )
                     , .LUT_DUMP( "{{ impl.paths.nest }}/#{ softwareFile tag _pu }" )
                     ) #{ tag }
                 ( .clk( #{ sigClk } )
@@ -212,7 +224,7 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
 
 instance VarValTime v x t => ProcessorUnit (LUT v x t) v x t where
     tryBind f pu@LUT{remain, lutFunctions}
-        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain, lutFunctions = f : lutFunctions} -- check
+        | Just F.Lut{} <- castF f = Right pu{remain = f : remain ++ remain, lutFunctions = f : lutFunctions}
         | Just F.LogicAnd{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
         | Just F.LogicOr{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
         | Just F.LogicNot{} <- castF f = Right pu{remain = f : remain, lutFunctions = f : lutFunctions}
@@ -250,7 +262,7 @@ instance VarValTime v x t => EndpointProblem (LUT v x t) v t where
         , let allTargets = targets
         , ([_], targets') <- partition (== v) allTargets
         , let process_' = execSchedule pu $ do
-                scheduleEndpoint d $ scheduleInstructionUnsafe epAt Load =
+                scheduleEndpoint d $ scheduleInstructionUnsafe epAt (Load (getFunctionIndex pu)) =
             pu
                 { targets = targets'
                 , process_ = process_'
@@ -311,3 +323,31 @@ instance Default x => DefaultX (LUT v x t) x
 
 instance Time t => Default (LUT v x t) where
     def = lut
+
+instance VarValTime v x t => Testable (LUT v x t) v x where
+    testBenchImplementation prj@Project{pName, pUnit} =
+        let lutDef :: LUT v x t
+            lutDef = def
+            tbcSignalsConst = [T.pack "oe", T.pack "wr", T.pack $ "[" ++ show (selBitNum lutDef - 1) ++ ":0] sel"]
+            showMicrocode Microcode{oeSignal, wrSignal, selSignal} =
+                [i|oe <= #{ bool2verilog oeSignal };|]
+                    <> [i| wr <= #{ bool2verilog wrSignal };|]
+                    <> case selSignal of
+                        Just sel -> [i| sel <= #{ selWidth lutDef }'d#{ sel };|]
+                        Nothing -> [i| sel <= {#{ selWidth lutDef }{1'bx}};|]
+         in Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
+                snippetTestBench
+                    prj
+                    SnippetTestBenchConf
+                        { tbcSignals = tbcSignalsConst
+                        , tbcPorts =
+                            LUTPorts
+                                { oe = SignalTag (T.pack "oe")
+                                , wr = SignalTag (T.pack "wr")
+                                , sel =
+                                    [ (SignalTag . T.pack) ("sel[" <> show p <> "]")
+                                    | p <- [selBitNum lutDef - 1, selBitNum lutDef - 2 .. 0]
+                                    ]
+                                }
+                        , tbcMC2verilogLiteral = showMicrocode
+                        }

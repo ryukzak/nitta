@@ -534,12 +534,14 @@ instance Var v => Show (LogicCompare v x) where
 instance Var v => Function (LogicCompare v x) v where
     inputs (LogicCompare _ a b _) = variables a `S.union` variables b
     outputs (LogicCompare _ _ _ o) = variables o
-instance (Var v, Ord x, Num x) => FunctionSimulation (LogicCompare v x) v x where
+instance (Var v, Val x) => FunctionSimulation (LogicCompare v x) v x where
     simulate cntx (LogicCompare op (I a) (I b) (O o)) =
-        let x1 = cntx `getCntx` a
-            x2 = cntx `getCntx` b
+        let
+            x1 = getCntx cntx a
+            x2 = getCntx cntx b
             y = if op2func op x1 x2 then 1 else 0
-         in [(v, y) | v <- S.elems o]
+         in
+            [(v, y) | v <- S.elems o]
         where
             op2func CMP_EQ = (==)
             op2func CMP_LT = (<)
@@ -577,7 +579,7 @@ instance (Var v, Num x, Eq x) => FunctionSimulation (Lut v x) v x where
             result = M.findWithDefault False inputValues table -- todo add default value
          in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
 
-data Mux v x = Mux [I v] [I v] (O v) deriving (Typeable, Eq)
+data Mux v x = Mux [I v] (I v) (O v) deriving (Typeable, Eq)
 
 instance Var v => Patch (Mux v x) (v, v) where
     patch (old, new) (Mux ins sel out) =
@@ -593,19 +595,21 @@ instance Var v => Show (Mux v x) where
 
 instance Var v => Function (Mux v x) v where
     inputs (Mux ins cond _) =
-        S.unions $ map variables (ins ++ cond)
+        S.unions $ map variables (ins ++ [cond])
     outputs (Mux _ _ output) = variables output
 
-instance (Var v, B.Bits x, Num x) => FunctionSimulation (Mux v x) v x where
-    simulate cntx (Mux ins [I sel] (O outs)) =
+instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
+    simulate cntx (Mux ins (I sel) (O outs)) =
         let
-            selValue = getCntx cntx sel
-            selectedIndex = if selValue /= 0 then 0 else 1
-            inputVars = map (\(I v) -> v) ins
-            selectedValue = getCntx cntx (inputVars !! selectedIndex)
+            selValue = getCntx cntx sel `mod` 16
+            insCount = length ins
+            selectedValue
+                | selValue >= 0 && fromIntegral selValue < insCount =
+                    case ins !! fromIntegral (selValue `mod` 16) of
+                        I inputVar -> getCntx cntx inputVar
+                | otherwise = 0
          in
             [(outVar, selectedValue) | outVar <- S.elems outs]
-    simulate _ _ = error "Mux requires exactly one selector"
 
 mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
-mux a b c d = packF $ Mux [I a, I b] [I c] $ O $ fromList d
+mux a b c d = packF $ Mux [I a, I b] (I c) $ O $ fromList d

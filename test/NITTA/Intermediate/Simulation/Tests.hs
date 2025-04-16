@@ -132,7 +132,7 @@ simulationTests =
                 , mux "a" "b" "cond" ["c"]
                 , send "c"
                 ]
-                ("c", [10, 60, 30, 80])
+                ("c", [50, 20, 70, 40])
             ]
         , testGroup
             "combined logic scenarios"

@@ -19,6 +19,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 
 import Control.Monad (when)
+import Data.Bits
 import Data.Foldable
 import Data.Maybe
 import Data.String.Interpolate
@@ -92,7 +93,9 @@ instance Controllable (Compare v x t) where
         [ (oePort, Bool oe)
         , (wrPort, Bool wr)
         ]
-            ++ zipWith (\tag idx -> (tag, Bool (idx == opSel))) opSelPort [0 ..]
+            ++ zipWith (\tag bit -> (tag, Bool bit)) opSelPort (bits opSel selWidth)
+        where
+            bits val width = [testBit val (width - i - 1) | i <- [0 .. width - 1]]
     usedPortTags ComparePorts{oePort, wrPort, opSelPort} = oePort : wrPort : opSelPort
 
     takePortTags (oe : wr : xs) _ = ComparePorts oe wr sel
@@ -101,7 +104,16 @@ instance Controllable (Compare v x t) where
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Var v => Locks (Compare v x t) v where
-    locks _ = []
+    locks Compare{remain, sources, targets} =
+        [ Lock{lockBy, locked}
+        | locked <- sources
+        , lockBy <- targets
+        ]
+            ++ [ Lock{lockBy, locked}
+               | locked <- concatMap (S.elems . variables) remain
+               , lockBy <- sources ++ targets
+               ]
+            ++ concatMap locks remain
 instance Default (Microcode (Compare v x t)) where
     def =
         Microcode
@@ -129,7 +141,7 @@ instance VarValTime v x t => EndpointProblem (Compare v x t) v t where
         | not $ null targets =
             let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
-             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
+             in [EndpointSt (Target $ head targets) $ TimeConstraint at duration]
     endpointOptions Compare{sources, currentWork = Just f, process_}
         | not $ null sources =
             let doneAt = inputsPushedAt process_ f + 3
@@ -266,7 +278,7 @@ instance VarValTime v x t => Testable (Compare v x t) v x where
             showMicrocode Microcode{oe, wr, opSel} =
                 [i|oe <= #{ bool2verilog oe };|]
                     <> [i| wr <= #{ bool2verilog wr };|]
-                    <> [i| opSel <= #{ show opSel };|]
+                    <> [i| op_sel <= #{ show opSel };|]
          in Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
                 snippetTestBench
                     prj
