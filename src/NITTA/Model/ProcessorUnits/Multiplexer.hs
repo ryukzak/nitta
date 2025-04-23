@@ -144,7 +144,7 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
         | not $ null sources =
             let sources' = sources \\ S.elems vs
                 process_' = execSchedule pu $ do
-                    scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
+                    _ <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
                     when (null sources') $ do
                         let a = inf $ stepsInterval $ relatedEndpoints (process_ pu) (variables f)
                         scheduleFunctionFinish_ [] f (a ... sup epAt)
@@ -163,7 +163,7 @@ execution pu@Multiplexer{targets = [], sources = [], muxSels = [], remain} f
     | Just (F.Mux a b (O c)) <- castF f =
         pu
             { sources = S.elems c
-            , muxSels = map (\(I v) -> v) [b]
+            , muxSels = [(\(I v) -> v) b]
             , targets = map (\(I v) -> v) a
             , remain = filter (/= f) remain
             , currentWork = Just f

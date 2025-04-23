@@ -19,7 +19,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 
 import Control.Monad (when)
-import Data.Bits
+import Data.Bits hiding (bit)
 import Data.Foldable
 import Data.Maybe
 import Data.String.Interpolate
@@ -95,7 +95,7 @@ instance Controllable (Compare v x t) where
         ]
             ++ zipWith (\tag bit -> (tag, Bool bit)) opSelPort (bits opSel selWidth)
         where
-            bits val width = [testBit val (width - i - 1) | i <- [0 .. width - 1]]
+            bits val localWidth = [testBit val (localWidth - idx - 1) | idx <- [0 .. localWidth - 1]]
     usedPortTags ComparePorts{oePort, wrPort, opSelPort} = oePort : wrPort : opSelPort
 
     takePortTags (oe : wr : xs) _ = ComparePorts oe wr sel
