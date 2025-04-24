@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverlappingInstances #-}
+
+-- {-# LANGUAGE OverlappingInstances #-}
 
 {- |
  Module      : NITTA.Intermediate.Tests.Functions
@@ -12,18 +13,15 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
-import Control.Monad (forM, when)
+import Control.Monad (forM)
 import Data.HashMap.Strict qualified as HM
-import Data.List (nub, (\\))
+import Data.List (nub)
 import Data.Map qualified as M
-import Data.Maybe (listToMaybe)
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
-import NITTA.Intermediate.Types (packF)
 import Test.QuickCheck
 
 maxLenght = 8
@@ -99,7 +97,7 @@ instance Arbitrary x => Arbitrary (LogicCompare T.Text x) where
                 b <- inputVarGen
                 LogicCompare op a b <$> outputVarsGen
 
-instance (Arbitrary x, Var T.Text) => Arbitrary (Cntx T.Text x) where
+instance Arbitrary x => Arbitrary (Cntx T.Text x) where
     arbitrary = do
         inputVars <- vectorOf 16 inputVarGen
         let keys = map (\(I v) -> v) inputVars
@@ -107,10 +105,7 @@ instance (Arbitrary x, Var T.Text) => Arbitrary (Cntx T.Text x) where
         let cycleCntxMap = HM.fromList (zip keys values)
         let process = [CycleCntx cycleCntxMap]
 
-        -- receivedVars <- listOf inputVarGen
-        -- let receivedKeys = map (\(I v) -> v) receivedVars
-        -- receivedValues <- forM receivedKeys $ \k -> (k,) <$> listOf arbitrary
-        let received = M.fromList [] -- receivedValues
+        let received = M.empty
         return $
             Cntx
                 { cntxProcess = process
@@ -121,18 +116,17 @@ instance (Arbitrary x, Var T.Text) => Arbitrary (Cntx T.Text x) where
 instance Arbitrary (Mux T.Text Int) where
     arbitrary =
         Mux
-            <$> vectorOf 15 inputVarGen
+            <$> vectorOf 11 inputVarGen
             <*> inputVarGen
             <*> outputVarsGen
 
-instance Arbitrary (Mux T.Text Int, Cntx T.Text Int) where
+instance {-# OVERLAPS #-} Arbitrary ([Mux T.Text Int], Cntx T.Text Int) where
     arbitrary = do
-        mux@(Mux ins sel outs) <- arbitrary
+        m@(Mux ins sel outs) <- suchThat arbitrary uniqueVars
 
         let inputVars = [v | I v <- ins]
             selVar = case sel of I v -> v
-            outputVars = case outs of O vs -> S.toList vs
-            allVars = nub $ inputVars ++ [selVar] ++ outputVars
+            allVars = nub $ inputVars ++ [selVar]
 
         initialValues <- forM allVars $ \v -> do
             Positive x <- arbitrary
@@ -151,8 +145,4 @@ instance Arbitrary (Mux T.Text Int, Cntx T.Text Int) where
                     , cntxCycleNumber = 0
                     }
 
-        return (mux, cntx)
-        where
-            getPositive x = abs x + 1
-            muxDataInputs (Mux ins _ _) = ins
-            muxSel (Mux _ sel _) = sel
+        return ([m], cntx)

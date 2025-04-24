@@ -21,7 +21,6 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     initialCycleCntxGen',
     processAlgOnEndpointGen,
     algSynthesisGen,
-    algGenWithContext,
 ) where
 
 import Data.CallStack
@@ -32,6 +31,8 @@ import Data.Map qualified as M
 import Data.Set (elems, empty, fromList, intersection, union)
 import Data.Set qualified as S
 import Data.Text qualified as T
+import Debug.Trace
+import GHC.Show (Show (show))
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -123,12 +124,6 @@ algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
                     (empty, [])
                     alg
 
--- algGenWithContext :: [Gen (F v x, Cntx v x)] -> Gen [(F v x, Cntx v x)]
-algGenWithContext gens = mapM (`suchThat` uniqueVarsContext) gens
-    where
-        uniqueVarsContext (f, cntx) =
-            S.null (variables f `S.intersection` S.fromList (M.keys (cntxReceived cntx)))
-
 initialCycleCntxGen fs = do
     let vs = elems $ unionsMap inputs fs
     xs <- infiniteListOf arbitrary
@@ -137,18 +132,11 @@ initialCycleCntxGen fs = do
     return cntx0
 
 initialCycleCntxGen' fs cntx = do
-    let lastValues = case reverse (cntxProcess cntx) of
-            (CycleCntx hm : _) -> hm
-            _ -> HM.empty
-    let fsVars = elems $ unionsMap inputs fs
+    let lastCycle = case reverse (cntxProcess cntx) of
+            (CycleCntx hm : _) -> CycleCntx hm
+            _ -> CycleCntx HM.empty
 
-    let missingVars = filter (`notElem` HM.keys lastValues) fsVars -- todo it has to be rewritten somehow...
-    newValues <- mapM (\v -> (v,) <$> (getPositive <$> arbitrary)) missingVars -- move to Arbitrary
-    let initialValues = HM.union lastValues $ HM.fromList newValues
-
-    return $ simulateAlg 5 (CycleCntx initialValues) [] fs
-    where
-        getPositive x = abs x + 1
+    return $ simulateAlg 5 lastCycle [] fs
 
 {- | Automatic synthesis evaluation process with random decisions. If we can't bind
 function to PU then we skip it.

@@ -45,10 +45,9 @@ import NITTA.Project qualified as P
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix
-import Test.QuickCheck (arbitrary)
 import Test.QuickCheck.Monadic
 import Test.Tasty (TestTree)
-import Test.Tasty.QuickCheck (Gen, testProperty)
+import Test.Tasty.QuickCheck (testProperty)
 
 -- * Test cases
 
@@ -127,7 +126,7 @@ puCoSimProp name pu0 fsGen =
 puCoSimPropWithContext name pu0 fsGen =
     testProperty (toModuleName name) $ do
         (fs, cntx) <- fsGen
-        cntx2 <- initialCycleCntxGen' fs cntx
+        cntx' <- initialCycleCntxGen' fs cntx
         (pu, _) <- processAlgOnEndpointGen pu0 (return fs)
         return $
             monadicIO $
@@ -150,7 +149,7 @@ puCoSimPropWithContext name pu0 fsGen =
                                 , pAbsNittaPath = pwd </> "gen" </> uniqueName
                                 , pUnit = pu
                                 , pUnitEnv = def
-                                , pTestCntx = cntx2
+                                , pTestCntx = cntx'
                                 , pTemplates = ["templates/Icarus"]
                                 }
                     writeProject prj
