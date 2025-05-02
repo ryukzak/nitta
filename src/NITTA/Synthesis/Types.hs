@@ -174,9 +174,10 @@ data SynthesisState m tag v x t = SynthesisState
     , possibleDeadlockBinds :: S.Set (F v x)
     -- ^ a function set, which binding may cause dead lock
     , bindWaves :: M.Map v Int
-    -- ^ if algorithm will be represented as a graph, where nodes -
-    --  variables of not bound functions, edges - casuality, wave is a
-    --  minimal number of a step from an initial node to selected
+    {- ^ if algorithm will be represented as a graph, where nodes -
+    variables of not bound functions, edges - casuality, wave is a
+    minimal number of a step from an initial node to selected
+    -}
     , processWaves :: [ProcessWave v x]
     -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
     , numberOfProcessWaves :: Int
@@ -184,8 +185,9 @@ data SynthesisState m tag v x t = SynthesisState
     , numberOfDataflowOptions :: Int
     -- ^ number of dataflow options
     , transferableVars :: S.Set v
-    -- ^ a variable set, which can be transferred on the current
-    --  synthesis step
+    {- ^ a variable set, which can be transferred on the current
+    synthesis step
+    -}
     , unitWorkloadInFunction :: M.Map tag Int
     -- ^ dictionary with number of bound functions for each unit
     }
