@@ -42,19 +42,20 @@ span.spaces    { background: white }
 <span class="lineno">   23 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">outputPath</span></span></span> :: String
 <span class="lineno">   24 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">mlBackendGetter</span></span></span> :: IO MlBackendServer
 <span class="lineno">   25 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nodeScores</span></span></span> :: [T.Text]
-<span class="lineno">   26 </span>    -- ^ list of node scores name. Used for ML backend mostly, but can be used
-<span class="lineno">   27 </span>    -- for any &quot;hardcoded&quot; scoring function.
-<span class="lineno">   28 </span>    }
-<span class="lineno">   29 </span>
-<span class="lineno">   30 </span>instance Default (BackendCtx tag v x t) where
-<span class="lineno">   31 </span>    <span class="decl"><span class="istickedoff">def =</span>
-<span class="lineno">   32 </span><span class="spaces">        </span><span class="istickedoff">BackendCtx</span>
-<span class="lineno">   33 </span><span class="spaces">            </span><span class="istickedoff">{ root = <span class="nottickedoff">error &quot;root of a default (missing) BackendCtx was accessed&quot;</span></span>
-<span class="lineno">   34 </span><span class="spaces">            </span><span class="istickedoff">, receivedValues = <span class="nottickedoff">def</span></span>
-<span class="lineno">   35 </span><span class="spaces">            </span><span class="istickedoff">, outputPath = <span class="nottickedoff">def</span></span>
-<span class="lineno">   36 </span><span class="spaces">            </span><span class="istickedoff">, mlBackendGetter = <span class="nottickedoff">def</span></span>
-<span class="lineno">   37 </span><span class="spaces">            </span><span class="istickedoff">, nodeScores = def</span>
-<span class="lineno">   38 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   26 </span>    {- ^ list of node scores name. Used for ML backend mostly, but can be used
+<span class="lineno">   27 </span>    for any &quot;hardcoded&quot; scoring function.
+<span class="lineno">   28 </span>    -}
+<span class="lineno">   29 </span>    }
+<span class="lineno">   30 </span>
+<span class="lineno">   31 </span>instance Default (BackendCtx tag v x t) where
+<span class="lineno">   32 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">   33 </span><span class="spaces">        </span><span class="istickedoff">BackendCtx</span>
+<span class="lineno">   34 </span><span class="spaces">            </span><span class="istickedoff">{ root = <span class="nottickedoff">error &quot;root of a default (missing) BackendCtx was accessed&quot;</span></span>
+<span class="lineno">   35 </span><span class="spaces">            </span><span class="istickedoff">, receivedValues = <span class="nottickedoff">def</span></span>
+<span class="lineno">   36 </span><span class="spaces">            </span><span class="istickedoff">, outputPath = <span class="nottickedoff">def</span></span>
+<span class="lineno">   37 </span><span class="spaces">            </span><span class="istickedoff">, mlBackendGetter = <span class="nottickedoff">def</span></span>
+<span class="lineno">   38 </span><span class="spaces">            </span><span class="istickedoff">, nodeScores = def</span>
+<span class="lineno">   39 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 
 </pre>
 </body>

@@ -1183,12 +1183,13 @@ Changeset{changeI=[(a, b), (c, d)], changeO=[(e, [f, g])]}
 </span><span id="line-413"></span><span>    </span><span class="hs-comment">-- ^ change set for input variables (one to one)</span><span>
 </span><span id="line-414"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="changeO"><span class="annot"><span class="annottext">forall v. Changeset v -&gt; Map v (Set v)
 </span><a href="NITTA.Intermediate.Types.html#changeO"><span class="hs-identifier hs-var hs-var">changeO</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621680236402"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="annot"><a href="#local-6989586621680236402"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-415"></span><span>    </span><span class="hs-comment">-- ^ change set for output variables. Many to many relations:</span><span>
-</span><span id="line-416"></span><span>    </span><span class="hs-comment">--</span><span>
-</span><span id="line-417"></span><span>    </span><span class="hs-comment">--  &gt; fromList [(a, {x}), (b, {x})] -- several output variables to one</span><span>
-</span><span id="line-418"></span><span>    </span><span class="hs-comment">--  &gt; fromList [(c, {y, z})] -- one output variable to many</span><span>
-</span><span id="line-419"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-420"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680235099"><span id="local-6989586621680235105"><span class="annot"><span class="annottext">Changeset v -&gt; Changeset v -&gt; Bool
+</span><span id="line-415"></span><span>    </span><span class="hs-comment">{- ^ change set for output variables. Many to many relations:
+
+    &gt; fromList [(a, {x}), (b, {x})] -- several output variables to one
+    &gt; fromList [(c, {y, z})] -- one output variable to many
+    -}</span><span>
+</span><span id="line-420"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-421"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680235099"><span id="local-6989586621680235105"><span class="annot"><span class="annottext">Changeset v -&gt; Changeset v -&gt; Bool
 forall v. Eq v =&gt; Changeset v -&gt; Changeset v -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
 /= :: Changeset v -&gt; Changeset v -&gt; Bool
@@ -1196,9 +1197,9 @@ $c/= :: forall v. Eq v =&gt; Changeset v -&gt; Changeset v -&gt; Bool
 == :: Changeset v -&gt; Changeset v -&gt; Bool
 $c== :: forall v. Eq v =&gt; Changeset v -&gt; Changeset v -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-421"></span><span>
-</span><span id="line-422"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680235094"><span id="local-6989586621680235097"><span id="local-6989586621680236225"><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236225"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236225"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-423"></span><span>    </span><span id="local-6989586621680235064"><span class="annot"><span class="annottext">show :: Changeset v -&gt; String
+</span><span id="line-422"></span><span>
+</span><span id="line-423"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680235094"><span id="local-6989586621680235097"><span id="local-6989586621680236225"><span class="annot"><a href="NITTA.Intermediate.Variable.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236225"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236225"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-424"></span><span>    </span><span id="local-6989586621680235064"><span class="annot"><span class="annottext">show :: Changeset v -&gt; String
 </span><a href="#local-6989586621680235064"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span class="hs-special">{</span><span id="local-6989586621680235063"><span class="annot"><span class="annottext">Map v v
 changeI :: Map v v
 changeI :: forall v. Changeset v -&gt; Map v v
@@ -1206,7 +1207,7 @@ changeI :: forall v. Changeset v -&gt; Map v v
 changeO :: Map v (Set v)
 changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><a href="#local-6989586621680235062"><span class="hs-identifier hs-var hs-var">changeO</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-424"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680235061"><span class="annot"><span class="annottext">changeI' :: String
+</span><span id="line-425"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680235061"><span class="annot"><span class="annottext">changeI' :: String
 </span><a href="#local-6989586621680235061"><span class="hs-identifier hs-var hs-var">changeI'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [[a]] -&gt; [a]
 </span><span class="hs-identifier hs-var">S.join</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -1228,7 +1229,7 @@ changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map v v
 </span><a href="#local-6989586621680235063"><span class="hs-identifier hs-var">changeI</span></a></span><span>
-</span><span id="line-425"></span><span>            </span><span id="local-6989586621680235058"><span class="annot"><span class="annottext">changeO' :: String
+</span><span id="line-426"></span><span>            </span><span id="local-6989586621680235058"><span class="annot"><span class="annottext">changeO' :: String
 </span><a href="#local-6989586621680235058"><span class="hs-identifier hs-var hs-var">changeO'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [[a]] -&gt; [a]
 </span><span class="hs-identifier hs-var">S.join</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -1252,7 +1253,7 @@ changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map v (Set v)
 </span><a href="#local-6989586621680235062"><span class="hs-identifier hs-var">changeO</span></a></span><span>
-</span><span id="line-426"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-427"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Changeset{changeI=[&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><a href="#local-6989586621680235061"><span class="hs-identifier hs-var">changeI'</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
@@ -1262,16 +1263,16 @@ changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><a href="#local-6989586621680235058"><span class="hs-identifier hs-var">changeO'</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;]}&quot;</span></span><span>
-</span><span id="line-427"></span><span>
-</span><span id="line-428"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680236223"><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236223"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-429"></span><span>    </span><span id="local-6989586621680235051"><span class="annot"><span class="annottext">def :: Changeset v
+</span><span id="line-428"></span><span>
+</span><span id="line-429"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680236223"><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680236223"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-430"></span><span>    </span><span id="local-6989586621680235051"><span class="annot"><span class="annottext">def :: Changeset v
 </span><a href="#local-6989586621680235051"><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall v. Map v v -&gt; Map v (Set v) -&gt; Changeset v
 </span><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-var">Changeset</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span> </span><span class="annot"><span class="annottext">forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
-</span><span id="line-430"></span><span>
-</span><span id="line-431"></span><span class="hs-comment">-- | Reverse changeset for patch a process unit options / decision.</span><span>
-</span><span id="line-432"></span><span id="reverseDiff"><span class="annot"><span class="annottext">reverseDiff :: Changeset t -&gt; Changeset t
+</span><span id="line-431"></span><span>
+</span><span id="line-432"></span><span class="hs-comment">-- | Reverse changeset for patch a process unit options / decision.</span><span>
+</span><span id="line-433"></span><span id="reverseDiff"><span class="annot"><span class="annottext">reverseDiff :: Changeset t -&gt; Changeset t
 </span><a href="NITTA.Intermediate.Types.html#reverseDiff"><span class="hs-identifier hs-var hs-var">reverseDiff</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span class="hs-special">{</span><span id="local-6989586621680235043"><span class="annot"><span class="annottext">Map t t
 changeI :: Map t t
 changeI :: forall v. Changeset v -&gt; Map v v
@@ -1279,8 +1280,8 @@ changeI :: forall v. Changeset v -&gt; Map v v
 changeO :: Map t (Set t)
 changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><a href="#local-6989586621680235042"><span class="hs-identifier hs-var hs-var">changeO</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-433"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span>
-</span><span id="line-434"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">changeI :: Map t t
+</span><span id="line-434"></span><span>    </span><span class="annot"><a href="NITTA.Intermediate.Types.html#Changeset"><span class="hs-identifier hs-type">Changeset</span></a></span><span>
+</span><span id="line-435"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">changeI :: Map t t
 </span><a href="NITTA.Intermediate.Types.html#changeI"><span class="hs-identifier hs-var">changeI</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
@@ -1289,51 +1290,51 @@ changeO :: forall v. Changeset v -&gt; Map v (Set v)
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map t t
 </span><a href="#local-6989586621680235043"><span class="hs-identifier hs-var">changeI</span></a></span><span>
-</span><span id="line-435"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">changeO :: Map t (Set t)
+</span><span id="line-436"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">changeO :: Map t (Set t)
 </span><a href="NITTA.Intermediate.Types.html#changeO"><span class="hs-identifier hs-var">changeO</span></a></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-436"></span><span>            </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) b a.
+</span><span id="line-437"></span><span>            </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
 </span><span class="hs-identifier hs-var">foldl</span></span><span>
-</span><span id="line-437"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680235040"><span class="annot"><span class="annottext">Map t (Set t)
+</span><span id="line-438"></span><span>                </span><span class="hs-special">(</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621680235040"><span class="annot"><span class="annottext">Map t (Set t)
 </span><a href="#local-6989586621680235040"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680235039"><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235039"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680235038"><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235038"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-438"></span><span>                    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680235037"><span class="annot"><span class="annottext">box' :: Set t
+</span><span id="line-439"></span><span>                    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680235037"><span class="annot"><span class="annottext">box' :: Set t
 </span><a href="#local-6989586621680235037"><span class="hs-identifier hs-var hs-var">box'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Map t (Set t)
 </span><a href="#local-6989586621680235040"><span class="hs-identifier hs-var">st</span></a></span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; Map k a -&gt; k -&gt; Maybe a
 </span><span class="hs-operator hs-var">M.!?</span></span><span> </span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235039"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-439"></span><span>                            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680235036"><span class="annot"><span class="annottext">Set t
+</span><span id="line-440"></span><span>                            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680235036"><span class="annot"><span class="annottext">Set t
 </span><a href="#local-6989586621680235036"><span class="hs-identifier hs-var">box</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Set t
 </span><a href="#local-6989586621680235036"><span class="hs-identifier hs-var">box</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; Set a -&gt; Set a -&gt; Set a
 </span><span class="hs-operator hs-var">`S.union`</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Set a
 </span><span class="hs-identifier hs-var">S.singleton</span></span><span> </span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235038"><span class="hs-identifier hs-var">v</span></a></span><span>
-</span><span id="line-440"></span><span>                            </span><span class="annot"><span class="annottext">Maybe (Set t)
+</span><span id="line-441"></span><span>                            </span><span class="annot"><span class="annottext">Maybe (Set t)
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Set a
 </span><span class="hs-identifier hs-var">S.singleton</span></span><span> </span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235038"><span class="hs-identifier hs-var">v</span></a></span><span>
-</span><span id="line-441"></span><span>                     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span id="line-442"></span><span>                     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
 </span><span class="hs-identifier hs-var">M.insert</span></span><span> </span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235039"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Set t
 </span><a href="#local-6989586621680235037"><span class="hs-identifier hs-var">box'</span></a></span><span> </span><span class="annot"><span class="annottext">Map t (Set t)
 </span><a href="#local-6989586621680235040"><span class="hs-identifier hs-var">st</span></a></span><span>
-</span><span id="line-442"></span><span>                </span><span class="hs-special">)</span><span>
-</span><span id="line-443"></span><span>                </span><span class="annot"><span class="annottext">forall a. Default a =&gt; a
+</span><span id="line-443"></span><span>                </span><span class="hs-special">)</span><span>
+</span><span id="line-444"></span><span>                </span><span class="annot"><span class="annottext">forall a. Default a =&gt; a
 </span><span class="hs-identifier hs-var">def</span></span><span>
-</span><span id="line-444"></span><span>                </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
+</span><span id="line-445"></span><span>                </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235034"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235033"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-445"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680235033"><span class="annot"><span class="annottext">t
+</span><span id="line-446"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680235033"><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235033"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680235032"><span class="annot"><span class="annottext">Set t
 </span><a href="#local-6989586621680235032"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall k a. Map k a -&gt; [(k, a)]
 </span><span class="hs-identifier hs-var">M.assocs</span></span><span> </span><span class="annot"><span class="annottext">Map t (Set t)
 </span><a href="#local-6989586621680235042"><span class="hs-identifier hs-var">changeO</span></a></span><span>
-</span><span id="line-446"></span><span>                </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680235034"><span class="annot"><span class="annottext">t
+</span><span id="line-447"></span><span>                </span><span class="hs-special">,</span><span> </span><span id="local-6989586621680235034"><span class="annot"><span class="annottext">t
 </span><a href="#local-6989586621680235034"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.elems</span></span><span> </span><span class="annot"><span class="annottext">Set t
 </span><a href="#local-6989586621680235032"><span class="hs-identifier hs-var">bs</span></a></span><span>
-</span><span id="line-447"></span><span>                </span><span class="hs-special">]</span><span>
-</span><span id="line-448"></span><span>        </span><span class="hs-special">}</span><span>
-</span><span id="line-449"></span></pre></body></html>
+</span><span id="line-448"></span><span>                </span><span class="hs-special">]</span><span>
+</span><span id="line-449"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-450"></span></pre></body></html>

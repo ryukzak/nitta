@@ -1196,8 +1196,8 @@ bnBound :: forall tag v x t. BusNetwork tag v x t -&gt; Map tag [F v x]
 </span><span id="line-350"></span><span>                                    </span><span class="hs-comment">-- inputs, because they are equal from</span><span>
 </span><span id="line-351"></span><span>                                    </span><span class="hs-comment">-- scheduling point of view</span><span>
 </span><span id="line-352"></span><span>
-</span><span id="line-353"></span><span>                                    </span><span class="hs-comment">-- TODO: other way to reduce number of</span><span>
-</span><span id="line-354"></span><span>                                    </span><span class="hs-comment">-- combinations</span><span>
+</span><span id="line-353"></span><span>                                        </span><span class="hs-comment">-- TODO: other way to reduce number of</span><span>
+</span><span id="line-354"></span><span>                                        </span><span class="hs-comment">-- combinations</span><span>
 </span><span id="line-355"></span><span>                                        </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c

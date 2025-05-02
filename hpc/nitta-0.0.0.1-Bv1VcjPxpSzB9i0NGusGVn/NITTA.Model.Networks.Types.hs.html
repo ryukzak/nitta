@@ -200,15 +200,16 @@ span.spaces    { background: white }
 <span class="lineno">  181 </span>    PUPrototype ::
 <span class="lineno">  182 </span>        (UnitTag tag, PUClasses pu v x t) =&gt;
 <span class="lineno">  183 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTag</span></span></span> :: tag
-<span class="lineno">  184 </span>        -- ^ Prototype tag. You can specify tag as a template by adding {x}.
-<span class="lineno">  185 </span>        --  This will allow to allocate PU more than once by replacing {x} with index.
-<span class="lineno">  186 </span>        --  When PU is allocated processUnitTag will look like bnName_pTag.
-<span class="lineno">  187 </span>        , <span class="decl"><span class="nottickedoff">pProto</span></span> :: pu
-<span class="lineno">  188 </span>        -- ^ PU prototype
-<span class="lineno">  189 </span>        , <span class="decl"><span class="nottickedoff">pIOPorts</span></span> :: IOPorts pu
-<span class="lineno">  190 </span>        -- ^ IO ports that will be used by PU
-<span class="lineno">  191 </span>        } -&gt;
-<span class="lineno">  192 </span>        PUPrototype tag v x t
+<span class="lineno">  184 </span>        {- ^ Prototype tag. You can specify tag as a template by adding {x}.
+<span class="lineno">  185 </span>        This will allow to allocate PU more than once by replacing {x} with index.
+<span class="lineno">  186 </span>        When PU is allocated processUnitTag will look like bnName_pTag.
+<span class="lineno">  187 </span>        -}
+<span class="lineno">  188 </span>        , <span class="decl"><span class="nottickedoff">pProto</span></span> :: pu
+<span class="lineno">  189 </span>        -- ^ PU prototype
+<span class="lineno">  190 </span>        , <span class="decl"><span class="nottickedoff">pIOPorts</span></span> :: IOPorts pu
+<span class="lineno">  191 </span>        -- ^ IO ports that will be used by PU
+<span class="lineno">  192 </span>        } -&gt;
+<span class="lineno">  193 </span>        PUPrototype tag v x t
 
 </pre>
 </body>

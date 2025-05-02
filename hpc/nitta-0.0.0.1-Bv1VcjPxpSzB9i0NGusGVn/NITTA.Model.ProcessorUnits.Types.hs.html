@@ -276,158 +276,160 @@ span.spaces    { background: white }
 <span class="lineno">  257 </span>
 <span class="lineno">  258 </span>-- | Relations between process steps.
 <span class="lineno">  259 </span>data Relation
-<span class="lineno">  260 </span>    = -- | Vertical relationships (up and down). For example, the intermediate
-<span class="lineno">  261 </span>      --  step (function execution) can be translated to a sequence of endpoint
-<span class="lineno">  262 </span>      --  steps (receiving and sending variable), and process unit instructions.
-<span class="lineno">  263 </span>      Vertical {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">vUp</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">vDown</span></span></span> :: ProcessStepID}
-<span class="lineno">  264 </span>    | -- | Horizontal relationships (on one level). For example, we bind the
-<span class="lineno">  265 </span>      --  function and apply the refactoring. The binding step should be
-<span class="lineno">  266 </span>      --  connected to refactoring steps, including new binding steps.
-<span class="lineno">  267 </span>      Horizontal {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">hPrev</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">hNext</span></span></span> :: ProcessStepID}
-<span class="lineno">  268 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, Generic, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>)
-<span class="lineno">  269 </span>
-<span class="lineno">  270 </span>instance ToJSON Relation
+<span class="lineno">  260 </span>    = {- | Vertical relationships (up and down). For example, the intermediate
+<span class="lineno">  261 </span>      step (function execution) can be translated to a sequence of endpoint
+<span class="lineno">  262 </span>      steps (receiving and sending variable), and process unit instructions.
+<span class="lineno">  263 </span>      -}
+<span class="lineno">  264 </span>      Vertical {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">vUp</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">vDown</span></span></span> :: ProcessStepID}
+<span class="lineno">  265 </span>    | {- | Horizontal relationships (on one level). For example, we bind the
+<span class="lineno">  266 </span>      function and apply the refactoring. The binding step should be
+<span class="lineno">  267 </span>      connected to refactoring steps, including new binding steps.
+<span class="lineno">  268 </span>      -}
+<span class="lineno">  269 </span>      Horizontal {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">hPrev</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">hNext</span></span></span> :: ProcessStepID}
+<span class="lineno">  270 </span>    deriving (<span class="decl"><span class="istickedoff">Show</span></span>, Generic, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>)
 <span class="lineno">  271 </span>
-<span class="lineno">  272 </span><span class="decl"><span class="istickedoff">whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps</span>
-<span class="lineno">  273 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  274 </span><span class="spaces">        </span><span class="istickedoff">atSameTime a ti = a `member` ti</span></span>
-<span class="lineno">  275 </span>
-<span class="lineno">  276 </span><span class="decl"><span class="istickedoff">extractInstructionAt pu t = mapMaybe (inst <span class="nottickedoff">pu</span>) $ whatsHappen t $ process pu</span>
-<span class="lineno">  277 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  278 </span><span class="spaces">        </span><span class="istickedoff">inst :: Typeable (Instruction pu) =&gt; pu -&gt; Step t (StepInfo v x t) -&gt; Maybe (Instruction pu)</span>
-<span class="lineno">  279 </span><span class="spaces">        </span><span class="istickedoff">inst _ Step{pDesc = InstructionStep instr} = cast instr</span>
-<span class="lineno">  280 </span><span class="spaces">        </span><span class="istickedoff">inst _ _ = Nothing</span></span>
-<span class="lineno">  281 </span>
-<span class="lineno">  282 </span>{- | Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
-<span class="lineno">  283 </span>processor unit has buffered output, so we should provide @oe@ signal for one
-<span class="lineno">  284 </span>tick before data actually send to the bus. That raises the following cases:
-<span class="lineno">  285 </span>
-<span class="lineno">  286 </span>1. First usage. We can receive value immediately on nextTick
+<span class="lineno">  272 </span>instance ToJSON Relation
+<span class="lineno">  273 </span>
+<span class="lineno">  274 </span><span class="decl"><span class="istickedoff">whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps</span>
+<span class="lineno">  275 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  276 </span><span class="spaces">        </span><span class="istickedoff">atSameTime a ti = a `member` ti</span></span>
+<span class="lineno">  277 </span>
+<span class="lineno">  278 </span><span class="decl"><span class="istickedoff">extractInstructionAt pu t = mapMaybe (inst <span class="nottickedoff">pu</span>) $ whatsHappen t $ process pu</span>
+<span class="lineno">  279 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  280 </span><span class="spaces">        </span><span class="istickedoff">inst :: Typeable (Instruction pu) =&gt; pu -&gt; Step t (StepInfo v x t) -&gt; Maybe (Instruction pu)</span>
+<span class="lineno">  281 </span><span class="spaces">        </span><span class="istickedoff">inst _ Step{pDesc = InstructionStep instr} = cast instr</span>
+<span class="lineno">  282 </span><span class="spaces">        </span><span class="istickedoff">inst _ _ = Nothing</span></span>
+<span class="lineno">  283 </span>
+<span class="lineno">  284 </span>{- | Shift @nextTick@ value if it is not zero on a specific offset. Use case: The
+<span class="lineno">  285 </span>processor unit has buffered output, so we should provide @oe@ signal for one
+<span class="lineno">  286 </span>tick before data actually send to the bus. That raises the following cases:
 <span class="lineno">  287 </span>
-<span class="lineno">  288 </span>    @
-<span class="lineno">  289 </span>    tick | Endpoint     | Instruction |
-<span class="lineno">  290 </span>     0   | Target &quot;c&quot;   | WR          | &lt;- nextTick
-<span class="lineno">  291 </span>    @
-<span class="lineno">  292 </span>
-<span class="lineno">  293 </span>2. Not first usage. We need to wait for one tick from the last instruction due to the offset between instruction and data transfers.
+<span class="lineno">  288 </span>1. First usage. We can receive value immediately on nextTick
+<span class="lineno">  289 </span>
+<span class="lineno">  290 </span>    @
+<span class="lineno">  291 </span>    tick | Endpoint     | Instruction |
+<span class="lineno">  292 </span>     0   | Target &quot;c&quot;   | WR          | &lt;- nextTick
+<span class="lineno">  293 </span>    @
 <span class="lineno">  294 </span>
-<span class="lineno">  295 </span>    @
-<span class="lineno">  296 </span>    tick | Endpoint     | Instruction |
-<span class="lineno">  297 </span>      8  |              | OE          |
-<span class="lineno">  298 </span>      9  | Source [&quot;b&quot;] |             | &lt;- nextTick
-<span class="lineno">  299 </span>     10  | Target &quot;c&quot;   | WR          |
-<span class="lineno">  300 </span>    @
-<span class="lineno">  301 </span>-}
-<span class="lineno">  302 </span><span class="decl"><span class="istickedoff">0 `withShift` _offset = 0</span>
-<span class="lineno">  303 </span><span class="spaces"></span><span class="istickedoff">tick `withShift` offset = tick + offset</span></span>
-<span class="lineno">  304 </span>
-<span class="lineno">  305 </span>---------------------------------------------------------------------
+<span class="lineno">  295 </span>2. Not first usage. We need to wait for one tick from the last instruction due to the offset between instruction and data transfers.
+<span class="lineno">  296 </span>
+<span class="lineno">  297 </span>    @
+<span class="lineno">  298 </span>    tick | Endpoint     | Instruction |
+<span class="lineno">  299 </span>      8  |              | OE          |
+<span class="lineno">  300 </span>      9  | Source [&quot;b&quot;] |             | &lt;- nextTick
+<span class="lineno">  301 </span>     10  | Target &quot;c&quot;   | WR          |
+<span class="lineno">  302 </span>    @
+<span class="lineno">  303 </span>-}
+<span class="lineno">  304 </span><span class="decl"><span class="istickedoff">0 `withShift` _offset = 0</span>
+<span class="lineno">  305 </span><span class="spaces"></span><span class="istickedoff">tick `withShift` offset = tick + offset</span></span>
 <span class="lineno">  306 </span>
-<span class="lineno">  307 </span>{- | Type class for controllable units. Defines two level of a unit behaviour
-<span class="lineno">  308 </span>representation (see ahead).
-<span class="lineno">  309 </span>-}
-<span class="lineno">  310 </span>class Controllable pu where
-<span class="lineno">  311 </span>    -- Instruction describe unit behaviour on each mUnit cycle. If instruction
-<span class="lineno">  312 </span>    -- not defined for some cycles - it should be interpreted as NOP.
-<span class="lineno">  313 </span>    data Instruction pu :: Type
-<span class="lineno">  314 </span>
-<span class="lineno">  315 </span>    -- | Microcode desctibe controll signals on each mUnit cycle (without exclusion).
-<span class="lineno">  316 </span>    data Microcode pu :: Type
-<span class="lineno">  317 </span>
-<span class="lineno">  318 </span>    -- | Zip port signal tags and value.
-<span class="lineno">  319 </span>    zipSignalTagsAndValues :: Ports pu -&gt; Microcode pu -&gt; [(SignalTag, SignalValue)]
-<span class="lineno">  320 </span>
-<span class="lineno">  321 </span>    -- | Get list of used control signal tags.
-<span class="lineno">  322 </span>    usedPortTags :: Ports pu -&gt; [SignalTag]
-<span class="lineno">  323 </span>
-<span class="lineno">  324 </span>    -- | Take signal tags from inifinite list of tags.
-<span class="lineno">  325 </span>    takePortTags :: [SignalTag] -&gt; pu -&gt; Ports pu
-<span class="lineno">  326 </span>
-<span class="lineno">  327 </span>-- | Getting microcode value at a specific time.
-<span class="lineno">  328 </span>class ByTime pu t | pu -&gt; t where
-<span class="lineno">  329 </span>    microcodeAt :: pu -&gt; t -&gt; Microcode pu
-<span class="lineno">  330 </span>
-<span class="lineno">  331 </span>instance
-<span class="lineno">  332 </span>    ( Show (Instruction pu)
-<span class="lineno">  333 </span>    , Default (Microcode pu)
-<span class="lineno">  334 </span>    , ProcessorUnit pu v x t
-<span class="lineno">  335 </span>    , UnambiguouslyDecode pu
-<span class="lineno">  336 </span>    , Typeable pu
-<span class="lineno">  337 </span>    ) =&gt;
-<span class="lineno">  338 </span>    ByTime pu t
-<span class="lineno">  339 </span>    where
-<span class="lineno">  340 </span>    <span class="decl"><span class="istickedoff">microcodeAt pu t = case extractInstructionAt pu t of</span>
-<span class="lineno">  341 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; def</span>
-<span class="lineno">  342 </span><span class="spaces">        </span><span class="istickedoff">[instr] -&gt; decodeInstruction instr</span>
-<span class="lineno">  343 </span><span class="spaces">        </span><span class="istickedoff">is -&gt; <span class="nottickedoff">error [i|instruction collision at #{ t } tick: #{ is } #{ pretty $ process pu }|]</span></span></span>
-<span class="lineno">  344 </span>
-<span class="lineno">  345 </span>newtype SignalTag = SignalTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">signalTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  307 </span>---------------------------------------------------------------------
+<span class="lineno">  308 </span>
+<span class="lineno">  309 </span>{- | Type class for controllable units. Defines two level of a unit behaviour
+<span class="lineno">  310 </span>representation (see ahead).
+<span class="lineno">  311 </span>-}
+<span class="lineno">  312 </span>class Controllable pu where
+<span class="lineno">  313 </span>    -- Instruction describe unit behaviour on each mUnit cycle. If instruction
+<span class="lineno">  314 </span>    -- not defined for some cycles - it should be interpreted as NOP.
+<span class="lineno">  315 </span>    data Instruction pu :: Type
+<span class="lineno">  316 </span>
+<span class="lineno">  317 </span>    -- | Microcode desctibe controll signals on each mUnit cycle (without exclusion).
+<span class="lineno">  318 </span>    data Microcode pu :: Type
+<span class="lineno">  319 </span>
+<span class="lineno">  320 </span>    -- | Zip port signal tags and value.
+<span class="lineno">  321 </span>    zipSignalTagsAndValues :: Ports pu -&gt; Microcode pu -&gt; [(SignalTag, SignalValue)]
+<span class="lineno">  322 </span>
+<span class="lineno">  323 </span>    -- | Get list of used control signal tags.
+<span class="lineno">  324 </span>    usedPortTags :: Ports pu -&gt; [SignalTag]
+<span class="lineno">  325 </span>
+<span class="lineno">  326 </span>    -- | Take signal tags from inifinite list of tags.
+<span class="lineno">  327 </span>    takePortTags :: [SignalTag] -&gt; pu -&gt; Ports pu
+<span class="lineno">  328 </span>
+<span class="lineno">  329 </span>-- | Getting microcode value at a specific time.
+<span class="lineno">  330 </span>class ByTime pu t | pu -&gt; t where
+<span class="lineno">  331 </span>    microcodeAt :: pu -&gt; t -&gt; Microcode pu
+<span class="lineno">  332 </span>
+<span class="lineno">  333 </span>instance
+<span class="lineno">  334 </span>    ( Show (Instruction pu)
+<span class="lineno">  335 </span>    , Default (Microcode pu)
+<span class="lineno">  336 </span>    , ProcessorUnit pu v x t
+<span class="lineno">  337 </span>    , UnambiguouslyDecode pu
+<span class="lineno">  338 </span>    , Typeable pu
+<span class="lineno">  339 </span>    ) =&gt;
+<span class="lineno">  340 </span>    ByTime pu t
+<span class="lineno">  341 </span>    where
+<span class="lineno">  342 </span>    <span class="decl"><span class="istickedoff">microcodeAt pu t = case extractInstructionAt pu t of</span>
+<span class="lineno">  343 </span><span class="spaces">        </span><span class="istickedoff">[] -&gt; def</span>
+<span class="lineno">  344 </span><span class="spaces">        </span><span class="istickedoff">[instr] -&gt; decodeInstruction instr</span>
+<span class="lineno">  345 </span><span class="spaces">        </span><span class="istickedoff">is -&gt; <span class="nottickedoff">error [i|instruction collision at #{ t } tick: #{ is } #{ pretty $ process pu }|]</span></span></span>
 <span class="lineno">  346 </span>
-<span class="lineno">  347 </span>instance Show SignalTag where
-<span class="lineno">  348 </span>    <span class="decl"><span class="istickedoff">show = toString . signalTag</span></span>
-<span class="lineno">  349 </span>
-<span class="lineno">  350 </span>-- | Type class of processor units with control ports.
-<span class="lineno">  351 </span>class Connected pu where
-<span class="lineno">  352 </span>    -- | A processor unit control ports (signals, flags).
-<span class="lineno">  353 </span>    data Ports pu :: Type
-<span class="lineno">  354 </span>
-<span class="lineno">  355 </span>{- | Decoding microcode from a simple instruction (microcode don't change over
-<span class="lineno">  356 </span>time).
-<span class="lineno">  357 </span>
-<span class="lineno">  358 </span>TODO: Generalize that class for all process units, including networks.
-<span class="lineno">  359 </span>-}
-<span class="lineno">  360 </span>class UnambiguouslyDecode pu where
-<span class="lineno">  361 </span>    decodeInstruction :: Instruction pu -&gt; Microcode pu
-<span class="lineno">  362 </span>
-<span class="lineno">  363 </span>-- | Control line value.
-<span class="lineno">  364 </span>data SignalValue
-<span class="lineno">  365 </span>    = -- | undefined by design (`x`)
-<span class="lineno">  366 </span>      Undef
-<span class="lineno">  367 </span>    | -- | boolean (`0` or `1`)
-<span class="lineno">  368 </span>      Bool Bool
-<span class="lineno">  369 </span>    | -- | broken value (`x`) by data colision
-<span class="lineno">  370 </span>      BrokenSignal
-<span class="lineno">  371 </span>    deriving (<span class="decl"><span class="nottickedoff">Eq</span></span>)
-<span class="lineno">  372 </span>
-<span class="lineno">  373 </span>instance Default SignalValue where
-<span class="lineno">  374 </span>    <span class="decl"><span class="istickedoff">def = Undef</span></span>
-<span class="lineno">  375 </span>
-<span class="lineno">  376 </span>instance Show SignalValue where
-<span class="lineno">  377 </span>    <span class="decl"><span class="istickedoff">show Undef = &quot;x&quot;</span>
-<span class="lineno">  378 </span><span class="spaces">    </span><span class="istickedoff">show (Bool True) = &quot;1&quot;</span>
-<span class="lineno">  379 </span><span class="spaces">    </span><span class="istickedoff">show (Bool False) = &quot;0&quot;</span>
-<span class="lineno">  380 </span><span class="spaces">    </span><span class="istickedoff">show BrokenSignal = <span class="nottickedoff">&quot;B&quot;</span></span></span>
-<span class="lineno">  381 </span>
-<span class="lineno">  382 </span><span class="decl"><span class="istickedoff">Undef +++ v = v</span>
-<span class="lineno">  383 </span><span class="spaces"></span><span class="istickedoff">v +++ Undef = <span class="nottickedoff">v</span></span>
-<span class="lineno">  384 </span><span class="spaces"></span><span class="istickedoff">_ +++ _ = <span class="nottickedoff">BrokenSignal</span></span></span>
-<span class="lineno">  385 </span>
-<span class="lineno">  386 </span>------------------------------------------------------------
+<span class="lineno">  347 </span>newtype SignalTag = SignalTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">signalTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  348 </span>
+<span class="lineno">  349 </span>instance Show SignalTag where
+<span class="lineno">  350 </span>    <span class="decl"><span class="istickedoff">show = toString . signalTag</span></span>
+<span class="lineno">  351 </span>
+<span class="lineno">  352 </span>-- | Type class of processor units with control ports.
+<span class="lineno">  353 </span>class Connected pu where
+<span class="lineno">  354 </span>    -- | A processor unit control ports (signals, flags).
+<span class="lineno">  355 </span>    data Ports pu :: Type
+<span class="lineno">  356 </span>
+<span class="lineno">  357 </span>{- | Decoding microcode from a simple instruction (microcode don't change over
+<span class="lineno">  358 </span>time).
+<span class="lineno">  359 </span>
+<span class="lineno">  360 </span>TODO: Generalize that class for all process units, including networks.
+<span class="lineno">  361 </span>-}
+<span class="lineno">  362 </span>class UnambiguouslyDecode pu where
+<span class="lineno">  363 </span>    decodeInstruction :: Instruction pu -&gt; Microcode pu
+<span class="lineno">  364 </span>
+<span class="lineno">  365 </span>-- | Control line value.
+<span class="lineno">  366 </span>data SignalValue
+<span class="lineno">  367 </span>    = -- | undefined by design (`x`)
+<span class="lineno">  368 </span>      Undef
+<span class="lineno">  369 </span>    | -- | boolean (`0` or `1`)
+<span class="lineno">  370 </span>      Bool Bool
+<span class="lineno">  371 </span>    | -- | broken value (`x`) by data colision
+<span class="lineno">  372 </span>      BrokenSignal
+<span class="lineno">  373 </span>    deriving (<span class="decl"><span class="nottickedoff">Eq</span></span>)
+<span class="lineno">  374 </span>
+<span class="lineno">  375 </span>instance Default SignalValue where
+<span class="lineno">  376 </span>    <span class="decl"><span class="istickedoff">def = Undef</span></span>
+<span class="lineno">  377 </span>
+<span class="lineno">  378 </span>instance Show SignalValue where
+<span class="lineno">  379 </span>    <span class="decl"><span class="istickedoff">show Undef = &quot;x&quot;</span>
+<span class="lineno">  380 </span><span class="spaces">    </span><span class="istickedoff">show (Bool True) = &quot;1&quot;</span>
+<span class="lineno">  381 </span><span class="spaces">    </span><span class="istickedoff">show (Bool False) = &quot;0&quot;</span>
+<span class="lineno">  382 </span><span class="spaces">    </span><span class="istickedoff">show BrokenSignal = <span class="nottickedoff">&quot;B&quot;</span></span></span>
+<span class="lineno">  383 </span>
+<span class="lineno">  384 </span><span class="decl"><span class="istickedoff">Undef +++ v = v</span>
+<span class="lineno">  385 </span><span class="spaces"></span><span class="istickedoff">v +++ Undef = <span class="nottickedoff">v</span></span>
+<span class="lineno">  386 </span><span class="spaces"></span><span class="istickedoff">_ +++ _ = <span class="nottickedoff">BrokenSignal</span></span></span>
 <span class="lineno">  387 </span>
-<span class="lineno">  388 </span>-- | Type class of processor units with IO ports.
-<span class="lineno">  389 </span>class IOConnected pu where
-<span class="lineno">  390 </span>    data IOPorts pu :: Type
-<span class="lineno">  391 </span>
-<span class="lineno">  392 </span>    -- | External input ports, which go outside of NITTA mUnit.
-<span class="lineno">  393 </span>    inputPorts :: IOPorts pu -&gt; S.Set InputPortTag
-<span class="lineno">  394 </span>    <span class="decl"><span class="istickedoff">inputPorts _ = S.empty</span></span>
-<span class="lineno">  395 </span>
-<span class="lineno">  396 </span>    -- | External output ports, which go outside of NITTA mUnit.
-<span class="lineno">  397 </span>    outputPorts :: IOPorts pu -&gt; S.Set OutputPortTag
-<span class="lineno">  398 </span>    <span class="decl"><span class="istickedoff">outputPorts _ = S.empty</span></span>
-<span class="lineno">  399 </span>
-<span class="lineno">  400 </span>    -- | External output ports, which go outside of NITTA mUnit.
-<span class="lineno">  401 </span>    inoutPorts :: IOPorts pu -&gt; S.Set InoutPortTag
-<span class="lineno">  402 </span>    <span class="decl"><span class="istickedoff">inoutPorts _ = S.empty</span></span>
-<span class="lineno">  403 </span>
-<span class="lineno">  404 </span>newtype InputPortTag = InputPortTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">inputPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  405 </span>instance Show InputPortTag where <span class="decl"><span class="istickedoff">show = toString . inputPortTag</span></span>
-<span class="lineno">  406 </span>
-<span class="lineno">  407 </span>newtype OutputPortTag = OutputPortTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">outputPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  408 </span>instance Show OutputPortTag where <span class="decl"><span class="istickedoff">show = toString . outputPortTag</span></span>
-<span class="lineno">  409 </span>
-<span class="lineno">  410 </span>newtype InoutPortTag = InoutPortTag {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">inoutPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  411 </span>instance Show InoutPortTag where <span class="decl"><span class="nottickedoff">show = toString . inoutPortTag</span></span>
+<span class="lineno">  388 </span>------------------------------------------------------------
+<span class="lineno">  389 </span>
+<span class="lineno">  390 </span>-- | Type class of processor units with IO ports.
+<span class="lineno">  391 </span>class IOConnected pu where
+<span class="lineno">  392 </span>    data IOPorts pu :: Type
+<span class="lineno">  393 </span>
+<span class="lineno">  394 </span>    -- | External input ports, which go outside of NITTA mUnit.
+<span class="lineno">  395 </span>    inputPorts :: IOPorts pu -&gt; S.Set InputPortTag
+<span class="lineno">  396 </span>    <span class="decl"><span class="istickedoff">inputPorts _ = S.empty</span></span>
+<span class="lineno">  397 </span>
+<span class="lineno">  398 </span>    -- | External output ports, which go outside of NITTA mUnit.
+<span class="lineno">  399 </span>    outputPorts :: IOPorts pu -&gt; S.Set OutputPortTag
+<span class="lineno">  400 </span>    <span class="decl"><span class="istickedoff">outputPorts _ = S.empty</span></span>
+<span class="lineno">  401 </span>
+<span class="lineno">  402 </span>    -- | External output ports, which go outside of NITTA mUnit.
+<span class="lineno">  403 </span>    inoutPorts :: IOPorts pu -&gt; S.Set InoutPortTag
+<span class="lineno">  404 </span>    <span class="decl"><span class="istickedoff">inoutPorts _ = S.empty</span></span>
+<span class="lineno">  405 </span>
+<span class="lineno">  406 </span>newtype InputPortTag = InputPortTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">inputPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  407 </span>instance Show InputPortTag where <span class="decl"><span class="istickedoff">show = toString . inputPortTag</span></span>
+<span class="lineno">  408 </span>
+<span class="lineno">  409 </span>newtype OutputPortTag = OutputPortTag {<span class="istickedoff"><span class="decl"><span class="istickedoff">outputPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  410 </span>instance Show OutputPortTag where <span class="decl"><span class="istickedoff">show = toString . outputPortTag</span></span>
+<span class="lineno">  411 </span>
+<span class="lineno">  412 </span>newtype InoutPortTag = InoutPortTag {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">inoutPortTag</span></span></span> :: T.Text} deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  413 </span>instance Show InoutPortTag where <span class="decl"><span class="nottickedoff">show = toString . inoutPortTag</span></span>
 
 </pre>
 </body>

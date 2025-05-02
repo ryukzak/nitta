@@ -103,19 +103,18 @@ span.spaces    { background: white }
 <span class="lineno">   84 </span><span class="spaces">            </span><span class="istickedoff">CycleCntx $</span>
 <span class="lineno">   85 </span><span class="spaces">                </span><span class="istickedoff">HM.fromList $</span>
 <span class="lineno">   86 </span><span class="spaces">                    </span><span class="istickedoff">foldl</span>
-<span class="lineno">   87 </span><span class="spaces">                        </span><span class="istickedoff">( \st (thrown, vs) -&gt; map (\v -&gt; (v, cntx HM.! thrown)) vs ++ st</span>
-<span class="lineno">   88 </span><span class="spaces">                        </span><span class="istickedoff">)</span>
-<span class="lineno">   89 </span><span class="spaces">                        </span><span class="istickedoff">[]</span>
-<span class="lineno">   90 </span><span class="spaces">                        </span><span class="istickedoff">fromPrevCycle</span>
-<span class="lineno">   91 </span><span class="spaces">        </span><span class="istickedoff">simulateCycle cntx00 fs =</span>
-<span class="lineno">   92 </span><span class="spaces">            </span><span class="istickedoff">foldl</span>
-<span class="lineno">   93 </span><span class="spaces">                </span><span class="istickedoff">( \cntx f -&gt;</span>
-<span class="lineno">   94 </span><span class="spaces">                    </span><span class="istickedoff">case updateCntx cntx $ simulate cntx f of</span>
-<span class="lineno">   95 </span><span class="spaces">                        </span><span class="istickedoff">Right cntx' -&gt; cntx'</span>
-<span class="lineno">   96 </span><span class="spaces">                        </span><span class="istickedoff">Left e -&gt; <span class="nottickedoff">error [i|can't simulate #{f} in context #{cntx}: #{e}|]</span></span>
-<span class="lineno">   97 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">   98 </span><span class="spaces">                </span><span class="istickedoff">cntx00</span>
-<span class="lineno">   99 </span><span class="spaces">                </span><span class="istickedoff">fs</span></span>
+<span class="lineno">   87 </span><span class="spaces">                        </span><span class="istickedoff">(\st (thrown, vs) -&gt; map (\v -&gt; (v, cntx HM.! thrown)) vs ++ st)</span>
+<span class="lineno">   88 </span><span class="spaces">                        </span><span class="istickedoff">[]</span>
+<span class="lineno">   89 </span><span class="spaces">                        </span><span class="istickedoff">fromPrevCycle</span>
+<span class="lineno">   90 </span><span class="spaces">        </span><span class="istickedoff">simulateCycle cntx00 fs =</span>
+<span class="lineno">   91 </span><span class="spaces">            </span><span class="istickedoff">foldl</span>
+<span class="lineno">   92 </span><span class="spaces">                </span><span class="istickedoff">( \cntx f -&gt;</span>
+<span class="lineno">   93 </span><span class="spaces">                    </span><span class="istickedoff">case updateCntx cntx $ simulate cntx f of</span>
+<span class="lineno">   94 </span><span class="spaces">                        </span><span class="istickedoff">Right cntx' -&gt; cntx'</span>
+<span class="lineno">   95 </span><span class="spaces">                        </span><span class="istickedoff">Left e -&gt; <span class="nottickedoff">error [i|can't simulate #{f} in context #{cntx}: #{e}|]</span></span>
+<span class="lineno">   96 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">   97 </span><span class="spaces">                </span><span class="istickedoff">cntx00</span>
+<span class="lineno">   98 </span><span class="spaces">                </span><span class="istickedoff">fs</span></span>
 
 </pre>
 </body>
