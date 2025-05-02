@@ -252,7 +252,6 @@ nodeCtx parent nModel =
                  in
                     M.fromList
                         $ map
-                            ( \uTag -> (uTag, maybe 0 length $ bnBound M.!? uTag)
-                            )
+                            (\uTag -> (uTag, maybe 0 length $ bnBound M.!? uTag))
                         $ M.keys bnPus
             }

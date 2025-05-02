@@ -51,8 +51,9 @@ data Schedule pu v x t = Schedule
     { schProcess :: Process t (StepInfo v x t)
     -- ^ Defining process.
     , iProxy :: Proxy (Instruction pu)
-    -- ^ Proxy for process unit instruction, which is needed for API simplify. Without that,
-    --  for some function, the user needs to describe type explicitly.
+    {- ^ Proxy for process unit instruction, which is needed for API simplify. Without that,
+    for some function, the user needs to describe type explicitly.
+    -}
     }
 
 instance {-# OVERLAPS #-} NextTick (Schedule pu v x t) t where

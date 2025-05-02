@@ -84,8 +84,7 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg =
             CycleCntx $
                 HM.fromList $
                     foldl
-                        ( \st (thrown, vs) -> map (\v -> (v, cntx HM.! thrown)) vs ++ st
-                        )
+                        (\st (thrown, vs) -> map (\v -> (v, cntx HM.! thrown)) vs ++ st)
                         []
                         fromPrevCycle
         simulateCycle cntx00 fs =
