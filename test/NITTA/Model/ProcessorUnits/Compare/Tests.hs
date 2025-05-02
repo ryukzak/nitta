@@ -10,8 +10,8 @@ module NITTA.Model.ProcessorUnits.Compare.Tests (
 ) where
 
 import Data.Default
-import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F
+import qualified Data.Text as T
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Model.ProcessorUnits.Compare
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck

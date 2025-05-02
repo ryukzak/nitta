@@ -9,10 +9,10 @@ module NITTA.Model.ProcessorUnits.LUT.Tests (
 
 import Control.Monad (replicateM)
 import Data.Default
-import Data.Map qualified as M
+import qualified Data.Map as M
 import Data.Set (fromList)
-import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F
+import qualified Data.Text as T
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.LUT
 import NITTA.Model.ProcessorUnits.Tests.Providers

@@ -12,9 +12,9 @@ module NITTA.Model.ProcessorUnits.Compare (
 
 import Data.Default (Default, def)
 import Data.List (partition, (\\))
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Data.String.ToString
-import NITTA.Intermediate.Functions qualified as F
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
 
@@ -23,7 +23,7 @@ import Data.Bits hiding (bit)
 import Data.Foldable
 import Data.Maybe
 import Data.String.Interpolate
-import Data.Text qualified as T
+import qualified Data.Text as T
 import NITTA.Model.Problems
 import NITTA.Model.Time
 import NITTA.Project

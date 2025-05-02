@@ -8,10 +8,10 @@ module NITTA.Model.ProcessorUnits.Multiplexer.Tests (
 
 import Data.Default
 import Data.List ((\\))
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Data.String.Interpolate
-import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F
+import qualified Data.Text as T
+import qualified NITTA.Intermediate.Functions as F
 import NITTA.Model.ProcessorUnits.Multiplexer
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.TargetSystem ()

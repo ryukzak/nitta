@@ -14,11 +14,11 @@ import Control.Monad (when)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Maybe (maybeToList)
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.String.ToString
-import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F hiding (remain)
+import qualified Data.Text as T
+import qualified NITTA.Intermediate.Functions as F hiding (remain)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
