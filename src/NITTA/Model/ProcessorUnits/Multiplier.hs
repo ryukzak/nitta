@@ -355,32 +355,37 @@ synthesis model for that PU.
 -}
 data Multiplier v x t = Multiplier
     { remain :: [F v x]
-    -- ^ List of the assigned but not processed functions. To execute a
-    --  function:
-    --
-    --  - removing the function from this list;
-    --
-    --  - transfering information from function to 'targets' and 'sources'
-    --    fields.
-    --
-    --  An assigned function can be executed in random order.
+    {- ^ List of the assigned but not processed functions. To execute a
+    function:
+
+    - removing the function from this list;
+
+    - transfering information from function to 'targets' and 'sources'
+    fields.
+
+    An assigned function can be executed in random order.
+    -}
     , targets :: [v]
-    -- ^ List of variables, which is needed to push to the PU for current
-    --  function evaluation.
+    {- ^ List of variables, which is needed to push to the PU for current
+    function evaluation.
+    -}
     , sources :: [v]
-    -- ^ List of variables, which is needed to pull from PU for current
-    --  function evaluation. Pull order is arbitrary. All pulled variables
-    --  correspond to the same value (same result).
+    {- ^ List of variables, which is needed to pull from PU for current
+    function evaluation. Pull order is arbitrary. All pulled variables
+    correspond to the same value (same result).
+    -}
     , currentWork :: Maybe (F v x)
     -- ^ Current work, if some function is executed.
     , process_ :: Process t (StepInfo v x t)
-    -- ^ Description of scheduled computation process
-    --  ('NITTA.Model.ProcessorUnits.Types').
+    {- ^ Description of scheduled computation process
+    ('NITTA.Model.ProcessorUnits.Types').
+    -}
     , isMocked :: Bool
-    -- ^ HDL implementation of PU contains a multiplier IP core from Altera.
-    --  Icarus Verilog can not simulate it. If `isMocked` is set, a target
-    --  system will be contained non-synthesizable implementation of that
-    --  IP-core.
+    {- ^ HDL implementation of PU contains a multiplier IP core from Altera.
+    Icarus Verilog can not simulate it. If `isMocked` is set, a target
+    system will be contained non-synthesizable implementation of that
+    IP-core.
+    -}
     }
 
 instance VarValTime v x t => Pretty (Multiplier v x t) where

@@ -84,8 +84,7 @@ processTimelines Process{steps, relations} =
      in ProcessTimelines
             { timelines =
                 concatMap
-                    ( \(vp, vs) -> map (\v -> TimelineWithViewPoint vp $ timeline a b v) vs
-                    )
+                    (\(vp, vs) -> map (\v -> TimelineWithViewPoint vp $ timeline a b v) vs)
                     $ M.assocs views
             , verticalRelations = [(u, d) | (Vertical u d) <- relations]
             }
