@@ -107,8 +107,8 @@ getFunctionIndex LUT{currentWork, lutFunctions} = currentWork >>= \cw -> elemInd
 
 instance Controllable (LUT v x t) where
     data Instruction (LUT v x t)
-        = Load (Maybe Int)
-        | Out
+        = Load
+        | Out (Maybe Int)
         deriving (Show)
 
     data Microcode (LUT v x t) = Microcode
@@ -143,8 +143,8 @@ instance Controllable (LUT v x t) where
     takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance UnambiguouslyDecode (LUT v x t) where
-    decodeInstruction (Load op) = def{wrSignal = True, selSignal = op}
-    decodeInstruction Out = def{oeSignal = True}
+    decodeInstruction Load = def{wrSignal = True}
+    decodeInstruction (Out op) = def{oeSignal = True, selSignal = op}
 
 softwareFile tag pu = moduleName tag pu <> T.pack "." <> tag <> T.pack ".dump"
 
@@ -175,6 +175,10 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
                 | Just (F.Lut lutMap _ (O _)) <- castF f =
                     let
                         selBits = intToBits selBitNum funcIdx
+                        numArgs = maybe 0 length (listToMaybe $ M.keys lutMap)
+                        totalCombinations = 2 ^ maxArgsLen pu
+                        existingCombinations = M.size lutMap
+                        missingCount = totalCombinations - existingCombinations
                      in
                         map
                             ( \(inp, out) ->
@@ -183,6 +187,11 @@ instance VarValTime v x t => TargetSystemComponent (LUT v x t) where
                                 )
                             )
                             (M.toList lutMap)
+                            ++ replicate
+                                missingCount
+                                ( boolToBits selBits ++ replicate numArgs '0'
+                                , '0'
+                                )
                 | otherwise = []
 
             intToBits :: Int -> Int -> [Bool]
@@ -246,8 +255,8 @@ instance VarValTime v x t => EndpointProblem (LUT v x t) v t where
         | not $ DF.null targets =
             let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
-                allTargets = targets
-             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) allTargets
+             in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) targets
+    -- [EndpointSt (Target $ head targets) $ TimeConstraint at duration]
     endpointOptions LUT{sources, currentWork = Just f, process_}
         | not $ DF.null sources =
             let doneAt = inputsPushedAt process_ f + 3
@@ -262,7 +271,7 @@ instance VarValTime v x t => EndpointProblem (LUT v x t) v t where
         , let allTargets = targets
         , ([_], targets') <- partition (== v) allTargets
         , let process_' = execSchedule pu $ do
-                scheduleEndpoint d $ scheduleInstructionUnsafe epAt (Load (getFunctionIndex pu)) =
+                scheduleEndpoint d $ scheduleInstructionUnsafe epAt Load =
             pu
                 { targets = targets'
                 , process_ = process_'
@@ -274,7 +283,7 @@ instance VarValTime v x t => EndpointProblem (LUT v x t) v t where
         , sources' /= allSources
         , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
         , let process_' = execSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt Out
+                endpoints <- scheduleEndpoint d $ scheduleInstructionUnsafe epAt (Out (getFunctionIndex pu))
                 when (null sources') $ do
                     scheduleFunctionFinish_ [] f $ a ... sup epAt
                 return endpoints =

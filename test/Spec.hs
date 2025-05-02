@@ -60,8 +60,8 @@ main = do
       , NITTA.Model.ProcessorUnits.Divider.Tests.tests
       , NITTA.Model.ProcessorUnits.Fram.Tests.tests
       , NITTA.Model.ProcessorUnits.Compare.Tests.tests
-      , -- NITTA.Model.ProcessorUnits.LUT.Tests.tests
-        NITTA.Model.ProcessorUnits.Multiplexer.Tests.tests
+      , NITTA.Model.ProcessorUnits.LUT.Tests.tests
+      , NITTA.Model.ProcessorUnits.Multiplexer.Tests.tests
       , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
       , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
       , NITTA.Model.ProcessorUnits.Accum.Tests.tests

@@ -117,7 +117,7 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
              in -- in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) (targets ++ muxSels)
                 [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
         | not $ null sources =
-            let doneAt = nextTick (process_ pu) + 5
+            let doneAt = nextTick (process_ pu) + 3
                 at = doneAt ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
@@ -243,6 +243,13 @@ instance UnambiguouslyDecode (Multiplexer v x t) where
 instance VarValTime v x t => WithFunctions (Multiplexer v x t) (F v x) where
     functions Multiplexer{process_, remain, currentWork} =
         functions process_ ++ remain ++ maybeToList currentWork
+
+selWidth' :: Multiplexer v x t -> Int
+selWidth' pu
+    | numSources <= 1 = 0
+    | otherwise = ceiling (logBase 2 (fromIntegral numSources))
+    where
+        numSources = length (remain pu) -- todo: fix this
 
 instance VarValTime v x t => Testable (Multiplexer v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =

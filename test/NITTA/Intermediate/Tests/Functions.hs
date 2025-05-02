@@ -81,12 +81,12 @@ instance Arbitrary x => Arbitrary (Lut T.Text x) where
 
             outputVarGen = outputVarsGen
 
-instance Arbitrary x => Arbitrary (LogicFunction T.Text x) where
-    arbitrary = oneof [genLogicAnd, genLogicOr, genLogicNot]
-        where
-            genLogicAnd = LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
-            genLogicOr = LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
-            genLogicNot = LogicNot <$> inputVarGen <*> outputVarsGen
+-- instance Arbitrary x => Arbitrary (LogicFunction T.Text x) where
+--     arbitrary = oneof [genLogicAnd, genLogicOr, genLogicNot]
+--         where
+--             genLogicAnd = LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+--             genLogicOr = LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+--             genLogicNot = LogicNot <$> inputVarGen <*> outputVarsGen
 
 instance Arbitrary x => Arbitrary (LogicCompare T.Text x) where
     arbitrary = suchThat generateUniqueVars uniqueVars
@@ -146,3 +146,31 @@ instance {-# OVERLAPS #-} Arbitrary ([Mux T.Text Int], Cntx T.Text Int) where
                     }
 
         return ([m], cntx)
+
+instance {-# OVERLAPS #-} Arbitrary ([LogicFunction T.Text Int], Cntx T.Text Int) where
+    arbitrary = do
+        f <- oneof [genLogicAnd, genLogicOr, genLogicNot]
+
+        let (inVars, outVar) = case f of
+                LogicAnd a b (O o) -> ([a, b], head $ S.toList o)
+                LogicOr a b (O o) -> ([a, b], head $ S.toList o)
+                LogicNot a (O o) -> ([a], head $ S.toList o)
+
+        inputValues <- forM inVars $ \_ -> do
+            Positive x <- arbitrary
+            return x
+
+        let cntx =
+                Cntx
+                    { cntxProcess = [CycleCntx $ HM.fromList $ zip (map getVar inVars) inputValues]
+                    , cntxReceived = M.empty
+                    , cntxCycleNumber = 0
+                    }
+
+        return ([f], cntx)
+        where
+            genLogicAnd = suchThat (LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+            genLogicOr = suchThat (LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+            genLogicNot = suchThat (LogicNot <$> inputVarGen <*> outputVarsGen) uniqueVars
+
+            getVar (I v) = v

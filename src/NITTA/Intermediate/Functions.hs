@@ -505,19 +505,21 @@ instance Var v => Function (LogicFunction v x) v where
     outputs (LogicNot _ o) = variables o
 instance (Var v, B.Bits x, Num x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
-        let x1 = cntx `getCntx` a
-            x2 = cntx `getCntx` b
-            y = x1 .&. x2
+        let x1 = toBool (cntx `getCntx` a)
+            x2 = toBool (cntx `getCntx` b)
+            y = x1 * x2
          in [(v, y) | v <- S.elems o]
     simulate cntx (LogicOr (I a) (I b) (O o)) =
-        let x1 = cntx `getCntx` a
-            x2 = cntx `getCntx` b
-            y = x1 .|. x2
+        let x1 = toBool (cntx `getCntx` a)
+            x2 = toBool (cntx `getCntx` b)
+            y = if x1 + x2 > 0 then 1 else 0
          in [(v, y) | v <- S.elems o]
     simulate cntx (LogicNot (I a) (O o)) =
-        let x1 = cntx `getCntx` a
-            y = if x1 /= 0 then 0 else 1
+        let x1 = toBool (cntx `getCntx` a)
+            y = 1 - x1
          in [(v, y) | v <- S.elems o]
+
+toBool n = if n /= 0 then 1 else 0
 
 instance Var v => Locks (LogicFunction v x) v where
     locks = inputsLockOutputs

@@ -95,7 +95,7 @@ optimizeCluster allFunctions _ =
     let clusters = findMergeClusters allFunctions
         mergedLuts = mapMaybe mergeCluster clusters
 
-        singleFunctions = filter (\f -> isSupportedByLut f && S.size (outputs f) > 1) allFunctions
+        singleFunctions = filter (\f -> isSupportedByLut f && S.size (outputs f) /= 1) allFunctions
         singleLuts = mapMaybe convertToLUT singleFunctions
 
         remainingFunctions = allFunctions L.\\ (concat clusters ++ singleFunctions)
