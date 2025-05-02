@@ -7,15 +7,11 @@ module NITTA.Model.ProcessorUnits.Multiplexer.Tests (
 ) where
 
 import Data.Default
-import Data.List ((\\))
-import qualified Data.Set as S
-import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Model.ProcessorUnits.Multiplexer
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import NITTA.Model.TargetSystem ()
-import NITTA.Model.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
 
@@ -47,5 +43,5 @@ tests =
         muxGen = algGen [fmap packF (arbitrary :: Gen (F.Mux T.Text Int))]
 
         muxWithContextGen = do
-            (mux, cntx) <- arbitrary :: Gen ([F.Mux T.Text Int], Cntx T.Text Int)
-            return (fmap packF mux, cntx)
+            (m, cntx) <- arbitrary :: Gen ([F.Mux T.Text Int], Cntx T.Text Int)
+            return (fmap packF m, cntx)

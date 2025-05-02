@@ -1,16 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 
 module NITTA.Model.ProcessorUnits.LUT.Tests (
     tests,
 ) where
 
-import Control.Monad (replicateM)
 import Data.Default
-import qualified Data.Map as M
-import Data.Set (fromList)
 import qualified Data.Text as T
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -18,8 +14,6 @@ import NITTA.Model.ProcessorUnits.LUT
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
-import Test.Tasty.HUnit (assertEqual, testCase)
-import Test.Tasty.QuickCheck (testProperty)
 
 tests =
     testGroup
@@ -37,7 +31,6 @@ tests =
         ]
     where
         u = def :: LUT T.Text Int Int
-        u2 = def :: LUT T.Text (Attr (IntX 32)) Int
 
         lfWithContextGen = do
             (lf, cntx) <- arbitrary :: Gen ([F.LogicFunction T.Text Int], Cntx T.Text Int)

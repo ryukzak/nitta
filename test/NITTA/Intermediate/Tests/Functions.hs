@@ -122,7 +122,7 @@ instance Arbitrary (Mux T.Text Int) where
 
 instance {-# OVERLAPS #-} Arbitrary ([Mux T.Text Int], Cntx T.Text Int) where
     arbitrary = do
-        m@(Mux ins sel outs) <- suchThat arbitrary uniqueVars
+        m@(Mux ins sel _) <- suchThat arbitrary uniqueVars
 
         let inputVars = [v | I v <- ins]
             selVar = case sel of I v -> v
@@ -151,7 +151,7 @@ instance {-# OVERLAPS #-} Arbitrary ([LogicFunction T.Text Int], Cntx T.Text Int
     arbitrary = do
         f <- oneof [genLogicAnd, genLogicOr, genLogicNot]
 
-        let (inVars, outVar) = case f of
+        let (inVars, _) = case f of
                 LogicAnd a b (O o) -> ([a, b], head $ S.toList o)
                 LogicOr a b (O o) -> ([a, b], head $ S.toList o)
                 LogicNot a (O o) -> ([a], head $ S.toList o)

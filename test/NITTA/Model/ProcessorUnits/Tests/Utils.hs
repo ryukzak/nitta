@@ -27,12 +27,9 @@ import Data.CallStack
 import Data.Default
 import Data.HashMap.Strict qualified as HM
 import Data.List (delete)
-import Data.Map qualified as M
+import Data.Map ()
 import Data.Set (elems, empty, fromList, intersection, union)
-import Data.Set qualified as S
 import Data.Text qualified as T
-import Debug.Trace
-import GHC.Show (Show (show))
 import NITTA.Intermediate.Functions ()
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
