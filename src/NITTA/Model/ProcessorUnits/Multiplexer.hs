@@ -244,13 +244,6 @@ instance VarValTime v x t => WithFunctions (Multiplexer v x t) (F v x) where
     functions Multiplexer{process_, remain, currentWork} =
         functions process_ ++ remain ++ maybeToList currentWork
 
-selWidth' :: Multiplexer v x t -> Int
-selWidth' pu
-    | numSources <= 1 = 0
-    | otherwise = ceiling (logBase 2 (fromIntegral numSources))
-    where
-        numSources = length (remain pu) -- todo: fix this
-
 instance VarValTime v x t => Testable (Multiplexer v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         let tbcSignalsConst = map T.pack ["data_active", "sel_active", "out_active"]

@@ -71,7 +71,6 @@ module NITTA.Intermediate.Functions (
     mux,
 ) where
 
-import Data.Bits ((.&.), (.|.))
 import Data.Bits qualified as B
 import Data.Data (Data)
 import Data.Default
@@ -503,7 +502,7 @@ instance Var v => Function (LogicFunction v x) v where
     outputs (LogicOr _ _ o) = variables o
     outputs (LogicAnd _ _ o) = variables o
     outputs (LogicNot _ o) = variables o
-instance (Var v, B.Bits x, Num x) => FunctionSimulation (LogicFunction v x) v x where
+instance (Var v, B.Bits x, Num x, Ord x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
         let x1 = toBool (cntx `getCntx` a)
             x2 = toBool (cntx `getCntx` b)
@@ -519,6 +518,7 @@ instance (Var v, B.Bits x, Num x) => FunctionSimulation (LogicFunction v x) v x 
             y = 1 - x1
          in [(v, y) | v <- S.elems o]
 
+toBool :: (Num x, Eq x) => x -> x
 toBool n = if n /= 0 then 1 else 0
 
 instance Var v => Locks (LogicFunction v x) v where
