@@ -148,7 +148,6 @@ library
     , hashable
     , heap
     , hslogger
-    , htoml
     , http-api-data
     , http-conduit
     , hxt
@@ -178,6 +177,7 @@ library
     , wai-app-static
     , wai-cors
     , warp
+    , yaml
   default-language: Haskell2010
 
 executable nitta
@@ -211,7 +211,6 @@ executable nitta
     , ginger
     , heap
     , hslogger
-    , htoml
     , intervals
     , mtl
     , nitta
@@ -223,6 +222,7 @@ executable nitta
     , tostring
     , unordered-containers
     , wai-app-static
+    , yaml
   default-language: Haskell2010
 
 executable nitta-api-gen
@@ -259,7 +259,6 @@ executable nitta-api-gen
     , ginger
     , heap
     , hslogger
-    , htoml
     , intervals
     , mtl
     , nitta
@@ -271,6 +270,7 @@ executable nitta-api-gen
     , tostring
     , unordered-containers
     , wai-app-static
+    , yaml
   default-language: Haskell2010
 
 test-suite nitta-test
@@ -285,6 +285,7 @@ test-suite nitta-test
       NITTA.Intermediate.Simulation.Tests
       NITTA.Intermediate.Tests.Functions
       NITTA.Intermediate.Value.Tests
+      NITTA.Model.Config.Tests
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.ConstantFolding.Tests
       NITTA.Model.Problems.Refactor.Tests
@@ -337,7 +338,6 @@ test-suite nitta-test
     , genvalidity-property
     , ginger
     , heap
-    , htoml
     , hxt
     , intervals
     , language-lua
@@ -359,4 +359,5 @@ test-suite nitta-test
     , tostring
     , unordered-containers
     , wai-app-static
+    , yaml
   default-language: Haskell2010

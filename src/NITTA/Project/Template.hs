@@ -31,6 +31,7 @@ import Data.Maybe
 import Data.String.Interpolate
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Yaml
 import GHC.Generics hiding (moduleName)
 import NITTA.Project.Context
 import NITTA.Project.Types
@@ -39,13 +40,15 @@ import System.FilePath
 import System.Log.Logger
 import System.Path.WildMatch
 import Text.Ginger
-import Text.Toml
 
 data Conf = Conf
     { template :: TemplateConf
     , signals :: M.HashMap T.Text T.Text
     }
-    deriving (Show)
+    deriving (Generic, Show)
+
+instance FromJSON Conf
+instance ToJSON Conf
 
 data TemplateConf = TemplateConf
     { nittaPath :: Maybe FilePath
@@ -54,7 +57,7 @@ data TemplateConf = TemplateConf
     deriving (Generic, Show)
 
 defNittaPath = "."
-templateConfFileName = "template.toml"
+templateConfFileName = "template.yml"
 
 instance Default TemplateConf where
     def =
@@ -86,26 +89,11 @@ collectNittaPath templates = do
     where
         getNittaPath = fromMaybe (error "internal error") . nittaPath . template
 
+readTemplateConfDef :: FilePath -> IO Conf
 readTemplateConfDef fn = do
-    text <-
-        doesFileExist fn >>= \case
-            True -> T.readFile fn
-            False -> return ""
-    let conf = either (error . show) id $ parseTomlDoc (fn <> ": parse error: ") text
-    return
-        Conf
-            { template = confLookup fn "template" conf
-            , signals = confLookup fn "signals" conf
-            }
-
-confLookup fn sec conf =
-    maybe
-        def
-        (unwrap (fn <> " in section [" <> T.unpack sec <> "]: ") . fromJSON . toJSON)
-        $ M.lookup sec conf
-    where
-        unwrap _prefix (Success a) = a
-        unwrap prefix (Error msg) = error $ prefix <> msg
+    doesFileExist fn >>= \case
+        True -> decodeFileThrow fn :: IO Conf
+        False -> return Conf{template = def, signals = def}
 
 applyCustomSignal
     signals

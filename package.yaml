@@ -61,7 +61,7 @@ dependencies:
   - data-default
   - filepath
   - ginger
-  - htoml
+  - yaml
   - intervals
   - mtl
   - prettyprinter

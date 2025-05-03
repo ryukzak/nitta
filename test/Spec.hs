@@ -20,6 +20,7 @@ import NITTA.Frontends.XMILE.MathParserTests qualified
 import NITTA.Intermediate.Functions.Accum.Tests qualified
 import NITTA.Intermediate.Simulation.Tests qualified
 import NITTA.Intermediate.Value.Tests qualified
+import NITTA.Model.Config.Tests qualified
 import NITTA.Model.Problems.Refactor.Accum.Tests qualified
 import NITTA.Model.Problems.Refactor.ConstantFolding.Tests qualified
 import NITTA.Model.Problems.Refactor.Tests qualified
@@ -61,6 +62,7 @@ main = do
           , NITTA.Model.ProcessorUnits.Accum.Tests.tests
           , NITTA.Model.ProcessorUnits.Shift.Tests.tests
           , NITTA.Model.ProcessorUnits.Tests.DSL.Tests.tests
+          , NITTA.Model.Config.Tests.tests
           , NITTA.Tests.tests
           , NITTA.Utils.Tests.tests
           ]
