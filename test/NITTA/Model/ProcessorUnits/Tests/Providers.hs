@@ -16,6 +16,7 @@ module NITTA.Model.ProcessorUnits.Tests.Providers (
     puCoSimTestCase,
     finitePUSynthesisProp,
     puCoSimProp,
+    puCoSimPropWithContext,
     module NITTA.Model.ProcessorUnits,
     module NITTA.Intermediate.Functions,
     module NITTA.Intermediate.Types,
@@ -121,3 +122,36 @@ puCoSimProp name pu0 fsGen =
                     writeProject prj
                     report <- runTestbench prj
                     unless (tbStatus report) $ error $ "Fail CoSim in: " <> pTargetProjectPath
+
+puCoSimPropWithContext name pu0 fsGen =
+    testProperty (toModuleName name) $ do
+        (fs, cntx) <- fsGen
+        cntx' <- initialCycleCntxGen' fs cntx
+        (pu, _) <- processAlgOnEndpointGen pu0 (return fs)
+        return $
+            monadicIO $
+                run $ do
+                    unless (isProcessComplete pu fs) $
+                        error $
+                            "Process incomplete: " <> incompleteProcessMsg pu fs
+                    case checkProcessIntegrity pu of
+                        Left e -> error e
+                        Right _ -> return ()
+                    uniqueName <- uniqTestPath (toModuleName name)
+                    pwd <- getCurrentDirectory
+                    let prj =
+                            Project
+                                { pName = T.pack uniqueName
+                                , pLibPath = "hdl"
+                                , pTargetProjectPath = "gen" </> uniqueName
+                                , pAbsTargetProjectPath = pwd </> "gen" </> uniqueName
+                                , pInProjectNittaPath = "."
+                                , pAbsNittaPath = pwd </> "gen" </> uniqueName
+                                , pUnit = pu
+                                , pUnitEnv = def
+                                , pTestCntx = cntx'
+                                , pTemplates = ["templates/Icarus"]
+                                }
+                    writeProject prj
+                    report <- runTestbench prj
+                    unless (tbStatus report) $ error $ "CoSim failed: gen/" <> uniqueName
