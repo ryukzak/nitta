@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -70,6 +70,7 @@ library
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
+      NITTA.Model.ProcessorUnits.Compare
       NITTA.Model.ProcessorUnits.Divider
       NITTA.Model.ProcessorUnits.Fram
       NITTA.Model.ProcessorUnits.IO.I2C
@@ -290,6 +291,7 @@ test-suite nitta-test
       NITTA.Model.Problems.Refactor.Tests
       NITTA.Model.ProcessorUnits.Accum.Tests
       NITTA.Model.ProcessorUnits.Broken.Tests
+      NITTA.Model.ProcessorUnits.Compare.Tests
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
       NITTA.Model.ProcessorUnits.IO.SPI.Tests

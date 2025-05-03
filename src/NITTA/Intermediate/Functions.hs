@@ -55,12 +55,17 @@ module NITTA.Intermediate.Functions (
     -- * Internal
     BrokenBuffer (..),
     brokenBuffer,
+    LogicCompare (..),
+    Op (..),
+    logicCompare,
 ) where
 
 import Data.Bits qualified as B
+import Data.Data (Data)
 import Data.Default
 import Data.HashMap.Strict qualified as HM
 import Data.Set (elems, fromList, union)
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
@@ -442,3 +447,36 @@ instance Var v => Locks (BrokenBuffer v x) v where
     locks = inputsLockOutputs
 instance Var v => FunctionSimulation (BrokenBuffer v x) v x where
     simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- elems vs]
+data Op = CMP_EQ | CMP_LT | CMP_LTE | CMP_GT | CMP_GTE
+    deriving (Typeable, Eq, Show, Data)
+data LogicCompare v x = LogicCompare Op (I v) (I v) (O v) deriving (Typeable, Eq)
+instance Label (LogicCompare v x) where
+    label (LogicCompare op _ _ _) = show op
+instance Var v => Patch (LogicCompare v x) (v, v) where
+    patch diff (LogicCompare op a b c) = LogicCompare op (patch diff a) (patch diff b) (patch diff c)
+
+instance Var v => Show (LogicCompare v x) where
+    show (LogicCompare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
+
+instance Var v => Function (LogicCompare v x) v where
+    inputs (LogicCompare _ a b _) = variables a `S.union` variables b
+    outputs (LogicCompare _ _ _ o) = variables o
+instance (Var v, Val x) => FunctionSimulation (LogicCompare v x) v x where
+    simulate cntx (LogicCompare op (I a) (I b) (O o)) =
+        let
+            x1 = getCntx cntx a
+            x2 = getCntx cntx b
+            y = if op2func op x1 x2 then 1 else 0
+         in
+            [(v, y) | v <- S.elems o]
+        where
+            op2func CMP_EQ = (==)
+            op2func CMP_LT = (<)
+            op2func CMP_LTE = (<=)
+            op2func CMP_GT = (>)
+            op2func CMP_GTE = (>=)
+instance Var v => Locks (LogicCompare v x) v where
+    locks = inputsLockOutputs
+
+logicCompare :: (Var v, Val x) => Op -> v -> v -> [v] -> F v x
+logicCompare op a b c = packF $ LogicCompare op (I a) (I b) $ O $ fromList c
