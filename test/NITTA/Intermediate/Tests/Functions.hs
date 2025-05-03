@@ -10,6 +10,10 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
+import Control.Monad (forM)
+import Data.HashMap.Strict qualified as HM
+import Data.List (nub)
+import Data.Map qualified as M
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
@@ -59,3 +63,37 @@ instance Arbitrary (IntX m) where
 
 instance Arbitrary x => Arbitrary (Attr x) where
     arbitrary = Attr <$> arbitrary <*> arbitrary
+
+instance Arbitrary (Mux T.Text Int) where
+    arbitrary =
+        Mux
+            <$> vectorOf 11 inputVarGen
+            <*> inputVarGen
+            <*> outputVarsGen
+
+instance {-# OVERLAPS #-} Arbitrary ([Mux T.Text Int], Cntx T.Text Int) where
+    arbitrary = do
+        m@(Mux ins sel _) <- suchThat arbitrary uniqueVars
+
+        let inputVars = [v | I v <- ins]
+            selVar = case sel of I v -> v
+            allVars = nub $ inputVars ++ [selVar]
+
+        initialValues <- forM allVars $ \v -> do
+            Positive x <- arbitrary
+            return (v, x)
+
+        let dataCount = length inputVars
+        selValue <-
+            if dataCount > 0
+                then choose (0, dataCount - 1)
+                else pure 0
+
+        let cntx =
+                Cntx
+                    { cntxProcess = [CycleCntx $ HM.fromList $ (selVar, selValue) : initialValues]
+                    , cntxReceived = M.empty
+                    , cntxCycleNumber = 0
+                    }
+
+        return ([m], cntx)

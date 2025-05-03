@@ -55,12 +55,15 @@ module NITTA.Intermediate.Functions (
     -- * Internal
     BrokenBuffer (..),
     brokenBuffer,
+    Mux (..),
+    mux,
 ) where
 
 import Data.Bits qualified as B
 import Data.Default
 import Data.HashMap.Strict qualified as HM
 import Data.Set (elems, fromList, union)
+import Data.Set qualified as S
 import Data.Typeable
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
@@ -442,3 +445,38 @@ instance Var v => Locks (BrokenBuffer v x) v where
     locks = inputsLockOutputs
 instance Var v => FunctionSimulation (BrokenBuffer v x) v x where
     simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- elems vs]
+
+data Mux v x = Mux [I v] (I v) (O v) deriving (Typeable, Eq)
+
+instance Var v => Patch (Mux v x) (v, v) where
+    patch (old, new) (Mux ins sel out) =
+        Mux (patch (old, new) ins) sel (patch (old, new) out)
+
+instance Var v => Locks (Mux v x) v where
+    locks (Mux{}) = []
+
+instance Label (Mux v x) where
+    label (Mux{}) = "Mux"
+instance Var v => Show (Mux v x) where
+    show (Mux ins sel output) = "Mux " <> show ins <> " " <> show sel <> " = " <> show output
+
+instance Var v => Function (Mux v x) v where
+    inputs (Mux ins cond _) =
+        S.unions $ map variables (ins ++ [cond])
+    outputs (Mux _ _ output) = variables output
+
+instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
+    simulate cntx (Mux ins (I sel) (O outs)) =
+        let
+            selValue = getCntx cntx sel `mod` 16
+            insCount = length ins
+            selectedValue
+                | selValue >= 0 && fromIntegral selValue < insCount =
+                    case ins !! fromIntegral (selValue `mod` 16) of
+                        I inputVar -> getCntx cntx inputVar
+                | otherwise = 0
+         in
+            [(outVar, selectedValue) | outVar <- S.elems outs]
+
+mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
+mux a b c d = packF $ Mux [I a, I b] (I c) $ O $ fromList d
