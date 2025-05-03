@@ -61,6 +61,10 @@ data DecisionView
         { old :: [FView]
         , new :: [FView]
         }
+    | OptimizeLutView
+        { lOld :: [FView]
+        , lNew :: [FView]
+        }
     | ResolveDeadlockView
         { newBuffer :: T.Text
         , changeset :: T.Text
@@ -120,6 +124,12 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
+instance Viewable (OptimizeLut v x) DecisionView where
+    view OptimizeLut{rOld, rNew} =
+        OptimizeLutView
+            { lOld = map view rOld
+            , lNew = map view rNew
+            }
 instance Var v => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
