@@ -69,6 +69,9 @@ data PUConf
     | LogicalUnit
         { name :: T.Text
         }
+    | Multiplexer
+        { name :: T.Text
+        }
     deriving (Generic, Show)
 
 puConfJsonOptions =
@@ -116,6 +119,7 @@ mkMicroarchitecture ioSync toml =
                 configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
                 configure proto Comparator{name} = addPU proto name def PU.CompareIO
                 configure proto LogicalUnit{name} = addPU proto name def PU.LogicalUnitIO
+                configure proto Multiplexer{name} = addPU proto name def PU.MultiplexerIO
                 configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
                     addPU proto name (PU.anySPI bounceFilter bufferSize) $
                         if isSlave

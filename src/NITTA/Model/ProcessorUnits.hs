@@ -128,6 +128,7 @@ module NITTA.Model.ProcessorUnits (
     module NITTA.Model.ProcessorUnits.Shift,
     module NITTA.Model.ProcessorUnits.Comparator,
     module NITTA.Model.ProcessorUnits.LogicalUnit,
+    module NITTA.Model.ProcessorUnits.Multiplexer,
 ) where
 
 import NITTA.Model.ProcessorUnits.Types
@@ -140,5 +141,6 @@ import NITTA.Model.ProcessorUnits.Divider
 import NITTA.Model.ProcessorUnits.Fram
 import NITTA.Model.ProcessorUnits.IO.SPI
 import NITTA.Model.ProcessorUnits.LogicalUnit
+import NITTA.Model.ProcessorUnits.Multiplexer
 import NITTA.Model.ProcessorUnits.Multiplier
 import NITTA.Model.ProcessorUnits.Shift
