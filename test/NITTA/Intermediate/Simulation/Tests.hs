@@ -71,6 +71,69 @@ simulationTests =
             , send "c"
             ]
             ("c", [11, 12, 13, 14, 15])
+        , testGroup
+            "logic operations"
+            [ simulationTestCase @Int
+                "lessThan comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_LT "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 0, 0])
+            , simulationTestCase @Int
+                "lessThanOrEqual comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_LTE "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 0, 1])
+            , simulationTestCase @Int
+                "equal comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_EQ "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [0, 0, 1])
+            , simulationTestCase @Int
+                "greaterThan comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_GT "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [0, 1, 0])
+            , simulationTestCase @Int
+                "greaterThanOrEqual comparison"
+                3
+                [ ("a", [2, 5, 3])
+                , ("b", [5, 2, 3])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicCompare CMP_GTE "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [0, 1, 1])
+            ]
         ]
 
 tests =
