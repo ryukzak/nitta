@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
@@ -278,7 +279,7 @@ instance (Var v, Num x) => FunctionSimulation (Sub v x) v x where
             y = x1 - x2
          in [(v, y) | v <- S.elems vs]
 
-data FixedPointCompatible x => Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
+data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance Var v => Show (Multiply v x) where
     show (Multiply a b c) =
@@ -300,7 +301,7 @@ instance (Var v, Num x) => FunctionSimulation (Multiply v x) v x where
             y = x1 * x2
          in [(v, y) | v <- S.elems vs]
 
-data Integral x => Division v x = Division
+data Division v x = Division
     { denom, numer :: I v
     , quotient, remain :: O v
     }
@@ -336,9 +337,10 @@ instance (Var v, Val x) => FunctionSimulation (Division v x) v x where
             rx = dx `mod` nx
          in [(v, qx) | v <- S.elems qs] ++ [(v, rx) | v <- S.elems rs]
 
-data Fractional x => FloatDivision v x = FloatDivision
+data FloatDivision v x = FloatDivision
     { denom, numer :: I v
     , quotient :: O v
+    , remain :: O v
     }
     deriving (Typeable, Eq)
 instance Label (FloatDivision v x) where label FloatDivision{} = "/"
@@ -346,20 +348,21 @@ instance Var v => Show (FloatDivision v x) where
     show FloatDivision{denom, numer, quotient} =
         show numer <> " / " <> show denom <> " = " <> show quotient
 
-floatDivision :: (Var v, Val x, Fractional x) => v -> v -> [v] -> F v x
-floatDivision d n q =
+floatDivision :: (Var v, Val x, Fractional x) => v -> v -> [v] -> [v] -> F v x
+floatDivision d n q r =
     packF $
         FloatDivision
             { denom = I d
             , numer = I n
             , quotient = O $ fromList q
+            , remain = O $ fromList r
             }
 
 instance Var v => Function (FloatDivision v x) v where
     inputs FloatDivision{denom, numer} = variables denom `union` variables numer
     outputs FloatDivision{quotient} = variables quotient
 instance Var v => Patch (FloatDivision v x) (v, v) where
-    patch diff (FloatDivision a b c) = FloatDivision (patch diff a) (patch diff b) (patch diff c)
+    patch diff (FloatDivision a b c d) = FloatDivision (patch diff a) (patch diff b) (patch diff c) (patch diff d)
 instance Var v => Locks (FloatDivision v x) v where
     locks = inputsLockOutputs
 instance (Var v, Fractional x) => FunctionSimulation (FloatDivision v x) v x where

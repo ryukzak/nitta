@@ -53,7 +53,7 @@ instance Arbitrary (Division T.Text x) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (FloatDivision T.Text x) where
-    arbitrary = suchThat (FloatDivision <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (FloatDivision <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (Acc T.Text x) where
     arbitrary = suchThat (Acc . concat <$> resize maxLenght (listOf1 $ (++) <$> genPush <*> genPull)) uniqueVars
