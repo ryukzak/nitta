@@ -58,24 +58,40 @@ getTraceVarFormat (Just fmt) = fmt
 class Val x => Translatable x where
     stat2function :: Var v => T.Text -> [T.Text] -> [[v]] -> [x] -> [Int] -> F v x
 
-instance (FixedPointCompatible x, Val x) => Translatable x where
-    stat2function "buffer" [i] [o] [] [] = F.buffer (fromText i) o
-    stat2function "brokenBuffer" [i] [o] [] [] = F.brokenBuffer (fromText i) o
-    stat2function "constant" [] [o] [x] [] = F.constant x o
-    stat2function "send" [i] [] [] [] = F.send (fromText i)
-    stat2function "add" [a, b] [c] [] [] = F.add (fromText a) (fromText b) c
-    stat2function "sub" [a, b] [c] [] [] = F.sub (fromText a) (fromText b) c
-    stat2function "multiply" [a, b] [c] [] [] = F.multiply (fromText a) (fromText b) c
-    stat2function "divide" [d, n] [q] [] [] = F.division (fromText d) (fromText n) q []
-    stat2function "divide" [d, n] [q, r] [] [] = F.division (fromText d) (fromText n) q r
-    stat2function "neg" [i] [o] [] [] = F.neg (fromText i) o
-    stat2function "receive" [] [o] [] [] = F.receive o
-    stat2function "shiftL" [a] [c] [] [s] = F.shiftL s (fromText a) c
-    stat2function "shiftR" [a] [c] [] [s] = F.shiftR s (fromText a) c
-    stat2function "loop" [a] [c] [x] [] = F.loop x (fromText a) c
-    stat2function f _ _ _ _ = error $ "function not found: " <> show f
+stat2functionFX :: (Var v, Val x, FixedPointCompatible x) => T.Text -> [T.Text] -> [[v]] -> [x] -> [Int] -> F v x
+stat2functionFX "buffer" [i] [o] [] [] = F.buffer (fromText i) o
+stat2functionFX "brokenBuffer" [i] [o] [] [] = F.brokenBuffer (fromText i) o
+stat2functionFX "constant" [] [o] [x] [] = F.constant x o
+stat2functionFX "send" [i] [] [] [] = F.send (fromText i)
+stat2functionFX "add" [a, b] [c] [] [] = F.add (fromText a) (fromText b) c
+stat2functionFX "sub" [a, b] [c] [] [] = F.sub (fromText a) (fromText b) c
+stat2functionFX "multiply" [a, b] [c] [] [] = F.multiply (fromText a) (fromText b) c
+stat2functionFX "divide" [d, n] [q] [] [] = F.division (fromText d) (fromText n) q []
+stat2functionFX "divide" [d, n] [q, r] [] [] = F.division (fromText d) (fromText n) q r
+stat2functionFX "neg" [i] [o] [] [] = F.neg (fromText i) o
+stat2functionFX "receive" [] [o] [] [] = F.receive o
+stat2functionFX "shiftL" [a] [c] [] [s] = F.shiftL s (fromText a) c
+stat2functionFX "shiftR" [a] [c] [] [s] = F.shiftR s (fromText a) c
+stat2functionFX "loop" [a] [c] [x] [] = F.loop x (fromText a) c
+stat2functionFX f _ _ _ _ = error $ "function not found: " <> show f
 
-instance Translatable Float where
-    -- FIXME: add other functions
-    stat2function "divide" [d, n] [q] [] [] = F.floatDivision (fromText d) (fromText n) q
-    stat2function f _ _ _ _ = error $ "function not found: " <> show f
+stat2functionFloat :: (Var v, Val x, Fractional x) => T.Text -> [T.Text] -> [[v]] -> [x] -> [Int] -> F v x
+stat2functionFloat "divide" [d, n] [q] [] [] = F.floatDivision (fromText d) (fromText n) q []
+stat2functionFloat "divide" [d, n] [q, r] [] [] = F.floatDivision (fromText d) (fromText n) q r
+stat2functionFloat "buffer" [i] [o] [] [] = F.buffer (fromText i) o
+stat2functionFloat "brokenBuffer" [i] [o] [] [] = F.brokenBuffer (fromText i) o
+stat2functionFloat "constant" [] [o] [x] [] = F.constant x o
+stat2functionFloat "send" [i] [] [] [] = F.send (fromText i)
+stat2functionFloat "add" [a, b] [c] [] [] = F.add (fromText a) (fromText b) c
+stat2functionFloat "sub" [a, b] [c] [] [] = F.sub (fromText a) (fromText b) c
+stat2functionFloat "multiply" [a, b] [c] [] [] = F.multiply (fromText a) (fromText b) c
+stat2functionFloat "neg" [i] [o] [] [] = F.neg (fromText i) o
+stat2functionFloat "receive" [] [o] [] [] = F.receive o
+stat2functionFloat "loop" [a] [c] [x] [] = F.loop x (fromText a) c
+stat2functionFloat f _ _ _ _ = error $ "function not found: " <> show f
+
+instance {-# OVERLAPPING #-} Translatable Float where stat2function = stat2functionFloat
+
+instance {-# OVERLAPPING #-} Translatable (Attr Float) where stat2function = stat2functionFloat
+
+instance {-# OVERLAPPABLE #-} (FixedPointCompatible x, Val x) => Translatable x where stat2function = stat2functionFX
