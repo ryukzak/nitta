@@ -1,4 +1,6 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -47,7 +49,7 @@ data OutputDesc
     | Remain
     deriving (Show, Eq)
 
-data FixedPointCompatible x => Divider v x t = Divider
+data Divider v x t = Divider
     { jobs :: [Job v x t]
     , remains :: [F v x]
     , process_ :: Process t (StepInfo v x t)
@@ -55,7 +57,7 @@ data FixedPointCompatible x => Divider v x t = Divider
     , mock :: Bool
     }
 
-instance (Show v, Show t, FixedPointCompatible x) => Show (Divider v x t) where
+instance (Show v, Show t) => Show (Divider v x t) where
     show Divider{jobs} = show jobs
 
 divider pipeline mock =
@@ -67,12 +69,12 @@ divider pipeline mock =
         , mock
         }
 
-instance (Time t, FixedPointCompatible x) => Default (Divider v x t) where
+instance (Time t) => Default (Divider v x t) where
     def = divider 4 True
 
-instance (Default x, FixedPointCompatible x) => DefaultX (Divider v x t) x
+instance (Default x) => DefaultX (Divider v x t) x
 
-instance (Ord t, FixedPointCompatible x) => WithFunctions (Divider v x t) (F v x) where
+instance (Ord t) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{process_, remains, jobs} =
         functions process_
             ++ remains
@@ -101,15 +103,17 @@ isWaitArguments _ = False
 isWaitResults WaitResults{} = True
 isWaitResults _ = False
 
-instance (VarValTime v x t, FixedPointCompatible x) => ProcessorUnit (Divider v x t) v x t where
+instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
+            Right pu{remains = f : remains}
+        | Just (F.FloatDivision (I _n) (I _d) (O _q) (O _r)) <- castF f =
             Right pu{remains = f : remains}
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
     parallelismType _ = Pipeline
 
-instance (Var v, Time t, FixedPointCompatible x) => Locks (Divider v x t) v where
+instance (Var v, Time t) => Locks (Divider v x t) v where
     locks Divider{jobs, remains} = L.nub $ byArguments ++ byResults
         where
             byArguments
@@ -144,6 +148,11 @@ function2WaitArguments f
             { function = f
             , arguments = [(Denom, denom), (Numer, numer)]
             }
+    | Just F.FloatDivision{F.denom = I denom, F.numer = I numer} <- castF f =
+        WaitArguments
+            { function = f
+            , arguments = [(Denom, denom), (Numer, numer)]
+            }
     | otherwise = error $ "internal divider error: " <> show f
 
 function2WaitResults readyAt f
@@ -153,6 +162,13 @@ function2WaitResults readyAt f
             , readyAt
             , restrict = Nothing
             , results = filterEmptyResults [(Quotient, quotient), (Remain, remain)]
+            }
+    | Just F.FloatDivision{F.quotient = O quotient} <- castF f =
+        WaitResults
+            { function = f
+            , readyAt
+            , restrict = Nothing
+            , results = filterEmptyResults [(Quotient, quotient)]
             }
     | otherwise = error "internal error"
 
@@ -164,7 +180,7 @@ firstWaitResults jobs =
             then Nothing
             else Just $ minimumOn readyAt jobs'
 
-instance (VarValTime v x t, FixedPointCompatible x) => EndpointProblem (Divider v x t) v t where
+instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
     endpointOptions pu@Divider{remains, jobs} =
         let executeNewFunction
                 | any isWaitArguments jobs = []
@@ -282,7 +298,90 @@ instance IOConnected (Divider v x t) where
     data IOPorts (Divider v x t) = DividerIO
         deriving (Show)
 
-instance (Val x, Show t, FixedPointCompatible x) => TargetSystemComponent (Divider v x t) where
+moduleNameFloat _ _ = "pu_div"
+softwareFloat _ _ = Empty
+hardwareFloat _tag Divider{mock} =
+    Aggregate
+        Nothing
+        [ if mock
+            then FromLibrary "div/float_div_mock.v"
+            else FromLibrary "div/div.v"
+        , FromLibrary "div/pu_div.v"
+        ]
+
+instance {-# OVERLAPPING #-} (Time t) => TargetSystemComponent (Divider v Float t) where
+    moduleName = moduleNameFloat
+    software = softwareFloat
+    hardware = hardwareFloat
+    hardwareInstance
+        tag
+        _pu@Divider{pipeline}
+        UnitEnv
+            { sigClk
+            , sigRst
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            , ctrlPorts = Just DividerPorts{sel, wr, oe}
+            } =
+            [__i|
+                pu_div \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: Float) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: Float) } )
+                        , .INVALID( 0 )
+                        , .PIPELINE( #{ pipeline } )
+                        , .MOCK_DIV( 1'b1 )
+                        , .FLOAT ( 1 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_sel( #{ sel } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .signal_oe( #{ oe } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPING #-} (Time t) => TargetSystemComponent (Divider v (Attr Float) t) where
+    moduleName = moduleNameFloat
+    software = softwareFloat
+    hardware = hardwareFloat
+    hardwareInstance
+        tag
+        _pu@Divider{pipeline}
+        UnitEnv
+            { sigClk
+            , sigRst
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            , ctrlPorts = Just DividerPorts{sel, wr, oe}
+            } =
+            [__i|
+                pu_div \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: (Attr Float) ) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: (Attr Float) ) } )
+                        , .INVALID( 0 )
+                        , .PIPELINE( #{ pipeline } )
+                        , .MOCK_DIV( 1'b1 )
+                        , .FLOAT ( 1 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_sel( #{ sel } )
+                    , .signal_wr( #{ wr } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .signal_oe( #{ oe } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPABLE #-} (VarValTime v x t, FixedPointCompatible x) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
     hardware _tag Divider{mock} =
@@ -311,6 +410,7 @@ instance (Val x, Show t, FixedPointCompatible x) => TargetSystemComponent (Divid
                         , .PIPELINE( #{ pipeline } )
                         , .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )
                         , .MOCK_DIV( #{ bool2verilog mock } )
+                        , .FLOAT ( 0 )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )
@@ -327,7 +427,7 @@ instance (Val x, Show t, FixedPointCompatible x) => TargetSystemComponent (Divid
 
 instance IOTestBench (Divider v x t) v x
 
-instance (VarValTime v x t, FixedPointCompatible x) => Testable (Divider v x t) v x where
+instance {-# OVERLAPPING #-} (VarValTime v x t, FixedPointCompatible x) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench
@@ -343,3 +443,22 @@ instance (VarValTime v x t, FixedPointCompatible x) => Testable (Divider v x t) 
                     , tbcMC2verilogLiteral = \Microcode{selSignal, wrSignal, oeSignal} ->
                         [i|oe <= #{ bool2verilog oeSignal }; sel <= #{ bool2verilog selSignal }; wr <= #{ bool2verilog wrSignal }; |]
                     }
+instance {-# OVERLAPS #-} (Var v, Time t) => Testable (Divider v Float t) v Float where testBenchImplementation = testBenchImplementationFloat
+instance {-# OVERLAPS #-} (Var v, Time t) => Testable (Divider v (Attr Float) t) v (Attr Float) where testBenchImplementation = testBenchImplementationFloat
+
+testBenchImplementationFloat :: forall v x t. (VarValTime v x t, TargetSystemComponent (Divider v x t)) => Project (Divider v x t) v x -> Implementation
+testBenchImplementationFloat prj@Project{pName, pUnit} =
+    Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
+        snippetTestBench
+            prj
+            SnippetTestBenchConf
+                { tbcSignals = ["sel", "wr", "oe"]
+                , tbcPorts =
+                    DividerPorts
+                        { sel = SignalTag "sel"
+                        , wr = SignalTag "wr"
+                        , oe = SignalTag "oe"
+                        }
+                , tbcMC2verilogLiteral = \Microcode{selSignal, wrSignal, oeSignal} ->
+                    [i|oe <= #{ bool2verilog oeSignal }; sel <= #{ bool2verilog selSignal }; wr <= #{ bool2verilog wrSignal }; |]
+                }
