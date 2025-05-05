@@ -60,11 +60,14 @@ instance Arbitrary (IntX m) where
 instance Arbitrary x => Arbitrary (Attr x) where
     arbitrary = Attr <$> arbitrary <*> arbitrary
 
-instance Arbitrary x => Arbitrary (LogicCompare T.Text x) where
+instance Arbitrary CmpOp where
+    arbitrary = elements [CmpEq, CmpLt, CmpLte, CmpGt, CmpGte]
+
+instance Arbitrary x => Arbitrary (Compare T.Text x) where
     arbitrary = suchThat generateUniqueVars uniqueVars
         where
             generateUniqueVars = do
-                op <- elements [CMP_EQ, CMP_LT, CMP_LTE, CMP_GT, CMP_GTE]
+                op <- arbitrary
                 a <- inputVarGen
                 b <- inputVarGen
-                LogicCompare op a b <$> outputVarsGen
+                Compare op a b <$> outputVarsGen

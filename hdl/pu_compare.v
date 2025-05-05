@@ -22,11 +22,11 @@ reg [1:0] arg_sel;
 reg [2:0] operation;
 
 localparam
-    CMP_EQ  = 3'b000,
-    CMP_LT  = 3'b001,
-    CMP_LTE = 3'b010,
-    CMP_GT  = 3'b011,
-    CMP_GTE = 3'b100;
+    CmpEq  = 3'b000,
+    CmpLt  = 3'b001,
+    CmpLte = 3'b010,
+    CmpGt  = 3'b011,
+    CmpGte = 3'b100;
 
 always @(posedge clk)
   if ( rst ) begin
@@ -39,8 +39,11 @@ always @(posedge clk)
 always @(posedge clk) begin
     if (wr) begin
         arg[arg_sel] <= data_in;
-        operation <= op_sel;
         arg_sel <= arg_sel + 1;
+
+        if (arg_sel == 0) begin
+            operation <= op_sel;
+        end
     end
 end
 
@@ -48,11 +51,11 @@ reg [DATA_WIDTH-1:0] result;
 always @(posedge clk) begin
     if (arg_sel == 2) begin
         case(operation)
-            CMP_EQ: result <= (arg[0] == arg[1]);
-            CMP_LT: result <= (arg[0] < arg[1]);
-            CMP_LTE: result <= (arg[0] <= arg[1]);
-            CMP_GT: result <= (arg[0] > arg[1]);
-            CMP_GTE: result <= (arg[0] >= arg[1]);
+            CmpEq: result <= (arg[0] == arg[1]);
+            CmpLt: result <= (arg[0] < arg[1]);
+            CmpLte: result <= (arg[0] <= arg[1]);
+            CmpGt: result <= (arg[0] > arg[1]);
+            CmpGte: result <= (arg[0] >= arg[1]);
             default: result <= 0;
         endcase
         arg_sel <= 0;

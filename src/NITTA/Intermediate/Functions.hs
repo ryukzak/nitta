@@ -55,18 +55,18 @@ module NITTA.Intermediate.Functions (
     -- * Internal
     BrokenBuffer (..),
     brokenBuffer,
-    LogicCompare (..),
-    Op (..),
-    logicCompare,
+    Compare (..),
+    CmpOp (..),
+    cmp,
 ) where
 
 import Data.Bits qualified as B
 import Data.Data (Data)
 import Data.Default
 import Data.HashMap.Strict qualified as HM
-import Data.Set (elems, fromList, union)
 import Data.Set qualified as S
 import Data.Typeable
+import GHC.Generics
 import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
@@ -152,7 +152,7 @@ instance (Var v, Show x) => Label (Loop v x) where
     label (Loop (X x) os i) =
         "loop(" <> show x <> ", " <> show i <> ") = " <> show os
 loop :: (Var v, Val x) => x -> v -> [v] -> F v x
-loop x a bs = packF $ Loop (X x) (O $ fromList bs) $ I a
+loop x a bs = packF $ Loop (X x) (O $ S.fromList bs) $ I a
 isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
@@ -164,14 +164,14 @@ instance Function (Loop v x) v where
 instance Var v => Patch (Loop v x) (v, v) where
     patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
 instance Var v => Locks (Loop v x) v where
-    locks (Loop _ (O as) (I b)) = [Lock{locked = b, lockBy = a} | a <- elems as]
+    locks (Loop _ (O as) (I b)) = [Lock{locked = b, lockBy = a} | a <- S.elems as]
 instance Var v => FunctionSimulation (Loop v x) v x where
     simulate CycleCntx{cycleCntx} (Loop (X x) (O vs) (I _)) =
         case oneOf vs `HM.lookup` cycleCntx of
             -- if output variables are defined - nothing to do (values thrown on upper level)
             Just _ -> []
             -- if output variables are not defined - set initial value
-            Nothing -> [(v, x) | v <- elems vs]
+            Nothing -> [(v, x) | v <- S.elems vs]
 
 data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq)
 instance (Var v, Show x) => Show (LoopBegin v x) where show = label
@@ -205,7 +205,7 @@ instance Label (Buffer v x) where label Buffer{} = "buf"
 instance Var v => Show (Buffer v x) where
     show (Buffer i os) = "buffer(" <> show i <> ")" <> " = " <> show os
 buffer :: (Var v, Val x) => v -> [v] -> F v x
-buffer a b = packF $ Buffer (I a) (O $ fromList b)
+buffer a b = packF $ Buffer (I a) (O $ S.fromList b)
 
 instance Var v => Function (Buffer v x) v where
     inputs (Buffer a _b) = variables a
@@ -216,7 +216,7 @@ instance Var v => Locks (Buffer v x) v where
     locks = inputsLockOutputs
 instance Var v => FunctionSimulation (Buffer v x) v x where
     simulate cntx (Buffer (I a) (O vs)) =
-        [(v, cntx `getCntx` a) | v <- elems vs]
+        [(v, cntx `getCntx` a) | v <- S.elems vs]
 
 data Add v x = Add (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Add v x) where label Add{} = "+"
@@ -226,10 +226,10 @@ instance Var v => Show (Add v x) where
             rexp = show c
          in lexp <> " = " <> rexp
 add :: (Var v, Val x) => v -> v -> [v] -> F v x
-add a b c = packF $ Add (I a) (I b) $ O $ fromList c
+add a b c = packF $ Add (I a) (I b) $ O $ S.fromList c
 
 instance Var v => Function (Add v x) v where
-    inputs (Add a b _c) = variables a `union` variables b
+    inputs (Add a b _c) = variables a `S.union` variables b
     outputs (Add _a _b c) = variables c
 instance Var v => Patch (Add v x) (v, v) where
     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
@@ -240,7 +240,7 @@ instance (Var v, Num x) => FunctionSimulation (Add v x) v x where
         let x1 = cntx `getCntx` v1
             x2 = cntx `getCntx` v2
             y = x1 + x2
-         in [(v, y) | v <- elems vs]
+         in [(v, y) | v <- S.elems vs]
 
 data Sub v x = Sub (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Sub v x) where label Sub{} = "-"
@@ -250,10 +250,10 @@ instance Var v => Show (Sub v x) where
             rexp = show c
          in lexp <> " = " <> rexp
 sub :: (Var v, Val x) => v -> v -> [v] -> F v x
-sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
+sub a b c = packF $ Sub (I a) (I b) $ O $ S.fromList c
 
 instance Var v => Function (Sub v x) v where
-    inputs (Sub a b _c) = variables a `union` variables b
+    inputs (Sub a b _c) = variables a `S.union` variables b
     outputs (Sub _a _b c) = variables c
 instance Var v => Patch (Sub v x) (v, v) where
     patch diff (Sub a b c) = Sub (patch diff a) (patch diff b) (patch diff c)
@@ -264,7 +264,7 @@ instance (Var v, Num x) => FunctionSimulation (Sub v x) v x where
         let x1 = cntx `getCntx` v1
             x2 = cntx `getCntx` v2
             y = x1 - x2
-         in [(v, y) | v <- elems vs]
+         in [(v, y) | v <- S.elems vs]
 
 data Multiply v x = Multiply (I v) (I v) (O v) deriving (Typeable, Eq)
 instance Label (Multiply v x) where label Multiply{} = "*"
@@ -272,10 +272,10 @@ instance Var v => Show (Multiply v x) where
     show (Multiply a b c) =
         show a <> " * " <> show b <> " = " <> show c
 multiply :: (Var v, Val x) => v -> v -> [v] -> F v x
-multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
+multiply a b c = packF $ Multiply (I a) (I b) $ O $ S.fromList c
 
 instance Var v => Function (Multiply v x) v where
-    inputs (Multiply a b _c) = variables a `union` variables b
+    inputs (Multiply a b _c) = variables a `S.union` variables b
     outputs (Multiply _a _b c) = variables c
 instance Var v => Patch (Multiply v x) (v, v) where
     patch diff (Multiply a b c) = Multiply (patch diff a) (patch diff b) (patch diff c)
@@ -286,7 +286,7 @@ instance (Var v, Num x) => FunctionSimulation (Multiply v x) v x where
         let x1 = cntx `getCntx` v1
             x2 = cntx `getCntx` v2
             y = x1 * x2
-         in [(v, y) | v <- elems vs]
+         in [(v, y) | v <- S.elems vs]
 
 data Division v x = Division
     { denom, numer :: I v
@@ -305,13 +305,13 @@ division d n q r =
         Division
             { denom = I d
             , numer = I n
-            , quotient = O $ fromList q
-            , remain = O $ fromList r
+            , quotient = O $ S.fromList q
+            , remain = O $ S.fromList r
             }
 
 instance Var v => Function (Division v x) v where
-    inputs Division{denom, numer} = variables denom `union` variables numer
-    outputs Division{quotient, remain} = variables quotient `union` variables remain
+    inputs Division{denom, numer} = variables denom `S.union` variables numer
+    outputs Division{quotient, remain} = variables quotient `S.union` variables remain
 instance Var v => Patch (Division v x) (v, v) where
     patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)
 instance Var v => Locks (Division v x) v where
@@ -321,7 +321,7 @@ instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
         let dx = cntx `getCntx` d
             nx = cntx `getCntx` n
             (qx, rx) = dx `quotRem` nx
-         in [(v, qx) | v <- elems qs] ++ [(v, rx) | v <- elems rs]
+         in [(v, qx) | v <- S.elems qs] ++ [(v, rx) | v <- S.elems rs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
 instance Label (Neg v x) where label Neg{} = "neg"
@@ -329,7 +329,7 @@ instance Var v => Show (Neg v x) where
     show (Neg i o) = "-" <> show i <> " = " <> show o
 
 neg :: (Var v, Val x) => v -> [v] -> F v x
-neg i o = packF $ Neg (I i) $ O $ fromList o
+neg i o = packF $ Neg (I i) $ O $ S.fromList o
 
 instance Ord v => Function (Neg v x) v where
     inputs (Neg i _) = variables i
@@ -342,14 +342,14 @@ instance (Var v, Num x) => FunctionSimulation (Neg v x) v x where
     simulate cntx (Neg (I i) (O o)) =
         let x1 = cntx `getCntx` i
             y = -x1
-         in [(v, y) | v <- elems o]
+         in [(v, y) | v <- S.elems o]
 
 data Constant v x = Constant (X x) (O v) deriving (Typeable, Eq)
 instance Show x => Label (Constant v x) where label (Constant (X x) _) = show x
 instance (Var v, Show x) => Show (Constant v x) where
     show (Constant (X x) os) = "const(" <> show x <> ") = " <> show os
 constant :: (Var v, Val x) => x -> [v] -> F v x
-constant x vs = packF $ Constant (X x) $ O $ fromList vs
+constant x vs = packF $ Constant (X x) $ O $ S.fromList vs
 isConst f
     | Just Constant{} <- castF f = True
     | otherwise = False
@@ -360,7 +360,7 @@ instance Var v => Patch (Constant v x) (v, v) where
     patch diff (Constant x a) = Constant x (patch diff a)
 instance Var v => Locks (Constant v x) v where locks _ = []
 instance FunctionSimulation (Constant v x) v x where
-    simulate _cntx (Constant (X x) (O vs)) = [(v, x) | v <- elems vs]
+    simulate _cntx (Constant (X x) (O vs)) = [(v, x) | v <- S.elems vs]
 
 -- TODO: separete into two different functions
 
@@ -376,9 +376,9 @@ instance Var v => Show (ShiftLR v x) where
 instance Var v => Label (ShiftLR v x) where label = show
 
 shiftL :: (Var v, Val x) => Int -> v -> [v] -> F v x
-shiftL s i o = packF $ ShiftL s (I i) $ O $ fromList o
+shiftL s i o = packF $ ShiftL s (I i) $ O $ S.fromList o
 shiftR :: (Var v, Val x) => Int -> v -> [v] -> F v x
-shiftR s i o = packF $ ShiftR s (I i) $ O $ fromList o
+shiftR s i o = packF $ ShiftR s (I i) $ O $ S.fromList o
 
 instance Var v => Function (ShiftLR v x) v where
     inputs (ShiftL _ i _) = variables i
@@ -392,9 +392,9 @@ instance Var v => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance (Var v, B.Bits x) => FunctionSimulation (ShiftLR v x) v x where
     simulate cntx (ShiftL s (I i) (O os)) = do
-        [(o, getCntx cntx i `B.shiftL` s) | o <- elems os]
+        [(o, getCntx cntx i `B.shiftL` s) | o <- S.elems os]
     simulate cntx (ShiftR s (I i) (O os)) = do
-        [(o, getCntx cntx i `B.shiftR` s) | o <- elems os]
+        [(o, getCntx cntx i `B.shiftR` s) | o <- S.elems os]
 
 newtype Send v x = Send (I v) deriving (Typeable, Eq)
 instance Var v => Show (Send v x) where
@@ -415,7 +415,7 @@ instance Var v => Show (Receive v x) where
     show (Receive os) = "receive() = " <> show os
 instance Label (Receive v x) where label Receive{} = "receive"
 receive :: (Var v, Val x) => [v] -> F v x
-receive a = packF $ Receive $ O $ fromList a
+receive a = packF $ Receive $ O $ S.fromList a
 instance Var v => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance Var v => Patch (Receive v x) (v, v) where
@@ -427,7 +427,7 @@ instance (Var v, Val x) => FunctionSimulation (Receive v x) v x where
             -- if output variables are defined - nothing to do (values thrown on upper level)
             Just _ -> []
             -- if output variables are not defined - set initial value
-            Nothing -> [(v, def) | v <- elems vs]
+            Nothing -> [(v, def) | v <- S.elems vs]
 
 -- | Special function for negative tests only.
 data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, Eq)
@@ -436,7 +436,7 @@ instance Label (BrokenBuffer v x) where label BrokenBuffer{} = "broken"
 instance Var v => Show (BrokenBuffer v x) where
     show (BrokenBuffer i os) = "brokenBuffer(" <> show i <> ")" <> " = " <> show os
 brokenBuffer :: (Var v, Val x) => v -> [v] -> F v x
-brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ fromList b)
+brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ S.fromList b)
 
 instance Var v => Function (BrokenBuffer v x) v where
     inputs (BrokenBuffer a _b) = variables a
@@ -446,23 +446,25 @@ instance Var v => Patch (BrokenBuffer v x) (v, v) where
 instance Var v => Locks (BrokenBuffer v x) v where
     locks = inputsLockOutputs
 instance Var v => FunctionSimulation (BrokenBuffer v x) v x where
-    simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- elems vs]
-data Op = CMP_EQ | CMP_LT | CMP_LTE | CMP_GT | CMP_GTE
-    deriving (Typeable, Eq, Show, Data)
-data LogicCompare v x = LogicCompare Op (I v) (I v) (O v) deriving (Typeable, Eq)
-instance Label (LogicCompare v x) where
-    label (LogicCompare op _ _ _) = show op
-instance Var v => Patch (LogicCompare v x) (v, v) where
-    patch diff (LogicCompare op a b c) = LogicCompare op (patch diff a) (patch diff b) (patch diff c)
+    simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v <- S.elems vs]
 
-instance Var v => Show (LogicCompare v x) where
-    show (LogicCompare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
+data CmpOp = CmpEq | CmpLt | CmpLte | CmpGt | CmpGte
+    deriving (Typeable, Eq, Show, Data, Generic)
 
-instance Var v => Function (LogicCompare v x) v where
-    inputs (LogicCompare _ a b _) = variables a `S.union` variables b
-    outputs (LogicCompare _ _ _ o) = variables o
-instance (Var v, Val x) => FunctionSimulation (LogicCompare v x) v x where
-    simulate cntx (LogicCompare op (I a) (I b) (O o)) =
+data Compare v x = Compare CmpOp (I v) (I v) (O v) deriving (Typeable, Eq)
+instance Label (Compare v x) where
+    label (Compare op _ _ _) = show op
+instance Var v => Patch (Compare v x) (v, v) where
+    patch diff (Compare op a b c) = Compare op (patch diff a) (patch diff b) (patch diff c)
+
+instance Var v => Show (Compare v x) where
+    show (Compare op a b o) = show a <> " " <> show op <> " " <> show b <> " = " <> show o
+
+instance Var v => Function (Compare v x) v where
+    inputs (Compare _ a b _) = variables a `S.union` variables b
+    outputs (Compare _ _ _ o) = variables o
+instance (Var v, Val x) => FunctionSimulation (Compare v x) v x where
+    simulate cntx (Compare op (I a) (I b) (O o)) =
         let
             x1 = getCntx cntx a
             x2 = getCntx cntx b
@@ -470,13 +472,13 @@ instance (Var v, Val x) => FunctionSimulation (LogicCompare v x) v x where
          in
             [(v, y) | v <- S.elems o]
         where
-            op2func CMP_EQ = (==)
-            op2func CMP_LT = (<)
-            op2func CMP_LTE = (<=)
-            op2func CMP_GT = (>)
-            op2func CMP_GTE = (>=)
-instance Var v => Locks (LogicCompare v x) v where
+            op2func CmpEq = (==)
+            op2func CmpLt = (<)
+            op2func CmpLte = (<=)
+            op2func CmpGt = (>)
+            op2func CmpGte = (>=)
+instance Var v => Locks (Compare v x) v where
     locks = inputsLockOutputs
 
-logicCompare :: (Var v, Val x) => Op -> v -> v -> [v] -> F v x
-logicCompare op a b c = packF $ LogicCompare op (I a) (I b) $ O $ fromList c
+cmp :: (Var v, Val x) => CmpOp -> v -> v -> [v] -> F v x
+cmp op a b c = packF $ Compare op (I a) (I b) $ O $ S.fromList c

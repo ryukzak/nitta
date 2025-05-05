@@ -81,7 +81,7 @@ simulationTests =
                 ]
                 [ receive ["a"]
                 , receive ["b"]
-                , logicCompare CMP_LT "a" "b" ["c"]
+                , cmp CmpLt "a" "b" ["c"]
                 , send "c"
                 ]
                 ("c", [1, 0, 0])
@@ -93,7 +93,7 @@ simulationTests =
                 ]
                 [ receive ["a"]
                 , receive ["b"]
-                , logicCompare CMP_LTE "a" "b" ["c"]
+                , cmp CmpLte "a" "b" ["c"]
                 , send "c"
                 ]
                 ("c", [1, 0, 1])
@@ -105,7 +105,7 @@ simulationTests =
                 ]
                 [ receive ["a"]
                 , receive ["b"]
-                , logicCompare CMP_EQ "a" "b" ["c"]
+                , cmp CmpEq "a" "b" ["c"]
                 , send "c"
                 ]
                 ("c", [0, 0, 1])
@@ -117,7 +117,7 @@ simulationTests =
                 ]
                 [ receive ["a"]
                 , receive ["b"]
-                , logicCompare CMP_GT "a" "b" ["c"]
+                , cmp CmpGt "a" "b" ["c"]
                 , send "c"
                 ]
                 ("c", [0, 1, 0])
@@ -129,7 +129,7 @@ simulationTests =
                 ]
                 [ receive ["a"]
                 , receive ["b"]
-                , logicCompare CMP_GTE "a" "b" ["c"]
+                , cmp CmpGte "a" "b" ["c"]
                 , send "c"
                 ]
                 ("c", [0, 1, 1])

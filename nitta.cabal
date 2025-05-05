@@ -70,7 +70,7 @@ library
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
-      NITTA.Model.ProcessorUnits.Compare
+      NITTA.Model.ProcessorUnits.Comparator
       NITTA.Model.ProcessorUnits.Divider
       NITTA.Model.ProcessorUnits.Fram
       NITTA.Model.ProcessorUnits.IO.I2C
@@ -291,7 +291,7 @@ test-suite nitta-test
       NITTA.Model.Problems.Refactor.Tests
       NITTA.Model.ProcessorUnits.Accum.Tests
       NITTA.Model.ProcessorUnits.Broken.Tests
-      NITTA.Model.ProcessorUnits.Compare.Tests
+      NITTA.Model.ProcessorUnits.Comparator.Tests
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
       NITTA.Model.ProcessorUnits.IO.SPI.Tests

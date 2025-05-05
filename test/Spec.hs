@@ -25,7 +25,7 @@ import NITTA.Model.Problems.Refactor.ConstantFolding.Tests qualified
 import NITTA.Model.Problems.Refactor.Tests qualified
 import NITTA.Model.ProcessorUnits.Accum.Tests qualified
 import NITTA.Model.ProcessorUnits.Broken.Tests qualified
-import NITTA.Model.ProcessorUnits.Compare.Tests qualified
+import NITTA.Model.ProcessorUnits.Comparator.Tests qualified
 import NITTA.Model.ProcessorUnits.Divider.Tests qualified
 import NITTA.Model.ProcessorUnits.Fram.Tests qualified
 import NITTA.Model.ProcessorUnits.IO.SPI.Tests qualified
@@ -57,7 +57,7 @@ main = do
           , NITTA.Model.ProcessorUnits.Broken.Tests.tests
           , NITTA.Model.ProcessorUnits.Divider.Tests.tests
           , NITTA.Model.ProcessorUnits.Fram.Tests.tests
-          , NITTA.Model.ProcessorUnits.Compare.Tests.tests
+          , NITTA.Model.ProcessorUnits.Comparator.Tests.tests
           , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
           , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
           , NITTA.Model.ProcessorUnits.Accum.Tests.tests

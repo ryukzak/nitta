@@ -63,7 +63,7 @@ data PUConf
         { name :: T.Text
         , sRight :: Maybe Bool
         }
-    | Compare
+    | Comparator
         { name :: T.Text
         }
     deriving (Generic, Show)
@@ -111,7 +111,7 @@ mkMicroarchitecture ioSync toml =
                 configure proto Multiplier{name, mock} = addPU proto name (PU.multiplier mock) PU.MultiplierIO
                 configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
                 configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
-                configure proto Compare{name} = addPU proto name def PU.CompareIO
+                configure proto Comparator{name} = addPU proto name def PU.CompareIO
                 configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
                     addPU proto name (PU.anySPI bounceFilter bufferSize) $
                         if isSlave

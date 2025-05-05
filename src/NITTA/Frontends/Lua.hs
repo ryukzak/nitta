@@ -441,11 +441,11 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "shiftL", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c
         function2nitta LuaStatement{fName = "shiftR", fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c
         function2nitta LuaStatement{fName = "loop", fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c
-        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_LT (fromText a) (fromText b) (output c)
-        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_LTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_EQ (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_GTE (fromText a) (fromText b) $ output c
-        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicCompare F.CMP_GT (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "lessThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpLt (fromText a) (fromText b) (output c)
+        function2nitta LuaStatement{fName = "lessThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpLte (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpEq (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGte (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGt (fromText a) (fromText b) $ output c
         function2nitta f = error $ "function not found: " <> show f
         output v =
             case HM.lookup v algVars of
