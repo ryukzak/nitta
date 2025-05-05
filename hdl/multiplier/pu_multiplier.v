@@ -3,6 +3,7 @@ module pu_multiplier
     , parameter ATTR_WIDTH           = 4
     , parameter SCALING_FACTOR_POWER = 0
     , parameter INVALID              = 0
+    , parameter FLOAT                = 1
     )
     ( input  wire                  clk
     , input  wire                  rst
@@ -36,13 +37,36 @@ end
 
 
 wire signed [DATA_WIDTH-1:0]         mult_result;
-mult_inner #
-        ( .DATA_WIDTH( DATA_WIDTH )
-        ) mult_i1
-    ( .dataa( arg[0][DATA_WIDTH/2-1:0] )
-    , .datab( arg[1][DATA_WIDTH/2-1:0] )
-    , .result( mult_result )
-    );
+
+generate
+    if ( FLOAT ) begin
+        wire [DATA_WIDTH-1:0] a = arg[0];
+        wire [DATA_WIDTH-1:0] b = arg[1];
+        wire [DATA_WIDTH-1:0] mult_result_float;
+
+        float_mult #(
+            .DATA_WIDTH(DATA_WIDTH)
+        ) mult_i2 (
+            .dataa(a),
+            .datab(b),
+            .result(mult_result_float)
+        );
+        assign mult_result = mult_result_float;
+    end else begin
+        wire signed [DATA_WIDTH/2-1:0] dataa = arg[0][DATA_WIDTH/2-1:0];
+        wire signed [DATA_WIDTH/2-1:0] datab = arg[1][DATA_WIDTH/2-1:0];
+        wire signed [DATA_WIDTH-1:0] mult_result_fixed;
+
+        mult_inner #(
+            .DATA_WIDTH(DATA_WIDTH)
+        ) mult_i1 (
+            .dataa(dataa),
+            .datab(datab),
+            .result(mult_result_fixed)
+        );
+        assign mult_result = mult_result_fixed;
+    end
+endgenerate
 
 reg f;
 reg write_multresult;
@@ -55,9 +79,13 @@ assign arg2_high_part = arg[1][DATA_WIDTH-1:DATA_WIDTH/2-1];
 
 
 always @(posedge clk) begin
-    invalid_value <= arg_invalid[0] || arg_invalid[1]
-                || !( arg1_high_part == zero ^ ~arg1_high_part == zero )
-                || !( arg2_high_part == zero ^ ~arg2_high_part == zero );
+    if ( FLOAT ) begin
+        invalid_value <= arg_invalid[0] || arg_invalid[1];
+    end else begin
+        invalid_value <= arg_invalid[0] || arg_invalid[1]
+                    || !( arg1_high_part == zero ^ ~arg1_high_part == zero )
+                    || !( arg2_high_part == zero ^ ~arg2_high_part == zero );
+    end
     if ( rst ) begin
         f <= 0;
         write_multresult <= 0;
@@ -78,7 +106,11 @@ always @(posedge clk) begin
     end else begin
         if ( write_multresult ) begin
             invalid_result <= invalid_value;
-            data_multresult <= mult_result >>> SCALING_FACTOR_POWER;
+            if ( FLOAT ) begin
+                data_multresult <= mult_result;
+            end else begin
+                data_multresult <= mult_result >>> SCALING_FACTOR_POWER;
+            end
         end
     end
 end
