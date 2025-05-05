@@ -24,7 +24,7 @@ import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
 import Data.String.Interpolate
-import NITTA.Intermediate.Functions hiding (remain)
+import NITTA.Intermediate.Functions hiding (Division (..), FloatDivision (..))
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
