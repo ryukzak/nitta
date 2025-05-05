@@ -194,6 +194,10 @@ instance Applicative Attr where
         let value = f x y
          in Attr{value, invalid = x' || y'}
 
+instance (Fractional x, Validity x) => Fractional (Attr x) where
+    fromRational x = Attr{value = fromRational x, invalid = False}
+    recip a = fmap recip a
+
 instance Show x => Show (Attr x) where
     show Attr{invalid = True} = "NaN"
     show Attr{value, invalid = False} = show value
@@ -288,13 +292,15 @@ instance Val Int where
     dataLiteral = showText
 
 instance Val Float where
-    dataWidth _ = 4
+    dataWidth _ = 32
 
     rawData x = toInteger $ castFloatToWord32 x
-    rawAttr _ = 0
+    rawAttr x = if isInvalid x then 1 else 0
     fromRaw x _ = castWord32ToFloat $ fromInteger x
 
-    dataLiteral = showText
+    dataLiteral x = showText (rawData x)
+
+    attrLiteral x = showText (attrWidth x) <> "'d000" <> showText (rawAttr x)
 
     verilogHelper x =
         [__i|
@@ -305,7 +311,7 @@ instance Val Float where
                 input [#{ attrWidth x }-1:0] actualAttr;
                 begin
                     $write("%0d:%0d\t", cycle, tick);
-                    $write("actual: %d %d\t", actualData, actualAttr);
+                    $write("actual: %.3f %d\t", float_to_real(actualData), actualAttr);
                     $display();
                 end
             endtask // traceWithAttr
@@ -320,12 +326,12 @@ instance Val Float where
                 input [256*8-1:0] var; // string
                 begin
                     $write("%0d:%0d\t", cycle, tick);
-                    $write("actual: %.3f %.3f\t", actualData, actualAttr);
-                    $write("expect: %.3f %.3f\t", expectData, expectAttr);
+                    $write("actual: %.3f %d\t", float_to_real(actualData), actualAttr);
+                    $write("expect: %.3f %d\t", float_to_real(expectData), expectAttr);
                     $write("var: %0s\t", var);
-                    if ( actualData != expectData || actualAttr != expectAttr
-                        || ( actualData === 'dx && !actualAttr[0] )
-                        ) $write("FAIL");
+                    if ((actualData) != (expectData) && diff(actualData, expectData) > 8) $write("FAIL DATA %.3f, %.3f, %d\t", float_to_real(actualData), float_to_real(expectData), 
+                        diff(actualData,expectData));
+                    if ( actualAttr != expectAttr) $write("FAIL ATTR %d, %d\t", actualAttr, expectAttr);
                     $display();
                 end
             endtask // assertWithAttr

@@ -5,6 +5,7 @@ module pu_div
     , parameter PIPELINE             = 4
     , parameter SCALING_FACTOR_POWER = 0
     , parameter MOCK_DIV             = 0
+    , parameter FLOAT                = 1
     )
     ( input  wire                  clk
     , input  wire                  rst
@@ -67,6 +68,9 @@ assign invalid = denom_invalid_latch
                  || denom_is_zero
                  || denom_out_of_range;
 
+
+assign float_invalid = denom_invalid_latch || numer_invalid_latch || denom_is_zero;
+
 reg [PIPELINE-1:0]   invalid_pipeline;
 
 always @(posedge clk) begin
@@ -99,7 +103,7 @@ assign data_out = (signal_oe && !signal_wr)
 
 assign attr_out = {
     {ATTR_WIDTH-1{1'b0}},
-    (signal_oe && !signal_wr) ? invalid_pipeline[ PIPELINE - 1 ] : 1'b0
+    (signal_oe && !signal_wr) ? (FLOAT ? float_invalid : invalid_pipeline[ PIPELINE - 1 ]) : 1'b0
     };
 
 endmodule
