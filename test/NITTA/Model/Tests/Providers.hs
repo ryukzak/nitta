@@ -21,6 +21,7 @@ module NITTA.Model.Tests.Providers (
 import Data.CallStack
 import Data.Default
 import Data.Text as T
+import NITTA.Frontends (Translatable)
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -38,6 +39,7 @@ nittaCoSimTestCase ::
     ( HasCallStack
     , Val x
     , Integral x
+    , Translatable x
     ) =>
     String ->
     BusNetwork T.Text T.Text x Int ->

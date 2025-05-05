@@ -115,9 +115,8 @@ data TargetSynthesis tag v x t = TargetSynthesis
     , tSourceCode :: Maybe Text
     -- ^ optional application source code (lua)
     , tDFG :: DataFlowGraph v x
-    {- ^ algorithm in intermediate data flow graph representation (if
-    tSourceCode present will be overwritten)
-    -}
+    -- ^ algorithm in intermediate data flow graph representation (if
+    --     tSourceCode present will be overwritten)
     , tReceivedValues :: [(v, [x])]
     -- ^ values from input interface for testing purpose
     , tSynthesisMethod :: SynthesisMethod tag v x t
@@ -159,7 +158,8 @@ runTargetSynthesis leaf = do
     traverse runTestbench prj
 
 synthesizeTargetSystem ::
-    (UnitTag tag, VarValTime v x t) =>
+    forall tag v x t.
+    (UnitTag tag, VarValTime v x t, Translatable x) =>
     TargetSynthesis tag v x t ->
     IO
         ( DefTree tag v x t

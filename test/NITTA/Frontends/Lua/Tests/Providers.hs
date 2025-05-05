@@ -24,6 +24,7 @@ import Data.CallStack
 import Data.Default
 import Data.Proxy
 import Data.Text qualified as T
+import NITTA.Frontends (Translatable)
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
@@ -36,7 +37,7 @@ import Test.Tasty.HUnit
 
 traceLuaSimulationTestCase ::
     forall x.
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     Proxy x ->
     String ->
     T.Text ->
@@ -53,7 +54,7 @@ luaTestCase :: HasCallStack => String -> T.Text -> TestTree
 luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pAttrIntX32 name def
 
 typedLuaTestCase ::
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->
@@ -62,7 +63,7 @@ typedLuaTestCase ::
 typedLuaTestCase arch proxy name = typedIOLuaTestCase arch proxy name def
 
 typedIOLuaTestCase ::
-    (HasCallStack, Val x, Integral x) =>
+    (HasCallStack, Val x, Integral x, Translatable x) =>
     BusNetwork T.Text T.Text x Int ->
     Proxy x ->
     String ->

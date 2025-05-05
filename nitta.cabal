@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -127,6 +127,7 @@ library
       FlexibleContexts
       FlexibleInstances
       TupleSections
+      TypeApplications
       UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
@@ -197,10 +198,13 @@ executable nitta
       FlexibleContexts
       FlexibleInstances
       TupleSections
+      TypeApplications
       UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
+    , aeson
+    , aeson-pretty
     , base
     , boxes
     , bytestring
@@ -242,6 +246,7 @@ executable nitta-api-gen
       FlexibleContexts
       FlexibleInstances
       TupleSections
+      TypeApplications
       UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
@@ -318,6 +323,7 @@ test-suite nitta-test
       FlexibleContexts
       FlexibleInstances
       TupleSections
+      TypeApplications
       UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
