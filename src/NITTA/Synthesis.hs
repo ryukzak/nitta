@@ -115,9 +115,8 @@ data TargetSynthesis tag v x t = TargetSynthesis
     , tSourceCode :: Maybe Text
     -- ^ optional application source code (lua)
     , tDFG :: DataFlowGraph v x
-    {- ^ algorithm in intermediate data flow graph representation (if
-    tSourceCode present will be overwritten)
-    -}
+    -- ^ algorithm in intermediate data flow graph representation (if
+    --     tSourceCode present will be overwritten)
     , tReceivedValues :: [(v, [x])]
     -- ^ values from input interface for testing purpose
     , tSynthesisMethod :: SynthesisMethod tag v x t
