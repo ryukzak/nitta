@@ -72,7 +72,7 @@ instance Var v => Show (Job v x) where
         where
             show' = map (map (second toString))
 
-data FixedPointCompatible x => Accum v x t = Accum
+data Accum v x t = Accum
     { remainJobs :: [Job v x]
     -- ^ List of jobs (expressions)
     , currentJob :: Maybe (Job v x)
@@ -81,7 +81,7 @@ data FixedPointCompatible x => Accum v x t = Accum
     -- ^ Process
     }
 
-instance (VarValTime v x t, FixedPointCompatible x) => Pretty (Accum v x t) where
+instance VarValTime v x t => Pretty (Accum v x t) where
     pretty a =
         [__i|
             Accum:
@@ -90,10 +90,10 @@ instance (VarValTime v x t, FixedPointCompatible x) => Pretty (Accum v x t) wher
                 #{ indent 4 $ pretty $ process_ a }
             |]
 
-instance (VarValTime v x t, FixedPointCompatible x) => Show (Accum v x t) where
+instance VarValTime v x t => Show (Accum v x t) where
     show = show . pretty
 
-instance (VarValTime v x t, FixedPointCompatible x) => Default (Accum v x t) where
+instance VarValTime v x t => Default (Accum v x t) where
     def =
         Accum
             { remainJobs = []
@@ -101,7 +101,7 @@ instance (VarValTime v x t, FixedPointCompatible x) => Default (Accum v x t) whe
             , process_ = def
             }
 
-instance (Default x, FixedPointCompatible x) => DefaultX (Accum v x t) x
+instance Default x => DefaultX (Accum v x t) x
 
 registerAcc f@F.Acc{actions} pu@Accum{remainJobs} =
     pu
@@ -141,7 +141,7 @@ sourceTask tasks
     | odd $ length tasks = Just $ head tasks
     | otherwise = Nothing
 
-instance (VarValTime v x t, FixedPointCompatible x) => ProcessorUnit (Accum v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu
         | Just (F.Add a b c) <- castF f =
             Right $ registerAcc (F.Acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c]) pu
@@ -155,7 +155,7 @@ instance (VarValTime v x t, FixedPointCompatible x) => ProcessorUnit (Accum v x 
 
     process = process_
 
-instance (VarValTime v x t, FixedPointCompatible x) => EndpointProblem (Accum v x t) v t where
+instance VarValTime v x t => EndpointProblem (Accum v x t) v t where
     endpointOptions pu@Accum{currentJob = Just Job{tasks, state}}
         | Just task <- targetTask tasks =
             let from = case state of
@@ -269,7 +269,7 @@ instance UnambiguouslyDecode (Accum v x t) where
     decodeInstruction (Load neg) = def{resetAccSignal = False, loadSignal = True, negSignal = Just neg}
     decodeInstruction Out = def{oeSignal = True}
 
-instance (Var v, FixedPointCompatible x) => Locks (Accum v x t) v where
+instance Var v => Locks (Accum v x t) v where
     locks Accum{currentJob = Nothing, remainJobs} = concatMap (locks . func) remainJobs
     locks Accum{currentJob = Just Job{tasks = []}} = error "Accum locks: internal error"
     locks Accum{currentJob = Just Job{tasks = t : ts}, remainJobs} =
@@ -285,10 +285,19 @@ instance (Var v, FixedPointCompatible x) => Locks (Accum v x t) v where
                 ]
          in current ++ remain
 
-instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
-    moduleName _ _ = "pu_accum"
-    hardware _tag _pu = FromLibrary "pu_accum.v"
-    software _ _ = Empty
+moduleNameX _ _ = "pu_accum"
+softwareX _ _ = Empty
+hardwareFloat _ _ =
+    Aggregate
+        Nothing
+        [ FromLibrary "float_accum.v"
+        , FromLibrary "pu_accum.v"
+        ]
+
+instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v Float t) where
+    moduleName = moduleNameX
+    software = softwareX
+    hardware = hardwareFloat
     hardwareInstance
         tag
         _pu
@@ -301,8 +310,9 @@ instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
             } =
             [__i|
                 pu_accum \#
-                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
-                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        ( .DATA_WIDTH( #{ dataWidth (def :: Float) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: Float) } )
+                        , .FLOAT ( 1 )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )
@@ -318,11 +328,79 @@ instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-instance (Ord t, FixedPointCompatible x) => WithFunctions (Accum v x t) (F v x) where
+instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v (Attr Float) t) where
+    moduleName = moduleNameX
+    software = softwareX
+    hardware = hardwareFloat
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just AccumPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+                pu_accum \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: (Attr Float)) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: (Attr Float)) } )
+                        , .FLOAT ( 1 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_resetAcc( #{ resetAcc } )
+                    , .signal_load( #{ load } )
+                    , .signal_neg( #{ neg } )
+                    , .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPABLE #-} (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
+    moduleName = moduleNameX
+    hardware _tag _pu = FromLibrary "pu_accum.v"
+    software = softwareX
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just AccumPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+                pu_accum \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .FLOAT ( 0 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_resetAcc( #{ resetAcc } )
+                    , .signal_load( #{ load } )
+                    , .signal_neg( #{ neg } )
+                    , .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance Ord t => WithFunctions (Accum v x t) (F v x) where
     functions Accum{process_, remainJobs} =
         functions process_ ++ map func remainJobs
 
-instance (VarValTime v x t, FixedPointCompatible x) => Testable (Accum v x t) v x where
+instance VarValTime v x t => Testable (Accum v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         let tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
 
