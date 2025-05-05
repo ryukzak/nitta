@@ -246,7 +246,8 @@ instance VarValTime v x t => IOTestBench (SPI v x t) v x where
                                         @(posedge #{ tag }_io_test_start_transaction);
                                             $write( "#{ tag }_io_test_output actual: %H except: %H ({ #{ toVerilogLiteral xs } })",
                                                 #{ tag }_io_test_output, { #{ toVerilogLiteral xs } } );
-                                            if ( #{ tag }_io_test_output != { #{ toVerilogLiteral xs } } ) $display("\t\tFAIL");
+                                            if ( spi_assert_false(#{ tag }_io_test_output, { #{ toVerilogLiteral xs } }))
+                                                $display("\t\tFAIL");
                                             else $display();
 
                                     |]
@@ -345,7 +346,7 @@ instance VarValTime v x t => IOTestBench (SPI v x t) v x where
                                         @(posedge #{ tag }_io_test_ready);
                                             $display( "#{ tag }_io_test_output except: %H ({ #{ toVerilogLiteral xs } })", { #{ toVerilogLiteral xs } } );
                                             $display( "#{ tag }_io_test_output actual: %H", #{ tag }_io_test_output );
-                                            if ( #{ tag }_io_test_output !=  { #{ toVerilogLiteral xs } } )
+                                            if ( spi_assert_false(#{ tag }_io_test_output, { #{ toVerilogLiteral xs } }))
                                                 $display("                       FAIL");
                                             $display();
                                     |]

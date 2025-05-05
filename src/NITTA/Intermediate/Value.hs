@@ -122,6 +122,14 @@ class
                     $display();
                 end
             endtask // assertWithAttr
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = a != b;
+                end
+            endfunction
         |]
 
     -- | RE for extraction assertion data from a testbench log
@@ -321,7 +329,55 @@ instance Val Float where
                     $display();
                 end
             endtask // assertWithAttr
+
+            function real float_to_real;
+                input [31:0] x;
+                reg         sign;
+                reg [7:0]   exponent;
+                reg [22:0]  mantissa;
+                real        result;
+                integer     exponent_shifted;
+                real        mantissa_value;
+                begin
+                    sign = x[31];
+                    exponent = x[30:23];
+                    mantissa = x[22:0];
+
+                    exponent_shifted = exponent - 127;
+
+                    mantissa_value = 1.0 + (mantissa / (2.0 ** 23));
+
+                    result = mantissa_value * (2.0 ** exponent_shifted);
+                    if (sign) result = -result;
+
+                    float_to_real = result;
+                end
+            endfunction // float_to_real
+
+            function automatic diff;
+                input [31:0] a;
+                input [31:0] b;
+                begin
+                    diff = (a > b) ? a - b : b - a;
+                end
+            endfunction
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = diff(a[63:32], b[63:32]) > 8 || diff(a[31:0], b[31:0]) > 8;
+                end
+            endfunction
         |]
+    verilogAssertRE _ =
+        mkRegex $
+            concat
+                [ "([[:digit:]]+):([[:digit:]]+)[\t ]"
+                , "actual:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "expect:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "var: ([^ \t\n]+)"
+                ]
 
 -- | Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
@@ -520,6 +576,14 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
                 input [31:0] b;
                 begin
                     diff = (a > b) ? a - b : b - a;
+                end
+            endfunction
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = a != b;
                 end
             endfunction
         |]
