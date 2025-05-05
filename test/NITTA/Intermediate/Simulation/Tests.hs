@@ -86,7 +86,7 @@ simulationTests =
             def
             [ loop 2 "c" ["a"]
             , constant 2 ["b"]
-            , floatDivision "a" "b" ["c"]
+            , floatDivision "a" "b" ["c"] []
             ]
             ("a", [2, 1, 0.5, 0.25, 0.125, 0.0625, 0.03125])
         , testGroup
