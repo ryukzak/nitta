@@ -19,7 +19,7 @@ module NITTA.Model.Time (
     TaggedTime (..),
 ) where
 
-import Data.Aeson
+import Data.Aeson (ToJSON, ToJSONKey)
 import Data.Default
 import Data.Typeable
 import GHC.Generics

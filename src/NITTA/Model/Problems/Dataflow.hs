@@ -31,9 +31,8 @@ statement. Describe sending data between processor units over a network. Any
 -}
 data DataflowSt tag v tp = DataflowSt
     { dfSource :: (tag, EndpointSt v tp)
-    {- ^ A source processor unit of data flow transaction, and it's time
-    constrains which defines when data can be sended.
-    -}
+    -- ^ A source processor unit of data flow transaction, and it's time
+    --         constrains which defines when data can be sended.
     , dfTargets :: [(tag, EndpointSt v tp)]
     -- ^ All possible targets of dataflow transaction.
     }

@@ -39,9 +39,8 @@ import Numeric.Interval.NonEmpty (inf)
 data BindMetrics
     = SingleBindMetrics
         { pCritical :: Bool
-        {- ^ Can this binding block another one (for example, one 'Loop' can
-        take the last free buffer)?
-        -}
+        -- ^ Can this binding block another one (for example, one 'Loop' can
+        --         take the last free buffer)?
         , pAlternative :: Float
         -- ^ How many alternative binding we have?
         , pRestless :: Float

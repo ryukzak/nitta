@@ -412,11 +412,10 @@ data Changeset v = Changeset
     { changeI :: M.Map v v
     -- ^ change set for input variables (one to one)
     , changeO :: M.Map v (S.Set v)
-    {- ^ change set for output variables. Many to many relations:
-
-    > fromList [(a, {x}), (b, {x})] -- several output variables to one
-    > fromList [(c, {y, z})] -- one output variable to many
-    -}
+    -- ^ change set for output variables. Many to many relations:
+    --
+    --         > fromList [(a, {x}), (b, {x})] -- several output variables to one
+    --         > fromList [(c, {y, z})] -- one output variable to many
     }
     deriving (Eq)
 
