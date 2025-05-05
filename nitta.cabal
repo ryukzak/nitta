@@ -131,8 +131,8 @@ library
       FlexibleContexts
       FlexibleInstances
       TupleSections
-      UndecidableInstances
       TypeApplications
+      UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       HStringTemplate
@@ -202,11 +202,13 @@ executable nitta
       FlexibleContexts
       FlexibleInstances
       TupleSections
-      UndecidableInstances
       TypeApplications
+      UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
+    , aeson
+    , aeson-pretty
     , base
     , boxes
     , bytestring
@@ -248,8 +250,8 @@ executable nitta-api-gen
       FlexibleContexts
       FlexibleInstances
       TupleSections
-      UndecidableInstances
       TypeApplications
+      UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
@@ -327,8 +329,8 @@ test-suite nitta-test
       FlexibleContexts
       FlexibleInstances
       TupleSections
-      UndecidableInstances
       TypeApplications
+      UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH
