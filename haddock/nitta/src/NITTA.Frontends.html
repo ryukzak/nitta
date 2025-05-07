@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621680248252"><span id="local-6989586621680248253"><span id="local-6989586621680248254"></span></span></span><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621680286053"><span id="local-6989586621680286054"><span id="local-6989586621680286055"></span></span></span><span class="hs-comment">{- |
 Module      : NITTA.Frontends.FrontendIdentifier
 Description : Chooses a frontend based on source file extension or format
 Copyright   : (c) Artur Gogiyan, 2022
@@ -24,7 +24,7 @@ Stability   : experimental
 </span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>
 </span><span id="line-25"></span><span>
 </span><span id="line-26"></span><span class="hs-keyword">data</span><span> </span><span id="FrontendType"><span class="annot"><a href="NITTA.Frontends.html#FrontendType"><span class="hs-identifier hs-var">FrontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Lua"><span class="annot"><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="XMILE"><span class="annot"><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span></span><span>
-</span><span id="line-27"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680248239"><span id="local-6989586621680248241"><span id="local-6989586621680248243"><span class="annot"><span class="annottext">Int -&gt; FrontendType -&gt; ShowS
+</span><span id="line-27"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680286040"><span id="local-6989586621680286042"><span id="local-6989586621680286044"><span class="annot"><span class="annottext">Int -&gt; FrontendType -&gt; ShowS
 [FrontendType] -&gt; ShowS
 FrontendType -&gt; String
 forall a.
@@ -35,7 +35,7 @@ show :: FrontendType -&gt; String
 $cshow :: FrontendType -&gt; String
 showsPrec :: Int -&gt; FrontendType -&gt; ShowS
 $cshowsPrec :: Int -&gt; FrontendType -&gt; ShowS
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680248208"><span id="local-6989586621680248210"><span id="local-6989586621680248212"><span id="local-6989586621680248214"><span id="local-6989586621680248216"><span id="local-6989586621680248218"><span id="local-6989586621680248220"><span id="local-6989586621680248222"><span id="local-6989586621680248224"><span id="local-6989586621680248226"><span id="local-6989586621680248228"><span id="local-6989586621680248230"><span id="local-6989586621680248232"><span id="local-6989586621680248234"><span class="annot"><span class="annottext">Typeable FrontendType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680286009"><span id="local-6989586621680286011"><span id="local-6989586621680286013"><span id="local-6989586621680286015"><span id="local-6989586621680286017"><span id="local-6989586621680286019"><span id="local-6989586621680286021"><span id="local-6989586621680286023"><span id="local-6989586621680286025"><span id="local-6989586621680286027"><span id="local-6989586621680286029"><span id="local-6989586621680286031"><span id="local-6989586621680286033"><span id="local-6989586621680286035"><span class="annot"><span class="annottext">Typeable FrontendType
 FrontendType -&gt; DataType
 FrontendType -&gt; Constr
 (forall b. Data b =&gt; b -&gt; b) -&gt; FrontendType -&gt; FrontendType
@@ -168,37 +168,37 @@ $cgfoldl :: forall (c :: * -&gt; *).
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-28"></span><span>
 </span><span id="line-29"></span><span id="identifyFrontendType"><span class="annot"><span class="annottext">identifyFrontendType :: String -&gt; Maybe FrontendType -&gt; FrontendType
-</span><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier hs-var hs-var">identifyFrontendType</span></a></span></span><span> </span><span id="local-6989586621680248206"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680248206"><span class="hs-identifier hs-var">fileName</span></a></span></span><span> </span><span id="local-6989586621680248205"><span class="annot"><span class="annottext">Maybe FrontendType
-</span><a href="#local-6989586621680248205"><span class="hs-identifier hs-var">frontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a -&gt; a
+</span><a href="NITTA.Frontends.html#identifyFrontendType"><span class="hs-identifier hs-var hs-var">identifyFrontendType</span></a></span></span><span> </span><span id="local-6989586621680286007"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680286007"><span class="hs-identifier hs-var">fileName</span></a></span></span><span> </span><span id="local-6989586621680286006"><span class="annot"><span class="annottext">Maybe FrontendType
+</span><a href="#local-6989586621680286006"><span class="hs-identifier hs-var">frontendType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">FrontendType
-</span><a href="#local-6989586621680248203"><span class="hs-identifier hs-var">identifyByExtension</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe FrontendType
-</span><a href="#local-6989586621680248205"><span class="hs-identifier hs-var">frontendType</span></a></span><span>
+</span><a href="#local-6989586621680286004"><span class="hs-identifier hs-var">identifyByExtension</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe FrontendType
+</span><a href="#local-6989586621680286006"><span class="hs-identifier hs-var">frontendType</span></a></span><span>
 </span><span id="line-30"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-31"></span><span>        </span><span id="local-6989586621680248203"><span class="annot"><span class="annottext">identifyByExtension :: FrontendType
-</span><a href="#local-6989586621680248203"><span class="hs-identifier hs-var hs-var">identifyByExtension</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-31"></span><span>        </span><span id="local-6989586621680286004"><span class="annot"><span class="annottext">identifyByExtension :: FrontendType
+</span><a href="#local-6989586621680286004"><span class="hs-identifier hs-var hs-var">identifyByExtension</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-32"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; b
 </span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; (String, String)
 </span><span class="hs-identifier hs-var">splitExtension</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680248206"><span class="hs-identifier hs-var">fileName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621680286007"><span class="hs-identifier hs-var">fileName</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-33"></span><span>                </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;.lua&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FrontendType
 </span><a href="NITTA.Frontends.html#Lua"><span class="hs-identifier hs-var">Lua</span></a></span><span>
 </span><span id="line-34"></span><span>                </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;.xmile&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">FrontendType
 </span><a href="NITTA.Frontends.html#XMILE"><span class="hs-identifier hs-var">XMILE</span></a></span><span>
-</span><span id="line-35"></span><span>                </span><span id="local-6989586621680248195"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680248195"><span class="hs-identifier hs-var">ext</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
+</span><span id="line-35"></span><span>                </span><span id="local-6989586621680285996"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680285996"><span class="hs-identifier hs-var">ext</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; String -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;unknown file extensions: &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680248195"><span class="hs-identifier hs-var">ext</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680285996"><span class="hs-identifier hs-var">ext</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot; for &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621680248206"><span class="hs-identifier hs-var">fileName</span></a></span><span>
+</span><a href="#local-6989586621680286007"><span class="hs-identifier hs-var">fileName</span></a></span><span>
 </span><span id="line-36"></span><span>
 </span><span id="line-37"></span><span id="translate"><span class="annot"><span class="annottext">translate :: FrontendType -&gt; Text -&gt; FrontendResult v x
 </span><a href="NITTA.Frontends.html#translate"><span class="hs-identifier hs-var hs-var">translate</span></a></span></span><span> </span><span class="annot"><span class="annottext">FrontendType

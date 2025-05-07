@@ -1112,6 +1112,15 @@ send :: (Var v, Val x) => v -> F v x
 data BrokenBuffer v x
 BrokenBuffer :: I v -> O v -> BrokenBuffer v x
 brokenBuffer :: (Var v, Val x) => v -> [v] -> F v x
+data Compare v x
+Compare :: CmpOp -> I v -> I v -> O v -> Compare v x
+data CmpOp
+CmpEq :: CmpOp
+CmpLt :: CmpOp
+CmpLte :: CmpOp
+CmpGt :: CmpOp
+CmpGte :: CmpOp
+cmp :: (Var v, Val x) => CmpOp -> v -> v -> [v] -> F v x
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.Loop v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopBegin v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopEnd v x)
@@ -1126,6 +1135,17 @@ instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.ShiftL
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Send v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Receive v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.BrokenBuffer v x)
+instance GHC.Generics.Generic NITTA.Intermediate.Functions.CmpOp
+instance Data.Data.Data NITTA.Intermediate.Functions.CmpOp
+instance GHC.Show.Show NITTA.Intermediate.Functions.CmpOp
+instance GHC.Classes.Eq NITTA.Intermediate.Functions.CmpOp
+instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Compare v x)
+instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Compare v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Compare v x) (v, v)
+instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Compare v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Compare v x) v
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Compare v x) v x
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Compare v x) v
 instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.BrokenBuffer v x)
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.BrokenBuffer v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.BrokenBuffer v x) v
@@ -2636,6 +2656,39 @@ instance (NITTA.Intermediate.Value.Val x, GHC.Show.Show t) => NITTA.Project.Type
 instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance GHC.Classes.Ord v => NITTA.Intermediate.Variable.Variables (NITTA.Model.ProcessorUnits.Divider.Job v x t) v
+
+
+module NITTA.Model.ProcessorUnits.Comparator
+data Comparator v x t
+compare :: Time t => Comparator v x t
+
+-- | A processor unit control ports (signals, flags).
+data Ports pu :: Type
+data IOPorts pu :: Type
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x t
+instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v
+instance Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t))
+instance NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) x
+instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v t
+instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
+instance GHC.Classes.Ord t => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) (NITTA.Intermediate.Types.F v x)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
 
 
 module NITTA.Model.ProcessorUnits.Broken
