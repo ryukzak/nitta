@@ -94,7 +94,7 @@ div #
     );
 
 assign data_out = (signal_oe && !signal_wr)
-    ? (signal_sel ? remain_result : quotient_result )//<<< SCALING_FACTOR_POWER)
+    ? (signal_sel ? remain_result : quotient_result)
     : 0;
 
 assign attr_out = {
