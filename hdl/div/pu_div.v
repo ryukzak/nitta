@@ -84,6 +84,7 @@ wire [DATA_WIDTH-1:0]         remain_result;
 div #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .PIPELINE( PIPELINE )
+        , .SCALING_FACTOR_POWER( SCALING_FACTOR_POWER )
         ) div_inner
     ( .numer( numer_latch )
     , .denom( denom_latch )
@@ -93,7 +94,7 @@ div #
     );
 
 assign data_out = (signal_oe && !signal_wr)
-    ? (signal_sel ? remain_result : quotient_result <<< SCALING_FACTOR_POWER)
+    ? (signal_sel ? remain_result : quotient_result )//<<< SCALING_FACTOR_POWER)
     : 0;
 
 assign attr_out = {
