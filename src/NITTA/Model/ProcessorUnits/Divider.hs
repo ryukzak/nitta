@@ -69,12 +69,12 @@ divider pipeline mock =
         , mock
         }
 
-instance (Time t) => Default (Divider v x t) where
+instance Time t => Default (Divider v x t) where
     def = divider 4 True
 
-instance (Default x) => DefaultX (Divider v x t) x
+instance Default x => DefaultX (Divider v x t) x
 
-instance (Ord t) => WithFunctions (Divider v x t) (F v x) where
+instance Ord t => WithFunctions (Divider v x t) (F v x) where
     functions Divider{process_, remains, jobs} =
         functions process_
             ++ remains
@@ -103,7 +103,7 @@ isWaitArguments _ = False
 isWaitResults WaitResults{} = True
 isWaitResults _ = False
 
-instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
             Right pu{remains = f : remains}
@@ -180,7 +180,7 @@ firstWaitResults jobs =
             then Nothing
             else Just $ minimumOn readyAt jobs'
 
-instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
+instance VarValTime v x t => EndpointProblem (Divider v x t) v t where
     endpointOptions pu@Divider{remains, jobs} =
         let executeNewFunction
                 | any isWaitArguments jobs = []
@@ -309,7 +309,7 @@ hardwareFloat _tag Divider{mock} =
         , FromLibrary "div/pu_div.v"
         ]
 
-instance {-# OVERLAPPING #-} (Time t) => TargetSystemComponent (Divider v Float t) where
+instance {-# OVERLAPPING #-} Time t => TargetSystemComponent (Divider v Float t) where
     moduleName = moduleNameFloat
     software = softwareFloat
     hardware = hardwareFloat
@@ -345,7 +345,7 @@ instance {-# OVERLAPPING #-} (Time t) => TargetSystemComponent (Divider v Float 
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-instance {-# OVERLAPPING #-} (Time t) => TargetSystemComponent (Divider v (Attr Float) t) where
+instance {-# OVERLAPPING #-} Time t => TargetSystemComponent (Divider v (Attr Float) t) where
     moduleName = moduleNameFloat
     software = softwareFloat
     hardware = hardwareFloat

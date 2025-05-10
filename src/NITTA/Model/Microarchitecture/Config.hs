@@ -112,7 +112,7 @@ class MKMicro v x where
     microarchWithProtos :: (PU.VarValTime v x t, PU.UnitTag tag, ToJSON v) => IOSynchronization -> BusNetwork tag v x t
     defMicroarch :: (PU.VarValTime v x t, PU.UnitTag tag, ToJSON v) => IOSynchronization -> BusNetwork tag v x t
 
-instance {-# OVERLAPPABLE #-} (FixedPointCompatible x) => MKMicro v x where
+instance {-# OVERLAPPABLE #-} FixedPointCompatible x => MKMicro v x where
     mkMicroarchitecture ioSync toml =
         let addPU proto
                 | proto = addCustomPrototype
