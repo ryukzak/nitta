@@ -114,7 +114,7 @@ nittaArgs =
         , type_ =
             Nothing
                 &= name "t"
-                &= typ "fxM.B"
+                &= typ "fxM.B|float|int"
                 &= help "Overrides data type specified in config file"
                 &= groupname "Target system configuration"
         , io_sync =
