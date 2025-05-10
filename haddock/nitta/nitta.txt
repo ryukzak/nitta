@@ -1727,6 +1727,7 @@ LuaValueInstance :: Text -> Int -> Bool -> LuaValueInstance
 [lviName] :: LuaValueInstance -> Text
 [lviAssignCount] :: LuaValueInstance -> Int
 [lviIsConstant] :: LuaValueInstance -> Bool
+buildAlg :: (Read x, Show x) => Block -> LuaAlgBuilder x
 findStartupFunction :: Block -> (Text, Stat, Stat)
 getLuaBlockFromSources :: Text -> Block
 processStatement :: (MonadState (LuaAlgBuilder x) m, Read x, Show x) => Text -> Stat -> m ()
