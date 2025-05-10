@@ -50,6 +50,18 @@ case_find_startup_function_several_args =
         expectedValues = ("sum", [Lua.Name "a", Lua.Name "b"], [Lua.Number Lua.IntNum "1", Lua.Number Lua.IntNum "2"])
      in (actualName, actualArg, actualArgValue) @?= expectedValues
 
+case_parse_startup_function_negative_arg =
+    let src =
+            [__i|
+                function div(a, b)
+                    local x = a / b
+                    div(x, b)
+                end
+                div(-25, 2)
+            |]
+        LuaAlgBuilder{algStartupArgs} :: LuaAlgBuilder Int = buildAlg (getLuaBlockFromSources src)
+     in HM.fromList [(0, ("a", "-25")), (1, ("b", "2"))] @?= algStartupArgs
+
 case_find_startup_function_no_args =
     let src =
             [__i|
