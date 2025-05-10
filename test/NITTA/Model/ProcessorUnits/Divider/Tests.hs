@@ -146,6 +146,15 @@ tests =
                 f(1024)
             |]
         , luaTestCase
+            "fixed point div accuracy"
+            [__i|
+                function f(a)
+                    a, _ = a / 2
+                    f(a)
+                end
+                f(25)            
+            |]
+        , luaTestCase
             "one division implicit"
             [__i|
                 function f(a)
