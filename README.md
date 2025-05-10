@@ -242,8 +242,8 @@ Target system configuration:
          --uarch=PATH                   Microarchitecture configuration file
   -a     --auto-uarch                   Use empty microarchitecture and
                                         allocate PUs during synthesis process.
-  -t     --type=fxM.B                   Overrides data type specified in
-                                        config file
+  -t     --type=fxM.B|float|int         Overrides data type specified in
+                                        config file. (fxM.B means M - integer part, B - total number of bits; default: fx24.32)
          --io-sync=sync|async|onboard   Overrides IO synchronization mode
                                         specified in config file
          --templates=PATH[:PATH]        Target platform templates (default:
