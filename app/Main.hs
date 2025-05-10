@@ -21,10 +21,8 @@ module Main (main) where
 import Control.Applicative
 import Control.Exception
 import Control.Monad (when)
-import Data.Aeson
 import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
-import Data.HashMap.Internal.Strict qualified as HM
 import Data.Maybe
 import Data.Proxy
 import Data.String.Utils qualified as S
@@ -55,6 +53,7 @@ import System.Log.Handler.Simple
 import System.Log.Logger
 import Text.Read
 import Text.Regex
+import Text.Toml.Parser (Table)
 
 data SynthesisMethodArg
     = StateOfTheArt
@@ -242,7 +241,8 @@ main = do
         exactFrontendType
         src
         toml
-mainLogic :: forall x a. (Translatable x, ToJSON a, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe (HM.HashMap T.Text a) -> IO ()
+
+mainLogic :: forall x. (Translatable x, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe Table -> IO ()
 mainLogic
     Nitta
         { auto_uarch
