@@ -86,6 +86,7 @@ module NITTA.Frontends.Lua (
     LuaAlgBuilder (..),
     LuaStatement (..),
     LuaValueInstance (..),
+    buildAlg,
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
