@@ -232,6 +232,7 @@ addStartupFuncArgs (FunCall (NormalFunCall _ (Args exps))) (FunAssign _ (FunBody
     mapM_
         ( \case
             (Name name, Number _ valueString, serialNumber) -> addToBuffer name valueString serialNumber
+            (Name name, Unop Neg (Number _ valueString), serialNumber) -> addToBuffer name ("-" <> valueString) serialNumber
             _ -> error "addStartupFuncArgs: internal error"
         )
         $ zip3 names exps [0 ..]
