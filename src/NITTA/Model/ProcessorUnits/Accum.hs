@@ -362,7 +362,7 @@ instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v (Attr Float) t) wher
             |]
     hardwareInstance _title _pu _env = error "internal error"
 
-instance {-# OVERLAPPABLE #-} (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
+instance {-# OVERLAPPABLE #-} VarValTime v x t => TargetSystemComponent (Accum v x t) where
     moduleName = moduleNameX
     hardware _tag _pu = FromLibrary "pu_accum.v"
     software = softwareX

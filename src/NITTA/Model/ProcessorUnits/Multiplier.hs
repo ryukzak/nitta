@@ -356,35 +356,40 @@ synthesis model for that PU.
 -}
 data Multiplier v x t = Multiplier
     { remain :: [F v x]
-    -- ^ List of the assigned but not processed functions. To execute a
-    --         function:
-    --
-    --         - removing the function from this list;
-    --
-    --         - transfering information from function to 'targets' and 'sources'
-    --         fields.
-    --
-    --         An assigned function can be executed in random order.
+    {- ^ List of the assigned but not processed functions. To execute a
+        function:
+
+        - removing the function from this list;
+
+        - transfering information from function to 'targets' and 'sources'
+        fields.
+
+        An assigned function can be executed in random order.
+    -}
     , targets :: [v]
-    -- ^ List of variables, which is needed to push to the PU for current
-    --         function evaluation.
+    {- ^ List of variables, which is needed to push to the PU for current
+        function evaluation.
+    -}
     , sources :: [v]
-    -- ^ List of variables, which is needed to pull from PU for current
-    --         function evaluation. Pull order is arbitrary. All pulled variables
-    --         correspond to the same value (same result).
+    {- ^ List of variables, which is needed to pull from PU for current
+        function evaluation. Pull order is arbitrary. All pulled variables
+        correspond to the same value (same result).
+    -}
     , currentWork :: Maybe (F v x)
     -- ^ Current work, if some function is executed.
     , process_ :: Process t (StepInfo v x t)
-    -- ^ Description of scheduled computation process
-    --     ('NITTA.Model.ProcessorUnits.Types').
+    {- ^ Description of scheduled computation process
+    ('NITTA.Model.ProcessorUnits.Types').
+    -}
     , isMocked :: Bool
-    -- ^ HDL implementation of PU contains a multiplier IP core from Altera.
-    --     Icarus Verilog can not simulate it. If `isMocked` is set, a target
-    --     system will be contained non-synthesizable implementation of that
-    --     IP-core.
+    {- ^ HDL implementation of PU contains a multiplier IP core from Altera.
+    Icarus Verilog can not simulate it. If `isMocked` is set, a target
+    system will be contained non-synthesizable implementation of that
+    IP-core.
+    -}
     }
 
-instance (VarValTime v x t) => Pretty (Multiplier v x t) where
+instance VarValTime v x t => Pretty (Multiplier v x t) where
     pretty Multiplier{remain, targets, sources, currentWork, process_, isMocked} =
         [__i|
             Multiplier:
@@ -411,16 +416,16 @@ multiplier mock =
         }
 
 -- | Default initial state of multiplier PU model.
-instance (Time t) => Default (Multiplier v x t) where
+instance Time t => Default (Multiplier v x t) where
     def = multiplier True
 
-instance (Default x) => DefaultX (Multiplier v x t) x
+instance Default x => DefaultX (Multiplier v x t) x
 
 {- | This class is allowed to extract all bound functions. It has a very simple
 implementation: we take process description (all planned functions), and
 function in progress, if it is.
 -}
-instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
+instance Ord t => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{process_, remain, currentWork} =
         functions process_
             ++ remain
@@ -433,7 +438,7 @@ instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
 - dependencies of all remain functions from the currently evaluated function
   (if it is).
 -}
-instance (Var v) => Locks (Multiplier v x t) v where
+instance Var v => Locks (Multiplier v x t) v where
     locks Multiplier{remain, sources, targets} =
         [ Lock{lockBy, locked}
         | locked <- sources
@@ -472,7 +477,7 @@ From the CAD point of view, bind looks like:
 
 Binding can be done either gradually due synthesis process at the start.
 -}
-instance (VarValTime v x t) => ProcessorUnit (Multiplier v x t) v x t where
+instance VarValTime v x t => ProcessorUnit (Multiplier v x t) v x t where
     tryBind f pu@Multiplier{remain}
         | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
@@ -530,7 +535,7 @@ It includes three cases:
   find the selected function, 'execute' it, and do a recursive call with the
   same decision.
 -}
-instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
+instance VarValTime v x t => EndpointProblem (Multiplier v x t) v t where
     endpointOptions pu@Multiplier{targets}
         | not $ null targets =
             let at = nextTick pu ... maxBound
