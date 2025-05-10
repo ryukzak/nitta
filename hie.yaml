@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "nitta:lib"
+    - path: "./test"
+      component: "nitta:test:nitta-test"
+    - path: "./app"
+      component: "nitta:exe:nitta-exe"
