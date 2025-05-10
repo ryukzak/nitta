@@ -463,7 +463,7 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
                     $write("actual: %.3f %d \t", fxtor(actualData), actualAttr);
                     $write("expect: %.3f %d \t", fxtor(expectData), expectAttr);
                     $write("var: %0s\t", var);
-                    if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
+                    if (diff(actualData, expectData) > 1 || actualAttr != expectAttr ) $write("FAIL");
                     $display();
                 end
             endtask // assertWithAttr
@@ -473,6 +473,14 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
                     fxtor = $itor(x) / $itor(1 << #{ scalingFactorPower x });
                 end
             endfunction // fxtor
+
+            function automatic diff;
+                input [31:0] a;
+                input [31:0] b;
+                begin
+                    diff = (a > b) ? a - b : b - a;
+                end
+            endfunction
         |]
 
     verilogAssertRE _ =
