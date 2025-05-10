@@ -205,26 +205,14 @@ getNittaArgs = cmdArgs nittaArgs
 fromConf toml s = getFromTomlSection s =<< toml
 
 main = do
-    nitta@( Nitta
-                filename
-                uarch
-                _auto_uarch
-                type_
-                _io_sync
-                _port
-                _templates
-                _n
-                _fsim
-                _lsim
-                verbose
-                extra_verbose
-                _output_path
-                _format
-                frontend_language
-                _score
-                _depth_base
-                _method
-            ) <-
+    nitta@Nitta
+        { filename
+        , uarch
+        , type_
+        , verbose
+        , extra_verbose
+        , frontend_language
+        } <-
         getNittaArgs
 
     setupLogger verbose extra_verbose
@@ -256,26 +244,20 @@ main = do
         toml
 mainLogic :: forall x a. (Translatable x, ToJSON a, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe (HM.HashMap T.Text a) -> IO ()
 mainLogic
-    ( Nitta
-            _filename
-            _uarch
-            auto_uarch
-            _type_
-            io_sync
-            port
-            templates
-            n
-            fsim
-            lsim
-            _verbose
-            _extra_verbose
-            output_path
-            format
-            _frontend_language
-            score
-            depth_base
-            method
-        )
+    Nitta
+        { auto_uarch
+        , io_sync
+        , port
+        , templates
+        , n
+        , fsim
+        , lsim
+        , output_path
+        , format
+        , score
+        , depth_base
+        , method
+        }
     exactFrontendType
     src
     toml = do
