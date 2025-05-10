@@ -24,7 +24,7 @@ import Control.Monad (when)
 import Data.Aeson
 import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
-import Data.HashMap.Internal.Strict (HashMap)
+import Data.HashMap.Internal.Strict qualified as HM
 import Data.Maybe
 import Data.Proxy
 import Data.String.Utils qualified as S
@@ -254,7 +254,7 @@ main = do
         exactFrontendType
         src
         toml
-mainLogic :: forall x a. (Translatable x, ToJSON a, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe (HashMap T.Text a) -> IO ()
+mainLogic :: forall x a. (Translatable x, ToJSON a, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe (HM.HashMap T.Text a) -> IO ()
 mainLogic
     ( Nitta
             _filename
