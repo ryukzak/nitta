@@ -289,6 +289,7 @@ instance VarValTime v x t => BreakLoopProblem (Fram v x t) v x where
 
 instance ConstantFoldingProblem (Fram v x t) v x
 instance OptimizeAccumProblem (Fram v x t) v x
+instance OptimizeLutProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance VarValTime v x t => EndpointProblem (Fram v x t) v t where
