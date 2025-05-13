@@ -32,7 +32,7 @@ module float_mult
     wire [8:0] exp_sum = exp_a + exp_b - 127;
     wire [8:0] norm_exp = product[47] ? exp_sum + 1 : exp_sum;
     
-    assign res_mant = product[47] ? product[46:24] : product[45:23];
+    assign res_mant = product[47] ? (product[46:24] + product[23]) : (product[45:23] + product[22]);
 
     always @(*) begin
         if (a_nan || b_nan) begin
