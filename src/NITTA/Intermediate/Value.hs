@@ -329,7 +329,7 @@ instance Val Float where
                     $write("actual: %.3f %d\t", float_to_real(actualData), actualAttr);
                     $write("expect: %.3f %d\t", float_to_real(expectData), expectAttr);
                     $write("var: %0s\t", var);
-                    if ((actualData) != (expectData) && diff(actualData, expectData) > 8) $write("FAIL DATA %.3f, %.3f, %d\t", float_to_real(actualData), float_to_real(expectData), 
+                    if ((actualData) != (expectData) && diff(actualData, expectData) > 1) $write("FAIL DATA %.3f, %.3f, %d\t", float_to_real(actualData), float_to_real(expectData), 
                         diff(actualData,expectData));
                     if ( actualAttr != expectAttr) $write("FAIL ATTR %d, %d\t", actualAttr, expectAttr);
                     $display();
@@ -372,7 +372,7 @@ instance Val Float where
                 input [#{2*(dataWidth x)}-1:0] a;
                 input [#{2*(dataWidth x)}-1:0] b;
                 begin
-                    spi_assert_false = diff(a[63:32], b[63:32]) > 8 || diff(a[31:0], b[31:0]) > 8;
+                    spi_assert_false = diff(a[63:32], b[63:32]) > 1 || diff(a[31:0], b[31:0]) > 1;
                 end
             endfunction
         |]

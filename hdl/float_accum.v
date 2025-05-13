@@ -26,11 +26,11 @@ module float_sum
 
   wire [7:0] max_exp = (exp_a > exp_b) ? exp_a : exp_b;
   
-  wire [23:0] mant_a_aligned = (exp_a > exp_b) ? mant_a : mant_a >> (exp_b - exp_a);
+  wire [31:0] mant_a_aligned = (exp_a > exp_b) ? mant_a << (exp_a - exp_b) : mant_a;
     
-  wire [23:0] mant_b_aligned = (exp_b > exp_a) ? mant_b : mant_b >> (exp_a - exp_b);
+  wire [31:0] mant_b_aligned = (exp_b > exp_a) ? mant_b << (exp_b - exp_a) : mant_b;
 
-  reg [24:0] sum_mant;
+  reg [32:0] sum_mant;
   always @*
     sum_mant <= (sign_a == sign_b) ? 
     mant_a_aligned + mant_b_aligned : 
@@ -43,56 +43,72 @@ module float_sum
 
   reg [7:0] shift;
   always @(sum_mant) begin
-    if (sum_mant[24]) begin
-      shift = 0;
-    end else if (sum_mant[23]) begin
-      shift = 1;
-    end else if (sum_mant[22]) begin
-      shift = 2;
-    end else if (sum_mant[21]) begin
-      shift = 3;
-    end else if (sum_mant[20]) begin
+    if (sum_mant[32]) begin
+        shift = 0;
+    end else if (sum_mant[31]) begin
+        shift = 1;
+    end else if (sum_mant[30]) begin
+        shift = 2;
+    end else if (sum_mant[29]) begin
+        shift = 3;
+    end else if (sum_mant[28]) begin
         shift = 4;
-    end else if (sum_mant[19]) begin
+    end else if (sum_mant[27]) begin
         shift = 5;
-    end else if (sum_mant[18]) begin
+    end else if (sum_mant[26]) begin
         shift = 6;
-    end else if (sum_mant[17]) begin
+    end else if (sum_mant[25]) begin
         shift = 7;
-    end else if (sum_mant[16]) begin
+    end else if (sum_mant[24]) begin
         shift = 8;
-    end else if (sum_mant[15]) begin
+    end else if (sum_mant[23]) begin
         shift = 9;
-    end else if (sum_mant[14]) begin
+    end else if (sum_mant[22]) begin
         shift = 10;
-    end else if (sum_mant[13]) begin
+    end else if (sum_mant[21]) begin
         shift = 11;
-    end else if (sum_mant[12]) begin
+    end else if (sum_mant[20]) begin
         shift = 12;
-    end else if (sum_mant[11]) begin
+    end else if (sum_mant[19]) begin
         shift = 13;
-    end else if (sum_mant[10]) begin
+    end else if (sum_mant[18]) begin
         shift = 14;
-    end else if (sum_mant[9]) begin
+    end else if (sum_mant[17]) begin
         shift = 15;
-    end else if (sum_mant[8]) begin
+    end else if (sum_mant[16]) begin
         shift = 16;
-    end else if (sum_mant[7]) begin
+    end else if (sum_mant[15]) begin
         shift = 17;
-    end else if (sum_mant[6]) begin
+    end else if (sum_mant[14]) begin
         shift = 18;
-    end else if (sum_mant[5]) begin
+    end else if (sum_mant[13]) begin
         shift = 19;
-    end else if (sum_mant[4]) begin
+    end else if (sum_mant[12]) begin
         shift = 20;
-    end else if (sum_mant[3]) begin
+    end else if (sum_mant[11]) begin
         shift = 21;
-    end else if (sum_mant[2]) begin
+    end else if (sum_mant[10]) begin
         shift = 22;
-    end else if (sum_mant[1]) begin
+    end else if (sum_mant[9]) begin
         shift = 23;
-    end else if (sum_mant[0]) begin
+    end else if (sum_mant[8]) begin
         shift = 24;
+    end else if (sum_mant[7]) begin
+        shift = 25;
+    end else if (sum_mant[6]) begin
+        shift = 26;
+    end else if (sum_mant[5]) begin
+        shift = 27;
+    end else if (sum_mant[4]) begin
+        shift = 28;
+    end else if (sum_mant[3]) begin
+        shift = 29;
+    end else if (sum_mant[2]) begin
+        shift = 30;
+    end else if (sum_mant[1]) begin
+        shift = 31;
+    end else if (sum_mant[0]) begin
+        shift = 32;
     end else begin
         shift = 0;
     end
@@ -100,8 +116,10 @@ module float_sum
     
 
 
-  wire [24:0] normalized_mant = sum_mant << shift;
-  wire [7:0] new_exp = max_exp - shift + 1;
+  wire [32:0] shifted_sum;
+  assign shifted_sum = (sum_mant << shift);
+  wire [24:0] normalized_mant = shifted_sum[32:8];
+  wire [7:0] new_exp = max_exp - shift + 9 - ((exp_b > exp_a) ? (exp_b - exp_a) : (exp_a - exp_b) );
 
   wire overflow, underflow;
 
@@ -122,7 +140,7 @@ module float_sum
     end else if (new_exp[7:0] < 1) begin
         result = {res_sign, 8'h0, 23'h0};
     end else begin
-        result = {res_sign, new_exp[7:0], normalized_mant[23:1]};
+        result = {res_sign, new_exp[7:0], normalized_mant[23:1] + normalized_mant[0]};
     end
   end
 
