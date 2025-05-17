@@ -60,7 +60,7 @@ module NITTA.Intermediate.Functions (
     Compare (..),
     CmpOp (..),
     cmp,
-    Lut (..),
+    TruthTable (..),
     LogicFunction (..),
     logicAnd,
     logicOr,
@@ -71,9 +71,7 @@ import Data.Bits qualified as B
 import Data.Data (Data)
 import Data.Default
 import Data.HashMap.Strict qualified as HM
-import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Set qualified as S
 import Data.Set qualified as S
 import Data.Typeable
 import GHC.Generics
@@ -501,13 +499,13 @@ data LogicFunction v x
 deriving instance (Data v, Data (I v), Data (O v), Data x) => Data (LogicFunction v x)
 
 logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
-logicAnd a b c = packF $ LogicAnd (I a) (I b) $ O $ fromList c
+logicAnd a b c = packF $ LogicAnd (I a) (I b) $ O $ S.fromList c
 
 logicOr :: (Var v, Val x) => v -> v -> [v] -> F v x
-logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ fromList c
+logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ S.fromList c
 
 logicNot :: (Var v, Val x) => v -> [v] -> F v x
-logicNot a c = packF $ LogicNot (I a) $ O $ fromList c
+logicNot a c = packF $ LogicNot (I a) $ O $ S.fromList c
 
 instance Label (LogicFunction v x) where
     label LogicAnd{} = "and"
@@ -554,26 +552,26 @@ instance Var v => Locks (LogicFunction v x) v where
     locks = inputsLockOutputs
 
 -- Look Up Table
-data Lut v x = Lut (Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
+data TruthTable v x = TruthTable (M.Map [Bool] Bool) [I v] (O v) deriving (Typeable, Eq)
 
-instance Var v => Patch (Lut v x) (v, v) where
-    patch (old, new) (Lut table ins out) =
-        Lut table (patch (old, new) ins) (patch (old, new) out)
+instance Var v => Patch (TruthTable v x) (v, v) where
+    patch (old, new) (TruthTable table ins out) =
+        TruthTable table (patch (old, new) ins) (patch (old, new) out)
 
-instance Var v => Locks (Lut v x) v where
-    locks (Lut{}) = []
+instance Var v => Locks (TruthTable v x) v where
+    locks (TruthTable{}) = []
 
-instance Label (Lut v x) where
-    label (Lut{}) = "Lut"
-instance Var v => Show (Lut v x) where
-    show (Lut table ins output) = "Lut " <> show table <> " " <> show ins <> " = " <> show output
+instance Label (TruthTable v x) where
+    label (TruthTable{}) = "TruthTable"
+instance Var v => Show (TruthTable v x) where
+    show (TruthTable table ins output) = "TruthTable " <> show table <> " " <> show ins <> " = " <> show output
 
-instance Var v => Function (Lut v x) v where
-    inputs (Lut _ ins _) = S.unions $ map variables ins
-    outputs (Lut _ _ output) = variables output
+instance Var v => Function (TruthTable v x) v where
+    inputs (TruthTable _ ins _) = S.unions $ map variables ins
+    outputs (TruthTable _ _ output) = variables output
 
-instance (Var v, Num x, Eq x) => FunctionSimulation (Lut v x) v x where
-    simulate cntx (Lut table ins (O output)) =
+instance (Var v, Num x, Eq x) => FunctionSimulation (TruthTable v x) v x where
+    simulate cntx (TruthTable table ins (O output)) =
         let inputValues = map (\(I v) -> cntx `getCntx` v == 1) ins
             result = M.findWithDefault False inputValues table -- todo add default value
          in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]

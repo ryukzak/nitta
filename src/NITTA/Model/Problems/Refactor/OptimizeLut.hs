@@ -11,6 +11,21 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{- |
+The optimization consists of two parts:
+1) Replacing logic functions with lookup tables
+2) Searching and merging lookup tables, if possible
+
+>>> let a = constant 1 ["a"]
+>>> let b = constant 2 ["b"]
+>>> let c = constant 3 ["c"]
+>>> let f1 = logicAnd "a" "b" ["f1"]
+>>> let f2 = logicOr "f1" "c" ["f2"]
+>>> let loopRes = loop 1 "e" ["f2"]
+>>> let fs = [a, b, c, f1, f2, loopRes] :: [F String Int]
+>>> optimizeLutDecision fs $ head $ optimizeLutOptions fs
+[const(1) = a,const(2) = b,const(3) = c,loop(1, e) = f2,TruthTable fromList [([False,False,False],False),([False,False,True],True),([False,True,False],False),([False,True,True],True),([True,False,False],False),([True,False,True],True),([True,True,False],True),([True,True,True],True)] [a,b,c] = f2]
+-}
 module NITTA.Model.Problems.Refactor.OptimizeLut (
     OptimizeLut (..),
     OptimizeLutProblem (..),
@@ -34,7 +49,6 @@ data OptimizeLut v x = OptimizeLut
     deriving (Generic, Show, Eq)
 
 class OptimizeLutProblem u v x | u -> v x where
-    -- | Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
     optimizeLutOptions :: u -> [OptimizeLut v x]
     optimizeLutOptions _ = []
 
@@ -71,19 +85,13 @@ deleteExtraLuts fs =
 
 isOptimizationNeeded fs = countLuts fs > 1 || hasLogicFunctions fs
     where
-        hasLogicFunctions fns = any isLogicFunction fns
-
-        isLogicFunction f = case castF f of
-            Just LogicAnd{} -> True
-            Just LogicOr{} -> True
-            Just LogicNot{} -> True
-            _ -> False
+        hasLogicFunctions fns = any isSupportedByLut fns
 
         isLut f = case castF f of
-            Just (Lut{}) -> True
+            Just (TruthTable{}) -> True
             _ -> False
 
-        countLuts f = length $ filter isLut f
+        countLuts fns = length $ filter isLut fns
 
 isSupportedByLut f
     | Just LogicAnd{} <- castF f = True
@@ -176,15 +184,20 @@ buildCombinedLUT inputVars outputSet evalFn =
         lutOutput = O outputSet
         inputCombinations = replicateM (length inputVars) [False, True]
         tbl = M.fromList [(comb, evalFn comb) | comb <- inputCombinations]
-     in Just $ packF $ Lut tbl lutInputs lutOutput
+     in Just $ packF $ TruthTable tbl lutInputs lutOutput
 
 topSort :: Eq a => [(a, [a])] -> [a]
 topSort [] = []
-topSort g =
-    let (ready, notReady) = L.partition (\(_, ds) -> null ds) g
-     in if null ready
-            then []
-            else map fst ready ++ topSort [(x, ys L.\\ map fst ready) | (x, ys) <- notReady]
+topSort g = case L.partition (null . snd) g of
+    ([], _) -> []
+    (ready, rest) ->
+        map fst ready
+            ++ topSort
+                [ (x, filter (`notElem` readyNodes) ys)
+                | (x, ys) <- rest
+                ]
+        where
+            readyNodes = map fst ready
 
 findMergeClusters :: Var v => [F v x] -> [[F v x]]
 findMergeClusters fs =

@@ -24,7 +24,7 @@ import NITTA.Model.TargetSystem
 import NITTA.Model.Time
 import NITTA.Synthesis.Types
 
-data OptimizeLutMetrics = OptimizeLutMetrics
+newtype OptimizeLutMetrics = OptimizeLutMetrics {mergedFuncNumber :: Int}
     deriving (Generic)
 
 instance ToJSON OptimizeLutMetrics
@@ -40,6 +40,6 @@ instance
     where
     decisions SynthesisState{sTarget} o = [(o, optimizeLutDecision sTarget o)]
 
-    parameters SynthesisState{} OptimizeLut{} _ = OptimizeLutMetrics
+    parameters SynthesisState{} OptimizeLut{} _ = OptimizeLutMetrics 0
 
-    estimate _ctx _o _d OptimizeLutMetrics = 6000
+    estimate _ctx _o _d OptimizeLutMetrics{} = 6000

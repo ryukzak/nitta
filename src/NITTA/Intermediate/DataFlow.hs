@@ -76,6 +76,7 @@ instance (Var v, Val x) => OptimizeLutProblem (DataFlowGraph v x) v x where
 
     optimizeLutDecision dfg ref@OptimizeLut{} =
         fsToDataFlowGraph $ optimizeLutDecision (functions dfg) ref
+
 instance Var v => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 

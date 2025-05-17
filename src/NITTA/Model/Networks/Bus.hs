@@ -440,6 +440,7 @@ instance (UnitTag tag, VarValTime v x t) => OptimizeLutProblem (BusNetwork tag v
             , bnProcess = execScheduleWithProcess bn bnProcess $ do
                 scheduleRefactoring (I.singleton $ nextTick bn) ol
             }
+
 instance (UnitTag tag, VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
     constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 

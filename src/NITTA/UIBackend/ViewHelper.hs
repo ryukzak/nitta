@@ -294,11 +294,11 @@ instance ToSample (NodeView tag v x t) where
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
-                , parameters = toJSON OptimizeLutMetrics
+                , parameters = toJSON $ OptimizeLutMetrics 0
                 , decision =
                     OptimizeLutView
                         { lOld = [FView "a and b = c" [], FView "d = not c" []]
-                        , lNew = [FView "LUT" []]
+                        , lNew = [FView "LogicalUnit" []]
                         }
                 , score = 1999
                 , scores = object ["default" .= (1999 :: Float)]
