@@ -135,6 +135,7 @@ instance (Var v, Time t) => Locks (Divider v x t) v where
 instance BreakLoopProblem (Divider v x t) v x
 instance ConstantFoldingProblem (Divider v x t) v x
 instance OptimizeAccumProblem (Divider v x t) v x
+instance OptimizeLutProblem (Divider v x t) v x
 instance ResolveDeadlockProblem (Divider v x t) v x
 
 function2WaitArguments f

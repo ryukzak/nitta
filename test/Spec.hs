@@ -29,6 +29,7 @@ import NITTA.Model.ProcessorUnits.Comparator.Tests qualified
 import NITTA.Model.ProcessorUnits.Divider.Tests qualified
 import NITTA.Model.ProcessorUnits.Fram.Tests qualified
 import NITTA.Model.ProcessorUnits.IO.SPI.Tests qualified
+import NITTA.Model.ProcessorUnits.LogicalUnit.Tests qualified
 import NITTA.Model.ProcessorUnits.Multiplier.Tests qualified
 import NITTA.Model.ProcessorUnits.Shift.Tests qualified
 import NITTA.Model.ProcessorUnits.Tests.DSL.Tests qualified
@@ -58,6 +59,7 @@ main = do
           , NITTA.Model.ProcessorUnits.Divider.Tests.tests
           , NITTA.Model.ProcessorUnits.Fram.Tests.tests
           , NITTA.Model.ProcessorUnits.Comparator.Tests.tests
+          , NITTA.Model.ProcessorUnits.LogicalUnit.Tests.tests
           , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
           , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
           , NITTA.Model.ProcessorUnits.Accum.Tests.tests

@@ -182,12 +182,18 @@ parseRightExp fOut@(x : _) (Binop op a b) = do
         getBinopFuncName EQ = "equal"
         getBinopFuncName GTE = "greaterThanOrEqual"
         getBinopFuncName GT = "greaterThan"
+        getBinopFuncName And = "and"
+        getBinopFuncName Or = "or"
         getBinopFuncName o = error $ "unknown binop: " <> show o
 parseRightExp fOut (PrefixExp (Paren e)) = parseRightExp fOut e
 parseRightExp fOut (Unop Neg (Number numType name)) = parseRightExp fOut (Number numType ("-" <> name))
 parseRightExp [fOut] (Unop Neg expr@(PrefixExp _)) = do
     varName <- parseExpArg fOut expr
     addVariable [varName] [fOut] [] "neg" []
+parseRightExp fOut (Unop Not (Number numType name)) = parseRightExp fOut (Number numType ("not" <> name))
+parseRightExp [fOut] (Unop Not expr@(PrefixExp _)) = do
+    varName <- parseExpArg fOut expr
+    addVariable [varName] [fOut] [] "not" []
 parseRightExp
     [fOut]
     ( PrefixExp
@@ -448,6 +454,9 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "equal", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpEq (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "greaterThanOrEqual", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGte (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "greaterThan", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.cmp F.CmpGt (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
+        function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
         function2nitta f = error $ "function not found: " <> show f
         output v =
             case HM.lookup v algVars of

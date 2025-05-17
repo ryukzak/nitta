@@ -18,6 +18,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     incompleteProcessMsg,
     algGen,
     initialCycleCntxGen,
+    initialCycleCntxGen',
     processAlgOnEndpointGen,
     algSynthesisGen,
 ) where
@@ -125,6 +126,13 @@ initialCycleCntxGen fs = do
     let vxs = HM.fromList $ zip vs xs
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
+
+initialCycleCntxGen' fs cntx = do
+    let lastCycle = case reverse (cntxProcess cntx) of
+            (CycleCntx hm : _) -> CycleCntx hm
+            _ -> CycleCntx HM.empty
+
+    return $ simulateAlg 5 lastCycle [] fs
 
 {- | Automatic synthesis evaluation process with random decisions. If we can't bind
 function to PU then we skip it.
