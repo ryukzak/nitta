@@ -13,6 +13,7 @@ import {
   IDataflowDecisionView,
   IGroupBindView,
   IOptimizeAccumView,
+  IOptimizeLutView,
   IResolveDeadlockView,
   IRootView,
   ISingleBindView,
@@ -52,6 +53,7 @@ export type Dataflow = IDataflowDecisionView;
 export type BreakLoop = IBreakLoopView;
 export type ConstantFolding = IConstantFoldingView;
 export type OptimizeAccum = IOptimizeAccumView;
+export type OptimizeLut = IOptimizeLutView;
 export type ResolveDeadlock = IResolveDeadlockView;
 
 export type UnitEndpointsData = UnitEndpoints<string, string, number>;
