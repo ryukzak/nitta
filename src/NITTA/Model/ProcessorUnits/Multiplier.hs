@@ -458,6 +458,7 @@ instance BreakLoopProblem (Multiplier v x t) v x
 
 instance ConstantFoldingProblem (Multiplier v x t) v x
 instance OptimizeAccumProblem (Multiplier v x t) v x
+instance OptimizeLutProblem (Multiplier v x t) v x
 instance ResolveDeadlockProblem (Multiplier v x t) v x
 
 {- | This type class specifies how to bind functions to the PU. If it is

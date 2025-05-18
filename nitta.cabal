@@ -64,6 +64,7 @@ library
       NITTA.Model.Problems.Refactor.BreakLoop
       NITTA.Model.Problems.Refactor.ConstantFolding
       NITTA.Model.Problems.Refactor.OptimizeAccum
+      NITTA.Model.Problems.Refactor.OptimizeLut
       NITTA.Model.Problems.Refactor.ResolveDeadlock
       NITTA.Model.Problems.ViewHelper
       NITTA.Model.ProcessIntegrity
@@ -76,6 +77,7 @@ library
       NITTA.Model.ProcessorUnits.IO.I2C
       NITTA.Model.ProcessorUnits.IO.SimpleIO
       NITTA.Model.ProcessorUnits.IO.SPI
+      NITTA.Model.ProcessorUnits.LUT
       NITTA.Model.ProcessorUnits.Multiplier
       NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
@@ -101,6 +103,7 @@ library
       NITTA.Synthesis.Steps.ConstantFolding
       NITTA.Synthesis.Steps.Dataflow
       NITTA.Synthesis.Steps.OptimizeAccum
+      NITTA.Synthesis.Steps.OptimizeLut
       NITTA.Synthesis.Steps.ResolveDeadlock
       NITTA.Synthesis.Types
       NITTA.UIBackend
@@ -295,6 +298,7 @@ test-suite nitta-test
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
+      NITTA.Model.ProcessorUnits.LUT.Tests
       NITTA.Model.ProcessorUnits.Multiplier.Tests
       NITTA.Model.ProcessorUnits.Shift.Tests
       NITTA.Model.ProcessorUnits.Tests.DSL

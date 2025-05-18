@@ -10,6 +10,9 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
+import Control.Monad (forM)
+import Data.HashMap.Strict qualified as HM
+import Data.Map qualified as M
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
@@ -71,3 +74,44 @@ instance Arbitrary x => Arbitrary (Compare T.Text x) where
                 a <- inputVarGen
                 b <- inputVarGen
                 Compare op a b <$> outputVarsGen
+
+instance Arbitrary x => Arbitrary (Lut T.Text x) where
+    arbitrary = suchThat generateUniqueVars uniqueVars
+        where
+            generateUniqueVars = Lut <$> arbitraryTable <*> inputVarsGen <*> outputVarGen
+
+            arbitraryTable = do
+                keys <- resize maxLenght $ listOf1 (vectorOf maxLenght arbitrary)
+                values <- vectorOf (length keys) arbitrary
+                return $ M.fromList $ zip keys values
+
+            inputVarsGen = resize maxLenght $ listOf1 inputVarGen
+
+            outputVarGen = outputVarsGen
+instance {-# OVERLAPS #-} Arbitrary ([LogicFunction T.Text Int], Cntx T.Text Int) where
+    arbitrary = do
+        f <- oneof [genLogicAnd, genLogicOr, genLogicNot]
+
+        let (inVars, _) = case f of
+                LogicAnd a b (O o) -> ([a, b], head $ S.toList o)
+                LogicOr a b (O o) -> ([a, b], head $ S.toList o)
+                LogicNot a (O o) -> ([a], head $ S.toList o)
+
+        inputValues <- forM inVars $ \_ -> do
+            Positive x <- arbitrary
+            return x
+
+        let cntx =
+                Cntx
+                    { cntxProcess = [CycleCntx $ HM.fromList $ zip (map getVar inVars) inputValues]
+                    , cntxReceived = M.empty
+                    , cntxCycleNumber = 0
+                    }
+
+        return ([f], cntx)
+        where
+            genLogicAnd = suchThat (LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+            genLogicOr = suchThat (LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+            genLogicNot = suchThat (LogicNot <$> inputVarGen <*> outputVarsGen) uniqueVars
+
+            getVar (I v) = v
