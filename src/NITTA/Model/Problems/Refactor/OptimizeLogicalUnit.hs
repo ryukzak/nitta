@@ -11,9 +11,24 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module NITTA.Model.Problems.Refactor.OptimizeLut (
-    OptimizeLut (..),
-    OptimizeLutProblem (..),
+{- |
+The optimization consists of two parts:
+1) Replacing logic functions with lookup tables
+2) Searching and merging lookup tables, if possible
+
+>>> let a = constant 1 ["a"]
+>>> let b = constant 2 ["b"]
+>>> let c = constant 3 ["c"]
+>>> let f1 = logicAnd "a" "b" ["f1"]
+>>> let f2 = logicOr "f1" "c" ["f2"]
+>>> let loopRes = loop 1 "e" ["f2"]
+>>> let fs = [a, b, c, f1, f2, loopRes] :: [F String Int]
+>>> optimizeLogicalUnitDecision fs $ head $ optimizeLogicalUnitOptions fs
+[const(1) = a,const(2) = b,const(3) = c,loop(1, e) = f2,TruthTable fromList [([False,False,False],False),([False,False,True],True),([False,True,False],False),([False,True,True],True),([True,False,False],False),([True,False,True],True),([True,True,False],True),([True,True,True],True)] [a,b,c] = f2]
+-}
+module NITTA.Model.Problems.Refactor.OptimizeLogicalUnit (
+    OptimizeLogicalUnit (..),
+    OptimizeLogicalUnitProblem (..),
 )
 where
 
@@ -27,24 +42,23 @@ import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 
-data OptimizeLut v x = OptimizeLut
+data OptimizeLogicalUnit v x = OptimizeLogicalUnit
     { rOld :: [F v x]
     , rNew :: [F v x]
     }
     deriving (Generic, Show, Eq)
 
-class OptimizeLutProblem u v x | u -> v x where
-    -- | Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
-    optimizeLutOptions :: u -> [OptimizeLut v x]
-    optimizeLutOptions _ = []
+class OptimizeLogicalUnitProblem u v x | u -> v x where
+    optimizeLogicalUnitOptions :: u -> [OptimizeLogicalUnit v x]
+    optimizeLogicalUnitOptions _ = []
 
-    -- | Function takes 'OptimizeLut' and modify 'DataFlowGraph'
-    optimizeLutDecision :: u -> OptimizeLut v x -> u
-    optimizeLutDecision _ _ = error "not implemented"
+    -- | Function takes 'OptimizeLogicalUnit' and modify 'DataFlowGraph'
+    optimizeLogicalUnitDecision :: u -> OptimizeLogicalUnit v x -> u
+    optimizeLogicalUnitDecision _ _ = error "not implemented"
 
-instance (Var v, Val x) => OptimizeLutProblem [F v x] v x where
-    optimizeLutOptions fs =
-        let supportedFunctions = filter isSupportedByLut fs
+instance (Var v, Val x) => OptimizeLogicalUnitProblem [F v x] v x where
+    optimizeLogicalUnitOptions fs =
+        let supportedFunctions = filter isSupportedByLogicalUnit fs
 
             rNew =
                 if not (null supportedFunctions)
@@ -52,15 +66,15 @@ instance (Var v, Val x) => OptimizeLutProblem [F v x] v x where
                     then optimizeCluster supportedFunctions fs
                     else []
             result =
-                [ OptimizeLut{rOld = supportedFunctions, rNew}
+                [ OptimizeLogicalUnit{rOld = supportedFunctions, rNew}
                 | not (null rNew) && S.fromList supportedFunctions /= S.fromList rNew
                 ]
          in result
 
-    optimizeLutDecision fs OptimizeLut{rOld, rNew} =
-        deleteExtraLuts $ (fs L.\\ rOld) <> rNew
+    optimizeLogicalUnitDecision fs OptimizeLogicalUnit{rOld, rNew} =
+        deleteExtraLogicalUnits $ (fs L.\\ rOld) <> rNew
 
-deleteExtraLuts fs =
+deleteExtraLogicalUnits fs =
     L.nub
         [ f1
         | f1 <- fs
@@ -69,23 +83,17 @@ deleteExtraLuts fs =
         , not $ S.null (variables f1 `S.intersection` variables f2)
         ]
 
-isOptimizationNeeded fs = countLuts fs > 1 || hasLogicFunctions fs
+isOptimizationNeeded fs = countLogicalUnits fs > 1 || hasLogicFunctions fs
     where
-        hasLogicFunctions fns = any isLogicFunction fns
+        hasLogicFunctions fns = any isSupportedByLogicalUnit fns
 
-        isLogicFunction f = case castF f of
-            Just LogicAnd{} -> True
-            Just LogicOr{} -> True
-            Just LogicNot{} -> True
+        isLogicalUnit f = case castF f of
+            Just (TruthTable{}) -> True
             _ -> False
 
-        isLut f = case castF f of
-            Just (Lut{}) -> True
-            _ -> False
+        countLogicalUnits fns = length $ filter isLogicalUnit fns
 
-        countLuts f = length $ filter isLut f
-
-isSupportedByLut f
+isSupportedByLogicalUnit f
     | Just LogicAnd{} <- castF f = True
     | Just LogicOr{} <- castF f = True
     | Just LogicNot{} <- castF f = True
@@ -93,21 +101,21 @@ isSupportedByLut f
 
 optimizeCluster allFunctions _ =
     let clusters = findMergeClusters allFunctions
-        mergedLuts = mapMaybe mergeCluster clusters
+        mergedLogicalUnits = mapMaybe mergeCluster clusters
 
-        singleFunctions = filter (\f -> isSupportedByLut f && S.size (outputs f) /= 1) allFunctions
-        singleLuts = mapMaybe convertToLUT singleFunctions
+        singleFunctions = filter (\f -> isSupportedByLogicalUnit f && S.size (outputs f) /= 1) allFunctions
+        singleLogicalUnits = mapMaybe convertToLOGICALUNIT singleFunctions
 
         remainingFunctions = allFunctions L.\\ (concat clusters ++ singleFunctions)
-     in mergedLuts ++ singleLuts ++ remainingFunctions
+     in mergedLogicalUnits ++ singleLogicalUnits ++ remainingFunctions
     where
         mergeCluster cluster
             | isSingleOutputChain cluster = mergeLogicCluster M.empty cluster
             | otherwise = Nothing
 
-        convertToLUT f = case castF f of
+        convertToLOGICALUNIT f = case castF f of
             Just (LogicAnd (I a) (I b) (O out)) ->
-                buildCombinedLUT
+                buildCombinedLOGICALUNIT
                     [a, b]
                     out
                     ( \case
@@ -115,7 +123,7 @@ optimizeCluster allFunctions _ =
                         _ -> error "Unexpected pattern"
                     )
             Just (LogicOr (I a) (I b) (O out)) ->
-                buildCombinedLUT
+                buildCombinedLOGICALUNIT
                     [a, b]
                     out
                     ( \case
@@ -123,7 +131,7 @@ optimizeCluster allFunctions _ =
                         _ -> error "Unexpected pattern"
                     )
             Just (LogicNot (I a) (O out)) ->
-                buildCombinedLUT
+                buildCombinedLOGICALUNIT
                     [a]
                     out
                     ( \case
@@ -135,7 +143,7 @@ optimizeCluster allFunctions _ =
 mergeLogicCluster _ fs =
     let (inputVars, finalOutput) = analyzeClusterIO fs
         evalFn = buildCombinedLogic fs inputVars
-     in buildCombinedLUT inputVars finalOutput evalFn
+     in buildCombinedLOGICALUNIT inputVars finalOutput evalFn
 
 isSingleOutputChain fs =
     all (\f -> S.size (outputs f) == 1) fs
@@ -170,21 +178,26 @@ applyLogicGate f varMap = case castF f of
             _ -> error "LogicNot must have exactly one output: 3"
     _ -> varMap
 
-buildCombinedLUT :: (Var v, Val x) => [v] -> S.Set v -> ([Bool] -> Bool) -> Maybe (F v x)
-buildCombinedLUT inputVars outputSet evalFn =
-    let lutInputs = map I inputVars
-        lutOutput = O outputSet
+buildCombinedLOGICALUNIT :: (Var v, Val x) => [v] -> S.Set v -> ([Bool] -> Bool) -> Maybe (F v x)
+buildCombinedLOGICALUNIT inputVars outputSet evalFn =
+    let logicalunitInputs = map I inputVars
+        logicalunitOutput = O outputSet
         inputCombinations = replicateM (length inputVars) [False, True]
         tbl = M.fromList [(comb, evalFn comb) | comb <- inputCombinations]
-     in Just $ packF $ Lut tbl lutInputs lutOutput
+     in Just $ packF $ TruthTable tbl logicalunitInputs logicalunitOutput
 
 topSort :: Eq a => [(a, [a])] -> [a]
 topSort [] = []
-topSort g =
-    let (ready, notReady) = L.partition (\(_, ds) -> null ds) g
-     in if null ready
-            then []
-            else map fst ready ++ topSort [(x, ys L.\\ map fst ready) | (x, ys) <- notReady]
+topSort g = case L.partition (null . snd) g of
+    ([], _) -> []
+    (ready, rest) ->
+        map fst ready
+            ++ topSort
+                [ (x, filter (`notElem` readyNodes) ys)
+                | (x, ys) <- rest
+                ]
+        where
+            readyNodes = map fst ready
 
 findMergeClusters :: Var v => [F v x] -> [[F v x]]
 findMergeClusters fs =

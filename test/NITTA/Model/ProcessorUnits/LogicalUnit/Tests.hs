@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 
-module NITTA.Model.ProcessorUnits.LUT.Tests (
+module NITTA.Model.ProcessorUnits.LogicalUnit.Tests (
     tests,
 ) where
 
@@ -10,7 +10,7 @@ import Data.Default
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
-import NITTA.Model.ProcessorUnits.LUT
+import NITTA.Model.ProcessorUnits.LogicalUnit
 import NITTA.Model.ProcessorUnits.Tests.Providers
 import Test.QuickCheck
 import Test.Tasty (testGroup)
@@ -30,7 +30,7 @@ tests =
             lfWithContextGen
         ]
     where
-        u = def :: LUT T.Text Int Int
+        u = def :: LogicalUnit T.Text Int Int
 
         lfWithContextGen = do
             (lf, cntx) <- arbitrary :: Gen ([F.LogicFunction T.Text Int], Cntx T.Text Int)

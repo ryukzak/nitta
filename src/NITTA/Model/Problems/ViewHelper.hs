@@ -61,7 +61,7 @@ data DecisionView
         { old :: [FView]
         , new :: [FView]
         }
-    | OptimizeLutView
+    | OptimizeLogicalUnitView
         { lOld :: [FView]
         , lNew :: [FView]
         }
@@ -124,9 +124,9 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance Viewable (OptimizeLut v x) DecisionView where
-    view OptimizeLut{rOld, rNew} =
-        OptimizeLutView
+instance Viewable (OptimizeLogicalUnit v x) DecisionView where
+    view OptimizeLogicalUnit{rOld, rNew} =
+        OptimizeLogicalUnitView
             { lOld = map view rOld
             , lNew = map view rNew
             }

@@ -163,7 +163,7 @@ viewNodeTree tree@Tree{sID = sid, sDecision, sSubForestVar} = do
                             | Just ConstantFoldingMetrics{} <- cast metrics -> "Refactor"
                             | Just DataflowMetrics{} <- cast metrics -> "Transport"
                             | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
-                            | Just OptimizeLutMetrics{} <- cast metrics -> "Refactor"
+                            | Just OptimizeLogicalUnitMetrics{} <- cast metrics -> "Refactor"
                             | Just ResolveDeadlockMetrics{} <- cast metrics -> "Refactor"
                         _ -> "?"
                     }
@@ -294,11 +294,11 @@ instance ToSample (NodeView tag v x t) where
                 , isTerminal = False
                 , isFinish = False
                 , duration = 0
-                , parameters = toJSON OptimizeLutMetrics
+                , parameters = toJSON $ OptimizeLogicalUnitMetrics 0
                 , decision =
-                    OptimizeLutView
+                    OptimizeLogicalUnitView
                         { lOld = [FView "a and b = c" [], FView "d = not c" []]
-                        , lNew = [FView "LUT" []]
+                        , lNew = [FView "LogicalUnit" []]
                         }
                 , score = 1999
                 , scores = object ["default" .= (1999 :: Float)]

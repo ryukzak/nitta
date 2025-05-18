@@ -248,6 +248,8 @@ instance ResolveDeadlockProblem (Comparator v x t) v x
 
 instance IOTestBench (Comparator v x t) v x
 
+instance OptimizeLogicalUnitProblem (Comparator v x t) v x
+
 instance VarValTime v x t => TargetSystemComponent (Comparator v x t) where
     moduleName _ _ = T.pack "pu_compare"
     software _ _ = Empty

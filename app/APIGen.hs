@@ -73,7 +73,7 @@ $(deriveTypeScript defaultOptions ''AllocationMetrics)
 $(deriveTypeScript defaultOptions ''DataflowMetrics)
 $(deriveTypeScript defaultOptions ''BreakLoopMetrics)
 $(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
-$(deriveTypeScript defaultOptions ''OptimizeLutMetrics)
+$(deriveTypeScript defaultOptions ''OptimizeLogicalUnitMetrics)
 $(deriveTypeScript defaultOptions ''ResolveDeadlockMetrics)
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
@@ -155,7 +155,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy BreakLoopMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy OptimizeAccumMetrics)
-                    , getTypeScriptDeclarations (Proxy :: Proxy OptimizeLutMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy OptimizeLogicalUnitMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy ResolveDeadlockMetrics)
                     , -- other
                       getTypeScriptDeclarations (Proxy :: Proxy FView)

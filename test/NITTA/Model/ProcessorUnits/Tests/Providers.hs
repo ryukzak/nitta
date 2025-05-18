@@ -92,7 +92,7 @@ simulation should be identical for any correct algorithm.
 puCoSimProp name pu0 fsGen =
     testProperty (toModuleName name) $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
-        pTestCntx <- initialCycleCntxGen fs
+        pTestCntx <- generateInitialContext fs
         return $
             monadicIO $
                 run $ do
@@ -126,7 +126,7 @@ puCoSimProp name pu0 fsGen =
 puCoSimPropWithContext name pu0 fsGen =
     testProperty (toModuleName name) $ do
         (fs, cntx) <- fsGen
-        cntx' <- initialCycleCntxGen' fs cntx
+        cntx' <- generateNextContext fs cntx
         (pu, _) <- processAlgOnEndpointGen pu0 (return fs)
         return $
             monadicIO $

@@ -33,7 +33,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
     "BreakLoopView",
     "ConstantFoldingView",
     "OptimizeAccumView",
-    "OptimizeLutView",
+    "OptimizeLogicalUnitView",
     "ResolveDeadlockView",
   ];
 
@@ -108,7 +108,7 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
             "AllocationView",
             "ResolveDeadlockView",
             "OptimizeAccumView",
-            "OptimizeLutView",
+            "OptimizeLogicalUnitView",
           ].includes(e.decision.tag),
         )}
         columns={[

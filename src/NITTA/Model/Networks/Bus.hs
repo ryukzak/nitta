@@ -431,15 +431,16 @@ instance (UnitTag tag, VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag
                 scheduleRefactoring (I.singleton $ nextTick bn) oa
             }
 
-instance (UnitTag tag, VarValTime v x t) => OptimizeLutProblem (BusNetwork tag v x t) v x where
-    optimizeLutOptions BusNetwork{bnRemains} = optimizeLutOptions bnRemains
+instance (UnitTag tag, VarValTime v x t) => OptimizeLogicalUnitProblem (BusNetwork tag v x t) v x where
+    optimizeLogicalUnitOptions BusNetwork{bnRemains} = optimizeLogicalUnitOptions bnRemains
 
-    optimizeLutDecision bn@BusNetwork{bnRemains, bnProcess} ol@OptimizeLut{} =
+    optimizeLogicalUnitDecision bn@BusNetwork{bnRemains, bnProcess} ol@OptimizeLogicalUnit{} =
         bn
-            { bnRemains = optimizeLutDecision bnRemains ol
+            { bnRemains = optimizeLogicalUnitDecision bnRemains ol
             , bnProcess = execScheduleWithProcess bn bnProcess $ do
                 scheduleRefactoring (I.singleton $ nextTick bn) ol
             }
+
 instance (UnitTag tag, VarValTime v x t) => ConstantFoldingProblem (BusNetwork tag v x t) v x where
     constantFoldingOptions BusNetwork{bnRemains} = constantFoldingOptions bnRemains
 

@@ -90,15 +90,15 @@ instance
             }
 
 instance
-    (Var v, Val x, OptimizeLutProblem u v x) =>
-    OptimizeLutProblem (TargetSystem u tag v x t) v x
+    (Var v, Val x, OptimizeLogicalUnitProblem u v x) =>
+    OptimizeLogicalUnitProblem (TargetSystem u tag v x t) v x
     where
-    optimizeLutOptions TargetSystem{mUnit} = optimizeLutOptions mUnit
+    optimizeLogicalUnitOptions TargetSystem{mUnit} = optimizeLogicalUnitOptions mUnit
 
-    optimizeLutDecision TargetSystem{mUnit, mDataFlowGraph} d =
+    optimizeLogicalUnitDecision TargetSystem{mUnit, mDataFlowGraph} d =
         TargetSystem
-            { mDataFlowGraph = optimizeLutDecision mDataFlowGraph d
-            , mUnit = optimizeLutDecision mUnit d
+            { mDataFlowGraph = optimizeLogicalUnitDecision mDataFlowGraph d
+            , mUnit = optimizeLogicalUnitDecision mUnit d
             }
 instance (Var v, Val x, ConstantFoldingProblem u v x) => ConstantFoldingProblem (TargetSystem u tag v x t) v x where
     constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit

@@ -377,7 +377,7 @@ defMicroarch ioSync = defineNetwork "net1" ioSync $ do
             , slave_cs = InputPortTag "cs"
             }
     add "compare" CompareIO
-    add "lut" LUTIO
+    add "logicalUnit" LogicalUnitIO
 
 microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
     addCustomPrototype "fram{x}" (framWithSize 32) FramIO
@@ -393,4 +393,4 @@ microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
             , slave_cs = InputPortTag "cs"
             }
     addPrototype "compare{x}" CompareIO
-    addPrototype "lut{x}" LUTIO
+    addPrototype "logicalUnit{x}" LogicalUnitIO

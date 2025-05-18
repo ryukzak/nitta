@@ -71,11 +71,12 @@ instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
 
-instance (Var v, Val x) => OptimizeLutProblem (DataFlowGraph v x) v x where
-    optimizeLutOptions _dfg = []
+instance (Var v, Val x) => OptimizeLogicalUnitProblem (DataFlowGraph v x) v x where
+    optimizeLogicalUnitOptions _dfg = []
 
-    optimizeLutDecision dfg ref@OptimizeLut{} =
-        fsToDataFlowGraph $ optimizeLutDecision (functions dfg) ref
+    optimizeLogicalUnitDecision dfg ref@OptimizeLogicalUnit{} =
+        fsToDataFlowGraph $ optimizeLogicalUnitDecision (functions dfg) ref
+
 instance Var v => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 

@@ -12,7 +12,7 @@ module NITTA.Synthesis.Steps (
     module NITTA.Synthesis.Steps.Dataflow,
     module NITTA.Synthesis.Steps.BreakLoop,
     module NITTA.Synthesis.Steps.OptimizeAccum,
-    module NITTA.Synthesis.Steps.OptimizeLut,
+    module NITTA.Synthesis.Steps.OptimizeLogicalUnit,
     module NITTA.Synthesis.Steps.ResolveDeadlock,
     module NITTA.Synthesis.Steps.ConstantFolding,
     isRefactor,
@@ -26,14 +26,14 @@ import NITTA.Synthesis.Steps.BreakLoop
 import NITTA.Synthesis.Steps.ConstantFolding
 import NITTA.Synthesis.Steps.Dataflow
 import NITTA.Synthesis.Steps.OptimizeAccum
-import NITTA.Synthesis.Steps.OptimizeLut
+import NITTA.Synthesis.Steps.OptimizeLogicalUnit
 import NITTA.Synthesis.Steps.ResolveDeadlock
 import NITTA.Synthesis.Types (SynthesisDecision (SynthesisDecision, metrics))
 
 isRefactor SynthesisDecision{metrics}
     | isJust (cast metrics :: Maybe BreakLoopMetrics) = True
     | isJust (cast metrics :: Maybe OptimizeAccumMetrics) = True
-    | isJust (cast metrics :: Maybe OptimizeLutMetrics) = True
+    | isJust (cast metrics :: Maybe OptimizeLogicalUnitMetrics) = True
     | isJust (cast metrics :: Maybe ResolveDeadlockMetrics) = True
     | isJust (cast metrics :: Maybe ConstantFoldingMetrics) = True
 isRefactor _ = False

@@ -18,7 +18,7 @@ import Data.Set qualified as S
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import Test.QuickCheck
+import Test.QuickCheck hiding (Function)
 
 maxLenght = 8
 
@@ -75,10 +75,10 @@ instance Arbitrary x => Arbitrary (Compare T.Text x) where
                 b <- inputVarGen
                 Compare op a b <$> outputVarsGen
 
-instance Arbitrary x => Arbitrary (Lut T.Text x) where
+instance Arbitrary x => Arbitrary (TruthTable T.Text x) where
     arbitrary = suchThat generateUniqueVars uniqueVars
         where
-            generateUniqueVars = Lut <$> arbitraryTable <*> inputVarsGen <*> outputVarGen
+            generateUniqueVars = TruthTable <$> arbitraryTable <*> inputVarsGen <*> outputVarGen
 
             arbitraryTable = do
                 keys <- resize maxLenght $ listOf1 (vectorOf maxLenght arbitrary)
@@ -88,14 +88,21 @@ instance Arbitrary x => Arbitrary (Lut T.Text x) where
             inputVarsGen = resize maxLenght $ listOf1 inputVarGen
 
             outputVarGen = outputVarsGen
-instance {-# OVERLAPS #-} Arbitrary ([LogicFunction T.Text Int], Cntx T.Text Int) where
-    arbitrary = do
-        f <- oneof [genLogicAnd, genLogicOr, genLogicNot]
 
-        let (inVars, _) = case f of
-                LogicAnd a b (O o) -> ([a, b], head $ S.toList o)
-                LogicOr a b (O o) -> ([a, b], head $ S.toList o)
-                LogicNot a (O o) -> ([a], head $ S.toList o)
+instance Arbitrary (LogicFunction T.Text x) where
+    arbitrary =
+        oneof
+            [ LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+            , LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+            , LogicNot <$> inputVarGen <*> outputVarsGen
+            ]
+            `suchThat` uniqueVars
+
+instance {-# OVERLAPS #-} (Arbitrary f', Function f' T.Text) => Arbitrary ([f'], Cntx T.Text Int) where
+    arbitrary = do
+        f <- arbitrary
+
+        let inVars = S.toList $ inputs f
 
         inputValues <- forM inVars $ \_ -> do
             Positive x <- arbitrary
@@ -103,15 +110,9 @@ instance {-# OVERLAPS #-} Arbitrary ([LogicFunction T.Text Int], Cntx T.Text Int
 
         let cntx =
                 Cntx
-                    { cntxProcess = [CycleCntx $ HM.fromList $ zip (map getVar inVars) inputValues]
+                    { cntxProcess = [CycleCntx $ HM.fromList $ zip inVars inputValues]
                     , cntxReceived = M.empty
                     , cntxCycleNumber = 0
                     }
 
         return ([f], cntx)
-        where
-            genLogicAnd = suchThat (LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
-            genLogicOr = suchThat (LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
-            genLogicNot = suchThat (LogicNot <$> inputVarGen <*> outputVarsGen) uniqueVars
-
-            getVar (I v) = v

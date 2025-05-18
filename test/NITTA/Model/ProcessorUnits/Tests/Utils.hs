@@ -17,8 +17,8 @@ module NITTA.Model.ProcessorUnits.Tests.Utils (
     isProcessComplete,
     incompleteProcessMsg,
     algGen,
-    initialCycleCntxGen,
-    initialCycleCntxGen',
+    generateInitialContext,
+    generateNextContext,
     processAlgOnEndpointGen,
     algSynthesisGen,
 ) where
@@ -27,7 +27,6 @@ import Data.CallStack
 import Data.Default
 import Data.HashMap.Strict qualified as HM
 import Data.List (delete)
-import Data.Map ()
 import Data.Set (elems, empty, fromList, intersection, union)
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions ()
@@ -121,19 +120,22 @@ algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
                     (empty, [])
                     alg
 
-initialCycleCntxGen fs = do
-    let vs = elems $ unionsMap inputs fs
-    xs <- infiniteListOf arbitrary
-    let vxs = HM.fromList $ zip vs xs
-        cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
-    return cntx0
+getInitialCycleContext fs = do
+    let inputVars = elems $ unionsMap inputs fs
+    values <- infiniteListOf arbitrary
+    pure $ CycleCntx $ HM.fromList (zip inputVars values)
 
-initialCycleCntxGen' fs cntx = do
-    let lastCycle = case reverse (cntxProcess cntx) of
+runSimulation fs initialCycle = simulateAlg 5 initialCycle [] fs
+
+generateInitialContext fs = do
+    initialCycle <- getInitialCycleContext fs
+    pure $ runSimulation fs initialCycle
+
+generateNextContext fs prevContext =
+    let lastCycle = case reverse (cntxProcess prevContext) of
             (CycleCntx hm : _) -> CycleCntx hm
             _ -> CycleCntx HM.empty
-
-    return $ simulateAlg 5 lastCycle [] fs
+     in pure $ runSimulation fs lastCycle
 
 {- | Automatic synthesis evaluation process with random decisions. If we can't bind
 function to PU then we skip it.
