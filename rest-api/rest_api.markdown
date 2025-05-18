@@ -188,32 +188,30 @@ Typescript interfaces can be finded here: `types.ts`
 ```javascript
 {
     "decision": {
-        "cRefNew": [
+        "lNew": [
             {
-                "fvFun": "r = 3",
+                "fvFun": "LogicalUnit",
                 "fvHistory": []
             }
         ],
-        "cRefOld": [
+        "lOld": [
             {
-                "fvFun": "a = 1",
+                "fvFun": "a and b = c",
                 "fvHistory": []
             },
             {
-                "fvFun": "b = 2",
-                "fvHistory": []
-            },
-            {
-                "fvFun": "a + b = r",
+                "fvFun": "d = not c",
                 "fvHistory": []
             }
         ],
-        "tag": "ConstantFoldingView"
+        "tag": "OptimizeLogicalUnitView"
     },
     "duration": 0,
     "isFinish": false,
     "isTerminal": false,
-    "parameters": [],
+    "parameters": {
+        "mergedFuncNumber": 0
+    },
     "score": 1999,
     "scores": {
         "default": 1999

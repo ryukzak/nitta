@@ -57,8 +57,8 @@ Stability   : experimental
 </span><a href="NITTA.UIBackend.html#frontendPath"><span class="hs-identifier hs-var">frontendPath</span></a></span><span>
 </span><span id="line-44"></span><span>
 </span><span id="line-45"></span><span id="restDocs"><span class="annot"><span class="annottext">restDocs :: a -&gt; FilePath
-</span><a href="NITTA.UIBackend.html#restDocs"><span class="hs-identifier hs-var hs-var">restDocs</span></a></span></span><span> </span><span id="local-6989586621680323362"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680323362"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.UIBackend.html#restDocs"><span class="hs-identifier hs-var hs-var">restDocs</span></a></span></span><span> </span><span id="local-6989586621680399976"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680399976"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-46"></span><span>    </span><span class="annot"><span class="annottext">API -&gt; FilePath
 </span><span class="hs-identifier hs-var">markdown</span></span><span>
 </span><span id="line-47"></span><span>        </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -76,7 +76,7 @@ HasDocs api =&gt;
 </span><span class="hs-string">&quot;Expected port: &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680323362"><span class="hs-identifier hs-var">port</span></a></span><span>
+</span><a href="#local-6989586621680399976"><span class="hs-identifier hs-var">port</span></a></span><span>
 </span><span id="line-52"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;Request helper with axios can be finded here: &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
@@ -93,19 +93,19 @@ HasDocs api =&gt;
 </span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.REST.html#SynthesisAPI"><span class="hs-identifier hs-type">SynthesisAPI</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-57"></span><span>
 </span><span id="line-58"></span><span id="prepareJSAPI"><span class="annot"><span class="annottext">prepareJSAPI :: p -&gt; FilePath -&gt; IO ()
-</span><a href="NITTA.UIBackend.html#prepareJSAPI"><span class="hs-identifier hs-var hs-var">prepareJSAPI</span></a></span></span><span> </span><span id="local-6989586621680323185"><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680323185"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span id="local-6989586621680323184"><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680323184"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-59"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680323177"><span class="annot"><span class="annottext">prefix :: Text
-</span><a href="#local-6989586621680323177"><span class="hs-identifier hs-var hs-var">prefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.UIBackend.html#prepareJSAPI"><span class="hs-identifier hs-var hs-var">prepareJSAPI</span></a></span></span><span> </span><span id="local-6989586621680399799"><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621680399799"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span id="local-6989586621680399798"><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680399798"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680399791"><span class="annot"><span class="annottext">prefix :: Text
+</span><a href="#local-6989586621680399791"><span class="hs-identifier hs-var hs-var">prefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-60"></span><span>            </span><span class="annot"><span class="">[__i|
                 import axios from 'axios';
                 var jsAPI = {};
                 export default jsAPI;
                 /* eslint no-useless-concat: &quot;off&quot; */
             |]</span></span><span>
-</span><span id="line-66"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680323165"><span class="annot"><span class="annottext">axios' :: JavaScriptGenerator
-</span><a href="#local-6989586621680323165"><span class="hs-identifier hs-var hs-var">axios'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680399779"><span class="annot"><span class="annottext">axios' :: JavaScriptGenerator
+</span><a href="#local-6989586621680399779"><span class="hs-identifier hs-var hs-var">axios'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-67"></span><span>            </span><span class="annot"><span class="annottext">AxiosOptions -&gt; CommonGeneratorOptions -&gt; JavaScriptGenerator
 </span><span class="hs-identifier hs-var">SJS.axiosWith</span></span><span>
 </span><span id="line-68"></span><span>                </span><span class="annot"><span class="annottext">AxiosOptions
@@ -124,25 +124,25 @@ HasDocs api =&gt;
 Proxy api -&gt; JavaScriptGenerator -&gt; FilePath -&gt; IO ()
 </span><span class="hs-identifier hs-var">SJS.writeJSForAPI</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall {k} (t :: k). Proxy t
 </span><span class="hs-identifier hs-var">Proxy</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Proxy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.UIBackend.REST.html#SynthesisAPI"><span class="hs-identifier hs-type">SynthesisAPI</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680323177"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680399791"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">JavaScriptGenerator
-</span><a href="#local-6989586621680323165"><span class="hs-identifier hs-var">axios'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680399779"><span class="hs-identifier hs-var">axios'</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; FilePath
 </span><span class="hs-identifier hs-var">joinPath</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">FilePath
-</span><a href="#local-6989586621680323184"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><a href="#local-6989586621680399798"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;rest_api.js&quot;</span></span><span class="hs-special">]</span><span>
 </span><span id="line-74"></span><span>
 </span><span id="line-75"></span><span id="fileOrIndex"><span class="annot"><span class="annottext">fileOrIndex :: Pieces -&gt; IO LookupResult
-</span><a href="NITTA.UIBackend.html#fileOrIndex"><span class="hs-identifier hs-var hs-var">fileOrIndex</span></a></span></span><span> </span><span id="local-6989586621680323149"><span class="annot"><span class="annottext">Pieces
-</span><a href="#local-6989586621680323149"><span class="hs-identifier hs-var">pieces</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-76"></span><span>    </span><span id="local-6989586621680323148"><span class="annot"><span class="annottext">LookupResult
-</span><a href="#local-6989586621680323148"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">StaticSettings -&gt; Pieces -&gt; IO LookupResult
+</span><a href="NITTA.UIBackend.html#fileOrIndex"><span class="hs-identifier hs-var hs-var">fileOrIndex</span></a></span></span><span> </span><span id="local-6989586621680399763"><span class="annot"><span class="annottext">Pieces
+</span><a href="#local-6989586621680399763"><span class="hs-identifier hs-var">pieces</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-76"></span><span>    </span><span id="local-6989586621680399762"><span class="annot"><span class="annottext">LookupResult
+</span><a href="#local-6989586621680399762"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">StaticSettings -&gt; Pieces -&gt; IO LookupResult
 </span><span class="hs-identifier hs-var">ssLookupFile</span></span><span> </span><span class="annot"><span class="annottext">StaticSettings
 </span><a href="NITTA.UIBackend.html#frontendAppSettings"><span class="hs-identifier hs-var">frontendAppSettings</span></a></span><span> </span><span class="annot"><span class="annottext">Pieces
-</span><a href="#local-6989586621680323149"><span class="hs-identifier hs-var">pieces</span></a></span><span>
+</span><a href="#local-6989586621680399763"><span class="hs-identifier hs-var">pieces</span></a></span><span>
 </span><span id="line-77"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">LookupResult
-</span><a href="#local-6989586621680323148"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621680399762"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-78"></span><span>        </span><span class="annot"><span class="annottext">LookupResult
 </span><span class="hs-identifier hs-var">LRNotFound</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-79"></span><span>            </span><span class="annot"><span class="annottext">StaticSettings -&gt; Pieces -&gt; IO LookupResult
@@ -156,11 +156,11 @@ Proxy api -&gt; JavaScriptGenerator -&gt; FilePath -&gt; IO ()
 </span><span id="line-80"></span><span>        </span><span class="annot"><span class="annottext">LookupResult
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">LookupResult
-</span><a href="#local-6989586621680323148"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><a href="#local-6989586621680399762"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-81"></span><span>
 </span><span id="line-82"></span><span id="application"><span class="annot"><span class="annottext">application :: BackendCtx w w w w -&gt; m Application
-</span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var hs-var">application</span></a></span></span><span> </span><span id="local-6989586621680322823"><span class="annot"><span class="annottext">BackendCtx w w w w
-</span><a href="#local-6989586621680322823"><span class="hs-identifier hs-var">ctx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var hs-var">application</span></a></span></span><span> </span><span id="local-6989586621680399437"><span class="annot"><span class="annottext">BackendCtx w w w w
+</span><a href="#local-6989586621680399437"><span class="hs-identifier hs-var">ctx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
 </span><span id="line-83"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
@@ -210,12 +210,12 @@ BackendCtx tag2 v x b
                                     :&lt;|&gt; (m18 Sid
                                           :&lt;|&gt; (m19 Sid :&lt;|&gt; (m20 Sid :&lt;|&gt; (Int -&gt; m21 Sid)))))))))
 </span><a href="NITTA.UIBackend.REST.html#synthesisServer"><span class="hs-identifier hs-var">synthesisServer</span></a></span><span> </span><span class="annot"><span class="annottext">BackendCtx w w w w
-</span><a href="#local-6989586621680322823"><span class="hs-identifier hs-var">ctx</span></a></span><span>
+</span><a href="#local-6989586621680399437"><span class="hs-identifier hs-var">ctx</span></a></span><span>
 </span><span id="line-93"></span><span>                </span><span class="annot"><span class="annottext">forall a b. a -&gt; b -&gt; a :&lt;|&gt; b
 </span><span class="hs-operator hs-var">:&lt;|&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall e (m :: * -&gt; *) a. MonadError e m =&gt; e -&gt; m a
 </span><span class="hs-identifier hs-var">throwError</span></span><span> </span><span class="annot"><span class="annottext">ServerError
 </span><span class="hs-identifier hs-var">err301</span></span><span class="hs-special">{</span><span class="annot"><span class="annottext">errHeaders :: [Header]
-</span><a href="#local-6989586621680322817"><span class="hs-identifier hs-var">errHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName
+</span><a href="#local-6989586621680399431"><span class="hs-identifier hs-var">errHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName
 </span><span class="hs-string">&quot;Location&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString
 </span><span class="hs-string">&quot;index.html&quot;</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">}</span><span>
 </span><span id="line-94"></span><span>                </span><span class="annot"><span class="annottext">forall a b. a -&gt; b -&gt; a :&lt;|&gt; b
@@ -227,8 +227,8 @@ BackendCtx tag2 v x b
 </span><span id="line-95"></span><span>            </span><span class="hs-special">)</span><span>
 </span><span id="line-96"></span><span>
 </span><span id="line-97"></span><span id="isLocalPortFree"><span class="annot"><span class="annottext">isLocalPortFree :: a -&gt; IO Bool
-</span><a href="NITTA.UIBackend.html#isLocalPortFree"><span class="hs-identifier hs-var hs-var">isLocalPortFree</span></a></span></span><span> </span><span id="local-6989586621680322803"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680322803"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.UIBackend.html#isLocalPortFree"><span class="hs-identifier hs-var hs-var">isLocalPortFree</span></a></span></span><span> </span><span id="local-6989586621680399417"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680399417"><span class="hs-identifier hs-var">port</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-98"></span><span>    </span><span class="annot"><span class="annottext">forall a b. Either a b -&gt; Bool
 </span><span class="hs-identifier hs-var">isLeft</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall e a. Exception e =&gt; IO a -&gt; IO (Either e a)
@@ -239,26 +239,26 @@ FilePath -&gt; FilePath -&gt; ((Socket, SockAddr) -&gt; m r) -&gt; m r
 </span><span class="hs-identifier hs-var">connect</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;localhost&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680322803"><span class="hs-identifier hs-var">port</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">(Socket, SockAddr)
+</span><a href="#local-6989586621680399417"><span class="hs-identifier hs-var">port</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">(Socket, SockAddr)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-99"></span><span>
 </span><span id="line-100"></span><span class="hs-comment">-- | Run backend server.</span><span>
 </span><span id="line-101"></span><span id="backendServer"><span class="annot"><span class="annottext">backendServer :: Int -&gt; BackendCtx w w w w -&gt; IO ()
-</span><a href="NITTA.UIBackend.html#backendServer"><span class="hs-identifier hs-var hs-var">backendServer</span></a></span></span><span> </span><span id="local-6989586621680322712"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322712"><span class="hs-identifier hs-var">givenPort</span></a></span></span><span> </span><span id="local-6989586621680322711"><span class="annot"><span class="annottext">BackendCtx w w w w
-</span><a href="#local-6989586621680322711"><span class="hs-identifier hs-var">ctx</span></a></span></span><span>
+</span><a href="NITTA.UIBackend.html#backendServer"><span class="hs-identifier hs-var hs-var">backendServer</span></a></span></span><span> </span><span id="local-6989586621680399326"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680399326"><span class="hs-identifier hs-var">givenPort</span></a></span></span><span> </span><span id="local-6989586621680399325"><span class="annot"><span class="annottext">BackendCtx w w w w
+</span><a href="#local-6989586621680399325"><span class="hs-identifier hs-var">ctx</span></a></span></span><span>
 </span><span id="line-102"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322712"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680399326"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-103"></span><span>        </span><span id="local-6989586621680322709"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680322709"><span class="hs-identifier hs-var">isFree</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {a}. Show a =&gt; a -&gt; IO Bool
+</span><span id="line-103"></span><span>        </span><span id="local-6989586621680399323"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680399323"><span class="hs-identifier hs-var">isFree</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {a}. Show a =&gt; a -&gt; IO Bool
 </span><a href="NITTA.UIBackend.html#isLocalPortFree"><span class="hs-identifier hs-var">isLocalPortFree</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322712"><span class="hs-identifier hs-var">givenPort</span></a></span><span>
+</span><a href="#local-6989586621680399326"><span class="hs-identifier hs-var">givenPort</span></a></span><span>
 </span><span id="line-104"></span><span>        </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
 </span><span class="hs-identifier hs-var">unless</span></span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680322709"><span class="hs-identifier hs-var">isFree</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680399323"><span class="hs-identifier hs-var">isFree</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; FilePath -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot;resource busy (Port already in use)&quot;</span></span><span>
@@ -269,11 +269,11 @@ FilePath -&gt; FilePath -&gt; ((Socket, SockAddr) -&gt; m r) -&gt; m r
 </span><span class="hs-string">&quot;Running NITTA server at http://localhost:&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322712"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680399326"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot; ...&quot;</span></span><span>
-</span><span id="line-107"></span><span>        </span><span id="local-6989586621680322706"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621680322706"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Middleware
+</span><span id="line-107"></span><span>        </span><span id="local-6989586621680399320"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680399320"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Middleware
 </span><span class="hs-identifier hs-var">simpleCors</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {w} {w} {w} {w}.
 (Monad m, Suffix w, Hashable w, Val w, Bounded w, ToJSONKey w,
@@ -282,31 +282,31 @@ FilePath -&gt; FilePath -&gt; ((Socket, SockAddr) -&gt; m r) -&gt; m r
  Default w, Integral w, Ord w) =&gt;
 BackendCtx w w w w -&gt; m Application
 </span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var">application</span></a></span><span> </span><span class="annot"><span class="annottext">BackendCtx w w w w
-</span><a href="#local-6989586621680322711"><span class="hs-identifier hs-var">ctx</span></a></span><span>
+</span><a href="#local-6989586621680399325"><span class="hs-identifier hs-var">ctx</span></a></span><span>
 </span><span id="line-108"></span><span>        </span><span class="annot"><span class="annottext">TextEncoding -&gt; IO ()
 </span><span class="hs-identifier hs-var">setLocaleEncoding</span></span><span> </span><span class="annot"><span class="annottext">TextEncoding
 </span><span class="hs-identifier hs-var">utf8</span></span><span>
 </span><span id="line-109"></span><span>        </span><span class="annot"><span class="annottext">Int -&gt; Application -&gt; IO ()
 </span><span class="hs-identifier hs-var">run</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322712"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621680322706"><span class="hs-identifier hs-var">app</span></a></span><span>
+</span><a href="#local-6989586621680399326"><span class="hs-identifier hs-var">givenPort</span></a></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680399320"><span class="hs-identifier hs-var">app</span></a></span><span>
 </span><span id="line-110"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-111"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680322705"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322705"><span class="hs-identifier hs-var">freePort</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680322704"><span class="annot"><span class="annottext">Socket
-</span><a href="#local-6989586621680322704"><span class="hs-identifier hs-var">socket</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (Int, Socket)
+</span><span id="line-111"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621680399319"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680399319"><span class="hs-identifier hs-var">freePort</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680399318"><span class="annot"><span class="annottext">Socket
+</span><a href="#local-6989586621680399318"><span class="hs-identifier hs-var">socket</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO (Int, Socket)
 </span><span class="hs-identifier hs-var">openFreePort</span></span><span>
 </span><span id="line-112"></span><span>
-</span><span id="line-113"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680322703"><span class="annot"><span class="annottext">settings :: Settings
-</span><a href="#local-6989586621680322703"><span class="hs-identifier hs-var hs-var">settings</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Settings -&gt; Settings
+</span><span id="line-113"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680399317"><span class="annot"><span class="annottext">settings :: Settings
+</span><a href="#local-6989586621680399317"><span class="hs-identifier hs-var hs-var">settings</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Settings -&gt; Settings
 </span><span class="hs-identifier hs-var">setPort</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322705"><span class="hs-identifier hs-var">freePort</span></a></span><span> </span><span class="annot"><span class="annottext">Settings
+</span><a href="#local-6989586621680399319"><span class="hs-identifier hs-var">freePort</span></a></span><span> </span><span class="annot"><span class="annottext">Settings
 </span><span class="hs-identifier hs-var">defaultSettings</span></span><span>
-</span><span id="line-114"></span><span>            </span><span id="local-6989586621680322702"><span class="annot"><span class="annottext">appRunner :: Application -&gt; IO ()
-</span><a href="#local-6989586621680322702"><span class="hs-identifier hs-var hs-var">appRunner</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Settings -&gt; Socket -&gt; Application -&gt; IO ()
+</span><span id="line-114"></span><span>            </span><span id="local-6989586621680399316"><span class="annot"><span class="annottext">appRunner :: Application -&gt; IO ()
+</span><a href="#local-6989586621680399316"><span class="hs-identifier hs-var hs-var">appRunner</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Settings -&gt; Socket -&gt; Application -&gt; IO ()
 </span><span class="hs-identifier hs-var">runSettingsSocket</span></span><span> </span><span class="annot"><span class="annottext">Settings
-</span><a href="#local-6989586621680322703"><span class="hs-identifier hs-var">settings</span></a></span><span> </span><span class="annot"><span class="annottext">Socket
-</span><a href="#local-6989586621680322704"><span class="hs-identifier hs-var">socket</span></a></span><span>
+</span><a href="#local-6989586621680399317"><span class="hs-identifier hs-var">settings</span></a></span><span> </span><span class="annot"><span class="annottext">Socket
+</span><a href="#local-6989586621680399318"><span class="hs-identifier hs-var">socket</span></a></span><span>
 </span><span id="line-115"></span><span>
 </span><span id="line-116"></span><span>        </span><span class="annot"><span class="annottext">FilePath -&gt; IO ()
 </span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -314,11 +314,11 @@ BackendCtx w w w w -&gt; m Application
 </span><span class="hs-string">&quot;Running NITTA server at http://localhost:&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; FilePath
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680322705"><span class="hs-identifier hs-var">freePort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680399319"><span class="hs-identifier hs-var">freePort</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">FilePath
 </span><span class="hs-string">&quot; ...&quot;</span></span><span>
-</span><span id="line-117"></span><span>        </span><span id="local-6989586621680322701"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621680322701"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Middleware
+</span><span id="line-117"></span><span>        </span><span id="local-6989586621680399315"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680399315"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Middleware
 </span><span class="hs-identifier hs-var">simpleCors</span></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall {m :: * -&gt; *} {w} {w} {w} {w}.
 (Monad m, Suffix w, Hashable w, Val w, Bounded w, ToJSONKey w,
@@ -327,11 +327,11 @@ BackendCtx w w w w -&gt; m Application
  Default w, Integral w, Ord w) =&gt;
 BackendCtx w w w w -&gt; m Application
 </span><a href="NITTA.UIBackend.html#application"><span class="hs-identifier hs-var">application</span></a></span><span> </span><span class="annot"><span class="annottext">BackendCtx w w w w
-</span><a href="#local-6989586621680322711"><span class="hs-identifier hs-var">ctx</span></a></span><span>
+</span><a href="#local-6989586621680399325"><span class="hs-identifier hs-var">ctx</span></a></span><span>
 </span><span id="line-118"></span><span>        </span><span class="annot"><span class="annottext">TextEncoding -&gt; IO ()
 </span><span class="hs-identifier hs-var">setLocaleEncoding</span></span><span> </span><span class="annot"><span class="annottext">TextEncoding
 </span><span class="hs-identifier hs-var">utf8</span></span><span>
 </span><span id="line-119"></span><span>        </span><span class="annot"><span class="annottext">Application -&gt; IO ()
-</span><a href="#local-6989586621680322702"><span class="hs-identifier hs-var">appRunner</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621680322701"><span class="hs-identifier hs-var">app</span></a></span><span>
+</span><a href="#local-6989586621680399316"><span class="hs-identifier hs-var">appRunner</span></a></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621680399315"><span class="hs-identifier hs-var">app</span></a></span><span>
 </span><span id="line-120"></span></pre></body></html>

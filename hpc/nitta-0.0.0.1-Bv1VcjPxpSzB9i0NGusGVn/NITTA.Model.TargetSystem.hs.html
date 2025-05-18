@@ -108,28 +108,39 @@ span.spaces    { background: white }
 <span class="lineno">   89 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = optimizeAccumDecision mUnit d</span>
 <span class="lineno">   90 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
 <span class="lineno">   91 </span>
-<span class="lineno">   92 </span>instance (Var v, Val x, ConstantFoldingProblem u v x) =&gt; ConstantFoldingProblem (TargetSystem u tag v x t) v x where
-<span class="lineno">   93 </span>    <span class="decl"><span class="istickedoff">constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit</span></span>
-<span class="lineno">   94 </span>
-<span class="lineno">   95 </span>    <span class="decl"><span class="istickedoff">constantFoldingDecision TargetSystem{mUnit, mDataFlowGraph} d =</span>
-<span class="lineno">   96 </span><span class="spaces">        </span><span class="istickedoff">TargetSystem</span>
-<span class="lineno">   97 </span><span class="spaces">            </span><span class="istickedoff">{ mDataFlowGraph = constantFoldingDecision mDataFlowGraph d</span>
-<span class="lineno">   98 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = constantFoldingDecision mUnit d</span>
-<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  100 </span>
-<span class="lineno">  101 </span>instance (Var v, ResolveDeadlockProblem u v x) =&gt; ResolveDeadlockProblem (TargetSystem u tag v x t) v x where
-<span class="lineno">  102 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit</span></span>
-<span class="lineno">  103 </span>
-<span class="lineno">  104 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =</span>
-<span class="lineno">  105 </span><span class="spaces">        </span><span class="istickedoff">TargetSystem</span>
-<span class="lineno">  106 </span><span class="spaces">            </span><span class="istickedoff">{ mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d</span>
-<span class="lineno">  107 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = resolveDeadlockDecision mUnit d</span>
-<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  109 </span>
-<span class="lineno">  110 </span>instance AllocationProblem u tag =&gt; AllocationProblem (TargetSystem u tag v x t) tag where
-<span class="lineno">  111 </span>    <span class="decl"><span class="istickedoff">allocationOptions TargetSystem{mUnit} = allocationOptions mUnit</span></span>
-<span class="lineno">  112 </span>
-<span class="lineno">  113 </span>    <span class="decl"><span class="istickedoff">allocationDecision f@TargetSystem{mUnit} d = f{mUnit = allocationDecision mUnit d}</span></span>
+<span class="lineno">   92 </span>instance
+<span class="lineno">   93 </span>    (Var v, Val x, OptimizeLogicalUnitProblem u v x) =&gt;
+<span class="lineno">   94 </span>    OptimizeLogicalUnitProblem (TargetSystem u tag v x t) v x
+<span class="lineno">   95 </span>    where
+<span class="lineno">   96 </span>    <span class="decl"><span class="istickedoff">optimizeLogicalUnitOptions TargetSystem{mUnit} = optimizeLogicalUnitOptions mUnit</span></span>
+<span class="lineno">   97 </span>
+<span class="lineno">   98 </span>    <span class="decl"><span class="istickedoff">optimizeLogicalUnitDecision TargetSystem{mUnit, mDataFlowGraph} d =</span>
+<span class="lineno">   99 </span><span class="spaces">        </span><span class="istickedoff">TargetSystem</span>
+<span class="lineno">  100 </span><span class="spaces">            </span><span class="istickedoff">{ mDataFlowGraph = optimizeLogicalUnitDecision mDataFlowGraph d</span>
+<span class="lineno">  101 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = optimizeLogicalUnitDecision mUnit d</span>
+<span class="lineno">  102 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  103 </span>instance (Var v, Val x, ConstantFoldingProblem u v x) =&gt; ConstantFoldingProblem (TargetSystem u tag v x t) v x where
+<span class="lineno">  104 </span>    <span class="decl"><span class="istickedoff">constantFoldingOptions TargetSystem{mUnit} = constantFoldingOptions mUnit</span></span>
+<span class="lineno">  105 </span>
+<span class="lineno">  106 </span>    <span class="decl"><span class="istickedoff">constantFoldingDecision TargetSystem{mUnit, mDataFlowGraph} d =</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="istickedoff">TargetSystem</span>
+<span class="lineno">  108 </span><span class="spaces">            </span><span class="istickedoff">{ mDataFlowGraph = constantFoldingDecision mDataFlowGraph d</span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = constantFoldingDecision mUnit d</span>
+<span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  111 </span>
+<span class="lineno">  112 </span>instance (Var v, ResolveDeadlockProblem u v x) =&gt; ResolveDeadlockProblem (TargetSystem u tag v x t) v x where
+<span class="lineno">  113 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit</span></span>
+<span class="lineno">  114 </span>
+<span class="lineno">  115 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =</span>
+<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">TargetSystem</span>
+<span class="lineno">  117 </span><span class="spaces">            </span><span class="istickedoff">{ mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="istickedoff">, mUnit = resolveDeadlockDecision mUnit d</span>
+<span class="lineno">  119 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  120 </span>
+<span class="lineno">  121 </span>instance AllocationProblem u tag =&gt; AllocationProblem (TargetSystem u tag v x t) tag where
+<span class="lineno">  122 </span>    <span class="decl"><span class="istickedoff">allocationOptions TargetSystem{mUnit} = allocationOptions mUnit</span></span>
+<span class="lineno">  123 </span>
+<span class="lineno">  124 </span>    <span class="decl"><span class="istickedoff">allocationDecision f@TargetSystem{mUnit} d = f{mUnit = allocationDecision mUnit d}</span></span>
 
 </pre>
 </body>

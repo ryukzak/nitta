@@ -184,37 +184,38 @@ span.spaces    { background: white }
 <span class="lineno">  165 </span>    -- ^ bind options cache
 <span class="lineno">  166 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sResolveDeadlockOptions</span></span></span> :: [ResolveDeadlock v x]
 <span class="lineno">  167 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sOptimizeAccumOptions</span></span></span> :: [OptimizeAccum v x]
-<span class="lineno">  168 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sConstantFoldingOptions</span></span></span> :: [ConstantFolding v x]
-<span class="lineno">  169 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBreakLoopOptions</span></span></span> :: [BreakLoop v x]
-<span class="lineno">  170 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDataflowOptions</span></span></span> :: [DataflowSt tag v (TimeConstraint t)]
-<span class="lineno">  171 </span>    -- ^ dataflow options cache
-<span class="lineno">  172 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindingAlternative</span></span></span> :: M.Map (F v x) [tag]
-<span class="lineno">  173 </span>    -- ^ a map from functions to possible processor unit tags
-<span class="lineno">  174 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">possibleDeadlockBinds</span></span></span> :: S.Set (F v x)
-<span class="lineno">  175 </span>    -- ^ a function set, which binding may cause dead lock
-<span class="lineno">  176 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindWaves</span></span></span> :: M.Map v Int
-<span class="lineno">  177 </span>    {- ^ if algorithm will be represented as a graph, where nodes -
-<span class="lineno">  178 </span>    variables of not bound functions, edges - casuality, wave is a
-<span class="lineno">  179 </span>    minimal number of a step from an initial node to selected
-<span class="lineno">  180 </span>    -}
-<span class="lineno">  181 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">processWaves</span></span></span> :: [ProcessWave v x]
-<span class="lineno">  182 </span>    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
-<span class="lineno">  183 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfProcessWaves</span></span></span> :: Int
-<span class="lineno">  184 </span>    -- ^ Number of execution waves of the algorithm.
-<span class="lineno">  185 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfDataflowOptions</span></span></span> :: Int
-<span class="lineno">  186 </span>    -- ^ number of dataflow options
-<span class="lineno">  187 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">transferableVars</span></span></span> :: S.Set v
-<span class="lineno">  188 </span>    {- ^ a variable set, which can be transferred on the current
-<span class="lineno">  189 </span>    synthesis step
-<span class="lineno">  190 </span>    -}
-<span class="lineno">  191 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitWorkloadInFunction</span></span></span> :: M.Map tag Int
-<span class="lineno">  192 </span>    -- ^ dictionary with number of bound functions for each unit
-<span class="lineno">  193 </span>    }
-<span class="lineno">  194 </span>
-<span class="lineno">  195 </span>-- * Utils
-<span class="lineno">  196 </span>
-<span class="lineno">  197 </span><span class="decl"><span class="istickedoff">True &lt;?&gt; v = v</span>
-<span class="lineno">  198 </span><span class="spaces"></span><span class="istickedoff">False &lt;?&gt; _ = 0</span></span>
+<span class="lineno">  168 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sOptimizeLogicalUnitOptions</span></span></span> :: [OptimizeLogicalUnit v x]
+<span class="lineno">  169 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sConstantFoldingOptions</span></span></span> :: [ConstantFolding v x]
+<span class="lineno">  170 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sBreakLoopOptions</span></span></span> :: [BreakLoop v x]
+<span class="lineno">  171 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">sDataflowOptions</span></span></span> :: [DataflowSt tag v (TimeConstraint t)]
+<span class="lineno">  172 </span>    -- ^ dataflow options cache
+<span class="lineno">  173 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindingAlternative</span></span></span> :: M.Map (F v x) [tag]
+<span class="lineno">  174 </span>    -- ^ a map from functions to possible processor unit tags
+<span class="lineno">  175 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">possibleDeadlockBinds</span></span></span> :: S.Set (F v x)
+<span class="lineno">  176 </span>    -- ^ a function set, which binding may cause dead lock
+<span class="lineno">  177 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">bindWaves</span></span></span> :: M.Map v Int
+<span class="lineno">  178 </span>    {- ^ if algorithm will be represented as a graph, where nodes -
+<span class="lineno">  179 </span>    variables of not bound functions, edges - casuality, wave is a
+<span class="lineno">  180 </span>    minimal number of a step from an initial node to selected
+<span class="lineno">  181 </span>    -}
+<span class="lineno">  182 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">processWaves</span></span></span> :: [ProcessWave v x]
+<span class="lineno">  183 </span>    -- ^ Execution waves of the algorithm. See detailed description in NITTA.Intermediate.Analysis module.
+<span class="lineno">  184 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfProcessWaves</span></span></span> :: Int
+<span class="lineno">  185 </span>    -- ^ Number of execution waves of the algorithm.
+<span class="lineno">  186 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">numberOfDataflowOptions</span></span></span> :: Int
+<span class="lineno">  187 </span>    -- ^ number of dataflow options
+<span class="lineno">  188 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">transferableVars</span></span></span> :: S.Set v
+<span class="lineno">  189 </span>    {- ^ a variable set, which can be transferred on the current
+<span class="lineno">  190 </span>    synthesis step
+<span class="lineno">  191 </span>    -}
+<span class="lineno">  192 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">unitWorkloadInFunction</span></span></span> :: M.Map tag Int
+<span class="lineno">  193 </span>    -- ^ dictionary with number of bound functions for each unit
+<span class="lineno">  194 </span>    }
+<span class="lineno">  195 </span>
+<span class="lineno">  196 </span>-- * Utils
+<span class="lineno">  197 </span>
+<span class="lineno">  198 </span><span class="decl"><span class="istickedoff">True &lt;?&gt; v = v</span>
+<span class="lineno">  199 </span><span class="spaces"></span><span class="istickedoff">False &lt;?&gt; _ = 0</span></span>
 
 </pre>
 </body>

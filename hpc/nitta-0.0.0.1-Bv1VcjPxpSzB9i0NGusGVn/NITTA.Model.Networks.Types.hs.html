@@ -61,155 +61,160 @@ span.spaces    { background: white }
 <span class="lineno">   42 </span>    , BreakLoopProblem pu v x
 <span class="lineno">   43 </span>    , ConstantFoldingProblem pu v x
 <span class="lineno">   44 </span>    , OptimizeAccumProblem pu v x
-<span class="lineno">   45 </span>    , ResolveDeadlockProblem pu v x
-<span class="lineno">   46 </span>    , ProcessorUnit pu v x t
-<span class="lineno">   47 </span>    , Show (Instruction pu)
-<span class="lineno">   48 </span>    , Typeable pu
-<span class="lineno">   49 </span>    , UnambiguouslyDecode pu
-<span class="lineno">   50 </span>    , TargetSystemComponent pu
-<span class="lineno">   51 </span>    , Controllable pu
-<span class="lineno">   52 </span>    , IOTestBench pu v x
-<span class="lineno">   53 </span>    , Locks pu v
-<span class="lineno">   54 </span>    , Typeable pu
-<span class="lineno">   55 </span>    )
-<span class="lineno">   56 </span>
-<span class="lineno">   57 </span>-- | Existential container for a processor unit .
-<span class="lineno">   58 </span>data PU v x t where
-<span class="lineno">   59 </span>    PU ::
-<span class="lineno">   60 </span>        PUClasses pu v x t =&gt;
-<span class="lineno">   61 </span>        { <span class="decl"><span class="nottickedoff">unit</span></span> :: pu
-<span class="lineno">   62 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">diff</span></span></span> :: Changeset v
-<span class="lineno">   63 </span>        , <span class="decl"><span class="nottickedoff">uEnv</span></span> :: UnitEnv pu
-<span class="lineno">   64 </span>        } -&gt;
-<span class="lineno">   65 </span>        PU v x t
-<span class="lineno">   66 </span>
-<span class="lineno">   67 </span>unitType :: PU v x t -&gt; TypeRep
-<span class="lineno">   68 </span><span class="decl"><span class="istickedoff">unitType PU{unit} = typeOf <span class="nottickedoff">unit</span></span></span>
-<span class="lineno">   69 </span>
-<span class="lineno">   70 </span>instance Ord v =&gt; EndpointProblem (PU v x t) v t where
-<span class="lineno">   71 </span>    <span class="decl"><span class="istickedoff">endpointOptions PU{diff, unit} =</span>
-<span class="lineno">   72 </span><span class="spaces">        </span><span class="istickedoff">map (patch diff) $ endpointOptions unit</span></span>
-<span class="lineno">   73 </span>
-<span class="lineno">   74 </span>    <span class="decl"><span class="istickedoff">endpointDecision PU{unit, diff, uEnv} d =</span>
-<span class="lineno">   75 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
-<span class="lineno">   76 </span><span class="spaces">            </span><span class="istickedoff">{ unit = endpointDecision unit $ patch (reverseDiff diff) d</span>
-<span class="lineno">   77 </span><span class="spaces">            </span><span class="istickedoff">, diff</span>
-<span class="lineno">   78 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
-<span class="lineno">   79 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">   80 </span>
-<span class="lineno">   81 </span>instance BreakLoopProblem (PU v x t) v x where
-<span class="lineno">   82 </span>    <span class="decl"><span class="istickedoff">breakLoopOptions PU{unit} = breakLoopOptions unit</span></span>
-<span class="lineno">   83 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision PU{diff, unit, uEnv} d =</span>
-<span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">PU{unit = breakLoopDecision unit d, diff, uEnv}</span></span>
-<span class="lineno">   85 </span>
-<span class="lineno">   86 </span>instance OptimizeAccumProblem (PU v x t) v x where
-<span class="lineno">   87 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumOptions PU{unit} = optimizeAccumOptions unit</span></span>
-<span class="lineno">   88 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumDecision PU{diff, unit, uEnv} d =</span>
-<span class="lineno">   89 </span><span class="spaces">        </span><span class="nottickedoff">PU{diff, unit = optimizeAccumDecision unit d, uEnv}</span></span>
-<span class="lineno">   90 </span>
-<span class="lineno">   91 </span>instance ResolveDeadlockProblem (PU v x t) v x where
-<span class="lineno">   92 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit</span></span>
-<span class="lineno">   93 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockDecision PU{diff, unit, uEnv} d =</span>
-<span class="lineno">   94 </span><span class="spaces">        </span><span class="nottickedoff">PU{unit = resolveDeadlockDecision unit d, diff, uEnv}</span></span>
-<span class="lineno">   95 </span>
-<span class="lineno">   96 </span>instance VarValTime v x t =&gt; ProcessorUnit (PU v x t) v x t where
-<span class="lineno">   97 </span>    <span class="decl"><span class="istickedoff">tryBind fb PU{diff, unit, uEnv} =</span>
-<span class="lineno">   98 </span><span class="spaces">        </span><span class="istickedoff">case tryBind fb unit of</span>
-<span class="lineno">   99 </span><span class="spaces">            </span><span class="istickedoff">Right unit' -&gt; Right PU{unit = unit', diff, uEnv}</span>
-<span class="lineno">  100 </span><span class="spaces">            </span><span class="istickedoff">Left err -&gt; Left <span class="nottickedoff">err</span></span></span>
-<span class="lineno">  101 </span>    <span class="decl"><span class="istickedoff">process PU{unit, diff} =</span>
-<span class="lineno">  102 </span><span class="spaces">        </span><span class="istickedoff">let p = process unit</span>
-<span class="lineno">  103 </span><span class="spaces">         </span><span class="istickedoff">in p{steps = map (patch diff) $ steps p}</span></span>
-<span class="lineno">  104 </span>    <span class="decl"><span class="nottickedoff">parallelismType PU{unit} = parallelismType unit</span></span>
-<span class="lineno">  105 </span>
-<span class="lineno">  106 </span>instance Ord v =&gt; Patch (PU v x t) (Changeset v) where
-<span class="lineno">  107 </span>    <span class="decl"><span class="istickedoff">patch diff' PU{unit, diff, uEnv} =</span>
-<span class="lineno">  108 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
-<span class="lineno">  109 </span><span class="spaces">            </span><span class="istickedoff">{ unit</span>
-<span class="lineno">  110 </span><span class="spaces">            </span><span class="istickedoff">, diff =</span>
-<span class="lineno">  111 </span><span class="spaces">                </span><span class="istickedoff">Changeset</span>
-<span class="lineno">  112 </span><span class="spaces">                    </span><span class="istickedoff">{ changeI = changeI diff' `M.union` changeI diff</span>
-<span class="lineno">  113 </span><span class="spaces">                    </span><span class="istickedoff">, changeO = changeO diff' `M.union` changeO diff</span>
-<span class="lineno">  114 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
-<span class="lineno">  116 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  117 </span>
-<span class="lineno">  118 </span>instance Ord v =&gt; Patch (PU v x t) (I v, I v) where
-<span class="lineno">  119 </span>    <span class="decl"><span class="istickedoff">patch (I v, I v') pu@PU{diff = diff@Changeset{changeI}} = pu{diff = diff{changeI = M.insert v v' changeI}}</span></span>
-<span class="lineno">  120 </span>
-<span class="lineno">  121 </span>instance Ord v =&gt; Patch (PU v x t) (O v, O v) where
-<span class="lineno">  122 </span>    <span class="decl"><span class="istickedoff">patch (O vs, O vs') pu@PU{diff = diff@Changeset{changeO}} =</span>
-<span class="lineno">  123 </span><span class="spaces">        </span><span class="istickedoff">pu</span>
-<span class="lineno">  124 </span><span class="spaces">            </span><span class="istickedoff">{ diff =</span>
-<span class="lineno">  125 </span><span class="spaces">                </span><span class="istickedoff">diff</span>
-<span class="lineno">  126 </span><span class="spaces">                    </span><span class="istickedoff">{ changeO =</span>
-<span class="lineno">  127 </span><span class="spaces">                        </span><span class="istickedoff">foldl</span>
-<span class="lineno">  128 </span><span class="spaces">                            </span><span class="istickedoff">(\s (v, v') -&gt; M.insert v (S.singleton v') s)</span>
-<span class="lineno">  129 </span><span class="spaces">                            </span><span class="istickedoff">changeO</span>
-<span class="lineno">  130 </span><span class="spaces">                            </span><span class="istickedoff">$ [(a, b) | b &lt;- S.elems vs', a &lt;- S.elems vs]</span>
-<span class="lineno">  131 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  132 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  133 </span>
-<span class="lineno">  134 </span>instance Var v =&gt; Locks (PU v x t) v where
-<span class="lineno">  135 </span>    <span class="decl"><span class="istickedoff">locks PU{unit, diff = diff@Changeset{changeI, changeO}}</span>
-<span class="lineno">  136 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlyfalse">not $ M.null changeI</span> = <span class="nottickedoff">error $ &quot;Locks (PU v x t) with non empty changeI: &quot; &lt;&gt; show diff</span></span>
-<span class="lineno">  137 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
-<span class="lineno">  138 </span><span class="spaces">            </span><span class="istickedoff">let (locked', locks') = L.partition (\Lock{locked} -&gt; locked `M.member` changeO) $ locks unit</span>
-<span class="lineno">  139 </span><span class="spaces">                </span><span class="istickedoff">(lockBy', locks'') = L.partition (\Lock{lockBy} -&gt; lockBy `M.member` changeO) locks'</span>
-<span class="lineno">  140 </span><span class="spaces">             </span><span class="istickedoff">in concat</span>
-<span class="lineno">  141 </span><span class="spaces">                    </span><span class="istickedoff">[ locks''</span>
-<span class="lineno">  142 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
-<span class="lineno">  143 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
-<span class="lineno">  144 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked, lockBy = v} | v &lt;- S.elems (changeO M.! lockBy)])</span>
-<span class="lineno">  145 </span><span class="spaces">                            </span><span class="istickedoff">lockBy'</span>
-<span class="lineno">  146 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
-<span class="lineno">  147 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
-<span class="lineno">  148 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked = v, lockBy} | v &lt;- S.elems (changeO M.! locked)])</span>
-<span class="lineno">  149 </span><span class="spaces">                            </span><span class="istickedoff">locked'</span>
-<span class="lineno">  150 </span><span class="spaces">                    </span><span class="istickedoff">]</span></span>
-<span class="lineno">  151 </span>
-<span class="lineno">  152 </span>instance TargetSystemComponent (PU v x t) where
-<span class="lineno">  153 </span>    <span class="decl"><span class="nottickedoff">moduleName name PU{unit} = moduleName name unit</span></span>
-<span class="lineno">  154 </span>    <span class="decl"><span class="istickedoff">hardware name PU{unit} = hardware <span class="nottickedoff">name</span> unit</span></span>
-<span class="lineno">  155 </span>    <span class="decl"><span class="istickedoff">software name PU{unit} = software name unit</span></span>
-<span class="lineno">  156 </span>    <span class="decl"><span class="nottickedoff">hardwareInstance name pu = hardwareInstance name pu</span></span>
-<span class="lineno">  157 </span>
-<span class="lineno">  158 </span>instance IOTestBench (PU v x t) v x where
-<span class="lineno">  159 </span>    <span class="decl"><span class="istickedoff">testEnvironmentInitFlag tag PU{unit} = testEnvironmentInitFlag tag <span class="nottickedoff">unit</span></span></span>
-<span class="lineno">  160 </span>
-<span class="lineno">  161 </span>    <span class="decl"><span class="nottickedoff">testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs</span></span>
+<span class="lineno">   45 </span>    , OptimizeLogicalUnitProblem pu v x
+<span class="lineno">   46 </span>    , ResolveDeadlockProblem pu v x
+<span class="lineno">   47 </span>    , ProcessorUnit pu v x t
+<span class="lineno">   48 </span>    , Show (Instruction pu)
+<span class="lineno">   49 </span>    , Typeable pu
+<span class="lineno">   50 </span>    , UnambiguouslyDecode pu
+<span class="lineno">   51 </span>    , TargetSystemComponent pu
+<span class="lineno">   52 </span>    , Controllable pu
+<span class="lineno">   53 </span>    , IOTestBench pu v x
+<span class="lineno">   54 </span>    , Locks pu v
+<span class="lineno">   55 </span>    , Typeable pu
+<span class="lineno">   56 </span>    )
+<span class="lineno">   57 </span>
+<span class="lineno">   58 </span>-- | Existential container for a processor unit .
+<span class="lineno">   59 </span>data PU v x t where
+<span class="lineno">   60 </span>    PU ::
+<span class="lineno">   61 </span>        PUClasses pu v x t =&gt;
+<span class="lineno">   62 </span>        { <span class="decl"><span class="nottickedoff">unit</span></span> :: pu
+<span class="lineno">   63 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">diff</span></span></span> :: Changeset v
+<span class="lineno">   64 </span>        , <span class="decl"><span class="nottickedoff">uEnv</span></span> :: UnitEnv pu
+<span class="lineno">   65 </span>        } -&gt;
+<span class="lineno">   66 </span>        PU v x t
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>unitType :: PU v x t -&gt; TypeRep
+<span class="lineno">   69 </span><span class="decl"><span class="istickedoff">unitType PU{unit} = typeOf <span class="nottickedoff">unit</span></span></span>
+<span class="lineno">   70 </span>
+<span class="lineno">   71 </span>instance Ord v =&gt; EndpointProblem (PU v x t) v t where
+<span class="lineno">   72 </span>    <span class="decl"><span class="istickedoff">endpointOptions PU{diff, unit} =</span>
+<span class="lineno">   73 </span><span class="spaces">        </span><span class="istickedoff">map (patch diff) $ endpointOptions unit</span></span>
+<span class="lineno">   74 </span>
+<span class="lineno">   75 </span>    <span class="decl"><span class="istickedoff">endpointDecision PU{unit, diff, uEnv} d =</span>
+<span class="lineno">   76 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
+<span class="lineno">   77 </span><span class="spaces">            </span><span class="istickedoff">{ unit = endpointDecision unit $ patch (reverseDiff diff) d</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="istickedoff">, diff</span>
+<span class="lineno">   79 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
+<span class="lineno">   80 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">   81 </span>
+<span class="lineno">   82 </span>instance BreakLoopProblem (PU v x t) v x where
+<span class="lineno">   83 </span>    <span class="decl"><span class="istickedoff">breakLoopOptions PU{unit} = breakLoopOptions unit</span></span>
+<span class="lineno">   84 </span>    <span class="decl"><span class="istickedoff">breakLoopDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">PU{unit = breakLoopDecision unit d, diff, uEnv}</span></span>
+<span class="lineno">   86 </span>
+<span class="lineno">   87 </span>instance OptimizeAccumProblem (PU v x t) v x where
+<span class="lineno">   88 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumOptions PU{unit} = optimizeAccumOptions unit</span></span>
+<span class="lineno">   89 </span>    <span class="decl"><span class="nottickedoff">optimizeAccumDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   90 </span><span class="spaces">        </span><span class="nottickedoff">PU{diff, unit = optimizeAccumDecision unit d, uEnv}</span></span>
+<span class="lineno">   91 </span>
+<span class="lineno">   92 </span>instance OptimizeLogicalUnitProblem (PU v x t) v x where
+<span class="lineno">   93 </span>    <span class="decl"><span class="nottickedoff">optimizeLogicalUnitOptions PU{unit} = optimizeLogicalUnitOptions unit</span></span>
+<span class="lineno">   94 </span>    <span class="decl"><span class="nottickedoff">optimizeLogicalUnitDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   95 </span><span class="spaces">        </span><span class="nottickedoff">PU{diff, unit = optimizeLogicalUnitDecision unit d, uEnv}</span></span>
+<span class="lineno">   96 </span>instance ResolveDeadlockProblem (PU v x t) v x where
+<span class="lineno">   97 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit</span></span>
+<span class="lineno">   98 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockDecision PU{diff, unit, uEnv} d =</span>
+<span class="lineno">   99 </span><span class="spaces">        </span><span class="nottickedoff">PU{unit = resolveDeadlockDecision unit d, diff, uEnv}</span></span>
+<span class="lineno">  100 </span>
+<span class="lineno">  101 </span>instance VarValTime v x t =&gt; ProcessorUnit (PU v x t) v x t where
+<span class="lineno">  102 </span>    <span class="decl"><span class="istickedoff">tryBind fb PU{diff, unit, uEnv} =</span>
+<span class="lineno">  103 </span><span class="spaces">        </span><span class="istickedoff">case tryBind fb unit of</span>
+<span class="lineno">  104 </span><span class="spaces">            </span><span class="istickedoff">Right unit' -&gt; Right PU{unit = unit', diff, uEnv}</span>
+<span class="lineno">  105 </span><span class="spaces">            </span><span class="istickedoff">Left err -&gt; Left <span class="nottickedoff">err</span></span></span>
+<span class="lineno">  106 </span>    <span class="decl"><span class="istickedoff">process PU{unit, diff} =</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="istickedoff">let p = process unit</span>
+<span class="lineno">  108 </span><span class="spaces">         </span><span class="istickedoff">in p{steps = map (patch diff) $ steps p}</span></span>
+<span class="lineno">  109 </span>    <span class="decl"><span class="nottickedoff">parallelismType PU{unit} = parallelismType unit</span></span>
+<span class="lineno">  110 </span>
+<span class="lineno">  111 </span>instance Ord v =&gt; Patch (PU v x t) (Changeset v) where
+<span class="lineno">  112 </span>    <span class="decl"><span class="istickedoff">patch diff' PU{unit, diff, uEnv} =</span>
+<span class="lineno">  113 </span><span class="spaces">        </span><span class="istickedoff">PU</span>
+<span class="lineno">  114 </span><span class="spaces">            </span><span class="istickedoff">{ unit</span>
+<span class="lineno">  115 </span><span class="spaces">            </span><span class="istickedoff">, diff =</span>
+<span class="lineno">  116 </span><span class="spaces">                </span><span class="istickedoff">Changeset</span>
+<span class="lineno">  117 </span><span class="spaces">                    </span><span class="istickedoff">{ changeI = changeI diff' `M.union` changeI diff</span>
+<span class="lineno">  118 </span><span class="spaces">                    </span><span class="istickedoff">, changeO = changeO diff' `M.union` changeO diff</span>
+<span class="lineno">  119 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  120 </span><span class="spaces">            </span><span class="istickedoff">, uEnv</span>
+<span class="lineno">  121 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  122 </span>
+<span class="lineno">  123 </span>instance Ord v =&gt; Patch (PU v x t) (I v, I v) where
+<span class="lineno">  124 </span>    <span class="decl"><span class="istickedoff">patch (I v, I v') pu@PU{diff = diff@Changeset{changeI}} = pu{diff = diff{changeI = M.insert v v' changeI}}</span></span>
+<span class="lineno">  125 </span>
+<span class="lineno">  126 </span>instance Ord v =&gt; Patch (PU v x t) (O v, O v) where
+<span class="lineno">  127 </span>    <span class="decl"><span class="istickedoff">patch (O vs, O vs') pu@PU{diff = diff@Changeset{changeO}} =</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="istickedoff">pu</span>
+<span class="lineno">  129 </span><span class="spaces">            </span><span class="istickedoff">{ diff =</span>
+<span class="lineno">  130 </span><span class="spaces">                </span><span class="istickedoff">diff</span>
+<span class="lineno">  131 </span><span class="spaces">                    </span><span class="istickedoff">{ changeO =</span>
+<span class="lineno">  132 </span><span class="spaces">                        </span><span class="istickedoff">foldl</span>
+<span class="lineno">  133 </span><span class="spaces">                            </span><span class="istickedoff">(\s (v, v') -&gt; M.insert v (S.singleton v') s)</span>
+<span class="lineno">  134 </span><span class="spaces">                            </span><span class="istickedoff">changeO</span>
+<span class="lineno">  135 </span><span class="spaces">                            </span><span class="istickedoff">$ [(a, b) | b &lt;- S.elems vs', a &lt;- S.elems vs]</span>
+<span class="lineno">  136 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  137 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  138 </span>
+<span class="lineno">  139 </span>instance Var v =&gt; Locks (PU v x t) v where
+<span class="lineno">  140 </span>    <span class="decl"><span class="istickedoff">locks PU{unit, diff = diff@Changeset{changeI, changeO}}</span>
+<span class="lineno">  141 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlyfalse">not $ M.null changeI</span> = <span class="nottickedoff">error $ &quot;Locks (PU v x t) with non empty changeI: &quot; &lt;&gt; show diff</span></span>
+<span class="lineno">  142 </span><span class="spaces">        </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
+<span class="lineno">  143 </span><span class="spaces">            </span><span class="istickedoff">let (locked', locks') = L.partition (\Lock{locked} -&gt; locked `M.member` changeO) $ locks unit</span>
+<span class="lineno">  144 </span><span class="spaces">                </span><span class="istickedoff">(lockBy', locks'') = L.partition (\Lock{lockBy} -&gt; lockBy `M.member` changeO) locks'</span>
+<span class="lineno">  145 </span><span class="spaces">             </span><span class="istickedoff">in concat</span>
+<span class="lineno">  146 </span><span class="spaces">                    </span><span class="istickedoff">[ locks''</span>
+<span class="lineno">  147 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
+<span class="lineno">  148 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
+<span class="lineno">  149 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked, lockBy = v} | v &lt;- S.elems (changeO M.! lockBy)])</span>
+<span class="lineno">  150 </span><span class="spaces">                            </span><span class="istickedoff">lockBy'</span>
+<span class="lineno">  151 </span><span class="spaces">                    </span><span class="istickedoff">, L.nub $</span>
+<span class="lineno">  152 </span><span class="spaces">                        </span><span class="istickedoff">concatMap</span>
+<span class="lineno">  153 </span><span class="spaces">                            </span><span class="istickedoff">(\Lock{locked, lockBy} -&gt; [Lock{locked = v, lockBy} | v &lt;- S.elems (changeO M.! locked)])</span>
+<span class="lineno">  154 </span><span class="spaces">                            </span><span class="istickedoff">locked'</span>
+<span class="lineno">  155 </span><span class="spaces">                    </span><span class="istickedoff">]</span></span>
+<span class="lineno">  156 </span>
+<span class="lineno">  157 </span>instance TargetSystemComponent (PU v x t) where
+<span class="lineno">  158 </span>    <span class="decl"><span class="nottickedoff">moduleName name PU{unit} = moduleName name unit</span></span>
+<span class="lineno">  159 </span>    <span class="decl"><span class="istickedoff">hardware name PU{unit} = hardware <span class="nottickedoff">name</span> unit</span></span>
+<span class="lineno">  160 </span>    <span class="decl"><span class="istickedoff">software name PU{unit} = software name unit</span></span>
+<span class="lineno">  161 </span>    <span class="decl"><span class="nottickedoff">hardwareInstance name pu = hardwareInstance name pu</span></span>
 <span class="lineno">  162 </span>
-<span class="lineno">  163 </span>data IOSynchronization
-<span class="lineno">  164 </span>    = -- | IO cycle synchronously to process cycle
-<span class="lineno">  165 </span>      Sync
-<span class="lineno">  166 </span>    | -- | if IO cycle lag behiend - ignore them
-<span class="lineno">  167 </span>      ASync
-<span class="lineno">  168 </span>    | -- | defined by onboard signal (sync - false, async - true)
-<span class="lineno">  169 </span>      OnBoard
-<span class="lineno">  170 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>, Typeable, Generic)
-<span class="lineno">  171 </span>
-<span class="lineno">  172 </span>instance ToJSON IOSynchronization
-<span class="lineno">  173 </span>instance FromJSON IOSynchronization
-<span class="lineno">  174 </span>
-<span class="lineno">  175 </span><span class="decl"><span class="istickedoff">puInputPorts PU{uEnv} = envInputPorts uEnv</span></span>
-<span class="lineno">  176 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
-<span class="lineno">  177 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
-<span class="lineno">  178 </span>
-<span class="lineno">  179 </span>-- | PU and some additional information required for allocation on BusNetwork
-<span class="lineno">  180 </span>data PUPrototype tag v x t where
-<span class="lineno">  181 </span>    PUPrototype ::
-<span class="lineno">  182 </span>        (UnitTag tag, PUClasses pu v x t) =&gt;
-<span class="lineno">  183 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTag</span></span></span> :: tag
-<span class="lineno">  184 </span>        {- ^ Prototype tag. You can specify tag as a template by adding {x}.
-<span class="lineno">  185 </span>        This will allow to allocate PU more than once by replacing {x} with index.
-<span class="lineno">  186 </span>        When PU is allocated processUnitTag will look like bnName_pTag.
-<span class="lineno">  187 </span>        -}
-<span class="lineno">  188 </span>        , <span class="decl"><span class="nottickedoff">pProto</span></span> :: pu
-<span class="lineno">  189 </span>        -- ^ PU prototype
-<span class="lineno">  190 </span>        , <span class="decl"><span class="nottickedoff">pIOPorts</span></span> :: IOPorts pu
-<span class="lineno">  191 </span>        -- ^ IO ports that will be used by PU
-<span class="lineno">  192 </span>        } -&gt;
-<span class="lineno">  193 </span>        PUPrototype tag v x t
+<span class="lineno">  163 </span>instance IOTestBench (PU v x t) v x where
+<span class="lineno">  164 </span>    <span class="decl"><span class="istickedoff">testEnvironmentInitFlag tag PU{unit} = testEnvironmentInitFlag tag <span class="nottickedoff">unit</span></span></span>
+<span class="lineno">  165 </span>
+<span class="lineno">  166 </span>    <span class="decl"><span class="nottickedoff">testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs</span></span>
+<span class="lineno">  167 </span>
+<span class="lineno">  168 </span>data IOSynchronization
+<span class="lineno">  169 </span>    = -- | IO cycle synchronously to process cycle
+<span class="lineno">  170 </span>      Sync
+<span class="lineno">  171 </span>    | -- | if IO cycle lag behiend - ignore them
+<span class="lineno">  172 </span>      ASync
+<span class="lineno">  173 </span>    | -- | defined by onboard signal (sync - false, async - true)
+<span class="lineno">  174 </span>      OnBoard
+<span class="lineno">  175 </span>    deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>, Typeable, Generic)
+<span class="lineno">  176 </span>
+<span class="lineno">  177 </span>instance ToJSON IOSynchronization
+<span class="lineno">  178 </span>instance FromJSON IOSynchronization
+<span class="lineno">  179 </span>
+<span class="lineno">  180 </span><span class="decl"><span class="istickedoff">puInputPorts PU{uEnv} = envInputPorts uEnv</span></span>
+<span class="lineno">  181 </span><span class="decl"><span class="istickedoff">puOutputPorts PU{uEnv} = envOutputPorts uEnv</span></span>
+<span class="lineno">  182 </span><span class="decl"><span class="istickedoff">puInOutPorts PU{uEnv} = envInOutPorts uEnv</span></span>
+<span class="lineno">  183 </span>
+<span class="lineno">  184 </span>-- | PU and some additional information required for allocation on BusNetwork
+<span class="lineno">  185 </span>data PUPrototype tag v x t where
+<span class="lineno">  186 </span>    PUPrototype ::
+<span class="lineno">  187 </span>        (UnitTag tag, PUClasses pu v x t) =&gt;
+<span class="lineno">  188 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pTag</span></span></span> :: tag
+<span class="lineno">  189 </span>        {- ^ Prototype tag. You can specify tag as a template by adding {x}.
+<span class="lineno">  190 </span>        This will allow to allocate PU more than once by replacing {x} with index.
+<span class="lineno">  191 </span>        When PU is allocated processUnitTag will look like bnName_pTag.
+<span class="lineno">  192 </span>        -}
+<span class="lineno">  193 </span>        , <span class="decl"><span class="nottickedoff">pProto</span></span> :: pu
+<span class="lineno">  194 </span>        -- ^ PU prototype
+<span class="lineno">  195 </span>        , <span class="decl"><span class="nottickedoff">pIOPorts</span></span> :: IOPorts pu
+<span class="lineno">  196 </span>        -- ^ IO ports that will be used by PU
+<span class="lineno">  197 </span>        } -&gt;
+<span class="lineno">  198 </span>        PUPrototype tag v x t
 
 </pre>
 </body>

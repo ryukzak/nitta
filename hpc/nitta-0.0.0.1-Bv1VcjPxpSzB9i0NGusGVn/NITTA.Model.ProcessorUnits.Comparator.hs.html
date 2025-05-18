@@ -267,70 +267,72 @@ span.spaces    { background: white }
 <span class="lineno">  248 </span>
 <span class="lineno">  249 </span>instance IOTestBench (Comparator v x t) v x
 <span class="lineno">  250 </span>
-<span class="lineno">  251 </span>instance VarValTime v x t =&gt; TargetSystemComponent (Comparator v x t) where
-<span class="lineno">  252 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = T.pack &quot;pu_compare&quot;</span></span>
-<span class="lineno">  253 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
-<span class="lineno">  254 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_compare.v&quot;</span></span>
-<span class="lineno">  255 </span>
-<span class="lineno">  256 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
-<span class="lineno">  257 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
-<span class="lineno">  258 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
-<span class="lineno">  259 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
-<span class="lineno">  260 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
-<span class="lineno">  261 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
-<span class="lineno">  262 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just ComparePorts{..}</span>
-<span class="lineno">  263 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
-<span class="lineno">  264 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
-<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
-<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
-<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_compare \#</span></span></span>
-<span class="lineno">  268 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
-<span class="lineno">  269 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
-<span class="lineno">  270 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SEL_WIDTH( #{ selWidth } )</span></span></span>
-<span class="lineno">  271 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag } (</span></span></span>
-<span class="lineno">  272 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.clk(#{ sigClk }),</span></span></span>
-<span class="lineno">  273 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.rst( #{ sigRst } ),</span></span></span>
-<span class="lineno">  274 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.oe(#{ oePort }),</span></span></span>
-<span class="lineno">  275 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.wr(#{ wrPort }),</span></span></span>
-<span class="lineno">  276 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.op_sel({ #{ T.intercalate (T.pack &quot;, &quot;) $ map showText opSelPort } })</span></span></span>
-<span class="lineno">  277 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span>
-<span class="lineno">  278 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
-<span class="lineno">  279 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
-<span class="lineno">  280 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
-<span class="lineno">  281 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
-<span class="lineno">  282 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
-<span class="lineno">  283 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
-<span class="lineno">  284 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  285 </span>
-<span class="lineno">  286 </span>instance Ord t =&gt; WithFunctions (Comparator v x t) (F v x) where
-<span class="lineno">  287 </span>    <span class="decl"><span class="istickedoff">functions Comparator{process_, remain, currentWork} =</span>
-<span class="lineno">  288 </span><span class="spaces">        </span><span class="istickedoff">functions process_</span>
-<span class="lineno">  289 </span><span class="spaces">            </span><span class="istickedoff">++ remain</span>
-<span class="lineno">  290 </span><span class="spaces">            </span><span class="istickedoff">++ maybeToList currentWork</span></span>
-<span class="lineno">  291 </span>
-<span class="lineno">  292 </span>instance VarValTime v x t =&gt; Testable (Comparator v x t) v x where
-<span class="lineno">  293 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
-<span class="lineno">  294 </span><span class="spaces">        </span><span class="istickedoff">let tbcSignalsConst = [T.pack &quot;oe&quot;, T.pack &quot;wr&quot;, T.pack $ &quot;[&quot; ++ show (selWidth - 1) ++ &quot;:0] op_sel&quot;]</span>
-<span class="lineno">  295 </span><span class="spaces">            </span><span class="istickedoff">showMicrocode Microcode{oe, wr, opSel} =</span>
-<span class="lineno">  296 </span><span class="spaces">                </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oe };|]</span>
-<span class="lineno">  297 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{ bool2verilog wr };|]</span>
-<span class="lineno">  298 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| op_sel &lt;= #{ show opSel };|]</span>
-<span class="lineno">  299 </span><span class="spaces">         </span><span class="istickedoff">in Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; T.pack &quot;_tb.v&quot;) $</span>
-<span class="lineno">  300 </span><span class="spaces">                </span><span class="istickedoff">snippetTestBench</span>
-<span class="lineno">  301 </span><span class="spaces">                    </span><span class="istickedoff">prj</span>
-<span class="lineno">  302 </span><span class="spaces">                    </span><span class="istickedoff">SnippetTestBenchConf</span>
-<span class="lineno">  303 </span><span class="spaces">                        </span><span class="istickedoff">{ tbcSignals = tbcSignalsConst</span>
-<span class="lineno">  304 </span><span class="spaces">                        </span><span class="istickedoff">, tbcPorts =</span>
-<span class="lineno">  305 </span><span class="spaces">                            </span><span class="istickedoff">ComparePorts</span>
-<span class="lineno">  306 </span><span class="spaces">                                </span><span class="istickedoff">{ oePort = SignalTag (T.pack &quot;oe&quot;)</span>
-<span class="lineno">  307 </span><span class="spaces">                                </span><span class="istickedoff">, wrPort = SignalTag (T.pack &quot;wr&quot;)</span>
-<span class="lineno">  308 </span><span class="spaces">                                </span><span class="istickedoff">, opSelPort =</span>
-<span class="lineno">  309 </span><span class="spaces">                                    </span><span class="istickedoff">[ (SignalTag . T.pack) (&quot;op_sel[&quot; &lt;&gt; show p &lt;&gt; &quot;]&quot;)</span>
-<span class="lineno">  310 </span><span class="spaces">                                    </span><span class="istickedoff">| p &lt;- [selWidth - 1, selWidth - 2 .. 0]</span>
-<span class="lineno">  311 </span><span class="spaces">                                    </span><span class="istickedoff">]</span>
-<span class="lineno">  312 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
-<span class="lineno">  313 </span><span class="spaces">                        </span><span class="istickedoff">, tbcMC2verilogLiteral = showMicrocode</span>
-<span class="lineno">  314 </span><span class="spaces">                        </span><span class="istickedoff">}</span></span>
+<span class="lineno">  251 </span>instance OptimizeLogicalUnitProblem (Comparator v x t) v x
+<span class="lineno">  252 </span>
+<span class="lineno">  253 </span>instance VarValTime v x t =&gt; TargetSystemComponent (Comparator v x t) where
+<span class="lineno">  254 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = T.pack &quot;pu_compare&quot;</span></span>
+<span class="lineno">  255 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  256 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_compare.v&quot;</span></span>
+<span class="lineno">  257 </span>
+<span class="lineno">  258 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  259 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  260 </span><span class="spaces">        </span><span class="istickedoff">_pu</span>
+<span class="lineno">  261 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  262 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  263 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
+<span class="lineno">  264 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just ComparePorts{..}</span>
+<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  268 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  269 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_compare \#</span></span></span>
+<span class="lineno">  270 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  271 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  272 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SEL_WIDTH( #{ selWidth } )</span></span></span>
+<span class="lineno">  273 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag } (</span></span></span>
+<span class="lineno">  274 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.clk(#{ sigClk }),</span></span></span>
+<span class="lineno">  275 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.rst( #{ sigRst } ),</span></span></span>
+<span class="lineno">  276 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.oe(#{ oePort }),</span></span></span>
+<span class="lineno">  277 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.wr(#{ wrPort }),</span></span></span>
+<span class="lineno">  278 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">.op_sel({ #{ T.intercalate (T.pack &quot;, &quot;) $ map showText opSelPort } })</span></span></span>
+<span class="lineno">  279 </span><span class="spaces"></span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  280 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
+<span class="lineno">  281 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  282 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
+<span class="lineno">  283 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  284 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  285 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  286 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  287 </span>
+<span class="lineno">  288 </span>instance Ord t =&gt; WithFunctions (Comparator v x t) (F v x) where
+<span class="lineno">  289 </span>    <span class="decl"><span class="istickedoff">functions Comparator{process_, remain, currentWork} =</span>
+<span class="lineno">  290 </span><span class="spaces">        </span><span class="istickedoff">functions process_</span>
+<span class="lineno">  291 </span><span class="spaces">            </span><span class="istickedoff">++ remain</span>
+<span class="lineno">  292 </span><span class="spaces">            </span><span class="istickedoff">++ maybeToList currentWork</span></span>
+<span class="lineno">  293 </span>
+<span class="lineno">  294 </span>instance VarValTime v x t =&gt; Testable (Comparator v x t) v x where
+<span class="lineno">  295 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  296 </span><span class="spaces">        </span><span class="istickedoff">let tbcSignalsConst = [T.pack &quot;oe&quot;, T.pack &quot;wr&quot;, T.pack $ &quot;[&quot; ++ show (selWidth - 1) ++ &quot;:0] op_sel&quot;]</span>
+<span class="lineno">  297 </span><span class="spaces">            </span><span class="istickedoff">showMicrocode Microcode{oe, wr, opSel} =</span>
+<span class="lineno">  298 </span><span class="spaces">                </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oe };|]</span>
+<span class="lineno">  299 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{ bool2verilog wr };|]</span>
+<span class="lineno">  300 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| op_sel &lt;= #{ show opSel };|]</span>
+<span class="lineno">  301 </span><span class="spaces">         </span><span class="istickedoff">in Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; T.pack &quot;_tb.v&quot;) $</span>
+<span class="lineno">  302 </span><span class="spaces">                </span><span class="istickedoff">snippetTestBench</span>
+<span class="lineno">  303 </span><span class="spaces">                    </span><span class="istickedoff">prj</span>
+<span class="lineno">  304 </span><span class="spaces">                    </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  305 </span><span class="spaces">                        </span><span class="istickedoff">{ tbcSignals = tbcSignalsConst</span>
+<span class="lineno">  306 </span><span class="spaces">                        </span><span class="istickedoff">, tbcPorts =</span>
+<span class="lineno">  307 </span><span class="spaces">                            </span><span class="istickedoff">ComparePorts</span>
+<span class="lineno">  308 </span><span class="spaces">                                </span><span class="istickedoff">{ oePort = SignalTag (T.pack &quot;oe&quot;)</span>
+<span class="lineno">  309 </span><span class="spaces">                                </span><span class="istickedoff">, wrPort = SignalTag (T.pack &quot;wr&quot;)</span>
+<span class="lineno">  310 </span><span class="spaces">                                </span><span class="istickedoff">, opSelPort =</span>
+<span class="lineno">  311 </span><span class="spaces">                                    </span><span class="istickedoff">[ (SignalTag . T.pack) (&quot;op_sel[&quot; &lt;&gt; show p &lt;&gt; &quot;]&quot;)</span>
+<span class="lineno">  312 </span><span class="spaces">                                    </span><span class="istickedoff">| p &lt;- [selWidth - 1, selWidth - 2 .. 0]</span>
+<span class="lineno">  313 </span><span class="spaces">                                    </span><span class="istickedoff">]</span>
+<span class="lineno">  314 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
+<span class="lineno">  315 </span><span class="spaces">                        </span><span class="istickedoff">, tbcMC2verilogLiteral = showMicrocode</span>
+<span class="lineno">  316 </span><span class="spaces">                        </span><span class="istickedoff">}</span></span>
 
 </pre>
 </body>

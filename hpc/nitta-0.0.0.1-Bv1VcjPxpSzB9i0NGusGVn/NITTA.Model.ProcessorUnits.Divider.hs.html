@@ -154,213 +154,214 @@ span.spaces    { background: white }
 <span class="lineno">  135 </span>instance BreakLoopProblem (Divider v x t) v x
 <span class="lineno">  136 </span>instance ConstantFoldingProblem (Divider v x t) v x
 <span class="lineno">  137 </span>instance OptimizeAccumProblem (Divider v x t) v x
-<span class="lineno">  138 </span>instance ResolveDeadlockProblem (Divider v x t) v x
-<span class="lineno">  139 </span>
-<span class="lineno">  140 </span><span class="decl"><span class="istickedoff">function2WaitArguments f</span>
-<span class="lineno">  141 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Division{F.denom = I denom, F.numer = I numer} &lt;- castF f =</span>
-<span class="lineno">  142 </span><span class="spaces">        </span><span class="istickedoff">WaitArguments</span>
-<span class="lineno">  143 </span><span class="spaces">            </span><span class="istickedoff">{ function = f</span>
-<span class="lineno">  144 </span><span class="spaces">            </span><span class="istickedoff">, arguments = [(Denom, denom), (Numer, numer)]</span>
-<span class="lineno">  145 </span><span class="spaces">            </span><span class="istickedoff">}</span>
-<span class="lineno">  146 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error $ &quot;internal divider error: &quot; &lt;&gt; show f</span></span></span>
-<span class="lineno">  147 </span>
-<span class="lineno">  148 </span><span class="decl"><span class="istickedoff">function2WaitResults readyAt f</span>
-<span class="lineno">  149 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Division{F.quotient = O quotient, F.remain = O remain} &lt;- castF f =</span>
-<span class="lineno">  150 </span><span class="spaces">        </span><span class="istickedoff">WaitResults</span>
-<span class="lineno">  151 </span><span class="spaces">            </span><span class="istickedoff">{ function = f</span>
-<span class="lineno">  152 </span><span class="spaces">            </span><span class="istickedoff">, readyAt</span>
-<span class="lineno">  153 </span><span class="spaces">            </span><span class="istickedoff">, restrict = Nothing</span>
-<span class="lineno">  154 </span><span class="spaces">            </span><span class="istickedoff">, results = filterEmptyResults [(Quotient, quotient), (Remain, remain)]</span>
-<span class="lineno">  155 </span><span class="spaces">            </span><span class="istickedoff">}</span>
-<span class="lineno">  156 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  157 </span>
-<span class="lineno">  158 </span><span class="decl"><span class="istickedoff">filterEmptyResults rs = filter (not . null . snd) rs</span></span>
-<span class="lineno">  159 </span>
-<span class="lineno">  160 </span><span class="decl"><span class="istickedoff">firstWaitResults jobs =</span>
-<span class="lineno">  161 </span><span class="spaces">    </span><span class="istickedoff">let jobs' = filter isWaitResults jobs</span>
-<span class="lineno">  162 </span><span class="spaces">     </span><span class="istickedoff">in if null jobs'</span>
-<span class="lineno">  163 </span><span class="spaces">            </span><span class="istickedoff">then Nothing</span>
-<span class="lineno">  164 </span><span class="spaces">            </span><span class="istickedoff">else Just $ minimumOn readyAt jobs'</span></span>
-<span class="lineno">  165 </span>
-<span class="lineno">  166 </span>instance VarValTime v x t =&gt; EndpointProblem (Divider v x t) v t where
-<span class="lineno">  167 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@Divider{remains, jobs} =</span>
-<span class="lineno">  168 </span><span class="spaces">        </span><span class="istickedoff">let executeNewFunction</span>
-<span class="lineno">  169 </span><span class="spaces">                </span><span class="istickedoff">| any isWaitArguments jobs = []</span>
-<span class="lineno">  170 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = concatMap (map target . S.elems . inputs) remains</span>
-<span class="lineno">  171 </span><span class="spaces">            </span><span class="istickedoff">waitingArguments =</span>
-<span class="lineno">  172 </span><span class="spaces">                </span><span class="istickedoff">maybe [] (map target . S.elems . variables) $ L.find isWaitArguments jobs</span>
-<span class="lineno">  173 </span><span class="spaces">            </span><span class="istickedoff">waitResults</span>
-<span class="lineno">  174 </span><span class="spaces">                </span><span class="istickedoff">| Just WaitResults{readyAt, results, restrict} &lt;- firstWaitResults jobs =</span>
-<span class="lineno">  175 </span><span class="spaces">                    </span><span class="istickedoff">let at = max readyAt (nextTick pu) ... fromMaybe maxBound restrict</span>
-<span class="lineno">  176 </span><span class="spaces">                     </span><span class="istickedoff">in map (sources at . snd) results</span>
-<span class="lineno">  177 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = []</span>
-<span class="lineno">  178 </span><span class="spaces">         </span><span class="istickedoff">in concat [executeNewFunction, waitingArguments, waitResults]</span>
-<span class="lineno">  179 </span><span class="spaces">        </span><span class="istickedoff">where</span>
-<span class="lineno">  180 </span><span class="spaces">            </span><span class="istickedoff">target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)</span>
-<span class="lineno">  181 </span><span class="spaces">            </span><span class="istickedoff">sources at vs = EndpointSt (Source vs) $ TimeConstraint at (singleton 1)</span></span>
-<span class="lineno">  182 </span>
-<span class="lineno">  183 </span>    <span class="decl"><span class="istickedoff">endpointDecision pu@Divider{jobs, remains, pipeline} d@EndpointSt{epRole = Target v, epAt}</span>
-<span class="lineno">  184 </span><span class="spaces">        </span><span class="istickedoff">| ([f], remains') &lt;- partition (S.member v . inputs) remains =</span>
-<span class="lineno">  185 </span><span class="spaces">            </span><span class="istickedoff">let pu' =</span>
-<span class="lineno">  186 </span><span class="spaces">                    </span><span class="istickedoff">pu</span>
-<span class="lineno">  187 </span><span class="spaces">                        </span><span class="istickedoff">{ jobs = function2WaitArguments f : jobs</span>
-<span class="lineno">  188 </span><span class="spaces">                        </span><span class="istickedoff">, remains = remains'</span>
-<span class="lineno">  189 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
-<span class="lineno">  190 </span><span class="spaces">             </span><span class="istickedoff">in endpointDecision pu' d</span>
-<span class="lineno">  191 </span><span class="spaces">        </span><span class="istickedoff">| ([WaitArguments{function, arguments}], jobs') &lt;- partition (S.member v . variables) jobs =</span>
-<span class="lineno">  192 </span><span class="spaces">            </span><span class="istickedoff">let (tag, arguments') = case partition ((== v) . snd) arguments of</span>
-<span class="lineno">  193 </span><span class="spaces">                    </span><span class="istickedoff">([(tag', _v)], other) -&gt; (tag', other)</span>
-<span class="lineno">  194 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error &quot;Divider: endpointDecision: internal error&quot;</span></span>
-<span class="lineno">  195 </span><span class="spaces">                </span><span class="istickedoff">nextTick' = sup epAt + 1</span>
-<span class="lineno">  196 </span><span class="spaces">             </span><span class="istickedoff">in case arguments' of</span>
-<span class="lineno">  197 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
-<span class="lineno">  198 </span><span class="spaces">                        </span><span class="istickedoff">let job' = function2WaitResults (nextTick' + pipeline + 1) function</span>
-<span class="lineno">  199 </span><span class="spaces">                            </span><span class="istickedoff">restrictResults =</span>
-<span class="lineno">  200 </span><span class="spaces">                                </span><span class="istickedoff">map</span>
-<span class="lineno">  201 </span><span class="spaces">                                    </span><span class="istickedoff">( \case</span>
-<span class="lineno">  202 </span><span class="spaces">                                        </span><span class="istickedoff">wa@WaitResults{restrict = Nothing} -&gt; wa{restrict = Just (nextTick' + pipeline)}</span>
-<span class="lineno">  203 </span><span class="spaces">                                        </span><span class="istickedoff">other -&gt; <span class="nottickedoff">other</span></span>
-<span class="lineno">  204 </span><span class="spaces">                                    </span><span class="istickedoff">)</span>
-<span class="lineno">  205 </span><span class="spaces">                         </span><span class="istickedoff">in pu</span>
-<span class="lineno">  206 </span><span class="spaces">                                </span><span class="istickedoff">{ jobs = job' : restrictResults jobs'</span>
-<span class="lineno">  207 </span><span class="spaces">                                </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
-<span class="lineno">  208 </span><span class="spaces">                                    </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag</span>
-<span class="lineno">  209 </span><span class="spaces">                                    </span><span class="istickedoff">scheduleInstructionUnsafe_ (singleton nextTick') Do</span>
-<span class="lineno">  210 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
-<span class="lineno">  211 </span><span class="spaces">                    </span><span class="istickedoff">_arguments' -&gt;</span>
-<span class="lineno">  212 </span><span class="spaces">                        </span><span class="istickedoff">pu</span>
-<span class="lineno">  213 </span><span class="spaces">                            </span><span class="istickedoff">{ jobs = WaitArguments{function, arguments = arguments'} : jobs'</span>
-<span class="lineno">  214 </span><span class="spaces">                            </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
-<span class="lineno">  215 </span><span class="spaces">                                </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag</span>
-<span class="lineno">  216 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  217 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}</span>
-<span class="lineno">  218 </span><span class="spaces">        </span><span class="istickedoff">| ([job@WaitResults{results, function}], jobs') &lt;- partition ((vs `S.isSubsetOf`) . variables) jobs =</span>
-<span class="lineno">  219 </span><span class="spaces">            </span><span class="istickedoff">let ((tag, allVs), results') = case partition ((vs `S.isSubsetOf`) . snd) results of</span>
-<span class="lineno">  220 </span><span class="spaces">                    </span><span class="istickedoff">([(tag_, allVs_)], other) -&gt; ((tag_, allVs_), other)</span>
-<span class="lineno">  221 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error &quot;Divider: endpointDecision: internal error&quot;</span></span>
-<span class="lineno">  222 </span><span class="spaces">                </span><span class="istickedoff">allVs' = allVs S.\\ vs</span>
-<span class="lineno">  223 </span><span class="spaces">                </span><span class="istickedoff">results'' = filterEmptyResults $ (<span class="nottickedoff">tag</span>, allVs') : results'</span>
-<span class="lineno">  224 </span><span class="spaces">                </span><span class="istickedoff">jobs'' =</span>
-<span class="lineno">  225 </span><span class="spaces">                    </span><span class="istickedoff">if null results''</span>
-<span class="lineno">  226 </span><span class="spaces">                        </span><span class="istickedoff">then jobs'</span>
-<span class="lineno">  227 </span><span class="spaces">                        </span><span class="istickedoff">else job{results = results''} : jobs'</span>
-<span class="lineno">  228 </span><span class="spaces">             </span><span class="istickedoff">in pu</span>
-<span class="lineno">  229 </span><span class="spaces">                    </span><span class="istickedoff">{ jobs = jobs''</span>
-<span class="lineno">  230 </span><span class="spaces">                    </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
-<span class="lineno">  231 </span><span class="spaces">                        </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag</span>
-<span class="lineno">  232 </span><span class="spaces">                        </span><span class="istickedoff">when (null jobs') $ do</span>
-<span class="lineno">  233 </span><span class="spaces">                            </span><span class="istickedoff">scheduleFunctionFinish_ [] function $ 0 ... sup epAt</span>
-<span class="lineno">  234 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  235 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision _pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for Divider|]</span></span></span>
-<span class="lineno">  236 </span>
-<span class="lineno">  237 </span>instance Controllable (Divider v x t) where
-<span class="lineno">  238 </span>    data Instruction (Divider v x t)
-<span class="lineno">  239 </span>        = Load InputDesc
-<span class="lineno">  240 </span>        | Do
-<span class="lineno">  241 </span>        | Out OutputDesc
-<span class="lineno">  242 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
-<span class="lineno">  243 </span>
-<span class="lineno">  244 </span>    data Microcode (Divider v x t) = Microcode
-<span class="lineno">  245 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">selSignal</span></span></span> :: Bool
-<span class="lineno">  246 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
-<span class="lineno">  247 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
-<span class="lineno">  248 </span>        }
-<span class="lineno">  249 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  250 </span>
-<span class="lineno">  251 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues DividerPorts{..} Microcode{..} =</span>
-<span class="lineno">  252 </span><span class="spaces">        </span><span class="istickedoff">[ (sel, Bool selSignal)</span>
-<span class="lineno">  253 </span><span class="spaces">        </span><span class="istickedoff">, (wr, Bool wrSignal)</span>
-<span class="lineno">  254 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
-<span class="lineno">  255 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
-<span class="lineno">  256 </span>
-<span class="lineno">  257 </span>    <span class="decl"><span class="istickedoff">usedPortTags DividerPorts{sel, wr, oe} = [<span class="nottickedoff">sel</span>, <span class="nottickedoff">wr</span>, <span class="nottickedoff">oe</span>]</span></span>
-<span class="lineno">  258 </span>
-<span class="lineno">  259 </span>    <span class="decl"><span class="istickedoff">takePortTags (sel : wr : oe : _) _ = DividerPorts sel wr oe</span>
-<span class="lineno">  260 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
-<span class="lineno">  261 </span>
-<span class="lineno">  262 </span>instance Default (Microcode (Divider v x t)) where
-<span class="lineno">  263 </span>    <span class="decl"><span class="istickedoff">def =</span>
-<span class="lineno">  264 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
-<span class="lineno">  265 </span><span class="spaces">            </span><span class="istickedoff">{ selSignal = False</span>
-<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">, wrSignal = False</span>
-<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
-<span class="lineno">  268 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
-<span class="lineno">  269 </span>instance UnambiguouslyDecode (Divider v x t) where
-<span class="lineno">  270 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (Load Numer) = def{wrSignal = True, selSignal = False}</span>
-<span class="lineno">  271 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Load Denom) = def{wrSignal = True, selSignal = True}</span>
-<span class="lineno">  272 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Do = def{wrSignal = True, oeSignal = True}</span>
-<span class="lineno">  273 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Out Quotient) = def{oeSignal = True, selSignal = False}</span>
-<span class="lineno">  274 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Out Remain) = def{oeSignal = True, selSignal = True}</span></span>
-<span class="lineno">  275 </span>
-<span class="lineno">  276 </span>instance Connected (Divider v x t) where
-<span class="lineno">  277 </span>    data Ports (Divider v x t) = DividerPorts {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">sel</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag}
-<span class="lineno">  278 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  279 </span>
-<span class="lineno">  280 </span>instance IOConnected (Divider v x t) where
-<span class="lineno">  281 </span>    data IOPorts (Divider v x t) = DividerIO
-<span class="lineno">  282 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  283 </span>
-<span class="lineno">  284 </span>instance (Val x, Show t) =&gt; TargetSystemComponent (Divider v x t) where
-<span class="lineno">  285 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = &quot;pu_div&quot;</span></span>
-<span class="lineno">  286 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
-<span class="lineno">  287 </span>    <span class="decl"><span class="istickedoff">hardware _tag Divider{mock} =</span>
-<span class="lineno">  288 </span><span class="spaces">        </span><span class="istickedoff">Aggregate</span>
-<span class="lineno">  289 </span><span class="spaces">            </span><span class="istickedoff">Nothing</span>
-<span class="lineno">  290 </span><span class="spaces">            </span><span class="istickedoff">[ if <span class="tickonlytrue">mock</span></span>
-<span class="lineno">  291 </span><span class="spaces">                </span><span class="istickedoff">then FromLibrary &quot;div/div_mock.v&quot;</span>
-<span class="lineno">  292 </span><span class="spaces">                </span><span class="istickedoff">else <span class="nottickedoff">FromLibrary &quot;div/div.v&quot;</span></span>
-<span class="lineno">  293 </span><span class="spaces">            </span><span class="istickedoff">, FromLibrary &quot;div/pu_div.v&quot;</span>
-<span class="lineno">  294 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
-<span class="lineno">  295 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
-<span class="lineno">  296 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
-<span class="lineno">  297 </span><span class="spaces">        </span><span class="istickedoff">_pu@Divider{mock, pipeline}</span>
-<span class="lineno">  298 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
-<span class="lineno">  299 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
-<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
-<span class="lineno">  301 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
-<span class="lineno">  302 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
-<span class="lineno">  303 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just DividerPorts{sel, wr, oe}</span>
-<span class="lineno">  304 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
-<span class="lineno">  305 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
-<span class="lineno">  306 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_div \#</span></span></span>
-<span class="lineno">  307 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
-<span class="lineno">  308 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
-<span class="lineno">  309 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .INVALID( 0 )</span></span></span>
-<span class="lineno">  310 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .PIPELINE( #{ pipeline } )</span></span></span>
-<span class="lineno">  311 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )</span></span></span>
-<span class="lineno">  312 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .MOCK_DIV( #{ bool2verilog mock } )</span></span></span>
-<span class="lineno">  313 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
-<span class="lineno">  314 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
-<span class="lineno">  315 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .rst( #{ sigRst } )</span></span></span>
-<span class="lineno">  316 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_sel( #{ sel } )</span></span></span>
-<span class="lineno">  317 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span>
-<span class="lineno">  318 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
-<span class="lineno">  319 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
-<span class="lineno">  320 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
-<span class="lineno">  321 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
-<span class="lineno">  322 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
-<span class="lineno">  323 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
-<span class="lineno">  324 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
-<span class="lineno">  325 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  326 </span>
-<span class="lineno">  327 </span>instance IOTestBench (Divider v x t) v x
-<span class="lineno">  328 </span>
-<span class="lineno">  329 </span>instance VarValTime v x t =&gt; Testable (Divider v x t) v x where
-<span class="lineno">  330 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
-<span class="lineno">  331 </span><span class="spaces">        </span><span class="istickedoff">Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
-<span class="lineno">  332 </span><span class="spaces">            </span><span class="istickedoff">snippetTestBench</span>
-<span class="lineno">  333 </span><span class="spaces">                </span><span class="istickedoff">prj</span>
-<span class="lineno">  334 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
-<span class="lineno">  335 </span><span class="spaces">                    </span><span class="istickedoff">{ tbcSignals = [&quot;sel&quot;, &quot;wr&quot;, &quot;oe&quot;]</span>
-<span class="lineno">  336 </span><span class="spaces">                    </span><span class="istickedoff">, tbcPorts =</span>
-<span class="lineno">  337 </span><span class="spaces">                        </span><span class="istickedoff">DividerPorts</span>
-<span class="lineno">  338 </span><span class="spaces">                            </span><span class="istickedoff">{ sel = SignalTag &quot;sel&quot;</span>
-<span class="lineno">  339 </span><span class="spaces">                            </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
-<span class="lineno">  340 </span><span class="spaces">                            </span><span class="istickedoff">, oe = SignalTag &quot;oe&quot;</span>
-<span class="lineno">  341 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  342 </span><span class="spaces">                    </span><span class="istickedoff">, tbcMC2verilogLiteral = \Microcode{selSignal, wrSignal, oeSignal} -&gt;</span>
-<span class="lineno">  343 </span><span class="spaces">                        </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oeSignal }; sel &lt;= #{ bool2verilog selSignal }; wr &lt;= #{ bool2verilog wrSignal }; |]</span>
-<span class="lineno">  344 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
+<span class="lineno">  138 </span>instance OptimizeLogicalUnitProblem (Divider v x t) v x
+<span class="lineno">  139 </span>instance ResolveDeadlockProblem (Divider v x t) v x
+<span class="lineno">  140 </span>
+<span class="lineno">  141 </span><span class="decl"><span class="istickedoff">function2WaitArguments f</span>
+<span class="lineno">  142 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Division{F.denom = I denom, F.numer = I numer} &lt;- castF f =</span>
+<span class="lineno">  143 </span><span class="spaces">        </span><span class="istickedoff">WaitArguments</span>
+<span class="lineno">  144 </span><span class="spaces">            </span><span class="istickedoff">{ function = f</span>
+<span class="lineno">  145 </span><span class="spaces">            </span><span class="istickedoff">, arguments = [(Denom, denom), (Numer, numer)]</span>
+<span class="lineno">  146 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  147 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error $ &quot;internal divider error: &quot; &lt;&gt; show f</span></span></span>
+<span class="lineno">  148 </span>
+<span class="lineno">  149 </span><span class="decl"><span class="istickedoff">function2WaitResults readyAt f</span>
+<span class="lineno">  150 </span><span class="spaces">    </span><span class="istickedoff">| Just F.Division{F.quotient = O quotient, F.remain = O remain} &lt;- castF f =</span>
+<span class="lineno">  151 </span><span class="spaces">        </span><span class="istickedoff">WaitResults</span>
+<span class="lineno">  152 </span><span class="spaces">            </span><span class="istickedoff">{ function = f</span>
+<span class="lineno">  153 </span><span class="spaces">            </span><span class="istickedoff">, readyAt</span>
+<span class="lineno">  154 </span><span class="spaces">            </span><span class="istickedoff">, restrict = Nothing</span>
+<span class="lineno">  155 </span><span class="spaces">            </span><span class="istickedoff">, results = filterEmptyResults [(Quotient, quotient), (Remain, remain)]</span>
+<span class="lineno">  156 </span><span class="spaces">            </span><span class="istickedoff">}</span>
+<span class="lineno">  157 </span><span class="spaces">    </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  158 </span>
+<span class="lineno">  159 </span><span class="decl"><span class="istickedoff">filterEmptyResults rs = filter (not . null . snd) rs</span></span>
+<span class="lineno">  160 </span>
+<span class="lineno">  161 </span><span class="decl"><span class="istickedoff">firstWaitResults jobs =</span>
+<span class="lineno">  162 </span><span class="spaces">    </span><span class="istickedoff">let jobs' = filter isWaitResults jobs</span>
+<span class="lineno">  163 </span><span class="spaces">     </span><span class="istickedoff">in if null jobs'</span>
+<span class="lineno">  164 </span><span class="spaces">            </span><span class="istickedoff">then Nothing</span>
+<span class="lineno">  165 </span><span class="spaces">            </span><span class="istickedoff">else Just $ minimumOn readyAt jobs'</span></span>
+<span class="lineno">  166 </span>
+<span class="lineno">  167 </span>instance VarValTime v x t =&gt; EndpointProblem (Divider v x t) v t where
+<span class="lineno">  168 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@Divider{remains, jobs} =</span>
+<span class="lineno">  169 </span><span class="spaces">        </span><span class="istickedoff">let executeNewFunction</span>
+<span class="lineno">  170 </span><span class="spaces">                </span><span class="istickedoff">| any isWaitArguments jobs = []</span>
+<span class="lineno">  171 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = concatMap (map target . S.elems . inputs) remains</span>
+<span class="lineno">  172 </span><span class="spaces">            </span><span class="istickedoff">waitingArguments =</span>
+<span class="lineno">  173 </span><span class="spaces">                </span><span class="istickedoff">maybe [] (map target . S.elems . variables) $ L.find isWaitArguments jobs</span>
+<span class="lineno">  174 </span><span class="spaces">            </span><span class="istickedoff">waitResults</span>
+<span class="lineno">  175 </span><span class="spaces">                </span><span class="istickedoff">| Just WaitResults{readyAt, results, restrict} &lt;- firstWaitResults jobs =</span>
+<span class="lineno">  176 </span><span class="spaces">                    </span><span class="istickedoff">let at = max readyAt (nextTick pu) ... fromMaybe maxBound restrict</span>
+<span class="lineno">  177 </span><span class="spaces">                     </span><span class="istickedoff">in map (sources at . snd) results</span>
+<span class="lineno">  178 </span><span class="spaces">                </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = []</span>
+<span class="lineno">  179 </span><span class="spaces">         </span><span class="istickedoff">in concat [executeNewFunction, waitingArguments, waitResults]</span>
+<span class="lineno">  180 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  181 </span><span class="spaces">            </span><span class="istickedoff">target v = EndpointSt (Target v) $ TimeConstraint (nextTick pu ... maxBound) (singleton 1)</span>
+<span class="lineno">  182 </span><span class="spaces">            </span><span class="istickedoff">sources at vs = EndpointSt (Source vs) $ TimeConstraint at (singleton 1)</span></span>
+<span class="lineno">  183 </span>
+<span class="lineno">  184 </span>    <span class="decl"><span class="istickedoff">endpointDecision pu@Divider{jobs, remains, pipeline} d@EndpointSt{epRole = Target v, epAt}</span>
+<span class="lineno">  185 </span><span class="spaces">        </span><span class="istickedoff">| ([f], remains') &lt;- partition (S.member v . inputs) remains =</span>
+<span class="lineno">  186 </span><span class="spaces">            </span><span class="istickedoff">let pu' =</span>
+<span class="lineno">  187 </span><span class="spaces">                    </span><span class="istickedoff">pu</span>
+<span class="lineno">  188 </span><span class="spaces">                        </span><span class="istickedoff">{ jobs = function2WaitArguments f : jobs</span>
+<span class="lineno">  189 </span><span class="spaces">                        </span><span class="istickedoff">, remains = remains'</span>
+<span class="lineno">  190 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  191 </span><span class="spaces">             </span><span class="istickedoff">in endpointDecision pu' d</span>
+<span class="lineno">  192 </span><span class="spaces">        </span><span class="istickedoff">| ([WaitArguments{function, arguments}], jobs') &lt;- partition (S.member v . variables) jobs =</span>
+<span class="lineno">  193 </span><span class="spaces">            </span><span class="istickedoff">let (tag, arguments') = case partition ((== v) . snd) arguments of</span>
+<span class="lineno">  194 </span><span class="spaces">                    </span><span class="istickedoff">([(tag', _v)], other) -&gt; (tag', other)</span>
+<span class="lineno">  195 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error &quot;Divider: endpointDecision: internal error&quot;</span></span>
+<span class="lineno">  196 </span><span class="spaces">                </span><span class="istickedoff">nextTick' = sup epAt + 1</span>
+<span class="lineno">  197 </span><span class="spaces">             </span><span class="istickedoff">in case arguments' of</span>
+<span class="lineno">  198 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
+<span class="lineno">  199 </span><span class="spaces">                        </span><span class="istickedoff">let job' = function2WaitResults (nextTick' + pipeline + 1) function</span>
+<span class="lineno">  200 </span><span class="spaces">                            </span><span class="istickedoff">restrictResults =</span>
+<span class="lineno">  201 </span><span class="spaces">                                </span><span class="istickedoff">map</span>
+<span class="lineno">  202 </span><span class="spaces">                                    </span><span class="istickedoff">( \case</span>
+<span class="lineno">  203 </span><span class="spaces">                                        </span><span class="istickedoff">wa@WaitResults{restrict = Nothing} -&gt; wa{restrict = Just (nextTick' + pipeline)}</span>
+<span class="lineno">  204 </span><span class="spaces">                                        </span><span class="istickedoff">other -&gt; <span class="nottickedoff">other</span></span>
+<span class="lineno">  205 </span><span class="spaces">                                    </span><span class="istickedoff">)</span>
+<span class="lineno">  206 </span><span class="spaces">                         </span><span class="istickedoff">in pu</span>
+<span class="lineno">  207 </span><span class="spaces">                                </span><span class="istickedoff">{ jobs = job' : restrictResults jobs'</span>
+<span class="lineno">  208 </span><span class="spaces">                                </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
+<span class="lineno">  209 </span><span class="spaces">                                    </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag</span>
+<span class="lineno">  210 </span><span class="spaces">                                    </span><span class="istickedoff">scheduleInstructionUnsafe_ (singleton nextTick') Do</span>
+<span class="lineno">  211 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
+<span class="lineno">  212 </span><span class="spaces">                    </span><span class="istickedoff">_arguments' -&gt;</span>
+<span class="lineno">  213 </span><span class="spaces">                        </span><span class="istickedoff">pu</span>
+<span class="lineno">  214 </span><span class="spaces">                            </span><span class="istickedoff">{ jobs = WaitArguments{function, arguments = arguments'} : jobs'</span>
+<span class="lineno">  215 </span><span class="spaces">                            </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
+<span class="lineno">  216 </span><span class="spaces">                                </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Load tag</span>
+<span class="lineno">  217 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  218 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu@Divider{jobs} d@EndpointSt{epRole = Source vs, epAt}</span>
+<span class="lineno">  219 </span><span class="spaces">        </span><span class="istickedoff">| ([job@WaitResults{results, function}], jobs') &lt;- partition ((vs `S.isSubsetOf`) . variables) jobs =</span>
+<span class="lineno">  220 </span><span class="spaces">            </span><span class="istickedoff">let ((tag, allVs), results') = case partition ((vs `S.isSubsetOf`) . snd) results of</span>
+<span class="lineno">  221 </span><span class="spaces">                    </span><span class="istickedoff">([(tag_, allVs_)], other) -&gt; ((tag_, allVs_), other)</span>
+<span class="lineno">  222 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error &quot;Divider: endpointDecision: internal error&quot;</span></span>
+<span class="lineno">  223 </span><span class="spaces">                </span><span class="istickedoff">allVs' = allVs S.\\ vs</span>
+<span class="lineno">  224 </span><span class="spaces">                </span><span class="istickedoff">results'' = filterEmptyResults $ (<span class="nottickedoff">tag</span>, allVs') : results'</span>
+<span class="lineno">  225 </span><span class="spaces">                </span><span class="istickedoff">jobs'' =</span>
+<span class="lineno">  226 </span><span class="spaces">                    </span><span class="istickedoff">if null results''</span>
+<span class="lineno">  227 </span><span class="spaces">                        </span><span class="istickedoff">then jobs'</span>
+<span class="lineno">  228 </span><span class="spaces">                        </span><span class="istickedoff">else job{results = results''} : jobs'</span>
+<span class="lineno">  229 </span><span class="spaces">             </span><span class="istickedoff">in pu</span>
+<span class="lineno">  230 </span><span class="spaces">                    </span><span class="istickedoff">{ jobs = jobs''</span>
+<span class="lineno">  231 </span><span class="spaces">                    </span><span class="istickedoff">, process_ = execSchedule pu $ do</span>
+<span class="lineno">  232 </span><span class="spaces">                        </span><span class="istickedoff">scheduleEndpoint_ d $ scheduleInstructionUnsafe epAt $ Out tag</span>
+<span class="lineno">  233 </span><span class="spaces">                        </span><span class="istickedoff">when (null jobs') $ do</span>
+<span class="lineno">  234 </span><span class="spaces">                            </span><span class="istickedoff">scheduleFunctionFinish_ [] function $ 0 ... sup epAt</span>
+<span class="lineno">  235 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  236 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision _pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for Divider|]</span></span></span>
+<span class="lineno">  237 </span>
+<span class="lineno">  238 </span>instance Controllable (Divider v x t) where
+<span class="lineno">  239 </span>    data Instruction (Divider v x t)
+<span class="lineno">  240 </span>        = Load InputDesc
+<span class="lineno">  241 </span>        | Do
+<span class="lineno">  242 </span>        | Out OutputDesc
+<span class="lineno">  243 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  244 </span>
+<span class="lineno">  245 </span>    data Microcode (Divider v x t) = Microcode
+<span class="lineno">  246 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">selSignal</span></span></span> :: Bool
+<span class="lineno">  247 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
+<span class="lineno">  248 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  249 </span>        }
+<span class="lineno">  250 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  251 </span>
+<span class="lineno">  252 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues DividerPorts{..} Microcode{..} =</span>
+<span class="lineno">  253 </span><span class="spaces">        </span><span class="istickedoff">[ (sel, Bool selSignal)</span>
+<span class="lineno">  254 </span><span class="spaces">        </span><span class="istickedoff">, (wr, Bool wrSignal)</span>
+<span class="lineno">  255 </span><span class="spaces">        </span><span class="istickedoff">, (oe, Bool oeSignal)</span>
+<span class="lineno">  256 </span><span class="spaces">        </span><span class="istickedoff">]</span></span>
+<span class="lineno">  257 </span>
+<span class="lineno">  258 </span>    <span class="decl"><span class="istickedoff">usedPortTags DividerPorts{sel, wr, oe} = [<span class="nottickedoff">sel</span>, <span class="nottickedoff">wr</span>, <span class="nottickedoff">oe</span>]</span></span>
+<span class="lineno">  259 </span>
+<span class="lineno">  260 </span>    <span class="decl"><span class="istickedoff">takePortTags (sel : wr : oe : _) _ = DividerPorts sel wr oe</span>
+<span class="lineno">  261 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  262 </span>
+<span class="lineno">  263 </span>instance Default (Microcode (Divider v x t)) where
+<span class="lineno">  264 </span>    <span class="decl"><span class="istickedoff">def =</span>
+<span class="lineno">  265 </span><span class="spaces">        </span><span class="istickedoff">Microcode</span>
+<span class="lineno">  266 </span><span class="spaces">            </span><span class="istickedoff">{ selSignal = False</span>
+<span class="lineno">  267 </span><span class="spaces">            </span><span class="istickedoff">, wrSignal = False</span>
+<span class="lineno">  268 </span><span class="spaces">            </span><span class="istickedoff">, oeSignal = False</span>
+<span class="lineno">  269 </span><span class="spaces">            </span><span class="istickedoff">}</span></span>
+<span class="lineno">  270 </span>instance UnambiguouslyDecode (Divider v x t) where
+<span class="lineno">  271 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (Load Numer) = def{wrSignal = True, selSignal = False}</span>
+<span class="lineno">  272 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Load Denom) = def{wrSignal = True, selSignal = True}</span>
+<span class="lineno">  273 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction Do = def{wrSignal = True, oeSignal = True}</span>
+<span class="lineno">  274 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Out Quotient) = def{oeSignal = True, selSignal = False}</span>
+<span class="lineno">  275 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Out Remain) = def{oeSignal = True, selSignal = True}</span></span>
+<span class="lineno">  276 </span>
+<span class="lineno">  277 </span>instance Connected (Divider v x t) where
+<span class="lineno">  278 </span>    data Ports (Divider v x t) = DividerPorts {<span class="nottickedoff"><span class="decl"><span class="nottickedoff">sel</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span> :: SignalTag}
+<span class="lineno">  279 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  280 </span>
+<span class="lineno">  281 </span>instance IOConnected (Divider v x t) where
+<span class="lineno">  282 </span>    data IOPorts (Divider v x t) = DividerIO
+<span class="lineno">  283 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  284 </span>
+<span class="lineno">  285 </span>instance (Val x, Show t) =&gt; TargetSystemComponent (Divider v x t) where
+<span class="lineno">  286 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = &quot;pu_div&quot;</span></span>
+<span class="lineno">  287 </span>    <span class="decl"><span class="istickedoff">software _ _ = Empty</span></span>
+<span class="lineno">  288 </span>    <span class="decl"><span class="istickedoff">hardware _tag Divider{mock} =</span>
+<span class="lineno">  289 </span><span class="spaces">        </span><span class="istickedoff">Aggregate</span>
+<span class="lineno">  290 </span><span class="spaces">            </span><span class="istickedoff">Nothing</span>
+<span class="lineno">  291 </span><span class="spaces">            </span><span class="istickedoff">[ if <span class="tickonlytrue">mock</span></span>
+<span class="lineno">  292 </span><span class="spaces">                </span><span class="istickedoff">then FromLibrary &quot;div/div_mock.v&quot;</span>
+<span class="lineno">  293 </span><span class="spaces">                </span><span class="istickedoff">else <span class="nottickedoff">FromLibrary &quot;div/div.v&quot;</span></span>
+<span class="lineno">  294 </span><span class="spaces">            </span><span class="istickedoff">, FromLibrary &quot;div/pu_div.v&quot;</span>
+<span class="lineno">  295 </span><span class="spaces">            </span><span class="istickedoff">]</span></span>
+<span class="lineno">  296 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  297 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  298 </span><span class="spaces">        </span><span class="istickedoff">_pu@Divider{mock, pipeline}</span>
+<span class="lineno">  299 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  301 </span><span class="spaces">            </span><span class="istickedoff">, sigRst</span>
+<span class="lineno">  302 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  303 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  304 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just DividerPorts{sel, wr, oe}</span>
+<span class="lineno">  305 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  306 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"></span></span></span>
+<span class="lineno">  307 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_div \#</span></span></span>
+<span class="lineno">  308 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span>
+<span class="lineno">  309 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span>
+<span class="lineno">  310 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .INVALID( 0 )</span></span></span>
+<span class="lineno">  311 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .PIPELINE( #{ pipeline } )</span></span></span>
+<span class="lineno">  312 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )</span></span></span>
+<span class="lineno">  313 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .MOCK_DIV( #{ bool2verilog mock } )</span></span></span>
+<span class="lineno">  314 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span>
+<span class="lineno">  315 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span>
+<span class="lineno">  316 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .rst( #{ sigRst } )</span></span></span>
+<span class="lineno">  317 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_sel( #{ sel } )</span></span></span>
+<span class="lineno">  318 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span>
+<span class="lineno">  319 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span>
+<span class="lineno">  320 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span>
+<span class="lineno">  321 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span>
+<span class="lineno">  322 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span>
+<span class="lineno">  323 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span>
+<span class="lineno">  324 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span>
+<span class="lineno">  325 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span>
+<span class="lineno">  326 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  327 </span>
+<span class="lineno">  328 </span>instance IOTestBench (Divider v x t) v x
+<span class="lineno">  329 </span>
+<span class="lineno">  330 </span>instance VarValTime v x t =&gt; Testable (Divider v x t) v x where
+<span class="lineno">  331 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  332 </span><span class="spaces">        </span><span class="istickedoff">Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
+<span class="lineno">  333 </span><span class="spaces">            </span><span class="istickedoff">snippetTestBench</span>
+<span class="lineno">  334 </span><span class="spaces">                </span><span class="istickedoff">prj</span>
+<span class="lineno">  335 </span><span class="spaces">                </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  336 </span><span class="spaces">                    </span><span class="istickedoff">{ tbcSignals = [&quot;sel&quot;, &quot;wr&quot;, &quot;oe&quot;]</span>
+<span class="lineno">  337 </span><span class="spaces">                    </span><span class="istickedoff">, tbcPorts =</span>
+<span class="lineno">  338 </span><span class="spaces">                        </span><span class="istickedoff">DividerPorts</span>
+<span class="lineno">  339 </span><span class="spaces">                            </span><span class="istickedoff">{ sel = SignalTag &quot;sel&quot;</span>
+<span class="lineno">  340 </span><span class="spaces">                            </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
+<span class="lineno">  341 </span><span class="spaces">                            </span><span class="istickedoff">, oe = SignalTag &quot;oe&quot;</span>
+<span class="lineno">  342 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  343 </span><span class="spaces">                    </span><span class="istickedoff">, tbcMC2verilogLiteral = \Microcode{selSignal, wrSignal, oeSignal} -&gt;</span>
+<span class="lineno">  344 </span><span class="spaces">                        </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oeSignal }; sel &lt;= #{ bool2verilog selSignal }; wr &lt;= #{ bool2verilog wrSignal }; |]</span>
+<span class="lineno">  345 </span><span class="spaces">                    </span><span class="istickedoff">}</span></span>
 
 </pre>
 </body>

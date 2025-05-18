@@ -308,271 +308,272 @@ span.spaces    { background: white }
 <span class="lineno">  289 </span>
 <span class="lineno">  290 </span>instance ConstantFoldingProblem (Fram v x t) v x
 <span class="lineno">  291 </span>instance OptimizeAccumProblem (Fram v x t) v x
-<span class="lineno">  292 </span>instance ResolveDeadlockProblem (Fram v x t) v x
-<span class="lineno">  293 </span>
-<span class="lineno">  294 </span>instance VarValTime v x t =&gt; EndpointProblem (Fram v x t) v t where
-<span class="lineno">  295 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@Fram{remainBuffers, memory} =</span>
-<span class="lineno">  296 </span><span class="spaces">        </span><span class="istickedoff">let target v = EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)</span>
-<span class="lineno">  297 </span><span class="spaces">                </span><span class="istickedoff">where</span>
-<span class="lineno">  298 </span><span class="spaces">                    </span><span class="istickedoff">a = nextTick pu `withShift` 1</span>
-<span class="lineno">  299 </span><span class="spaces">            </span><span class="istickedoff">source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick pu ... maxBound) (1 ... maxBound)</span>
-<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff">source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick pu ... maxBound) (1 ... maxBound)</span>
-<span class="lineno">  301 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  302 </span><span class="spaces">            </span><span class="istickedoff">fromRemain =</span>
-<span class="lineno">  303 </span><span class="spaces">                </span><span class="istickedoff">if any (\case ForBuffer{} -&gt; True; NotUsed{} -&gt; True; _ -&gt; False) $ map state $ A.elems memory</span>
-<span class="lineno">  304 </span><span class="spaces">                    </span><span class="istickedoff">then map ((\(Buffer (I v) (O _)) -&gt; target v) . fst) remainBuffers</span>
-<span class="lineno">  305 </span><span class="spaces">                    </span><span class="istickedoff">else []</span>
-<span class="lineno">  306 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  307 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = NotUsed} = Nothing</span>
-<span class="lineno">  308 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = Done} = Nothing</span>
-<span class="lineno">  309 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoConstant vs} = Just $ source False vs</span>
-<span class="lineno">  310 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe <span class="nottickedoff">0</span> lastWrite == nextTick pu - 1) vs</span>
-<span class="lineno">  311 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = ForBuffer} = Nothing</span>
-<span class="lineno">  312 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = NotBrokenLoop} = Nothing</span>
-<span class="lineno">  313 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs</span>
-<span class="lineno">  314 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoLoopTarget v} = Just $ target v</span>
-<span class="lineno">  315 </span><span class="spaces"></span><span class="istickedoff"></span>
-<span class="lineno">  316 </span><span class="spaces">            </span><span class="istickedoff">fromCells = mapMaybe foo $ A.elems memory</span>
-<span class="lineno">  317 </span><span class="spaces">         </span><span class="istickedoff">in fromRemain ++ fromCells</span></span>
-<span class="lineno">  318 </span>
-<span class="lineno">  319 </span>    -- Constant
-<span class="lineno">  320 </span>    <span class="decl"><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
-<span class="lineno">  321 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoConstant vs', job = Just Job{function, binds}}) &lt;-</span>
-<span class="lineno">  322 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
-<span class="lineno">  323 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
-<span class="lineno">  324 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoConstant vs'}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
-<span class="lineno">  325 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
-<span class="lineno">  326 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">  327 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
-<span class="lineno">  328 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
-<span class="lineno">  329 </span><span class="spaces">                </span><span class="istickedoff">process_' = execSchedule fram $ do</span>
-<span class="lineno">  330 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
-<span class="lineno">  331 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
-<span class="lineno">  332 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
-<span class="lineno">  333 </span><span class="spaces">                            </span><span class="istickedoff">0 ... sup epAt</span>
-<span class="lineno">  334 </span><span class="spaces">                </span><span class="istickedoff">cell' = case vsRemain of</span>
-<span class="lineno">  335 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
-<span class="lineno">  336 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
-<span class="lineno">  337 </span><span class="spaces">                            </span><span class="istickedoff">{ job = Nothing</span>
-<span class="lineno">  338 </span><span class="spaces">                            </span><span class="istickedoff">, state = Done</span>
-<span class="lineno">  339 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  340 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt;</span>
-<span class="lineno">  341 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
-<span class="lineno">  342 </span><span class="spaces">                            </span><span class="istickedoff">{ state = DoConstant vsRemain</span>
-<span class="lineno">  343 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  344 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
-<span class="lineno">  345 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
-<span class="lineno">  346 </span><span class="spaces">                    </span><span class="istickedoff">, process_ = process_'</span>
-<span class="lineno">  347 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  348 </span><span class="spaces">    </span><span class="istickedoff">-- Loop</span>
-<span class="lineno">  349 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
-<span class="lineno">  350 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoLoopSource vs' oJob, job = Just job@Job{binds, function, startAt}}) &lt;-</span>
-<span class="lineno">  351 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
-<span class="lineno">  352 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
-<span class="lineno">  353 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoLoopSource vs' _}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
-<span class="lineno">  354 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
-<span class="lineno">  355 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">  356 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
-<span class="lineno">  357 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
-<span class="lineno">  358 </span><span class="spaces">                </span><span class="istickedoff">process_ = execSchedule fram $ do</span>
-<span class="lineno">  359 </span><span class="spaces">                    </span><span class="istickedoff">eps &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
-<span class="lineno">  360 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
-<span class="lineno">  361 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
-<span class="lineno">  362 </span><span class="spaces">                            </span><span class="istickedoff">0 ... sup epAt</span>
-<span class="lineno">  363 </span><span class="spaces">                    </span><span class="istickedoff">return <span class="nottickedoff">eps</span></span>
-<span class="lineno">  364 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
-<span class="lineno">  365 </span><span class="spaces">                    </span><span class="istickedoff">if not $ null vsRemain</span>
-<span class="lineno">  366 </span><span class="spaces">                        </span><span class="istickedoff">then</span>
-<span class="lineno">  367 </span><span class="spaces">                            </span><span class="istickedoff">cell</span>
-<span class="lineno">  368 </span><span class="spaces">                                </span><span class="istickedoff">{ job = Just job{startAt = <span class="nottickedoff">startAt &lt;|&gt; Just (inf epAt - 1)</span>}</span>
-<span class="lineno">  369 </span><span class="spaces">                                </span><span class="istickedoff">, state = DoLoopSource vsRemain oJob</span>
-<span class="lineno">  370 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
-<span class="lineno">  371 </span><span class="spaces">                        </span><span class="istickedoff">else</span>
-<span class="lineno">  372 </span><span class="spaces">                            </span><span class="istickedoff">cell</span>
-<span class="lineno">  373 </span><span class="spaces">                                </span><span class="istickedoff">{ job = Just oJob{startAt = <span class="nottickedoff">startAt &lt;|&gt; Just (inf epAt - 1)</span>}</span>
-<span class="lineno">  374 </span><span class="spaces">                                </span><span class="istickedoff">, state = DoLoopTarget $ oJobV oJob</span>
-<span class="lineno">  375 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
-<span class="lineno">  376 </span><span class="spaces">             </span><span class="istickedoff">in fram{process_, memory = memory A.// [(addr, cell')]}</span>
-<span class="lineno">  377 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Target v, epAt}</span>
-<span class="lineno">  378 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{job = Just Job{function, binds}}) &lt;-</span>
-<span class="lineno">  379 </span><span class="spaces">            </span><span class="istickedoff">L.find (\case (_, Cell{state = DoLoopTarget v'}) -&gt; v == v'; _ -&gt; False) $ A.assocs memory =</span>
-<span class="lineno">  380 </span><span class="spaces">            </span><span class="istickedoff">let process_ = execSchedule fram $ do</span>
-<span class="lineno">  381 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr</span>
-<span class="lineno">  382 </span><span class="spaces">                    </span><span class="istickedoff">scheduleFunctionFinish binds function epAt</span>
-<span class="lineno">  383 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
-<span class="lineno">  384 </span><span class="spaces">                    </span><span class="istickedoff">cell</span>
-<span class="lineno">  385 </span><span class="spaces">                        </span><span class="istickedoff">{ job = Nothing</span>
-<span class="lineno">  386 </span><span class="spaces">                        </span><span class="istickedoff">, state = Done</span>
-<span class="lineno">  387 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
-<span class="lineno">  388 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
-<span class="lineno">  389 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
-<span class="lineno">  390 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
-<span class="lineno">  391 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  392 </span><span class="spaces">    </span><span class="istickedoff">-- Buffer Target</span>
-<span class="lineno">  393 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory, remainBuffers} d@EndpointSt{epRole = Target v, epAt}</span>
-<span class="lineno">  394 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{history}) &lt;- findForBufferCell fram</span>
-<span class="lineno">  395 </span><span class="spaces">        </span><span class="istickedoff">, ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') &lt;- L.partition (\(Buffer (I v') (O _), _) -&gt; v' == v) remainBuffers =</span>
-<span class="lineno">  396 </span><span class="spaces">            </span><span class="istickedoff">let process_ = execSchedule fram $ do</span>
-<span class="lineno">  397 </span><span class="spaces">                    </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr</span>
-<span class="lineno">  398 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
-<span class="lineno">  399 </span><span class="spaces">                    </span><span class="istickedoff">cell</span>
-<span class="lineno">  400 </span><span class="spaces">                        </span><span class="istickedoff">{ job = Just j{startAt = Just $ inf epAt}</span>
-<span class="lineno">  401 </span><span class="spaces">                        </span><span class="istickedoff">, state = DoBuffer $ S.elems vs</span>
-<span class="lineno">  402 </span><span class="spaces">                        </span><span class="istickedoff">, lastWrite = Just $ sup epAt</span>
-<span class="lineno">  403 </span><span class="spaces">                        </span><span class="istickedoff">, history = function : history</span>
-<span class="lineno">  404 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
-<span class="lineno">  405 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
-<span class="lineno">  406 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
-<span class="lineno">  407 </span><span class="spaces">                    </span><span class="istickedoff">, remainBuffers = remainBuffers'</span>
-<span class="lineno">  408 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
-<span class="lineno">  409 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  410 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
-<span class="lineno">  411 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoBuffer vs', job = Just Job{function, startAt = Just fBegin, binds}}) &lt;-</span>
-<span class="lineno">  412 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
-<span class="lineno">  413 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
-<span class="lineno">  414 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoBuffer vs'}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
-<span class="lineno">  415 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
-<span class="lineno">  416 </span><span class="spaces">                </span><span class="istickedoff">)</span>
-<span class="lineno">  417 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
-<span class="lineno">  418 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
-<span class="lineno">  419 </span><span class="spaces">                </span><span class="istickedoff">process_ = execSchedule fram $ do</span>
-<span class="lineno">  420 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
-<span class="lineno">  421 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
-<span class="lineno">  422 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
-<span class="lineno">  423 </span><span class="spaces">                            </span><span class="istickedoff">fBegin ... sup epAt</span>
-<span class="lineno">  424 </span><span class="spaces">                </span><span class="istickedoff">cell' = case vsRemain of</span>
-<span class="lineno">  425 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
-<span class="lineno">  426 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
-<span class="lineno">  427 </span><span class="spaces">                            </span><span class="istickedoff">{ job = Nothing</span>
-<span class="lineno">  428 </span><span class="spaces">                            </span><span class="istickedoff">, state = ForBuffer</span>
-<span class="lineno">  429 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  430 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt;</span>
-<span class="lineno">  431 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
-<span class="lineno">  432 </span><span class="spaces">                            </span><span class="istickedoff">{ state = DoBuffer vsRemain</span>
-<span class="lineno">  433 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
-<span class="lineno">  434 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
-<span class="lineno">  435 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
-<span class="lineno">  436 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
-<span class="lineno">  437 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  438 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
-<span class="lineno">  439 </span>
-<span class="lineno">  440 </span>---------------------------------------------------------------------
-<span class="lineno">  441 </span>
-<span class="lineno">  442 </span>instance Controllable (Fram v x t) where
-<span class="lineno">  443 </span>    data Instruction (Fram v x t)
-<span class="lineno">  444 </span>        = PrepareRead Int
-<span class="lineno">  445 </span>        | Write Int
-<span class="lineno">  446 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
-<span class="lineno">  447 </span>
-<span class="lineno">  448 </span>    data Microcode (Fram v x t) = Microcode
-<span class="lineno">  449 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
-<span class="lineno">  450 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
-<span class="lineno">  451 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">addrSignal</span></span></span> :: Maybe Int
-<span class="lineno">  452 </span>        }
-<span class="lineno">  453 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
-<span class="lineno">  454 </span>
-<span class="lineno">  455 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues FramPorts{oe, wr, addr} Microcode{oeSignal, wrSignal, addrSignal} =</span>
-<span class="lineno">  456 </span><span class="spaces">        </span><span class="istickedoff">[ (oe, Bool oeSignal)</span>
-<span class="lineno">  457 </span><span class="spaces">        </span><span class="istickedoff">, (wr, Bool wrSignal)</span>
-<span class="lineno">  458 </span><span class="spaces">        </span><span class="istickedoff">]</span>
-<span class="lineno">  459 </span><span class="spaces">            </span><span class="istickedoff">++ addrs</span>
-<span class="lineno">  460 </span><span class="spaces">        </span><span class="istickedoff">where</span>
-<span class="lineno">  461 </span><span class="spaces">            </span><span class="istickedoff">addrs =</span>
-<span class="lineno">  462 </span><span class="spaces">                </span><span class="istickedoff">map</span>
-<span class="lineno">  463 </span><span class="spaces">                    </span><span class="istickedoff">( \(linkId, ix) -&gt;</span>
-<span class="lineno">  464 </span><span class="spaces">                        </span><span class="istickedoff">( linkId</span>
-<span class="lineno">  465 </span><span class="spaces">                        </span><span class="istickedoff">, maybe Undef (Bool . (`testBit` ix)) addrSignal</span>
-<span class="lineno">  466 </span><span class="spaces">                        </span><span class="istickedoff">)</span>
-<span class="lineno">  467 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
-<span class="lineno">  468 </span><span class="spaces">                    </span><span class="istickedoff">$ zip (reverse addr) [0 ..]</span></span>
-<span class="lineno">  469 </span>
-<span class="lineno">  470 </span>    <span class="decl"><span class="istickedoff">usedPortTags FramPorts{oe, wr, addr} = <span class="nottickedoff">oe</span> : <span class="nottickedoff">wr</span> : addr</span></span>
-<span class="lineno">  471 </span>
-<span class="lineno">  472 </span>    <span class="decl"><span class="istickedoff">takePortTags (oe : wr : xs) pu = FramPorts oe wr addr</span>
-<span class="lineno">  473 </span><span class="spaces">        </span><span class="istickedoff">where</span>
-<span class="lineno">  474 </span><span class="spaces">            </span><span class="istickedoff">addr = take (addrWidth pu) xs</span>
-<span class="lineno">  475 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
-<span class="lineno">  476 </span>
-<span class="lineno">  477 </span>instance Connected (Fram v x t) where
-<span class="lineno">  478 </span>    data Ports (Fram v x t) = FramPorts
-<span class="lineno">  479 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span> :: SignalTag
-<span class="lineno">  480 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">addr</span></span></span> :: [SignalTag]
-<span class="lineno">  481 </span>        }
-<span class="lineno">  482 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  483 </span>
-<span class="lineno">  484 </span>instance IOConnected (Fram v x t) where
-<span class="lineno">  485 </span>    data IOPorts (Fram v x t) = FramIO
-<span class="lineno">  486 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
-<span class="lineno">  487 </span>
-<span class="lineno">  488 </span>instance Default (Microcode (Fram v x t)) where
-<span class="lineno">  489 </span>    <span class="decl"><span class="istickedoff">def = Microcode False False Nothing</span></span>
-<span class="lineno">  490 </span>
-<span class="lineno">  491 </span>instance UnambiguouslyDecode (Fram v x t) where
-<span class="lineno">  492 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (PrepareRead addr) = Microcode True False $ Just addr</span>
-<span class="lineno">  493 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Write addr) = Microcode False True $ Just addr</span></span>
-<span class="lineno">  494 </span>
-<span class="lineno">  495 </span>instance VarValTime v x t =&gt; Testable (Fram v x t) v x where
-<span class="lineno">  496 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
-<span class="lineno">  497 </span><span class="spaces">        </span><span class="istickedoff">let tbcSignalsConst = [&quot;oe&quot;, &quot;wr&quot;, &quot;[3:0] addr&quot;]</span>
-<span class="lineno">  498 </span><span class="spaces">            </span><span class="istickedoff">showMicrocode Microcode{oeSignal, wrSignal, addrSignal} =</span>
-<span class="lineno">  499 </span><span class="spaces">                </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oeSignal };|]</span>
-<span class="lineno">  500 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{ bool2verilog wrSignal };|]</span>
-<span class="lineno">  501 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| addr &lt;= #{ maybe &quot;0&quot; show addrSignal };|]</span>
-<span class="lineno">  502 </span><span class="spaces">         </span><span class="istickedoff">in Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
-<span class="lineno">  503 </span><span class="spaces">                </span><span class="istickedoff">snippetTestBench</span>
-<span class="lineno">  504 </span><span class="spaces">                    </span><span class="istickedoff">prj</span>
-<span class="lineno">  505 </span><span class="spaces">                    </span><span class="istickedoff">SnippetTestBenchConf</span>
-<span class="lineno">  506 </span><span class="spaces">                        </span><span class="istickedoff">{ tbcSignals = tbcSignalsConst</span>
-<span class="lineno">  507 </span><span class="spaces">                        </span><span class="istickedoff">, tbcPorts =</span>
-<span class="lineno">  508 </span><span class="spaces">                            </span><span class="istickedoff">FramPorts</span>
-<span class="lineno">  509 </span><span class="spaces">                                </span><span class="istickedoff">{ oe = SignalTag &quot;oe&quot;</span>
-<span class="lineno">  510 </span><span class="spaces">                                </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
-<span class="lineno">  511 </span><span class="spaces">                                </span><span class="istickedoff">, addr = map SignalTag [&quot;addr[3]&quot;, &quot;addr[2]&quot;, &quot;addr[1]&quot;, &quot;addr[0]&quot;]</span>
-<span class="lineno">  512 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
-<span class="lineno">  513 </span><span class="spaces">                        </span><span class="istickedoff">, tbcMC2verilogLiteral = showMicrocode</span>
-<span class="lineno">  514 </span><span class="spaces">                        </span><span class="istickedoff">}</span></span>
-<span class="lineno">  515 </span>
-<span class="lineno">  516 </span><span class="decl"><span class="istickedoff">softwareFile tag pu = moduleName <span class="nottickedoff">tag</span> <span class="nottickedoff">pu</span> &lt;&gt; &quot;.&quot; &lt;&gt; tag &lt;&gt; &quot;.dump&quot;</span></span>
-<span class="lineno">  517 </span>
-<span class="lineno">  518 </span>instance VarValTime v x t =&gt; TargetSystemComponent (Fram v x t) where
-<span class="lineno">  519 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = &quot;pu_fram&quot;</span></span>
-<span class="lineno">  520 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_fram.v&quot;</span></span>
-<span class="lineno">  521 </span>    <span class="decl"><span class="istickedoff">software tag fram@Fram{memory} =</span>
-<span class="lineno">  522 </span><span class="spaces">        </span><span class="istickedoff">Immediate</span>
-<span class="lineno">  523 </span><span class="spaces">            </span><span class="istickedoff">(toString $ softwareFile tag <span class="nottickedoff">fram</span>)</span>
-<span class="lineno">  524 </span><span class="spaces">            </span><span class="istickedoff">$ T.unlines</span>
-<span class="lineno">  525 </span><span class="spaces">            </span><span class="istickedoff">$ map</span>
-<span class="lineno">  526 </span><span class="spaces">                </span><span class="istickedoff">(\Cell{initialValue = initialValue} -&gt; hdlValDump initialValue)</span>
-<span class="lineno">  527 </span><span class="spaces">            </span><span class="istickedoff">$ A.elems memory</span></span>
-<span class="lineno">  528 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
-<span class="lineno">  529 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
-<span class="lineno">  530 </span><span class="spaces">        </span><span class="istickedoff">fram@Fram{memory}</span>
-<span class="lineno">  531 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
-<span class="lineno">  532 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
-<span class="lineno">  533 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just FramPorts{..}</span>
-<span class="lineno">  534 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
-<span class="lineno">  535 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
-<span class="lineno">  536 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
-<span class="lineno">  537 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span>
-<span class="lineno">  538 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_fram \#</span></span></span></span></span>
-<span class="lineno">  539 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span></span></span>
-<span class="lineno">  540 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span></span></span>
-<span class="lineno">  541 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .RAM_SIZE( #{ numElements memory } )</span></span></span></span></span>
-<span class="lineno">  542 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .FRAM_DUMP( &quot;{{ impl.paths.nest }}/#{ softwareFile tag fram }&quot; )</span></span></span></span></span>
-<span class="lineno">  543 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span></span></span>
-<span class="lineno">  544 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span></span></span>
-<span class="lineno">  545 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_addr( { #{ T.intercalate &quot;, &quot; $ map showText addr } } )</span></span></span></span></span>
-<span class="lineno">  546 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span></span></span>
-<span class="lineno">  547 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span></span></span>
-<span class="lineno">  548 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span></span></span>
-<span class="lineno">  549 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span></span></span>
-<span class="lineno">  550 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span></span></span>
-<span class="lineno">  551 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span></span></span>
-<span class="lineno">  552 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span></span></span>
-<span class="lineno">  553 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span></span></span>
-<span class="lineno">  554 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
-<span class="lineno">  555 </span>
-<span class="lineno">  556 </span>instance IOTestBench (Fram v x t) v x
+<span class="lineno">  292 </span>instance OptimizeLogicalUnitProblem (Fram v x t) v x
+<span class="lineno">  293 </span>instance ResolveDeadlockProblem (Fram v x t) v x
+<span class="lineno">  294 </span>
+<span class="lineno">  295 </span>instance VarValTime v x t =&gt; EndpointProblem (Fram v x t) v t where
+<span class="lineno">  296 </span>    <span class="decl"><span class="istickedoff">endpointOptions pu@Fram{remainBuffers, memory} =</span>
+<span class="lineno">  297 </span><span class="spaces">        </span><span class="istickedoff">let target v = EndpointSt (Target v) $ TimeConstraint (a ... maxBound) (1 ... maxBound)</span>
+<span class="lineno">  298 </span><span class="spaces">                </span><span class="istickedoff">where</span>
+<span class="lineno">  299 </span><span class="spaces">                    </span><span class="istickedoff">a = nextTick pu `withShift` 1</span>
+<span class="lineno">  300 </span><span class="spaces">            </span><span class="istickedoff">source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + 1 + nextTick pu ... maxBound) (1 ... maxBound)</span>
+<span class="lineno">  301 </span><span class="spaces">            </span><span class="istickedoff">source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstraint (1 + nextTick pu ... maxBound) (1 ... maxBound)</span>
+<span class="lineno">  302 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  303 </span><span class="spaces">            </span><span class="istickedoff">fromRemain =</span>
+<span class="lineno">  304 </span><span class="spaces">                </span><span class="istickedoff">if any (\case ForBuffer{} -&gt; True; NotUsed{} -&gt; True; _ -&gt; False) $ map state $ A.elems memory</span>
+<span class="lineno">  305 </span><span class="spaces">                    </span><span class="istickedoff">then map ((\(Buffer (I v) (O _)) -&gt; target v) . fst) remainBuffers</span>
+<span class="lineno">  306 </span><span class="spaces">                    </span><span class="istickedoff">else []</span>
+<span class="lineno">  307 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  308 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = NotUsed} = Nothing</span>
+<span class="lineno">  309 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = Done} = Nothing</span>
+<span class="lineno">  310 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoConstant vs} = Just $ source False vs</span>
+<span class="lineno">  311 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe <span class="nottickedoff">0</span> lastWrite == nextTick pu - 1) vs</span>
+<span class="lineno">  312 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = ForBuffer} = Nothing</span>
+<span class="lineno">  313 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = NotBrokenLoop} = Nothing</span>
+<span class="lineno">  314 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick pu - 1) vs</span>
+<span class="lineno">  315 </span><span class="spaces">            </span><span class="istickedoff">foo Cell{state = DoLoopTarget v} = Just $ target v</span>
+<span class="lineno">  316 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  317 </span><span class="spaces">            </span><span class="istickedoff">fromCells = mapMaybe foo $ A.elems memory</span>
+<span class="lineno">  318 </span><span class="spaces">         </span><span class="istickedoff">in fromRemain ++ fromCells</span></span>
+<span class="lineno">  319 </span>
+<span class="lineno">  320 </span>    -- Constant
+<span class="lineno">  321 </span>    <span class="decl"><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
+<span class="lineno">  322 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoConstant vs', job = Just Job{function, binds}}) &lt;-</span>
+<span class="lineno">  323 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
+<span class="lineno">  324 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
+<span class="lineno">  325 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoConstant vs'}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
+<span class="lineno">  326 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
+<span class="lineno">  327 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">  328 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
+<span class="lineno">  329 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
+<span class="lineno">  330 </span><span class="spaces">                </span><span class="istickedoff">process_' = execSchedule fram $ do</span>
+<span class="lineno">  331 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
+<span class="lineno">  332 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
+<span class="lineno">  333 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
+<span class="lineno">  334 </span><span class="spaces">                            </span><span class="istickedoff">0 ... sup epAt</span>
+<span class="lineno">  335 </span><span class="spaces">                </span><span class="istickedoff">cell' = case vsRemain of</span>
+<span class="lineno">  336 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
+<span class="lineno">  337 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
+<span class="lineno">  338 </span><span class="spaces">                            </span><span class="istickedoff">{ job = Nothing</span>
+<span class="lineno">  339 </span><span class="spaces">                            </span><span class="istickedoff">, state = Done</span>
+<span class="lineno">  340 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  341 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt;</span>
+<span class="lineno">  342 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
+<span class="lineno">  343 </span><span class="spaces">                            </span><span class="istickedoff">{ state = DoConstant vsRemain</span>
+<span class="lineno">  344 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  345 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
+<span class="lineno">  346 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
+<span class="lineno">  347 </span><span class="spaces">                    </span><span class="istickedoff">, process_ = process_'</span>
+<span class="lineno">  348 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  349 </span><span class="spaces">    </span><span class="istickedoff">-- Loop</span>
+<span class="lineno">  350 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
+<span class="lineno">  351 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoLoopSource vs' oJob, job = Just job@Job{binds, function, startAt}}) &lt;-</span>
+<span class="lineno">  352 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
+<span class="lineno">  353 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
+<span class="lineno">  354 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoLoopSource vs' _}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
+<span class="lineno">  355 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
+<span class="lineno">  356 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">  357 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
+<span class="lineno">  358 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
+<span class="lineno">  359 </span><span class="spaces">                </span><span class="istickedoff">process_ = execSchedule fram $ do</span>
+<span class="lineno">  360 </span><span class="spaces">                    </span><span class="istickedoff">eps &lt;- scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
+<span class="lineno">  361 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
+<span class="lineno">  362 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
+<span class="lineno">  363 </span><span class="spaces">                            </span><span class="istickedoff">0 ... sup epAt</span>
+<span class="lineno">  364 </span><span class="spaces">                    </span><span class="istickedoff">return <span class="nottickedoff">eps</span></span>
+<span class="lineno">  365 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
+<span class="lineno">  366 </span><span class="spaces">                    </span><span class="istickedoff">if not $ null vsRemain</span>
+<span class="lineno">  367 </span><span class="spaces">                        </span><span class="istickedoff">then</span>
+<span class="lineno">  368 </span><span class="spaces">                            </span><span class="istickedoff">cell</span>
+<span class="lineno">  369 </span><span class="spaces">                                </span><span class="istickedoff">{ job = Just job{startAt = <span class="nottickedoff">startAt &lt;|&gt; Just (inf epAt - 1)</span>}</span>
+<span class="lineno">  370 </span><span class="spaces">                                </span><span class="istickedoff">, state = DoLoopSource vsRemain oJob</span>
+<span class="lineno">  371 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
+<span class="lineno">  372 </span><span class="spaces">                        </span><span class="istickedoff">else</span>
+<span class="lineno">  373 </span><span class="spaces">                            </span><span class="istickedoff">cell</span>
+<span class="lineno">  374 </span><span class="spaces">                                </span><span class="istickedoff">{ job = Just oJob{startAt = <span class="nottickedoff">startAt &lt;|&gt; Just (inf epAt - 1)</span>}</span>
+<span class="lineno">  375 </span><span class="spaces">                                </span><span class="istickedoff">, state = DoLoopTarget $ oJobV oJob</span>
+<span class="lineno">  376 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
+<span class="lineno">  377 </span><span class="spaces">             </span><span class="istickedoff">in fram{process_, memory = memory A.// [(addr, cell')]}</span>
+<span class="lineno">  378 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Target v, epAt}</span>
+<span class="lineno">  379 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{job = Just Job{function, binds}}) &lt;-</span>
+<span class="lineno">  380 </span><span class="spaces">            </span><span class="istickedoff">L.find (\case (_, Cell{state = DoLoopTarget v'}) -&gt; v == v'; _ -&gt; False) $ A.assocs memory =</span>
+<span class="lineno">  381 </span><span class="spaces">            </span><span class="istickedoff">let process_ = execSchedule fram $ do</span>
+<span class="lineno">  382 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr</span>
+<span class="lineno">  383 </span><span class="spaces">                    </span><span class="istickedoff">scheduleFunctionFinish binds function epAt</span>
+<span class="lineno">  384 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
+<span class="lineno">  385 </span><span class="spaces">                    </span><span class="istickedoff">cell</span>
+<span class="lineno">  386 </span><span class="spaces">                        </span><span class="istickedoff">{ job = Nothing</span>
+<span class="lineno">  387 </span><span class="spaces">                        </span><span class="istickedoff">, state = Done</span>
+<span class="lineno">  388 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  389 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
+<span class="lineno">  390 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
+<span class="lineno">  391 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
+<span class="lineno">  392 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  393 </span><span class="spaces">    </span><span class="istickedoff">-- Buffer Target</span>
+<span class="lineno">  394 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory, remainBuffers} d@EndpointSt{epRole = Target v, epAt}</span>
+<span class="lineno">  395 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{history}) &lt;- findForBufferCell fram</span>
+<span class="lineno">  396 </span><span class="spaces">        </span><span class="istickedoff">, ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') &lt;- L.partition (\(Buffer (I v') (O _), _) -&gt; v' == v) remainBuffers =</span>
+<span class="lineno">  397 </span><span class="spaces">            </span><span class="istickedoff">let process_ = execSchedule fram $ do</span>
+<span class="lineno">  398 </span><span class="spaces">                    </span><span class="istickedoff">scheduleEndpoint d $ scheduleInstructionUnsafe epAt $ Write addr</span>
+<span class="lineno">  399 </span><span class="spaces">                </span><span class="istickedoff">cell' =</span>
+<span class="lineno">  400 </span><span class="spaces">                    </span><span class="istickedoff">cell</span>
+<span class="lineno">  401 </span><span class="spaces">                        </span><span class="istickedoff">{ job = Just j{startAt = Just $ inf epAt}</span>
+<span class="lineno">  402 </span><span class="spaces">                        </span><span class="istickedoff">, state = DoBuffer $ S.elems vs</span>
+<span class="lineno">  403 </span><span class="spaces">                        </span><span class="istickedoff">, lastWrite = Just $ sup epAt</span>
+<span class="lineno">  404 </span><span class="spaces">                        </span><span class="istickedoff">, history = function : history</span>
+<span class="lineno">  405 </span><span class="spaces">                        </span><span class="istickedoff">}</span>
+<span class="lineno">  406 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
+<span class="lineno">  407 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
+<span class="lineno">  408 </span><span class="spaces">                    </span><span class="istickedoff">, remainBuffers = remainBuffers'</span>
+<span class="lineno">  409 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
+<span class="lineno">  410 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  411 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}</span>
+<span class="lineno">  412 </span><span class="spaces">        </span><span class="istickedoff">| Just (addr, cell@Cell{state = DoBuffer vs', job = Just Job{function, startAt = Just fBegin, binds}}) &lt;-</span>
+<span class="lineno">  413 </span><span class="spaces">            </span><span class="istickedoff">L.find</span>
+<span class="lineno">  414 </span><span class="spaces">                </span><span class="istickedoff">( \case</span>
+<span class="lineno">  415 </span><span class="spaces">                    </span><span class="istickedoff">(_, Cell{state = DoBuffer vs'}) -&gt; (vs' L.\\ S.elems vs) /= vs'</span>
+<span class="lineno">  416 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt; False</span>
+<span class="lineno">  417 </span><span class="spaces">                </span><span class="istickedoff">)</span>
+<span class="lineno">  418 </span><span class="spaces">                </span><span class="istickedoff">$ A.assocs memory =</span>
+<span class="lineno">  419 </span><span class="spaces">            </span><span class="istickedoff">let vsRemain = vs' L.\\ S.elems vs</span>
+<span class="lineno">  420 </span><span class="spaces">                </span><span class="istickedoff">process_ = execSchedule fram $ do</span>
+<span class="lineno">  421 </span><span class="spaces">                    </span><span class="istickedoff">void $ scheduleEndpoint d $ scheduleInstructionUnsafe (shiftI (-1) epAt) $ PrepareRead addr</span>
+<span class="lineno">  422 </span><span class="spaces">                    </span><span class="istickedoff">when (null vsRemain) $</span>
+<span class="lineno">  423 </span><span class="spaces">                        </span><span class="istickedoff">scheduleFunctionFinish_ binds function $</span>
+<span class="lineno">  424 </span><span class="spaces">                            </span><span class="istickedoff">fBegin ... sup epAt</span>
+<span class="lineno">  425 </span><span class="spaces">                </span><span class="istickedoff">cell' = case vsRemain of</span>
+<span class="lineno">  426 </span><span class="spaces">                    </span><span class="istickedoff">[] -&gt;</span>
+<span class="lineno">  427 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
+<span class="lineno">  428 </span><span class="spaces">                            </span><span class="istickedoff">{ job = Nothing</span>
+<span class="lineno">  429 </span><span class="spaces">                            </span><span class="istickedoff">, state = ForBuffer</span>
+<span class="lineno">  430 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  431 </span><span class="spaces">                    </span><span class="istickedoff">_ -&gt;</span>
+<span class="lineno">  432 </span><span class="spaces">                        </span><span class="istickedoff">cell</span>
+<span class="lineno">  433 </span><span class="spaces">                            </span><span class="istickedoff">{ state = DoBuffer vsRemain</span>
+<span class="lineno">  434 </span><span class="spaces">                            </span><span class="istickedoff">}</span>
+<span class="lineno">  435 </span><span class="spaces">             </span><span class="istickedoff">in fram</span>
+<span class="lineno">  436 </span><span class="spaces">                    </span><span class="istickedoff">{ memory = memory A.// [(addr, cell')]</span>
+<span class="lineno">  437 </span><span class="spaces">                    </span><span class="istickedoff">, process_</span>
+<span class="lineno">  438 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  439 </span><span class="spaces">    </span><span class="istickedoff">endpointDecision pu d = <span class="nottickedoff">error [i|incorrect decision #{ d } for #{ pretty pu }|]</span></span></span>
+<span class="lineno">  440 </span>
+<span class="lineno">  441 </span>---------------------------------------------------------------------
+<span class="lineno">  442 </span>
+<span class="lineno">  443 </span>instance Controllable (Fram v x t) where
+<span class="lineno">  444 </span>    data Instruction (Fram v x t)
+<span class="lineno">  445 </span>        = PrepareRead Int
+<span class="lineno">  446 </span>        | Write Int
+<span class="lineno">  447 </span>        deriving (<span class="decl"><span class="istickedoff">Show</span></span>)
+<span class="lineno">  448 </span>
+<span class="lineno">  449 </span>    data Microcode (Fram v x t) = Microcode
+<span class="lineno">  450 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oeSignal</span></span></span> :: Bool
+<span class="lineno">  451 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wrSignal</span></span></span> :: Bool
+<span class="lineno">  452 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">addrSignal</span></span></span> :: Maybe Int
+<span class="lineno">  453 </span>        }
+<span class="lineno">  454 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff">Eq</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Ord</span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">  455 </span>
+<span class="lineno">  456 </span>    <span class="decl"><span class="istickedoff">zipSignalTagsAndValues FramPorts{oe, wr, addr} Microcode{oeSignal, wrSignal, addrSignal} =</span>
+<span class="lineno">  457 </span><span class="spaces">        </span><span class="istickedoff">[ (oe, Bool oeSignal)</span>
+<span class="lineno">  458 </span><span class="spaces">        </span><span class="istickedoff">, (wr, Bool wrSignal)</span>
+<span class="lineno">  459 </span><span class="spaces">        </span><span class="istickedoff">]</span>
+<span class="lineno">  460 </span><span class="spaces">            </span><span class="istickedoff">++ addrs</span>
+<span class="lineno">  461 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  462 </span><span class="spaces">            </span><span class="istickedoff">addrs =</span>
+<span class="lineno">  463 </span><span class="spaces">                </span><span class="istickedoff">map</span>
+<span class="lineno">  464 </span><span class="spaces">                    </span><span class="istickedoff">( \(linkId, ix) -&gt;</span>
+<span class="lineno">  465 </span><span class="spaces">                        </span><span class="istickedoff">( linkId</span>
+<span class="lineno">  466 </span><span class="spaces">                        </span><span class="istickedoff">, maybe Undef (Bool . (`testBit` ix)) addrSignal</span>
+<span class="lineno">  467 </span><span class="spaces">                        </span><span class="istickedoff">)</span>
+<span class="lineno">  468 </span><span class="spaces">                    </span><span class="istickedoff">)</span>
+<span class="lineno">  469 </span><span class="spaces">                    </span><span class="istickedoff">$ zip (reverse addr) [0 ..]</span></span>
+<span class="lineno">  470 </span>
+<span class="lineno">  471 </span>    <span class="decl"><span class="istickedoff">usedPortTags FramPorts{oe, wr, addr} = <span class="nottickedoff">oe</span> : <span class="nottickedoff">wr</span> : addr</span></span>
+<span class="lineno">  472 </span>
+<span class="lineno">  473 </span>    <span class="decl"><span class="istickedoff">takePortTags (oe : wr : xs) pu = FramPorts oe wr addr</span>
+<span class="lineno">  474 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  475 </span><span class="spaces">            </span><span class="istickedoff">addr = take (addrWidth pu) xs</span>
+<span class="lineno">  476 </span><span class="spaces">    </span><span class="istickedoff">takePortTags _ _ = <span class="nottickedoff">error &quot;can not take port tags, tags are over&quot;</span></span></span>
+<span class="lineno">  477 </span>
+<span class="lineno">  478 </span>instance Connected (Fram v x t) where
+<span class="lineno">  479 </span>    data Ports (Fram v x t) = FramPorts
+<span class="lineno">  480 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">oe</span></span></span>, <span class="nottickedoff"><span class="decl"><span class="nottickedoff">wr</span></span></span> :: SignalTag
+<span class="lineno">  481 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">addr</span></span></span> :: [SignalTag]
+<span class="lineno">  482 </span>        }
+<span class="lineno">  483 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  484 </span>
+<span class="lineno">  485 </span>instance IOConnected (Fram v x t) where
+<span class="lineno">  486 </span>    data IOPorts (Fram v x t) = FramIO
+<span class="lineno">  487 </span>        deriving (<span class="decl"><span class="nottickedoff">Show</span></span>)
+<span class="lineno">  488 </span>
+<span class="lineno">  489 </span>instance Default (Microcode (Fram v x t)) where
+<span class="lineno">  490 </span>    <span class="decl"><span class="istickedoff">def = Microcode False False Nothing</span></span>
+<span class="lineno">  491 </span>
+<span class="lineno">  492 </span>instance UnambiguouslyDecode (Fram v x t) where
+<span class="lineno">  493 </span>    <span class="decl"><span class="istickedoff">decodeInstruction (PrepareRead addr) = Microcode True False $ Just addr</span>
+<span class="lineno">  494 </span><span class="spaces">    </span><span class="istickedoff">decodeInstruction (Write addr) = Microcode False True $ Just addr</span></span>
+<span class="lineno">  495 </span>
+<span class="lineno">  496 </span>instance VarValTime v x t =&gt; Testable (Fram v x t) v x where
+<span class="lineno">  497 </span>    <span class="decl"><span class="istickedoff">testBenchImplementation prj@Project{pName, pUnit} =</span>
+<span class="lineno">  498 </span><span class="spaces">        </span><span class="istickedoff">let tbcSignalsConst = [&quot;oe&quot;, &quot;wr&quot;, &quot;[3:0] addr&quot;]</span>
+<span class="lineno">  499 </span><span class="spaces">            </span><span class="istickedoff">showMicrocode Microcode{oeSignal, wrSignal, addrSignal} =</span>
+<span class="lineno">  500 </span><span class="spaces">                </span><span class="istickedoff">[i|oe &lt;= #{ bool2verilog oeSignal };|]</span>
+<span class="lineno">  501 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| wr &lt;= #{ bool2verilog wrSignal };|]</span>
+<span class="lineno">  502 </span><span class="spaces">                    </span><span class="istickedoff">&lt;&gt; [i| addr &lt;= #{ maybe &quot;0&quot; show addrSignal };|]</span>
+<span class="lineno">  503 </span><span class="spaces">         </span><span class="istickedoff">in Immediate (toString $ moduleName <span class="nottickedoff">pName</span> <span class="nottickedoff">pUnit</span> &lt;&gt; &quot;_tb.v&quot;) $</span>
+<span class="lineno">  504 </span><span class="spaces">                </span><span class="istickedoff">snippetTestBench</span>
+<span class="lineno">  505 </span><span class="spaces">                    </span><span class="istickedoff">prj</span>
+<span class="lineno">  506 </span><span class="spaces">                    </span><span class="istickedoff">SnippetTestBenchConf</span>
+<span class="lineno">  507 </span><span class="spaces">                        </span><span class="istickedoff">{ tbcSignals = tbcSignalsConst</span>
+<span class="lineno">  508 </span><span class="spaces">                        </span><span class="istickedoff">, tbcPorts =</span>
+<span class="lineno">  509 </span><span class="spaces">                            </span><span class="istickedoff">FramPorts</span>
+<span class="lineno">  510 </span><span class="spaces">                                </span><span class="istickedoff">{ oe = SignalTag &quot;oe&quot;</span>
+<span class="lineno">  511 </span><span class="spaces">                                </span><span class="istickedoff">, wr = SignalTag &quot;wr&quot;</span>
+<span class="lineno">  512 </span><span class="spaces">                                </span><span class="istickedoff">, addr = map SignalTag [&quot;addr[3]&quot;, &quot;addr[2]&quot;, &quot;addr[1]&quot;, &quot;addr[0]&quot;]</span>
+<span class="lineno">  513 </span><span class="spaces">                                </span><span class="istickedoff">}</span>
+<span class="lineno">  514 </span><span class="spaces">                        </span><span class="istickedoff">, tbcMC2verilogLiteral = showMicrocode</span>
+<span class="lineno">  515 </span><span class="spaces">                        </span><span class="istickedoff">}</span></span>
+<span class="lineno">  516 </span>
+<span class="lineno">  517 </span><span class="decl"><span class="istickedoff">softwareFile tag pu = moduleName <span class="nottickedoff">tag</span> <span class="nottickedoff">pu</span> &lt;&gt; &quot;.&quot; &lt;&gt; tag &lt;&gt; &quot;.dump&quot;</span></span>
+<span class="lineno">  518 </span>
+<span class="lineno">  519 </span>instance VarValTime v x t =&gt; TargetSystemComponent (Fram v x t) where
+<span class="lineno">  520 </span>    <span class="decl"><span class="istickedoff">moduleName _ _ = &quot;pu_fram&quot;</span></span>
+<span class="lineno">  521 </span>    <span class="decl"><span class="istickedoff">hardware _tag _pu = FromLibrary &quot;pu_fram.v&quot;</span></span>
+<span class="lineno">  522 </span>    <span class="decl"><span class="istickedoff">software tag fram@Fram{memory} =</span>
+<span class="lineno">  523 </span><span class="spaces">        </span><span class="istickedoff">Immediate</span>
+<span class="lineno">  524 </span><span class="spaces">            </span><span class="istickedoff">(toString $ softwareFile tag <span class="nottickedoff">fram</span>)</span>
+<span class="lineno">  525 </span><span class="spaces">            </span><span class="istickedoff">$ T.unlines</span>
+<span class="lineno">  526 </span><span class="spaces">            </span><span class="istickedoff">$ map</span>
+<span class="lineno">  527 </span><span class="spaces">                </span><span class="istickedoff">(\Cell{initialValue = initialValue} -&gt; hdlValDump initialValue)</span>
+<span class="lineno">  528 </span><span class="spaces">            </span><span class="istickedoff">$ A.elems memory</span></span>
+<span class="lineno">  529 </span>    <span class="decl"><span class="istickedoff">hardwareInstance</span>
+<span class="lineno">  530 </span><span class="spaces">        </span><span class="istickedoff">tag</span>
+<span class="lineno">  531 </span><span class="spaces">        </span><span class="istickedoff">fram@Fram{memory}</span>
+<span class="lineno">  532 </span><span class="spaces">        </span><span class="istickedoff">UnitEnv</span>
+<span class="lineno">  533 </span><span class="spaces">            </span><span class="istickedoff">{ sigClk</span>
+<span class="lineno">  534 </span><span class="spaces">            </span><span class="istickedoff">, ctrlPorts = Just FramPorts{..}</span>
+<span class="lineno">  535 </span><span class="spaces">            </span><span class="istickedoff">, valueIn = Just (dataIn, attrIn)</span>
+<span class="lineno">  536 </span><span class="spaces">            </span><span class="istickedoff">, valueOut = Just (dataOut, attrOut)</span>
+<span class="lineno">  537 </span><span class="spaces">            </span><span class="istickedoff">} =</span>
+<span class="lineno">  538 </span><span class="spaces">            </span><span class="istickedoff">[__i|<span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"></span></span></span></span></span>
+<span class="lineno">  539 </span><span class="spaces">                </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">pu_fram \#</span></span></span></span></span>
+<span class="lineno">  540 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .DATA_WIDTH( #{ dataWidth (def :: x) } )</span></span></span></span></span>
+<span class="lineno">  541 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .ATTR_WIDTH( #{ attrWidth (def :: x) } )</span></span></span></span></span>
+<span class="lineno">  542 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .RAM_SIZE( #{ numElements memory } )</span></span></span></span></span>
+<span class="lineno">  543 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .FRAM_DUMP( &quot;{{ impl.paths.nest }}/#{ softwareFile tag fram }&quot; )</span></span></span></span></span>
+<span class="lineno">  544 </span><span class="spaces">                        </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">) #{ tag }</span></span></span></span></span>
+<span class="lineno">  545 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">( .clk( #{ sigClk } )</span></span></span></span></span>
+<span class="lineno">  546 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_addr( { #{ T.intercalate &quot;, &quot; $ map showText addr } } )</span></span></span></span></span>
+<span class="lineno">  547 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_wr( #{ wr } )</span></span></span></span></span>
+<span class="lineno">  548 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_in( #{ dataIn } )</span></span></span></span></span>
+<span class="lineno">  549 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_in( #{ attrIn } )</span></span></span></span></span>
+<span class="lineno">  550 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .signal_oe( #{ oe } )</span></span></span></span></span>
+<span class="lineno">  551 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .data_out( #{ dataOut } )</span></span></span></span></span>
+<span class="lineno">  552 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">, .attr_out( #{ attrOut } )</span></span></span></span></span>
+<span class="lineno">  553 </span><span class="spaces">                    </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">);</span></span></span></span></span>
+<span class="lineno">  554 </span><span class="spaces">            </span><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff"><span class="nottickedoff"><span class="istickedoff">|]</span></span></span></span></span>
+<span class="lineno">  555 </span><span class="spaces">    </span><span class="istickedoff">hardwareInstance _title _pu _env = <span class="nottickedoff">error &quot;internal error&quot;</span></span></span>
+<span class="lineno">  556 </span>
+<span class="lineno">  557 </span>instance IOTestBench (Fram v x t) v x
 
 </pre>
 </body>

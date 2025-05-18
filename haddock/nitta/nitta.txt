@@ -1121,6 +1121,15 @@ CmpLte :: CmpOp
 CmpGt :: CmpOp
 CmpGte :: CmpOp
 cmp :: (Var v, Val x) => CmpOp -> v -> v -> [v] -> F v x
+data TruthTable v x
+TruthTable :: Map [Bool] Bool -> [I v] -> O v -> TruthTable v x
+data LogicFunction v x
+LogicAnd :: I v -> I v -> O v -> LogicFunction v x
+LogicOr :: I v -> I v -> O v -> LogicFunction v x
+LogicNot :: I v -> O v -> LogicFunction v x
+logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
+logicOr :: (Var v, Val x) => v -> v -> [v] -> F v x
+logicNot :: (Var v, Val x) => v -> [v] -> F v x
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.Loop v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopBegin v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopEnd v x)
@@ -1140,6 +1149,21 @@ instance Data.Data.Data NITTA.Intermediate.Functions.CmpOp
 instance GHC.Show.Show NITTA.Intermediate.Functions.CmpOp
 instance GHC.Classes.Eq NITTA.Intermediate.Functions.CmpOp
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Compare v x)
+instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.LogicFunction v x)
+instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.TruthTable v x)
+instance (Data.Data.Data v, Data.Data.Data (NITTA.Intermediate.Types.I v), Data.Data.Data (NITTA.Intermediate.Types.O v), Data.Data.Data x) => Data.Data.Data (NITTA.Intermediate.Functions.LogicFunction v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.TruthTable v x) (v, v)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.TruthTable v x) v
+instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.TruthTable v x)
+instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.TruthTable v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.TruthTable v x) v
+instance (NITTA.Intermediate.Variable.Var v, GHC.Num.Num x, GHC.Classes.Eq x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.TruthTable v x) v x
+instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.LogicFunction v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.LogicFunction v x) (v, v)
+instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.LogicFunction v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.LogicFunction v x) v
+instance (NITTA.Intermediate.Variable.Var v, GHC.Bits.Bits x, GHC.Num.Num x, GHC.Classes.Ord x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.LogicFunction v x) v x
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.LogicFunction v x) v
 instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Compare v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Compare v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Compare v x)
@@ -1299,6 +1323,44 @@ maxBufferStack :: Int
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x)
 instance (Data.Typeable.Internal.Typeable v, GHC.Classes.Ord v, Data.String.IsString v, Data.String.ToString.ToString v, NITTA.Intermediate.Variable.Suffix v, Data.Hashable.Class.Hashable v) => GHC.Show.Show (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x)
 instance GHC.Generics.Generic (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x)
+
+
+-- | The optimization consists of two parts: 1) Replacing logic functions
+--   with lookup tables 2) Searching and merging lookup tables, if possible
+--   
+--   <pre>
+--   &gt;&gt;&gt; let a = constant 1 ["a"]
+--   
+--   &gt;&gt;&gt; let b = constant 2 ["b"]
+--   
+--   &gt;&gt;&gt; let c = constant 3 ["c"]
+--   
+--   &gt;&gt;&gt; let f1 = logicAnd "a" "b" ["f1"]
+--   
+--   &gt;&gt;&gt; let f2 = logicOr "f1" "c" ["f2"]
+--   
+--   &gt;&gt;&gt; let loopRes = loop 1 "e" ["f2"]
+--   
+--   &gt;&gt;&gt; let fs = [a, b, c, f1, f2, loopRes] :: [F String Int]
+--   
+--   &gt;&gt;&gt; optimizeLogicalUnitDecision fs $ head $ optimizeLogicalUnitOptions fs
+--   [const(1) = a,const(2) = b,const(3) = c,loop(1, e) = f2,TruthTable fromList [([False,False,False],False),([False,False,True],True),([False,True,False],False),([False,True,True],True),([True,False,False],False),([True,False,True],True),([True,True,False],True),([True,True,True],True)] [a,b,c] = f2]
+--   </pre>
+module NITTA.Model.Problems.Refactor.OptimizeLogicalUnit
+data OptimizeLogicalUnit v x
+OptimizeLogicalUnit :: [F v x] -> [F v x] -> OptimizeLogicalUnit v x
+[rOld] :: OptimizeLogicalUnit v x -> [F v x]
+[rNew] :: OptimizeLogicalUnit v x -> [F v x]
+class OptimizeLogicalUnitProblem u v x | u -> v x
+optimizeLogicalUnitOptions :: OptimizeLogicalUnitProblem u v x => u -> [OptimizeLogicalUnit v x]
+
+-- | Function takes <a>OptimizeLogicalUnit</a> and modify
+--   <tt>DataFlowGraph</tt>
+optimizeLogicalUnitDecision :: OptimizeLogicalUnitProblem u v x => u -> OptimizeLogicalUnit v x -> u
+instance GHC.Classes.Eq (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x)
+instance GHC.Show.Show (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x)
+instance GHC.Generics.Generic (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x)
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem [NITTA.Intermediate.Types.F v x] v x
 
 
 module NITTA.Model.Problems.Refactor.OptimizeAccum
@@ -1500,6 +1562,7 @@ instance NITTA.Intermediate.Types.WithFunctions (NITTA.Intermediate.DataFlow.Dat
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
 instance NITTA.Intermediate.Variable.Var v => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Intermediate.DataFlow.DataFlowGraph v x) v x
 
 
@@ -2024,7 +2087,7 @@ module NITTA.Model.Networks.Types
 data PU v x t
 [PU] :: PUClasses pu v x t => pu -> Changeset v -> UnitEnv pu -> PU v x t
 unitType :: PU v x t -> TypeRep
-type PUClasses pu v x t = (ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, Show (Instruction pu), Typeable pu, UnambiguouslyDecode pu, TargetSystemComponent pu, Controllable pu, IOTestBench pu v x, Locks pu v, Typeable pu)
+type PUClasses pu v x t = (ByTime pu t, Connected pu, IOConnected pu, EndpointProblem pu v t, BreakLoopProblem pu v x, ConstantFoldingProblem pu v x, OptimizeAccumProblem pu v x, OptimizeLogicalUnitProblem pu v x, ResolveDeadlockProblem pu v x, ProcessorUnit pu v x t, Show (Instruction pu), Typeable pu, UnambiguouslyDecode pu, TargetSystemComponent pu, Controllable pu, IOTestBench pu v x, Locks pu v, Typeable pu)
 data IOSynchronization
 
 -- | IO cycle synchronously to process cycle
@@ -2051,6 +2114,7 @@ instance Data.Aeson.Types.FromJSON.FromJSON NITTA.Model.Networks.Types.IOSynchro
 instance GHC.Classes.Ord v => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.Networks.Types.PU v x t) v t
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Types.PU v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Types.PU v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.Networks.Types.PU v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Types.PU v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.Networks.Types.PU v x t) v x t
 instance GHC.Classes.Ord v => NITTA.Intermediate.Types.Patch (NITTA.Model.Networks.Types.PU v x t) (NITTA.Intermediate.Types.Changeset v)
@@ -2117,6 +2181,7 @@ instance Data.Default.Class.Default t => Data.Default.Class.Default (NITTA.Model
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Shift.Shift v x t) v x t
 instance Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Shift.Shift v x t))
@@ -2478,6 +2543,7 @@ instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NI
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x t
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v t
@@ -2489,6 +2555,50 @@ instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnit
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
+
+module NITTA.Model.ProcessorUnits.LogicalUnit
+data LogicalUnit v x t
+LogicalUnit :: [F v x] -> [v] -> [v] -> Maybe (F v x) -> [F v x] -> Int -> Int -> Process t (StepInfo v x t) -> LogicalUnit v x t
+[remain] :: LogicalUnit v x t -> [F v x]
+[targets] :: LogicalUnit v x t -> [v]
+[sources] :: LogicalUnit v x t -> [v]
+[currentWork] :: LogicalUnit v x t -> Maybe (F v x)
+[logicalunitFunctions] :: LogicalUnit v x t -> [F v x]
+[selBitNum] :: LogicalUnit v x t -> Int
+[maxNumArgs] :: LogicalUnit v x t -> Int
+[process_] :: LogicalUnit v x t -> Process t (StepInfo v x t)
+logicalUnit :: Time t => LogicalUnit v x t
+
+-- | A processor unit control ports (signals, flags).
+data Ports pu :: Type
+data IOPorts pu :: Type
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Ports (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance GHC.Classes.Ord (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.Time.VarValTime v x t => GHC.Show.Show (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t))
+instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x t
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v t
+instance GHC.Classes.Ord t => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) (NITTA.Intermediate.Types.F v x)
+instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v
+instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
+instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) x
+instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.LogicalUnit.LogicalUnit v x t) v x
 
 
 module NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -2523,6 +2633,7 @@ instance (NITTA.Model.Time.VarValTime v x t, NITTA.Model.ProcessorUnits.IO.Simpl
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v x
 instance (NITTA.Model.Time.VarValTime v x t, NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIOInterface i) => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t) v t
 instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.IO.SimpleIO.SimpleIO i v x t)
@@ -2597,6 +2708,7 @@ instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NI
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Fram.Fram v x t) v t
 instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Fram.Fram v x t)
@@ -2646,6 +2758,7 @@ instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Time.Time t) => NITTA.I
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Divider.Divider v x t) v t
 instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Divider.Divider v x t)
@@ -2687,6 +2800,7 @@ instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (N
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
 instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t)
 instance GHC.Classes.Ord t => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) (NITTA.Intermediate.Types.F v x)
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Comparator.Comparator v x t) v x
@@ -2740,6 +2854,7 @@ instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NI
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v x t
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Broken.Broken v x t) v t
@@ -2788,6 +2903,7 @@ instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Accum.A
 instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x
 instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x
 instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x
 instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Accum.Accum v x t) v x
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Model.ProcessorUnits.Accum.Job v x)
 
@@ -2956,6 +3072,7 @@ instance NITTA.Model.Problems.Bind.BindProblem u tag v x => NITTA.Model.Problems
 instance NITTA.Model.Problems.Dataflow.DataflowProblem u tag v t => NITTA.Model.Problems.Dataflow.DataflowProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag v t
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem u v x) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem u v x) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem u v x) => NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x, NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem u v x) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem u v x) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) v x
 instance NITTA.Model.Problems.Allocation.AllocationProblem u tag => NITTA.Model.Problems.Allocation.AllocationProblem (NITTA.Model.TargetSystem.TargetSystem u tag v x t) tag
@@ -2990,6 +3107,9 @@ ConstantFoldingView :: [FView] -> [FView] -> DecisionView
 OptimizeAccumView :: [FView] -> [FView] -> DecisionView
 [$sel:old:RootView] :: DecisionView -> [FView]
 [$sel:new:RootView] :: DecisionView -> [FView]
+OptimizeLogicalUnitView :: [FView] -> [FView] -> DecisionView
+[$sel:lOld:RootView] :: DecisionView -> [FView]
+[$sel:lNew:RootView] :: DecisionView -> [FView]
 ResolveDeadlockView :: Text -> Text -> DecisionView
 [$sel:newBuffer:RootView] :: DecisionView -> Text
 [$sel:changeset:RootView] :: DecisionView -> Text
@@ -3003,6 +3123,7 @@ instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Intermediate.Varia
 instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.BreakLoop.BreakLoop v x) NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFolding v x) NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccum v x) NITTA.Model.Problems.ViewHelper.DecisionView
+instance NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x) NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.Intermediate.Variable.Var v => NITTA.UIBackend.ViewHelperCls.Viewable (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) NITTA.Model.Problems.ViewHelper.DecisionView
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Model.Problems.ViewHelper.DecisionView
 instance NITTA.Model.Time.Time t => NITTA.UIBackend.ViewHelperCls.Viewable (Numeric.Interval.NonEmpty.Internal.Interval t) NITTA.Model.Problems.ViewHelper.IntervalView
@@ -3067,6 +3188,7 @@ instance NITTA.Model.ProcessorUnits.Types.ByTime (NITTA.Model.Networks.Bus.BusNe
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Bind.BindProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) v x
 instance NITTA.Model.ProcessorUnits.Types.UnitTag tag => NITTA.Model.Problems.Allocation.AllocationProblem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag
@@ -3111,7 +3233,7 @@ data SynthesisDecision ctx m
 [Root] :: SynthesisDecision ctx m
 [SynthesisDecision] :: (Typeable p, SynthesisDecisionCls ctx m o d p, Show d, ToJSON p, Viewable d DecisionView) => o -> d -> p -> Map Text Float -> SynthesisDecision ctx m
 data SynthesisState m tag v x t
-SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> [ProcessWave v x] -> Int -> Int -> Set v -> Map tag Int -> SynthesisState m tag v x t
+SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag v x] -> [ResolveDeadlock v x] -> [OptimizeAccum v x] -> [OptimizeLogicalUnit v x] -> [ConstantFolding v x] -> [BreakLoop v x] -> [DataflowSt tag v (TimeConstraint t)] -> Map (F v x) [tag] -> Set (F v x) -> Map v Int -> [ProcessWave v x] -> Int -> Int -> Set v -> Map tag Int -> SynthesisState m tag v x t
 [sParent] :: SynthesisState m tag v x t -> Maybe (Tree m tag v x t)
 [sTarget] :: SynthesisState m tag v x t -> m
 
@@ -3122,6 +3244,7 @@ SynthesisState :: Maybe (Tree m tag v x t) -> m -> [Allocation tag] -> [Bind tag
 [sBindOptions] :: SynthesisState m tag v x t -> [Bind tag v x]
 [sResolveDeadlockOptions] :: SynthesisState m tag v x t -> [ResolveDeadlock v x]
 [sOptimizeAccumOptions] :: SynthesisState m tag v x t -> [OptimizeAccum v x]
+[sOptimizeLogicalUnitOptions] :: SynthesisState m tag v x t -> [OptimizeLogicalUnit v x]
 [sConstantFoldingOptions] :: SynthesisState m tag v x t -> [ConstantFolding v x]
 [sBreakLoopOptions] :: SynthesisState m tag v x t -> [BreakLoop v x]
 
@@ -3230,6 +3353,15 @@ ResolveDeadlockMetrics :: Float -> Float -> Float -> ResolveDeadlockMetrics
 instance GHC.Generics.Generic NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
 instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
 instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) (NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlock v x) NITTA.Synthesis.Steps.ResolveDeadlock.ResolveDeadlockMetrics
+
+
+module NITTA.Synthesis.Steps.OptimizeLogicalUnit
+newtype OptimizeLogicalUnitMetrics
+OptimizeLogicalUnitMetrics :: Int -> OptimizeLogicalUnitMetrics
+[mergedFuncNumber] :: OptimizeLogicalUnitMetrics -> Int
+instance GHC.Generics.Generic NITTA.Synthesis.Steps.OptimizeLogicalUnit.OptimizeLogicalUnitMetrics
+instance Data.Aeson.Types.ToJSON.ToJSON NITTA.Synthesis.Steps.OptimizeLogicalUnit.OptimizeLogicalUnitMetrics
+instance (NITTA.Model.ProcessorUnits.Types.UnitTag tag, NITTA.Model.Time.VarValTime v x t) => NITTA.Synthesis.Types.SynthesisDecisionCls (NITTA.Synthesis.Types.SynthesisState (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) tag v x t) (NITTA.Model.TargetSystem.TargetSystem (NITTA.Model.Networks.Bus.BusNetwork tag v x t) tag v x t) (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x) (NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnit v x) NITTA.Synthesis.Steps.OptimizeLogicalUnit.OptimizeLogicalUnitMetrics
 
 
 module NITTA.Synthesis.Steps.OptimizeAccum

@@ -182,270 +182,285 @@ span.spaces    { background: white }
 <span class="lineno">  163 </span><span class="spaces">                            </span><span class="nottickedoff">| Just ConstantFoldingMetrics{} &lt;- cast metrics -&gt; &quot;Refactor&quot;</span>
 <span class="lineno">  164 </span><span class="spaces">                            </span><span class="nottickedoff">| Just DataflowMetrics{} &lt;- cast metrics -&gt; &quot;Transport&quot;</span>
 <span class="lineno">  165 </span><span class="spaces">                            </span><span class="nottickedoff">| Just OptimizeAccumMetrics{} &lt;- cast metrics -&gt; &quot;Refactor&quot;</span>
-<span class="lineno">  166 </span><span class="spaces">                            </span><span class="nottickedoff">| Just ResolveDeadlockMetrics{} &lt;- cast metrics -&gt; &quot;Refactor&quot;</span>
-<span class="lineno">  167 </span><span class="spaces">                        </span><span class="nottickedoff">_ -&gt; &quot;?&quot;</span>
-<span class="lineno">  168 </span><span class="spaces">                    </span><span class="nottickedoff">}</span>
-<span class="lineno">  169 </span><span class="spaces">            </span><span class="nottickedoff">, subForest = subForest</span>
-<span class="lineno">  170 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  171 </span>
-<span class="lineno">  172 </span>data NodeView tag v x t = NodeView
-<span class="lineno">  173 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sid</span></span></span> :: T.Text
-<span class="lineno">  174 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isTerminal</span></span></span> :: Bool
-<span class="lineno">  175 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isFinish</span></span></span> :: Bool
-<span class="lineno">  176 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">duration</span></span></span> :: Int
-<span class="lineno">  177 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">parameters</span></span></span> :: Value
-<span class="lineno">  178 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">decision</span></span></span> :: DecisionView
-<span class="lineno">  179 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">score</span></span></span> :: Float
-<span class="lineno">  180 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">scores</span></span></span> :: Value
-<span class="lineno">  181 </span>    }
-<span class="lineno">  182 </span>    deriving (Generic)
-<span class="lineno">  183 </span>
-<span class="lineno">  184 </span>instance (UnitTag tag, VarValTimeJSON v x t) =&gt; Viewable (DefTree tag v x t) (NodeView tag v x t) where
-<span class="lineno">  185 </span>    <span class="decl"><span class="nottickedoff">view tree@Tree{sID, sDecision} =</span>
-<span class="lineno">  186 </span><span class="spaces">        </span><span class="nottickedoff">NodeView</span>
-<span class="lineno">  187 </span><span class="spaces">            </span><span class="nottickedoff">{ sid = showText sID</span>
-<span class="lineno">  188 </span><span class="spaces">            </span><span class="nottickedoff">, isTerminal = isLeaf tree</span>
-<span class="lineno">  189 </span><span class="spaces">            </span><span class="nottickedoff">, isFinish = isComplete tree</span>
-<span class="lineno">  190 </span><span class="spaces">            </span><span class="nottickedoff">, duration = fromEnum $ processDuration $ sTarget $ sState tree</span>
-<span class="lineno">  191 </span><span class="spaces">            </span><span class="nottickedoff">, decision =</span>
-<span class="lineno">  192 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
-<span class="lineno">  193 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{decision} -&gt; view decision</span>
-<span class="lineno">  194 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; RootView</span>
-<span class="lineno">  195 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
-<span class="lineno">  196 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
-<span class="lineno">  197 </span><span class="spaces">            </span><span class="nottickedoff">, parameters =</span>
-<span class="lineno">  198 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
-<span class="lineno">  199 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{metrics} -&gt; toJSON metrics</span>
-<span class="lineno">  200 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; String &quot;root&quot;</span>
-<span class="lineno">  201 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
-<span class="lineno">  202 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
-<span class="lineno">  203 </span><span class="spaces">            </span><span class="nottickedoff">, score =</span>
-<span class="lineno">  204 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
-<span class="lineno">  205 </span><span class="spaces">                    </span><span class="nottickedoff">-- TODO: add support for &quot;scores&quot; field in UI, remove that field (or rename to default_score/effective_score?)</span>
-<span class="lineno">  206 </span><span class="spaces">                    </span><span class="nottickedoff">sd@SynthesisDecision{} -&gt; defScore sd</span>
-<span class="lineno">  207 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; 0</span>
-<span class="lineno">  208 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
-<span class="lineno">  209 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
-<span class="lineno">  210 </span><span class="spaces">            </span><span class="nottickedoff">, scores =</span>
-<span class="lineno">  211 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
-<span class="lineno">  212 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{scores} -&gt; toJSON scores</span>
-<span class="lineno">  213 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; object [&quot;default&quot; .= (0 :: Float)]</span>
-<span class="lineno">  214 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
-<span class="lineno">  215 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
-<span class="lineno">  216 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  217 </span>
-<span class="lineno">  218 </span>instance (VarValTimeJSON v x t, ToJSON tag) =&gt; ToJSON (NodeView tag v x t)
-<span class="lineno">  219 </span>
-<span class="lineno">  220 </span>instance ToSample (NodeView tag v x t) where
-<span class="lineno">  221 </span>    <span class="decl"><span class="nottickedoff">toSamples _ =</span>
-<span class="lineno">  222 </span><span class="spaces">        </span><span class="nottickedoff">samples</span>
-<span class="lineno">  223 </span><span class="spaces">            </span><span class="nottickedoff">[ NodeView</span>
-<span class="lineno">  224 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1]</span>
-<span class="lineno">  225 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  226 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  227 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  228 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
-<span class="lineno">  229 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
-<span class="lineno">  230 </span><span class="spaces">                        </span><span class="nottickedoff">SingleBindMetrics</span>
-<span class="lineno">  231 </span><span class="spaces">                            </span><span class="nottickedoff">{ pCritical = False</span>
-<span class="lineno">  232 </span><span class="spaces">                            </span><span class="nottickedoff">, pAlternative = 1</span>
-<span class="lineno">  233 </span><span class="spaces">                            </span><span class="nottickedoff">, pRestless = 0</span>
-<span class="lineno">  234 </span><span class="spaces">                            </span><span class="nottickedoff">, pOutputNumber = 2</span>
-<span class="lineno">  235 </span><span class="spaces">                            </span><span class="nottickedoff">, pAllowDataFlow = 1</span>
-<span class="lineno">  236 </span><span class="spaces">                            </span><span class="nottickedoff">, pPossibleDeadlock = False</span>
-<span class="lineno">  237 </span><span class="spaces">                            </span><span class="nottickedoff">, pNumberOfBoundFunctions = 1</span>
-<span class="lineno">  238 </span><span class="spaces">                            </span><span class="nottickedoff">, pPercentOfBoundInputs = 0.2</span>
-<span class="lineno">  239 </span><span class="spaces">                            </span><span class="nottickedoff">, pWave = Just 2</span>
-<span class="lineno">  240 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
-<span class="lineno">  241 </span><span class="spaces">                </span><span class="nottickedoff">, decision = SingleBindView (FView &quot;buffer(a) = b = c&quot; []) &quot;pu&quot;</span>
-<span class="lineno">  242 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1032</span>
-<span class="lineno">  243 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1032 :: Float)]</span>
-<span class="lineno">  244 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  245 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
-<span class="lineno">  246 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
-<span class="lineno">  247 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  248 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  249 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  250 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
-<span class="lineno">  251 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
-<span class="lineno">  252 </span><span class="spaces">                        </span><span class="nottickedoff">DataflowMetrics</span>
-<span class="lineno">  253 </span><span class="spaces">                            </span><span class="nottickedoff">{ pWaitTime = 1</span>
-<span class="lineno">  254 </span><span class="spaces">                            </span><span class="nottickedoff">, pRestrictedTime = False</span>
-<span class="lineno">  255 </span><span class="spaces">                            </span><span class="nottickedoff">, pNotTransferableInputs = [0, 0]</span>
-<span class="lineno">  256 </span><span class="spaces">                            </span><span class="nottickedoff">, pFirstWaveOfTargetUse = 0</span>
-<span class="lineno">  257 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
-<span class="lineno">  258 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
-<span class="lineno">  259 </span><span class="spaces">                    </span><span class="nottickedoff">DataflowDecisionView</span>
-<span class="lineno">  260 </span><span class="spaces">                        </span><span class="nottickedoff">{ source = (&quot;PU1&quot;, EndpointSt{epRole = Source $ S.fromList [&quot;a1&quot;, &quot;a2&quot;], epAt = 1 ... 1})</span>
-<span class="lineno">  261 </span><span class="spaces">                        </span><span class="nottickedoff">, targets =</span>
-<span class="lineno">  262 </span><span class="spaces">                            </span><span class="nottickedoff">[(&quot;PU2&quot;, EndpointSt{epRole = Target &quot;a2&quot;, epAt = 1 ... 1})]</span>
-<span class="lineno">  263 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
-<span class="lineno">  264 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
-<span class="lineno">  265 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
-<span class="lineno">  266 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  267 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
-<span class="lineno">  268 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 6]</span>
-<span class="lineno">  269 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  270 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  271 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  272 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON BreakLoopMetrics</span>
-<span class="lineno">  273 </span><span class="spaces">                </span><span class="nottickedoff">, decision = BreakLoopView{value = &quot;12.5&quot;, outputs = [&quot;a&quot;, &quot;b&quot;], input = &quot;c&quot;}</span>
-<span class="lineno">  274 </span><span class="spaces">                </span><span class="nottickedoff">, score = 5000</span>
-<span class="lineno">  275 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (5000 :: Float)]</span>
-<span class="lineno">  276 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  277 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
-<span class="lineno">  278 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
-<span class="lineno">  279 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  280 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  281 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  282 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON OptimizeAccumMetrics</span>
-<span class="lineno">  283 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
-<span class="lineno">  284 </span><span class="spaces">                    </span><span class="nottickedoff">OptimizeAccumView</span>
-<span class="lineno">  285 </span><span class="spaces">                        </span><span class="nottickedoff">{ old = [FView &quot;a + b = c&quot; [], FView &quot;c + d = e&quot; []]</span>
-<span class="lineno">  286 </span><span class="spaces">                        </span><span class="nottickedoff">, new = [FView &quot;a + b + d = e&quot; []]</span>
-<span class="lineno">  287 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
-<span class="lineno">  288 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
-<span class="lineno">  289 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
-<span class="lineno">  290 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  291 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
-<span class="lineno">  292 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
-<span class="lineno">  293 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  294 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  295 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  296 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON ConstantFoldingMetrics</span>
-<span class="lineno">  297 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
-<span class="lineno">  298 </span><span class="spaces">                    </span><span class="nottickedoff">ConstantFoldingView</span>
-<span class="lineno">  299 </span><span class="spaces">                        </span><span class="nottickedoff">{ cRefOld = [FView &quot;a = 1&quot; [], FView &quot;b = 2&quot; [], FView &quot;a + b = r&quot; []]</span>
-<span class="lineno">  300 </span><span class="spaces">                        </span><span class="nottickedoff">, cRefNew = [FView &quot;r = 3&quot; []]</span>
-<span class="lineno">  301 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
-<span class="lineno">  302 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
-<span class="lineno">  303 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
-<span class="lineno">  304 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  305 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
-<span class="lineno">  306 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
-<span class="lineno">  307 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
-<span class="lineno">  308 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
-<span class="lineno">  309 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
-<span class="lineno">  310 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
-<span class="lineno">  311 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
-<span class="lineno">  312 </span><span class="spaces">                        </span><span class="nottickedoff">ResolveDeadlockMetrics</span>
-<span class="lineno">  313 </span><span class="spaces">                            </span><span class="nottickedoff">{ pNumberOfLockedVariables = 1</span>
-<span class="lineno">  314 </span><span class="spaces">                            </span><span class="nottickedoff">, pBufferCount = 0</span>
-<span class="lineno">  315 </span><span class="spaces">                            </span><span class="nottickedoff">, pNumberOfTransferableVariables = 0</span>
-<span class="lineno">  316 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
-<span class="lineno">  317 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
-<span class="lineno">  318 </span><span class="spaces">                    </span><span class="nottickedoff">ResolveDeadlockView</span>
-<span class="lineno">  319 </span><span class="spaces">                        </span><span class="nottickedoff">{ newBuffer = &quot;buffer(x#0@buf) = x#0&quot;</span>
-<span class="lineno">  320 </span><span class="spaces">                        </span><span class="nottickedoff">, changeset = &quot;Changeset {changeI = fromList [], changeO = fromList [(\&quot;x#0\&quot;,fromList [\&quot;x#0@buf\&quot;])]}&quot;</span>
-<span class="lineno">  321 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
-<span class="lineno">  322 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
-<span class="lineno">  323 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
-<span class="lineno">  324 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
-<span class="lineno">  325 </span><span class="spaces">            </span><span class="nottickedoff">]</span></span>
-<span class="lineno">  326 </span>
-<span class="lineno">  327 </span>newtype StepInfoView = StepInfoView T.Text
-<span class="lineno">  328 </span>    deriving (Generic)
-<span class="lineno">  329 </span>
-<span class="lineno">  330 </span>instance (Var v, Time t) =&gt; Viewable (StepInfo v x t) StepInfoView where
-<span class="lineno">  331 </span>    <span class="decl"><span class="nottickedoff">view = StepInfoView . showText</span></span>
-<span class="lineno">  332 </span>
-<span class="lineno">  333 </span>instance ToJSON StepInfoView
-<span class="lineno">  334 </span>
-<span class="lineno">  335 </span>instance (Var v, Time t) =&gt; Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
-<span class="lineno">  336 </span>    <span class="decl"><span class="nottickedoff">view p@Process{steps} = p{steps = map (\s@Step{pDesc} -&gt; s{pDesc = view pDesc}) steps}</span></span>
-<span class="lineno">  337 </span>
-<span class="lineno">  338 </span>-- Testbench
-<span class="lineno">  339 </span>
-<span class="lineno">  340 </span>instance (ToJSONKey v, ToJSON v, ToJSON x) =&gt; ToJSON (TestbenchReport v x)
+<span class="lineno">  166 </span><span class="spaces">                            </span><span class="nottickedoff">| Just OptimizeLogicalUnitMetrics{} &lt;- cast metrics -&gt; &quot;Refactor&quot;</span>
+<span class="lineno">  167 </span><span class="spaces">                            </span><span class="nottickedoff">| Just ResolveDeadlockMetrics{} &lt;- cast metrics -&gt; &quot;Refactor&quot;</span>
+<span class="lineno">  168 </span><span class="spaces">                        </span><span class="nottickedoff">_ -&gt; &quot;?&quot;</span>
+<span class="lineno">  169 </span><span class="spaces">                    </span><span class="nottickedoff">}</span>
+<span class="lineno">  170 </span><span class="spaces">            </span><span class="nottickedoff">, subForest = subForest</span>
+<span class="lineno">  171 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  172 </span>
+<span class="lineno">  173 </span>data NodeView tag v x t = NodeView
+<span class="lineno">  174 </span>    { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">sid</span></span></span> :: T.Text
+<span class="lineno">  175 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isTerminal</span></span></span> :: Bool
+<span class="lineno">  176 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">isFinish</span></span></span> :: Bool
+<span class="lineno">  177 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">duration</span></span></span> :: Int
+<span class="lineno">  178 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">parameters</span></span></span> :: Value
+<span class="lineno">  179 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">decision</span></span></span> :: DecisionView
+<span class="lineno">  180 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">score</span></span></span> :: Float
+<span class="lineno">  181 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">scores</span></span></span> :: Value
+<span class="lineno">  182 </span>    }
+<span class="lineno">  183 </span>    deriving (Generic)
+<span class="lineno">  184 </span>
+<span class="lineno">  185 </span>instance (UnitTag tag, VarValTimeJSON v x t) =&gt; Viewable (DefTree tag v x t) (NodeView tag v x t) where
+<span class="lineno">  186 </span>    <span class="decl"><span class="nottickedoff">view tree@Tree{sID, sDecision} =</span>
+<span class="lineno">  187 </span><span class="spaces">        </span><span class="nottickedoff">NodeView</span>
+<span class="lineno">  188 </span><span class="spaces">            </span><span class="nottickedoff">{ sid = showText sID</span>
+<span class="lineno">  189 </span><span class="spaces">            </span><span class="nottickedoff">, isTerminal = isLeaf tree</span>
+<span class="lineno">  190 </span><span class="spaces">            </span><span class="nottickedoff">, isFinish = isComplete tree</span>
+<span class="lineno">  191 </span><span class="spaces">            </span><span class="nottickedoff">, duration = fromEnum $ processDuration $ sTarget $ sState tree</span>
+<span class="lineno">  192 </span><span class="spaces">            </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  193 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
+<span class="lineno">  194 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{decision} -&gt; view decision</span>
+<span class="lineno">  195 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; RootView</span>
+<span class="lineno">  196 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
+<span class="lineno">  197 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
+<span class="lineno">  198 </span><span class="spaces">            </span><span class="nottickedoff">, parameters =</span>
+<span class="lineno">  199 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
+<span class="lineno">  200 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{metrics} -&gt; toJSON metrics</span>
+<span class="lineno">  201 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; String &quot;root&quot;</span>
+<span class="lineno">  202 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
+<span class="lineno">  203 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
+<span class="lineno">  204 </span><span class="spaces">            </span><span class="nottickedoff">, score =</span>
+<span class="lineno">  205 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
+<span class="lineno">  206 </span><span class="spaces">                    </span><span class="nottickedoff">-- TODO: add support for &quot;scores&quot; field in UI, remove that field (or rename to default_score/effective_score?)</span>
+<span class="lineno">  207 </span><span class="spaces">                    </span><span class="nottickedoff">sd@SynthesisDecision{} -&gt; defScore sd</span>
+<span class="lineno">  208 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; 0</span>
+<span class="lineno">  209 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
+<span class="lineno">  210 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
+<span class="lineno">  211 </span><span class="spaces">            </span><span class="nottickedoff">, scores =</span>
+<span class="lineno">  212 </span><span class="spaces">                </span><span class="nottickedoff">( \case</span>
+<span class="lineno">  213 </span><span class="spaces">                    </span><span class="nottickedoff">SynthesisDecision{scores} -&gt; toJSON scores</span>
+<span class="lineno">  214 </span><span class="spaces">                    </span><span class="nottickedoff">_ -&gt; object [&quot;default&quot; .= (0 :: Float)]</span>
+<span class="lineno">  215 </span><span class="spaces">                </span><span class="nottickedoff">)</span>
+<span class="lineno">  216 </span><span class="spaces">                    </span><span class="nottickedoff">sDecision</span>
+<span class="lineno">  217 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  218 </span>
+<span class="lineno">  219 </span>instance (VarValTimeJSON v x t, ToJSON tag) =&gt; ToJSON (NodeView tag v x t)
+<span class="lineno">  220 </span>
+<span class="lineno">  221 </span>instance ToSample (NodeView tag v x t) where
+<span class="lineno">  222 </span>    <span class="decl"><span class="nottickedoff">toSamples _ =</span>
+<span class="lineno">  223 </span><span class="spaces">        </span><span class="nottickedoff">samples</span>
+<span class="lineno">  224 </span><span class="spaces">            </span><span class="nottickedoff">[ NodeView</span>
+<span class="lineno">  225 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1]</span>
+<span class="lineno">  226 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  227 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  228 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  229 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
+<span class="lineno">  230 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
+<span class="lineno">  231 </span><span class="spaces">                        </span><span class="nottickedoff">SingleBindMetrics</span>
+<span class="lineno">  232 </span><span class="spaces">                            </span><span class="nottickedoff">{ pCritical = False</span>
+<span class="lineno">  233 </span><span class="spaces">                            </span><span class="nottickedoff">, pAlternative = 1</span>
+<span class="lineno">  234 </span><span class="spaces">                            </span><span class="nottickedoff">, pRestless = 0</span>
+<span class="lineno">  235 </span><span class="spaces">                            </span><span class="nottickedoff">, pOutputNumber = 2</span>
+<span class="lineno">  236 </span><span class="spaces">                            </span><span class="nottickedoff">, pAllowDataFlow = 1</span>
+<span class="lineno">  237 </span><span class="spaces">                            </span><span class="nottickedoff">, pPossibleDeadlock = False</span>
+<span class="lineno">  238 </span><span class="spaces">                            </span><span class="nottickedoff">, pNumberOfBoundFunctions = 1</span>
+<span class="lineno">  239 </span><span class="spaces">                            </span><span class="nottickedoff">, pPercentOfBoundInputs = 0.2</span>
+<span class="lineno">  240 </span><span class="spaces">                            </span><span class="nottickedoff">, pWave = Just 2</span>
+<span class="lineno">  241 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
+<span class="lineno">  242 </span><span class="spaces">                </span><span class="nottickedoff">, decision = SingleBindView (FView &quot;buffer(a) = b = c&quot; []) &quot;pu&quot;</span>
+<span class="lineno">  243 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1032</span>
+<span class="lineno">  244 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1032 :: Float)]</span>
+<span class="lineno">  245 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  246 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  247 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
+<span class="lineno">  248 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  249 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  250 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  251 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
+<span class="lineno">  252 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
+<span class="lineno">  253 </span><span class="spaces">                        </span><span class="nottickedoff">DataflowMetrics</span>
+<span class="lineno">  254 </span><span class="spaces">                            </span><span class="nottickedoff">{ pWaitTime = 1</span>
+<span class="lineno">  255 </span><span class="spaces">                            </span><span class="nottickedoff">, pRestrictedTime = False</span>
+<span class="lineno">  256 </span><span class="spaces">                            </span><span class="nottickedoff">, pNotTransferableInputs = [0, 0]</span>
+<span class="lineno">  257 </span><span class="spaces">                            </span><span class="nottickedoff">, pFirstWaveOfTargetUse = 0</span>
+<span class="lineno">  258 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
+<span class="lineno">  259 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  260 </span><span class="spaces">                    </span><span class="nottickedoff">DataflowDecisionView</span>
+<span class="lineno">  261 </span><span class="spaces">                        </span><span class="nottickedoff">{ source = (&quot;PU1&quot;, EndpointSt{epRole = Source $ S.fromList [&quot;a1&quot;, &quot;a2&quot;], epAt = 1 ... 1})</span>
+<span class="lineno">  262 </span><span class="spaces">                        </span><span class="nottickedoff">, targets =</span>
+<span class="lineno">  263 </span><span class="spaces">                            </span><span class="nottickedoff">[(&quot;PU2&quot;, EndpointSt{epRole = Target &quot;a2&quot;, epAt = 1 ... 1})]</span>
+<span class="lineno">  264 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
+<span class="lineno">  265 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
+<span class="lineno">  266 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
+<span class="lineno">  267 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  268 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  269 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 6]</span>
+<span class="lineno">  270 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  271 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  272 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  273 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON BreakLoopMetrics</span>
+<span class="lineno">  274 </span><span class="spaces">                </span><span class="nottickedoff">, decision = BreakLoopView{value = &quot;12.5&quot;, outputs = [&quot;a&quot;, &quot;b&quot;], input = &quot;c&quot;}</span>
+<span class="lineno">  275 </span><span class="spaces">                </span><span class="nottickedoff">, score = 5000</span>
+<span class="lineno">  276 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (5000 :: Float)]</span>
+<span class="lineno">  277 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  278 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  279 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
+<span class="lineno">  280 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  281 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  282 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  283 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON OptimizeAccumMetrics</span>
+<span class="lineno">  284 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  285 </span><span class="spaces">                    </span><span class="nottickedoff">OptimizeAccumView</span>
+<span class="lineno">  286 </span><span class="spaces">                        </span><span class="nottickedoff">{ old = [FView &quot;a + b = c&quot; [], FView &quot;c + d = e&quot; []]</span>
+<span class="lineno">  287 </span><span class="spaces">                        </span><span class="nottickedoff">, new = [FView &quot;a + b + d = e&quot; []]</span>
+<span class="lineno">  288 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
+<span class="lineno">  289 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
+<span class="lineno">  290 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
+<span class="lineno">  291 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  292 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  293 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
+<span class="lineno">  294 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  295 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  296 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  297 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON $ OptimizeLogicalUnitMetrics 0</span>
+<span class="lineno">  298 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  299 </span><span class="spaces">                    </span><span class="nottickedoff">OptimizeLogicalUnitView</span>
+<span class="lineno">  300 </span><span class="spaces">                        </span><span class="nottickedoff">{ lOld = [FView &quot;a and b = c&quot; [], FView &quot;d = not c&quot; []]</span>
+<span class="lineno">  301 </span><span class="spaces">                        </span><span class="nottickedoff">, lNew = [FView &quot;LogicalUnit&quot; []]</span>
+<span class="lineno">  302 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
+<span class="lineno">  303 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
+<span class="lineno">  304 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
+<span class="lineno">  305 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  306 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  307 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
+<span class="lineno">  308 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  309 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  310 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  311 </span><span class="spaces">                </span><span class="nottickedoff">, parameters = toJSON ConstantFoldingMetrics</span>
+<span class="lineno">  312 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  313 </span><span class="spaces">                    </span><span class="nottickedoff">ConstantFoldingView</span>
+<span class="lineno">  314 </span><span class="spaces">                        </span><span class="nottickedoff">{ cRefOld = [FView &quot;a = 1&quot; [], FView &quot;b = 2&quot; [], FView &quot;a + b = r&quot; []]</span>
+<span class="lineno">  315 </span><span class="spaces">                        </span><span class="nottickedoff">, cRefNew = [FView &quot;r = 3&quot; []]</span>
+<span class="lineno">  316 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
+<span class="lineno">  317 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
+<span class="lineno">  318 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
+<span class="lineno">  319 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  320 </span><span class="spaces">            </span><span class="nottickedoff">, NodeView</span>
+<span class="lineno">  321 </span><span class="spaces">                </span><span class="nottickedoff">{ sid = showText $ Sid [0, 1, 3, 1, 5]</span>
+<span class="lineno">  322 </span><span class="spaces">                </span><span class="nottickedoff">, isTerminal = False</span>
+<span class="lineno">  323 </span><span class="spaces">                </span><span class="nottickedoff">, isFinish = False</span>
+<span class="lineno">  324 </span><span class="spaces">                </span><span class="nottickedoff">, duration = 0</span>
+<span class="lineno">  325 </span><span class="spaces">                </span><span class="nottickedoff">, parameters =</span>
+<span class="lineno">  326 </span><span class="spaces">                    </span><span class="nottickedoff">toJSON $</span>
+<span class="lineno">  327 </span><span class="spaces">                        </span><span class="nottickedoff">ResolveDeadlockMetrics</span>
+<span class="lineno">  328 </span><span class="spaces">                            </span><span class="nottickedoff">{ pNumberOfLockedVariables = 1</span>
+<span class="lineno">  329 </span><span class="spaces">                            </span><span class="nottickedoff">, pBufferCount = 0</span>
+<span class="lineno">  330 </span><span class="spaces">                            </span><span class="nottickedoff">, pNumberOfTransferableVariables = 0</span>
+<span class="lineno">  331 </span><span class="spaces">                            </span><span class="nottickedoff">}</span>
+<span class="lineno">  332 </span><span class="spaces">                </span><span class="nottickedoff">, decision =</span>
+<span class="lineno">  333 </span><span class="spaces">                    </span><span class="nottickedoff">ResolveDeadlockView</span>
+<span class="lineno">  334 </span><span class="spaces">                        </span><span class="nottickedoff">{ newBuffer = &quot;buffer(x#0@buf) = x#0&quot;</span>
+<span class="lineno">  335 </span><span class="spaces">                        </span><span class="nottickedoff">, changeset = &quot;Changeset {changeI = fromList [], changeO = fromList [(\&quot;x#0\&quot;,fromList [\&quot;x#0@buf\&quot;])]}&quot;</span>
+<span class="lineno">  336 </span><span class="spaces">                        </span><span class="nottickedoff">}</span>
+<span class="lineno">  337 </span><span class="spaces">                </span><span class="nottickedoff">, score = 1999</span>
+<span class="lineno">  338 </span><span class="spaces">                </span><span class="nottickedoff">, scores = object [&quot;default&quot; .= (1999 :: Float)]</span>
+<span class="lineno">  339 </span><span class="spaces">                </span><span class="nottickedoff">}</span>
+<span class="lineno">  340 </span><span class="spaces">            </span><span class="nottickedoff">]</span></span>
 <span class="lineno">  341 </span>
-<span class="lineno">  342 </span>instance ToSample (TestbenchReport String Int) where
-<span class="lineno">  343 </span>    <span class="decl"><span class="nottickedoff">toSamples _ =</span>
-<span class="lineno">  344 </span><span class="spaces">        </span><span class="nottickedoff">singleSample</span>
-<span class="lineno">  345 </span><span class="spaces">            </span><span class="nottickedoff">TestbenchReport</span>
-<span class="lineno">  346 </span><span class="spaces">                </span><span class="nottickedoff">{ tbStatus = True</span>
-<span class="lineno">  347 </span><span class="spaces">                </span><span class="nottickedoff">, tbCompilerDump = &quot;stdout:\n&quot; &lt;&gt; &quot;stderr:\n&quot;</span>
-<span class="lineno">  348 </span><span class="spaces">                </span><span class="nottickedoff">, tbSimulationDump =</span>
-<span class="lineno">  349 </span><span class="spaces">                    </span><span class="nottickedoff">T.unlines</span>
-<span class="lineno">  350 </span><span class="spaces">                        </span><span class="nottickedoff">[ &quot;stdout:&quot;</span>
-<span class="lineno">  351 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;VCD info: dumpfile web_ui_net_tb.vcd opened for output.&quot;</span>
-<span class="lineno">  352 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:0\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  353 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t&quot;</span>
-<span class="lineno">  354 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:2\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  355 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:3\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  356 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t&quot;</span>
-<span class="lineno">  357 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:5\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  358 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:0\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  359 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t&quot;</span>
-<span class="lineno">  360 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:2\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  361 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:3\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  362 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t&quot;</span>
-<span class="lineno">  363 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:5\tactual: 0.000  0\t&quot;</span>
-<span class="lineno">  364 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;stderr:&quot;</span>
-<span class="lineno">  365 </span><span class="spaces">                        </span><span class="nottickedoff">]</span>
-<span class="lineno">  366 </span><span class="spaces">                </span><span class="nottickedoff">, tbPath = &quot;/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui&quot;</span>
-<span class="lineno">  367 </span><span class="spaces">                </span><span class="nottickedoff">, tbFiles =</span>
-<span class="lineno">  368 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;web_ui_net/web_ui_net.v&quot;</span>
-<span class="lineno">  369 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/div/div_mock.v&quot;</span>
-<span class="lineno">  370 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/div/pu_div.v&quot;</span>
-<span class="lineno">  371 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/i2c/bounce_filter.v&quot;</span>
-<span class="lineno">  372 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/i2c/buffer.v&quot;</span>
-<span class="lineno">  373 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/multiplier/mult_mock.v&quot;</span>
-<span class="lineno">  374 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/multiplier/pu_multiplier.v&quot;</span>
-<span class="lineno">  375 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_slave_spi_driver.v&quot;</span>
-<span class="lineno">  376 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/spi_slave_driver.v&quot;</span>
-<span class="lineno">  377 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/i2n_splitter.v&quot;</span>
-<span class="lineno">  378 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/spi_master_driver.v&quot;</span>
-<span class="lineno">  379 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/n2i_splitter.v&quot;</span>
-<span class="lineno">  380 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_slave_spi.v&quot;</span>
-<span class="lineno">  381 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_master_spi.v&quot;</span>
-<span class="lineno">  382 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_accum.v&quot;</span>
-<span class="lineno">  383 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_fram.v&quot;</span>
-<span class="lineno">  384 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_shift.v&quot;</span>
-<span class="lineno">  385 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_simple_control.v&quot;</span>
-<span class="lineno">  386 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;web_ui_net_tb.v&quot;</span>
-<span class="lineno">  387 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
-<span class="lineno">  388 </span><span class="spaces">                </span><span class="nottickedoff">, tbFunctions =</span>
-<span class="lineno">  389 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;buffer(x#0) = tmp_0#0&quot;</span>
-<span class="lineno">  390 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)&quot;</span>
-<span class="lineno">  391 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])&quot;</span>
-<span class="lineno">  392 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
-<span class="lineno">  393 </span><span class="spaces">                </span><span class="nottickedoff">, tbSynthesisSteps =</span>
-<span class="lineno">  394 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;Step {pID = 19, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}&quot;</span>
-<span class="lineno">  395 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 18, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 1, pInterval = 0 ... 0, pDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}&quot;</span>
-<span class="lineno">  396 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 17, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 2, pInterval = 0 ... 0, pDesc = bind LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}&quot;</span>
-<span class="lineno">  397 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 16, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 3, pInterval = 0 ... 0, pDesc = bind LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}&quot;</span>
-<span class="lineno">  398 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 15, pInterval = 1 ... 1, pDesc = Nested fram2: Step {pID = 4, pInterval = 1 ... 1, pDesc = Source x#0}}&quot;</span>
-<span class="lineno">  399 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 14, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 5, pInterval = 0 ... 0, pDesc = PrepareRead 0}}&quot;</span>
-<span class="lineno">  400 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 13, pInterval = 0 ... 1, pDesc = Nested fram2: Step {pID = 6, pInterval = 0 ... 1, pDesc = LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}&quot;</span>
-<span class="lineno">  401 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 12, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 7, pInterval = 4 ... 4, pDesc = Target tmp_0#0}}&quot;</span>
-<span class="lineno">  402 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 11, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 8, pInterval = 4 ... 4, pDesc = Write 0}}&quot;</span>
-<span class="lineno">  403 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 10, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 9, pInterval = 4 ... 4, pDesc = LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}&quot;</span>
-<span class="lineno">  404 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 9, pInterval = 0 ... 0, pDesc = Nested fram1: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind buffer(x#0) = tmp_0#0}}&quot;</span>
-<span class="lineno">  405 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 8, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 1, pInterval = 1 ... 1, pDesc = Target x#0}}&quot;</span>
-<span class="lineno">  406 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 7, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 2, pInterval = 1 ... 1, pDesc = Write 0}}&quot;</span>
-<span class="lineno">  407 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 6, pInterval = 4 ... 4, pDesc = Nested fram1: Step {pID = 3, pInterval = 4 ... 4, pDesc = Source tmp_0#0}}&quot;</span>
-<span class="lineno">  408 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 5, pInterval = 3 ... 3, pDesc = Nested fram1: Step {pID = 4, pInterval = 3 ... 3, pDesc = PrepareRead 0}}&quot;</span>
-<span class="lineno">  409 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 4, pInterval = 1 ... 4, pDesc = Nested fram1: Step {pID = 5, pInterval = 1 ... 4, pDesc = buffer(x#0) = tmp_0#0}}&quot;</span>
-<span class="lineno">  410 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 3, pInterval = 4 ... 4, pDesc = Transport \&quot;tmp_0#0\&quot; \&quot;fram1\&quot; \&quot;fram2\&quot;}&quot;</span>
-<span class="lineno">  411 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 2, pInterval = 1 ... 1, pDesc = Transport \&quot;x#0\&quot; \&quot;fram2\&quot; \&quot;fram1\&quot;}&quot;</span>
-<span class="lineno">  412 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}&quot;</span>
-<span class="lineno">  413 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}&quot;</span>
-<span class="lineno">  414 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
-<span class="lineno">  415 </span><span class="spaces">                </span><span class="nottickedoff">, tbFunctionalSimulationLog =</span>
-<span class="lineno">  416 </span><span class="spaces">                    </span><span class="nottickedoff">replicate 2 $</span>
-<span class="lineno">  417 </span><span class="spaces">                        </span><span class="nottickedoff">HM.fromList</span>
-<span class="lineno">  418 </span><span class="spaces">                            </span><span class="nottickedoff">[ (&quot;tmp_0#0&quot;, 0)</span>
-<span class="lineno">  419 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;u#0&quot;, 0)</span>
-<span class="lineno">  420 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;x#0&quot;, 0)</span>
-<span class="lineno">  421 </span><span class="spaces">                            </span><span class="nottickedoff">]</span>
-<span class="lineno">  422 </span><span class="spaces">                </span><span class="nottickedoff">, tbLogicalSimulationLog =</span>
-<span class="lineno">  423 </span><span class="spaces">                    </span><span class="nottickedoff">replicate 2 $</span>
-<span class="lineno">  424 </span><span class="spaces">                        </span><span class="nottickedoff">HM.fromList</span>
-<span class="lineno">  425 </span><span class="spaces">                            </span><span class="nottickedoff">[ (&quot;tmp_0#0&quot;, 0)</span>
-<span class="lineno">  426 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;u#0&quot;, 0)</span>
-<span class="lineno">  427 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;x#0&quot;, 0)</span>
-<span class="lineno">  428 </span><span class="spaces">                            </span><span class="nottickedoff">]</span>
-<span class="lineno">  429 </span><span class="spaces">                </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  342 </span>newtype StepInfoView = StepInfoView T.Text
+<span class="lineno">  343 </span>    deriving (Generic)
+<span class="lineno">  344 </span>
+<span class="lineno">  345 </span>instance (Var v, Time t) =&gt; Viewable (StepInfo v x t) StepInfoView where
+<span class="lineno">  346 </span>    <span class="decl"><span class="nottickedoff">view = StepInfoView . showText</span></span>
+<span class="lineno">  347 </span>
+<span class="lineno">  348 </span>instance ToJSON StepInfoView
+<span class="lineno">  349 </span>
+<span class="lineno">  350 </span>instance (Var v, Time t) =&gt; Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
+<span class="lineno">  351 </span>    <span class="decl"><span class="nottickedoff">view p@Process{steps} = p{steps = map (\s@Step{pDesc} -&gt; s{pDesc = view pDesc}) steps}</span></span>
+<span class="lineno">  352 </span>
+<span class="lineno">  353 </span>-- Testbench
+<span class="lineno">  354 </span>
+<span class="lineno">  355 </span>instance (ToJSONKey v, ToJSON v, ToJSON x) =&gt; ToJSON (TestbenchReport v x)
+<span class="lineno">  356 </span>
+<span class="lineno">  357 </span>instance ToSample (TestbenchReport String Int) where
+<span class="lineno">  358 </span>    <span class="decl"><span class="nottickedoff">toSamples _ =</span>
+<span class="lineno">  359 </span><span class="spaces">        </span><span class="nottickedoff">singleSample</span>
+<span class="lineno">  360 </span><span class="spaces">            </span><span class="nottickedoff">TestbenchReport</span>
+<span class="lineno">  361 </span><span class="spaces">                </span><span class="nottickedoff">{ tbStatus = True</span>
+<span class="lineno">  362 </span><span class="spaces">                </span><span class="nottickedoff">, tbCompilerDump = &quot;stdout:\n&quot; &lt;&gt; &quot;stderr:\n&quot;</span>
+<span class="lineno">  363 </span><span class="spaces">                </span><span class="nottickedoff">, tbSimulationDump =</span>
+<span class="lineno">  364 </span><span class="spaces">                    </span><span class="nottickedoff">T.unlines</span>
+<span class="lineno">  365 </span><span class="spaces">                        </span><span class="nottickedoff">[ &quot;stdout:&quot;</span>
+<span class="lineno">  366 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;VCD info: dumpfile web_ui_net_tb.vcd opened for output.&quot;</span>
+<span class="lineno">  367 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:0\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  368 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t&quot;</span>
+<span class="lineno">  369 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:2\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  370 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:3\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  371 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t&quot;</span>
+<span class="lineno">  372 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;0:5\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  373 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:0\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  374 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t&quot;</span>
+<span class="lineno">  375 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:2\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  376 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:3\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  377 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t&quot;</span>
+<span class="lineno">  378 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;1:5\tactual: 0.000  0\t&quot;</span>
+<span class="lineno">  379 </span><span class="spaces">                        </span><span class="nottickedoff">, &quot;stderr:&quot;</span>
+<span class="lineno">  380 </span><span class="spaces">                        </span><span class="nottickedoff">]</span>
+<span class="lineno">  381 </span><span class="spaces">                </span><span class="nottickedoff">, tbPath = &quot;/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui&quot;</span>
+<span class="lineno">  382 </span><span class="spaces">                </span><span class="nottickedoff">, tbFiles =</span>
+<span class="lineno">  383 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;web_ui_net/web_ui_net.v&quot;</span>
+<span class="lineno">  384 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/div/div_mock.v&quot;</span>
+<span class="lineno">  385 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/div/pu_div.v&quot;</span>
+<span class="lineno">  386 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/i2c/bounce_filter.v&quot;</span>
+<span class="lineno">  387 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/i2c/buffer.v&quot;</span>
+<span class="lineno">  388 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/multiplier/mult_mock.v&quot;</span>
+<span class="lineno">  389 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/multiplier/pu_multiplier.v&quot;</span>
+<span class="lineno">  390 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_slave_spi_driver.v&quot;</span>
+<span class="lineno">  391 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/spi_slave_driver.v&quot;</span>
+<span class="lineno">  392 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/i2n_splitter.v&quot;</span>
+<span class="lineno">  393 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/spi_master_driver.v&quot;</span>
+<span class="lineno">  394 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/n2i_splitter.v&quot;</span>
+<span class="lineno">  395 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_slave_spi.v&quot;</span>
+<span class="lineno">  396 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/spi/pu_master_spi.v&quot;</span>
+<span class="lineno">  397 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_accum.v&quot;</span>
+<span class="lineno">  398 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_fram.v&quot;</span>
+<span class="lineno">  399 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_shift.v&quot;</span>
+<span class="lineno">  400 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;lib/pu_simple_control.v&quot;</span>
+<span class="lineno">  401 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;web_ui_net_tb.v&quot;</span>
+<span class="lineno">  402 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
+<span class="lineno">  403 </span><span class="spaces">                </span><span class="nottickedoff">, tbFunctions =</span>
+<span class="lineno">  404 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;buffer(x#0) = tmp_0#0&quot;</span>
+<span class="lineno">  405 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)&quot;</span>
+<span class="lineno">  406 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])&quot;</span>
+<span class="lineno">  407 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
+<span class="lineno">  408 </span><span class="spaces">                </span><span class="nottickedoff">, tbSynthesisSteps =</span>
+<span class="lineno">  409 </span><span class="spaces">                    </span><span class="nottickedoff">[ &quot;Step {pID = 19, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}&quot;</span>
+<span class="lineno">  410 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 18, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 1, pInterval = 0 ... 0, pDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}&quot;</span>
+<span class="lineno">  411 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 17, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 2, pInterval = 0 ... 0, pDesc = bind LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}&quot;</span>
+<span class="lineno">  412 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 16, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 3, pInterval = 0 ... 0, pDesc = bind LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}&quot;</span>
+<span class="lineno">  413 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 15, pInterval = 1 ... 1, pDesc = Nested fram2: Step {pID = 4, pInterval = 1 ... 1, pDesc = Source x#0}}&quot;</span>
+<span class="lineno">  414 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 14, pInterval = 0 ... 0, pDesc = Nested fram2: Step {pID = 5, pInterval = 0 ... 0, pDesc = PrepareRead 0}}&quot;</span>
+<span class="lineno">  415 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 13, pInterval = 0 ... 1, pDesc = Nested fram2: Step {pID = 6, pInterval = 0 ... 1, pDesc = LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}&quot;</span>
+<span class="lineno">  416 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 12, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 7, pInterval = 4 ... 4, pDesc = Target tmp_0#0}}&quot;</span>
+<span class="lineno">  417 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 11, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 8, pInterval = 4 ... 4, pDesc = Write 0}}&quot;</span>
+<span class="lineno">  418 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 10, pInterval = 4 ... 4, pDesc = Nested fram2: Step {pID = 9, pInterval = 4 ... 4, pDesc = LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}&quot;</span>
+<span class="lineno">  419 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 9, pInterval = 0 ... 0, pDesc = Nested fram1: Step {pID = 0, pInterval = 0 ... 0, pDesc = bind buffer(x#0) = tmp_0#0}}&quot;</span>
+<span class="lineno">  420 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 8, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 1, pInterval = 1 ... 1, pDesc = Target x#0}}&quot;</span>
+<span class="lineno">  421 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 7, pInterval = 1 ... 1, pDesc = Nested fram1: Step {pID = 2, pInterval = 1 ... 1, pDesc = Write 0}}&quot;</span>
+<span class="lineno">  422 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 6, pInterval = 4 ... 4, pDesc = Nested fram1: Step {pID = 3, pInterval = 4 ... 4, pDesc = Source tmp_0#0}}&quot;</span>
+<span class="lineno">  423 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 5, pInterval = 3 ... 3, pDesc = Nested fram1: Step {pID = 4, pInterval = 3 ... 3, pDesc = PrepareRead 0}}&quot;</span>
+<span class="lineno">  424 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 4, pInterval = 1 ... 4, pDesc = Nested fram1: Step {pID = 5, pInterval = 1 ... 4, pDesc = buffer(x#0) = tmp_0#0}}&quot;</span>
+<span class="lineno">  425 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 3, pInterval = 4 ... 4, pDesc = Transport \&quot;tmp_0#0\&quot; \&quot;fram1\&quot; \&quot;fram2\&quot;}&quot;</span>
+<span class="lineno">  426 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 2, pInterval = 1 ... 1, pDesc = Transport \&quot;x#0\&quot; \&quot;fram2\&quot; \&quot;fram1\&quot;}&quot;</span>
+<span class="lineno">  427 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 1, pInterval = 0 ... 0, pDesc = bind reg(x#0) = tmp_0#0}&quot;</span>
+<span class="lineno">  428 </span><span class="spaces">                    </span><span class="nottickedoff">, &quot;Step {pID = 0, pInterval = 0 ... 0, pDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}&quot;</span>
+<span class="lineno">  429 </span><span class="spaces">                    </span><span class="nottickedoff">]</span>
+<span class="lineno">  430 </span><span class="spaces">                </span><span class="nottickedoff">, tbFunctionalSimulationLog =</span>
+<span class="lineno">  431 </span><span class="spaces">                    </span><span class="nottickedoff">replicate 2 $</span>
+<span class="lineno">  432 </span><span class="spaces">                        </span><span class="nottickedoff">HM.fromList</span>
+<span class="lineno">  433 </span><span class="spaces">                            </span><span class="nottickedoff">[ (&quot;tmp_0#0&quot;, 0)</span>
+<span class="lineno">  434 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;u#0&quot;, 0)</span>
+<span class="lineno">  435 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;x#0&quot;, 0)</span>
+<span class="lineno">  436 </span><span class="spaces">                            </span><span class="nottickedoff">]</span>
+<span class="lineno">  437 </span><span class="spaces">                </span><span class="nottickedoff">, tbLogicalSimulationLog =</span>
+<span class="lineno">  438 </span><span class="spaces">                    </span><span class="nottickedoff">replicate 2 $</span>
+<span class="lineno">  439 </span><span class="spaces">                        </span><span class="nottickedoff">HM.fromList</span>
+<span class="lineno">  440 </span><span class="spaces">                            </span><span class="nottickedoff">[ (&quot;tmp_0#0&quot;, 0)</span>
+<span class="lineno">  441 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;u#0&quot;, 0)</span>
+<span class="lineno">  442 </span><span class="spaces">                            </span><span class="nottickedoff">, (&quot;x#0&quot;, 0)</span>
+<span class="lineno">  443 </span><span class="spaces">                            </span><span class="nottickedoff">]</span>
+<span class="lineno">  444 </span><span class="spaces">                </span><span class="nottickedoff">}</span></span>
 
 </pre>
 </body>

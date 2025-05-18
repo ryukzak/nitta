@@ -90,17 +90,23 @@ span.spaces    { background: white }
 <span class="lineno">   71 </span>    <span class="decl"><span class="istickedoff">optimizeAccumDecision dfg ref@OptimizeAccum{} =</span>
 <span class="lineno">   72 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref</span></span>
 <span class="lineno">   73 </span>
-<span class="lineno">   74 </span>instance Var v =&gt; ResolveDeadlockProblem (DataFlowGraph v x) v x where
-<span class="lineno">   75 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions _dfg = []</span></span>
+<span class="lineno">   74 </span>instance (Var v, Val x) =&gt; OptimizeLogicalUnitProblem (DataFlowGraph v x) v x where
+<span class="lineno">   75 </span>    <span class="decl"><span class="nottickedoff">optimizeLogicalUnitOptions _dfg = []</span></span>
 <span class="lineno">   76 </span>
-<span class="lineno">   77 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =</span>
-<span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))</span></span>
+<span class="lineno">   77 </span>    <span class="decl"><span class="istickedoff">optimizeLogicalUnitDecision dfg ref@OptimizeLogicalUnit{} =</span>
+<span class="lineno">   78 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph $ optimizeLogicalUnitDecision (functions dfg) ref</span></span>
 <span class="lineno">   79 </span>
-<span class="lineno">   80 </span>-- | Convert @[ F v x ]@ to 'DataFlowGraph'.
-<span class="lineno">   81 </span><span class="decl"><span class="istickedoff">fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs</span></span>
+<span class="lineno">   80 </span>instance Var v =&gt; ResolveDeadlockProblem (DataFlowGraph v x) v x where
+<span class="lineno">   81 </span>    <span class="decl"><span class="nottickedoff">resolveDeadlockOptions _dfg = []</span></span>
 <span class="lineno">   82 </span>
-<span class="lineno">   83 </span><span class="decl"><span class="istickedoff">addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)</span>
-<span class="lineno">   84 </span><span class="spaces"></span><span class="istickedoff">addFuncToDataFlowGraph f leaf = <span class="nottickedoff">DFCluster [DFLeaf f, leaf]</span></span></span>
+<span class="lineno">   83 </span>    <span class="decl"><span class="istickedoff">resolveDeadlockDecision dfg ResolveDeadlock{newBuffer, changeset} =</span>
+<span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">fsToDataFlowGraph (newBuffer : map (patch changeset) (functions dfg))</span></span>
+<span class="lineno">   85 </span>
+<span class="lineno">   86 </span>-- | Convert @[ F v x ]@ to 'DataFlowGraph'.
+<span class="lineno">   87 </span><span class="decl"><span class="istickedoff">fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs</span></span>
+<span class="lineno">   88 </span>
+<span class="lineno">   89 </span><span class="decl"><span class="istickedoff">addFuncToDataFlowGraph f (DFCluster items) = DFCluster (DFLeaf f : items)</span>
+<span class="lineno">   90 </span><span class="spaces"></span><span class="istickedoff">addFuncToDataFlowGraph f leaf = <span class="nottickedoff">DFCluster [DFLeaf f, leaf]</span></span></span>
 
 </pre>
 </body>

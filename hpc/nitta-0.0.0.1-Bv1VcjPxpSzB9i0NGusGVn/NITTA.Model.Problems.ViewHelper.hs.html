@@ -80,73 +80,83 @@ span.spaces    { background: white }
 <span class="lineno">   61 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">old</span></span></span> :: [FView]
 <span class="lineno">   62 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">new</span></span></span> :: [FView]
 <span class="lineno">   63 </span>        }
-<span class="lineno">   64 </span>    | ResolveDeadlockView
-<span class="lineno">   65 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">newBuffer</span></span></span> :: T.Text
-<span class="lineno">   66 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">changeset</span></span></span> :: T.Text
+<span class="lineno">   64 </span>    | OptimizeLogicalUnitView
+<span class="lineno">   65 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lOld</span></span></span> :: [FView]
+<span class="lineno">   66 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">lNew</span></span></span> :: [FView]
 <span class="lineno">   67 </span>        }
-<span class="lineno">   68 </span>    deriving (Generic)
-<span class="lineno">   69 </span>
-<span class="lineno">   70 </span>instance UnitTag tag =&gt; Viewable (Bind tag v x) DecisionView where
-<span class="lineno">   71 </span>    <span class="decl"><span class="nottickedoff">view (SingleBind uTag f) =</span>
-<span class="lineno">   72 </span><span class="spaces">        </span><span class="nottickedoff">SingleBindView</span>
-<span class="lineno">   73 </span><span class="spaces">            </span><span class="nottickedoff">{ function = view f</span>
-<span class="lineno">   74 </span><span class="spaces">            </span><span class="nottickedoff">, pu = toText uTag</span>
-<span class="lineno">   75 </span><span class="spaces">            </span><span class="nottickedoff">}</span>
-<span class="lineno">   76 </span><span class="spaces">    </span><span class="nottickedoff">view GroupBind{bindGroup} = GroupBindView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup</span></span>
-<span class="lineno">   77 </span>
-<span class="lineno">   78 </span>instance UnitTag tag =&gt; Viewable (Allocation tag) DecisionView where
-<span class="lineno">   79 </span>    <span class="decl"><span class="nottickedoff">view Allocation{networkTag, processUnitTag} =</span>
-<span class="lineno">   80 </span><span class="spaces">        </span><span class="nottickedoff">AllocationView</span>
-<span class="lineno">   81 </span><span class="spaces">            </span><span class="nottickedoff">{ networkTag = toText networkTag</span>
-<span class="lineno">   82 </span><span class="spaces">            </span><span class="nottickedoff">, processUnitTag = toText processUnitTag</span>
-<span class="lineno">   83 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">   84 </span>
-<span class="lineno">   85 </span>instance (UnitTag tag, Var v, Time t) =&gt; Viewable (DataflowSt tag v (Interval t)) DecisionView where
-<span class="lineno">   86 </span>    <span class="decl"><span class="nottickedoff">view DataflowSt{dfSource, dfTargets} =</span>
-<span class="lineno">   87 </span><span class="spaces">        </span><span class="nottickedoff">DataflowDecisionView</span>
-<span class="lineno">   88 </span><span class="spaces">            </span><span class="nottickedoff">{ source = view' dfSource</span>
-<span class="lineno">   89 </span><span class="spaces">            </span><span class="nottickedoff">, targets = map view' dfTargets</span>
-<span class="lineno">   90 </span><span class="spaces">            </span><span class="nottickedoff">}</span>
-<span class="lineno">   91 </span><span class="spaces">        </span><span class="nottickedoff">where</span>
-<span class="lineno">   92 </span><span class="spaces">            </span><span class="nottickedoff">view' = bimap toText epdView</span>
-<span class="lineno">   93 </span><span class="spaces">            </span><span class="nottickedoff">epdView EndpointSt{epRole, epAt} =</span>
-<span class="lineno">   94 </span><span class="spaces">                </span><span class="nottickedoff">EndpointSt</span>
-<span class="lineno">   95 </span><span class="spaces">                    </span><span class="nottickedoff">{ epRole = case epRole of</span>
-<span class="lineno">   96 </span><span class="spaces">                        </span><span class="nottickedoff">Source vs -&gt; Source $ S.map toText vs</span>
-<span class="lineno">   97 </span><span class="spaces">                        </span><span class="nottickedoff">Target v -&gt; Target $ toText v</span>
-<span class="lineno">   98 </span><span class="spaces">                    </span><span class="nottickedoff">, epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)</span>
-<span class="lineno">   99 </span><span class="spaces">                    </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  100 </span>
-<span class="lineno">  101 </span>instance (Var v, Val x) =&gt; Viewable (BreakLoop v x) DecisionView where
-<span class="lineno">  102 </span>    <span class="decl"><span class="nottickedoff">view BreakLoop{loopX, loopO, loopI} =</span>
-<span class="lineno">  103 </span><span class="spaces">        </span><span class="nottickedoff">BreakLoopView</span>
-<span class="lineno">  104 </span><span class="spaces">            </span><span class="nottickedoff">{ value = showText loopX</span>
-<span class="lineno">  105 </span><span class="spaces">            </span><span class="nottickedoff">, outputs = map toText $ S.elems loopO</span>
-<span class="lineno">  106 </span><span class="spaces">            </span><span class="nottickedoff">, input = toText loopI</span>
-<span class="lineno">  107 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  108 </span>
-<span class="lineno">  109 </span>instance Viewable (ConstantFolding v x) DecisionView where
-<span class="lineno">  110 </span>    <span class="decl"><span class="nottickedoff">view ConstantFolding{cRefOld, cRefNew} =</span>
-<span class="lineno">  111 </span><span class="spaces">        </span><span class="nottickedoff">ConstantFoldingView</span>
-<span class="lineno">  112 </span><span class="spaces">            </span><span class="nottickedoff">{ cRefOld = map view cRefOld</span>
-<span class="lineno">  113 </span><span class="spaces">            </span><span class="nottickedoff">, cRefNew = map view cRefNew</span>
-<span class="lineno">  114 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  115 </span>
-<span class="lineno">  116 </span>instance Viewable (OptimizeAccum v x) DecisionView where
-<span class="lineno">  117 </span>    <span class="decl"><span class="nottickedoff">view OptimizeAccum{refOld, refNew} =</span>
-<span class="lineno">  118 </span><span class="spaces">        </span><span class="nottickedoff">OptimizeAccumView</span>
-<span class="lineno">  119 </span><span class="spaces">            </span><span class="nottickedoff">{ old = map view refOld</span>
-<span class="lineno">  120 </span><span class="spaces">            </span><span class="nottickedoff">, new = map view refNew</span>
-<span class="lineno">  121 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  122 </span>
-<span class="lineno">  123 </span>instance Var v =&gt; Viewable (ResolveDeadlock v x) DecisionView where
-<span class="lineno">  124 </span>    <span class="decl"><span class="nottickedoff">view ResolveDeadlock{newBuffer, changeset} =</span>
-<span class="lineno">  125 </span><span class="spaces">        </span><span class="nottickedoff">ResolveDeadlockView</span>
-<span class="lineno">  126 </span><span class="spaces">            </span><span class="nottickedoff">{ newBuffer = showText newBuffer</span>
-<span class="lineno">  127 </span><span class="spaces">            </span><span class="nottickedoff">, changeset = showText changeset</span>
-<span class="lineno">  128 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
-<span class="lineno">  129 </span>
-<span class="lineno">  130 </span>instance ToJSON DecisionView
+<span class="lineno">   68 </span>    | ResolveDeadlockView
+<span class="lineno">   69 </span>        { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">newBuffer</span></span></span> :: T.Text
+<span class="lineno">   70 </span>        , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">changeset</span></span></span> :: T.Text
+<span class="lineno">   71 </span>        }
+<span class="lineno">   72 </span>    deriving (Generic)
+<span class="lineno">   73 </span>
+<span class="lineno">   74 </span>instance UnitTag tag =&gt; Viewable (Bind tag v x) DecisionView where
+<span class="lineno">   75 </span>    <span class="decl"><span class="nottickedoff">view (SingleBind uTag f) =</span>
+<span class="lineno">   76 </span><span class="spaces">        </span><span class="nottickedoff">SingleBindView</span>
+<span class="lineno">   77 </span><span class="spaces">            </span><span class="nottickedoff">{ function = view f</span>
+<span class="lineno">   78 </span><span class="spaces">            </span><span class="nottickedoff">, pu = toText uTag</span>
+<span class="lineno">   79 </span><span class="spaces">            </span><span class="nottickedoff">}</span>
+<span class="lineno">   80 </span><span class="spaces">    </span><span class="nottickedoff">view GroupBind{bindGroup} = GroupBindView $ HM.fromList $ map (bimap toText (map view)) $ M.assocs bindGroup</span></span>
+<span class="lineno">   81 </span>
+<span class="lineno">   82 </span>instance UnitTag tag =&gt; Viewable (Allocation tag) DecisionView where
+<span class="lineno">   83 </span>    <span class="decl"><span class="nottickedoff">view Allocation{networkTag, processUnitTag} =</span>
+<span class="lineno">   84 </span><span class="spaces">        </span><span class="nottickedoff">AllocationView</span>
+<span class="lineno">   85 </span><span class="spaces">            </span><span class="nottickedoff">{ networkTag = toText networkTag</span>
+<span class="lineno">   86 </span><span class="spaces">            </span><span class="nottickedoff">, processUnitTag = toText processUnitTag</span>
+<span class="lineno">   87 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">   88 </span>
+<span class="lineno">   89 </span>instance (UnitTag tag, Var v, Time t) =&gt; Viewable (DataflowSt tag v (Interval t)) DecisionView where
+<span class="lineno">   90 </span>    <span class="decl"><span class="nottickedoff">view DataflowSt{dfSource, dfTargets} =</span>
+<span class="lineno">   91 </span><span class="spaces">        </span><span class="nottickedoff">DataflowDecisionView</span>
+<span class="lineno">   92 </span><span class="spaces">            </span><span class="nottickedoff">{ source = view' dfSource</span>
+<span class="lineno">   93 </span><span class="spaces">            </span><span class="nottickedoff">, targets = map view' dfTargets</span>
+<span class="lineno">   94 </span><span class="spaces">            </span><span class="nottickedoff">}</span>
+<span class="lineno">   95 </span><span class="spaces">        </span><span class="nottickedoff">where</span>
+<span class="lineno">   96 </span><span class="spaces">            </span><span class="nottickedoff">view' = bimap toText epdView</span>
+<span class="lineno">   97 </span><span class="spaces">            </span><span class="nottickedoff">epdView EndpointSt{epRole, epAt} =</span>
+<span class="lineno">   98 </span><span class="spaces">                </span><span class="nottickedoff">EndpointSt</span>
+<span class="lineno">   99 </span><span class="spaces">                    </span><span class="nottickedoff">{ epRole = case epRole of</span>
+<span class="lineno">  100 </span><span class="spaces">                        </span><span class="nottickedoff">Source vs -&gt; Source $ S.map toText vs</span>
+<span class="lineno">  101 </span><span class="spaces">                        </span><span class="nottickedoff">Target v -&gt; Target $ toText v</span>
+<span class="lineno">  102 </span><span class="spaces">                    </span><span class="nottickedoff">, epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)</span>
+<span class="lineno">  103 </span><span class="spaces">                    </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  104 </span>
+<span class="lineno">  105 </span>instance (Var v, Val x) =&gt; Viewable (BreakLoop v x) DecisionView where
+<span class="lineno">  106 </span>    <span class="decl"><span class="nottickedoff">view BreakLoop{loopX, loopO, loopI} =</span>
+<span class="lineno">  107 </span><span class="spaces">        </span><span class="nottickedoff">BreakLoopView</span>
+<span class="lineno">  108 </span><span class="spaces">            </span><span class="nottickedoff">{ value = showText loopX</span>
+<span class="lineno">  109 </span><span class="spaces">            </span><span class="nottickedoff">, outputs = map toText $ S.elems loopO</span>
+<span class="lineno">  110 </span><span class="spaces">            </span><span class="nottickedoff">, input = toText loopI</span>
+<span class="lineno">  111 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  112 </span>
+<span class="lineno">  113 </span>instance Viewable (ConstantFolding v x) DecisionView where
+<span class="lineno">  114 </span>    <span class="decl"><span class="nottickedoff">view ConstantFolding{cRefOld, cRefNew} =</span>
+<span class="lineno">  115 </span><span class="spaces">        </span><span class="nottickedoff">ConstantFoldingView</span>
+<span class="lineno">  116 </span><span class="spaces">            </span><span class="nottickedoff">{ cRefOld = map view cRefOld</span>
+<span class="lineno">  117 </span><span class="spaces">            </span><span class="nottickedoff">, cRefNew = map view cRefNew</span>
+<span class="lineno">  118 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  119 </span>
+<span class="lineno">  120 </span>instance Viewable (OptimizeAccum v x) DecisionView where
+<span class="lineno">  121 </span>    <span class="decl"><span class="nottickedoff">view OptimizeAccum{refOld, refNew} =</span>
+<span class="lineno">  122 </span><span class="spaces">        </span><span class="nottickedoff">OptimizeAccumView</span>
+<span class="lineno">  123 </span><span class="spaces">            </span><span class="nottickedoff">{ old = map view refOld</span>
+<span class="lineno">  124 </span><span class="spaces">            </span><span class="nottickedoff">, new = map view refNew</span>
+<span class="lineno">  125 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  126 </span>
+<span class="lineno">  127 </span>instance Viewable (OptimizeLogicalUnit v x) DecisionView where
+<span class="lineno">  128 </span>    <span class="decl"><span class="nottickedoff">view OptimizeLogicalUnit{rOld, rNew} =</span>
+<span class="lineno">  129 </span><span class="spaces">        </span><span class="nottickedoff">OptimizeLogicalUnitView</span>
+<span class="lineno">  130 </span><span class="spaces">            </span><span class="nottickedoff">{ lOld = map view rOld</span>
+<span class="lineno">  131 </span><span class="spaces">            </span><span class="nottickedoff">, lNew = map view rNew</span>
+<span class="lineno">  132 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  133 </span>instance Var v =&gt; Viewable (ResolveDeadlock v x) DecisionView where
+<span class="lineno">  134 </span>    <span class="decl"><span class="nottickedoff">view ResolveDeadlock{newBuffer, changeset} =</span>
+<span class="lineno">  135 </span><span class="spaces">        </span><span class="nottickedoff">ResolveDeadlockView</span>
+<span class="lineno">  136 </span><span class="spaces">            </span><span class="nottickedoff">{ newBuffer = showText newBuffer</span>
+<span class="lineno">  137 </span><span class="spaces">            </span><span class="nottickedoff">, changeset = showText changeset</span>
+<span class="lineno">  138 </span><span class="spaces">            </span><span class="nottickedoff">}</span></span>
+<span class="lineno">  139 </span>
+<span class="lineno">  140 </span>instance ToJSON DecisionView
 
 </pre>
 </body>

@@ -68,13 +68,13 @@ Stability   : experimental
 </span><span class="hs-identifier hs-var">defaultLayoutOptions</span></span><span>
 </span><span id="line-64"></span><span>
 </span><span id="line-65"></span><span id="shiftI"><span class="annot"><span class="annottext">shiftI :: a -&gt; Interval a -&gt; Interval a
-</span><a href="NITTA.Utils.html#shiftI"><span class="hs-identifier hs-var hs-var">shiftI</span></a></span></span><span> </span><span id="local-6989586621680287401"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287401"><span class="hs-identifier hs-var">offset</span></a></span></span><span> </span><span id="local-6989586621680287400"><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680287400"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680287400"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="NITTA.Utils.html#shiftI"><span class="hs-identifier hs-var hs-var">shiftI</span></a></span></span><span> </span><span id="local-6989586621680361781"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680361781"><span class="hs-identifier hs-var">offset</span></a></span></span><span> </span><span id="local-6989586621680361780"><span class="annot"><span class="annottext">Interval a
+</span><a href="#local-6989586621680361780"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Interval a
+</span><a href="#local-6989586621680361780"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Interval a
 </span><span class="hs-identifier hs-var">I.singleton</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287401"><span class="hs-identifier hs-var">offset</span></a></span><span>
+</span><a href="#local-6989586621680361781"><span class="hs-identifier hs-var">offset</span></a></span><span>
 </span><span id="line-66"></span><span>
 </span><span id="line-67"></span><span id="bool2verilog"><span class="annot"><span class="annottext">bool2verilog :: Bool -&gt; Text
 </span><a href="NITTA.Utils.html#bool2verilog"><span class="hs-identifier hs-var hs-var">bool2verilog</span></a></span></span><span> </span><span class="annot"><span class="annottext">Bool
@@ -85,58 +85,58 @@ Stability   : experimental
 </span><span class="hs-string">&quot;1'b0&quot;</span></span><span>
 </span><span id="line-69"></span><span>
 </span><span id="line-70"></span><span id="values2dump"><span class="annot"><span class="annottext">values2dump :: t a -&gt; [Char]
-</span><a href="NITTA.Utils.html#values2dump"><span class="hs-identifier hs-var hs-var">values2dump</span></a></span></span><span> </span><span id="local-6989586621680287380"><span class="annot"><span class="annottext">t a
-</span><a href="#local-6989586621680287380"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-71"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680287377"><span class="annot"><span class="annottext">vs' :: [Char]
-</span><a href="#local-6989586621680287377"><span class="hs-identifier hs-var hs-var">vs'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><a href="NITTA.Utils.html#values2dump"><span class="hs-identifier hs-var hs-var">values2dump</span></a></span></span><span> </span><span id="local-6989586621680361760"><span class="annot"><span class="annottext">t a
+</span><a href="#local-6989586621680361760"><span class="hs-identifier hs-var">vs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680361757"><span class="annot"><span class="annottext">vs' :: [Char]
+</span><a href="#local-6989586621680361757"><span class="hs-identifier hs-var hs-var">vs'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
 </span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">t a
-</span><a href="#local-6989586621680287380"><span class="hs-identifier hs-var">vs</span></a></span><span>
-</span><span id="line-72"></span><span>        </span><span id="local-6989586621680287371"><span class="annot"><span class="annottext">x :: Int
-</span><a href="#local-6989586621680287371"><span class="hs-identifier hs-var hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><a href="#local-6989586621680361760"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><span id="line-72"></span><span>        </span><span id="local-6989586621680361751"><span class="annot"><span class="annottext">x :: Int
+</span><a href="#local-6989586621680361751"><span class="hs-identifier hs-var hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287377"><span class="hs-identifier hs-var">vs'</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680361757"><span class="hs-identifier hs-var">vs'</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span>
-</span><span id="line-73"></span><span>        </span><span id="local-6989586621680287363"><span class="annot"><span class="annottext">vs'' :: [Char]
-</span><a href="#local-6989586621680287363"><span class="hs-identifier hs-var hs-var">vs''</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287371"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span id="line-73"></span><span>        </span><span id="local-6989586621680361743"><span class="annot"><span class="annottext">vs'' :: [Char]
+</span><a href="#local-6989586621680361743"><span class="hs-identifier hs-var hs-var">vs''</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361751"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287377"><span class="hs-identifier hs-var">vs'</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; a -&gt; [a]
+</span><a href="#local-6989586621680361757"><span class="hs-identifier hs-var">vs'</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; a -&gt; [a]
 </span><span class="hs-identifier hs-var">replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287371"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621680361751"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Char
 </span><span class="hs-char">'0'</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287377"><span class="hs-identifier hs-var">vs'</span></a></span><span>
+</span><a href="#local-6989586621680361757"><span class="hs-identifier hs-var">vs'</span></a></span><span>
 </span><span id="line-74"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
-</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680287361"><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287361"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. (Integral a, Show a) =&gt; a -&gt; [Char] -&gt; [Char]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621680361741"><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361741"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. (Integral a, Show a) =&gt; a -&gt; [Char] -&gt; [Char]
 </span><span class="hs-identifier hs-var">showHex</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Char] -&gt; Int
-</span><a href="#local-6989586621680287360"><span class="hs-identifier hs-var">readBin</span></a></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287361"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361740"><span class="hs-identifier hs-var">readBin</span></a></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361741"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {a}. [a] -&gt; [[a]]
-</span><a href="#local-6989586621680287359"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287363"><span class="hs-identifier hs-var">vs''</span></a></span><span>
+</span><a href="#local-6989586621680361739"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361743"><span class="hs-identifier hs-var">vs''</span></a></span><span>
 </span><span id="line-75"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-76"></span><span>        </span><span id="local-6989586621680287359"><span class="annot"><span class="annottext">groupBy4 :: [a] -&gt; [[a]]
-</span><a href="#local-6989586621680287359"><span class="hs-identifier hs-var hs-var">groupBy4</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-77"></span><span>        </span><span class="annot"><a href="#local-6989586621680287359"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span id="local-6989586621680287358"><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287358"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><span id="line-76"></span><span>        </span><span id="local-6989586621680361739"><span class="annot"><span class="annottext">groupBy4 :: [a] -&gt; [[a]]
+</span><a href="#local-6989586621680361739"><span class="hs-identifier hs-var hs-var">groupBy4</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span>        </span><span class="annot"><a href="#local-6989586621680361739"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span id="local-6989586621680361738"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680361738"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287358"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361738"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [[a]]
-</span><a href="#local-6989586621680287359"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361739"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287358"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-78"></span><span>        </span><span class="annot"><a href="#local-6989586621680287360"><span class="hs-identifier hs-type">readBin</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
-</span><span id="line-79"></span><span>        </span><span id="local-6989586621680287360"><span class="annot"><span class="annottext">readBin :: [Char] -&gt; Int
-</span><a href="#local-6989586621680287360"><span class="hs-identifier hs-var hs-var">readBin</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; a
+</span><a href="#local-6989586621680361738"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>        </span><span class="annot"><a href="#local-6989586621680361740"><span class="hs-identifier hs-type">readBin</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-79"></span><span>        </span><span id="local-6989586621680361740"><span class="annot"><span class="annottext">readBin :: [Char] -&gt; Int
+</span><a href="#local-6989586621680361740"><span class="hs-identifier hs-var hs-var">readBin</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a, b) -&gt; a
 </span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; a
 </span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
@@ -151,20 +151,20 @@ Stability   : experimental
 </span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
 </span><span id="line-80"></span><span>
 </span><span id="line-81"></span><span id="hdlValDump"><span class="annot"><span class="annottext">hdlValDump :: p -&gt; Text
-</span><a href="NITTA.Utils.html#hdlValDump"><span class="hs-identifier hs-var hs-var">hdlValDump</span></a></span></span><span> </span><span id="local-6989586621680287347"><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680287347"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-82"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680287330"><span class="annot"><span class="annottext">bins :: [Bool]
-</span><a href="#local-6989586621680287330"><span class="hs-identifier hs-var hs-var">bins</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Utils.html#hdlValDump"><span class="hs-identifier hs-var hs-var">hdlValDump</span></a></span></span><span> </span><span id="local-6989586621680361727"><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621680361727"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680361710"><span class="annot"><span class="annottext">bins :: [Bool]
+</span><a href="#local-6989586621680361710"><span class="hs-identifier hs-var hs-var">bins</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-83"></span><span>            </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Bits a =&gt; a -&gt; Int -&gt; Bool
 </span><span class="hs-identifier hs-var">testBit</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall x. Val x =&gt; x -&gt; Integer
 </span><a href="NITTA.Intermediate.Value.html#rawAttr"><span class="hs-identifier hs-var">rawAttr</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680287347"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
+</span><a href="#local-6989586621680361727"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">forall x. Val x =&gt; x -&gt; Int
 </span><a href="NITTA.Intermediate.Value.html#attrWidth"><span class="hs-identifier hs-var">attrWidth</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680287347"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680361727"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
 </span><span id="line-84"></span><span>                </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
@@ -173,54 +173,54 @@ Stability   : experimental
 </span><span class="hs-identifier hs-var">testBit</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall x. Val x =&gt; x -&gt; Integer
 </span><a href="NITTA.Intermediate.Value.html#rawData"><span class="hs-identifier hs-var">rawData</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680287347"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
+</span><a href="#local-6989586621680361727"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">reverse</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">forall x. Val x =&gt; x -&gt; Int
 </span><a href="NITTA.Intermediate.Value.html#dataWidth"><span class="hs-identifier hs-var">dataWidth</span></a></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680287347"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680361727"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
 </span><span id="line-85"></span><span>
-</span><span id="line-86"></span><span>        </span><span id="local-6989586621680287321"><span class="annot"><span class="annottext">lMod :: Int
-</span><a href="#local-6989586621680287321"><span class="hs-identifier hs-var hs-var">lMod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span id="line-86"></span><span>        </span><span id="local-6989586621680361701"><span class="annot"><span class="annottext">lMod :: Int
+</span><a href="#local-6989586621680361701"><span class="hs-identifier hs-var hs-var">lMod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
 </span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
-</span><a href="#local-6989586621680287330"><span class="hs-identifier hs-var">bins</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680361710"><span class="hs-identifier hs-var">bins</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Integral a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span>
-</span><span id="line-87"></span><span>        </span><span id="local-6989586621680287316"><span class="annot"><span class="annottext">bins' :: [[Bool]]
-</span><a href="#local-6989586621680287316"><span class="hs-identifier hs-var hs-var">bins'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>        </span><span id="local-6989586621680361696"><span class="annot"><span class="annottext">bins' :: [[Bool]]
+</span><a href="#local-6989586621680361696"><span class="hs-identifier hs-var hs-var">bins'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-88"></span><span>            </span><span class="annot"><span class="annottext">forall {a}. [a] -&gt; [[a]]
-</span><a href="#local-6989586621680287315"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680361695"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
 </span><span id="line-89"></span><span>                </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287321"><span class="hs-identifier hs-var">lMod</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680361701"><span class="hs-identifier hs-var">lMod</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span>
 </span><span id="line-90"></span><span>                    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">[Bool]
-</span><a href="#local-6989586621680287330"><span class="hs-identifier hs-var">bins</span></a></span><span>
+</span><a href="#local-6989586621680361710"><span class="hs-identifier hs-var">bins</span></a></span><span>
 </span><span id="line-91"></span><span>                    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; a -&gt; [a]
 </span><span class="hs-identifier hs-var">replicate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287321"><span class="hs-identifier hs-var">lMod</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; a
+</span><a href="#local-6989586621680361701"><span class="hs-identifier hs-var">lMod</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. [a] -&gt; a
 </span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
-</span><a href="#local-6989586621680287330"><span class="hs-identifier hs-var">bins</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361710"><span class="hs-identifier hs-var">bins</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
-</span><a href="#local-6989586621680287330"><span class="hs-identifier hs-var">bins</span></a></span><span>
-</span><span id="line-92"></span><span>        </span><span id="local-6989586621680287307"><span class="annot"><span class="annottext">hs :: [Int]
-</span><a href="#local-6989586621680287307"><span class="hs-identifier hs-var hs-var">hs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><a href="#local-6989586621680361710"><span class="hs-identifier hs-var">bins</span></a></span><span>
+</span><span id="line-92"></span><span>        </span><span id="local-6989586621680361687"><span class="annot"><span class="annottext">hs :: [Int]
+</span><a href="#local-6989586621680361687"><span class="hs-identifier hs-var hs-var">hs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a b.
 Foldable t =&gt;
 (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
-</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680287305"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287305"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680287304"><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680287304"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680287303"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287303"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
-</span><a href="#local-6989586621680287304"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall a. Bits a =&gt; a -&gt; Int -&gt; a
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span id="local-6989586621680361685"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361685"><span class="hs-identifier hs-var">i</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680361684"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680361684"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680361683"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361683"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680361684"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">forall a. Bits a =&gt; a -&gt; Int -&gt; a
 </span><span class="hs-identifier hs-var">setBit</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287303"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287305"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621680287303"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361683"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361685"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680361683"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a b. [a] -&gt; [b] -&gt; [(a, b)]
 </span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
@@ -228,7 +228,7 @@ Foldable t =&gt;
 </span><span class="hs-number">2</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Bool]]
-</span><a href="#local-6989586621680287316"><span class="hs-identifier hs-var">bins'</span></a></span><span>
+</span><a href="#local-6989586621680361696"><span class="hs-identifier hs-var">bins'</span></a></span><span>
 </span><span id="line-93"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.concat</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
@@ -237,24 +237,24 @@ Foldable t =&gt;
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. (Integral a, Show a) =&gt; a -&gt; [Char] -&gt; [Char]
 </span><span class="hs-operator hs-var">`showHex`</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Int]
-</span><a href="#local-6989586621680287307"><span class="hs-identifier hs-var">hs</span></a></span><span>
+</span><a href="#local-6989586621680361687"><span class="hs-identifier hs-var">hs</span></a></span><span>
 </span><span id="line-94"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-95"></span><span>        </span><span id="local-6989586621680287315"><span class="annot"><span class="annottext">groupBy4 :: [a] -&gt; [[a]]
-</span><a href="#local-6989586621680287315"><span class="hs-identifier hs-var hs-var">groupBy4</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-96"></span><span>        </span><span class="annot"><a href="#local-6989586621680287315"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span id="local-6989586621680287300"><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287300"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><span id="line-95"></span><span>        </span><span id="local-6989586621680361695"><span class="annot"><span class="annottext">groupBy4 :: [a] -&gt; [[a]]
+</span><a href="#local-6989586621680361695"><span class="hs-identifier hs-var hs-var">groupBy4</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-96"></span><span>        </span><span class="annot"><a href="#local-6989586621680361695"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span id="local-6989586621680361680"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621680361680"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287300"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361680"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [[a]]
-</span><a href="#local-6989586621680287315"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361695"><span class="hs-identifier hs-var">groupBy4</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Int -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">[a]
-</span><a href="#local-6989586621680287300"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680361680"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-97"></span><span>
 </span><span id="line-98"></span><span id="toModuleName"><span class="annot"><span class="annottext">toModuleName :: [Char] -&gt; [Char]
-</span><a href="NITTA.Utils.html#toModuleName"><span class="hs-identifier hs-var hs-var">toModuleName</span></a></span></span><span> </span><span id="local-6989586621680287291"><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287291"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a] -&gt; [a]
+</span><a href="NITTA.Utils.html#toModuleName"><span class="hs-identifier hs-var hs-var">toModuleName</span></a></span></span><span> </span><span id="local-6989586621680361671"><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361671"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-identifier hs-var">S.replace</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;_&quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -262,65 +262,65 @@ Foldable t =&gt;
 </span><span class="hs-identifier hs-var">S.replace</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;:&quot;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287291"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><a href="#local-6989586621680361671"><span class="hs-identifier hs-var">name</span></a></span><span>
 </span><span id="line-99"></span><span>
 </span><span id="line-100"></span><span id="endpointAt"><span class="annot"><span class="annottext">endpointAt :: a -&gt; Process a (StepInfo v x t) -&gt; Maybe (EndpointRole v)
-</span><a href="NITTA.Utils.html#endpointAt"><span class="hs-identifier hs-var hs-var">endpointAt</span></a></span></span><span> </span><span id="local-6989586621680287274"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287274"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621680287273"><span class="annot"><span class="annottext">Process a (StepInfo v x t)
-</span><a href="#local-6989586621680287273"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="NITTA.Utils.html#endpointAt"><span class="hs-identifier hs-var hs-var">endpointAt</span></a></span></span><span> </span><span id="local-6989586621680361654"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680361654"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621680361653"><span class="annot"><span class="annottext">Process a (StepInfo v x t)
+</span><a href="#local-6989586621680361653"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-101"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">forall {t} {v} {x} {t}.
 Step t (StepInfo v x t) -&gt; Maybe (EndpointRole v)
 </span><a href="NITTA.Utils.html#getEndpoint"><span class="hs-identifier hs-var">getEndpoint</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {a} {i}. Ord a =&gt; a -&gt; Process a i -&gt; [Step a i]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#whatsHappen"><span class="hs-identifier hs-var">whatsHappen</span></a></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287274"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Process a (StepInfo v x t)
-</span><a href="#local-6989586621680287273"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-102"></span><span>        </span><span class="hs-special">[</span><span id="local-6989586621680287270"><span class="annot"><span class="annottext">EndpointRole v
-</span><a href="#local-6989586621680287270"><span class="hs-identifier hs-var">ep</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><a href="#local-6989586621680361654"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Process a (StepInfo v x t)
+</span><a href="#local-6989586621680361653"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-102"></span><span>        </span><span class="hs-special">[</span><span id="local-6989586621680361650"><span class="annot"><span class="annottext">EndpointRole v
+</span><a href="#local-6989586621680361650"><span class="hs-identifier hs-var">ep</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">EndpointRole v
-</span><a href="#local-6989586621680287270"><span class="hs-identifier hs-var">ep</span></a></span><span>
+</span><a href="#local-6989586621680361650"><span class="hs-identifier hs-var">ep</span></a></span><span>
 </span><span id="line-103"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-104"></span><span>        </span><span id="local-6989586621680287269"><span class="annot"><span class="annottext">[EndpointRole v]
-</span><a href="#local-6989586621680287269"><span class="hs-identifier hs-var">eps</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span id="line-104"></span><span>        </span><span id="local-6989586621680361649"><span class="annot"><span class="annottext">[EndpointRole v]
+</span><a href="#local-6989586621680361649"><span class="hs-identifier hs-var">eps</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;endpoints collision at: &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287274"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621680361654"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; [Char]
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[EndpointRole v]
-</span><a href="#local-6989586621680287269"><span class="hs-identifier hs-var">eps</span></a></span><span>
+</span><a href="#local-6989586621680361649"><span class="hs-identifier hs-var">eps</span></a></span><span>
 </span><span id="line-105"></span><span>
 </span><span id="line-106"></span><span id="isIntermediate"><span class="annot"><span class="annottext">isIntermediate :: Step t (StepInfo v x t) -&gt; Bool
-</span><a href="NITTA.Utils.html#isIntermediate"><span class="hs-identifier hs-var hs-var">isIntermediate</span></a></span></span><span> </span><span id="local-6989586621680287267"><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680287267"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
+</span><a href="NITTA.Utils.html#isIntermediate"><span class="hs-identifier hs-var hs-var">isIntermediate</span></a></span></span><span> </span><span id="local-6989586621680361647"><span class="annot"><span class="annottext">Step t (StepInfo v x t)
+</span><a href="#local-6989586621680361647"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
 </span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {t} {v} {x} {t}. Step t (StepInfo v x t) -&gt; Maybe (F v x)
 </span><a href="NITTA.Utils.html#getIntermediate"><span class="hs-identifier hs-var">getIntermediate</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680287267"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><a href="#local-6989586621680361647"><span class="hs-identifier hs-var">s</span></a></span><span>
 </span><span id="line-107"></span><span>
 </span><span id="line-108"></span><span id="getIntermediate"><span class="annot"><span class="annottext">getIntermediate :: Step t (StepInfo v x t) -&gt; Maybe (F v x)
-</span><a href="NITTA.Utils.html#getIntermediate"><span class="hs-identifier hs-var hs-var">getIntermediate</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680287264"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="NITTA.Utils.html#getIntermediate"><span class="hs-identifier hs-var hs-var">getIntermediate</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680361644"><span class="annot"><span class="annottext">StepInfo v x t
 pDesc :: forall t i. Step t i -&gt; i
 pDesc :: StepInfo v x t
-</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IntermediateStep"><span class="hs-identifier hs-type">IntermediateStep</span></a></span><span> </span><span id="local-6989586621680287261"><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680287261"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t}. StepInfo v x t -&gt; StepInfo v x t
+</span><a href="NITTA.Model.ProcessorUnits.Types.html#pDesc"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#IntermediateStep"><span class="hs-identifier hs-type">IntermediateStep</span></a></span><span> </span><span id="local-6989586621680361641"><span class="annot"><span class="annottext">F v x
+</span><a href="#local-6989586621680361641"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t}. StepInfo v x t -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#descent"><span class="hs-identifier hs-var">descent</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680287264"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><a href="#local-6989586621680361644"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">F v x
-</span><a href="#local-6989586621680287261"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680361641"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-109"></span><span class="annot"><a href="NITTA.Utils.html#getIntermediate"><span class="hs-identifier hs-var">getIntermediate</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-110"></span><span>
 </span><span id="line-111"></span><span id="getIntermediates"><span class="annot"><span class="annottext">getIntermediates :: Process b (StepInfo v x t) -&gt; [F v x]
-</span><a href="NITTA.Utils.html#getIntermediates"><span class="hs-identifier hs-var hs-var">getIntermediates</span></a></span></span><span> </span><span id="local-6989586621680287257"><span class="annot"><span class="annottext">Process b (StepInfo v x t)
-</span><a href="#local-6989586621680287257"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><a href="NITTA.Utils.html#getIntermediates"><span class="hs-identifier hs-var hs-var">getIntermediates</span></a></span></span><span> </span><span id="local-6989586621680361637"><span class="annot"><span class="annottext">Process b (StepInfo v x t)
+</span><a href="#local-6989586621680361637"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">forall {t} {v} {x} {t}. Step t (StepInfo v x t) -&gt; Maybe (F v x)
 </span><a href="NITTA.Utils.html#getIntermediate"><span class="hs-identifier hs-var">getIntermediate</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall b a. Ord b =&gt; (a -&gt; b) -&gt; [a] -&gt; [a]
@@ -328,49 +328,49 @@ pDesc :: StepInfo v x t
 </span><a href="NITTA.Utils.html#stepStart"><span class="hs-identifier hs-var">stepStart</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Process t i -&gt; [Step t i]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">Process b (StepInfo v x t)
-</span><a href="#local-6989586621680287257"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680361637"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-112"></span><span>
 </span><span id="line-113"></span><span id="getEndpoint"><span class="annot"><span class="annottext">getEndpoint :: Step t (StepInfo v x t) -&gt; Maybe (EndpointRole v)
-</span><a href="NITTA.Utils.html#getEndpoint"><span class="hs-identifier hs-var hs-var">getEndpoint</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680287254"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="NITTA.Utils.html#getEndpoint"><span class="hs-identifier hs-var hs-var">getEndpoint</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680361634"><span class="annot"><span class="annottext">StepInfo v x t
 pDesc :: StepInfo v x t
 pDesc :: forall t i. Step t i -&gt; i
-</span><a href="#local-6989586621680287254"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#EndpointRoleStep"><span class="hs-identifier hs-type">EndpointRoleStep</span></a></span><span> </span><span id="local-6989586621680287252"><span class="annot"><span class="annottext">EndpointRole v
-</span><a href="#local-6989586621680287252"><span class="hs-keyword hs-var">role</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t}. StepInfo v x t -&gt; StepInfo v x t
+</span><a href="#local-6989586621680361634"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#EndpointRoleStep"><span class="hs-identifier hs-type">EndpointRoleStep</span></a></span><span> </span><span id="local-6989586621680361632"><span class="annot"><span class="annottext">EndpointRole v
+</span><a href="#local-6989586621680361632"><span class="hs-keyword hs-var">role</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t}. StepInfo v x t -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#descent"><span class="hs-identifier hs-var">descent</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680287254"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><a href="#local-6989586621680361634"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">EndpointRole v
-</span><a href="#local-6989586621680287252"><span class="hs-keyword hs-var">role</span></a></span><span>
+</span><a href="#local-6989586621680361632"><span class="hs-keyword hs-var">role</span></a></span><span>
 </span><span id="line-114"></span><span class="annot"><a href="NITTA.Utils.html#getEndpoint"><span class="hs-identifier hs-var">getEndpoint</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-115"></span><span>
 </span><span id="line-116"></span><span id="isInstruction"><span class="annot"><span class="annottext">isInstruction :: Step t (StepInfo v x t) -&gt; Bool
-</span><a href="NITTA.Utils.html#isInstruction"><span class="hs-identifier hs-var hs-var">isInstruction</span></a></span></span><span> </span><span id="local-6989586621680287251"><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680287251"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
+</span><a href="NITTA.Utils.html#isInstruction"><span class="hs-identifier hs-var hs-var">isInstruction</span></a></span></span><span> </span><span id="local-6989586621680361631"><span class="annot"><span class="annottext">Step t (StepInfo v x t)
+</span><a href="#local-6989586621680361631"><span class="hs-identifier hs-var">instr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
 </span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {t} {v} {x} {t}.
 Step t (StepInfo v x t) -&gt; Maybe (StepInfo v x t)
 </span><a href="NITTA.Utils.html#getInstruction"><span class="hs-identifier hs-var">getInstruction</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
-</span><a href="#local-6989586621680287251"><span class="hs-identifier hs-var">instr</span></a></span><span>
+</span><a href="#local-6989586621680361631"><span class="hs-identifier hs-var">instr</span></a></span><span>
 </span><span id="line-117"></span><span>
 </span><span id="line-118"></span><span id="getInstruction"><span class="annot"><span class="annottext">getInstruction :: Step t (StepInfo v x t) -&gt; Maybe (StepInfo v x t)
-</span><a href="NITTA.Utils.html#getInstruction"><span class="hs-identifier hs-var hs-var">getInstruction</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680287250"><span class="annot"><span class="annottext">StepInfo v x t
+</span><a href="NITTA.Utils.html#getInstruction"><span class="hs-identifier hs-var hs-var">getInstruction</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680361630"><span class="annot"><span class="annottext">StepInfo v x t
 pDesc :: StepInfo v x t
 pDesc :: forall t i. Step t i -&gt; i
-</span><a href="#local-6989586621680287250"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680287249"><span class="annot"><span class="annottext">instr :: StepInfo v x t
-</span><a href="#local-6989586621680287249"><span class="hs-identifier hs-var">instr</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#InstructionStep"><span class="hs-identifier hs-type">InstructionStep</span></a></span><span> </span><span class="annot"><span class="annottext">Instruction pu
+</span><a href="#local-6989586621680361630"><span class="hs-identifier hs-var hs-var">pDesc</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621680361629"><span class="annot"><span class="annottext">instr :: StepInfo v x t
+</span><a href="#local-6989586621680361629"><span class="hs-identifier hs-var">instr</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#InstructionStep"><span class="hs-identifier hs-type">InstructionStep</span></a></span><span> </span><span class="annot"><span class="annottext">Instruction pu
 </span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall {v} {x} {t}. StepInfo v x t -&gt; StepInfo v x t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#descent"><span class="hs-identifier hs-var">descent</span></a></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680287250"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><a href="#local-6989586621680361630"><span class="hs-identifier hs-var">pDesc</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">StepInfo v x t
-</span><a href="#local-6989586621680287249"><span class="hs-identifier hs-var">instr</span></a></span><span>
+</span><a href="#local-6989586621680361629"><span class="hs-identifier hs-var">instr</span></a></span><span>
 </span><span id="line-119"></span><span class="annot"><a href="NITTA.Utils.html#getInstruction"><span class="hs-identifier hs-var">getInstruction</span></a></span><span> </span><span class="annot"><span class="annottext">Step t (StepInfo v x t)
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-120"></span><span>
 </span><span id="line-121"></span><span id="getEndpoints"><span class="annot"><span class="annottext">getEndpoints :: Process b (StepInfo v x t) -&gt; [EndpointRole v]
-</span><a href="NITTA.Utils.html#getEndpoints"><span class="hs-identifier hs-var hs-var">getEndpoints</span></a></span></span><span> </span><span id="local-6989586621680287243"><span class="annot"><span class="annottext">Process b (StepInfo v x t)
-</span><a href="#local-6989586621680287243"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><a href="NITTA.Utils.html#getEndpoints"><span class="hs-identifier hs-var hs-var">getEndpoints</span></a></span></span><span> </span><span id="local-6989586621680361623"><span class="annot"><span class="annottext">Process b (StepInfo v x t)
+</span><a href="#local-6989586621680361623"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">forall {t} {v} {x} {t}.
 Step t (StepInfo v x t) -&gt; Maybe (EndpointRole v)
 </span><a href="NITTA.Utils.html#getEndpoint"><span class="hs-identifier hs-var">getEndpoint</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -379,10 +379,10 @@ Step t (StepInfo v x t) -&gt; Maybe (EndpointRole v)
 </span><a href="NITTA.Utils.html#stepStart"><span class="hs-identifier hs-var">stepStart</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Process t i -&gt; [Step t i]
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#steps"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">Process b (StepInfo v x t)
-</span><a href="#local-6989586621680287243"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><a href="#local-6989586621680361623"><span class="hs-identifier hs-var">p</span></a></span><span>
 </span><span id="line-122"></span><span id="transferred"><span class="annot"><span class="annottext">transferred :: u -&gt; Set a1
-</span><a href="NITTA.Utils.html#transferred"><span class="hs-identifier hs-var hs-var">transferred</span></a></span></span><span> </span><span id="local-6989586621680287230"><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680287230"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
+</span><a href="NITTA.Utils.html#transferred"><span class="hs-identifier hs-var hs-var">transferred</span></a></span></span><span> </span><span id="local-6989586621680361610"><span class="annot"><span class="annottext">u
+</span><a href="#local-6989586621680361610"><span class="hs-identifier hs-var">pu</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a1} {a2}. Ord a1 =&gt; (a2 -&gt; Set a1) -&gt; [a2] -&gt; Set a1
 </span><a href="NITTA.Utils.Base.html#unionsMap"><span class="hs-identifier hs-var">unionsMap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a v. Variables a v =&gt; a -&gt; Set v
 </span><a href="NITTA.Intermediate.Variable.html#variables"><span class="hs-identifier hs-var">variables</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {b} {v} {x} {t}.
@@ -393,12 +393,12 @@ Process b (StepInfo v x t) -&gt; [EndpointRole v]
 ProcessorUnit u v x t =&gt;
 u -&gt; Process t (StepInfo v x t)
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#process"><span class="hs-identifier hs-var">process</span></a></span><span> </span><span class="annot"><span class="annottext">u
-</span><a href="#local-6989586621680287230"><span class="hs-identifier hs-var">pu</span></a></span><span>
+</span><a href="#local-6989586621680361610"><span class="hs-identifier hs-var">pu</span></a></span><span>
 </span><span id="line-123"></span><span>
 </span><span id="line-124"></span><span id="inputsPushedAt"><span class="annot"><span class="annottext">inputsPushedAt :: Process a (StepInfo a x t2) -&gt; f -&gt; a
-</span><a href="NITTA.Utils.html#inputsPushedAt"><span class="hs-identifier hs-var hs-var">inputsPushedAt</span></a></span></span><span> </span><span id="local-6989586621680287220"><span class="annot"><span class="annottext">Process a (StepInfo a x t2)
-</span><a href="#local-6989586621680287220"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span id="local-6989586621680287219"><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680287219"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
+</span><a href="NITTA.Utils.html#inputsPushedAt"><span class="hs-identifier hs-var hs-var">inputsPushedAt</span></a></span></span><span> </span><span id="local-6989586621680361600"><span class="annot"><span class="annottext">Process a (StepInfo a x t2)
+</span><a href="#local-6989586621680361600"><span class="hs-identifier hs-var">process_</span></a></span></span><span> </span><span id="local-6989586621680361599"><span class="annot"><span class="annottext">f
+</span><a href="#local-6989586621680361599"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">sup</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall {a} {i}. Ord a =&gt; [Step a i] -&gt; Interval a
 </span><a href="NITTA.Utils.html#stepsInterval"><span class="hs-identifier hs-var">stepsInterval</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -407,48 +407,48 @@ Ord a =&gt;
 Process t1 (StepInfo a x t2)
 -&gt; Set a -&gt; [Step t1 (StepInfo a x t2)]
 </span><a href="NITTA.Utils.ProcessDescription.html#relatedEndpoints"><span class="hs-identifier hs-var">relatedEndpoints</span></a></span><span> </span><span class="annot"><span class="annottext">Process a (StepInfo a x t2)
-</span><a href="#local-6989586621680287220"><span class="hs-identifier hs-var">process_</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680361600"><span class="hs-identifier hs-var">process_</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall f v. Function f v =&gt; f -&gt; Set v
 </span><a href="NITTA.Intermediate.Types.html#inputs"><span class="hs-identifier hs-var">inputs</span></a></span><span> </span><span class="annot"><span class="annottext">f
-</span><a href="#local-6989586621680287219"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><a href="#local-6989586621680361599"><span class="hs-identifier hs-var">f</span></a></span><span>
 </span><span id="line-125"></span><span>
 </span><span id="line-126"></span><span id="stepsInterval"><span class="annot"><span class="annottext">stepsInterval :: [Step a i] -&gt; Interval a
-</span><a href="NITTA.Utils.html#stepsInterval"><span class="hs-identifier hs-var hs-var">stepsInterval</span></a></span></span><span> </span><span id="local-6989586621680287215"><span class="annot"><span class="annottext">[Step a i]
-</span><a href="#local-6989586621680287215"><span class="hs-identifier hs-var">ss</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-127"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680287212"><span class="annot"><span class="annottext">a :: a
-</span><a href="#local-6989586621680287212"><span class="hs-identifier hs-var hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><a href="NITTA.Utils.html#stepsInterval"><span class="hs-identifier hs-var hs-var">stepsInterval</span></a></span></span><span> </span><span id="local-6989586621680361595"><span class="annot"><span class="annottext">[Step a i]
+</span><a href="#local-6989586621680361595"><span class="hs-identifier hs-var">ss</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621680361592"><span class="annot"><span class="annottext">a :: a
+</span><a href="#local-6989586621680361592"><span class="hs-identifier hs-var hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">minimum</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">inf</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Step t i -&gt; Interval t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a i]
-</span><a href="#local-6989586621680287215"><span class="hs-identifier hs-var">ss</span></a></span><span>
-</span><span id="line-128"></span><span>        </span><span id="local-6989586621680287207"><span class="annot"><span class="annottext">b :: a
-</span><a href="#local-6989586621680287207"><span class="hs-identifier hs-var hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><a href="#local-6989586621680361595"><span class="hs-identifier hs-var">ss</span></a></span><span>
+</span><span id="line-128"></span><span>        </span><span id="local-6989586621680361587"><span class="annot"><span class="annottext">b :: a
+</span><a href="#local-6989586621680361587"><span class="hs-identifier hs-var hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
 </span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">sup</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall t i. Step t i -&gt; Interval t
 </span><a href="NITTA.Model.ProcessorUnits.Types.html#pInterval"><span class="hs-identifier hs-var">pInterval</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Step a i]
-</span><a href="#local-6989586621680287215"><span class="hs-identifier hs-var">ss</span></a></span><span>
+</span><a href="#local-6989586621680361595"><span class="hs-identifier hs-var">ss</span></a></span><span>
 </span><span id="line-129"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287212"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Interval a
+</span><a href="#local-6989586621680361592"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Ord a =&gt; a -&gt; a -&gt; Interval a
 </span><span class="hs-operator hs-var">...</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287207"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><a href="#local-6989586621680361587"><span class="hs-identifier hs-var">b</span></a></span><span>
 </span><span id="line-130"></span><span>
 </span><span id="line-131"></span><span id="stepStart"><span class="annot"><span class="annottext">stepStart :: Step a i -&gt; a
-</span><a href="NITTA.Utils.html#stepStart"><span class="hs-identifier hs-var hs-var">stepStart</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680287205"><span class="annot"><span class="annottext">Interval a
+</span><a href="NITTA.Utils.html#stepStart"><span class="hs-identifier hs-var hs-var">stepStart</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.ProcessorUnits.Types.html#Step"><span class="hs-identifier hs-type">Step</span></a></span><span class="hs-special">{</span><span id="local-6989586621680361585"><span class="annot"><span class="annottext">Interval a
 pInterval :: Interval a
 pInterval :: forall t i. Step t i -&gt; Interval t
-</span><a href="#local-6989586621680287205"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
+</span><a href="#local-6989586621680361585"><span class="hs-identifier hs-var hs-var">pInterval</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. Interval a -&gt; a
 </span><span class="hs-identifier hs-var">I.inf</span></span><span> </span><span class="annot"><span class="annottext">Interval a
-</span><a href="#local-6989586621680287205"><span class="hs-identifier hs-var">pInterval</span></a></span><span>
+</span><a href="#local-6989586621680361585"><span class="hs-identifier hs-var">pInterval</span></a></span><span>
 </span><span id="line-132"></span><span>
 </span><span id="line-133"></span><span id="getToml"><span class="annot"><span class="annottext">getToml :: Text -&gt; Table
-</span><a href="NITTA.Utils.html#getToml"><span class="hs-identifier hs-var hs-var">getToml</span></a></span></span><span> </span><span id="local-6989586621680287200"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287200"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><a href="NITTA.Utils.html#getToml"><span class="hs-identifier hs-var hs-var">getToml</span></a></span></span><span> </span><span id="local-6989586621680361580"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680361580"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
 </span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall a. Show a =&gt; a -&gt; [Char]
@@ -457,44 +457,44 @@ pInterval :: forall t i. Step t i -&gt; Interval t
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Char] -&gt; Text -&gt; Either ParseError Table
 </span><span class="hs-identifier hs-var">parseTomlDoc</span></span><span> </span><span class="annot"><span class="annottext">[Char]
 </span><span class="hs-string">&quot;parse error: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287200"><span class="hs-identifier hs-var">text</span></a></span><span>
+</span><a href="#local-6989586621680361580"><span class="hs-identifier hs-var">text</span></a></span><span>
 </span><span id="line-134"></span><span>
 </span><span id="line-135"></span><span id="getFromToml"><span class="annot"><span class="annottext">getFromToml :: HashMap Text a -&gt; a
-</span><a href="NITTA.Utils.html#getFromToml"><span class="hs-identifier hs-var hs-var">getFromToml</span></a></span></span><span> </span><span id="local-6989586621680287193"><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680287193"><span class="hs-identifier hs-var">toml</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a} {a}.
+</span><a href="NITTA.Utils.html#getFromToml"><span class="hs-identifier hs-var hs-var">getFromToml</span></a></span></span><span> </span><span id="local-6989586621680361573"><span class="annot"><span class="annottext">HashMap Text a
+</span><a href="#local-6989586621680361573"><span class="hs-identifier hs-var">toml</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a} {a}.
 (FromJSON a, ToJSON a) =&gt;
 Text -&gt; HashMap Text a -&gt; a
 </span><a href="NITTA.Utils.html#getFromTomlSection"><span class="hs-identifier hs-var">getFromTomlSection</span></a></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-identifier hs-var">T.empty</span></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680287193"><span class="hs-identifier hs-var">toml</span></a></span><span>
+</span><a href="#local-6989586621680361573"><span class="hs-identifier hs-var">toml</span></a></span><span>
 </span><span id="line-136"></span><span>
 </span><span id="line-137"></span><span id="getFromTomlSection"><span class="annot"><span class="annottext">getFromTomlSection :: Text -&gt; HashMap Text a -&gt; a
-</span><a href="NITTA.Utils.html#getFromTomlSection"><span class="hs-identifier hs-var hs-var">getFromTomlSection</span></a></span></span><span> </span><span id="local-6989586621680287170"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287170"><span class="hs-identifier hs-var">section</span></a></span></span><span> </span><span id="local-6989586621680287169"><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680287169"><span class="hs-identifier hs-var">toml</span></a></span></span><span>
+</span><a href="NITTA.Utils.html#getFromTomlSection"><span class="hs-identifier hs-var hs-var">getFromTomlSection</span></a></span></span><span> </span><span id="local-6989586621680361550"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621680361550"><span class="hs-identifier hs-var">section</span></a></span></span><span> </span><span id="local-6989586621680361549"><span class="annot"><span class="annottext">HashMap Text a
+</span><a href="#local-6989586621680361549"><span class="hs-identifier hs-var">toml</span></a></span></span><span>
 </span><span id="line-138"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287170"><span class="hs-identifier hs-var">section</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><a href="#local-6989586621680361550"><span class="hs-identifier hs-var">section</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-identifier hs-var">T.empty</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall {a}. Result a -&gt; a
-</span><a href="#local-6989586621680287168"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680361548"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Result a
 </span><span class="hs-identifier hs-var">fromJSON</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ToJSON a =&gt; a -&gt; Value
 </span><span class="hs-identifier hs-var">toJSON</span></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680287169"><span class="hs-identifier hs-var">toml</span></a></span><span>
+</span><a href="#local-6989586621680361549"><span class="hs-identifier hs-var">toml</span></a></span><span>
 </span><span id="line-139"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall k v. (Eq k, Hashable k) =&gt; k -&gt; HashMap k v -&gt; Maybe v
 </span><span class="hs-identifier hs-var">HM.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287170"><span class="hs-identifier hs-var">section</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
-</span><a href="#local-6989586621680287169"><span class="hs-identifier hs-var">toml</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-140"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680287164"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287164"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall {a}. Result a -&gt; a
-</span><a href="#local-6989586621680287168"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680361550"><span class="hs-identifier hs-var">section</span></a></span><span> </span><span class="annot"><span class="annottext">HashMap Text a
+</span><a href="#local-6989586621680361549"><span class="hs-identifier hs-var">toml</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-140"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680361544"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680361544"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall {a}. Result a -&gt; a
+</span><a href="#local-6989586621680361548"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Result a
 </span><span class="hs-identifier hs-var">fromJSON</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">forall a. ToJSON a =&gt; a -&gt; Value
 </span><span class="hs-identifier hs-var">toJSON</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287164"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><a href="#local-6989586621680361544"><span class="hs-identifier hs-var">s</span></a></span><span>
 </span><span id="line-141"></span><span>        </span><span class="annot"><span class="annottext">Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -502,14 +502,14 @@ Text -&gt; HashMap Text a -&gt; a
 </span><span class="hs-string">&quot;section not found - &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Char]
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621680287170"><span class="hs-identifier hs-var">section</span></a></span><span>
+</span><a href="#local-6989586621680361550"><span class="hs-identifier hs-var">section</span></a></span><span>
 </span><span id="line-142"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-143"></span><span>        </span><span id="local-6989586621680287168"><span class="annot"><span class="annottext">unwrap :: Result a -&gt; a
-</span><a href="#local-6989586621680287168"><span class="hs-identifier hs-var hs-var">unwrap</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Success</span></span><span> </span><span id="local-6989586621680287159"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287159"><span class="hs-identifier hs-var">conf</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680287159"><span class="hs-identifier hs-var">conf</span></a></span><span>
-</span><span id="line-144"></span><span>        </span><span class="annot"><a href="#local-6989586621680287168"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Error</span></span><span> </span><span id="local-6989586621680287157"><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287157"><span class="hs-identifier hs-var">msg</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
+</span><span id="line-143"></span><span>        </span><span id="local-6989586621680361548"><span class="annot"><span class="annottext">unwrap :: Result a -&gt; a
+</span><a href="#local-6989586621680361548"><span class="hs-identifier hs-var hs-var">unwrap</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Success</span></span><span> </span><span id="local-6989586621680361539"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680361539"><span class="hs-identifier hs-var">conf</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680361539"><span class="hs-identifier hs-var">conf</span></a></span><span>
+</span><span id="line-144"></span><span>        </span><span class="annot"><a href="#local-6989586621680361548"><span class="hs-identifier hs-var">unwrap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Error</span></span><span> </span><span id="local-6989586621680361537"><span class="annot"><span class="annottext">[Char]
+</span><a href="#local-6989586621680361537"><span class="hs-identifier hs-var">msg</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a. HasCallStack =&gt; [Char] -&gt; a
 </span><span class="hs-identifier hs-var">error</span></span><span> </span><span class="annot"><span class="annottext">[Char]
-</span><a href="#local-6989586621680287157"><span class="hs-identifier hs-var">msg</span></a></span><span>
+</span><a href="#local-6989586621680361537"><span class="hs-identifier hs-var">msg</span></a></span><span>
 </span><span id="line-145"></span></pre></body></html>
