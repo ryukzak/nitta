@@ -71,6 +71,7 @@ basic _proxy = defineNetwork "net1" ASync $ do
     add "accum" AccumIO
     add "mul" MultiplierIO
     add "div" DividerIO
+    add "logicalunit" LogicalUnitIO
 
 march = basic pInt
 

@@ -82,6 +82,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     mkBreakLoop,
     mkConstantFolding,
     mkOptimizeAccum,
+    mkOptimizeLogicalUnit,
     mkResolveDeadlock,
 
     -- * Asserts for PU and target system
@@ -498,6 +499,12 @@ instance (Var v, Val x, OptimizeAccumProblem u v x) => Refactor u (OptimizeAccum
 mkOptimizeAccum :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (OptimizeAccum v x)
 mkOptimizeAccum old new = return $ OptimizeAccum old new
 
+instance (Var v, Val x, OptimizeLogicalUnitProblem u v x) => Refactor u (OptimizeLogicalUnit v x) where
+    refactorAvail ref = refactorAvail' ref optimizeLogicalUnitOptions
+    refactor ref = refactor' ref optimizeLogicalUnitOptions optimizeLogicalUnitDecision
+
+mkOptimizeLogicalUnit :: (Var v, Val x) => [F v x] -> [F v x] -> Statement u v x (OptimizeLogicalUnit v x)
+mkOptimizeLogicalUnit old new = return $ OptimizeLogicalUnit old new
 instance (Var v, Val x, ResolveDeadlockProblem u v x) => Refactor u (ResolveDeadlock v x) where
     refactorAvail ref = refactorAvail' ref resolveDeadlockOptions
     refactor ref = refactor' ref resolveDeadlockOptions resolveDeadlockDecision
@@ -690,6 +697,7 @@ traceRefactor = do
     lift $ putListLn "breakLoopOptions: " $ breakLoopOptions mUnit
     lift $ putListLn "constantFoldingOptions: " $ constantFoldingOptions mUnit
     lift $ putListLn "optimizeAccumOptions: " $ optimizeAccumOptions mUnit
+    lift $ putListLn "optimizeLogicalUnitOptions: " $ optimizeLogicalUnitOptions mUnit
     lift $ putListLn "resolveDeadlockOptions: " $ resolveDeadlockOptions mUnit
 
 putListLn name opts = do

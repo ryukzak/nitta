@@ -134,6 +134,64 @@ simulationTests =
                 ]
                 ("c", [0, 1, 1])
             ]
+        , testGroup
+            "logic operations"
+            [ simulationTestCase @Int
+                "AND operation"
+                4
+                [ ("a", [1, 1, 0, 0])
+                , ("b", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicAnd "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 0, 0, 0])
+            , simulationTestCase @Int
+                "OR operation"
+                4
+                [ ("a", [1, 1, 0, 0])
+                , ("b", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , receive ["b"]
+                , logicOr "a" "b" ["c"]
+                , send "c"
+                ]
+                ("c", [1, 1, 1, 0])
+            , simulationTestCase @Int
+                "NOT operation"
+                4
+                [ ("a", [1, 0, 1, 0])
+                ]
+                [ receive ["a"]
+                , logicNot "a" ["c"]
+                , send "c"
+                ]
+                ("c", [0, 1, 0, 1])
+            ]
+        , simulationTestCase @Int
+            "combination of operations"
+            4
+            [ ("a", [1, 1, 0, 0])
+            , ("b", [5, 0, 1, 0])
+            , ("c1", [2, 0, 0, 1])
+            , ("c2", [1, 1, 1, 0])
+            , ("c3", [1, 0, 1, 0])
+            ]
+            [ receive ["a"]
+            , receive ["b"]
+            , receive ["c1"]
+            , receive ["c2"]
+            , receive ["c3"]
+            , logicAnd "a" "b" ["r1"]
+            , logicAnd "c1" "c2" ["tmp"]
+            , logicOr "tmp" "c3" ["r2"]
+            , send "r1"
+            , send "r2"
+            ]
+            ("r2", [1, 0, 1, 0])
         ]
 
 tests =

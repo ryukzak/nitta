@@ -10,12 +10,15 @@
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
+import Control.Monad (forM)
+import Data.HashMap.Strict qualified as HM
+import Data.Map qualified as M
 import Data.Set (fromList, intersection)
 import Data.Set qualified as S
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import Test.QuickCheck
+import Test.QuickCheck hiding (Function)
 
 maxLenght = 8
 
@@ -71,3 +74,45 @@ instance Arbitrary x => Arbitrary (Compare T.Text x) where
                 a <- inputVarGen
                 b <- inputVarGen
                 Compare op a b <$> outputVarsGen
+
+instance Arbitrary x => Arbitrary (TruthTable T.Text x) where
+    arbitrary = suchThat generateUniqueVars uniqueVars
+        where
+            generateUniqueVars = TruthTable <$> arbitraryTable <*> inputVarsGen <*> outputVarGen
+
+            arbitraryTable = do
+                keys <- resize maxLenght $ listOf1 (vectorOf maxLenght arbitrary)
+                values <- vectorOf (length keys) arbitrary
+                return $ M.fromList $ zip keys values
+
+            inputVarsGen = resize maxLenght $ listOf1 inputVarGen
+
+            outputVarGen = outputVarsGen
+
+instance Arbitrary (LogicFunction T.Text x) where
+    arbitrary =
+        oneof
+            [ LogicAnd <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+            , LogicOr <$> inputVarGen <*> inputVarGen <*> outputVarsGen
+            , LogicNot <$> inputVarGen <*> outputVarsGen
+            ]
+            `suchThat` uniqueVars
+
+instance {-# OVERLAPS #-} (Arbitrary f', Function f' T.Text) => Arbitrary ([f'], Cntx T.Text Int) where
+    arbitrary = do
+        f <- arbitrary
+
+        let inVars = S.toList $ inputs f
+
+        inputValues <- forM inVars $ \_ -> do
+            Positive x <- arbitrary
+            return x
+
+        let cntx =
+                Cntx
+                    { cntxProcess = [CycleCntx $ HM.fromList $ zip inVars inputValues]
+                    , cntxReceived = M.empty
+                    , cntxCycleNumber = 0
+                    }
+
+        return ([f], cntx)

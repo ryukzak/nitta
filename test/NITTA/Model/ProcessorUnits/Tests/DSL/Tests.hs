@@ -18,6 +18,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL.Tests (
 ) where
 
 import Data.Default
+import Data.Map.Strict qualified as M
 import Data.Proxy
 import Data.Set qualified as S
 import Data.String.Interpolate
@@ -32,30 +33,34 @@ tests =
     testGroup
         "DSL Tests"
         [ expectFail $
-            unitTestCase "should error, when proccess is not done" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decideAt 1 2 $ consume "a"
-                assertSynthesisDone
+            unitTestCase "should error, when proccess is not done" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decideAt 1 2 $ consume "a"
+                    assertSynthesisDone
         , expectFail $
-            unitTestCase "should fail coSim, when variables not set" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decide $ consume "a"
-                decide $ consume "b"
-                decide $ provide ["c", "d"]
-                assertPUCoSimulation
+            unitTestCase "should fail coSim, when variables not set" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decide $ consume "a"
+                    decide $ consume "b"
+                    decide $ provide ["c", "d"]
+                    assertPUCoSimulation
         , unitTestCase "check assertEndpoint and assertAllEndpointRoles with Target success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             assertAllEndpointRoles [consume "a", consume "b"]
             assertEndpoint 0 maxBound $ consume "a"
             decide $ consume "a"
         , expectFail $
-            unitTestCase "check assertAllEndpointRoles and fail (too many)" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                assertAllEndpointRoles [consume "a", consume "b", consume "c"]
+            unitTestCase "check assertAllEndpointRoles and fail (too many)" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    assertAllEndpointRoles [consume "a", consume "b", consume "c"]
         , expectFail $
-            unitTestCase "check assertAllEndpointRoles and fail (too less)" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                assertAllEndpointRoles [consume "a"]
+            unitTestCase "check assertAllEndpointRoles and fail (too less)" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    assertAllEndpointRoles [consume "a"]
         , unitTestCase "check assertEndpoint with Source success" u $ do
             assign $ multiply "a" "b" ["c", "d"]
             decideAt 1 1 $ consume "a"
@@ -68,61 +73,71 @@ tests =
             decideAt 5 5 $ provide ["c"]
             assertEndpoint 6 maxBound $ provide ["d"]
         , expectFail $
-            unitTestCase "check assertEndpoint fail when wrong interval" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                assertEndpoint 2 2 $ consume "a"
-                decide $ consume "a"
+            unitTestCase "check assertEndpoint fail when wrong interval" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    assertEndpoint 2 2 $ consume "a"
+                    decide $ consume "a"
         , expectFail $
-            unitTestCase "check assertEndpoint success" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                assertEndpoint 2 2 $ consume "a"
-                decide $ consume "a"
+            unitTestCase "check assertEndpoint success" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    assertEndpoint 2 2 $ consume "a"
+                    decide $ consume "a"
         , expectFail $
-            unitTestCase "should fail coSim, when variables incorrect" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                setValue "a" 1
-                setValue "b" 1
-                decide $ consume "a"
-                decide $ consume "b"
-                decide $ provide ["c", "d"]
-                assertPUCoSimulation
+            unitTestCase "should fail coSim, when variables incorrect" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    setValue "a" 1
+                    setValue "b" 1
+                    decide $ consume "a"
+                    decide $ consume "b"
+                    decide $ provide ["c", "d"]
+                    assertPUCoSimulation
         , expectFail $
             unitTestCase "should not bind, when PU incompatible with F" u $
                 assign $
                     sub "a" "b" ["c"]
         , expectFail $
-            unitTestCase "decide should error, when Target in Decision is not present" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decideAt 1 1 $ consume "aa"
+            unitTestCase "decide should error, when Target in Decision is not present" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decideAt 1 1 $ consume "aa"
         , expectFail $
-            unitTestCase "Multiplier should error, when Source in Decision is Targets" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decideAt 1 1 $ provide ["a"]
+            unitTestCase "Multiplier should error, when Source in Decision is Targets" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decideAt 1 1 $ provide ["a"]
         , expectFail $
-            unitTestCase "decide should error, when Target in Decision is Source" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decide $ consume "a"
-                decide $ consume "b"
-                decideAt 4 4 $ consume "c"
+            unitTestCase "decide should error, when Target in Decision is Source" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decide $ consume "a"
+                    decide $ consume "b"
+                    decideAt 4 4 $ consume "c"
         , expectFail $
-            unitTestCase "decide should error, when Interval is not correct" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                decideAt 2 2 $ consume "a"
-                decideAt 1 1 $ consume "b"
+            unitTestCase "decide should error, when Interval is not correct" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    decideAt 2 2 $ consume "a"
+                    decideAt 1 1 $ consume "b"
         , expectFail $
-            unitTestCase "should error: breakLoop is not supportd" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                mkBreakLoop 10 "a" ["c"] >>= \r -> refactor r
+            unitTestCase "should error: breakLoop is not supportd" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    mkBreakLoop 10 "a" ["c"] >>= \r -> refactor r
         , expectFail $
-            unitTestCase "should error: setValue variable is unavailable" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                setValue "e" 10
+            unitTestCase "should error: setValue variable is unavailable" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    setValue "e" 10
         , expectFail $
-            unitTestCase "should error: setValue variable is alreay set" u $ do
-                assign $ multiply "a" "b" ["c", "d"]
-                setValue "a" 10
-                setValue "b" 11
-                setValue "a" 15
+            unitTestCase "should error: setValue variable is alreay set" u $
+                do
+                    assign $ multiply "a" "b" ["c", "d"]
+                    setValue "a" 10
+                    setValue "b" 11
+                    setValue "a" 15
         , testGroup
             "decideAtUnsafe"
             [ unitTestCase "check constrain existance" broken $ do
@@ -131,13 +146,14 @@ tests =
                 decideAt 0 0 $ consume "a"
                 assertEndpoint 3 maxBound $ provide ["b"]
             , expectFail $
-                unitTestCase "check that safe decide fail on wrong decision" broken $ do
-                    assign $ brokenBuffer "a" ["b"]
-                    setValue "a" 1
-                    assertEndpoint 0 maxBound $ consume "a"
-                    decideAt 0 0 $ consume "a"
-                    assertEndpoint 3 maxBound $ provide ["b"]
-                    decideAt 2 2 $ provide ["b"]
+                unitTestCase "check that safe decide fail on wrong decision" broken $
+                    do
+                        assign $ brokenBuffer "a" ["b"]
+                        setValue "a" 1
+                        assertEndpoint 0 maxBound $ consume "a"
+                        decideAt 0 0 $ consume "a"
+                        assertEndpoint 3 maxBound $ provide ["b"]
+                        decideAt 2 2 $ provide ["b"]
             , unitTestCase "check that unsafe decide success and test success pass" broken $ do
                 assign $ brokenBuffer "a" ["b"]
                 setValue "a" 1
@@ -154,10 +170,11 @@ tests =
                 decide $ consume "a"
                 assertLocks [Lock{locked = "c", lockBy = "b"}, Lock{locked = "d", lockBy = "b"}]
             , expectFail $
-                unitTestCase "assertLocks - fail" u $ do
-                    assign $ multiply "a" "b" ["c", "d"]
-                    decide $ consume "a"
-                    assertLocks [Lock{locked = "c", lockBy = "b"}]
+                unitTestCase "assertLocks - fail" u $
+                    do
+                        assign $ multiply "a" "b" ["c", "d"]
+                        decide $ consume "a"
+                        assertLocks [Lock{locked = "c", lockBy = "b"}]
             ]
         , testGroup
             "BusNetwork positive tests"
@@ -301,9 +318,10 @@ tests =
                 "Allocation synthesis step"
                 [ unitTestCase "target system: manual synthesis, allocation works correctly" def $ do
                     setNetwork $
-                        Bus.defineNetwork "net1" ASync $ do
-                            Bus.addPrototype "fram{x}" FramIO
-                            Bus.addPrototype "accum" AccumIO
+                        Bus.defineNetwork "net1" ASync $
+                            do
+                                Bus.addPrototype "fram{x}" FramIO
+                                Bus.addPrototype "accum" AccumIO
                     setBusType pInt
                     assignLua
                         [__i|
@@ -323,17 +341,18 @@ tests =
                     synthesizeAndCoSim
                 , unitTestCase "target system: autosynthesis, allocate required PUs" def $ do
                     setNetwork $
-                        Bus.defineNetwork "net1" ASync $ do
-                            Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
-                            Bus.addPrototype "accum{x}" AccumIO
-                            Bus.addPrototype "mul{x}" MultiplierIO
-                            Bus.add "spi" $ -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
-                                SPISlave
-                                    { slave_mosi = InputPortTag "mosi"
-                                    , slave_miso = OutputPortTag "miso"
-                                    , slave_sclk = InputPortTag "sclk"
-                                    , slave_cs = InputPortTag "cs"
-                                    }
+                        Bus.defineNetwork "net1" ASync $
+                            do
+                                Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
+                                Bus.addPrototype "accum{x}" AccumIO
+                                Bus.addPrototype "mul{x}" MultiplierIO
+                                Bus.add "spi" $
+                                    SPISlave -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
+                                        { slave_mosi = InputPortTag "mosi"
+                                        , slave_miso = OutputPortTag "miso"
+                                        , slave_sclk = InputPortTag "sclk"
+                                        , slave_cs = InputPortTag "cs"
+                                        }
                     setBusType pInt
                     assignLua
                         [__i|
@@ -350,10 +369,11 @@ tests =
                     mkAllocation "net1" "mul{x}" >>= \a -> assertAllocation 0 a
                 , unitTestCase "target system: autosynthesis, allocation comes after constant folding" def $ do
                     setNetwork $
-                        Bus.defineNetwork "net1" ASync $ do
-                            Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
-                            Bus.addPrototype "accum{x}" AccumIO
-                            Bus.addPrototype "mul{x}" MultiplierIO
+                        Bus.defineNetwork "net1" ASync $
+                            do
+                                Bus.addCustomPrototype "fram{x}" (framWithSize 32) FramIO
+                                Bus.addPrototype "accum{x}" AccumIO
+                                Bus.addPrototype "mul{x}" MultiplierIO
                     setBusType pInt
                     assignLua
                         [__i|
@@ -372,13 +392,47 @@ tests =
         , testGroup
             "BusNetwork negative tests"
             [ expectFail $
-                unitTestCase "target system: manual synthesis, refactor loop break not applied" def $ do
+                unitTestCase "target system: manual synthesis, refactor loop break not applied" def $
+                    do
+                        setNetwork march
+                        setBusType pInt
+                        let l = loop 0 "d^0#0" ["a^0#0"]
+                        bind2network l
+                        doBind "fram1" l
+                        mkBreakLoop 0 "d^0#0" ["a^0#0"] >>= \r -> assertRefactor r
+            ]
+        , testGroup
+            "logicalUnit Optimization"
+            [ unitTestCase "basic LogicalUnit optimization replacement" def $
+                do
                     setNetwork march
                     setBusType pInt
-                    let l = loop 0 "d^0#0" ["a^0#0"]
-                    bind2network l
-                    doBind "fram1" l
-                    mkBreakLoop 0 "d^0#0" ["a^0#0"] >>= \r -> assertRefactor r
+                    assignLua
+                        [__i|
+                        function logic(a, b)
+                            local c = a and b
+                            local c1 = c or a
+                            logic(a, c1)
+                        end
+                        logic(0,0)
+                    |]
+                    synthesizeAndCoSim
+                    mkBreakLoop 0 "a^0#2" ["a^0#0", "a^0#1", "a^0#2"] >>= \r -> assertRefactor r
+                    mkBreakLoop 0 "c1^0#0" ["b^0#0"] >>= \r -> assertRefactor r
+                    mkResolveDeadlock ["a^0#0", "a^0#1", "a^0#2"] >>= \r -> assertRefactor r
+
+                    mkOptimizeLogicalUnit
+                        [ logicOr "c^0#0" "a^0#1" ["c1^0#0"]
+                        , logicAnd "a^0#0" "b^0#0" ["c^0#0"]
+                        ]
+                        [ packF
+                            ( TruthTable
+                                (M.fromList [([False, False, False], False), ([False, False, True], False), ([False, True, False], True), ([False, True, True], True), ([True, False, False], False), ([True, False, True], True), ([True, True, False], True), ([True, True, True], True)])
+                                [I "a^0#0", I "a^0#1", I "b^0#0"]
+                                (O $ S.singleton "c1^0#0")
+                            )
+                        ]
+                    >>= \r -> assertRefactor r
             ]
         ]
     where
