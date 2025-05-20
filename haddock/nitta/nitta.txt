@@ -1211,7 +1211,7 @@ instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Division v x) v
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Division v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Division v x) v
-instance (NITTA.Intermediate.Variable.Var v, GHC.Real.Integral x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Division v x) v x
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Division v x) v x
 instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Multiply v x)
 instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Multiply v x)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Multiply v x) v

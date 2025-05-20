@@ -343,257 +343,258 @@ span.spaces    { background: white }
 <span class="lineno">  324 </span>    <span class="decl"><span class="nottickedoff">patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)</span></span>
 <span class="lineno">  325 </span>instance Var v =&gt; Locks (Division v x) v where
 <span class="lineno">  326 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  327 </span>instance (Var v, Integral x) =&gt; FunctionSimulation (Division v x) v x where
+<span class="lineno">  327 </span>instance (Var v, Val x) =&gt; FunctionSimulation (Division v x) v x where
 <span class="lineno">  328 </span>    <span class="decl"><span class="istickedoff">simulate cntx Division{denom = I d, numer = I n, quotient = O qs, remain = O rs} =</span>
 <span class="lineno">  329 </span><span class="spaces">        </span><span class="istickedoff">let dx = cntx `getCntx` d</span>
 <span class="lineno">  330 </span><span class="spaces">            </span><span class="istickedoff">nx = cntx `getCntx` n</span>
-<span class="lineno">  331 </span><span class="spaces">            </span><span class="istickedoff">(qx, rx) = dx `quotRem` nx</span>
-<span class="lineno">  332 </span><span class="spaces">         </span><span class="istickedoff">in [(v, qx) | v &lt;- S.elems qs] ++ [(v, rx) | v &lt;- S.elems rs]</span></span>
-<span class="lineno">  333 </span>
-<span class="lineno">  334 </span>data Neg v x = Neg (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  335 </span>instance Label (Neg v x) where <span class="decl"><span class="nottickedoff">label Neg{} = &quot;neg&quot;</span></span>
-<span class="lineno">  336 </span>instance Var v =&gt; Show (Neg v x) where
-<span class="lineno">  337 </span>    <span class="decl"><span class="istickedoff">show (Neg i o) = &quot;-&quot; &lt;&gt; show i &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
-<span class="lineno">  338 </span>
-<span class="lineno">  339 </span>neg :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  340 </span><span class="decl"><span class="istickedoff">neg i o = packF $ Neg (I i) $ O $ S.fromList o</span></span>
-<span class="lineno">  341 </span>
-<span class="lineno">  342 </span>instance Ord v =&gt; Function (Neg v x) v where
-<span class="lineno">  343 </span>    <span class="decl"><span class="istickedoff">inputs (Neg i _) = variables i</span></span>
-<span class="lineno">  344 </span>    <span class="decl"><span class="istickedoff">outputs (Neg _ o) = variables o</span></span>
-<span class="lineno">  345 </span>instance Ord v =&gt; Patch (Neg v x) (v, v) where
-<span class="lineno">  346 </span>    <span class="decl"><span class="nottickedoff">patch diff (Neg i o) = Neg (patch diff i) (patch diff o)</span></span>
-<span class="lineno">  347 </span>instance Var v =&gt; Locks (Neg v x) v where
-<span class="lineno">  348 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  349 </span>instance (Var v, Num x) =&gt; FunctionSimulation (Neg v x) v x where
-<span class="lineno">  350 </span>    <span class="decl"><span class="istickedoff">simulate cntx (Neg (I i) (O o)) =</span>
-<span class="lineno">  351 </span><span class="spaces">        </span><span class="istickedoff">let x1 = cntx `getCntx` i</span>
-<span class="lineno">  352 </span><span class="spaces">            </span><span class="istickedoff">y = -x1</span>
-<span class="lineno">  353 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span></span>
-<span class="lineno">  354 </span>
-<span class="lineno">  355 </span>data Constant v x = Constant (X x) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  356 </span>instance Show x =&gt; Label (Constant v x) where <span class="decl"><span class="nottickedoff">label (Constant (X x) _) = show x</span></span>
-<span class="lineno">  357 </span>instance (Var v, Show x) =&gt; Show (Constant v x) where
-<span class="lineno">  358 </span>    <span class="decl"><span class="istickedoff">show (Constant (X x) os) = &quot;const(&quot; &lt;&gt; show x &lt;&gt; &quot;) = &quot; &lt;&gt; show os</span></span>
-<span class="lineno">  359 </span>constant :: (Var v, Val x) =&gt; x -&gt; [v] -&gt; F v x
-<span class="lineno">  360 </span><span class="decl"><span class="istickedoff">constant x vs = packF $ Constant (X x) $ O $ S.fromList vs</span></span>
-<span class="lineno">  361 </span><span class="decl"><span class="istickedoff">isConst f</span>
-<span class="lineno">  362 </span><span class="spaces">    </span><span class="istickedoff">| Just Constant{} &lt;- castF f = True</span>
-<span class="lineno">  363 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
-<span class="lineno">  364 </span>
-<span class="lineno">  365 </span>instance (Show x, Eq x, Typeable x) =&gt; Function (Constant v x) v where
-<span class="lineno">  366 </span>    <span class="decl"><span class="istickedoff">outputs (Constant _ o) = variables o</span></span>
-<span class="lineno">  367 </span>instance Var v =&gt; Patch (Constant v x) (v, v) where
-<span class="lineno">  368 </span>    <span class="decl"><span class="nottickedoff">patch diff (Constant x a) = Constant x (patch diff a)</span></span>
-<span class="lineno">  369 </span>instance Var v =&gt; Locks (Constant v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
-<span class="lineno">  370 </span>instance FunctionSimulation (Constant v x) v x where
-<span class="lineno">  371 </span>    <span class="decl"><span class="istickedoff">simulate _cntx (Constant (X x) (O vs)) = [(v, x) | v &lt;- S.elems vs]</span></span>
-<span class="lineno">  372 </span>
-<span class="lineno">  373 </span>-- TODO: separete into two different functions
-<span class="lineno">  374 </span>
-<span class="lineno">  375 </span>-- | Functional unit that implements logic shift operations
-<span class="lineno">  376 </span>data ShiftLR v x
-<span class="lineno">  377 </span>    = ShiftL Int (I v) (O v)
-<span class="lineno">  378 </span>    | ShiftR Int (I v) (O v)
-<span class="lineno">  379 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  380 </span>
-<span class="lineno">  381 </span>instance Var v =&gt; Show (ShiftLR v x) where
-<span class="lineno">  382 </span>    <span class="decl"><span class="istickedoff">show (ShiftL s i os) = show i &lt;&gt; &quot; &lt;&lt; &quot; &lt;&gt; show s &lt;&gt; &quot; = &quot; &lt;&gt; show os</span>
-<span class="lineno">  383 </span><span class="spaces">    </span><span class="istickedoff">show (ShiftR s i os) = show i &lt;&gt; &quot; &gt;&gt; &quot; &lt;&gt; show s &lt;&gt; &quot; = &quot; &lt;&gt; show os</span></span>
-<span class="lineno">  384 </span>instance Var v =&gt; Label (ShiftLR v x) where <span class="decl"><span class="nottickedoff">label = show</span></span>
-<span class="lineno">  385 </span>
-<span class="lineno">  386 </span>shiftL :: (Var v, Val x) =&gt; Int -&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  387 </span><span class="decl"><span class="istickedoff">shiftL s i o = packF $ ShiftL s (I i) $ O $ S.fromList o</span></span>
-<span class="lineno">  388 </span>shiftR :: (Var v, Val x) =&gt; Int -&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  389 </span><span class="decl"><span class="istickedoff">shiftR s i o = packF $ ShiftR s (I i) $ O $ S.fromList o</span></span>
-<span class="lineno">  390 </span>
-<span class="lineno">  391 </span>instance Var v =&gt; Function (ShiftLR v x) v where
-<span class="lineno">  392 </span>    <span class="decl"><span class="istickedoff">inputs (ShiftL _ i _) = variables i</span>
-<span class="lineno">  393 </span><span class="spaces">    </span><span class="istickedoff">inputs (ShiftR _ i _) = variables i</span></span>
-<span class="lineno">  394 </span>    <span class="decl"><span class="istickedoff">outputs (ShiftL _ _ o) = variables o</span>
-<span class="lineno">  395 </span><span class="spaces">    </span><span class="istickedoff">outputs (ShiftR _ _ o) = variables o</span></span>
-<span class="lineno">  396 </span>instance Var v =&gt; Patch (ShiftLR v x) (v, v) where
-<span class="lineno">  397 </span>    <span class="decl"><span class="istickedoff">patch diff (ShiftL s i o) = ShiftL s (patch diff i) (patch diff o)</span>
-<span class="lineno">  398 </span><span class="spaces">    </span><span class="istickedoff">patch diff (ShiftR s i o) = <span class="nottickedoff">ShiftR s (patch diff i) (patch diff o)</span></span></span>
-<span class="lineno">  399 </span>instance Var v =&gt; Locks (ShiftLR v x) v where
-<span class="lineno">  400 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  401 </span>instance (Var v, B.Bits x) =&gt; FunctionSimulation (ShiftLR v x) v x where
-<span class="lineno">  402 </span>    <span class="decl"><span class="istickedoff">simulate cntx (ShiftL s (I i) (O os)) = do</span>
-<span class="lineno">  403 </span><span class="spaces">        </span><span class="istickedoff">[(o, getCntx cntx i `B.shiftL` s) | o &lt;- S.elems os]</span>
-<span class="lineno">  404 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (ShiftR s (I i) (O os)) = do</span>
-<span class="lineno">  405 </span><span class="spaces">        </span><span class="istickedoff">[(o, getCntx cntx i `B.shiftR` s) | o &lt;- S.elems os]</span></span>
-<span class="lineno">  406 </span>
-<span class="lineno">  407 </span>newtype Send v x = Send (I v) deriving (Typeable, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>)
-<span class="lineno">  408 </span>instance Var v =&gt; Show (Send v x) where
-<span class="lineno">  409 </span>    <span class="decl"><span class="istickedoff">show (Send i) = &quot;send(&quot; &lt;&gt; show i &lt;&gt; &quot;)&quot;</span></span>
-<span class="lineno">  410 </span>instance Label (Send v x) where <span class="decl"><span class="nottickedoff">label Send{} = &quot;send&quot;</span></span>
-<span class="lineno">  411 </span>send :: (Var v, Val x) =&gt; v -&gt; F v x
-<span class="lineno">  412 </span><span class="decl"><span class="istickedoff">send a = packF $ Send $ I a</span></span>
-<span class="lineno">  413 </span>instance Var v =&gt; Function (Send v x) v where
-<span class="lineno">  414 </span>    <span class="decl"><span class="istickedoff">inputs (Send i) = variables i</span></span>
-<span class="lineno">  415 </span>instance Var v =&gt; Patch (Send v x) (v, v) where
-<span class="lineno">  416 </span>    <span class="decl"><span class="nottickedoff">patch diff (Send a) = Send (patch diff a)</span></span>
-<span class="lineno">  417 </span>instance Var v =&gt; Locks (Send v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
-<span class="lineno">  418 </span>instance FunctionSimulation (Send v x) v x where
-<span class="lineno">  419 </span>    <span class="decl"><span class="istickedoff">simulate _cntx Send{} = []</span></span>
-<span class="lineno">  420 </span>
-<span class="lineno">  421 </span>newtype Receive v x = Receive (O v) deriving (Typeable, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>)
-<span class="lineno">  422 </span>instance Var v =&gt; Show (Receive v x) where
-<span class="lineno">  423 </span>    <span class="decl"><span class="istickedoff">show (Receive os) = &quot;receive() = &quot; &lt;&gt; show os</span></span>
-<span class="lineno">  424 </span>instance Label (Receive v x) where <span class="decl"><span class="nottickedoff">label Receive{} = &quot;receive&quot;</span></span>
-<span class="lineno">  425 </span>receive :: (Var v, Val x) =&gt; [v] -&gt; F v x
-<span class="lineno">  426 </span><span class="decl"><span class="istickedoff">receive a = packF $ Receive $ O $ S.fromList a</span></span>
-<span class="lineno">  427 </span>instance Var v =&gt; Function (Receive v x) v where
-<span class="lineno">  428 </span>    <span class="decl"><span class="istickedoff">outputs (Receive o) = variables o</span></span>
-<span class="lineno">  429 </span>instance Var v =&gt; Patch (Receive v x) (v, v) where
-<span class="lineno">  430 </span>    <span class="decl"><span class="nottickedoff">patch diff (Receive a) = Receive (patch diff a)</span></span>
-<span class="lineno">  431 </span>instance Var v =&gt; Locks (Receive v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
-<span class="lineno">  432 </span>instance (Var v, Val x) =&gt; FunctionSimulation (Receive v x) v x where
-<span class="lineno">  433 </span>    <span class="decl"><span class="istickedoff">simulate CycleCntx{cycleCntx} (Receive (O vs)) =</span>
-<span class="lineno">  434 </span><span class="spaces">        </span><span class="istickedoff">case oneOf vs `HM.lookup` cycleCntx of</span>
-<span class="lineno">  435 </span><span class="spaces">            </span><span class="istickedoff">-- if output variables are defined - nothing to do (values thrown on upper level)</span>
-<span class="lineno">  436 </span><span class="spaces">            </span><span class="istickedoff">Just _ -&gt; []</span>
-<span class="lineno">  437 </span><span class="spaces">            </span><span class="istickedoff">-- if output variables are not defined - set initial value</span>
-<span class="lineno">  438 </span><span class="spaces">            </span><span class="istickedoff">Nothing -&gt; [(v, def) | v &lt;- S.elems vs]</span></span>
-<span class="lineno">  439 </span>
-<span class="lineno">  440 </span>-- | Special function for negative tests only.
-<span class="lineno">  441 </span>data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  442 </span>
-<span class="lineno">  443 </span>instance Label (BrokenBuffer v x) where <span class="decl"><span class="nottickedoff">label BrokenBuffer{} = &quot;broken&quot;</span></span>
-<span class="lineno">  444 </span>instance Var v =&gt; Show (BrokenBuffer v x) where
-<span class="lineno">  445 </span>    <span class="decl"><span class="istickedoff">show (BrokenBuffer i os) = &quot;brokenBuffer(&quot; &lt;&gt; show i &lt;&gt; &quot;)&quot; &lt;&gt; &quot; = &quot; &lt;&gt; show os</span></span>
-<span class="lineno">  446 </span>brokenBuffer :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  447 </span><span class="decl"><span class="istickedoff">brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ S.fromList b)</span></span>
-<span class="lineno">  448 </span>
-<span class="lineno">  449 </span>instance Var v =&gt; Function (BrokenBuffer v x) v where
-<span class="lineno">  450 </span>    <span class="decl"><span class="istickedoff">inputs (BrokenBuffer a _b) = variables a</span></span>
-<span class="lineno">  451 </span>    <span class="decl"><span class="istickedoff">outputs (BrokenBuffer _a b) = variables b</span></span>
-<span class="lineno">  452 </span>instance Var v =&gt; Patch (BrokenBuffer v x) (v, v) where
-<span class="lineno">  453 </span>    <span class="decl"><span class="nottickedoff">patch diff (BrokenBuffer a b) = BrokenBuffer (patch diff a) (patch diff b)</span></span>
-<span class="lineno">  454 </span>instance Var v =&gt; Locks (BrokenBuffer v x) v where
-<span class="lineno">  455 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  456 </span>instance Var v =&gt; FunctionSimulation (BrokenBuffer v x) v x where
-<span class="lineno">  457 </span>    <span class="decl"><span class="istickedoff">simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v &lt;- S.elems vs]</span></span>
-<span class="lineno">  458 </span>
-<span class="lineno">  459 </span>data CmpOp = CmpEq | CmpLt | CmpLte | CmpGt | CmpGte
-<span class="lineno">  460 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>, <span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff">Data</span></span></span></span></span></span></span></span>, Generic)
-<span class="lineno">  461 </span>
-<span class="lineno">  462 </span>data Compare v x = Compare CmpOp (I v) (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  463 </span>instance Label (Compare v x) where
-<span class="lineno">  464 </span>    <span class="decl"><span class="nottickedoff">label (Compare op _ _ _) = show op</span></span>
-<span class="lineno">  465 </span>instance Var v =&gt; Patch (Compare v x) (v, v) where
-<span class="lineno">  466 </span>    <span class="decl"><span class="nottickedoff">patch diff (Compare op a b c) = Compare op (patch diff a) (patch diff b) (patch diff c)</span></span>
-<span class="lineno">  467 </span>
-<span class="lineno">  468 </span>instance Var v =&gt; Show (Compare v x) where
-<span class="lineno">  469 </span>    <span class="decl"><span class="istickedoff">show (Compare op a b o) = show a &lt;&gt; &quot; &quot; &lt;&gt; show op &lt;&gt; &quot; &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
-<span class="lineno">  470 </span>
-<span class="lineno">  471 </span>instance Var v =&gt; Function (Compare v x) v where
-<span class="lineno">  472 </span>    <span class="decl"><span class="istickedoff">inputs (Compare _ a b _) = variables a `S.union` variables b</span></span>
-<span class="lineno">  473 </span>    <span class="decl"><span class="istickedoff">outputs (Compare _ _ _ o) = variables o</span></span>
-<span class="lineno">  474 </span>instance (Var v, Val x) =&gt; FunctionSimulation (Compare v x) v x where
-<span class="lineno">  475 </span>    <span class="decl"><span class="istickedoff">simulate cntx (Compare op (I a) (I b) (O o)) =</span>
-<span class="lineno">  476 </span><span class="spaces">        </span><span class="istickedoff">let</span>
-<span class="lineno">  477 </span><span class="spaces">            </span><span class="istickedoff">x1 = getCntx cntx a</span>
-<span class="lineno">  478 </span><span class="spaces">            </span><span class="istickedoff">x2 = getCntx cntx b</span>
-<span class="lineno">  479 </span><span class="spaces">            </span><span class="istickedoff">y = if op2func op x1 x2 then 1 else 0</span>
-<span class="lineno">  480 </span><span class="spaces">         </span><span class="istickedoff">in</span>
-<span class="lineno">  481 </span><span class="spaces">            </span><span class="istickedoff">[(v, y) | v &lt;- S.elems o]</span>
-<span class="lineno">  482 </span><span class="spaces">        </span><span class="istickedoff">where</span>
-<span class="lineno">  483 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpEq = (==)</span>
-<span class="lineno">  484 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpLt = (&lt;)</span>
-<span class="lineno">  485 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpLte = (&lt;=)</span>
-<span class="lineno">  486 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpGt = (&gt;)</span>
-<span class="lineno">  487 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpGte = (&gt;=)</span></span>
-<span class="lineno">  488 </span>instance Var v =&gt; Locks (Compare v x) v where
-<span class="lineno">  489 </span>    <span class="decl"><span class="nottickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  490 </span>
-<span class="lineno">  491 </span>cmp :: (Var v, Val x) =&gt; CmpOp -&gt; v -&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  492 </span><span class="decl"><span class="istickedoff">cmp op a b c = packF $ Compare op (I a) (I b) $ O $ S.fromList c</span></span>
-<span class="lineno">  493 </span>data LogicFunction v x
-<span class="lineno">  494 </span>    = LogicAnd (I v) (I v) (O v)
-<span class="lineno">  495 </span>    | LogicOr (I v) (I v) (O v)
-<span class="lineno">  496 </span>    | LogicNot (I v) (O v)
-<span class="lineno">  497 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  498 </span>
-<span class="lineno">  499 </span><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">deriving instance (Data v, Data (I v), Data (O v), Data x) =&gt; Data (LogicFunction v x)</span></span></span></span></span></span></span></span></span></span>
-<span class="lineno">  500 </span>
-<span class="lineno">  501 </span>logicAnd :: (Var v, Val x) =&gt; v -&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  502 </span><span class="decl"><span class="istickedoff">logicAnd a b c = packF $ LogicAnd (I a) (I b) $ O $ S.fromList c</span></span>
-<span class="lineno">  503 </span>
-<span class="lineno">  504 </span>logicOr :: (Var v, Val x) =&gt; v -&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  505 </span><span class="decl"><span class="istickedoff">logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ S.fromList c</span></span>
-<span class="lineno">  506 </span>
-<span class="lineno">  507 </span>logicNot :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
-<span class="lineno">  508 </span><span class="decl"><span class="istickedoff">logicNot a c = packF $ LogicNot (I a) $ O $ S.fromList c</span></span>
-<span class="lineno">  509 </span>
-<span class="lineno">  510 </span>instance Label (LogicFunction v x) where
-<span class="lineno">  511 </span>    <span class="decl"><span class="nottickedoff">label LogicAnd{} = &quot;and&quot;</span>
-<span class="lineno">  512 </span><span class="spaces">    </span><span class="nottickedoff">label LogicOr{} = &quot;or&quot;</span>
-<span class="lineno">  513 </span><span class="spaces">    </span><span class="nottickedoff">label LogicNot{} = &quot;not&quot;</span></span>
-<span class="lineno">  514 </span>
-<span class="lineno">  515 </span>instance Var v =&gt; Patch (LogicFunction v x) (v, v) where
-<span class="lineno">  516 </span>    <span class="decl"><span class="istickedoff">patch diff (LogicAnd a b c) = LogicAnd (patch diff a) (patch diff b) (patch diff c)</span>
-<span class="lineno">  517 </span><span class="spaces">    </span><span class="istickedoff">patch diff (LogicOr a b c) = <span class="nottickedoff">LogicOr (patch diff a) (patch diff b) (patch diff c)</span></span>
-<span class="lineno">  518 </span><span class="spaces">    </span><span class="istickedoff">patch diff (LogicNot a b) = <span class="nottickedoff">LogicNot (patch diff a) (patch diff b)</span></span></span>
-<span class="lineno">  519 </span>
-<span class="lineno">  520 </span>instance Var v =&gt; Show (LogicFunction v x) where
-<span class="lineno">  521 </span>    <span class="decl"><span class="istickedoff">show (LogicAnd a b o) = show a &lt;&gt; &quot; and &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span>
-<span class="lineno">  522 </span><span class="spaces">    </span><span class="istickedoff">show (LogicOr a b o) = show a &lt;&gt; &quot; or &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span>
-<span class="lineno">  523 </span><span class="spaces">    </span><span class="istickedoff">show (LogicNot a o) = &quot;not &quot; &lt;&gt; show a &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
-<span class="lineno">  524 </span>
-<span class="lineno">  525 </span>instance Var v =&gt; Function (LogicFunction v x) v where
-<span class="lineno">  526 </span>    <span class="decl"><span class="istickedoff">inputs (LogicOr a b _) = variables a `S.union` variables b</span>
-<span class="lineno">  527 </span><span class="spaces">    </span><span class="istickedoff">inputs (LogicAnd a b _) = variables a `S.union` variables b</span>
-<span class="lineno">  528 </span><span class="spaces">    </span><span class="istickedoff">inputs (LogicNot a _) = variables a</span></span>
-<span class="lineno">  529 </span>    <span class="decl"><span class="istickedoff">outputs (LogicOr _ _ o) = variables o</span>
-<span class="lineno">  530 </span><span class="spaces">    </span><span class="istickedoff">outputs (LogicAnd _ _ o) = variables o</span>
-<span class="lineno">  531 </span><span class="spaces">    </span><span class="istickedoff">outputs (LogicNot _ o) = variables o</span></span>
-<span class="lineno">  532 </span>instance (Var v, B.Bits x, Num x, Ord x) =&gt; FunctionSimulation (LogicFunction v x) v x where
-<span class="lineno">  533 </span>    <span class="decl"><span class="istickedoff">simulate cntx (LogicAnd (I a) (I b) (O o)) =</span>
-<span class="lineno">  534 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
-<span class="lineno">  535 </span><span class="spaces">            </span><span class="istickedoff">x2 = toBool (cntx `getCntx` b)</span>
-<span class="lineno">  536 </span><span class="spaces">            </span><span class="istickedoff">y = x1 * x2</span>
-<span class="lineno">  537 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span>
-<span class="lineno">  538 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (LogicOr (I a) (I b) (O o)) =</span>
-<span class="lineno">  539 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
-<span class="lineno">  540 </span><span class="spaces">            </span><span class="istickedoff">x2 = toBool (cntx `getCntx` b)</span>
-<span class="lineno">  541 </span><span class="spaces">            </span><span class="istickedoff">y = if x1 + x2 &gt; 0 then 1 else 0</span>
-<span class="lineno">  542 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span>
-<span class="lineno">  543 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (LogicNot (I a) (O o)) =</span>
-<span class="lineno">  544 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
-<span class="lineno">  545 </span><span class="spaces">            </span><span class="istickedoff">y = 1 - x1</span>
-<span class="lineno">  546 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span></span>
-<span class="lineno">  547 </span>
-<span class="lineno">  548 </span>toBool :: (Num x, Eq x) =&gt; x -&gt; x
-<span class="lineno">  549 </span><span class="decl"><span class="istickedoff">toBool n = if n /= 0 then 1 else 0</span></span>
-<span class="lineno">  550 </span>
-<span class="lineno">  551 </span>instance Var v =&gt; Locks (LogicFunction v x) v where
-<span class="lineno">  552 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
-<span class="lineno">  553 </span>
-<span class="lineno">  554 </span>-- Look Up Table
-<span class="lineno">  555 </span>data TruthTable v x = TruthTable (M.Map [Bool] Bool) [I v] (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
-<span class="lineno">  556 </span>
-<span class="lineno">  557 </span>instance Var v =&gt; Patch (TruthTable v x) (v, v) where
-<span class="lineno">  558 </span>    <span class="decl"><span class="istickedoff">patch (old, new) (TruthTable table ins out) =</span>
-<span class="lineno">  559 </span><span class="spaces">        </span><span class="istickedoff">TruthTable table (patch (old, <span class="nottickedoff">new</span>) ins) (patch (old, new) out)</span></span>
-<span class="lineno">  560 </span>
-<span class="lineno">  561 </span>instance Var v =&gt; Locks (TruthTable v x) v where
-<span class="lineno">  562 </span>    <span class="decl"><span class="istickedoff">locks (TruthTable{}) = []</span></span>
-<span class="lineno">  563 </span>
-<span class="lineno">  564 </span>instance Label (TruthTable v x) where
-<span class="lineno">  565 </span>    <span class="decl"><span class="nottickedoff">label (TruthTable{}) = &quot;TruthTable&quot;</span></span>
-<span class="lineno">  566 </span>instance Var v =&gt; Show (TruthTable v x) where
-<span class="lineno">  567 </span>    <span class="decl"><span class="istickedoff">show (TruthTable table ins output) = &quot;TruthTable &quot; &lt;&gt; show table &lt;&gt; &quot; &quot; &lt;&gt; show ins &lt;&gt; &quot; = &quot; &lt;&gt; show output</span></span>
-<span class="lineno">  568 </span>
-<span class="lineno">  569 </span>instance Var v =&gt; Function (TruthTable v x) v where
-<span class="lineno">  570 </span>    <span class="decl"><span class="istickedoff">inputs (TruthTable _ ins _) = S.unions $ map variables ins</span></span>
-<span class="lineno">  571 </span>    <span class="decl"><span class="istickedoff">outputs (TruthTable _ _ output) = variables output</span></span>
-<span class="lineno">  572 </span>
-<span class="lineno">  573 </span>instance (Var v, Num x, Eq x) =&gt; FunctionSimulation (TruthTable v x) v x where
-<span class="lineno">  574 </span>    <span class="decl"><span class="istickedoff">simulate cntx (TruthTable table ins (O output)) =</span>
-<span class="lineno">  575 </span><span class="spaces">        </span><span class="istickedoff">let inputValues = map (\(I v) -&gt; cntx `getCntx` v == 1) ins</span>
-<span class="lineno">  576 </span><span class="spaces">            </span><span class="istickedoff">result = M.findWithDefault <span class="nottickedoff">False</span> inputValues table -- todo add default value</span>
-<span class="lineno">  577 </span><span class="spaces">         </span><span class="istickedoff">in [(v, fromIntegral (fromEnum result)) | v &lt;- S.elems output]</span></span>
+<span class="lineno">  331 </span><span class="spaces">            </span><span class="istickedoff">qx = fromRaw (rawData dx * 2 ^ scalingFactorPower dx `div` rawData nx) <span class="nottickedoff">def</span></span>
+<span class="lineno">  332 </span><span class="spaces">            </span><span class="istickedoff">rx = dx `mod` nx</span>
+<span class="lineno">  333 </span><span class="spaces">         </span><span class="istickedoff">in [(v, qx) | v &lt;- S.elems qs] ++ [(v, rx) | v &lt;- S.elems rs]</span></span>
+<span class="lineno">  334 </span>
+<span class="lineno">  335 </span>data Neg v x = Neg (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  336 </span>instance Label (Neg v x) where <span class="decl"><span class="nottickedoff">label Neg{} = &quot;neg&quot;</span></span>
+<span class="lineno">  337 </span>instance Var v =&gt; Show (Neg v x) where
+<span class="lineno">  338 </span>    <span class="decl"><span class="istickedoff">show (Neg i o) = &quot;-&quot; &lt;&gt; show i &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
+<span class="lineno">  339 </span>
+<span class="lineno">  340 </span>neg :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  341 </span><span class="decl"><span class="istickedoff">neg i o = packF $ Neg (I i) $ O $ S.fromList o</span></span>
+<span class="lineno">  342 </span>
+<span class="lineno">  343 </span>instance Ord v =&gt; Function (Neg v x) v where
+<span class="lineno">  344 </span>    <span class="decl"><span class="istickedoff">inputs (Neg i _) = variables i</span></span>
+<span class="lineno">  345 </span>    <span class="decl"><span class="istickedoff">outputs (Neg _ o) = variables o</span></span>
+<span class="lineno">  346 </span>instance Ord v =&gt; Patch (Neg v x) (v, v) where
+<span class="lineno">  347 </span>    <span class="decl"><span class="nottickedoff">patch diff (Neg i o) = Neg (patch diff i) (patch diff o)</span></span>
+<span class="lineno">  348 </span>instance Var v =&gt; Locks (Neg v x) v where
+<span class="lineno">  349 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
+<span class="lineno">  350 </span>instance (Var v, Num x) =&gt; FunctionSimulation (Neg v x) v x where
+<span class="lineno">  351 </span>    <span class="decl"><span class="istickedoff">simulate cntx (Neg (I i) (O o)) =</span>
+<span class="lineno">  352 </span><span class="spaces">        </span><span class="istickedoff">let x1 = cntx `getCntx` i</span>
+<span class="lineno">  353 </span><span class="spaces">            </span><span class="istickedoff">y = -x1</span>
+<span class="lineno">  354 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span></span>
+<span class="lineno">  355 </span>
+<span class="lineno">  356 </span>data Constant v x = Constant (X x) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  357 </span>instance Show x =&gt; Label (Constant v x) where <span class="decl"><span class="nottickedoff">label (Constant (X x) _) = show x</span></span>
+<span class="lineno">  358 </span>instance (Var v, Show x) =&gt; Show (Constant v x) where
+<span class="lineno">  359 </span>    <span class="decl"><span class="istickedoff">show (Constant (X x) os) = &quot;const(&quot; &lt;&gt; show x &lt;&gt; &quot;) = &quot; &lt;&gt; show os</span></span>
+<span class="lineno">  360 </span>constant :: (Var v, Val x) =&gt; x -&gt; [v] -&gt; F v x
+<span class="lineno">  361 </span><span class="decl"><span class="istickedoff">constant x vs = packF $ Constant (X x) $ O $ S.fromList vs</span></span>
+<span class="lineno">  362 </span><span class="decl"><span class="istickedoff">isConst f</span>
+<span class="lineno">  363 </span><span class="spaces">    </span><span class="istickedoff">| Just Constant{} &lt;- castF f = True</span>
+<span class="lineno">  364 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = False</span></span>
+<span class="lineno">  365 </span>
+<span class="lineno">  366 </span>instance (Show x, Eq x, Typeable x) =&gt; Function (Constant v x) v where
+<span class="lineno">  367 </span>    <span class="decl"><span class="istickedoff">outputs (Constant _ o) = variables o</span></span>
+<span class="lineno">  368 </span>instance Var v =&gt; Patch (Constant v x) (v, v) where
+<span class="lineno">  369 </span>    <span class="decl"><span class="nottickedoff">patch diff (Constant x a) = Constant x (patch diff a)</span></span>
+<span class="lineno">  370 </span>instance Var v =&gt; Locks (Constant v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
+<span class="lineno">  371 </span>instance FunctionSimulation (Constant v x) v x where
+<span class="lineno">  372 </span>    <span class="decl"><span class="istickedoff">simulate _cntx (Constant (X x) (O vs)) = [(v, x) | v &lt;- S.elems vs]</span></span>
+<span class="lineno">  373 </span>
+<span class="lineno">  374 </span>-- TODO: separete into two different functions
+<span class="lineno">  375 </span>
+<span class="lineno">  376 </span>-- | Functional unit that implements logic shift operations
+<span class="lineno">  377 </span>data ShiftLR v x
+<span class="lineno">  378 </span>    = ShiftL Int (I v) (O v)
+<span class="lineno">  379 </span>    | ShiftR Int (I v) (O v)
+<span class="lineno">  380 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  381 </span>
+<span class="lineno">  382 </span>instance Var v =&gt; Show (ShiftLR v x) where
+<span class="lineno">  383 </span>    <span class="decl"><span class="istickedoff">show (ShiftL s i os) = show i &lt;&gt; &quot; &lt;&lt; &quot; &lt;&gt; show s &lt;&gt; &quot; = &quot; &lt;&gt; show os</span>
+<span class="lineno">  384 </span><span class="spaces">    </span><span class="istickedoff">show (ShiftR s i os) = show i &lt;&gt; &quot; &gt;&gt; &quot; &lt;&gt; show s &lt;&gt; &quot; = &quot; &lt;&gt; show os</span></span>
+<span class="lineno">  385 </span>instance Var v =&gt; Label (ShiftLR v x) where <span class="decl"><span class="nottickedoff">label = show</span></span>
+<span class="lineno">  386 </span>
+<span class="lineno">  387 </span>shiftL :: (Var v, Val x) =&gt; Int -&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  388 </span><span class="decl"><span class="istickedoff">shiftL s i o = packF $ ShiftL s (I i) $ O $ S.fromList o</span></span>
+<span class="lineno">  389 </span>shiftR :: (Var v, Val x) =&gt; Int -&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  390 </span><span class="decl"><span class="istickedoff">shiftR s i o = packF $ ShiftR s (I i) $ O $ S.fromList o</span></span>
+<span class="lineno">  391 </span>
+<span class="lineno">  392 </span>instance Var v =&gt; Function (ShiftLR v x) v where
+<span class="lineno">  393 </span>    <span class="decl"><span class="istickedoff">inputs (ShiftL _ i _) = variables i</span>
+<span class="lineno">  394 </span><span class="spaces">    </span><span class="istickedoff">inputs (ShiftR _ i _) = variables i</span></span>
+<span class="lineno">  395 </span>    <span class="decl"><span class="istickedoff">outputs (ShiftL _ _ o) = variables o</span>
+<span class="lineno">  396 </span><span class="spaces">    </span><span class="istickedoff">outputs (ShiftR _ _ o) = variables o</span></span>
+<span class="lineno">  397 </span>instance Var v =&gt; Patch (ShiftLR v x) (v, v) where
+<span class="lineno">  398 </span>    <span class="decl"><span class="istickedoff">patch diff (ShiftL s i o) = ShiftL s (patch diff i) (patch diff o)</span>
+<span class="lineno">  399 </span><span class="spaces">    </span><span class="istickedoff">patch diff (ShiftR s i o) = <span class="nottickedoff">ShiftR s (patch diff i) (patch diff o)</span></span></span>
+<span class="lineno">  400 </span>instance Var v =&gt; Locks (ShiftLR v x) v where
+<span class="lineno">  401 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
+<span class="lineno">  402 </span>instance (Var v, B.Bits x) =&gt; FunctionSimulation (ShiftLR v x) v x where
+<span class="lineno">  403 </span>    <span class="decl"><span class="istickedoff">simulate cntx (ShiftL s (I i) (O os)) = do</span>
+<span class="lineno">  404 </span><span class="spaces">        </span><span class="istickedoff">[(o, getCntx cntx i `B.shiftL` s) | o &lt;- S.elems os]</span>
+<span class="lineno">  405 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (ShiftR s (I i) (O os)) = do</span>
+<span class="lineno">  406 </span><span class="spaces">        </span><span class="istickedoff">[(o, getCntx cntx i `B.shiftR` s) | o &lt;- S.elems os]</span></span>
+<span class="lineno">  407 </span>
+<span class="lineno">  408 </span>newtype Send v x = Send (I v) deriving (Typeable, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>)
+<span class="lineno">  409 </span>instance Var v =&gt; Show (Send v x) where
+<span class="lineno">  410 </span>    <span class="decl"><span class="istickedoff">show (Send i) = &quot;send(&quot; &lt;&gt; show i &lt;&gt; &quot;)&quot;</span></span>
+<span class="lineno">  411 </span>instance Label (Send v x) where <span class="decl"><span class="nottickedoff">label Send{} = &quot;send&quot;</span></span>
+<span class="lineno">  412 </span>send :: (Var v, Val x) =&gt; v -&gt; F v x
+<span class="lineno">  413 </span><span class="decl"><span class="istickedoff">send a = packF $ Send $ I a</span></span>
+<span class="lineno">  414 </span>instance Var v =&gt; Function (Send v x) v where
+<span class="lineno">  415 </span>    <span class="decl"><span class="istickedoff">inputs (Send i) = variables i</span></span>
+<span class="lineno">  416 </span>instance Var v =&gt; Patch (Send v x) (v, v) where
+<span class="lineno">  417 </span>    <span class="decl"><span class="nottickedoff">patch diff (Send a) = Send (patch diff a)</span></span>
+<span class="lineno">  418 </span>instance Var v =&gt; Locks (Send v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
+<span class="lineno">  419 </span>instance FunctionSimulation (Send v x) v x where
+<span class="lineno">  420 </span>    <span class="decl"><span class="istickedoff">simulate _cntx Send{} = []</span></span>
+<span class="lineno">  421 </span>
+<span class="lineno">  422 </span>newtype Receive v x = Receive (O v) deriving (Typeable, <span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>)
+<span class="lineno">  423 </span>instance Var v =&gt; Show (Receive v x) where
+<span class="lineno">  424 </span>    <span class="decl"><span class="istickedoff">show (Receive os) = &quot;receive() = &quot; &lt;&gt; show os</span></span>
+<span class="lineno">  425 </span>instance Label (Receive v x) where <span class="decl"><span class="nottickedoff">label Receive{} = &quot;receive&quot;</span></span>
+<span class="lineno">  426 </span>receive :: (Var v, Val x) =&gt; [v] -&gt; F v x
+<span class="lineno">  427 </span><span class="decl"><span class="istickedoff">receive a = packF $ Receive $ O $ S.fromList a</span></span>
+<span class="lineno">  428 </span>instance Var v =&gt; Function (Receive v x) v where
+<span class="lineno">  429 </span>    <span class="decl"><span class="istickedoff">outputs (Receive o) = variables o</span></span>
+<span class="lineno">  430 </span>instance Var v =&gt; Patch (Receive v x) (v, v) where
+<span class="lineno">  431 </span>    <span class="decl"><span class="nottickedoff">patch diff (Receive a) = Receive (patch diff a)</span></span>
+<span class="lineno">  432 </span>instance Var v =&gt; Locks (Receive v x) v where <span class="decl"><span class="istickedoff">locks _ = []</span></span>
+<span class="lineno">  433 </span>instance (Var v, Val x) =&gt; FunctionSimulation (Receive v x) v x where
+<span class="lineno">  434 </span>    <span class="decl"><span class="istickedoff">simulate CycleCntx{cycleCntx} (Receive (O vs)) =</span>
+<span class="lineno">  435 </span><span class="spaces">        </span><span class="istickedoff">case oneOf vs `HM.lookup` cycleCntx of</span>
+<span class="lineno">  436 </span><span class="spaces">            </span><span class="istickedoff">-- if output variables are defined - nothing to do (values thrown on upper level)</span>
+<span class="lineno">  437 </span><span class="spaces">            </span><span class="istickedoff">Just _ -&gt; []</span>
+<span class="lineno">  438 </span><span class="spaces">            </span><span class="istickedoff">-- if output variables are not defined - set initial value</span>
+<span class="lineno">  439 </span><span class="spaces">            </span><span class="istickedoff">Nothing -&gt; [(v, def) | v &lt;- S.elems vs]</span></span>
+<span class="lineno">  440 </span>
+<span class="lineno">  441 </span>-- | Special function for negative tests only.
+<span class="lineno">  442 </span>data BrokenBuffer v x = BrokenBuffer (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  443 </span>
+<span class="lineno">  444 </span>instance Label (BrokenBuffer v x) where <span class="decl"><span class="nottickedoff">label BrokenBuffer{} = &quot;broken&quot;</span></span>
+<span class="lineno">  445 </span>instance Var v =&gt; Show (BrokenBuffer v x) where
+<span class="lineno">  446 </span>    <span class="decl"><span class="istickedoff">show (BrokenBuffer i os) = &quot;brokenBuffer(&quot; &lt;&gt; show i &lt;&gt; &quot;)&quot; &lt;&gt; &quot; = &quot; &lt;&gt; show os</span></span>
+<span class="lineno">  447 </span>brokenBuffer :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  448 </span><span class="decl"><span class="istickedoff">brokenBuffer a b = packF $ BrokenBuffer (I a) (O $ S.fromList b)</span></span>
+<span class="lineno">  449 </span>
+<span class="lineno">  450 </span>instance Var v =&gt; Function (BrokenBuffer v x) v where
+<span class="lineno">  451 </span>    <span class="decl"><span class="istickedoff">inputs (BrokenBuffer a _b) = variables a</span></span>
+<span class="lineno">  452 </span>    <span class="decl"><span class="istickedoff">outputs (BrokenBuffer _a b) = variables b</span></span>
+<span class="lineno">  453 </span>instance Var v =&gt; Patch (BrokenBuffer v x) (v, v) where
+<span class="lineno">  454 </span>    <span class="decl"><span class="nottickedoff">patch diff (BrokenBuffer a b) = BrokenBuffer (patch diff a) (patch diff b)</span></span>
+<span class="lineno">  455 </span>instance Var v =&gt; Locks (BrokenBuffer v x) v where
+<span class="lineno">  456 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
+<span class="lineno">  457 </span>instance Var v =&gt; FunctionSimulation (BrokenBuffer v x) v x where
+<span class="lineno">  458 </span>    <span class="decl"><span class="istickedoff">simulate cntx (BrokenBuffer (I a) (O vs)) = [(v, cntx `getCntx` a) | v &lt;- S.elems vs]</span></span>
+<span class="lineno">  459 </span>
+<span class="lineno">  460 </span>data CmpOp = CmpEq | CmpLt | CmpLte | CmpGt | CmpGte
+<span class="lineno">  461 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>, <span class="decl"><span class="istickedoff">Show</span></span>, <span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff">Data</span></span></span></span></span></span></span></span>, Generic)
+<span class="lineno">  462 </span>
+<span class="lineno">  463 </span>data Compare v x = Compare CmpOp (I v) (I v) (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  464 </span>instance Label (Compare v x) where
+<span class="lineno">  465 </span>    <span class="decl"><span class="nottickedoff">label (Compare op _ _ _) = show op</span></span>
+<span class="lineno">  466 </span>instance Var v =&gt; Patch (Compare v x) (v, v) where
+<span class="lineno">  467 </span>    <span class="decl"><span class="nottickedoff">patch diff (Compare op a b c) = Compare op (patch diff a) (patch diff b) (patch diff c)</span></span>
+<span class="lineno">  468 </span>
+<span class="lineno">  469 </span>instance Var v =&gt; Show (Compare v x) where
+<span class="lineno">  470 </span>    <span class="decl"><span class="istickedoff">show (Compare op a b o) = show a &lt;&gt; &quot; &quot; &lt;&gt; show op &lt;&gt; &quot; &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
+<span class="lineno">  471 </span>
+<span class="lineno">  472 </span>instance Var v =&gt; Function (Compare v x) v where
+<span class="lineno">  473 </span>    <span class="decl"><span class="istickedoff">inputs (Compare _ a b _) = variables a `S.union` variables b</span></span>
+<span class="lineno">  474 </span>    <span class="decl"><span class="istickedoff">outputs (Compare _ _ _ o) = variables o</span></span>
+<span class="lineno">  475 </span>instance (Var v, Val x) =&gt; FunctionSimulation (Compare v x) v x where
+<span class="lineno">  476 </span>    <span class="decl"><span class="istickedoff">simulate cntx (Compare op (I a) (I b) (O o)) =</span>
+<span class="lineno">  477 </span><span class="spaces">        </span><span class="istickedoff">let</span>
+<span class="lineno">  478 </span><span class="spaces">            </span><span class="istickedoff">x1 = getCntx cntx a</span>
+<span class="lineno">  479 </span><span class="spaces">            </span><span class="istickedoff">x2 = getCntx cntx b</span>
+<span class="lineno">  480 </span><span class="spaces">            </span><span class="istickedoff">y = if op2func op x1 x2 then 1 else 0</span>
+<span class="lineno">  481 </span><span class="spaces">         </span><span class="istickedoff">in</span>
+<span class="lineno">  482 </span><span class="spaces">            </span><span class="istickedoff">[(v, y) | v &lt;- S.elems o]</span>
+<span class="lineno">  483 </span><span class="spaces">        </span><span class="istickedoff">where</span>
+<span class="lineno">  484 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpEq = (==)</span>
+<span class="lineno">  485 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpLt = (&lt;)</span>
+<span class="lineno">  486 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpLte = (&lt;=)</span>
+<span class="lineno">  487 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpGt = (&gt;)</span>
+<span class="lineno">  488 </span><span class="spaces">            </span><span class="istickedoff">op2func CmpGte = (&gt;=)</span></span>
+<span class="lineno">  489 </span>instance Var v =&gt; Locks (Compare v x) v where
+<span class="lineno">  490 </span>    <span class="decl"><span class="nottickedoff">locks = inputsLockOutputs</span></span>
+<span class="lineno">  491 </span>
+<span class="lineno">  492 </span>cmp :: (Var v, Val x) =&gt; CmpOp -&gt; v -&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  493 </span><span class="decl"><span class="istickedoff">cmp op a b c = packF $ Compare op (I a) (I b) $ O $ S.fromList c</span></span>
+<span class="lineno">  494 </span>data LogicFunction v x
+<span class="lineno">  495 </span>    = LogicAnd (I v) (I v) (O v)
+<span class="lineno">  496 </span>    | LogicOr (I v) (I v) (O v)
+<span class="lineno">  497 </span>    | LogicNot (I v) (O v)
+<span class="lineno">  498 </span>    deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  499 </span>
+<span class="lineno">  500 </span><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">deriving instance (Data v, Data (I v), Data (O v), Data x) =&gt; Data (LogicFunction v x)</span></span></span></span></span></span></span></span></span></span>
+<span class="lineno">  501 </span>
+<span class="lineno">  502 </span>logicAnd :: (Var v, Val x) =&gt; v -&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  503 </span><span class="decl"><span class="istickedoff">logicAnd a b c = packF $ LogicAnd (I a) (I b) $ O $ S.fromList c</span></span>
+<span class="lineno">  504 </span>
+<span class="lineno">  505 </span>logicOr :: (Var v, Val x) =&gt; v -&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  506 </span><span class="decl"><span class="istickedoff">logicOr a b c = packF $ LogicOr (I a) (I b) $ O $ S.fromList c</span></span>
+<span class="lineno">  507 </span>
+<span class="lineno">  508 </span>logicNot :: (Var v, Val x) =&gt; v -&gt; [v] -&gt; F v x
+<span class="lineno">  509 </span><span class="decl"><span class="istickedoff">logicNot a c = packF $ LogicNot (I a) $ O $ S.fromList c</span></span>
+<span class="lineno">  510 </span>
+<span class="lineno">  511 </span>instance Label (LogicFunction v x) where
+<span class="lineno">  512 </span>    <span class="decl"><span class="nottickedoff">label LogicAnd{} = &quot;and&quot;</span>
+<span class="lineno">  513 </span><span class="spaces">    </span><span class="nottickedoff">label LogicOr{} = &quot;or&quot;</span>
+<span class="lineno">  514 </span><span class="spaces">    </span><span class="nottickedoff">label LogicNot{} = &quot;not&quot;</span></span>
+<span class="lineno">  515 </span>
+<span class="lineno">  516 </span>instance Var v =&gt; Patch (LogicFunction v x) (v, v) where
+<span class="lineno">  517 </span>    <span class="decl"><span class="istickedoff">patch diff (LogicAnd a b c) = LogicAnd (patch diff a) (patch diff b) (patch diff c)</span>
+<span class="lineno">  518 </span><span class="spaces">    </span><span class="istickedoff">patch diff (LogicOr a b c) = <span class="nottickedoff">LogicOr (patch diff a) (patch diff b) (patch diff c)</span></span>
+<span class="lineno">  519 </span><span class="spaces">    </span><span class="istickedoff">patch diff (LogicNot a b) = <span class="nottickedoff">LogicNot (patch diff a) (patch diff b)</span></span></span>
+<span class="lineno">  520 </span>
+<span class="lineno">  521 </span>instance Var v =&gt; Show (LogicFunction v x) where
+<span class="lineno">  522 </span>    <span class="decl"><span class="istickedoff">show (LogicAnd a b o) = show a &lt;&gt; &quot; and &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span>
+<span class="lineno">  523 </span><span class="spaces">    </span><span class="istickedoff">show (LogicOr a b o) = show a &lt;&gt; &quot; or &quot; &lt;&gt; show b &lt;&gt; &quot; = &quot; &lt;&gt; show o</span>
+<span class="lineno">  524 </span><span class="spaces">    </span><span class="istickedoff">show (LogicNot a o) = &quot;not &quot; &lt;&gt; show a &lt;&gt; &quot; = &quot; &lt;&gt; show o</span></span>
+<span class="lineno">  525 </span>
+<span class="lineno">  526 </span>instance Var v =&gt; Function (LogicFunction v x) v where
+<span class="lineno">  527 </span>    <span class="decl"><span class="istickedoff">inputs (LogicOr a b _) = variables a `S.union` variables b</span>
+<span class="lineno">  528 </span><span class="spaces">    </span><span class="istickedoff">inputs (LogicAnd a b _) = variables a `S.union` variables b</span>
+<span class="lineno">  529 </span><span class="spaces">    </span><span class="istickedoff">inputs (LogicNot a _) = variables a</span></span>
+<span class="lineno">  530 </span>    <span class="decl"><span class="istickedoff">outputs (LogicOr _ _ o) = variables o</span>
+<span class="lineno">  531 </span><span class="spaces">    </span><span class="istickedoff">outputs (LogicAnd _ _ o) = variables o</span>
+<span class="lineno">  532 </span><span class="spaces">    </span><span class="istickedoff">outputs (LogicNot _ o) = variables o</span></span>
+<span class="lineno">  533 </span>instance (Var v, B.Bits x, Num x, Ord x) =&gt; FunctionSimulation (LogicFunction v x) v x where
+<span class="lineno">  534 </span>    <span class="decl"><span class="istickedoff">simulate cntx (LogicAnd (I a) (I b) (O o)) =</span>
+<span class="lineno">  535 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
+<span class="lineno">  536 </span><span class="spaces">            </span><span class="istickedoff">x2 = toBool (cntx `getCntx` b)</span>
+<span class="lineno">  537 </span><span class="spaces">            </span><span class="istickedoff">y = x1 * x2</span>
+<span class="lineno">  538 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span>
+<span class="lineno">  539 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (LogicOr (I a) (I b) (O o)) =</span>
+<span class="lineno">  540 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
+<span class="lineno">  541 </span><span class="spaces">            </span><span class="istickedoff">x2 = toBool (cntx `getCntx` b)</span>
+<span class="lineno">  542 </span><span class="spaces">            </span><span class="istickedoff">y = if x1 + x2 &gt; 0 then 1 else 0</span>
+<span class="lineno">  543 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span>
+<span class="lineno">  544 </span><span class="spaces">    </span><span class="istickedoff">simulate cntx (LogicNot (I a) (O o)) =</span>
+<span class="lineno">  545 </span><span class="spaces">        </span><span class="istickedoff">let x1 = toBool (cntx `getCntx` a)</span>
+<span class="lineno">  546 </span><span class="spaces">            </span><span class="istickedoff">y = 1 - x1</span>
+<span class="lineno">  547 </span><span class="spaces">         </span><span class="istickedoff">in [(v, y) | v &lt;- S.elems o]</span></span>
+<span class="lineno">  548 </span>
+<span class="lineno">  549 </span>toBool :: (Num x, Eq x) =&gt; x -&gt; x
+<span class="lineno">  550 </span><span class="decl"><span class="istickedoff">toBool n = if n /= 0 then 1 else 0</span></span>
+<span class="lineno">  551 </span>
+<span class="lineno">  552 </span>instance Var v =&gt; Locks (LogicFunction v x) v where
+<span class="lineno">  553 </span>    <span class="decl"><span class="istickedoff">locks = inputsLockOutputs</span></span>
+<span class="lineno">  554 </span>
+<span class="lineno">  555 </span>-- Look Up Table
+<span class="lineno">  556 </span>data TruthTable v x = TruthTable (M.Map [Bool] Bool) [I v] (O v) deriving (Typeable, <span class="decl"><span class="istickedoff">Eq</span></span>)
+<span class="lineno">  557 </span>
+<span class="lineno">  558 </span>instance Var v =&gt; Patch (TruthTable v x) (v, v) where
+<span class="lineno">  559 </span>    <span class="decl"><span class="istickedoff">patch (old, new) (TruthTable table ins out) =</span>
+<span class="lineno">  560 </span><span class="spaces">        </span><span class="istickedoff">TruthTable table (patch (old, <span class="nottickedoff">new</span>) ins) (patch (old, new) out)</span></span>
+<span class="lineno">  561 </span>
+<span class="lineno">  562 </span>instance Var v =&gt; Locks (TruthTable v x) v where
+<span class="lineno">  563 </span>    <span class="decl"><span class="istickedoff">locks (TruthTable{}) = []</span></span>
+<span class="lineno">  564 </span>
+<span class="lineno">  565 </span>instance Label (TruthTable v x) where
+<span class="lineno">  566 </span>    <span class="decl"><span class="nottickedoff">label (TruthTable{}) = &quot;TruthTable&quot;</span></span>
+<span class="lineno">  567 </span>instance Var v =&gt; Show (TruthTable v x) where
+<span class="lineno">  568 </span>    <span class="decl"><span class="istickedoff">show (TruthTable table ins output) = &quot;TruthTable &quot; &lt;&gt; show table &lt;&gt; &quot; &quot; &lt;&gt; show ins &lt;&gt; &quot; = &quot; &lt;&gt; show output</span></span>
+<span class="lineno">  569 </span>
+<span class="lineno">  570 </span>instance Var v =&gt; Function (TruthTable v x) v where
+<span class="lineno">  571 </span>    <span class="decl"><span class="istickedoff">inputs (TruthTable _ ins _) = S.unions $ map variables ins</span></span>
+<span class="lineno">  572 </span>    <span class="decl"><span class="istickedoff">outputs (TruthTable _ _ output) = variables output</span></span>
+<span class="lineno">  573 </span>
+<span class="lineno">  574 </span>instance (Var v, Num x, Eq x) =&gt; FunctionSimulation (TruthTable v x) v x where
+<span class="lineno">  575 </span>    <span class="decl"><span class="istickedoff">simulate cntx (TruthTable table ins (O output)) =</span>
+<span class="lineno">  576 </span><span class="spaces">        </span><span class="istickedoff">let inputValues = map (\(I v) -&gt; cntx `getCntx` v == 1) ins</span>
+<span class="lineno">  577 </span><span class="spaces">            </span><span class="istickedoff">result = M.findWithDefault <span class="nottickedoff">False</span> inputValues table -- todo add default value</span>
+<span class="lineno">  578 </span><span class="spaces">         </span><span class="istickedoff">in [(v, fromIntegral (fromEnum result)) | v &lt;- S.elems output]</span></span>
 
 </pre>
 </body>
