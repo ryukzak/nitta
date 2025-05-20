@@ -324,11 +324,12 @@ instance Var v => Patch (Division v x) (v, v) where
     patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)
 instance Var v => Locks (Division v x) v where
     locks = inputsLockOutputs
-instance (Var v, Integral x) => FunctionSimulation (Division v x) v x where
+instance (Var v, Val x) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{denom = I d, numer = I n, quotient = O qs, remain = O rs} =
         let dx = cntx `getCntx` d
             nx = cntx `getCntx` n
-            (qx, rx) = dx `quotRem` nx
+            qx = fromRaw (rawData dx * 2 ^ scalingFactorPower dx `div` rawData nx) def
+            rx = dx `mod` nx
          in [(v, qx) | v <- S.elems qs] ++ [(v, rx) | v <- S.elems rs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)

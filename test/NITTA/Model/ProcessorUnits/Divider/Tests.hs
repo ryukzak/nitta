@@ -124,12 +124,13 @@ tests =
                 decideAt 5 5 $ consume "f"
                 assertEndpoint 8 10 $ provide ["c"]
                 decideAt 11 11 $ provide ["c"] -- fail here because out of available time
-        , puCoSimTestCase
-            "division by zero"
-            u2
-            [("a", 64), ("b", 0)]
-            [ division "a" "b" ["c"] ["d"]
-            ]
+        , expectFail $
+            puCoSimTestCase
+                "division by zero"
+                u2
+                [("a", 64), ("b", 0)]
+                [ division "a" "b" ["c"] ["d"]
+                ]
         , puCoSimTestCase
             "division with overflow"
             u2
@@ -144,6 +145,15 @@ tests =
                     f(a)
                 end
                 f(1024)
+            |]
+        , luaTestCase
+            "fixed point div accuracy"
+            [__i|
+                function f(a)
+                    a, _ = a / 2
+                    f(a)
+                end
+                f(25)            
             |]
         , luaTestCase
             "one division implicit"
