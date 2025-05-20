@@ -126,6 +126,8 @@ instance {-# OVERLAPPABLE #-} FixedPointCompatible x => MKMicro v x where
                     configure proto Multiplier{name, mock} = addPU proto name (PU.multiplier mock) PU.MultiplierIO
                     configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
                     configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
+                    configure proto Comparator{name} = addPU proto name def PU.CompareIO
+                    configure proto LogicalUnit{name} = addPU proto name def PU.LogicalUnitIO
                     configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
                         addPU proto name (PU.anySPI bounceFilter bufferSize) $
                             if isSlave

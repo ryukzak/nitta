@@ -354,12 +354,12 @@ floatDivision d n q r =
         FloatDivision
             { denom = I d
             , numer = I n
-            , quotient = O $ fromList q
-            , remain = O $ fromList r
+            , quotient = O $ S.fromList q
+            , remain = O $ S.fromList r
             }
 
 instance Var v => Function (FloatDivision v x) v where
-    inputs FloatDivision{denom, numer} = variables denom `union` variables numer
+    inputs FloatDivision{denom, numer} = variables denom `S.union` variables numer
     outputs FloatDivision{quotient} = variables quotient
 instance Var v => Patch (FloatDivision v x) (v, v) where
     patch diff (FloatDivision a b c d) = FloatDivision (patch diff a) (patch diff b) (patch diff c) (patch diff d)
@@ -370,7 +370,7 @@ instance (Var v, Fractional x) => FunctionSimulation (FloatDivision v x) v x whe
         let dx = cntx `getCntx` d
             nx = cntx `getCntx` n
             qx = dx / nx
-         in [(v, qx) | v <- elems qs]
+         in [(v, qx) | v <- S.elems qs]
 
 data Neg v x = Neg (I v) (O v) deriving (Typeable, Eq)
 instance Label (Neg v x) where label Neg{} = "neg"
@@ -570,7 +570,7 @@ instance Var v => Function (LogicFunction v x) v where
     outputs (LogicOr _ _ o) = variables o
     outputs (LogicAnd _ _ o) = variables o
     outputs (LogicNot _ o) = variables o
-instance (Var v, B.Bits x, Num x, Ord x) => FunctionSimulation (LogicFunction v x) v x where
+instance (Var v, Num x, Ord x) => FunctionSimulation (LogicFunction v x) v x where
     simulate cntx (LogicAnd (I a) (I b) (O o)) =
         let x1 = toBool (cntx `getCntx` a)
             x2 = toBool (cntx `getCntx` b)
