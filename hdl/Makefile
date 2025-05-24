@@ -8,7 +8,7 @@ define test
 	$(shell which vvp) $(PWD)/$(3).out
 endef
 
-all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_div pu_multiplier pu_i2c pu_spi pu_compare
+all: pu_accum pu_fram pu_multiplexer pu_fifo pu_shift pu_div pu_multiplier pu_i2c pu_spi pu_compare
 
 clean:
 	$(RM) -r $(PWD)/*.vcd $(PWD)/*.out
@@ -23,8 +23,8 @@ pu_accum:
 pu_fram:
 	$(call test,pu_fram.v,pu_fram_tb.v,test_pu_fram_tb)
 
-pu_mux:
-	$(call test,pu_mux.v,pu_mux_tb.v,test_pu_mux_tb)
+pu_multiplexer:
+	$(call test,pu_multiplexer.v,pu_multiplexer_tb.v,test_pu_multiplexer_tb)
 
 pu_fifo:
 	$(call test,pu_fifo.v,pu_fifo_tb.v,test_pu_fifo_tb)

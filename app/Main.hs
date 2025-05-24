@@ -378,6 +378,7 @@ defMicroarch ioSync = defineNetwork "net1" ioSync $ do
             }
     add "compare" CompareIO
     add "logicalUnit" LogicalUnitIO
+    add "mux" MultiplexerIO
 
 microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
     addCustomPrototype "fram{x}" (framWithSize 32) FramIO
@@ -394,3 +395,4 @@ microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
             }
     addPrototype "compare{x}" CompareIO
     addPrototype "logicalUnit{x}" LogicalUnitIO
+    addPrototype "mux{x}" MultiplexerIO

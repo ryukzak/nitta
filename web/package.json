@@ -6,6 +6,7 @@
   "proxy": "http://localhost:8080",
   "dependencies": {
     "@types/react-table": "^6.8.5",
+    "autoprefixer": "^10.4.21",
     "axios": "^0.21.0",
     "bootstrap": "^5.1.3",
     "chart.js": "^3.3.2",
