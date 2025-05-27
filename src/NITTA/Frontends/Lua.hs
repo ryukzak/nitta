@@ -151,7 +151,9 @@ data LuaAlgBuilder x = LuaAlgBuilder
     , algConstants :: HM.HashMap T.Text LuaValueInstance
     -- ^ A table correlating constant with LuaValueInstance which store this constant.
     , algTraceFuncs :: [([T.Text], Maybe T.Text)]
-    -- ^ A list that stores debug information about monitored variables and their display formats.
+    {- ^ A list that stores debug information about monitored variables and their display formats.
+    , context :: [[LuaStatement x]] -- todo
+    -}
     }
     deriving (Show)
 
@@ -321,6 +323,8 @@ addFunction funcName [i] _ | toString funcName == "send" = do
     put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = "send", fInt = []} : algGraph}
 addFunction funcName _ fOut | toString funcName == "receive" = do
     addVariable [] fOut [] "receive" []
+addFunction "if_mux" [cond, a, b] [c] = do
+    addVariable [cond, a, b] [c] [] "if_mux" []
 addFunction fName _ _ = error $ "unknown function" <> T.unpack fName
 
 addConstant (Number _valueType valueString) = do
@@ -457,6 +461,7 @@ alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip exe
         function2nitta LuaStatement{fName = "and", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "or", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c
         function2nitta LuaStatement{fName = "not", fIn = [a], fOut = [c], fValues = [], fInt = []} = F.logicNot (fromText a) $ output c
+        function2nitta LuaStatement{fName = "if_mux", fIn = [cond, b, a], fOut = [c], fValues = [], fInt = []} = F.mux [fromText a, fromText b] (fromText cond) $ output c
         function2nitta f = error $ "function not found: " <> show f
         output v =
             case HM.lookup v algVars of
