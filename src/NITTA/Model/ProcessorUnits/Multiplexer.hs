@@ -18,7 +18,7 @@ import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
 import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F hiding (remain)
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -67,7 +67,7 @@ multiplexer =
         }
 
 selWidth :: Int
-selWidth = 4 -- todo should fix
+selWidth = 4
 instance VarValTime v x t => ProcessorUnit (Multiplexer v x t) v x t where
     tryBind f pu@Multiplexer{remain}
         | Just F.Mux{} <- castF f =
@@ -114,10 +114,9 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
         | not (null targets) || not (null muxSels) =
             let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
-             in -- in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) (targets ++ muxSels)
-                [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
+             in [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
         | not $ null sources =
-            let doneAt = nextTick (process_ pu) + 3
+            let doneAt = nextTick (process_ pu) + 2
                 at = doneAt ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
@@ -163,8 +162,8 @@ execution pu@Multiplexer{targets = [], sources = [], muxSels = [], remain} f
     | Just (F.Mux a b (O c)) <- castF f =
         pu
             { sources = S.elems c
-            , muxSels = [(\(I v) -> v) b]
-            , targets = map (\(I v) -> v) a
+            , muxSels = [(\(I v) -> v) a]
+            , targets = map (\(I v) -> v) b
             , remain = filter (/= f) remain
             , currentWork = Just f
             }
@@ -200,9 +199,9 @@ instance VarValTime v x t => TargetSystemComponent (Multiplexer v x t) where
                 ) #{ tag } (
             .clk(#{ sigClk }),
             .rst(#{ sigRst }),
-            .data_active(#{ dataInPort }),
-            .sel_active(#{ selPort }),
-            .out_active(#{ outPort }),
+            .signal_wr(#{ dataInPort }),
+            .signal_sel(#{ selPort }),
+            .signal_oe(#{ outPort }),
 
             .data_in( #{ dataIn } ),
             .attr_in( #{ attrIn } ),
@@ -246,11 +245,11 @@ instance VarValTime v x t => WithFunctions (Multiplexer v x t) (F v x) where
 
 instance VarValTime v x t => Testable (Multiplexer v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        let tbcSignalsConst = map T.pack ["data_active", "sel_active", "out_active"]
+        let tbcSignalsConst = map T.pack ["signal_wr", "signal_sel", "signal_oe"]
             showMicrocode MuxMicrocode{..} =
-                [i|data_active <= #{ bool2verilog dataInActive };|]
-                    <> [i| sel_active <= #{ bool2verilog selActive };|]
-                    <> [i| out_active <= #{ bool2verilog outActive };|]
+                [i|signal_wr <= #{ bool2verilog dataInActive };|]
+                    <> [i| signal_sel <= #{ bool2verilog selActive };|]
+                    <> [i| signal_oe <= #{ bool2verilog outActive };|]
          in Immediate (toString $ moduleName pName pUnit <> T.pack "_tb.v") $
                 snippetTestBench
                     prj
@@ -258,9 +257,9 @@ instance VarValTime v x t => Testable (Multiplexer v x t) v x where
                         { tbcSignals = tbcSignalsConst
                         , tbcPorts =
                             MultiplexerPorts
-                                { dataInPort = SignalTag (T.pack "data_active")
-                                , selPort = SignalTag (T.pack "sel_active")
-                                , outPort = SignalTag (T.pack "out_active")
+                                { dataInPort = SignalTag (T.pack "signal_wr")
+                                , selPort = SignalTag (T.pack "signal_sel")
+                                , outPort = SignalTag (T.pack "signal_oe")
                                 }
                         , tbcMC2verilogLiteral = showMicrocode
                         }

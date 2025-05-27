@@ -5,9 +5,9 @@ module pu_multiplexer #(
 )(
     input wire clk,
     input wire rst,
-    input wire data_active,
-    input wire sel_active,
-    input wire out_active,
+    input wire signal_wr,
+    input wire signal_sel,
+    input wire signal_oe,
     
     input wire signed [DATA_WIDTH-1:0] data_in,
     input wire [ATTR_WIDTH-1:0] attr_in,
@@ -22,18 +22,8 @@ module pu_multiplexer #(
 
     integer i;
 
-    always @(posedge clk)
-     if ( rst ) begin
-       for (i = 0; i < (2**SEL_WIDTH); i = i + 1) begin
-            buffer[i] <= 0;
-        end
-        write_index <= 0;
-        sel_reg <= 0;
-        is_prev_out <= 0;
-     end
-
     always @(posedge clk) begin
-        if (data_active) begin
+        if (signal_wr) begin
             if (is_prev_out) begin
                 sel_reg <= 0;
                 is_prev_out <= 0;
@@ -45,7 +35,7 @@ module pu_multiplexer #(
             end
         end
         
-        if (sel_active) begin
+        if (signal_sel) begin
             if (is_prev_out) begin
                 write_index <= 0;
                 is_prev_out <= 0;
@@ -53,12 +43,12 @@ module pu_multiplexer #(
             sel_reg <= data_in;
         end
 
-        if (out_active) begin
+        if (signal_oe) begin
             is_prev_out <= 1;
         end
     end
 
 assign attr_out = 0;
-assign data_out = (out_active && (sel_reg < write_index))? buffer[sel_reg] : 0;
+assign data_out = (signal_oe && (sel_reg < write_index))? buffer[sel_reg] : 0;
 
 endmodule

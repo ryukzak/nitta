@@ -22,12 +22,12 @@ tests =
             "sel_first_input"
             u
             [("a", 10), ("b", 20), ("sel", 0)]
-            [F.mux (T.pack "a") (T.pack "b") (T.pack "sel") [T.pack "out"]]
+            [F.mux [T.pack "a", T.pack "b"] (T.pack "sel") [T.pack "out"]]
         , puCoSimTestCase
             "sel_second_input"
             u
             [("a", 10), ("b", 20), ("sel", 1)]
-            [F.mux (T.pack "a") (T.pack "b") (T.pack "sel") [T.pack "out"]]
+            [F.mux [T.pack "a", T.pack "b"] (T.pack "sel") [T.pack "out"]]
         , -- Property-based tests
           finitePUSynthesisProp
             "finite synthesis properties"

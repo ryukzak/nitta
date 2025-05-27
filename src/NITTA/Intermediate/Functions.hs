@@ -578,11 +578,11 @@ instance (Var v, Num x, Eq x) => FunctionSimulation (TruthTable v x) v x where
             result = M.findWithDefault False inputValues table -- todo add default value
          in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
 
-data Mux v x = Mux [I v] (I v) (O v) deriving (Typeable, Eq)
+data Mux v x = Mux (I v) [I v] (O v) deriving (Typeable, Eq)
 
 instance Var v => Patch (Mux v x) (v, v) where
-    patch (old, new) (Mux ins sel out) =
-        Mux (patch (old, new) ins) sel (patch (old, new) out)
+    patch (old, new) (Mux sel ins out) =
+        Mux (patch (old, new) sel) ins (patch (old, new) out)
 
 instance Var v => Locks (Mux v x) v where
     locks (Mux{}) = []
@@ -593,12 +593,12 @@ instance Var v => Show (Mux v x) where
     show (Mux ins sel output) = "Mux " <> show ins <> " " <> show sel <> " = " <> show output
 
 instance Var v => Function (Mux v x) v where
-    inputs (Mux ins cond _) =
+    inputs (Mux cond ins _) =
         S.unions $ map variables (ins ++ [cond])
     outputs (Mux _ _ output) = variables output
 
 instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
-    simulate cntx (Mux ins (I sel) (O outs)) =
+    simulate cntx (Mux (I sel) ins (O outs)) =
         let
             selValue = getCntx cntx sel `mod` 16
             insCount = length ins
@@ -610,5 +610,5 @@ instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
          in
             [(outVar, selectedValue) | outVar <- S.elems outs]
 
-mux :: (Var v, Val x) => v -> v -> v -> [v] -> F v x
-mux a b c d = packF $ Mux [I a, I b] (I c) $ O $ S.fromList d
+mux :: (Var v, Val x) => [v] -> v -> [v] -> F v x
+mux inps cond outs = packF $ Mux (I cond) (map I inps) $ O $ S.fromList outs

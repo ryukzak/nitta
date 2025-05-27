@@ -27,7 +27,6 @@ import Data.CallStack
 import Data.Default
 import Data.HashMap.Strict qualified as HM
 import Data.List (delete)
-import Data.Map ()
 import Data.Set (elems, empty, fromList, intersection, union)
 import Data.Text qualified as T
 import NITTA.Intermediate.Functions ()
