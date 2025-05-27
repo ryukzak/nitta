@@ -22,16 +22,6 @@ module pu_multiplexer #(
 
     integer i;
 
-    always @(posedge clk)
-     if ( rst ) begin
-       for (i = 0; i < (2**SEL_WIDTH); i = i + 1) begin
-            buffer[i] <= 0;
-        end
-        write_index <= 0;
-        sel_reg <= 0;
-        is_prev_out <= 0;
-     end
-
     always @(posedge clk) begin
         if (data_active) begin
             if (is_prev_out) begin

@@ -18,7 +18,7 @@ import Data.Set qualified as S
 import Data.String.Interpolate
 import Data.String.ToString
 import Data.Text qualified as T
-import NITTA.Intermediate.Functions qualified as F hiding (remain)
+import NITTA.Intermediate.Functions qualified as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
@@ -67,7 +67,7 @@ multiplexer =
         }
 
 selWidth :: Int
-selWidth = 4 -- todo should fix
+selWidth = 4
 instance VarValTime v x t => ProcessorUnit (Multiplexer v x t) v x t where
     tryBind f pu@Multiplexer{remain}
         | Just F.Mux{} <- castF f =
@@ -114,10 +114,9 @@ instance VarValTime v x t => EndpointProblem (Multiplexer v x t) v t where
         | not (null targets) || not (null muxSels) =
             let at = nextTick pu ... maxBound
                 duration = 1 ... maxBound
-             in -- in map (\v -> EndpointSt (Target v) $ TimeConstraint at duration) (targets ++ muxSels)
-                [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
+             in [EndpointSt (Target $ head $ targets ++ muxSels) $ TimeConstraint at duration]
         | not $ null sources =
-            let doneAt = nextTick (process_ pu) + 3
+            let doneAt = nextTick (process_ pu) + 2
                 at = doneAt ... maxBound
                 duration = 1 ... maxBound
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstraint at duration]
@@ -163,8 +162,8 @@ execution pu@Multiplexer{targets = [], sources = [], muxSels = [], remain} f
     | Just (F.Mux a b (O c)) <- castF f =
         pu
             { sources = S.elems c
-            , muxSels = [(\(I v) -> v) b]
-            , targets = map (\(I v) -> v) a
+            , muxSels = [(\(I v) -> v) a]
+            , targets = map (\(I v) -> v) b
             , remain = filter (/= f) remain
             , currentWork = Just f
             }
