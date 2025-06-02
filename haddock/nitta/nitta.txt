@@ -1130,6 +1130,9 @@ LogicNot :: I v -> O v -> LogicFunction v x
 logicAnd :: (Var v, Val x) => v -> v -> [v] -> F v x
 logicOr :: (Var v, Val x) => v -> v -> [v] -> F v x
 logicNot :: (Var v, Val x) => v -> [v] -> F v x
+data Mux v x
+Mux :: I v -> [I v] -> O v -> Mux v x
+mux :: (Var v, Val x) => [v] -> v -> [v] -> F v x
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.Loop v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopBegin v x)
 instance (GHC.Classes.Eq x, GHC.Classes.Eq v) => GHC.Classes.Eq (NITTA.Intermediate.Functions.LoopEnd v x)
@@ -1151,7 +1154,14 @@ instance GHC.Classes.Eq NITTA.Intermediate.Functions.CmpOp
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Compare v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.LogicFunction v x)
 instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.TruthTable v x)
+instance GHC.Classes.Eq v => GHC.Classes.Eq (NITTA.Intermediate.Functions.Mux v x)
 instance (Data.Data.Data v, Data.Data.Data (NITTA.Intermediate.Types.I v), Data.Data.Data (NITTA.Intermediate.Types.O v), Data.Data.Data x) => Data.Data.Data (NITTA.Intermediate.Functions.LogicFunction v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.Mux v x) (v, v)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.Mux v x) v
+instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.Mux v x)
+instance NITTA.Intermediate.Variable.Var v => GHC.Show.Show (NITTA.Intermediate.Functions.Mux v x)
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Function (NITTA.Intermediate.Functions.Mux v x) v
+instance (NITTA.Intermediate.Variable.Var v, NITTA.Intermediate.Value.Val x) => NITTA.Intermediate.Types.FunctionSimulation (NITTA.Intermediate.Functions.Mux v x) v x
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Patch (NITTA.Intermediate.Functions.TruthTable v x) (v, v)
 instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Intermediate.Functions.TruthTable v x) v
 instance NITTA.Intermediate.Types.Label (NITTA.Intermediate.Functions.TruthTable v x)
@@ -2555,6 +2565,34 @@ instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnit
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t)
 instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
 instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Multiplier.Multiplier v x t) v x
+
+module NITTA.Model.ProcessorUnits.Multiplexer
+data Multiplexer v x t
+multiplexer :: Time t => Multiplexer v x t
+data IOPorts pu :: Type
+instance GHC.Classes.Eq (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.Instruction (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t))
+instance GHC.Show.Show (NITTA.Model.ProcessorUnits.Types.IOPorts (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t))
+instance Data.Default.Class.Default x => NITTA.Intermediate.Value.DefaultX (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) x
+instance NITTA.Model.Time.Time t => Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.Time.VarValTime v x t => Prettyprinter.Internal.Pretty (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.ProcessorUnits.Types.ProcessorUnit (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x t
+instance NITTA.Model.ProcessorUnits.Types.Connected (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.ProcessorUnits.Types.Controllable (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Model.Problems.Endpoint.EndpointProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v t
+instance NITTA.Intermediate.Variable.Var v => NITTA.Intermediate.Types.Locks (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.Types.TargetSystemComponent (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.ProcessorUnits.Types.IOConnected (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.Problems.Refactor.BreakLoop.BreakLoopProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance NITTA.Model.Problems.Refactor.ConstantFolding.ConstantFoldingProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeAccum.OptimizeAccumProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance NITTA.Model.Problems.Refactor.ResolveDeadlock.ResolveDeadlockProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance NITTA.Project.TestBench.IOTestBench (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance NITTA.Model.Problems.Refactor.OptimizeLogicalUnit.OptimizeLogicalUnitProblem (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
+instance Data.Default.Class.Default (NITTA.Model.ProcessorUnits.Types.Microcode (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t))
+instance NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Intermediate.Types.WithFunctions (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) (NITTA.Intermediate.Types.F v x)
+instance NITTA.Model.Time.VarValTime v x t => NITTA.Project.TestBench.Testable (NITTA.Model.ProcessorUnits.Multiplexer.Multiplexer v x t) v x
 
 module NITTA.Model.ProcessorUnits.LogicalUnit
 data LogicalUnit v x t

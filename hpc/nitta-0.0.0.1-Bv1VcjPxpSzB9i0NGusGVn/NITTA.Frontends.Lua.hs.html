@@ -340,165 +340,168 @@ span.spaces    { background: white }
 <span class="lineno">  321 </span><span class="spaces">    </span><span class="istickedoff">put luaAlgBuilder{algGraph = LuaStatement{fIn = [i], fOut = [], fValues = [], fName = &quot;send&quot;, fInt = []} : algGraph}</span>
 <span class="lineno">  322 </span><span class="spaces"></span><span class="istickedoff">addFunction funcName _ fOut | <span class="tickonlytrue">toString funcName == &quot;receive&quot;</span> = do</span>
 <span class="lineno">  323 </span><span class="spaces">    </span><span class="istickedoff">addVariable [] fOut [] &quot;receive&quot; []</span>
-<span class="lineno">  324 </span><span class="spaces"></span><span class="istickedoff">addFunction fName _ _ = <span class="nottickedoff">error $ &quot;unknown function&quot; &lt;&gt; T.unpack fName</span></span></span>
-<span class="lineno">  325 </span>
-<span class="lineno">  326 </span><span class="decl"><span class="istickedoff">addConstant (Number _valueType valueString) = do</span>
-<span class="lineno">  327 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algGraph, algVars, algConstants} &lt;- get</span>
-<span class="lineno">  328 </span><span class="spaces">    </span><span class="istickedoff">let lvv = LuaValueInstance{lviName = valueString, lviAssignCount = 0, lviIsConstant = True}</span>
-<span class="lineno">  329 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup valueString algConstants of</span>
-<span class="lineno">  330 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
-<span class="lineno">  331 </span><span class="spaces">            </span><span class="istickedoff">let names = fromMaybe <span class="nottickedoff">(error &quot;lua constants parsing error&quot;)</span> $ HM.lookup value algVars</span>
-<span class="lineno">  332 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName lvv $ length names</span>
-<span class="lineno">  333 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert value (resultName : names) algVars}</span>
-<span class="lineno">  334 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
-<span class="lineno">  335 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; do</span>
-<span class="lineno">  336 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName lvv 0</span>
-<span class="lineno">  337 </span><span class="spaces">            </span><span class="istickedoff">put</span>
-<span class="lineno">  338 </span><span class="spaces">                </span><span class="istickedoff">luaAlgBuilder</span>
-<span class="lineno">  339 </span><span class="spaces">                    </span><span class="istickedoff">{ algGraph = LuaStatement{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = &quot;constant&quot;, fInt = []} : algGraph</span>
-<span class="lineno">  340 </span><span class="spaces">                    </span><span class="istickedoff">, algVars = HM.insert lvv [resultName] algVars</span>
-<span class="lineno">  341 </span><span class="spaces">                    </span><span class="istickedoff">, algConstants = HM.insert valueString lvv algConstants</span>
-<span class="lineno">  342 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
-<span class="lineno">  343 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
-<span class="lineno">  344 </span><span class="spaces"></span><span class="istickedoff">addConstant _ = <span class="nottickedoff">undefined</span></span></span>
-<span class="lineno">  345 </span>
-<span class="lineno">  346 </span><span class="decl"><span class="istickedoff">addVariable fIn fOut fValues fName fInt = do</span>
-<span class="lineno">  347 </span><span class="spaces">    </span><span class="istickedoff">LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
-<span class="lineno">  348 </span><span class="spaces">    </span><span class="istickedoff">let luaValueInstances = map (\x -&gt; nameToLuaValueInstance algLatestLuaValueInstance x) fOut</span>
-<span class="lineno">  349 </span><span class="spaces">    </span><span class="istickedoff">let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueInstances}</span>
-<span class="lineno">  350 </span><span class="spaces">    </span><span class="istickedoff">mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueInstances</span>
-<span class="lineno">  351 </span><span class="spaces">    </span><span class="istickedoff">mapM_ addItemToVars luaValueInstances</span>
-<span class="lineno">  352 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueInstance = algLatestLuaValueInstance'} &lt;- get</span>
-<span class="lineno">  353 </span><span class="spaces">    </span><span class="istickedoff">case fName of</span>
-<span class="lineno">  354 </span><span class="spaces">        </span><span class="istickedoff">&quot;constant&quot; -&gt; do</span>
-<span class="lineno">  355 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup (showText $ head fValues) algConstants of</span>
-<span class="lineno">  356 </span><span class="spaces">                </span><span class="istickedoff">Just lvv -&gt; do</span>
-<span class="lineno">  357 </span><span class="spaces">                    </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert (head fOut) lvv algLatestLuaValueInstance'}</span>
-<span class="lineno">  358 </span><span class="spaces">                </span><span class="istickedoff">Nothing -&gt; do</span>
-<span class="lineno">  359 </span><span class="spaces">                    </span><span class="istickedoff">put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (showText $ head fValues) (head luaValueInstances) algConstants}</span>
-<span class="lineno">  360 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; do</span>
-<span class="lineno">  361 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algGraph = func : algGraph}</span>
-<span class="lineno">  362 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  363 </span><span class="spaces">        </span><span class="istickedoff">nameToLuaValueInstance algLatestLuaValueInstance name =</span>
-<span class="lineno">  364 </span><span class="spaces">            </span><span class="istickedoff">case getLuaValueByName name algLatestLuaValueInstance of</span>
-<span class="lineno">  365 </span><span class="spaces">                </span><span class="istickedoff">Just lvv@LuaValueInstance{lviAssignCount} -&gt; lvv{lviAssignCount = lviAssignCount + 1}</span>
-<span class="lineno">  366 </span><span class="spaces">                </span><span class="istickedoff">Nothing -&gt; LuaValueInstance{lviName = name, lviAssignCount = 0, lviIsConstant = False}</span>
-<span class="lineno">  367 </span><span class="spaces">        </span><span class="istickedoff">addItemToBuffer name lvv = do</span>
-<span class="lineno">  368 </span><span class="spaces">            </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
-<span class="lineno">  369 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name lvv algLatestLuaValueInstance}</span>
-<span class="lineno">  370 </span><span class="spaces">        </span><span class="istickedoff">addItemToVars name = do</span>
-<span class="lineno">  371 </span><span class="spaces">            </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algVars} &lt;- get</span>
-<span class="lineno">  372 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert name [] algVars}</span></span>
-<span class="lineno">  373 </span>
-<span class="lineno">  374 </span><span class="decl"><span class="istickedoff">addVariableAccess name = do</span>
-<span class="lineno">  375 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algVars} &lt;- get</span>
-<span class="lineno">  376 </span><span class="spaces">    </span><span class="istickedoff">luaValueInstance &lt;- getLatestLuaValueInstanceByName name</span>
-<span class="lineno">  377 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup luaValueInstance algVars of</span>
-<span class="lineno">  378 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
-<span class="lineno">  379 </span><span class="spaces">            </span><span class="istickedoff">let len = length value</span>
-<span class="lineno">  380 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName luaValueInstance len</span>
-<span class="lineno">  381 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert luaValueInstance (resultName : value) algVars}</span>
-<span class="lineno">  382 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
-<span class="lineno">  383 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error (&quot;variable '&quot; &lt;&gt; show (lviName luaValueInstance) &lt;&gt; &quot; not found. Constants list : &quot; &lt;&gt; show algVars)</span></span></span>
-<span class="lineno">  384 </span>
-<span class="lineno">  385 </span><span class="decl"><span class="istickedoff">getLatestLuaValueInstanceByName name = do</span>
-<span class="lineno">  386 </span><span class="spaces">    </span><span class="istickedoff">LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
-<span class="lineno">  387 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup name algLatestLuaValueInstance of</span>
-<span class="lineno">  388 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; return value</span>
-<span class="lineno">  389 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error $ &quot;variable not found : '&quot; &lt;&gt; show name &lt;&gt; &quot;'.&quot;</span></span></span>
-<span class="lineno">  390 </span>
-<span class="lineno">  391 </span><span class="decl"><span class="istickedoff">addAlias from to = do</span>
-<span class="lineno">  392 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
-<span class="lineno">  393 </span><span class="spaces">    </span><span class="istickedoff">case getLuaValueByName to algLatestLuaValueInstance of</span>
-<span class="lineno">  394 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
-<span class="lineno">  395 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert from value algLatestLuaValueInstance}</span>
-<span class="lineno">  396 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error (&quot;variable '&quot; &lt;&gt; show to &lt;&gt; &quot; not found. Constants list : &quot; &lt;&gt; show algLatestLuaValueInstance)</span></span></span>
-<span class="lineno">  397 </span>
-<span class="lineno">  398 </span><span class="decl"><span class="istickedoff">getLuaValueByName name buffer = HM.lookup name buffer</span></span>
+<span class="lineno">  324 </span><span class="spaces"></span><span class="istickedoff">addFunction &quot;if_mux&quot; [cond, a, b] [c] = <span class="nottickedoff">do</span></span>
+<span class="lineno">  325 </span><span class="spaces">    </span><span class="istickedoff"><span class="nottickedoff">addVariable [cond, a, b] [c] [] &quot;if_mux&quot; []</span></span>
+<span class="lineno">  326 </span><span class="spaces"></span><span class="istickedoff">addFunction fName _ _ = <span class="nottickedoff">error $ &quot;unknown function&quot; &lt;&gt; T.unpack fName</span></span></span>
+<span class="lineno">  327 </span>
+<span class="lineno">  328 </span><span class="decl"><span class="istickedoff">addConstant (Number _valueType valueString) = do</span>
+<span class="lineno">  329 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algGraph, algVars, algConstants} &lt;- get</span>
+<span class="lineno">  330 </span><span class="spaces">    </span><span class="istickedoff">let lvv = LuaValueInstance{lviName = valueString, lviAssignCount = 0, lviIsConstant = True}</span>
+<span class="lineno">  331 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup valueString algConstants of</span>
+<span class="lineno">  332 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
+<span class="lineno">  333 </span><span class="spaces">            </span><span class="istickedoff">let names = fromMaybe <span class="nottickedoff">(error &quot;lua constants parsing error&quot;)</span> $ HM.lookup value algVars</span>
+<span class="lineno">  334 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName lvv $ length names</span>
+<span class="lineno">  335 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert value (resultName : names) algVars}</span>
+<span class="lineno">  336 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
+<span class="lineno">  337 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; do</span>
+<span class="lineno">  338 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName lvv 0</span>
+<span class="lineno">  339 </span><span class="spaces">            </span><span class="istickedoff">put</span>
+<span class="lineno">  340 </span><span class="spaces">                </span><span class="istickedoff">luaAlgBuilder</span>
+<span class="lineno">  341 </span><span class="spaces">                    </span><span class="istickedoff">{ algGraph = LuaStatement{fIn = [], fOut = [lvv], fValues = [readText valueString], fName = &quot;constant&quot;, fInt = []} : algGraph</span>
+<span class="lineno">  342 </span><span class="spaces">                    </span><span class="istickedoff">, algVars = HM.insert lvv [resultName] algVars</span>
+<span class="lineno">  343 </span><span class="spaces">                    </span><span class="istickedoff">, algConstants = HM.insert valueString lvv algConstants</span>
+<span class="lineno">  344 </span><span class="spaces">                    </span><span class="istickedoff">}</span>
+<span class="lineno">  345 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
+<span class="lineno">  346 </span><span class="spaces"></span><span class="istickedoff">addConstant _ = <span class="nottickedoff">undefined</span></span></span>
+<span class="lineno">  347 </span>
+<span class="lineno">  348 </span><span class="decl"><span class="istickedoff">addVariable fIn fOut fValues fName fInt = do</span>
+<span class="lineno">  349 </span><span class="spaces">    </span><span class="istickedoff">LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
+<span class="lineno">  350 </span><span class="spaces">    </span><span class="istickedoff">let luaValueInstances = map (\x -&gt; nameToLuaValueInstance algLatestLuaValueInstance x) fOut</span>
+<span class="lineno">  351 </span><span class="spaces">    </span><span class="istickedoff">let func = LuaStatement{fIn, fValues, fName, fInt, fOut = luaValueInstances}</span>
+<span class="lineno">  352 </span><span class="spaces">    </span><span class="istickedoff">mapM_ (uncurry addItemToBuffer) $ zip fOut luaValueInstances</span>
+<span class="lineno">  353 </span><span class="spaces">    </span><span class="istickedoff">mapM_ addItemToVars luaValueInstances</span>
+<span class="lineno">  354 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algGraph, algConstants, algLatestLuaValueInstance = algLatestLuaValueInstance'} &lt;- get</span>
+<span class="lineno">  355 </span><span class="spaces">    </span><span class="istickedoff">case fName of</span>
+<span class="lineno">  356 </span><span class="spaces">        </span><span class="istickedoff">&quot;constant&quot; -&gt; do</span>
+<span class="lineno">  357 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup (showText $ head fValues) algConstants of</span>
+<span class="lineno">  358 </span><span class="spaces">                </span><span class="istickedoff">Just lvv -&gt; do</span>
+<span class="lineno">  359 </span><span class="spaces">                    </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert (head fOut) lvv algLatestLuaValueInstance'}</span>
+<span class="lineno">  360 </span><span class="spaces">                </span><span class="istickedoff">Nothing -&gt; do</span>
+<span class="lineno">  361 </span><span class="spaces">                    </span><span class="istickedoff">put luaAlgBuilder{algGraph = func : algGraph, algConstants = HM.insert (showText $ head fValues) (head luaValueInstances) algConstants}</span>
+<span class="lineno">  362 </span><span class="spaces">        </span><span class="istickedoff">_ -&gt; do</span>
+<span class="lineno">  363 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algGraph = func : algGraph}</span>
+<span class="lineno">  364 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  365 </span><span class="spaces">        </span><span class="istickedoff">nameToLuaValueInstance algLatestLuaValueInstance name =</span>
+<span class="lineno">  366 </span><span class="spaces">            </span><span class="istickedoff">case getLuaValueByName name algLatestLuaValueInstance of</span>
+<span class="lineno">  367 </span><span class="spaces">                </span><span class="istickedoff">Just lvv@LuaValueInstance{lviAssignCount} -&gt; lvv{lviAssignCount = lviAssignCount + 1}</span>
+<span class="lineno">  368 </span><span class="spaces">                </span><span class="istickedoff">Nothing -&gt; LuaValueInstance{lviName = name, lviAssignCount = 0, lviIsConstant = False}</span>
+<span class="lineno">  369 </span><span class="spaces">        </span><span class="istickedoff">addItemToBuffer name lvv = do</span>
+<span class="lineno">  370 </span><span class="spaces">            </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
+<span class="lineno">  371 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert name lvv algLatestLuaValueInstance}</span>
+<span class="lineno">  372 </span><span class="spaces">        </span><span class="istickedoff">addItemToVars name = do</span>
+<span class="lineno">  373 </span><span class="spaces">            </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algVars} &lt;- get</span>
+<span class="lineno">  374 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert name [] algVars}</span></span>
+<span class="lineno">  375 </span>
+<span class="lineno">  376 </span><span class="decl"><span class="istickedoff">addVariableAccess name = do</span>
+<span class="lineno">  377 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algVars} &lt;- get</span>
+<span class="lineno">  378 </span><span class="spaces">    </span><span class="istickedoff">luaValueInstance &lt;- getLatestLuaValueInstanceByName name</span>
+<span class="lineno">  379 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup luaValueInstance algVars of</span>
+<span class="lineno">  380 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
+<span class="lineno">  381 </span><span class="spaces">            </span><span class="istickedoff">let len = length value</span>
+<span class="lineno">  382 </span><span class="spaces">            </span><span class="istickedoff">let resultName = getUniqueLuaVariableName luaValueInstance len</span>
+<span class="lineno">  383 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algVars = HM.insert luaValueInstance (resultName : value) algVars}</span>
+<span class="lineno">  384 </span><span class="spaces">            </span><span class="istickedoff">return resultName</span>
+<span class="lineno">  385 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error (&quot;variable '&quot; &lt;&gt; show (lviName luaValueInstance) &lt;&gt; &quot; not found. Constants list : &quot; &lt;&gt; show algVars)</span></span></span>
+<span class="lineno">  386 </span>
+<span class="lineno">  387 </span><span class="decl"><span class="istickedoff">getLatestLuaValueInstanceByName name = do</span>
+<span class="lineno">  388 </span><span class="spaces">    </span><span class="istickedoff">LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
+<span class="lineno">  389 </span><span class="spaces">    </span><span class="istickedoff">case HM.lookup name algLatestLuaValueInstance of</span>
+<span class="lineno">  390 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; return value</span>
+<span class="lineno">  391 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error $ &quot;variable not found : '&quot; &lt;&gt; show name &lt;&gt; &quot;'.&quot;</span></span></span>
+<span class="lineno">  392 </span>
+<span class="lineno">  393 </span><span class="decl"><span class="istickedoff">addAlias from to = do</span>
+<span class="lineno">  394 </span><span class="spaces">    </span><span class="istickedoff">luaAlgBuilder@LuaAlgBuilder{algLatestLuaValueInstance} &lt;- get</span>
+<span class="lineno">  395 </span><span class="spaces">    </span><span class="istickedoff">case getLuaValueByName to algLatestLuaValueInstance of</span>
+<span class="lineno">  396 </span><span class="spaces">        </span><span class="istickedoff">Just value -&gt; do</span>
+<span class="lineno">  397 </span><span class="spaces">            </span><span class="istickedoff">put luaAlgBuilder{algLatestLuaValueInstance = HM.insert from value algLatestLuaValueInstance}</span>
+<span class="lineno">  398 </span><span class="spaces">        </span><span class="istickedoff">Nothing -&gt; <span class="nottickedoff">error (&quot;variable '&quot; &lt;&gt; show to &lt;&gt; &quot; not found. Constants list : &quot; &lt;&gt; show algLatestLuaValueInstance)</span></span></span>
 <span class="lineno">  399 </span>
-<span class="lineno">  400 </span><span class="decl"><span class="istickedoff">buildAlg syntaxTree =</span>
-<span class="lineno">  401 </span><span class="spaces">    </span><span class="istickedoff">flip execState emptyLuaAlgBuilder $ do</span>
-<span class="lineno">  402 </span><span class="spaces">        </span><span class="istickedoff">let (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree</span>
-<span class="lineno">  403 </span><span class="spaces">            </span><span class="istickedoff">statements = funAssignStatements startupFunctionDef</span>
-<span class="lineno">  404 </span><span class="spaces">        </span><span class="istickedoff">_ &lt;- addStartupFuncArgs startupFunctionCall startupFunctionDef</span>
-<span class="lineno">  405 </span><span class="spaces">        </span><span class="istickedoff">mapM_ (processStatement startupFunctionName) statements</span>
-<span class="lineno">  406 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  407 </span><span class="spaces">        </span><span class="istickedoff">emptyLuaAlgBuilder =</span>
-<span class="lineno">  408 </span><span class="spaces">            </span><span class="istickedoff">LuaAlgBuilder</span>
-<span class="lineno">  409 </span><span class="spaces">                </span><span class="istickedoff">{ algGraph = []</span>
-<span class="lineno">  410 </span><span class="spaces">                </span><span class="istickedoff">, algLatestLuaValueInstance = HM.empty</span>
-<span class="lineno">  411 </span><span class="spaces">                </span><span class="istickedoff">, algVarCounters = HM.empty</span>
-<span class="lineno">  412 </span><span class="spaces">                </span><span class="istickedoff">, algVars = HM.empty</span>
-<span class="lineno">  413 </span><span class="spaces">                </span><span class="istickedoff">, algStartupArgs = HM.empty</span>
-<span class="lineno">  414 </span><span class="spaces">                </span><span class="istickedoff">, algConstants = HM.empty</span>
-<span class="lineno">  415 </span><span class="spaces">                </span><span class="istickedoff">, algTraceFuncs = []</span>
-<span class="lineno">  416 </span><span class="spaces">                </span><span class="istickedoff">}</span>
-<span class="lineno">  417 </span><span class="spaces">        </span><span class="istickedoff">funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements</span>
-<span class="lineno">  418 </span><span class="spaces">        </span><span class="istickedoff">funAssignStatements _ = <span class="nottickedoff">error &quot;funAssignStatements : not a function assignment&quot;</span></span></span>
-<span class="lineno">  419 </span>
-<span class="lineno">  420 </span><span class="decl"><span class="istickedoff">findStartupFunction (Block statements Nothing)</span>
-<span class="lineno">  421 </span><span class="spaces">    </span><span class="istickedoff">| [call] &lt;- filter (\case FunCall{} -&gt; True; _ -&gt; False) statements</span>
-<span class="lineno">  422 </span><span class="spaces">    </span><span class="istickedoff">, [funAssign] &lt;- filter (\case FunAssign{} -&gt; True; _ -&gt; False) statements</span>
-<span class="lineno">  423 </span><span class="spaces">    </span><span class="istickedoff">, (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) &lt;- call</span>
-<span class="lineno">  424 </span><span class="spaces">    </span><span class="istickedoff">, (FunAssign (FunName (Name fnAssign) _ _) _) &lt;- funAssign</span>
-<span class="lineno">  425 </span><span class="spaces">    </span><span class="istickedoff">, <span class="tickonlytrue">fnCall == fnAssign</span> =</span>
-<span class="lineno">  426 </span><span class="spaces">        </span><span class="istickedoff">(fnCall, call, funAssign)</span>
-<span class="lineno">  427 </span><span class="spaces"></span><span class="istickedoff">findStartupFunction _ = <span class="nottickedoff">error &quot;can't find startup function in lua source code&quot;</span></span></span>
-<span class="lineno">  428 </span>
-<span class="lineno">  429 </span><span class="decl"><span class="istickedoff">getLuaBlockFromSources src = either <span class="nottickedoff">(\e -&gt; error $ &quot;Exception while parsing Lua sources: &quot; &lt;&gt; show e)</span> id $ parseText chunk src</span></span>
+<span class="lineno">  400 </span><span class="decl"><span class="istickedoff">getLuaValueByName name buffer = HM.lookup name buffer</span></span>
+<span class="lineno">  401 </span>
+<span class="lineno">  402 </span><span class="decl"><span class="istickedoff">buildAlg syntaxTree =</span>
+<span class="lineno">  403 </span><span class="spaces">    </span><span class="istickedoff">flip execState emptyLuaAlgBuilder $ do</span>
+<span class="lineno">  404 </span><span class="spaces">        </span><span class="istickedoff">let (startupFunctionName, startupFunctionCall, startupFunctionDef) = findStartupFunction syntaxTree</span>
+<span class="lineno">  405 </span><span class="spaces">            </span><span class="istickedoff">statements = funAssignStatements startupFunctionDef</span>
+<span class="lineno">  406 </span><span class="spaces">        </span><span class="istickedoff">_ &lt;- addStartupFuncArgs startupFunctionCall startupFunctionDef</span>
+<span class="lineno">  407 </span><span class="spaces">        </span><span class="istickedoff">mapM_ (processStatement startupFunctionName) statements</span>
+<span class="lineno">  408 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  409 </span><span class="spaces">        </span><span class="istickedoff">emptyLuaAlgBuilder =</span>
+<span class="lineno">  410 </span><span class="spaces">            </span><span class="istickedoff">LuaAlgBuilder</span>
+<span class="lineno">  411 </span><span class="spaces">                </span><span class="istickedoff">{ algGraph = []</span>
+<span class="lineno">  412 </span><span class="spaces">                </span><span class="istickedoff">, algLatestLuaValueInstance = HM.empty</span>
+<span class="lineno">  413 </span><span class="spaces">                </span><span class="istickedoff">, algVarCounters = HM.empty</span>
+<span class="lineno">  414 </span><span class="spaces">                </span><span class="istickedoff">, algVars = HM.empty</span>
+<span class="lineno">  415 </span><span class="spaces">                </span><span class="istickedoff">, algStartupArgs = HM.empty</span>
+<span class="lineno">  416 </span><span class="spaces">                </span><span class="istickedoff">, algConstants = HM.empty</span>
+<span class="lineno">  417 </span><span class="spaces">                </span><span class="istickedoff">, algTraceFuncs = []</span>
+<span class="lineno">  418 </span><span class="spaces">                </span><span class="istickedoff">}</span>
+<span class="lineno">  419 </span><span class="spaces">        </span><span class="istickedoff">funAssignStatements (FunAssign _ (FunBody _ _ (Block statements _))) = statements</span>
+<span class="lineno">  420 </span><span class="spaces">        </span><span class="istickedoff">funAssignStatements _ = <span class="nottickedoff">error &quot;funAssignStatements : not a function assignment&quot;</span></span></span>
+<span class="lineno">  421 </span>
+<span class="lineno">  422 </span><span class="decl"><span class="istickedoff">findStartupFunction (Block statements Nothing)</span>
+<span class="lineno">  423 </span><span class="spaces">    </span><span class="istickedoff">| [call] &lt;- filter (\case FunCall{} -&gt; True; _ -&gt; False) statements</span>
+<span class="lineno">  424 </span><span class="spaces">    </span><span class="istickedoff">, [funAssign] &lt;- filter (\case FunAssign{} -&gt; True; _ -&gt; False) statements</span>
+<span class="lineno">  425 </span><span class="spaces">    </span><span class="istickedoff">, (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) &lt;- call</span>
+<span class="lineno">  426 </span><span class="spaces">    </span><span class="istickedoff">, (FunAssign (FunName (Name fnAssign) _ _) _) &lt;- funAssign</span>
+<span class="lineno">  427 </span><span class="spaces">    </span><span class="istickedoff">, <span class="tickonlytrue">fnCall == fnAssign</span> =</span>
+<span class="lineno">  428 </span><span class="spaces">        </span><span class="istickedoff">(fnCall, call, funAssign)</span>
+<span class="lineno">  429 </span><span class="spaces"></span><span class="istickedoff">findStartupFunction _ = <span class="nottickedoff">error &quot;can't find startup function in lua source code&quot;</span></span></span>
 <span class="lineno">  430 </span>
-<span class="lineno">  431 </span><span class="decl"><span class="istickedoff">alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do</span>
-<span class="lineno">  432 </span><span class="spaces">    </span><span class="istickedoff">mapM addToGraph algGraph</span>
-<span class="lineno">  433 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  434 </span><span class="spaces">        </span><span class="istickedoff">addToGraph item = do</span>
-<span class="lineno">  435 </span><span class="spaces">            </span><span class="istickedoff">graph &lt;- get</span>
-<span class="lineno">  436 </span><span class="spaces">            </span><span class="istickedoff">put (addFuncToDataFlowGraph (function2nitta item) graph)</span>
-<span class="lineno">  437 </span><span class="spaces">            </span><span class="istickedoff">return $ <span class="nottickedoff">fromString &quot;&quot;</span></span>
-<span class="lineno">  438 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;buffer&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer (fromText i) $ output o</span>
-<span class="lineno">  439 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;brokenBuffer&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer (fromText i) $ output o</span>
-<span class="lineno">  440 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;constant&quot;, fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x $ output o</span>
-<span class="lineno">  441 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;send&quot;, fIn = [i], fOut = [], fValues = [], fInt = []} = F.send (fromText i)</span>
-<span class="lineno">  442 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;add&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  443 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;sub&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  444 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;multiply&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  445 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) []</span>
-<span class="lineno">  446 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)</span>
-<span class="lineno">  447 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;neg&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o</span>
-<span class="lineno">  448 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;receive&quot;, fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o</span>
-<span class="lineno">  449 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftL&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c</span>
-<span class="lineno">  450 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftR&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c</span>
-<span class="lineno">  451 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;loop&quot;, fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c</span>
-<span class="lineno">  452 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;lessThan&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpLt (fromText a) (fromText b) (output c)</span></span>
-<span class="lineno">  453 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;lessThanOrEqual&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpLte (fromText a) (fromText b) $ output c</span></span>
-<span class="lineno">  454 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;equal&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpEq (fromText a) (fromText b) $ output c</span></span>
-<span class="lineno">  455 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;greaterThanOrEqual&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpGte (fromText a) (fromText b) $ output c</span></span>
-<span class="lineno">  456 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;greaterThan&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpGt (fromText a) (fromText b) $ output c</span></span>
-<span class="lineno">  457 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;and&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  458 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;or&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c</span>
-<span class="lineno">  459 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;not&quot;, fIn = [a], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.logicNot (fromText a) $ output c</span></span>
-<span class="lineno">  460 </span><span class="spaces">        </span><span class="istickedoff">function2nitta f = <span class="nottickedoff">error $ &quot;function not found: &quot; &lt;&gt; show f</span></span>
-<span class="lineno">  461 </span><span class="spaces">        </span><span class="istickedoff">output v =</span>
-<span class="lineno">  462 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup v algVars of</span>
-<span class="lineno">  463 </span><span class="spaces">                </span><span class="istickedoff">Just names -&gt; map fromText names</span>
-<span class="lineno">  464 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;variable not found : &quot; &lt;&gt; show v &lt;&gt; &quot;, buffer : &quot; &lt;&gt; show algLatestLuaValueInstance</span></span></span>
-<span class="lineno">  465 </span>
-<span class="lineno">  466 </span>translateLua :: (Var v, Val x) =&gt; T.Text -&gt; FrontendResult v x
-<span class="lineno">  467 </span><span class="decl"><span class="istickedoff">translateLua src =</span>
-<span class="lineno">  468 </span><span class="spaces">    </span><span class="istickedoff">let syntaxTree = getLuaBlockFromSources src</span>
-<span class="lineno">  469 </span><span class="spaces">        </span><span class="istickedoff">luaAlgBuilder = buildAlg syntaxTree</span>
-<span class="lineno">  470 </span><span class="spaces">        </span><span class="istickedoff">frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder</span>
-<span class="lineno">  471 </span><span class="spaces">     </span><span class="istickedoff">in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, <span class="nottickedoff">frTrace</span>, frPrettyLog = prettyLog frTrace}</span>
-<span class="lineno">  472 </span><span class="spaces">    </span><span class="istickedoff">where</span>
-<span class="lineno">  473 </span><span class="spaces">        </span><span class="istickedoff">getAllTraceFuncs algBuilder =</span>
-<span class="lineno">  474 </span><span class="spaces">            </span><span class="istickedoff">let traceFuncs = algTraceFuncs algBuilder</span>
-<span class="lineno">  475 </span><span class="spaces">                </span><span class="istickedoff">startupArgNames =</span>
-<span class="lineno">  476 </span><span class="spaces">                    </span><span class="istickedoff">map</span>
-<span class="lineno">  477 </span><span class="spaces">                        </span><span class="istickedoff">(\(_idx, (varName, _initValue)) -&gt; varName)</span>
-<span class="lineno">  478 </span><span class="spaces">                        </span><span class="istickedoff">$ HM.toList</span>
-<span class="lineno">  479 </span><span class="spaces">                        </span><span class="istickedoff">$ algStartupArgs algBuilder</span>
-<span class="lineno">  480 </span><span class="spaces">             </span><span class="istickedoff">in map (\name -&gt; ([name &lt;&gt; &quot;^0&quot;], Nothing)) startupArgNames &lt;&gt; traceFuncs</span></span>
-<span class="lineno">  481 </span>
-<span class="lineno">  482 </span><span class="decl"><span class="istickedoff">getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) &lt;- traceFuncs, var &lt;- vars]</span></span>
+<span class="lineno">  431 </span><span class="decl"><span class="istickedoff">getLuaBlockFromSources src = either <span class="nottickedoff">(\e -&gt; error $ &quot;Exception while parsing Lua sources: &quot; &lt;&gt; show e)</span> id $ parseText chunk src</span></span>
+<span class="lineno">  432 </span>
+<span class="lineno">  433 </span><span class="decl"><span class="istickedoff">alg2graph LuaAlgBuilder{algGraph, algLatestLuaValueInstance, algVars} = flip execState (DFCluster []) $ do</span>
+<span class="lineno">  434 </span><span class="spaces">    </span><span class="istickedoff">mapM addToGraph algGraph</span>
+<span class="lineno">  435 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  436 </span><span class="spaces">        </span><span class="istickedoff">addToGraph item = do</span>
+<span class="lineno">  437 </span><span class="spaces">            </span><span class="istickedoff">graph &lt;- get</span>
+<span class="lineno">  438 </span><span class="spaces">            </span><span class="istickedoff">put (addFuncToDataFlowGraph (function2nitta item) graph)</span>
+<span class="lineno">  439 </span><span class="spaces">            </span><span class="istickedoff">return $ <span class="nottickedoff">fromString &quot;&quot;</span></span>
+<span class="lineno">  440 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;buffer&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer (fromText i) $ output o</span>
+<span class="lineno">  441 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;brokenBuffer&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer (fromText i) $ output o</span>
+<span class="lineno">  442 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;constant&quot;, fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x $ output o</span>
+<span class="lineno">  443 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;send&quot;, fIn = [i], fOut = [], fValues = [], fInt = []} = F.send (fromText i)</span>
+<span class="lineno">  444 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;add&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add (fromText a) (fromText b) $ output c</span>
+<span class="lineno">  445 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;sub&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.sub (fromText a) (fromText b) $ output c</span>
+<span class="lineno">  446 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;multiply&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.multiply (fromText a) (fromText b) $ output c</span>
+<span class="lineno">  447 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) []</span>
+<span class="lineno">  448 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;divide&quot;, fIn = [d, n], fOut = [q, r], fValues = [], fInt = []} = F.division (fromText d) (fromText n) (output q) (output r)</span>
+<span class="lineno">  449 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;neg&quot;, fIn = [i], fOut = [o], fValues = [], fInt = []} = F.neg (fromText i) $ output o</span>
+<span class="lineno">  450 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;receive&quot;, fIn = [], fOut = [o], fValues = [], fInt = []} = F.receive $ output o</span>
+<span class="lineno">  451 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftL&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftL s (fromText a) $ output c</span>
+<span class="lineno">  452 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;shiftR&quot;, fIn = [a], fOut = [c], fValues = [], fInt = [s]} = F.shiftR s (fromText a) $ output c</span>
+<span class="lineno">  453 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;loop&quot;, fIn = [a], fOut = [c], fValues = [x], fInt = []} = F.loop x (fromText a) $ output c</span>
+<span class="lineno">  454 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;lessThan&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpLt (fromText a) (fromText b) (output c)</span></span>
+<span class="lineno">  455 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;lessThanOrEqual&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpLte (fromText a) (fromText b) $ output c</span></span>
+<span class="lineno">  456 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;equal&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpEq (fromText a) (fromText b) $ output c</span></span>
+<span class="lineno">  457 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;greaterThanOrEqual&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpGte (fromText a) (fromText b) $ output c</span></span>
+<span class="lineno">  458 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;greaterThan&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.cmp F.CmpGt (fromText a) (fromText b) $ output c</span></span>
+<span class="lineno">  459 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;and&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicAnd (fromText a) (fromText b) $ output c</span>
+<span class="lineno">  460 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;or&quot;, fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.logicOr (fromText a) (fromText b) $ output c</span>
+<span class="lineno">  461 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;not&quot;, fIn = [a], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.logicNot (fromText a) $ output c</span></span>
+<span class="lineno">  462 </span><span class="spaces">        </span><span class="istickedoff">function2nitta LuaStatement{fName = &quot;if_mux&quot;, fIn = [cond, b, a], fOut = [c], fValues = [], fInt = []} = <span class="nottickedoff">F.mux [fromText a, fromText b] (fromText cond) $ output c</span></span>
+<span class="lineno">  463 </span><span class="spaces">        </span><span class="istickedoff">function2nitta f = <span class="nottickedoff">error $ &quot;function not found: &quot; &lt;&gt; show f</span></span>
+<span class="lineno">  464 </span><span class="spaces">        </span><span class="istickedoff">output v =</span>
+<span class="lineno">  465 </span><span class="spaces">            </span><span class="istickedoff">case HM.lookup v algVars of</span>
+<span class="lineno">  466 </span><span class="spaces">                </span><span class="istickedoff">Just names -&gt; map fromText names</span>
+<span class="lineno">  467 </span><span class="spaces">                </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">error $ &quot;variable not found : &quot; &lt;&gt; show v &lt;&gt; &quot;, buffer : &quot; &lt;&gt; show algLatestLuaValueInstance</span></span></span>
+<span class="lineno">  468 </span>
+<span class="lineno">  469 </span>translateLua :: (Var v, Val x) =&gt; T.Text -&gt; FrontendResult v x
+<span class="lineno">  470 </span><span class="decl"><span class="istickedoff">translateLua src =</span>
+<span class="lineno">  471 </span><span class="spaces">    </span><span class="istickedoff">let syntaxTree = getLuaBlockFromSources src</span>
+<span class="lineno">  472 </span><span class="spaces">        </span><span class="istickedoff">luaAlgBuilder = buildAlg syntaxTree</span>
+<span class="lineno">  473 </span><span class="spaces">        </span><span class="istickedoff">frTrace = getFrTrace $ getAllTraceFuncs luaAlgBuilder</span>
+<span class="lineno">  474 </span><span class="spaces">     </span><span class="istickedoff">in FrontendResult{frDataFlow = alg2graph luaAlgBuilder, <span class="nottickedoff">frTrace</span>, frPrettyLog = prettyLog frTrace}</span>
+<span class="lineno">  475 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  476 </span><span class="spaces">        </span><span class="istickedoff">getAllTraceFuncs algBuilder =</span>
+<span class="lineno">  477 </span><span class="spaces">            </span><span class="istickedoff">let traceFuncs = algTraceFuncs algBuilder</span>
+<span class="lineno">  478 </span><span class="spaces">                </span><span class="istickedoff">startupArgNames =</span>
+<span class="lineno">  479 </span><span class="spaces">                    </span><span class="istickedoff">map</span>
+<span class="lineno">  480 </span><span class="spaces">                        </span><span class="istickedoff">(\(_idx, (varName, _initValue)) -&gt; varName)</span>
+<span class="lineno">  481 </span><span class="spaces">                        </span><span class="istickedoff">$ HM.toList</span>
+<span class="lineno">  482 </span><span class="spaces">                        </span><span class="istickedoff">$ algStartupArgs algBuilder</span>
+<span class="lineno">  483 </span><span class="spaces">             </span><span class="istickedoff">in map (\name -&gt; ([name &lt;&gt; &quot;^0&quot;], Nothing)) startupArgNames &lt;&gt; traceFuncs</span></span>
+<span class="lineno">  484 </span>
+<span class="lineno">  485 </span><span class="decl"><span class="istickedoff">getFrTrace traceFuncs = [TraceVar fmt var | (vars, fmt) &lt;- traceFuncs, var &lt;- vars]</span></span>
 
 </pre>
 </body>
