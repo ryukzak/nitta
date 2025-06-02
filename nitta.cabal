@@ -4,365 +4,367 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 
-name:           nitta
-version:        0.0.0.1
-synopsis:       Tool for Hard Real-Time CGRA Processors
-description:    Kind: research pet project.
-                .
-                Project status: early prototype.
-                .
-                We develop the tool for generating and programming specialized non-von Neumann CGRA processors used for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
-                .
-                - Provide high speed and parallel execution of irregular algorithms (where GPU is not applicable) in hard real-time (clock accuracy).
-                - Make the processor reconfigurable for different application domains.
-                - Provide a high-level language for application developers and fast compilation.
-                .
-                Our future users can resolve the following tasks:
-                .
-                - Development of embedded and cyber-physical systems.
-                - Hardware and software testing and rapid prototyping (HIL and PIL).
-                - Development of programmable accelerators and coprocessors.
-                .
-                Page: <https://ryukzak.github.io/projects/nitta/>
-category:       CGRA, ASIP, CAD, hardware
-homepage:       https://ryukzak.github.io/projects/nitta/
-author:         Aleksandr Penskoi
-maintainer:     aleksandr.penskoi@gmail.com
-copyright:      2021 Aleksandr Penskoi
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name: nitta
+version: 0.0.0.1
+synopsis: Tool for Hard Real-Time CGRA Processors
+description: Kind: research pet project.
+             .
+             Project status: early prototype.
+             .
+             We develop the tool for generating and programming specialized non-von Neumann CGRA processors used for cyclic execution of control and signal/data processing algorithms. These processors are based on the original Not Instruction Transport Triggered Architecture (NITTA). That allows us to:
+             .
+             - Provide high speed and parallel execution of irregular algorithms (where GPU is not applicable) in hard real-time (clock accuracy).
+             - Make the processor reconfigurable for different application domains.
+             - Provide a high-level language for application developers and fast compilation.
+             .
+             Our future users can resolve the following tasks:
+             .
+             - Development of embedded and cyber-physical systems.
+             - Hardware and software testing and rapid prototyping (HIL and PIL).
+             - Development of programmable accelerators and coprocessors.
+             .
+             Page: <https://ryukzak.github.io/projects/nitta/>
+category: CGRA, ASIP, CAD, hardware
+homepage: https://ryukzak.github.io/projects/nitta/
+author: Aleksandr Penskoi
+maintainer: aleksandr.penskoi@gmail.com
+copyright: 2021 Aleksandr Penskoi
+license: BSD3
+license-file: LICENSE
+build-type: Simple
 extra-doc-files:
-    README.md
+  README.md
 
 library
   exposed-modules:
-      NITTA.Frontends
-      NITTA.Frontends.Common
-      NITTA.Frontends.Lua
-      NITTA.Frontends.XMILE.DocumentParser
-      NITTA.Frontends.XMILE.Frontend
-      NITTA.Frontends.XMILE.MathParser
-      NITTA.Intermediate.Analysis
-      NITTA.Intermediate.DataFlow
-      NITTA.Intermediate.Functions
-      NITTA.Intermediate.Functions.Accum
-      NITTA.Intermediate.Simulation
-      NITTA.Intermediate.Types
-      NITTA.Intermediate.Value
-      NITTA.Intermediate.Variable
-      NITTA.Model.Microarchitecture.Config
-      NITTA.Model.Microarchitecture.Types
-      NITTA.Model.Networks.Bus
-      NITTA.Model.Networks.Types
-      NITTA.Model.Problems
-      NITTA.Model.Problems.Allocation
-      NITTA.Model.Problems.Bind
-      NITTA.Model.Problems.Dataflow
-      NITTA.Model.Problems.Endpoint
-      NITTA.Model.Problems.Refactor
-      NITTA.Model.Problems.Refactor.BreakLoop
-      NITTA.Model.Problems.Refactor.ConstantFolding
-      NITTA.Model.Problems.Refactor.OptimizeAccum
-      NITTA.Model.Problems.Refactor.OptimizeLogicalUnit
-      NITTA.Model.Problems.Refactor.ResolveDeadlock
-      NITTA.Model.Problems.ViewHelper
-      NITTA.Model.ProcessIntegrity
-      NITTA.Model.ProcessorUnits
-      NITTA.Model.ProcessorUnits.Accum
-      NITTA.Model.ProcessorUnits.Broken
-      NITTA.Model.ProcessorUnits.Comparator
-      NITTA.Model.ProcessorUnits.Divider
-      NITTA.Model.ProcessorUnits.Fram
-      NITTA.Model.ProcessorUnits.IO.I2C
-      NITTA.Model.ProcessorUnits.IO.SimpleIO
-      NITTA.Model.ProcessorUnits.IO.SPI
-      NITTA.Model.ProcessorUnits.LogicalUnit
-      NITTA.Model.ProcessorUnits.Multiplier
-      NITTA.Model.ProcessorUnits.Shift
-      NITTA.Model.ProcessorUnits.Types
-      NITTA.Model.TargetSystem
-      NITTA.Model.Time
-      NITTA.Project
-      NITTA.Project.Context
-      NITTA.Project.Template
-      NITTA.Project.TestBench
-      NITTA.Project.Types
-      NITTA.Project.VerilogSnippets
-      NITTA.Synthesis
-      NITTA.Synthesis.Analysis
-      NITTA.Synthesis.Explore
-      NITTA.Synthesis.Method
-      NITTA.Synthesis.MlBackend.Client
-      NITTA.Synthesis.MlBackend.FixedCache
-      NITTA.Synthesis.MlBackend.ServerInstance
-      NITTA.Synthesis.Steps
-      NITTA.Synthesis.Steps.Allocation
-      NITTA.Synthesis.Steps.Bind
-      NITTA.Synthesis.Steps.BreakLoop
-      NITTA.Synthesis.Steps.ConstantFolding
-      NITTA.Synthesis.Steps.Dataflow
-      NITTA.Synthesis.Steps.OptimizeAccum
-      NITTA.Synthesis.Steps.OptimizeLogicalUnit
-      NITTA.Synthesis.Steps.ResolveDeadlock
-      NITTA.Synthesis.Types
-      NITTA.UIBackend
-      NITTA.UIBackend.REST
-      NITTA.UIBackend.Timeline
-      NITTA.UIBackend.Types
-      NITTA.UIBackend.ViewHelper
-      NITTA.UIBackend.ViewHelperCls
-      NITTA.UIBackend.VisJS
-      NITTA.Utils
-      NITTA.Utils.Base
-      NITTA.Utils.ProcessDescription
+    NITTA.Frontends
+    NITTA.Frontends.Common
+    NITTA.Frontends.Lua
+    NITTA.Frontends.XMILE.DocumentParser
+    NITTA.Frontends.XMILE.Frontend
+    NITTA.Frontends.XMILE.MathParser
+    NITTA.Intermediate.Analysis
+    NITTA.Intermediate.DataFlow
+    NITTA.Intermediate.Functions
+    NITTA.Intermediate.Functions.Accum
+    NITTA.Intermediate.Simulation
+    NITTA.Intermediate.Types
+    NITTA.Intermediate.Value
+    NITTA.Intermediate.Variable
+    NITTA.Model.Microarchitecture.Config
+    NITTA.Model.Microarchitecture.Types
+    NITTA.Model.Networks.Bus
+    NITTA.Model.Networks.Types
+    NITTA.Model.Problems
+    NITTA.Model.Problems.Allocation
+    NITTA.Model.Problems.Bind
+    NITTA.Model.Problems.Dataflow
+    NITTA.Model.Problems.Endpoint
+    NITTA.Model.Problems.Refactor
+    NITTA.Model.Problems.Refactor.BreakLoop
+    NITTA.Model.Problems.Refactor.ConstantFolding
+    NITTA.Model.Problems.Refactor.OptimizeAccum
+    NITTA.Model.Problems.Refactor.OptimizeLogicalUnit
+    NITTA.Model.Problems.Refactor.ResolveDeadlock
+    NITTA.Model.Problems.ViewHelper
+    NITTA.Model.ProcessIntegrity
+    NITTA.Model.ProcessorUnits
+    NITTA.Model.ProcessorUnits.Accum
+    NITTA.Model.ProcessorUnits.Broken
+    NITTA.Model.ProcessorUnits.Comparator
+    NITTA.Model.ProcessorUnits.Divider
+    NITTA.Model.ProcessorUnits.Fram
+    NITTA.Model.ProcessorUnits.IO.I2C
+    NITTA.Model.ProcessorUnits.IO.SimpleIO
+    NITTA.Model.ProcessorUnits.IO.SPI
+    NITTA.Model.ProcessorUnits.LogicalUnit
+    NITTA.Model.ProcessorUnits.Multiplexer
+    NITTA.Model.ProcessorUnits.Multiplier
+    NITTA.Model.ProcessorUnits.Shift
+    NITTA.Model.ProcessorUnits.Types
+    NITTA.Model.TargetSystem
+    NITTA.Model.Time
+    NITTA.Project
+    NITTA.Project.Context
+    NITTA.Project.Template
+    NITTA.Project.TestBench
+    NITTA.Project.Types
+    NITTA.Project.VerilogSnippets
+    NITTA.Synthesis
+    NITTA.Synthesis.Analysis
+    NITTA.Synthesis.Explore
+    NITTA.Synthesis.Method
+    NITTA.Synthesis.MlBackend.Client
+    NITTA.Synthesis.MlBackend.FixedCache
+    NITTA.Synthesis.MlBackend.ServerInstance
+    NITTA.Synthesis.Steps
+    NITTA.Synthesis.Steps.Allocation
+    NITTA.Synthesis.Steps.Bind
+    NITTA.Synthesis.Steps.BreakLoop
+    NITTA.Synthesis.Steps.ConstantFolding
+    NITTA.Synthesis.Steps.Dataflow
+    NITTA.Synthesis.Steps.OptimizeAccum
+    NITTA.Synthesis.Steps.OptimizeLogicalUnit
+    NITTA.Synthesis.Steps.ResolveDeadlock
+    NITTA.Synthesis.Types
+    NITTA.UIBackend
+    NITTA.UIBackend.REST
+    NITTA.UIBackend.Timeline
+    NITTA.UIBackend.Types
+    NITTA.UIBackend.ViewHelper
+    NITTA.UIBackend.ViewHelperCls
+    NITTA.UIBackend.VisJS
+    NITTA.Utils
+    NITTA.Utils.Base
+    NITTA.Utils.ProcessDescription
   other-modules:
-      Paths_nitta
+    Paths_nitta
   hs-source-dirs:
-      src
+    src
   default-extensions:
-      DeriveDataTypeable
-      DeriveGeneric
-      ImportQualifiedPost
-      LambdaCase
-      NamedFieldPuns
-      ScopedTypeVariables
-      MultiParamTypeClasses
-      FlexibleContexts
-      FlexibleInstances
-      TupleSections
-      UndecidableInstances
+    DeriveDataTypeable
+    DeriveGeneric
+    ImportQualifiedPost
+    LambdaCase
+    NamedFieldPuns
+    ScopedTypeVariables
+    MultiParamTypeClasses
+    FlexibleContexts
+    FlexibleInstances
+    TupleSections
+    UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
-      HStringTemplate
-    , MissingH
-    , aeson
-    , aeson-pretty
-    , array
-    , base
-    , boxes
-    , bytestring
-    , cassava
-    , containers
-    , data-default
-    , directory
-    , file-embed
-    , filepath
-    , ginger
-    , hashable
-    , heap
-    , hslogger
-    , htoml
-    , http-api-data
-    , http-conduit
-    , hxt
-    , intervals
-    , language-lua
-    , mtl
-    , network-simple
-    , parsec
-    , prettyprinter
-    , process
-    , process-extras
-    , regex-compat
-    , safe
-    , servant
-    , servant-docs
-    , servant-js
-    , servant-server
-    , split
-    , stm
-    , string-interpolate
-    , text
-    , tostring
-    , transformers
-    , unordered-containers
-    , utility-ht
-    , validity
-    , wai-app-static
-    , wai-cors
-    , warp
+    HStringTemplate,
+    MissingH,
+    aeson,
+    aeson-pretty,
+    array,
+    base,
+    boxes,
+    bytestring,
+    cassava,
+    containers,
+    data-default,
+    directory,
+    file-embed,
+    filepath,
+    ginger,
+    hashable,
+    heap,
+    hslogger,
+    htoml,
+    http-api-data,
+    http-conduit,
+    hxt,
+    intervals,
+    language-lua,
+    mtl,
+    network-simple,
+    parsec,
+    prettyprinter,
+    process,
+    process-extras,
+    regex-compat,
+    safe,
+    servant,
+    servant-docs,
+    servant-js,
+    servant-server,
+    split,
+    stm,
+    string-interpolate,
+    text,
+    tostring,
+    transformers,
+    unordered-containers,
+    utility-ht,
+    validity,
+    wai-app-static,
+    wai-cors,
+    warp
   default-language: Haskell2010
 
 executable nitta
   main-is: Main.hs
   other-modules:
-      Paths_nitta
+    Paths_nitta
   hs-source-dirs:
-      app
+    app
   default-extensions:
-      DeriveDataTypeable
-      DeriveGeneric
-      ImportQualifiedPost
-      LambdaCase
-      NamedFieldPuns
-      ScopedTypeVariables
-      MultiParamTypeClasses
-      FlexibleContexts
-      FlexibleInstances
-      TupleSections
-      UndecidableInstances
+    DeriveDataTypeable
+    DeriveGeneric
+    ImportQualifiedPost
+    LambdaCase
+    NamedFieldPuns
+    ScopedTypeVariables
+    MultiParamTypeClasses
+    FlexibleContexts
+    FlexibleInstances
+    TupleSections
+    UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
-      MissingH
-    , base
-    , boxes
-    , bytestring
-    , cmdargs
-    , containers
-    , data-default
-    , filepath
-    , ginger
-    , heap
-    , hslogger
-    , htoml
-    , intervals
-    , mtl
-    , nitta
-    , prettyprinter
-    , process-extras
-    , regex-compat
-    , string-interpolate
-    , text
-    , tostring
-    , unordered-containers
-    , wai-app-static
+    MissingH,
+    base,
+    boxes,
+    bytestring,
+    cmdargs,
+    containers,
+    data-default,
+    filepath,
+    ginger,
+    heap,
+    hslogger,
+    htoml,
+    intervals,
+    mtl,
+    nitta,
+    prettyprinter,
+    process-extras,
+    regex-compat,
+    string-interpolate,
+    text,
+    tostring,
+    unordered-containers,
+    wai-app-static
   default-language: Haskell2010
 
 executable nitta-api-gen
   main-is: APIGen.hs
   other-modules:
-      Paths_nitta
+    Paths_nitta
   hs-source-dirs:
-      app
+    app
   default-extensions:
-      DeriveDataTypeable
-      DeriveGeneric
-      ImportQualifiedPost
-      LambdaCase
-      NamedFieldPuns
-      ScopedTypeVariables
-      MultiParamTypeClasses
-      FlexibleContexts
-      FlexibleInstances
-      TupleSections
-      UndecidableInstances
+    DeriveDataTypeable
+    DeriveGeneric
+    ImportQualifiedPost
+    LambdaCase
+    NamedFieldPuns
+    ScopedTypeVariables
+    MultiParamTypeClasses
+    FlexibleContexts
+    FlexibleInstances
+    TupleSections
+    UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
-      MissingH
-    , aeson
-    , aeson-typescript
-    , base
-    , boxes
-    , bytestring
-    , cmdargs
-    , containers
-    , data-default
-    , directory
-    , filepath
-    , ginger
-    , heap
-    , hslogger
-    , htoml
-    , intervals
-    , mtl
-    , nitta
-    , prettyprinter
-    , process-extras
-    , regex-compat
-    , string-interpolate
-    , text
-    , tostring
-    , unordered-containers
-    , wai-app-static
+    MissingH,
+    aeson,
+    aeson-typescript,
+    base,
+    boxes,
+    bytestring,
+    cmdargs,
+    containers,
+    data-default,
+    directory,
+    filepath,
+    ginger,
+    heap,
+    hslogger,
+    htoml,
+    intervals,
+    mtl,
+    nitta,
+    prettyprinter,
+    process-extras,
+    regex-compat,
+    string-interpolate,
+    text,
+    tostring,
+    unordered-containers,
+    wai-app-static
   default-language: Haskell2010
 
 test-suite nitta-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      NITTA.Frontends.Lua.Tests
-      NITTA.Frontends.Lua.Tests.Providers
-      NITTA.Frontends.XMILE.DocumentParserTests
-      NITTA.Frontends.XMILE.MathParserTests
-      NITTA.Intermediate.Functions.Accum.Tests
-      NITTA.Intermediate.Simulation.Tests
-      NITTA.Intermediate.Tests.Functions
-      NITTA.Intermediate.Value.Tests
-      NITTA.Model.Problems.Refactor.Accum.Tests
-      NITTA.Model.Problems.Refactor.ConstantFolding.Tests
-      NITTA.Model.Problems.Refactor.Tests
-      NITTA.Model.ProcessorUnits.Accum.Tests
-      NITTA.Model.ProcessorUnits.Broken.Tests
-      NITTA.Model.ProcessorUnits.Comparator.Tests
-      NITTA.Model.ProcessorUnits.Divider.Tests
-      NITTA.Model.ProcessorUnits.Fram.Tests
-      NITTA.Model.ProcessorUnits.IO.SPI.Tests
-      NITTA.Model.ProcessorUnits.LogicalUnit.Tests
-      NITTA.Model.ProcessorUnits.Multiplier.Tests
-      NITTA.Model.ProcessorUnits.Shift.Tests
-      NITTA.Model.ProcessorUnits.Tests.DSL
-      NITTA.Model.ProcessorUnits.Tests.DSL.Tests
-      NITTA.Model.ProcessorUnits.Tests.Providers
-      NITTA.Model.ProcessorUnits.Tests.Utils
-      NITTA.Model.Tests.Internals
-      NITTA.Model.Tests.Microarchitecture
-      NITTA.Model.Tests.Providers
-      NITTA.Tests
-      NITTA.Utils.Tests
-      Paths_nitta
+    NITTA.Frontends.Lua.Tests
+    NITTA.Frontends.Lua.Tests.Providers
+    NITTA.Frontends.XMILE.DocumentParserTests
+    NITTA.Frontends.XMILE.MathParserTests
+    NITTA.Intermediate.Functions.Accum.Tests
+    NITTA.Intermediate.Simulation.Tests
+    NITTA.Intermediate.Tests.Functions
+    NITTA.Intermediate.Value.Tests
+    NITTA.Model.Problems.Refactor.Accum.Tests
+    NITTA.Model.Problems.Refactor.ConstantFolding.Tests
+    NITTA.Model.Problems.Refactor.Tests
+    NITTA.Model.ProcessorUnits.Accum.Tests
+    NITTA.Model.ProcessorUnits.Broken.Tests
+    NITTA.Model.ProcessorUnits.Comparator.Tests
+    NITTA.Model.ProcessorUnits.Divider.Tests
+    NITTA.Model.ProcessorUnits.Fram.Tests
+    NITTA.Model.ProcessorUnits.IO.SPI.Tests
+    NITTA.Model.ProcessorUnits.LogicalUnit.Tests
+    NITTA.Model.ProcessorUnits.Multiplexer.Tests
+    NITTA.Model.ProcessorUnits.Multiplier.Tests
+    NITTA.Model.ProcessorUnits.Shift.Tests
+    NITTA.Model.ProcessorUnits.Tests.DSL
+    NITTA.Model.ProcessorUnits.Tests.DSL.Tests
+    NITTA.Model.ProcessorUnits.Tests.Providers
+    NITTA.Model.ProcessorUnits.Tests.Utils
+    NITTA.Model.Tests.Internals
+    NITTA.Model.Tests.Microarchitecture
+    NITTA.Model.Tests.Providers
+    NITTA.Tests
+    NITTA.Utils.Tests
+    Paths_nitta
   hs-source-dirs:
-      test
+    test
   default-extensions:
-      DeriveDataTypeable
-      DeriveGeneric
-      ImportQualifiedPost
-      LambdaCase
-      NamedFieldPuns
-      ScopedTypeVariables
-      MultiParamTypeClasses
-      FlexibleContexts
-      FlexibleInstances
-      TupleSections
-      UndecidableInstances
+    DeriveDataTypeable
+    DeriveGeneric
+    ImportQualifiedPost
+    LambdaCase
+    NamedFieldPuns
+    ScopedTypeVariables
+    MultiParamTypeClasses
+    FlexibleContexts
+    FlexibleInstances
+    TupleSections
+    UndecidableInstances
   ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
-      MissingH
-    , QuickCheck
-    , atomic-primops
-    , base
-    , boxes
-    , bytestring
-    , call-stack
-    , containers
-    , data-default
-    , directory
-    , file-embed
-    , filepath
-    , genvalidity
-    , genvalidity-property
-    , ginger
-    , heap
-    , htoml
-    , hxt
-    , intervals
-    , language-lua
-    , mtl
-    , nitta
-    , prettyprinter
-    , process-extras
-    , regex-compat
-    , split
-    , stm
-    , string-interpolate
-    , tasty
-    , tasty-expected-failure
-    , tasty-hunit
-    , tasty-quickcheck
-    , tasty-rerun
-    , tasty-th
-    , text
-    , tostring
-    , unordered-containers
-    , wai-app-static
+    MissingH,
+    QuickCheck,
+    atomic-primops,
+    base,
+    boxes,
+    bytestring,
+    call-stack,
+    containers,
+    data-default,
+    directory,
+    file-embed,
+    filepath,
+    genvalidity,
+    genvalidity-property,
+    ginger,
+    heap,
+    htoml,
+    hxt,
+    intervals,
+    language-lua,
+    mtl,
+    nitta,
+    prettyprinter,
+    process-extras,
+    regex-compat,
+    split,
+    stm,
+    string-interpolate,
+    tasty,
+    tasty-expected-failure,
+    tasty-hunit,
+    tasty-quickcheck,
+    tasty-rerun,
+    tasty-th,
+    text,
+    tostring,
+    unordered-containers,
+    wai-app-static
   default-language: Haskell2010

@@ -65,6 +65,8 @@ module NITTA.Intermediate.Functions (
     logicAnd,
     logicOr,
     logicNot,
+    Mux (..),
+    mux,
 ) where
 
 import Data.Bits qualified as B
@@ -576,3 +578,38 @@ instance (Var v, Num x, Eq x) => FunctionSimulation (TruthTable v x) v x where
         let inputValues = map (\(I v) -> cntx `getCntx` v == 1) ins
             result = M.findWithDefault False inputValues table -- todo add default value
          in [(v, fromIntegral (fromEnum result)) | v <- S.elems output]
+
+data Mux v x = Mux (I v) [I v] (O v) deriving (Typeable, Eq)
+
+instance Var v => Patch (Mux v x) (v, v) where
+    patch (old, new) (Mux sel ins out) =
+        Mux (patch (old, new) sel) ins (patch (old, new) out)
+
+instance Var v => Locks (Mux v x) v where
+    locks (Mux{}) = []
+
+instance Label (Mux v x) where
+    label (Mux{}) = "Mux"
+instance Var v => Show (Mux v x) where
+    show (Mux ins sel output) = "Mux " <> show ins <> " " <> show sel <> " = " <> show output
+
+instance Var v => Function (Mux v x) v where
+    inputs (Mux cond ins _) =
+        S.unions $ map variables (ins ++ [cond])
+    outputs (Mux _ _ output) = variables output
+
+instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
+    simulate cntx (Mux (I sel) ins (O outs)) =
+        let
+            selValue = getCntx cntx sel `mod` 16
+            insCount = length ins
+            selectedValue
+                | selValue >= 0 && fromIntegral selValue < insCount =
+                    case ins !! fromIntegral (selValue `mod` 16) of
+                        I inputVar -> getCntx cntx inputVar
+                | otherwise = 0
+         in
+            [(outVar, selectedValue) | outVar <- S.elems outs]
+
+mux :: (Var v, Val x) => [v] -> v -> [v] -> F v x
+mux inps cond outs = packF $ Mux (I cond) (map I inps) $ O $ S.fromList outs
