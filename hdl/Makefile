@@ -18,7 +18,7 @@ clean:
 	$(MAKE) clean -C $(PWD)/spi
 
 pu_accum:
-	$(call test,pu_accum.v,pu_accum_tb.v,test_pu_accum_tb)
+	$(MAKE) -C $(PWD)/accum
 
 pu_fram:
 	$(call test,pu_fram.v,pu_fram_tb.v,test_pu_fram_tb)
