@@ -128,6 +128,7 @@ instance {-# OVERLAPPABLE #-} FixedPointCompatible x => MKMicro v x where
                     configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
                     configure proto Comparator{name} = addPU proto name def PU.CompareIO
                     configure proto LogicalUnit{name} = addPU proto name def PU.LogicalUnitIO
+                    configure proto Multiplexer{name} = addPU proto name def PU.MultiplexerIO
                     configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
                         addPU proto name (PU.anySPI bounceFilter bufferSize) $
                             if isSlave
@@ -164,9 +165,9 @@ instance {-# OVERLAPPABLE #-} FixedPointCompatible x => MKMicro v x where
                 , slave_sclk = PU.InputPortTag "sclk"
                 , slave_cs = PU.InputPortTag "cs"
                 }
-        addPrototype "compare{x}" CompareIO
-        addPrototype "logicalUnit{x}" LogicalUnitIO
-        addPrototype "mux{x}" MultiplexerIO
+        addPrototype "compare{x}" PU.CompareIO
+        addPrototype "logicalUnit{x}" PU.LogicalUnitIO
+        addPrototype "mux{x}" PU.MultiplexerIO
 
     defMicroarch ioSync = defineNetwork "net1" ioSync $ do
         addCustom "fram1" (PU.framWithSize 16) PU.FramIO
@@ -182,9 +183,9 @@ instance {-# OVERLAPPABLE #-} FixedPointCompatible x => MKMicro v x where
                 , slave_sclk = PU.InputPortTag "sclk"
                 , slave_cs = PU.InputPortTag "cs"
                 }
-        add "compare" CompareIO
-        add "logicalUnit" LogicalUnitIO
-        add "mux" MultiplexerIO
+        add "compare" PU.CompareIO
+        add "logicalUnit" PU.LogicalUnitIO
+        add "mux" PU.MultiplexerIO
 
 mkMicroarchitectureFloat ioSync toml =
     let addPU proto
@@ -238,9 +239,9 @@ microarchWithProtosFloat ioSync = defineNetwork "net1" ioSync $ do
             , slave_sclk = PU.InputPortTag "sclk"
             , slave_cs = PU.InputPortTag "cs"
             }
-    addPrototype "compare{x}" CompareIO
-    addPrototype "logicalUnit{x}" LogicalUnitIO
-    addPrototype "mux{x}" MultiplexerIO
+    addPrototype "compare{x}" PU.CompareIO
+    addPrototype "logicalUnit{x}" PU.LogicalUnitIO
+    addPrototype "mux{x}" PU.MultiplexerIO
 
 defMicroarchFloat ioSync = defineNetwork "net1" ioSync $ do
     addCustom "fram1" (PU.framWithSize 16) PU.FramIO
@@ -256,9 +257,9 @@ defMicroarchFloat ioSync = defineNetwork "net1" ioSync $ do
             , slave_sclk = PU.InputPortTag "sclk"
             , slave_cs = PU.InputPortTag "cs"
             }
-    add "compare" CompareIO
-    add "logicalUnit" LogicalUnitIO
-    add "mux" MultiplexerIO
+    add "compare" PU.CompareIO
+    add "logicalUnit" PU.LogicalUnitIO
+    add "mux" PU.MultiplexerIO
 
 instance {-# OVERLAPPING #-} MKMicro v Float where
     mkMicroarchitecture = mkMicroarchitectureFloat

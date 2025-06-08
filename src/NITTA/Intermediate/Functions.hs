@@ -312,7 +312,7 @@ instance Var v => Show (Division v x) where
         let q = show numer <> " / " <> show denom <> " = " <> show quotient
             r = show numer <> " mod " <> show denom <> " = " <> show remain
          in q <> "; " <> r
-division :: (Var v, Val x, Integral x) => v -> v -> [v] -> [v] -> F v x
+division :: (Var v, Val x, FixedPointCompatible x) => v -> v -> [v] -> [v] -> F v x
 division d n q r =
     packF $
         Division
@@ -329,7 +329,7 @@ instance Var v => Patch (Division v x) (v, v) where
     patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)
 instance Var v => Locks (Division v x) v where
     locks = inputsLockOutputs
-instance (Var v, Val x) => FunctionSimulation (Division v x) v x where
+instance (Var v, Val x, FixedPointCompatible x) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{denom = I d, numer = I n, quotient = O qs, remain = O rs} =
         let dx = cntx `getCntx` d
             nx = cntx `getCntx` n
