@@ -636,7 +636,7 @@ instance Var v => Function (Mux v x) v where
         S.unions $ map variables (ins ++ [cond])
     outputs (Mux _ _ output) = variables output
 
-instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
+instance (Var v, Val x, FixedPointCompatible x) => FunctionSimulation (Mux v x) v x where
     simulate cntx (Mux (I sel) ins (O outs)) =
         let
             selValue = getCntx cntx sel `mod` 16
@@ -649,5 +649,5 @@ instance (Var v, Val x) => FunctionSimulation (Mux v x) v x where
          in
             [(outVar, selectedValue) | outVar <- S.elems outs]
 
-mux :: (Var v, Val x) => [v] -> v -> [v] -> F v x
+mux :: (Var v, Val x, FixedPointCompatible x) => [v] -> v -> [v] -> F v x
 mux inps cond outs = packF $ Mux (I cond) (map I inps) $ O $ S.fromList outs

@@ -105,7 +105,6 @@ stat2functionFloat "greaterThan" [a, b] [c] [] [] = F.cmp F.CmpGt (fromText a) (
 stat2functionFloat "and" [a, b] [c] [] [] = F.logicAnd (fromText a) (fromText b) c
 stat2functionFloat "or" [a, b] [c] [] [] = F.logicOr (fromText a) (fromText b) c
 stat2functionFloat "not" [a] [c] [] [] = F.logicNot (fromText a) c
-stat2functionFloat "if_mux" [cond, b, a] [c] [] [] = F.mux [fromText a, fromText b] (fromText cond) c
 stat2functionFloat f _ _ _ _ = error $ "function not found: " <> show f
 
 instance {-# OVERLAPPING #-} Translatable Float where stat2function = stat2functionFloat
