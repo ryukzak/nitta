@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -356,23 +357,23 @@ synthesis model for that PU.
 data Multiplier v x t = Multiplier
     { remain :: [F v x]
     {- ^ List of the assigned but not processed functions. To execute a
-    function:
+        function:
 
-    - removing the function from this list;
+        - removing the function from this list;
 
-    - transfering information from function to 'targets' and 'sources'
-    fields.
+        - transfering information from function to 'targets' and 'sources'
+        fields.
 
-    An assigned function can be executed in random order.
+        An assigned function can be executed in random order.
     -}
     , targets :: [v]
     {- ^ List of variables, which is needed to push to the PU for current
-    function evaluation.
+        function evaluation.
     -}
     , sources :: [v]
     {- ^ List of variables, which is needed to pull from PU for current
-    function evaluation. Pull order is arbitrary. All pulled variables
-    correspond to the same value (same result).
+        function evaluation. Pull order is arbitrary. All pulled variables
+        correspond to the same value (same result).
     -}
     , currentWork :: Maybe (F v x)
     -- ^ Current work, if some function is executed.
@@ -673,7 +674,7 @@ instance IOConnected (Multiplier v x t) where
 
 - Hardware instance in the upper structure element.
 -}
-instance VarValTime v x t => TargetSystemComponent (Multiplier v x t) where
+instance {-# OVERLAPPABLE #-} (VarValTime v x t, FixedPointCompatible x) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
     hardware _tag Multiplier{isMocked} =
@@ -703,6 +704,7 @@ instance VarValTime v x t => TargetSystemComponent (Multiplier v x t) where
                         , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                         , .SCALING_FACTOR_POWER( #{ fractionalBitSize (def :: x) } )
                         , .INVALID( 0 )
+                        , .FLOAT ( 0 )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )
@@ -714,6 +716,86 @@ instance VarValTime v x t => TargetSystemComponent (Multiplier v x t) where
                     , .attr_out( #{ attrOut } )
                     );
             |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+moduleNameFloat _title _pu = "pu_multiplier"
+hardwareFloat _tag Multiplier{isMocked} =
+    Aggregate
+        Nothing
+        [ if isMocked
+            then FromLibrary "multiplier/float_mult_mock.v"
+            else FromLibrary "multiplier/mult_inner.v"
+        , FromLibrary "multiplier/pu_multiplier.v"
+        ]
+
+softwareFloat _ _ = Empty
+
+instance {-# OVERLAPPING #-} TargetSystemComponent (Multiplier v Float t) where
+    moduleName = moduleNameFloat
+    hardware = hardwareFloat
+    software = softwareFloat
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just MultiplierPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+            pu_multiplier \#
+                    ( .DATA_WIDTH( #{ dataWidth (def :: Float) } )
+                    , .ATTR_WIDTH( #{ attrWidth (def :: Float) } )
+                    , .SCALING_FACTOR_POWER( 0 )
+                    , .INVALID( 0 )
+                    , .FLOAT ( 1 )
+                    ) #{ tag }
+                ( .clk( #{ sigClk } )
+                , .rst( #{ sigRst } )
+                , .signal_wr( #{ wr } )
+                , .data_in( #{ dataIn } )
+                , .attr_in( #{ attrIn } )
+                , .signal_oe( #{ oe } )
+                , .data_out( #{ dataOut } )
+                , .attr_out( #{ attrOut } )
+                );
+        |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPING #-} TargetSystemComponent (Multiplier v (Attr Float) t) where
+    moduleName = moduleNameFloat
+    hardware = hardwareFloat
+    software = softwareFloat
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just MultiplierPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+            pu_multiplier \#
+                    ( .DATA_WIDTH( #{ dataWidth (def :: (Attr Float) ) } )
+                    , .ATTR_WIDTH( #{ attrWidth (def :: (Attr Float) ) } )
+                    , .SCALING_FACTOR_POWER( 0 )
+                    , .INVALID( 0 )
+                    , .FLOAT ( 1 )
+                    ) #{ tag }
+                ( .clk( #{ sigClk } )
+                , .rst( #{ sigRst } )
+                , .signal_wr( #{ wr } )
+                , .data_in( #{ dataIn } )
+                , .attr_in( #{ attrIn } )
+                , .signal_oe( #{ oe } )
+                , .data_out( #{ dataOut } )
+                , .attr_out( #{ attrOut } )
+                );
+        |]
     hardwareInstance _title _pu _env = error "internal error"
 
 {- | Empty implementation of 'NITTA.Project.TestBench.IOTestBench' class
@@ -730,7 +812,7 @@ process. You can see tests in @test/Spec.hs@. Testbench contains:
 - The sequence of bus state checks in which we compare actual values with the
   results of the functional simulation.
 -}
-instance VarValTime v x t => Testable (Multiplier v x t) v x where
+instance {-# OVERLAPPABLE #-} (VarValTime v x t, FixedPointCompatible x) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
         Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
             snippetTestBench
@@ -754,3 +836,32 @@ instance VarValTime v x t => Testable (Multiplier v x t) v x where
                         [i|oe <= #{bool2verilog oeSignal};|]
                             <> [i| wr <= #{bool2verilog wrSignal};|]
                     }
+
+testBenchImplementationFloat :: forall v x t. (VarValTime v x t, TargetSystemComponent (Multiplier v x t)) => Project (Multiplier v x t) v x -> Implementation
+testBenchImplementationFloat prj@Project{pName, pUnit} =
+    Immediate (toString $ moduleName pName pUnit <> "_tb.v") $
+        snippetTestBench
+            prj
+            SnippetTestBenchConf
+                { -- List of control signals. It is needed to initialize
+                  -- registers with the same names.
+                  tbcSignals = ["oe", "wr"]
+                , -- A processor unit connects to the environment by signal
+                  -- lines. In 'NITTA.Project.TestBench.tbcPorts'
+                  -- describes IDs signal lines of testbench. In
+                  -- 'NITTA.Project.TestBench.tbcSignalConnect' how
+                  -- abstract numbers are translate to source code.
+                  tbcPorts =
+                    MultiplierPorts
+                        { oe = SignalTag "oe"
+                        , wr = SignalTag "wr"
+                        }
+                , -- Map microcode to registers in the testbench.
+                  tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
+                    [i|oe <= #{bool2verilog oeSignal};|]
+                        <> [i| wr <= #{bool2verilog wrSignal};|]
+                }
+
+instance {-# OVERLAPPING #-} (Var v, Time t) => Testable (Multiplier v Float t) v Float where testBenchImplementation = testBenchImplementationFloat
+
+instance {-# OVERLAPPING #-} (Var v, Time t) => Testable (Multiplier v (Attr Float) t) v (Attr Float) where testBenchImplementation = testBenchImplementationFloat

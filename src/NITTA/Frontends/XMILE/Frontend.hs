@@ -28,6 +28,7 @@ import NITTA.Frontends.XMILE.DocumentParser as XMILE
 import NITTA.Frontends.XMILE.MathParser
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions qualified as F
+import NITTA.Intermediate.Types (Var)
 import NITTA.Utils.Base
 
 data XMILEAlgBuilder v x = XMILEAlgBuilder
@@ -42,6 +43,7 @@ data XMILEAlgBuilder v x = XMILEAlgBuilder
 
 deltaTimeVarName = T.pack "time_delta"
 
+translateXMILE :: (Var v, Translatable x) => T.Text -> FrontendResult v x
 translateXMILE src =
     let xmContent = XMILE.parseDocument $ T.unpack src
         builder = processXMILEGraph xmContent
@@ -51,6 +53,7 @@ translateXMILE src =
         algTraceVars' :: XMILEAlgBuilder T.Text Int -> [TraceVar]
         algTraceVars' = algTraceVars
 
+processXMILEGraph :: (Var v, Translatable x) => Content -> XMILEAlgBuilder v x
 processXMILEGraph xmContent = flip execState emptyBuilder $ do
     getDefaultValuesAndUsages xmContent
     createDataFlowGraph xmContent
@@ -152,7 +155,7 @@ createDataFlowGraph xmContent = do
                                     st
                                         { algDataFlowGraph =
                                             addFuncToDataFlowGraph
-                                                (F.multiply (fromText dtUniqueName) (fromText flowUniqueName) [fromText skaledFlowName])
+                                                (stat2function "multiply" [dtUniqueName, flowUniqueName] [[fromText skaledFlowName]] [] [])
                                                 algDataFlowGraph
                                         }
                                 )
@@ -202,11 +205,7 @@ createDataFlowGraph xmContent = do
                         tmpName = map fromText tmpNameText
 
                     st@XMILEAlgBuilder{algDataFlowGraph = graph} <- get
-                    case op of
-                        Add -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.add leftName rightName tmpName) graph}
-                        Sub -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.sub leftName rightName tmpName) graph}
-                        Mul -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.multiply leftName rightName tmpName) graph}
-                        Div -> put st{algDataFlowGraph = addFuncToDataFlowGraph (F.division leftName rightName tmpName []) graph}
+                    put st{algDataFlowGraph = addFuncToDataFlowGraph (stat2function (showText op) [leftName, rightName] [tmpName] [] []) graph}
                     return (head tmpName, tempNameIndex'' + 1)
                     where
                         getTempName _ name True = getAllOutGraphNodes name

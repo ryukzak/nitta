@@ -187,8 +187,8 @@ data PUPrototype tag v x t where
         (UnitTag tag, PUClasses pu v x t) =>
         { pTag :: tag
         {- ^ Prototype tag. You can specify tag as a template by adding {x}.
-        This will allow to allocate PU more than once by replacing {x} with index.
-        When PU is allocated processUnitTag will look like bnName_pTag.
+                This will allow to allocate PU more than once by replacing {x} with index.
+                When PU is allocated processUnitTag will look like bnName_pTag.
         -}
         , pProto :: pu
         -- ^ PU prototype

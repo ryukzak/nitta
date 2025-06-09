@@ -1,7 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -34,7 +36,6 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
-import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
 import NITTA.Synthesis (TargetSynthesis (..), mlScoreKeyPrefix, noSynthesis, stateOfTheArtSynthesisIO, synthesizeTargetSystem, topDownByScoreSynthesisIO)
 import NITTA.Synthesis.MlBackend.ServerInstance
@@ -52,6 +53,7 @@ import System.Log.Handler.Simple
 import System.Log.Logger
 import Text.Read
 import Text.Regex
+import Text.Toml.Parser (Table)
 
 data SynthesisMethodArg
     = StateOfTheArt
@@ -111,8 +113,8 @@ nittaArgs =
         , type_ =
             Nothing
                 &= name "t"
-                &= typ "fxM.B"
-                &= help "Overrides data type specified in config file. M - integer part, B - fractional part. Default: fx32.32"
+                &= typ "fxM.B|float|int"
+                &= help "Overrides data type specified in config file"
                 &= groupname "Target system configuration"
         , io_sync =
             Nothing
@@ -202,26 +204,14 @@ getNittaArgs = cmdArgs nittaArgs
 fromConf toml s = getFromTomlSection s =<< toml
 
 main = do
-    ( Nitta
-            filename
-            uarch
-            auto_uarch
-            type_
-            io_sync
-            port
-            templates
-            n
-            fsim
-            lsim
-            verbose
-            extra_verbose
-            output_path
-            format
-            frontend_language
-            score
-            depth_base
-            method
-        ) <-
+    nitta@Nitta
+        { filename
+        , uarch
+        , type_
+        , verbose
+        , extra_verbose
+        , frontend_language
+        } <-
         getNittaArgs
 
     setupLogger verbose extra_verbose
@@ -237,73 +227,102 @@ main = do
     let exactFrontendType = identifyFrontendType filename frontend_language
 
     src <- readSourceCode filename
-    ( \(SomeNat (m :: Proxy m), SomeNat (b :: Proxy b)) -> do
-            when (natVal m > natVal b) $ error "Wrong type, M should less or equal to B in fx<M>.<B>"
-            let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
-                    translate exactFrontendType src
-                received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
-                confMa = toml >>= Just . mkMicroarchitecture ioSync
-                ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
-                ma
-                    | auto_uarch && isJust confMa =
-                        error $
-                            "auto_uarch flag means that an empty uarch with default prototypes will be used. "
-                                <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync
-                    | isJust confMa = fromJust confMa
-                    | otherwise = defMicroarch ioSync
-
-            infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
-
-            when fsim $ functionalSimulation n received format frontendResult
-
-            withLazyMlBackendServer $ \serverGetter -> do
-                -- TODO: state monad?
-                -- TODO: rename BackendCtx to something more generic?
-                let ctxWithoutRoot =
-                        (def :: BackendCtx tag v x t)
-                            { receivedValues = received
-                            , outputPath = output_path
-                            , mlBackendGetter = serverGetter
-                            , nodeScores = score
-                            }
-                    synthesisMethod = case method of
-                        StateOfTheArt -> stateOfTheArtSynthesisIO
-                        TopDownByScore -> topDownByScoreSynthesisIO depth_base 500000 Nothing
-                        NoSynthesis -> noSynthesis
-
-                (synthesisRoot, prjE) <-
-                    synthesizeTargetSystem
-                        (def :: TargetSynthesis T.Text T.Text (Attr (FX m b)) Int)
-                            { tName = "main"
-                            , tPath = output_path
-                            , tMicroArch = ma
-                            , tDFG = frDataFlow
-                            , tReceivedValues = received
-                            , tTemplates = S.split ":" templates
-                            , tSynthesisMethod = synthesisMethod ctxWithoutRoot
-                            , tSimulationCycleN = n
-                            , tSourceCodeType = exactFrontendType
-                            }
-
-                let ctxWithRoot = ctxWithoutRoot{root = synthesisRoot}
-
-                when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
-
-                when (port > -1) $ do
-                    bufE <- try $ readFile (apiPath </> "PORT")
-                    let expectPort = case bufE of
-                            Right buf -> case readEither buf of
-                                Right p -> p
-                                Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
-                            Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
-                    when (expectPort /= port) $ warningUnexpectedPort expectPort port
-                    backendServer port ctxWithRoot
-                    exitSuccess
+    ( case fromJust $ type_ <|> fromConf toml "type" <|> Just "fx24.32" of
+            "int" -> mainWithKnownBusType @(Attr Int)
+            "float" -> mainWithKnownBusType @(Attr Float)
+            fx ->
+                ( \(SomeNat (m :: Proxy m), SomeNat (b :: Proxy b)) -> do
+                    when (natVal m > natVal b) $ error "Wrong type, M should less or equal to B in fx<M>.<B>"
+                    mainWithKnownBusType @(Attr (FX m b))
+                )
+                    $ parseFX fx
         )
-        $ parseFX . fromJust
-        $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
+        nitta
+        exactFrontendType
+        src
+        toml
+
+mainWithKnownBusType :: forall x. (Translatable x, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe Table -> IO ()
+mainWithKnownBusType
+    Nitta
+        { auto_uarch
+        , io_sync
+        , port
+        , templates
+        , n
+        , fsim
+        , lsim
+        , output_path
+        , format
+        , score
+        , depth_base
+        , method
+        }
+    exactFrontendType
+    src
+    toml = do
+        let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
+                translate @_ @x exactFrontendType src
+            received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
+            ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
+            confMa = toml >>= Just . mkMicroarchitecture ioSync :: Maybe (BusNetwork T.Text T.Text x Int)
+            ma :: BusNetwork T.Text T.Text x Int
+            ma
+                | auto_uarch && isJust confMa =
+                    error $
+                        "auto_uarch flag means that an empty uarch with default prototypes will be used. "
+                            <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
+                | auto_uarch = microarchWithProtos ioSync
+                | isJust confMa = fromJust confMa
+                | otherwise = defMicroarch ioSync
+
+        infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
+
+        when fsim $ functionalSimulation @x n received format frontendResult
+
+        withLazyMlBackendServer $ \serverGetter -> do
+            -- TODO: state monad?
+            -- TODO: rename BackendCtx to something more generic?
+            let ctxWithoutRoot =
+                    (def :: BackendCtx tag v x t)
+                        { receivedValues = received
+                        , outputPath = output_path
+                        , mlBackendGetter = serverGetter
+                        , nodeScores = score
+                        }
+                synthesisMethod = case method of
+                    StateOfTheArt -> stateOfTheArtSynthesisIO
+                    TopDownByScore -> topDownByScoreSynthesisIO depth_base 500000 Nothing
+                    NoSynthesis -> noSynthesis
+
+            (synthesisRoot, prjE) <-
+                synthesizeTargetSystem
+                    (def :: TargetSynthesis T.Text T.Text x Int)
+                        { tName = "main"
+                        , tPath = output_path
+                        , tMicroArch = ma
+                        , tDFG = frDataFlow
+                        , tReceivedValues = received
+                        , tTemplates = S.split ":" templates
+                        , tSynthesisMethod = synthesisMethod ctxWithoutRoot
+                        , tSimulationCycleN = n
+                        , tSourceCodeType = exactFrontendType
+                        }
+
+            let ctxWithRoot = ctxWithoutRoot{root = synthesisRoot} :: BackendCtx T.Text T.Text x Int
+
+            when lsim $ logicalSimulation format frPrettyLog $ either error id prjE
+
+            when (port > -1) $ do
+                bufE <- try $ readFile (apiPath </> "PORT")
+                let expectPort = case bufE of
+                        Right buf -> case readEither buf of
+                            Right p -> p
+                            Left e -> error $ "can't get nitta-api info: " <> show e <> "; you should use nitta-api-gen to fix it"
+                        Left (e :: IOError) -> error $ "can't get nitta-api info: " <> show e
+                when (expectPort /= port) $ warningUnexpectedPort expectPort port
+                backendServer port ctxWithRoot
+                exitSuccess
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
@@ -361,38 +380,3 @@ warningUnexpectedPort expect port =
             , show port
             , " (maybe you need regenerate API by nitta-api-gen)"
             ]
-
-defMicroarch ioSync = defineNetwork "net1" ioSync $ do
-    addCustom "fram1" (framWithSize 16) FramIO
-    addCustom "fram2" (framWithSize 32) FramIO
-    add "shift" ShiftIO
-    add "mul" MultiplierIO
-    add "accum" AccumIO
-    add "div" DividerIO
-    add "spi" $
-        SPISlave
-            { slave_mosi = InputPortTag "mosi"
-            , slave_miso = OutputPortTag "miso"
-            , slave_sclk = InputPortTag "sclk"
-            , slave_cs = InputPortTag "cs"
-            }
-    add "compare" CompareIO
-    add "logicalUnit" LogicalUnitIO
-    add "mux" MultiplexerIO
-
-microarchWithProtos ioSync = defineNetwork "net1" ioSync $ do
-    addCustomPrototype "fram{x}" (framWithSize 32) FramIO
-    addPrototype "shift{x}" ShiftIO
-    addPrototype "mul{x}" MultiplierIO
-    addPrototype "accum{x}" AccumIO
-    addPrototype "div{x}" DividerIO
-    add "spi" $ -- FIXME: use addPrototype when https://github.com/ryukzak/nitta/issues/194 will be fixed
-        SPISlave
-            { slave_mosi = InputPortTag "mosi"
-            , slave_miso = OutputPortTag "miso"
-            , slave_sclk = InputPortTag "sclk"
-            , slave_cs = InputPortTag "cs"
-            }
-    addPrototype "compare{x}" CompareIO
-    addPrototype "logicalUnit{x}" LogicalUnitIO
-    addPrototype "mux{x}" MultiplexerIO

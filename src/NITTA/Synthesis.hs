@@ -159,7 +159,8 @@ runTargetSynthesis leaf = do
     traverse runTestbench prj
 
 synthesizeTargetSystem ::
-    (UnitTag tag, VarValTime v x t) =>
+    forall tag v x t.
+    (UnitTag tag, VarValTime v x t, Translatable x) =>
     TargetSynthesis tag v x t ->
     IO
         ( DefTree tag v x t

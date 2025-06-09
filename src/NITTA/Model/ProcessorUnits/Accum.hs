@@ -285,10 +285,87 @@ instance Var v => Locks (Accum v x t) v where
                 ]
          in current ++ remain
 
-instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
-    moduleName _ _ = "pu_accum"
-    hardware _tag _pu = FromLibrary "pu_accum.v"
-    software _ _ = Empty
+moduleNameX _ _ = "pu_accum"
+softwareX _ _ = Empty
+hardwareFloat _ _ =
+    Aggregate
+        Nothing
+        [ FromLibrary "float_accum.v"
+        , FromLibrary "pu_accum.v"
+        ]
+
+instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v Float t) where
+    moduleName = moduleNameX
+    software = softwareX
+    hardware = hardwareFloat
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just AccumPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+                pu_accum \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: Float) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: Float) } )
+                        , .FLOAT ( 1 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_resetAcc( #{ resetAcc } )
+                    , .signal_load( #{ load } )
+                    , .signal_neg( #{ neg } )
+                    , .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v (Attr Float) t) where
+    moduleName = moduleNameX
+    software = softwareX
+    hardware = hardwareFloat
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just AccumPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            [__i|
+                pu_accum \#
+                        ( .DATA_WIDTH( #{ dataWidth (def :: (Attr Float)) } )
+                        , .ATTR_WIDTH( #{ attrWidth (def :: (Attr Float)) } )
+                        , .FLOAT ( 1 )
+                        ) #{ tag }
+                    ( .clk( #{ sigClk } )
+                    , .rst( #{ sigRst } )
+                    , .signal_resetAcc( #{ resetAcc } )
+                    , .signal_load( #{ load } )
+                    , .signal_neg( #{ neg } )
+                    , .signal_oe( #{ oe } )
+                    , .data_in( #{ dataIn } )
+                    , .attr_in( #{ attrIn } )
+                    , .data_out( #{ dataOut } )
+                    , .attr_out( #{ attrOut } )
+                    );
+            |]
+    hardwareInstance _title _pu _env = error "internal error"
+
+instance {-# OVERLAPPABLE #-} VarValTime v x t => TargetSystemComponent (Accum v x t) where
+    moduleName = moduleNameX
+    hardware _tag _pu = FromLibrary "accum/pu_accum.v"
+    software = softwareX
     hardwareInstance
         tag
         _pu
@@ -303,6 +380,7 @@ instance VarValTime v x t => TargetSystemComponent (Accum v x t) where
                 pu_accum \#
                         ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
                         , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
+                        , .FLOAT ( 0 )
                         ) #{ tag }
                     ( .clk( #{ sigClk } )
                     , .rst( #{ sigRst } )

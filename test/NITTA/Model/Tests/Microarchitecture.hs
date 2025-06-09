@@ -63,8 +63,11 @@ pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 pFX48_64 = Proxy :: Proxy (FX 48 64)
 
-basic :: Val x => Proxy x -> BusNetwork T.Text T.Text x Int
-basic _proxy = defineNetwork "net1" ASync $ do
+class Val x => Basic x where
+    basic :: Proxy x -> BusNetwork T.Text T.Text x Int
+    maBroken :: Broken T.Text x Int -> BusNetwork T.Text T.Text x Int
+
+basicPolymorphic _proxy = defineNetwork "net1" ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO
@@ -73,11 +76,21 @@ basic _proxy = defineNetwork "net1" ASync $ do
     add "div" DividerIO
     add "logicalunit" LogicalUnitIO
 
+instance Basic Float where
+    basic = basicPolymorphic
+    maBroken = maBrokenPolimorphic
+instance Basic (Attr Float) where
+    basic = basicPolymorphic
+    maBroken = maBrokenPolimorphic
+
+instance (FixedPointCompatible x, Val x) => Basic x where
+    basic = basicPolymorphic
+    maBroken = maBrokenPolimorphic
+
 march = basic pInt
 
 -- | Simple microarchitecture with broken PU for negative tests
-maBroken :: Val x => Broken T.Text x Int -> BusNetwork T.Text T.Text x Int
-maBroken brokenPU = defineNetwork "net1" ASync $ do
+maBrokenPolimorphic brokenPU = defineNetwork "net1" ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "accum" AccumIO

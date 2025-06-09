@@ -42,6 +42,7 @@ import Data.String.Interpolate
 import Data.Text qualified as T
 import Data.Typeable
 import Data.Validity hiding (invalid)
+import GHC.Float
 import GHC.Generics
 import GHC.TypeLits
 import NITTA.Utils.Base
@@ -56,14 +57,10 @@ class
     , Read x
     , PrintfArg x
     , Default x
-    , Integral x
-    , Enum x
-    , Eq x
     , Num x
-    , Bits x
     , Validity x
-    , FixedPointCompatible x
     , ToJSON x
+    , Real x
     ) =>
     Val x
     where
@@ -125,6 +122,14 @@ class
                     $display();
                 end
             endtask // assertWithAttr
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = a != b;
+                end
+            endfunction
         |]
 
     -- | RE for extraction assertion data from a testbench log
@@ -165,9 +170,9 @@ class Default x => DefaultX u x | u -> x where
 {- | Type class for values, which contain information about fractional part of
 value (for fixed point arithmetics).
 -}
-class FixedPointCompatible a where
-    scalingFactorPower :: a -> Integer
-    fractionalBitSize :: a -> Int
+class (Integral x, Bits x) => FixedPointCompatible x where
+    scalingFactorPower :: x -> Integer
+    fractionalBitSize :: x -> Int
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
@@ -188,6 +193,10 @@ instance Applicative Attr where
     liftA2 f Attr{value = x, invalid = x'} Attr{value = y, invalid = y'} =
         let value = f x y
          in Attr{value, invalid = x' || y'}
+
+instance (Fractional x, Validity x) => Fractional (Attr x) where
+    fromRational x = Attr{value = fromRational x, invalid = False}
+    recip a = fmap recip a
 
 instance Show x => Show (Attr x) where
     show Attr{invalid = True} = "NaN"
@@ -219,7 +228,7 @@ instance (Num x, Validity x) => Num (Attr x) where
 instance (Real x, Validity x) => Real (Attr x) where
     toRational Attr{value} = toRational value
 
-instance Val x => Integral (Attr x) where
+instance (Integral x, Val x) => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
         let (minB, maxB) = minMaxRaw' (dataWidth b `shiftR` 1)
@@ -260,7 +269,7 @@ instance Val x => Val (Attr x) where
     verilogHelper Attr{value} = verilogHelper value
     verilogAssertRE Attr{value} = verilogAssertRE value
 
-instance FixedPointCompatible x => FixedPointCompatible (Attr x) where
+instance (FixedPointCompatible x, Val x) => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
     fractionalBitSize Attr{value} = fractionalBitSize value
 
@@ -281,6 +290,100 @@ instance Val Int where
     fromRaw x _ = fromEnum x
 
     dataLiteral = showText
+
+instance Val Float where
+    dataWidth _ = 32
+
+    rawData x = toInteger $ castFloatToWord32 x
+    rawAttr x = if isInvalid x then 1 else 0
+    fromRaw x _ = castWord32ToFloat $ fromInteger x
+
+    dataLiteral x = showText (rawData x)
+
+    attrLiteral x = showText (attrWidth x) <> "'d000" <> showText (rawAttr x)
+
+    verilogHelper x =
+        [__i|
+            task traceWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %.3f %d\t", float_to_real(actualData), actualAttr);
+                    $display();
+                end
+            endtask // traceWithAttr
+
+            task assertWithAttr;
+                input integer cycle;
+                input integer tick;
+                input [#{ dataWidth x }-1:0] actualData;
+                input [#{ attrWidth x }-1:0] actualAttr;
+                input [#{ dataWidth x }-1:0] expectData;
+                input [#{ attrWidth x }-1:0] expectAttr;
+                input [256*8-1:0] var; // string
+                begin
+                    $write("%0d:%0d\t", cycle, tick);
+                    $write("actual: %.3f %d\t", float_to_real(actualData), actualAttr);
+                    $write("expect: %.3f %d\t", float_to_real(expectData), expectAttr);
+                    $write("var: %0s\t", var);
+                    if ((actualData) != (expectData) && diff(actualData, expectData) > 1) $write("FAIL DATA %.3f, %.3f, %d\t", float_to_real(actualData), float_to_real(expectData), 
+                        diff(actualData,expectData));
+                    if ( actualAttr != expectAttr) $write("FAIL ATTR %d, %d\t", actualAttr, expectAttr);
+                    $display();
+                end
+            endtask // assertWithAttr
+
+            function real float_to_real;
+                input [31:0] x;
+                reg         sign;
+                reg [7:0]   exponent;
+                reg [22:0]  mantissa;
+                real        result;
+                integer     exponent_shifted;
+                real        mantissa_value;
+                begin
+                    sign = x[31];
+                    exponent = x[30:23];
+                    mantissa = x[22:0];
+
+                    exponent_shifted = exponent - 127;
+
+                    mantissa_value = 1.0 + (mantissa / (2.0 ** 23));
+
+                    result = mantissa_value * (2.0 ** exponent_shifted);
+                    if (sign) result = -result;
+
+                    float_to_real = result;
+                end
+            endfunction // float_to_real
+
+            function automatic diff;
+                input [31:0] a;
+                input [31:0] b;
+                begin
+                    diff = (a > b) ? a - b : b - a;
+                end
+            endfunction
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = diff(a[63:32], b[63:32]) > 1 || diff(a[31:0], b[31:0]) > 1;
+                end
+            endfunction
+        |]
+    verilogAssertRE _ =
+        mkRegex $
+            concat
+                [ "([[:digit:]]+):([[:digit:]]+)[\t ]"
+                , "actual:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "expect:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "var: ([^ \t\n]+)"
+                ]
 
 -- | Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
@@ -348,7 +451,7 @@ instance KnownNat w => Val (IntX w) where
 
     dataLiteral (IntX x) = showText x
 
-instance FixedPointCompatible (IntX w) where
+instance KnownNat w => FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
 
@@ -479,6 +582,14 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
                 input [31:0] b;
                 begin
                     diff = (a > b) ? a - b : b - a;
+                end
+            endfunction
+
+            function automatic spi_assert_false;
+                input [#{2*(dataWidth x)}-1:0] a;
+                input [#{2*(dataWidth x)}-1:0] b;
+                begin
+                    spi_assert_false = a != b;
                 end
             endfunction
         |]

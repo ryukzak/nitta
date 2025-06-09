@@ -2,6 +2,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -128,6 +129,7 @@ import Data.String.ToString
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
 import Data.Typeable
+import NITTA.Frontends (Translatable)
 import NITTA.Frontends.Lua
 import NITTA.Intermediate.Analysis (buildProcessWaves)
 import NITTA.Intermediate.DataFlow
@@ -386,7 +388,7 @@ assertPUCoSimulation = do
                 initialCntx = S.fromList (map fst cntx)
              in requiredVars == initialCntx
 
-assignLua :: T.Text -> TSStatement x ()
+assignLua :: Translatable x => T.Text -> TSStatement x ()
 assignLua src = do
     assertEmptyDataFlow
     st@UnitTestState{unit = TargetSystem{mUnit}} <- get
