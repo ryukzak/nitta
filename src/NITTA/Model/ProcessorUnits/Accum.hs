@@ -364,7 +364,7 @@ instance {-# OVERLAPPING #-} TargetSystemComponent (Accum v (Attr Float) t) wher
 
 instance {-# OVERLAPPABLE #-} VarValTime v x t => TargetSystemComponent (Accum v x t) where
     moduleName = moduleNameX
-    hardware _tag _pu = FromLibrary "pu_accum.v"
+    hardware _tag _pu = FromLibrary "accum/pu_accum.v"
     software = softwareX
     hardwareInstance
         tag
