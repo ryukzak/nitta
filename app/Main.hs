@@ -228,12 +228,12 @@ main = do
 
     src <- readSourceCode filename
     ( case fromJust $ type_ <|> fromConf toml "type" <|> Just "fx24.32" of
-            "int" -> mainLogic @(Attr Int)
-            "float" -> mainLogic @(Attr Float)
+            "int" -> mainWithKnownBusType @(Attr Int)
+            "float" -> mainWithKnownBusType @(Attr Float)
             fx ->
                 ( \(SomeNat (m :: Proxy m), SomeNat (b :: Proxy b)) -> do
                     when (natVal m > natVal b) $ error "Wrong type, M should less or equal to B in fx<M>.<B>"
-                    mainLogic @(Attr (FX m b))
+                    mainWithKnownBusType @(Attr (FX m b))
                 )
                     $ parseFX fx
         )
@@ -242,8 +242,8 @@ main = do
         src
         toml
 
-mainLogic :: forall x. (Translatable x, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe Table -> IO ()
-mainLogic
+mainWithKnownBusType :: forall x. (Translatable x, MKMicro T.Text x) => Nitta -> FrontendType -> T.Text -> Maybe Table -> IO ()
+mainWithKnownBusType
     Nitta
         { auto_uarch
         , io_sync
