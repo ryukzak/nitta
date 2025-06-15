@@ -241,7 +241,7 @@ main = do
             when (natVal m > natVal b) $ error "Wrong type, M should less or equal to B in fx<M>.<B>"
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
-                received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
+                received = [("u^0#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
                 ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
                 confMa = toml >>= Just . mkMicroarchitecture ioSync
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
