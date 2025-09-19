@@ -15,8 +15,10 @@ module NITTA.Frontends.XMILE.Frontend (
     translateXMILE,
     FrontendResult (..),
     TraceVar (..),
-) where
+)
+where
 
+import Control.Monad (void)
 import Control.Monad.State
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified as L

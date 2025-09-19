@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-20.26
+resolver: lts-23.27
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,13 +41,15 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-  - alex-tools-0.4@sha256:7f24cb60ba88b04196965e78d7944d638b1a6034f0c9284bdf7d95e05c7be7c3
+  - alex-tools-0.6.1
   - git: https://github.com/mirokuratczyk/htoml.git
     commit: 33971287445c5e2531d9605a287486dfc3cbe1da
-  - language-lua-0.11.0.1@sha256:b3bdf864965279f830323d5ed7d38073b2687b3a07b7fa73aa13782560f48f89
-  - servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2
-  - ginger-0.10.4.0
-  - weeder-2.4.1
+  - language-lua-0.11.0.2
+  - git: https://github.com/haskell-servant/servant-js.git
+    commit: 28c25969353027e79fb8b14e242e3e14a1b2fc47
+  - ginger-0.10.6.0
+  - weeder-2.10.0
+  - tostring-0.2.1.1
 
 allow-newer: true
 

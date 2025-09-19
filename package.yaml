@@ -23,7 +23,7 @@ description: |-
 category: "CGRA, ASIP, CAD, hardware"
 author: Aleksandr Penskoi
 maintainer: aleksandr.penskoi@gmail.com
-copyright: 2021 Aleksandr Penskoi
+copyright: 2025 Aleksandr Penskoi
 license: BSD3
 homepage: "https://ryukzak.github.io/projects/nitta/"
 extra-doc-files:
@@ -36,19 +36,21 @@ ghc-options:
   - "-Wcompat"
   - "-Wredundant-constraints"
   - "-fno-warn-missing-signatures"
+  - "-fno-warn-x-partial"
   - "-optP-Wno-nonportable-include-path"
 
 default-extensions:
   - DeriveDataTypeable
   - DeriveGeneric
-  - ImportQualifiedPost
-  - LambdaCase
-  - NamedFieldPuns
-  - ScopedTypeVariables
-  - MultiParamTypeClasses
   - FlexibleContexts
   - FlexibleInstances
+  - ImportQualifiedPost
+  - LambdaCase
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - ScopedTypeVariables
   - TupleSections
+  - TypeOperators
   - UndecidableInstances
 
 dependencies:

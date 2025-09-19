@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-type-defaults -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-type-defaults -Wno-incomplete-uni-patterns -Wno-unused-imports #-}
 
 {- |
 Module      : NITTA.Frontends.Lua
@@ -90,8 +90,10 @@ module NITTA.Frontends.Lua (
     findStartupFunction,
     getLuaBlockFromSources,
     processStatement,
-) where
+)
+where
 
+import Control.Monad (void)
 import Control.Monad.State
 import Data.HashMap.Strict qualified as HM
 import Data.Hashable

@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+
 {- |
 Module      : NITTA.Model.ProcessorUnits
 Description : Library of processor unit models
@@ -129,10 +131,8 @@ module NITTA.Model.ProcessorUnits (
     module NITTA.Model.ProcessorUnits.Comparator,
     module NITTA.Model.ProcessorUnits.LogicalUnit,
     module NITTA.Model.ProcessorUnits.Multiplexer,
-) where
-
-import NITTA.Model.ProcessorUnits.Types
-import NITTA.Model.Time
+)
+where
 
 import NITTA.Model.ProcessorUnits.Accum
 import NITTA.Model.ProcessorUnits.Broken
@@ -144,3 +144,5 @@ import NITTA.Model.ProcessorUnits.LogicalUnit
 import NITTA.Model.ProcessorUnits.Multiplexer
 import NITTA.Model.ProcessorUnits.Multiplier
 import NITTA.Model.ProcessorUnits.Shift
+import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.Time

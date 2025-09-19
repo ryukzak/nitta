@@ -19,9 +19,11 @@ module NITTA.UIBackend.REST (
     synthesisServer,
     BackendCtx (..),
     UnitEndpoints (..),
-) where
+)
+where
 
-import Control.Monad.Except
+import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Bifunctor
 import Data.Default
@@ -228,7 +230,9 @@ data UnitEndpoints tag v t = UnitEndpoints
     , unitEndpoints :: [EndpointSt v (TimeConstraint t)]
     }
     deriving (Generic)
+
 instance (ToJSON tag, ToJSON t, ToJSON v, Time t) => ToJSON (UnitEndpoints tag v t)
+
 instance ToSample (UnitEndpoints String String Int) where
     toSamples _ =
         singleSample
@@ -253,6 +257,7 @@ data Debug tag v t = Debug
 instance (ToJSON tag, ToJSON v, ToJSON t, Time t) => ToJSON (Debug tag v t)
 
 instance ToSample (Debug String String Int) -- where toSamples _ = noSamples
+
 instance ToSample (EndpointSt String (TimeConstraint Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples

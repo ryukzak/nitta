@@ -30,8 +30,10 @@ module NITTA.Model.Networks.Bus (
     add,
     addPrototype,
     addCustomPrototype,
-) where
+)
+where
 
+import Control.Monad (when)
 import Control.Monad.State
 import Data.Bifunctor
 import Data.Default
@@ -305,12 +307,12 @@ cartesianProduct (xs : xss) = [x : ys | x <- xs, ys <- cartesianProduct xss]
 
 {- | Not all bindings can be applied to unit a the same time. E.g.:
 
- - @b = reg(a)@
- - @c = reg(b)@
+- @b = reg(a)@
+- @c = reg(b)@
 
- Can't be bound to same unit because it require self sending of data.
+Can't be bound to same unit because it require self sending of data.
 
- In this case, we just throw away conflicted bindings.
+In this case, we just throw away conflicted bindings.
 -}
 fixGroupBinding :: (UnitTag tag, VarValTime v x t) => BusNetwork tag v x t -> [(tag, F v x)] -> [(tag, F v x)]
 fixGroupBinding _bn [] = []
@@ -321,18 +323,18 @@ fixGroupBinding bn@BusNetwork{bnPus} (b@(uTag, f) : binds)
 mergeFunctionWithSameType = True
 
 {- | GroupBindHash required to find equal from task point of view bindings.
- E.g. (we have 2 units and 3 functions with the same type):
- @u1 <- f1, f2, f3; u2 <- _ === u1 <- _; u2 <-  f1, f2, f3@ because all
- task will performing by one unit and it is not matter which one.
+E.g. (we have 2 units and 3 functions with the same type):
+@u1 <- f1, f2, f3; u2 <- _ === u1 <- _; u2 <-  f1, f2, f3@ because all
+task will performing by one unit and it is not matter which one.
 
- Corner cases:
+Corner cases:
 
- - not all group binding are correct (e.g. self sending)
+- not all group binding are correct (e.g. self sending)
 
- - we can't wait that unit is empty
+- we can't wait that unit is empty
 
- - Combination like: `u1 <- f1, f2; u2 <- f3 !== u1 <- f1, f3; u2 <- f2` are not
-   equal because we don't take into accout their place in DFG.
+- Combination like: `u1 <- f1, f2; u2 <- f3 !== u1 <- f1, f3; u2 <- f2` are not
+  equal because we don't take into accout their place in DFG.
 -}
 bindsHash :: UnitTag k => BusNetwork k v x t -> [(k, F v x)] -> S.Set (TypeRep, Int, S.Set String)
 bindsHash BusNetwork{bnPus, bnBound} binds =
@@ -340,8 +342,7 @@ bindsHash BusNetwork{bnPus, bnBound} binds =
      in S.fromList
             $ map
                 ( \(tag, fs) ->
-                    let
-                        u = bnPus M.! tag
+                    let u = bnPus M.! tag
                         bound = maybe 0 length $ bnBound M.!? tag
                         fs' =
                             S.fromList $
@@ -354,8 +355,7 @@ bindsHash BusNetwork{bnPus, bnBound} binds =
                                         -- combinations
                                         map (show . (\lst -> (head lst, length lst))) (L.group $ map functionType fs)
                                     else map show fs
-                     in
-                        (unitType u, bound, fs')
+                     in (unitType u, bound, fs')
                 )
             $ M.assocs distribution
 
