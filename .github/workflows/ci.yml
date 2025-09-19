@@ -256,7 +256,7 @@ jobs:
 
       - uses: haskell-actions/run-fourmolu@v11
         with:
-          version: "0.18.0.0"
+          version: "0.19.0.0"
 
   typescript-formatting:
     timeout-minutes: 5
