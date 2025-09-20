@@ -15,15 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Cache ~/.stack
-        id: cache
         with:
           path: ~/.stack
           key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
           restore-keys: |
             ${{ runner.os }}-stack-global-
-          lookup-only: true
+
+      - uses: actions/cache@v4
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-
 
       - name: Install haskell-stack
         if: steps.cache.outputs.cache-hit != 'true'
@@ -49,7 +55,7 @@ jobs:
         ############################################################
         ## Caches
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Cache ~/.stack
         with:
           path: ~/.stack
@@ -57,7 +63,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-stack-global-
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-
+
+      - uses: actions/cache@v4
         name: Cache nitta exe
         with:
           path: ~/.local/bin
@@ -65,7 +79,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nitta-exe-
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Cache nitta-api-gen
         with:
           path: ./web/src/services/gen
