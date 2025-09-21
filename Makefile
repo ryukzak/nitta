@@ -41,7 +41,10 @@ format-check:
 
 lint:
 	hlint $(HS_SRC_DIR)
-	stack exec weeder
+
+weeder:
+	# FIXME: remove dead code
+	stack exec weeder -- --hie-directory .stack-work || true
 
 clean:
 	stack clean
