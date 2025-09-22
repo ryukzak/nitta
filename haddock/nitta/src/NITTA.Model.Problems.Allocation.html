@@ -3,14 +3,14 @@
 </span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
 </span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
 </span><span id="line-5"></span><span>
-</span><span id="line-6"></span><span class="hs-comment">{- |
+</span><span id="line-6"></span><span class="annot"><span class="hs-comment">{- |
 Module      : NITTA.Model.Problems.Allocation
 Description : PU allocation on the bus network
 Copyright   : (c) Aleksandr Penskoi, Vitaliy Zakusilo, 2022
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
--}</span><span>
+-}</span></span><span>
 </span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Model.Problems.Allocation</span><span> </span><span class="hs-special">(</span><span>
 </span><span id="line-15"></span><span>    </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier">Allocation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
 </span><span id="line-16"></span><span>    </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#AllocationProblem"><span class="hs-identifier">AllocationProblem</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
@@ -19,49 +19,64 @@ Stability   : experimental
 </span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.String.ToString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ToString</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Generic</span></span><span class="hs-special">)</span><span>
 </span><span id="line-21"></span><span>
-</span><span id="line-22"></span><span id="local-6989586621680371128"><span id="local-6989586621680371129"></span></span><span class="hs-keyword">data</span><span> </span><span id="Allocation"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-var">Allocation</span></a></span></span><span> </span><span id="local-6989586621680371149"><span class="annot"><a href="#local-6989586621680371149"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Allocation"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-var">Allocation</span></a></span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">data</span><span> </span><span id="Allocation"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-var">Allocation</span></a></span></span><span> </span><span id="local-6989586621680397501"><span class="annot"><a href="#local-6989586621680397501"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Allocation"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-var">Allocation</span></a></span></span><span>
 </span><span id="line-23"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="networkTag"><span class="annot"><span class="annottext">forall tag. Allocation tag -&gt; tag
-</span><a href="NITTA.Model.Problems.Allocation.html#networkTag"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680371149"><span class="hs-identifier hs-type">tag</span></a></span><span>
-</span><span id="line-24"></span><span>    </span><span class="hs-comment">-- ^ Tag of the BusNetwork where PU will be allocated</span><span>
+</span><a href="NITTA.Model.Problems.Allocation.html#networkTag"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680397501"><span class="hs-identifier hs-type">tag</span></a></span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Tag of the BusNetwork where PU will be allocated</span></span><span>
 </span><span id="line-25"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="processUnitTag"><span class="annot"><span class="annottext">forall tag. Allocation tag -&gt; tag
-</span><a href="NITTA.Model.Problems.Allocation.html#processUnitTag"><span class="hs-identifier hs-var hs-var">processUnitTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680371149"><span class="hs-identifier hs-type">tag</span></a></span><span>
-</span><span id="line-26"></span><span>    </span><span class="hs-comment">-- ^ Tag of the prototype that will be used for allocation</span><span>
+</span><a href="NITTA.Model.Problems.Allocation.html#processUnitTag"><span class="hs-identifier hs-var hs-var">processUnitTag</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680397501"><span class="hs-identifier hs-type">tag</span></a></span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Tag of the prototype that will be used for allocation</span></span><span>
 </span><span id="line-27"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-28"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a.
+</span><span id="line-28"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680397530"><span id="local-6989586621680397532"><span class="annot"><span class="annottext">(forall x. Allocation tag -&gt; Rep (Allocation tag) x)
+-&gt; (forall x. Rep (Allocation tag) x -&gt; Allocation tag)
+-&gt; Generic (Allocation tag)
+forall x. Rep (Allocation tag) x -&gt; Allocation tag
+forall x. Allocation tag -&gt; Rep (Allocation tag) x
+forall a.
 (forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
 forall tag x. Rep (Allocation tag) x -&gt; Allocation tag
 forall tag x. Allocation tag -&gt; Rep (Allocation tag) x
-$cto :: forall tag x. Rep (Allocation tag) x -&gt; Allocation tag
 $cfrom :: forall tag x. Allocation tag -&gt; Rep (Allocation tag) x
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680371115"><span id="local-6989586621680371119"><span class="annot"><span class="annottext">Allocation tag -&gt; Allocation tag -&gt; Bool
+from :: forall x. Allocation tag -&gt; Rep (Allocation tag) x
+$cto :: forall tag x. Rep (Allocation tag) x -&gt; Allocation tag
+to :: forall x. Rep (Allocation tag) x -&gt; Allocation tag
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Generic</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680397537"><span id="local-6989586621680397541"><span class="annot"><span class="annottext">Allocation tag -&gt; Allocation tag -&gt; Bool
+(Allocation tag -&gt; Allocation tag -&gt; Bool)
+-&gt; (Allocation tag -&gt; Allocation tag -&gt; Bool)
+-&gt; Eq (Allocation tag)
 forall tag. Eq tag =&gt; Allocation tag -&gt; Allocation tag -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: Allocation tag -&gt; Allocation tag -&gt; Bool
-$c/= :: forall tag. Eq tag =&gt; Allocation tag -&gt; Allocation tag -&gt; Bool
-== :: Allocation tag -&gt; Allocation tag -&gt; Bool
 $c== :: forall tag. Eq tag =&gt; Allocation tag -&gt; Allocation tag -&gt; Bool
+== :: Allocation tag -&gt; Allocation tag -&gt; Bool
+$c/= :: forall tag. Eq tag =&gt; Allocation tag -&gt; Allocation tag -&gt; Bool
+/= :: Allocation tag -&gt; Allocation tag -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
 </span><span id="line-29"></span><span>
-</span><span id="line-30"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680371109"><span id="local-6989586621680371112"><span id="local-6989586621680371142"><span class="annot"><span class="hs-identifier hs-type">ToString</span></span><span> </span><span class="annot"><a href="#local-6989586621680371142"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680371142"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-31"></span><span>    </span><span id="local-6989586621680371097"><span class="annot"><span class="annottext">show :: Allocation tag -&gt; String
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span class="hs-special">{</span><span id="local-6989586621680371095"><span class="annot"><span class="annottext">tag
-networkTag :: tag
+</span><span id="line-30"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680397517"><span id="local-6989586621680397547"><span id="local-6989586621680397552"><span class="annot"><span class="hs-identifier hs-type">ToString</span></span><span> </span><span class="annot"><a href="#local-6989586621680397517"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680397517"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-31"></span><span>    </span><span id="local-6989586621680397565"><span class="annot"><span class="annottext">show :: Allocation tag -&gt; String
+</span><a href="#local-6989586621680397565"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span class="hs-special">{</span><span id="local-6989586621680397567"><span class="annot"><span class="annottext">tag
 networkTag :: forall tag. Allocation tag -&gt; tag
-</span><a href="#local-6989586621680371095"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680371094"><span class="annot"><span class="annottext">tag
-processUnitTag :: tag
+networkTag :: tag
+</span><a href="NITTA.Model.Problems.Allocation.html#networkTag"><span class="hs-identifier hs-var hs-var">networkTag</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680397568"><span class="annot"><span class="annottext">tag
 processUnitTag :: forall tag. Allocation tag -&gt; tag
-</span><a href="#local-6989586621680371094"><span class="hs-identifier hs-var hs-var">processUnitTag</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot;Allocation of &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. ToString a =&gt; a -&gt; String
+processUnitTag :: tag
+</span><a href="NITTA.Model.Problems.Allocation.html#processUnitTag"><span class="hs-identifier hs-var hs-var">processUnitTag</span></a></span></span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Allocation of &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">tag -&gt; String
+forall a. ToString a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">toString</span></span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680371094"><span class="hs-identifier hs-var">processUnitTag</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><a href="#local-6989586621680397568"><span class="hs-identifier hs-var">processUnitTag</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><span class="hs-string">&quot; on &quot;</span></span><span> </span><span class="annot"><span class="annottext">forall a. Semigroup a =&gt; a -&gt; a -&gt; a
-</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">forall a. ToString a =&gt; a -&gt; String
+</span><span class="hs-string">&quot; on &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">tag -&gt; String
+forall a. ToString a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">toString</span></span><span> </span><span class="annot"><span class="annottext">tag
-</span><a href="#local-6989586621680371095"><span class="hs-identifier hs-var">networkTag</span></a></span><span>
+</span><a href="#local-6989586621680397567"><span class="hs-identifier hs-var">networkTag</span></a></span><span>
 </span><span id="line-32"></span><span>
-</span><span id="line-33"></span><span class="hs-keyword">class</span><span> </span><span id="AllocationProblem"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#AllocationProblem"><span class="hs-identifier hs-var">AllocationProblem</span></a></span></span><span> </span><span id="local-6989586621680371092"><span class="annot"><a href="#local-6989586621680371092"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680371091"><span class="annot"><a href="#local-6989586621680371091"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680371092"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680371091"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-34"></span><span>    </span><span id="allocationOptions"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#allocationOptions"><span class="hs-identifier hs-type">allocationOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680371092"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680371091"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-35"></span><span>    </span><span id="allocationDecision"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#allocationDecision"><span class="hs-identifier hs-type">allocationDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680371092"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680371091"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680371092"><span class="hs-identifier hs-type">u</span></a></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">class</span><span> </span><span id="AllocationProblem"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#AllocationProblem"><span class="hs-identifier hs-var">AllocationProblem</span></a></span></span><span> </span><span id="local-6989586621680397570"><span class="annot"><a href="#local-6989586621680397570"><span class="hs-identifier hs-type">u</span></a></span></span><span> </span><span id="local-6989586621680397571"><span class="annot"><a href="#local-6989586621680397571"><span class="hs-identifier hs-type">tag</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621680397570"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680397571"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-34"></span><span>    </span><span id="allocationOptions"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#allocationOptions"><span class="hs-identifier hs-type">allocationOptions</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680397570"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680397571"><span class="hs-identifier hs-type">tag</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-35"></span><span>    </span><span id="allocationDecision"><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#allocationDecision"><span class="hs-identifier hs-type">allocationDecision</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621680397570"><span class="hs-identifier hs-type">u</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="NITTA.Model.Problems.Allocation.html#Allocation"><span class="hs-identifier hs-type">Allocation</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680397571"><span class="hs-identifier hs-type">tag</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680397570"><span class="hs-identifier hs-type">u</span></a></span><span>
 </span><span id="line-36"></span></pre></body></html>

@@ -32,7 +32,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "function": {
@@ -67,7 +67,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "source": [
@@ -125,7 +125,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "input": "c",
@@ -150,7 +150,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "new": [
@@ -185,7 +185,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "lNew": [
@@ -250,7 +250,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -277,7 +277,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -304,7 +304,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -331,7 +331,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "dbgCurrentStateFunctionLocks": [
         [
@@ -362,7 +362,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "dbgCurrentStateFunctionLocks": [
         [
@@ -398,7 +398,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "dbgCurrentStateFunctionLocks": [
         [
@@ -451,7 +451,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "dbgCurrentStateFunctionLocks": [
         [
@@ -491,7 +491,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "dbgCurrentStateFunctionLocks": [
         [
@@ -570,13 +570,13 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 []
 ```
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "unitEndpoints": [
@@ -604,78 +604,8 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
-    {
-        "unitEndpoints": [
-            {
-                "epAt": {
-                    "tcAvailable": [
-                        1,
-                        10
-                    ],
-                    "tcDuration": [
-                        1,
-                        1
-                    ]
-                },
-                "epRole": {
-                    "contents": "x",
-                    "tag": "Target"
-                }
-            }
-        ],
-        "unitTag": "PU1"
-    },
-    {
-        "unitEndpoints": [
-            {
-                "epAt": {
-                    "tcAvailable": [
-                        1,
-                        10
-                    ],
-                    "tcDuration": [
-                        1,
-                        1
-                    ]
-                },
-                "epRole": {
-                    "contents": "x",
-                    "tag": "Target"
-                }
-            }
-        ],
-        "unitTag": "PU1"
-    }
-]
-```
-
-- Example (`application/json`):
-
-```javascript
-[
-    {
-        "unitEndpoints": [
-            {
-                "epAt": {
-                    "tcAvailable": [
-                        1,
-                        10
-                    ],
-                    "tcDuration": [
-                        1,
-                        1
-                    ]
-                },
-                "epRole": {
-                    "contents": "x",
-                    "tag": "Target"
-                }
-            }
-        ],
-        "unitTag": "PU1"
-    },
     {
         "unitEndpoints": [
             {
@@ -723,7 +653,77 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
+[
+    {
+        "unitEndpoints": [
+            {
+                "epAt": {
+                    "tcAvailable": [
+                        1,
+                        10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
+                    ]
+                },
+                "epRole": {
+                    "contents": "x",
+                    "tag": "Target"
+                }
+            }
+        ],
+        "unitTag": "PU1"
+    },
+    {
+        "unitEndpoints": [
+            {
+                "epAt": {
+                    "tcAvailable": [
+                        1,
+                        10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
+                    ]
+                },
+                "epRole": {
+                    "contents": "x",
+                    "tag": "Target"
+                }
+            }
+        ],
+        "unitTag": "PU1"
+    },
+    {
+        "unitEndpoints": [
+            {
+                "epAt": {
+                    "tcAvailable": [
+                        1,
+                        10
+                    ],
+                    "tcDuration": [
+                        1,
+                        1
+                    ]
+                },
+                "epRole": {
+                    "contents": "x",
+                    "tag": "Target"
+                }
+            }
+        ],
+        "unitTag": "PU1"
+    }
+]
+```
+
+- Example (`application/json`):
+
+```json
 [
     {
         "unitEndpoints": [
@@ -835,13 +835,13 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 []
 ```
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -878,7 +878,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -945,7 +945,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -1005,7 +1005,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -1123,7 +1123,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Response body as below.
 
-```javascript
+```json
 {
     "edges": [
         {
@@ -1189,7 +1189,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Response body as below.
 
-```javascript
+```json
 {
     "ioSyncMode": "Sync",
     "networks": [
@@ -1239,7 +1239,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - for process unit (`application/json`):
 
-```javascript
+```json
 {
     "nextTick_": 5,
     "nextUid": 7,
@@ -1359,7 +1359,7 @@ Typescript interfaces can be finded here: `types.ts`
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -1386,13 +1386,13 @@ Typescript interfaces can be finded here: `types.ts`
 
 - Example (`application/json`):
 
-```javascript
+```json
 null
 ```
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "function": {
@@ -1427,7 +1427,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "source": [
@@ -1485,7 +1485,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "input": "c",
@@ -1510,7 +1510,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 {
     "decision": {
         "new": [
@@ -1566,7 +1566,7 @@ null
 
 - for process unit (`application/json`):
 
-```javascript
+```json
 {
     "nextTick_": 5,
     "nextUid": 7,
@@ -1706,7 +1706,7 @@ null
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -1730,7 +1730,7 @@ null
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -1757,7 +1757,7 @@ null
 
 - The synthesis node path from the root by edge indexes. (`application/json`):
 
-```javascript
+```json
 "-1-1-3"
 ```
 
@@ -1784,13 +1784,13 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 []
 ```
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -1827,7 +1827,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -1894,7 +1894,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -1954,7 +1954,7 @@ null
 
 - Example (`application/json`):
 
-```javascript
+```json
 [
     {
         "decision": {
@@ -2080,7 +2080,7 @@ null
 
 - Response body as below.
 
-```javascript
+```json
 {
     "tbCompilerDump": "stdout:\nstderr:\n",
     "tbFiles": [
@@ -2177,7 +2177,7 @@ null
 
 - Response body as below.
 
-```javascript
+```json
 {
     "rootLabel": {
         "decsionType": "-",
@@ -2233,7 +2233,7 @@ null
 
 - Response body as below.
 
-```javascript
+```json
 {
     "nodesFailed": 0,
     "nodesNotProcessed": 0,

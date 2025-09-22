@@ -1,11 +1,11 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{- |
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
 Module      : NITTA.Synthesis.Steps
 Description : Synthesis tree representation
 Copyright   : (c) Aleksandr Penskoi, 2022
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
--}</span><span>
+-}</span></span><span>
 </span><span id="line-9"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.Steps</span><span> </span><span class="hs-special">(</span><span>
 </span><span id="line-10"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Allocation.html"><span class="hs-identifier">NITTA.Synthesis.Steps.Allocation</span></a></span><span class="hs-special">,</span><span>
 </span><span id="line-11"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.Bind.html"><span class="hs-identifier">NITTA.Synthesis.Steps.Bind</span></a></span><span class="hs-special">,</span><span>
@@ -31,34 +31,44 @@ Stability   : experimental
 </span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html"><span class="hs-identifier">NITTA.Synthesis.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier">SynthesisDecision</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier">SynthesisDecision</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#metrics"><span class="hs-identifier">metrics</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-32"></span><span>
 </span><span id="line-33"></span><span id="isRefactor"><span class="annot"><span class="annottext">isRefactor :: SynthesisDecision ctx m -&gt; Bool
-</span><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var hs-var">isRefactor</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680419717"><span class="annot"><span class="annottext">p
-metrics :: p
+</span><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var hs-var">isRefactor</span></a></span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Types.html#SynthesisDecision"><span class="hs-identifier hs-type">SynthesisDecision</span></a></span><span class="hs-special">{</span><span id="local-6989586621680452577"><span class="annot"><span class="annottext">p
 metrics :: ()
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var hs-var">metrics</span></a></span></span><span class="hs-special">}</span><span>
-</span><span id="line-34"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
-</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+metrics :: p
+</span><a href="NITTA.Synthesis.Types.html#metrics"><span class="hs-identifier hs-var hs-var">metrics</span></a></span></span><span class="hs-special">}</span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe BreakLoopMetrics -&gt; Bool
+forall a. Maybe a -&gt; Bool
+</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">p -&gt; Maybe BreakLoopMetrics
+forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.BreakLoop.html#BreakLoopMetrics"><span class="hs-identifier hs-type">BreakLoopMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680452577"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.BreakLoop.html#BreakLoopMetrics"><span class="hs-identifier hs-type">BreakLoopMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-35"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
-</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+</span><span id="line-35"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe OptimizeAccumMetrics -&gt; Bool
+forall a. Maybe a -&gt; Bool
+</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">p -&gt; Maybe OptimizeAccumMetrics
+forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.OptimizeAccum.html#OptimizeAccumMetrics"><span class="hs-identifier hs-type">OptimizeAccumMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680452577"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.OptimizeAccum.html#OptimizeAccumMetrics"><span class="hs-identifier hs-type">OptimizeAccumMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-36"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
-</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+</span><span id="line-36"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe OptimizeLogicalUnitMetrics -&gt; Bool
+forall a. Maybe a -&gt; Bool
+</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">p -&gt; Maybe OptimizeLogicalUnitMetrics
+forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.OptimizeLogicalUnit.html#OptimizeLogicalUnitMetrics"><span class="hs-identifier hs-type">OptimizeLogicalUnitMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680452577"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.OptimizeLogicalUnit.html#OptimizeLogicalUnitMetrics"><span class="hs-identifier hs-type">OptimizeLogicalUnitMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-37"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
-</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+</span><span id="line-37"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe ResolveDeadlockMetrics -&gt; Bool
+forall a. Maybe a -&gt; Bool
+</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">p -&gt; Maybe ResolveDeadlockMetrics
+forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.ResolveDeadlock.html#ResolveDeadlockMetrics"><span class="hs-identifier hs-type">ResolveDeadlockMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680452577"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.ResolveDeadlock.html#ResolveDeadlockMetrics"><span class="hs-identifier hs-type">ResolveDeadlockMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-38"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a -&gt; Bool
-</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
+</span><span id="line-38"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Maybe ConstantFoldingMetrics -&gt; Bool
+forall a. Maybe a -&gt; Bool
+</span><span class="hs-identifier hs-var">isJust</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">p -&gt; Maybe ConstantFoldingMetrics
+forall a b. (Typeable a, Typeable b) =&gt; a -&gt; Maybe b
 </span><span class="hs-identifier hs-var">cast</span></span><span> </span><span class="annot"><span class="annottext">p
-</span><a href="#local-6989586621680419717"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.ConstantFolding.html#ConstantFoldingMetrics"><span class="hs-identifier hs-type">ConstantFoldingMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621680452577"><span class="hs-identifier hs-var">metrics</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="NITTA.Synthesis.Steps.ConstantFolding.html#ConstantFoldingMetrics"><span class="hs-identifier hs-type">ConstantFoldingMetrics</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
 </span><span id="line-39"></span><span class="annot"><a href="NITTA.Synthesis.Steps.html#isRefactor"><span class="hs-identifier hs-var">isRefactor</span></a></span><span> </span><span class="annot"><span class="annottext">SynthesisDecision ctx m
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool

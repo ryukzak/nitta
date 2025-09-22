@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable #-}</span><span>
 </span><span id="line-2"></span><span>
-</span><span id="line-3"></span><span class="hs-comment">{- |
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
 Module      : NITTA.Synthesis.MlBackend.FixedCache
 Description : Fixed version of thread-safe write-once cache from io-memoize package
 Copyright   : (c) Dan Burton &lt;danburton.email@gmail.com&gt;, 2014
@@ -13,75 +13,96 @@ but with expoted Cache constructor, so we can use it in pattern matching.
 
 This was necessary not to rewrite similar functionality. Linter errors were
 fixed as well.
--}</span><span>
+-}</span></span><span>
 </span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">NITTA.Synthesis.MlBackend.FixedCache</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier">Cache</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#newCache"><span class="hs-identifier">newCache</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#fetch"><span class="hs-identifier">fetch</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-18"></span><span>
 </span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent.MVar</span></span><span>
 </span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">)</span><span>
 </span><span id="line-21"></span><span>
-</span><span id="line-22"></span><span class="hs-comment">{- | A thread-safe write-once cache. If you need more functionality,
+</span><span id="line-22"></span><span class="annot"><span class="hs-comment">{- | A thread-safe write-once cache. If you need more functionality,
 (e.g. multiple write, cache clearing) use an 'MVar' instead.
--}</span><span>
-</span><span id="line-25"></span><span class="hs-keyword">newtype</span><span> </span><span id="Cache"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span id="local-6989586621680371246"><span class="annot"><a href="#local-6989586621680371246"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Cache"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MVar</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621680371246"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680371218"><span id="local-6989586621680371223"><span class="annot"><span class="annottext">Cache a -&gt; Cache a -&gt; Bool
+-}</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">newtype</span><span> </span><span id="Cache"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span id="local-6989586621680397654"><span class="annot"><a href="#local-6989586621680397654"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Cache"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MVar</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621680397654"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621680397659"><span id="local-6989586621680397664"><span class="annot"><span class="annottext">Cache a -&gt; Cache a -&gt; Bool
+(Cache a -&gt; Cache a -&gt; Bool)
+-&gt; (Cache a -&gt; Cache a -&gt; Bool) -&gt; Eq (Cache a)
 forall a. Cache a -&gt; Cache a -&gt; Bool
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
-/= :: Cache a -&gt; Cache a -&gt; Bool
-$c/= :: forall a. Cache a -&gt; Cache a -&gt; Bool
-== :: Cache a -&gt; Cache a -&gt; Bool
 $c== :: forall a. Cache a -&gt; Cache a -&gt; Bool
+== :: Cache a -&gt; Cache a -&gt; Bool
+$c/= :: forall a. Cache a -&gt; Cache a -&gt; Bool
+/= :: Cache a -&gt; Cache a -&gt; Bool
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">)</span><span>
 </span><span id="line-27"></span><span>
-</span><span id="line-28"></span><span class="hs-comment">{- | Fetch the value stored in the cache,
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">{- | Fetch the value stored in the cache,
 or call the supplied fallback and store the result,
 if the cache is empty.
--}</span><span>
-</span><span id="line-32"></span><span id="local-6989586621680371245"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#fetch"><span class="hs-identifier hs-type">fetch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680371245"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621680371245"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621680371245"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+-}</span></span><span>
+</span><span id="line-32"></span><span id="local-6989586621680397636"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#fetch"><span class="hs-identifier hs-type">fetch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680397636"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621680397636"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621680397636"><span class="hs-identifier hs-type">a</span></a></span></span><span>
 </span><span id="line-33"></span><span id="fetch"><span class="annot"><span class="annottext">fetch :: forall a. Cache a -&gt; IO a -&gt; IO a
-</span><a href="NITTA.Synthesis.MlBackend.FixedCache.html#fetch"><span class="hs-identifier hs-var hs-var">fetch</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621680371213"><span class="annot"><span class="annottext">MVar (Maybe a)
-</span><a href="#local-6989586621680371213"><span class="hs-identifier hs-var">var</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680371212"><span class="annot"><span class="annottext">IO a
-</span><a href="#local-6989586621680371212"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO a
-</span><a href="#local-6989586621680371211"><span class="hs-identifier hs-var">go</span></a></span><span>
+</span><a href="NITTA.Synthesis.MlBackend.FixedCache.html#fetch"><span class="hs-identifier hs-var hs-var">fetch</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span id="local-6989586621680397669"><span class="annot"><span class="annottext">MVar (Maybe a)
+</span><a href="#local-6989586621680397669"><span class="hs-identifier hs-var">var</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621680397670"><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621680397670"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621680397671"><span class="hs-identifier hs-var">go</span></a></span><span>
 </span><span id="line-34"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-35"></span><span>        </span><span id="local-6989586621680371211"><span class="annot"><span class="annottext">go :: IO a
-</span><a href="#local-6989586621680371211"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-36"></span><span>            </span><span class="annot"><span class="annottext">forall a. MVar a -&gt; IO a
+</span><span id="line-35"></span><span>        </span><span id="local-6989586621680397671"><span class="annot"><span class="annottext">go :: IO a
+</span><a href="#local-6989586621680397671"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-36"></span><span>            </span><span class="annot"><span class="annottext">MVar (Maybe a) -&gt; IO (Maybe a)
+forall a. MVar a -&gt; IO a
 </span><span class="hs-identifier hs-var">readMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar (Maybe a)
-</span><a href="#local-6989586621680371213"><span class="hs-identifier hs-var">var</span></a></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><a href="#local-6989586621680397669"><span class="hs-identifier hs-var">var</span></a></span><span> </span><span class="annot"><span class="annottext">IO (Maybe a) -&gt; (Maybe a -&gt; IO a) -&gt; IO a
+forall a b. IO a -&gt; (a -&gt; IO b) -&gt; IO b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-37"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680371202"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680371202"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span id="line-37"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680397680"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680397680"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; IO a
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680371202"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><a href="#local-6989586621680397680"><span class="hs-identifier hs-var">a</span></a></span><span>
 </span><span id="line-38"></span><span>                </span><span class="annot"><span class="annottext">Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-39"></span><span>                    </span><span class="annot"><span class="annottext">forall a. MVar a -&gt; (a -&gt; IO a) -&gt; IO ()
+</span><span id="line-39"></span><span>                    </span><span class="annot"><span class="annottext">MVar (Maybe a) -&gt; (Maybe a -&gt; IO (Maybe a)) -&gt; IO ()
+forall a. MVar a -&gt; (a -&gt; IO a) -&gt; IO ()
 </span><span class="hs-identifier hs-var">modifyMVar_</span></span><span> </span><span class="annot"><span class="annottext">MVar (Maybe a)
-</span><a href="#local-6989586621680371213"><span class="hs-identifier hs-var">var</span></a></span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><a href="#local-6989586621680397669"><span class="hs-identifier hs-var">var</span></a></span><span> </span><span class="annot"><span class="annottext">((Maybe a -&gt; IO (Maybe a)) -&gt; IO ())
+-&gt; (Maybe a -&gt; IO (Maybe a)) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
-</span><span id="line-40"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680371200"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680371200"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span id="line-40"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621680397682"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680397682"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe a -&gt; IO (Maybe a)
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621680371200"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680397682"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-41"></span><span>                        </span><span class="annot"><span class="annottext">Maybe a
-</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe a) -&gt; IO a -&gt; IO (Maybe a)
+forall a b. (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">IO a
-</span><a href="#local-6989586621680371212"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><a href="#local-6989586621680397670"><span class="hs-identifier hs-var">action</span></a></span><span>
 </span><span id="line-42"></span><span>                    </span><span class="annot"><span class="annottext">IO a
-</span><a href="#local-6989586621680371211"><span class="hs-identifier hs-var">go</span></a></span><span>
+</span><a href="#local-6989586621680397671"><span class="hs-identifier hs-var">go</span></a></span><span>
 </span><span id="line-43"></span><span>
-</span><span id="line-44"></span><span class="hs-comment">-- | Create an empty cache.</span><span>
-</span><span id="line-45"></span><span id="local-6989586621680371230"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#newCache"><span class="hs-identifier hs-type">newCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680371230"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">-- | Create an empty cache.</span></span><span>
+</span><span id="line-45"></span><span id="local-6989586621680397651"><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#newCache"><span class="hs-identifier hs-type">newCache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-type">Cache</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680397651"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
 </span><span id="line-46"></span><span id="newCache"><span class="annot"><span class="annottext">newCache :: forall a. IO (Cache a)
 </span><a href="NITTA.Synthesis.MlBackend.FixedCache.html#newCache"><span class="hs-identifier hs-var hs-var">newCache</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-47"></span><span>    </span><span id="local-6989586621680371197"><span class="annot"><span class="annottext">MVar (Maybe a)
-</span><a href="#local-6989586621680371197"><span class="hs-identifier hs-var">var</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; IO (MVar a)
-</span><span class="hs-identifier hs-var">newMVar</span></span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621680397685"><span class="annot"><span class="annottext">MVar (Maybe a)
+</span><a href="#local-6989586621680397685"><span class="hs-identifier hs-var">var</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Maybe a -&gt; IO (MVar (Maybe a))
+forall a. a -&gt; IO (MVar a)
+</span><span class="hs-identifier hs-var">newMVar</span></span><span> </span><span class="annot"><span class="annottext">Maybe a
+forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
-</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. MVar (Maybe a) -&gt; Cache a
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">Cache a -&gt; IO (Cache a)
+forall a. a -&gt; IO a
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MVar (Maybe a) -&gt; Cache a
+forall a. MVar (Maybe a) -&gt; Cache a
 </span><a href="NITTA.Synthesis.MlBackend.FixedCache.html#Cache"><span class="hs-identifier hs-var">Cache</span></a></span><span> </span><span class="annot"><span class="annottext">MVar (Maybe a)
-</span><a href="#local-6989586621680371197"><span class="hs-identifier hs-var">var</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621680397685"><span class="hs-identifier hs-var">var</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-49"></span></pre></body></html>
