@@ -1,6 +1,6 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,7 +28,7 @@ category: CGRA, ASIP, CAD, hardware
 homepage: https://ryukzak.github.io/projects/nitta/
 author: Aleksandr Penskoi
 maintainer: aleksandr.penskoi@gmail.com
-copyright: 2021 Aleksandr Penskoi
+copyright: 2025 Aleksandr Penskoi
 license: BSD3
 license-file: LICENSE
 build-type: Simple
@@ -124,16 +124,17 @@ library
   default-extensions:
     DeriveDataTypeable
     DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
     FlexibleContexts
     FlexibleInstances
+    ImportQualifiedPost
+    LambdaCase
+    MultiParamTypeClasses
+    NamedFieldPuns
+    ScopedTypeVariables
     TupleSections
+    TypeOperators
     UndecidableInstances
-  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
+  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-x-partial -optP-Wno-nonportable-include-path
   build-depends:
     HStringTemplate,
     MissingH,
@@ -194,16 +195,17 @@ executable nitta
   default-extensions:
     DeriveDataTypeable
     DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
     FlexibleContexts
     FlexibleInstances
+    ImportQualifiedPost
+    LambdaCase
+    MultiParamTypeClasses
+    NamedFieldPuns
+    ScopedTypeVariables
     TupleSections
+    TypeOperators
     UndecidableInstances
-  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
+  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-x-partial -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
     MissingH,
     base,
@@ -239,16 +241,17 @@ executable nitta-api-gen
   default-extensions:
     DeriveDataTypeable
     DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
     FlexibleContexts
     FlexibleInstances
+    ImportQualifiedPost
+    LambdaCase
+    MultiParamTypeClasses
+    NamedFieldPuns
+    ScopedTypeVariables
     TupleSections
+    TypeOperators
     UndecidableInstances
-  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
+  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-x-partial -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
     MissingH,
     aeson,
@@ -318,16 +321,17 @@ test-suite nitta-test
   default-extensions:
     DeriveDataTypeable
     DeriveGeneric
-    ImportQualifiedPost
-    LambdaCase
-    NamedFieldPuns
-    ScopedTypeVariables
-    MultiParamTypeClasses
     FlexibleContexts
     FlexibleInstances
+    ImportQualifiedPost
+    LambdaCase
+    MultiParamTypeClasses
+    NamedFieldPuns
+    ScopedTypeVariables
     TupleSections
+    TypeOperators
     UndecidableInstances
-  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
+  ghc-options: -j -Wall -Werror -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-x-partial -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
     MissingH,
     QuickCheck,

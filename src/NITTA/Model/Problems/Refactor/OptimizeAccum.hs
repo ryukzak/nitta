@@ -22,7 +22,8 @@ Stability   : experimental
 module NITTA.Model.Problems.Refactor.OptimizeAccum (
     OptimizeAccum (..),
     OptimizeAccumProblem (..),
-) where
+)
+where
 
 import Data.List qualified as L
 import Data.Map qualified as M

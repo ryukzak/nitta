@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -18,13 +19,15 @@ Stability   : experimental
 -}
 module APIGen (
     main,
-) where
+)
+where
 
 import Data.Aeson
 import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import Data.String.Utils qualified as S
 import Data.Version
+import GHC.Generics (Generic)
 import NITTA.Model.Microarchitecture.Types
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
@@ -105,6 +108,13 @@ $(deriveTypeScript defaultOptions ''StepInfoView)
 $(deriveTypeScript defaultOptions ''Step)
 $(deriveTypeScript defaultOptions ''Relation)
 $(deriveTypeScript defaultOptions ''Process)
+
+-- Hack's for TestbenchReport
+deriving instance Generic T1
+
+instance ToJSON T1
+
+instance ToJSONKey T1
 
 $(deriveTypeScript defaultOptions ''TestbenchReport)
 
@@ -188,8 +198,7 @@ main = do
             (ts ++ "\n" ++ "type NId = string\n")
             [ ("type ", "export type ") -- export all types
             , ("interface ", "export interface ") -- export all interfaces
-            , ("[k in T1]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
-            , ("[k in T2]?", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[T1, T2][][]", "{ [k: string]: number; }[]") -- dirty hack for fixing map types for TestbenchReport
             , ("[k in number]?: number", "[k: number]: number") -- dirty hack for fixing map types for TreeInfo
             ]
     infoM "NITTA.APIGen" $ "Generate typescript interface " <> output_path <> "/types.ts...OK"

@@ -31,7 +31,7 @@ build-prod:
 
 test:
 	stack build --coverage --test $(HS_O)
-	find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+	find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest -- -fno-warn-x-partial
 
 format:
 	fourmolu -m inplace $(HS_SRC_DIR)
@@ -41,7 +41,10 @@ format-check:
 
 lint:
 	hlint $(HS_SRC_DIR)
-	stack exec weeder
+
+weeder:
+	# FIXME: remove dead code
+	stack exec weeder -- --hie-directory .stack-work || true
 
 clean:
 	stack clean

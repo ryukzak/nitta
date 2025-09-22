@@ -29,9 +29,9 @@ module NITTA.Intermediate.Value (
     -- * Value types
     IntX (..),
     FX (..),
-) where
+)
+where
 
-import Control.Applicative
 import Data.Aeson
 import Data.Bits
 import Data.Default

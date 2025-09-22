@@ -114,7 +114,7 @@ module NITTA.Model.ProcessorUnits.Tests.DSL (
     traceDataflowState,
 ) where
 
-import Control.Monad.Identity
+import Control.Monad (unless, void, when)
 import Control.Monad.State.Lazy
 import Data.CallStack
 import Data.Default

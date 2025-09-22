@@ -35,8 +35,10 @@ module NITTA.Utils.ProcessDescription (
     relatedEndpoints,
     castInstruction,
     scheduleAllocation,
-) where
+)
+where
 
+import Control.Monad (void, when)
 import Control.Monad.State
 import Data.Proxy (asProxyTypeOf)
 import Data.Set qualified as S
