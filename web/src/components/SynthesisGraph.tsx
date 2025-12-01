@@ -1,9 +1,7 @@
 import React, { FC, useContext, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
-
 import { api, reLastSid, sidSeparator, synthesize } from "services/HaskellApiService";
-
 import { AppContext, IAppContext } from "app/AppContext";
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 
@@ -52,13 +50,13 @@ export const SynthesisGraph: FC = () => {
             placement="left"
             overlay={
               <Popover id={`popover-positioned-left`}>
-                <Popover.Title>Legend</Popover.Title>
-                <Popover.Content>
+                <Popover.Header>Legend</Popover.Header>
+                <Popover.Body>
                   <p>black - processed node (subforest was evaluated)</p>
                   <p>white - not precessed node (subforest was not evaluated)</p>
                   <p>green - succees synthesis</p>
                   <p>blue - current sected node</p>
-                </Popover.Content>
+                </Popover.Body>
               </Popover>
             }
           >

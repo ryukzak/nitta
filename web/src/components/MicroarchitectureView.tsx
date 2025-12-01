@@ -1,7 +1,5 @@
 import { Graphviz } from "graphviz-react";
 import React, { FC, useCallback, useContext, useMemo } from "react";
-import "react-table/react-table.css";
-
 import { AppContext, IAppContext } from "app/AppContext";
 import {
   EndpointOptionData,
@@ -12,7 +10,6 @@ import {
   api,
 } from "services/HaskellApiService";
 import { DownloadTextFile } from "utils/download";
-
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 

@@ -1,18 +1,20 @@
-import React, { FC } from "react";
-import ReactJson, { ReactJsonViewProps } from "react-json-view";
+import React, {FC} from "react";
+import JsonViewComponent, {JsonViewProps} from "@uiw/react-json-view";
+import {TriangleSolidArrow} from '@uiw/react-json-view/triangle-solid-arrow';
 
-export interface IJsonViewProps extends ReactJsonViewProps {}
-
-const DEFAULT_REACT_JSON_PROPS: Partial<ReactJsonViewProps> = {
-  theme: "rjv-default",
-  iconStyle: "circle",
+const DEFAULT_REACT_JSON_PROPS: Partial<JsonViewProps<object>> = {
   displayDataTypes: false,
   displayObjectSize: true,
   collapsed: 3,
-  collapseStringsAfterLength: 120,
 };
 
-export const JsonView: FC<IJsonViewProps> = (props) => {
+export const JsonView: FC<JsonViewProps<object>> = (props) => {
   // default values are overriden by passed props
-  return <ReactJson {...{ ...DEFAULT_REACT_JSON_PROPS, ...props }} />;
+  return (
+    <JsonViewComponent {...{...DEFAULT_REACT_JSON_PROPS, ...props}}>
+      <JsonViewComponent.Arrow>
+        <TriangleSolidArrow/>
+      </JsonViewComponent.Arrow>
+    </JsonViewComponent>
+  )
 };

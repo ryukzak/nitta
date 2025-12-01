@@ -3,7 +3,7 @@ import React, { ReactElement } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 
-import { Column } from "react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import {
   Allocation,
   BreakLoop,
@@ -28,11 +28,12 @@ const style = {
 
 const GOOD_SCORE_COLOR = Color.fromHex("#84e371");
 
-export function sidColumn(onUpdateNid: (sid: string) => void) {
+export function sidColumn(onUpdateNid: (sid: string) => void): ColumnDef<Node> {
   return {
-    Header: "sid",
-    maxWidth: 30,
-    Cell: (row: { original: Node }) => {
+    header: "sid",
+    minSize: 30,
+    maxSize: 47,
+    cell: ({ row }) => {
       let sid: string[] = row.original.sid.split(sidSeparator);
       return (
         <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original.sid)}>
@@ -43,11 +44,11 @@ export function sidColumn(onUpdateNid: (sid: string) => void) {
   };
 }
 
-export function decisionColumn() {
+export function decisionColumn(): ColumnDef<Node> {
   return {
-    Header: "decision",
-    style: style,
-    Cell: (row: { original: Node }) => JSON.stringify(row.original.decision),
+    header: "decision",
+    cell: ({ row }) => JSON.stringify(row.original.decision),
+    meta: { style },
   };
 }
 
@@ -55,22 +56,20 @@ export function textColumn(
   columnName: string,
   f: (e: Node) => string | number | Interval<number> | ReactElement,
   maxWidth?: number,
-  wrap?: boolean,
-) {
+  wrap?: boolean
+): ColumnDef<Node> {
   let textColStyle = style;
   if (wrap) textColStyle = { ...style, ...{ whiteSpace: "unset" } };
 
   return {
-    Header: columnName,
-    style: textColStyle,
-    maxWidth: maxWidth,
-    Cell: (row: { original: Node }) => f(row.original),
+    header: columnName,
+    cell: ({ row }) => <span style={textColStyle}>{f(row.original)}</span>,
   };
 }
 
-export function detailColumn() {
+export function detailColumn(): ColumnDef<Node> {
   return textColumn(
-    "",
+    "detail",
     (e: Node) => {
       return (
         <OverlayTrigger
@@ -79,8 +78,8 @@ export function detailColumn() {
           placement="left"
           overlay={
             <Popover id={`popover-positioned-left`}>
-              <Popover.Title>{e.decision.tag}</Popover.Title>
-              <Popover.Content>
+              <Popover.Header>{e.decision.tag}</Popover.Header>
+              <Popover.Body>
                 <b>Decision:</b>
                 <pre>{JSON.stringify(e.decision, undefined, 2)}</pre>
                 <hr />
@@ -95,7 +94,7 @@ export function detailColumn() {
                     ),
                   )}
                 </pre>
-              </Popover.Content>
+              </Popover.Body>
             </Popover>
           }
         >
@@ -107,11 +106,11 @@ export function detailColumn() {
   );
 }
 
-export function parametersColumn() {
+export function parametersColumn(): ColumnDef<Node> {
   return {
-    Header: "parameters",
-    style: style,
-    Cell: (row: { original: Node }) => JSON.stringify(row.original.parameters),
+    header: "parameters",
+    meta: { style },
+    cell: ({ row }) => JSON.stringify(row.original.parameters),
   };
 }
 
@@ -120,13 +119,15 @@ export interface ScoresInfo {
   maxScore: number;
 }
 
-export function objectiveColumn(scoresInfo: ScoresInfo): Column {
+export function objectiveColumn(scoresInfo: ScoresInfo): ColumnDef<Node> {
+
   const objectiveCellStyle = { ...style, padding: "0" };
   return {
-    Header: "Z(d)",
-    maxWidth: 50,
-    style: objectiveCellStyle,
-    Cell: (row: { original: Node }) => {
+    header: "Z(d)",
+    maxSize: 20,
+    meta: { objectiveCellStyle },
+    cell: ({ row }) => {
+
       const cellColor = new Color({
         ...GOOD_SCORE_COLOR.obj,
         a: (row.original.score - scoresInfo.minScore) / (scoresInfo.maxScore - scoresInfo.minScore),
@@ -143,10 +144,10 @@ export function objectiveColumn(scoresInfo: ScoresInfo): Column {
           placement="left"
           overlay={
             <Popover id={`popover-positioned-left`}>
-              <Popover.Title>Scores</Popover.Title>
-              <Popover.Content>
+              <Popover.Header>Scores</Popover.Header>
+              <Popover.Body>
                 <pre>{JSON.stringify(row.original.scores, undefined, 2)}</pre>
-              </Popover.Content>
+              </Popover.Body>
             </Popover>
           }
         >
@@ -263,6 +264,7 @@ export function showOptimizeLogicalUnit(d: OptimizeLogicalUnit): ReactElement {
     </div>
   );
 }
+
 export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
   return <div>{decision.newBuffer}</div>;
 }

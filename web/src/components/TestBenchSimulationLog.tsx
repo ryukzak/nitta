@@ -1,5 +1,10 @@
 import React, { FC } from "react";
-import ReactTable from "react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+} from "@tanstack/react-table";
 
 export interface ITestBenchSimulationLogProps {
   functional: { [k: string]: number }[];
@@ -7,10 +12,6 @@ export interface ITestBenchSimulationLogProps {
 }
 
 export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ functional, logical }) => {
-  let columns: { Header: string; accessor: string }[] = [{ Header: "Cycle", accessor: "i" }];
-  for (let key in logical[0]) {
-    columns.push({ Header: key, accessor: key });
-  }
 
   let cntxs: Record<string, string>[] = [];
   for (let i = 0; i < functional.length; i++) {
@@ -24,15 +25,52 @@ export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ funct
     cntxs.push(cntx);
   }
 
+  // Build columns
+  const columns: ColumnDef<Record<string, string>>[] = [
+    {
+      header: "Cycle",
+      accessorKey: "i",
+    },
+    ...Object.keys(logical[0]).map((key) => ({
+      header: key,
+      accessorKey: key,
+    })),
+  ];
+
+  const table = useReactTable({
+    data: cntxs,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
     <>
-      <ReactTable
-        defaultPageSize={functional.length}
-        minRows={functional.length}
-        showPagination={false}
-        columns={columns}
-        data={cntxs}
-      />
+      <table>
+        <thead>
+          {table.getHeaderGroups().map((hg) => (
+            <tr key={hg.id}>
+              {hg.headers.map((h) => (
+                <th key={h.id}>
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
       <pre>function simulation [ != logical simulation ]</pre>
     </>
   );

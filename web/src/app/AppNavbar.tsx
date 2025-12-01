@@ -24,19 +24,19 @@ export const AppNavbar: FC<IAppNavbarProps> = (props) => {
       <Navbar.Collapse id="navbar-nav">
         <Nav className="mr-auto">
           {/* "as" property can help us to integrate React Router's NavLink */}
-          <Nav.Link as={RouterNavLink} exact to="/node">
+          <Nav.Link as={RouterNavLink} to="/node">
             Node
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/subforest">
+          <Nav.Link as={RouterNavLink} to="/subforest">
             Subforest
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/process">
+          <Nav.Link as={RouterNavLink} to="/process">
             Process
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/testbench">
+          <Nav.Link as={RouterNavLink} to="/testbench">
             Testbench
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/debug">
+          <Nav.Link as={RouterNavLink} to="/debug">
             Debug
           </Nav.Link>
         </Nav>

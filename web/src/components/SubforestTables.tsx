@@ -1,6 +1,4 @@
 import React, { FC, useContext, useMemo } from "react";
-import ReactTable, { Column } from "react-table";
-
 import { AppContext, IAppContext } from "app/AppContext";
 import {
   ScoresInfo,
@@ -14,6 +12,7 @@ import {
 } from "components/SubforestTables/Columns";
 import { Dataflow, Node } from "services/HaskellApiService";
 import { AllocationMetrics, DataflowMetrics, IGroupBindMetrics, ISingleBindMetrics } from "services/gen/types";
+import { Table } from "./SubforestTables/Table";
 
 type SubforestTablesProps = {
   nodes: Node[];
@@ -21,9 +20,11 @@ type SubforestTablesProps = {
 
 export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   const appContext = useContext(AppContext) as IAppContext;
-  const style = {
-    fontWeight: 600,
-  };
+
+  // const style = {
+  //   fontWeight: 600,
+  // };
+
   let known = [
     "RootView",
     "GroupBindView",
@@ -170,27 +171,4 @@ export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
       />
     </>
   );
-
-  // FIXME: shouldn't it be in Table.tsx?
-  function Table(props: { name: string; columns: Column[]; nodes: Node[] }) {
-    if (props.nodes.length === 0)
-      return (
-        <small>
-          <pre style={style}>{props.name}: NOTHING</pre>
-        </small>
-      );
-    return (
-      <small style={style}>
-        <pre>{props.name}</pre>
-        <ReactTable
-          defaultPageSize={props.nodes.length}
-          minRows={props.nodes.length}
-          showPagination={false}
-          columns={props.columns}
-          data={props.nodes}
-        />
-        <br />
-      </small>
-    );
-  }
 };

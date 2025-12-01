@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Redirect, Route, Switch } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { Sid, sidSeparator } from "services/HaskellApiService";
 import { AppContextProvider, IAppContext } from "./AppContext";
@@ -43,28 +43,15 @@ export default class App extends Component<IAppProps, IAppState> {
 
         <div className="flex-grow-1">
           <SynthesisGraph />
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/node" />
-            </Route>
-            <Route exact path="/node">
-              <NodeScreen />
-            </Route>
-            <Route exact path="/subforest">
-              <SubforestScreen />
-            </Route>
-            <Route exact path="/process">
-              <ProcessScreen />
-            </Route>
-            <Route exact path="/testbench">
-              <TestBenchScreen />
-            </Route>
-            <Route exact path="/debug">
-              <DebugScreen />
-            </Route>
-
+          <Routes>
+            <Route path="/" element={<Navigate to="/node"></Navigate>}></Route>
+            <Route path="/node" element={<NodeScreen />}></Route>
+            <Route path="/subforest" element={<SubforestScreen />}></Route>
+            <Route path="/process" element={<ProcessScreen />}></Route>
+            <Route path="/testbench" element={<TestBenchScreen />}></Route>
+            <Route path="/debug" element={<DebugScreen />}></Route>
             <Route>404 NOT FOUND</Route>
-          </Switch>
+          </Routes>
         </div>
       </AppContextProvider>
     );
