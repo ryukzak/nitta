@@ -197,16 +197,6 @@ jobs:
           yarn --cwd web install
           make ui-build
 
-        ############################################################
-        ## run linter
-
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
-      - name: Run Biome
-        run: biome ci ./web/src
-
   nitta-ml:
     runs-on: ubuntu-latest
     needs: nitta
@@ -294,8 +284,8 @@ jobs:
       - name: Check ts and tsx code style by prettier
         working-directory: ./web
         run: |
-          yarn add -s prettier
-          yarn exec -s prettier -- --check src/**/*.{ts,tsx}
+          yarn add -s biome
+          yarn exec -s biome ci src/**/*.{ts,tsx}
 
   markdown-formatting:
     timeout-minutes: 5
