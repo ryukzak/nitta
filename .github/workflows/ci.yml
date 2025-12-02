@@ -197,6 +197,16 @@ jobs:
           yarn --cwd web install
           make ui-build
 
+        ############################################################
+        ## run linter
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+      - name: Run Biome
+        run: biome ci ./web/src
+
   nitta-ml:
     runs-on: ubuntu-latest
     needs: nitta
