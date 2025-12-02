@@ -15,6 +15,7 @@
 	},
 	"linter": {
 		"enabled": true,
+    "includes": ["src/**/*.{ts,tsx}"],
 		"rules": {
 			"recommended": true
 		}
