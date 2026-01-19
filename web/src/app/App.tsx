@@ -8,6 +8,7 @@ import { AppNavbar } from "./AppNavbar";
 import { SynthesisGraph } from "components/SynthesisGraph";
 import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";
+import { Process2Screen } from "screens/Process2Screen";
 import { ProcessScreen } from "screens/ProcessScreen";
 import { SubforestScreen } from "screens/SubforestScreen";
 import { TestBenchScreen } from "screens/TestBenchScreen";
@@ -48,6 +49,7 @@ export default class App extends Component<IAppProps, IAppState> {
             <Route path="/node" element={<NodeScreen />}></Route>
             <Route path="/subforest" element={<SubforestScreen />}></Route>
             <Route path="/process" element={<ProcessScreen />}></Route>
+            <Route path="/process2" element={<Process2Screen />}></Route>
             <Route path="/testbench" element={<TestBenchScreen />}></Route>
             <Route path="/debug" element={<DebugScreen />}></Route>
             <Route>404 NOT FOUND</Route>
