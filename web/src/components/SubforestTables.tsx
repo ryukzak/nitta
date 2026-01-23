@@ -21,10 +21,6 @@ type SubforestTablesProps = {
 export const SubforestTables: FC<SubforestTablesProps> = ({ nodes }) => {
   const appContext = useContext(AppContext) as IAppContext;
 
-  // const style = {
-  //   fontWeight: 600,
-  // };
-
   let known = [
     "RootView",
     "GroupBindView",

@@ -1,6 +1,4 @@
 import React, { FC, useContext, useEffect, useState } from "react";
-// import "react-table/react-table.css";
-
 import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import { api } from "services/HaskellApiService";

@@ -25,7 +25,6 @@ export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ funct
     cntxs.push(cntx);
   }
 
-  // Build columns
   const columns: ColumnDef<Record<string, string>>[] = [
     {
       header: "Cycle",
