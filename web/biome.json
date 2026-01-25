@@ -6,6 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
+    "includes": ["src/**/*.{ts,tsx}"],
 		"ignoreUnknown": false
 	},
 	"formatter": {
@@ -15,7 +16,6 @@
 	},
 	"linter": {
 		"enabled": true,
-    "includes": ["src/**/*.{ts,tsx}"],
 		"rules": {
 			"recommended": true
 		}
