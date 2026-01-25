@@ -854,7 +854,7 @@ export const ProcessTimelines2: FC = () => {
               (_, i) => timelineConfig.minTime + i - 1
             ).map((time) => (
               <div key={time} className="time-label-item" style={{
-                top: topPadding + (time * ROW_HEIGHT) + 13,
+                top: topPadding + ((time - timelineConfig.minTime) * ROW_HEIGHT) + 13,
                 height: ROW_HEIGHT - 26,
                 width: ROW_HEIGHT - 26
               }}>
@@ -964,7 +964,7 @@ export const ProcessTimelines2: FC = () => {
                 key={idx}
                 className="function-rectangle"
                 style={{
-                  top: topPadding + func.startTime * ROW_HEIGHT - headerHeight,
+                  top: topPadding + (func.startTime - timelineConfig.minTime) * ROW_HEIGHT - headerHeight,
                   height: (func.endTime - func.startTime + 1) * ROW_HEIGHT + headerHeight,
                   left: `${leftPosition}px`,
                   width: `${func.width}px`,
