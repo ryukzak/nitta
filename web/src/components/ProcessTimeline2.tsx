@@ -63,7 +63,7 @@ const calculateArrowGeometry = (sourceX: number, sourceY: number, sourceHeight: 
 
   const rectX = textX - textPaddingX;
   const rectY = textY - textPaddingY - 6;
-  const rectWidth = estimatedTextWidth;// + textPaddingX * 2;
+  const rectWidth = estimatedTextWidth;
   const rectHeight = 14 + textPaddingY * 2;
 
   return {pathData, textX, textY, rectX, rectY, rectWidth, rectHeight};
@@ -210,7 +210,6 @@ export const ProcessTimelines2: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [containerHeight, setContainerHeight] = useState(1000);
-  const [containerWidth, setContainerWidth] = useState(0);
   const [columnWidths, setColumnWidths] = useState<Map<number, number>>(new Map());
   const [dataFlowConnections, setDataFlowConnections] = useState<DataFlowConnection[]>([]);
   const [instructionPositions, setInstructionPositions] = useState<Map<number, InstructionPosition>>(new Map());
@@ -275,7 +274,7 @@ export const ProcessTimelines2: FC = () => {
     });
   }, [functions, mapsEqual]);
 
-  // Helper function to compare InstructionPosition maps for equality
+  // helper function to compare InstructionPosition maps for equality
   const instructionPositionsEqual = React.useCallback(
     (map1: Map<number, InstructionPosition>, map2: Map<number, InstructionPosition>): boolean => {
       if (map1.size !== map2.size) return false;
@@ -338,11 +337,11 @@ export const ProcessTimelines2: FC = () => {
         clearTimeout(measurementTimeoutRef.current);
       }
 
-      // Schedule header height measurement after render completes
+      // schedule header height measurement after render completes
       measurementTimeoutRef.current = setTimeout(() => {
         calculateHeaderHeights();
 
-        // Calculate top padding to account for headers extending above minTime
+        // calculate top padding to account for headers extending above minTime
         if (timelineConfig.minTime === 0) {
           const functionsAtMinTime = functions.filter(f => f.startTime === timelineConfig.minTime);
           const maxHeaderHeight = Math.max(
@@ -383,13 +382,13 @@ export const ProcessTimelines2: FC = () => {
     }
   }, [functions, loading, calculateInstructionPositions, headerHeights]);
 
-  // Estimate header height based on text wrapping within expected function width
+  // estimate header height based on text wrapping within expected function width
   const estimateHeaderHeight = (headerText: string, functionWidth: number): number => {
     // account for padding and margins in the header
     const availableWidth = functionWidth - (HEADER_PADDING * BASE_FONT_SIZE * 2); // left and right padding
 
     // estimate characters per line based on monospace font
-    // Average character width in monospace is approximately 0.6em = 9.6px at 16px base
+    // average character width in monospace is approximately 0.6em = 9.6px at 16px base
     const charWidth = 9.6;
     const charsPerLine = Math.max(1, Math.floor(availableWidth / charWidth));
 
@@ -491,8 +490,6 @@ export const ProcessTimelines2: FC = () => {
             let funcFound = 0;
             for (const [, f] of functions) {
               if ((f.lowerPIDs.has(point.pID) && f.component === component)) {
-                // (f.component === component && point.pTime[0] >= f.startTime && point.pTime[1] <= f.endTime)) {
-                // if (f.component === component && point.pTime[0] >= f.startTime && point.pTime[1] <= f.endTime && hasRelation(point.pID, f.pID)) {
                 const upperPIDs = getOneLevelUpperPIDs(point.pID, processResponse);
 
                 const inputs = new Set<string>();
@@ -545,7 +542,7 @@ export const ProcessTimelines2: FC = () => {
     })
 
     const estimateArrowTextWidth = (label: string): number => {
-      // Approximately 7px per character at font size 11, plus 4px padding
+      // approximately 7px per character at font size 11, plus 4px padding
       return label.length * 7 + 4;
     };
 
@@ -682,8 +679,6 @@ export const ProcessTimelines2: FC = () => {
       columnsWidthPerRow.set(i, columnsMap);
     }
 
-    let maxWidth = 0;
-
     functionsArray.forEach((func) => {
       const estimatedHeaderHeight = estimateHeaderHeight(`${func.component} ${func.label}`, func.width);
       const headerRowHeight = Math.ceil(estimatedHeaderHeight / ROW_HEIGHT);
@@ -725,7 +720,6 @@ export const ProcessTimelines2: FC = () => {
         const spaceBetweenColumns = rightArrowTextWidth != 0 ? rightArrowTextWidth : COLUMN_MARGIN;
         const nextColumnRightBorder = currentLeftPositionOfFunction + func.width + spaceBetweenColumns;
         mostLeftFreeSpaceInColumnsByRows.get(i)!.set(func.column, nextColumnRightBorder);
-        maxWidth = Math.max(maxWidth, nextColumnRightBorder);
       }
 
       for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
@@ -780,9 +774,7 @@ export const ProcessTimelines2: FC = () => {
 
     setFunctions(functionsArray);
     setTimelineConfig({minTime, maxTime});
-    setTopPadding(maxHeaderHeightAtMin);
     setContainerHeight(maxHeaderHeightAtMin + (maxTime - minTime + 1) * ROW_HEIGHT);
-    setContainerWidth(maxWidth);
     setColumnWidths(widthsMap);
     setDataFlowConnections(connections);
     setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
@@ -813,7 +805,7 @@ export const ProcessTimelines2: FC = () => {
         setError(`Failed to load visualization data: ${errorMsg}`);
         setLoading(false);
       });
-  }, [selectedSid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedSid]);
 
   if (loading) {
     return <div className="pt-4">Loading...</div>;
@@ -866,7 +858,7 @@ export const ProcessTimelines2: FC = () => {
 
         <div className="diagram-container" ref={containerRef}
              style={{minHeight: `${containerHeight}px`, paddingTop: `${topPadding}px`}}>
-          {/* SVG Overlay for data flow arrows and grid lines */}
+          {/* SVG overlay for data flow arrows and grid lines */}
           <svg className="data-flow-overlay" style={{
             position: 'absolute',
             top: 0,
@@ -893,7 +885,7 @@ export const ProcessTimelines2: FC = () => {
                 </marker>
               ))))}
             </defs>
-            {/* Horizontal dotted grid lines */}
+            {/* horizontal dotted grid lines */}
             {(() => {
               let totalWidth = 0;
               for (let col = 0; col < Math.max(...functions.map(f => f.column), -1) + 1; col++) {
@@ -908,7 +900,7 @@ export const ProcessTimelines2: FC = () => {
                   key={`grid-line-${time}`}
                   x1="0"
                   y1={topPadding + time * ROW_HEIGHT}
-                  x2={containerWidth}
+                  x2={totalWidth}
                   y2={topPadding + time * ROW_HEIGHT}
                   stroke="#40404060"
                   strokeDasharray="2,4"
