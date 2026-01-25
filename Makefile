@@ -70,10 +70,10 @@ ui-run:
 	yarn --cwd web start
 
 ui-format:
-	yarn --cwd web exec -s prettier -- --write 'web/src/**/*.{ts,tsx}' --ignore-path web/.gitignore
+	yarn --cwd web exec -s biome -- check --write
 
 ui-format-check:
-	yarn --cwd web exec -s prettier -- --check 'web/src/**/*.{ts,tsx}' --ignore-path web/.gitignore
+	yarn --cwd web exec -s biome -- check
 
 ############################################################
 ## nitta ml
