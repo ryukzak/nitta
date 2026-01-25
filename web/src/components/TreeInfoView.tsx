@@ -1,15 +1,15 @@
-import React, { FC, useCallback, useContext } from "react";
-import { Col, Container, Row } from "react-bootstrap";
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { RequestResult } from "components/utils/RequestResult";
 import { useApiRequest } from "hooks/useApiRequest";
+import React, { type FC, useCallback, useContext } from "react";
+import { Col, Container, Row } from "react-bootstrap";
 import { api } from "services/HaskellApiService";
 import { CHART_COLOR_PALLETE } from "utils/color";
 import "components/Graphviz.scss";
 
-export interface ITreeInfoViewProps {}
+export type ITreeInfoViewProps = {};
 
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;

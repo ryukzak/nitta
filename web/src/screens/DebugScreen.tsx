@@ -1,9 +1,9 @@
-import React, { FC, useContext, useEffect, useState } from "react";
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
+import React, { type FC, useContext, useEffect, useState } from "react";
 import { api } from "services/HaskellApiService";
 
-export interface IDebugScreenProps {}
+export type IDebugScreenProps = {};
 
 export const DebugScreen: FC<IDebugScreenProps> = (props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;

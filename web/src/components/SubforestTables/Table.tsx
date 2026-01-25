@@ -1,29 +1,30 @@
-import React from "react"
+import React from "react";
 
-import "./Table.scss"
-import { Node } from "services/HaskellApiService";
+import "./Table.scss";
 import {
-  useReactTable,
-  getCoreRowModel,
-  ColumnDef,
+  type ColumnDef,
   flexRender,
-} from '@tanstack/react-table'
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import type { Node } from "services/HaskellApiService";
 
-
-export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: Node[] }) {
-
-
+export function Table(props: {
+  name: string;
+  columns: ColumnDef<Node>[];
+  nodes: Node[];
+}) {
   const table = useReactTable({
     data: props.nodes,
     columns: props.columns,
-    columnResizeMode: 'onChange',
-    columnResizeDirection: 'ltr',
-    getCoreRowModel: getCoreRowModel()
-  })
+    columnResizeMode: "onChange",
+    columnResizeDirection: "ltr",
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   const style = {
     fontWeight: 600,
-    fontSize: "1em"
+    fontSize: "1em",
   };
 
   if (props.nodes.length === 0)
@@ -35,7 +36,7 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
 
   return (
     <small style={style}>
-       <pre>{props.name}</pre>
+      <pre>{props.name}</pre>
       <div style={{ direction: table.options.columnResizeDirection }}>
         <div className="overflow-x-auto">
           <table
@@ -46,9 +47,9 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
             }}
           >
             <thead>
-              {table.getHeaderGroups().map(headerGroup => (
+              {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
+                  {headerGroup.headers.map((header) => (
                     <th
                       {...{
                         key: header.id,
@@ -61,23 +62,27 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       <div
                         {...{
                           onDoubleClick: () => header.column.resetSize(),
                           onMouseDown: header.getResizeHandler(),
                           onTouchStart: header.getResizeHandler(),
                           className: `resizer ${table.options.columnResizeDirection}
-                        ${header.column.getIsResizing() ? 'isResizing' : ''}`,
+                        ${header.column.getIsResizing() ? "isResizing" : ""}`,
                           style: {
-                            transform:
-                              header.column.getIsResizing()
-                                ? `translateX(
-                              ${(table.options.columnResizeDirection === 'rtl' ? -1 : 1) *
-                                (table.getState().columnSizingInfo.deltaOffset ?? 0)}px)`
-                                : '',
+                            transform: header.column.getIsResizing()
+                              ? `translateX(
+                              ${
+                                (table.options.columnResizeDirection === "rtl"
+                                  ? -1
+                                  : 1) *
+                                (table.getState().columnSizingInfo
+                                  .deltaOffset ?? 0)
+                              }px)`
+                              : "",
                           },
                         }}
                       />
@@ -87,9 +92,9 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.map(row => (
+              {table.getRowModel().rows.map((row) => (
                 <tr key={row.id}>
-                  {row.getVisibleCells().map(cell => (
+                  {row.getVisibleCells().map((cell) => (
                     <td
                       {...{
                         key: cell.id,
@@ -100,7 +105,7 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}
@@ -112,5 +117,5 @@ export function Table(props: { name: string; columns: ColumnDef<Node>[]; nodes: 
       </div>
       <br />
     </small>
-  )
+  );
 }
