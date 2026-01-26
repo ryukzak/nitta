@@ -1,4 +1,4 @@
-import React, { type FC, useContext } from "react";
+import { type FC, useContext } from "react";
 import { Dropdown, DropdownButton } from "react-bootstrap";
 import { api, synthesize } from "services/HaskellApiService";
 import { AppContext, type IAppContext } from "./AppContext";

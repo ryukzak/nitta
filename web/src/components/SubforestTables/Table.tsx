@@ -1,5 +1,3 @@
-import React from "react";
-
 import "./Table.scss";
 import {
   type ColumnDef,

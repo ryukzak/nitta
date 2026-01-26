@@ -1,4 +1,4 @@
-import React, { type FC } from "react";
+import type { FC } from "react";
 import { Nav, Navbar } from "react-bootstrap";
 import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
@@ -8,7 +8,7 @@ import { AppNavbarButtons } from "./AppNavbarButtons";
 
 export type IAppNavbarProps = {};
 
-export const AppNavbar: FC<IAppNavbarProps> = (props) => {
+export const AppNavbar: FC<IAppNavbarProps> = (_props) => {
   return (
     <Navbar bg="dark" variant="dark" expand="md" className="appNavbar">
       <Navbar.Brand className="mr-md-5 " as={Link} to="/">

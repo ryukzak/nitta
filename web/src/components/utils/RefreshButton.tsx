@@ -1,4 +1,4 @@
-import React, { type ButtonHTMLAttributes, type ReactElement } from "react";
+import type { ButtonHTMLAttributes, ReactElement } from "react";
 import { Button } from "react-bootstrap";
 
 export type RefreshButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;

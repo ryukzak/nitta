@@ -1,4 +1,4 @@
-import React, { type FC } from "react";
+import type { FC } from "react";
 
 import type { Highlight } from "screens/ProcessScreen";
 import type {
