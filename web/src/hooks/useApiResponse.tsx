@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UseApiRequestResult } from "./useApiRequest";
+import type { UseApiRequestResult } from "./useApiRequest";
 
 export function useApiResponse<TResponseResult, TResult>(
   { response }: UseApiRequestResult<TResponseResult>,

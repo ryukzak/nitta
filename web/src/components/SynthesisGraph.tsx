@@ -1,8 +1,13 @@
-import React, { FC, useContext, useState } from "react";
+import { AppContext, type IAppContext } from "app/AppContext";
+import React, { type FC, useContext, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
-import { api, reLastSid, sidSeparator, synthesize } from "services/HaskellApiService";
-import { AppContext, IAppContext } from "app/AppContext";
+import {
+  api,
+  reLastSid,
+  sidSeparator,
+  synthesize,
+} from "services/HaskellApiService";
 import { SynthesisGraphRender } from "./SynthesisGraph/Render";
 
 export const SynthesisGraph: FC = () => {
@@ -19,10 +24,11 @@ export const SynthesisGraph: FC = () => {
 
   const expandSynthesisGraphView = () => setHeight(height + step);
 
-  const reduceSynthesisGraphView = () => (height > minHeight ? setHeight(height - step) : null);
+  const reduceSynthesisGraphView = () =>
+    height > minHeight ? setHeight(height - step) : null;
 
   const backNavigation = () => {
-    let newId = appContext.selectedSid.replace(reLastSid, "");
+    const newId = appContext.selectedSid.replace(reLastSid, "");
     if (newId != null && newId.length !== 0) appContext.setSid(newId);
     else appContext.setSid(sidSeparator);
   };
@@ -40,7 +46,14 @@ export const SynthesisGraph: FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSid)}>
+          <Button
+            {...buttonAttrs}
+            onClick={synthesize(
+              appContext,
+              api.bestStep,
+              appContext.selectedSid,
+            )}
+          >
             Forward
           </Button>
         </div>
@@ -53,7 +66,9 @@ export const SynthesisGraph: FC = () => {
                 <Popover.Header>Legend</Popover.Header>
                 <Popover.Body>
                   <p>black - processed node (subforest was evaluated)</p>
-                  <p>white - not precessed node (subforest was not evaluated)</p>
+                  <p>
+                    white - not precessed node (subforest was not evaluated)
+                  </p>
                   <p>green - succees synthesis</p>
                   <p>blue - current sected node</p>
                 </Popover.Body>
@@ -64,7 +79,10 @@ export const SynthesisGraph: FC = () => {
           </OverlayTrigger>
         </span>
       </div>
-      <div className="justify-content-center bg-light border" style={{ height: height }}>
+      <div
+        className="justify-content-center bg-light border"
+        style={{ height: height }}
+      >
         <SynthesisGraphRender />
       </div>
     </div>

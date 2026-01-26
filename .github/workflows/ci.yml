@@ -281,13 +281,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: biomejs/setup-biome@v2
-        with:
-          version: latest
-
       - name: Check ts and tsx code style by biome
         working-directory: ./web
-        run: biome ci ./src
+        run: |
+          yarn add -s @biomejs/biome
+          yarn exec -s biome ci ./src
 
   markdown-formatting:
     timeout-minutes: 5

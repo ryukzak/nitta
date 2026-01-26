@@ -1,19 +1,17 @@
+import { SynthesisGraph } from "components/SynthesisGraph";
 import React, { Component } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-
-import { Sid, sidSeparator } from "services/HaskellApiService";
-import { AppContextProvider, IAppContext } from "./AppContext";
-import { AppNavbar } from "./AppNavbar";
-
-import { SynthesisGraph } from "components/SynthesisGraph";
 import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";
 import { Process2Screen } from "screens/Process2Screen";
 import { ProcessScreen } from "screens/ProcessScreen";
 import { SubforestScreen } from "screens/SubforestScreen";
 import { TestBenchScreen } from "screens/TestBenchScreen";
+import { type Sid, sidSeparator } from "services/HaskellApiService";
+import { AppContextProvider, type IAppContext } from "./AppContext";
+import { AppNavbar } from "./AppNavbar";
 
-export interface IAppProps {}
+export type IAppProps = {};
 
 // IMPORTANT: the value of AppContext.Provider MUST be {this.state} so React can handle re-rendering appropriately.
 // It's sad, but it's the best option we have.

@@ -1,31 +1,32 @@
-import React, { FC } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
+  type ColumnDef,
   flexRender,
-  ColumnDef,
+  getCoreRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
+import React, { type FC } from "react";
 
 export interface ITestBenchSimulationLogProps {
   functional: { [k: string]: number }[];
   logical: { [k: string]: number }[];
 }
 
-export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ functional, logical }) => {
-
-  let cntxs: Record<string, string>[] = [];
+export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({
+  functional,
+  logical,
+}) => {
+  const cntxs: Record<string, string>[] = [];
   for (let i = 0; i < functional.length; i++) {
     const funSim = functional[i];
     const logSim = logical[i];
-    let cntx: Record<string, string> = { i: i.toString() };
-    for (let key in logSim) {
+    const cntx: Record<string, string> = { i: i.toString() };
+    for (const key in logSim) {
       if (funSim[key] === logSim[key]) cntx[key] = logSim[key].toString();
       else cntx[key] = funSim[key] + " != " + logSim[key];
     }
     cntxs.push(cntx);
   }
 
-  // Build columns
   const columns: ColumnDef<Record<string, string>>[] = [
     {
       header: "Cycle",

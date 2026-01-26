@@ -1,4 +1,4 @@
-import { AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 import { useCallback, useEffect, useState } from "react";
 
 interface UseApiRequestArgs<TResult> {
@@ -11,7 +11,9 @@ export interface UseApiRequestResult<TResult> {
   refreshRequestData: () => void;
 }
 
-export function useApiRequest<TResult>(args: UseApiRequestArgs<TResult>): UseApiRequestResult<TResult> {
+export function useApiRequest<TResult>(
+  args: UseApiRequestArgs<TResult>,
+): UseApiRequestResult<TResult> {
   const [response, setResponse] = useState<AxiosResponse<TResult> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 

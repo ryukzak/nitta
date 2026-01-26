@@ -1,25 +1,23 @@
-import React, { ReactElement } from "react";
-
+import type { ColumnDef } from "@tanstack/react-table";
+import React, { type ReactElement } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
-
-import { ColumnDef } from "@tanstack/react-table";
+import type { DecisionView, FView, Interval } from "services/gen/types";
 import {
-  Allocation,
-  BreakLoop,
-  ConstantFolding,
-  Dataflow,
-  EndpointDecision,
-  GroupBind,
-  Node,
-  OptimizeAccum,
-  OptimizeLogicalUnit,
-  ResolveDeadlock,
-  SingleBind,
-  Target,
+  type Allocation,
+  type BreakLoop,
+  type ConstantFolding,
+  type Dataflow,
+  type EndpointDecision,
+  type GroupBind,
+  type Node,
+  type OptimizeAccum,
+  type OptimizeLogicalUnit,
+  type ResolveDeadlock,
+  type SingleBind,
   sidSeparator,
+  type Target,
 } from "services/HaskellApiService";
-import { DecisionView, FView, Interval } from "services/gen/types";
 import { Color } from "utils/color";
 
 const style = {
@@ -34,9 +32,13 @@ export function sidColumn(onUpdateNid: (sid: string) => void): ColumnDef<Node> {
     minSize: 30,
     maxSize: 47,
     cell: ({ row }) => {
-      let sid: string[] = row.original.sid.split(sidSeparator);
+      const sid: string[] = row.original.sid.split(sidSeparator);
       return (
-        <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original.sid)}>
+        <button
+          className="btn-link bg-transparent p-0 border-0"
+          onClick={() => onUpdateNid(row.original.sid)}
+          type={"button"}
+        >
           {sid[sid.length - 1]} {">"}
         </button>
       );
@@ -56,7 +58,7 @@ export function textColumn(
   columnName: string,
   f: (e: Node) => string | number | Interval<number> | ReactElement,
   maxWidth?: number,
-  wrap?: boolean
+  wrap?: boolean,
 ): ColumnDef<Node> {
   let textColStyle = style;
   if (wrap) textColStyle = { ...style, ...{ whiteSpace: "unset" } };
@@ -120,17 +122,17 @@ export interface ScoresInfo {
 }
 
 export function objectiveColumn(scoresInfo: ScoresInfo): ColumnDef<Node> {
-
   const objectiveCellStyle = { ...style, padding: "0" };
   return {
     header: "Z(d)",
     maxSize: 20,
     meta: { objectiveCellStyle },
     cell: ({ row }) => {
-
       const cellColor = new Color({
         ...GOOD_SCORE_COLOR.obj,
-        a: (row.original.score - scoresInfo.minScore) / (scoresInfo.maxScore - scoresInfo.minScore),
+        a:
+          (row.original.score - scoresInfo.minScore) /
+          (scoresInfo.maxScore - scoresInfo.minScore),
       });
 
       if (scoresInfo.minScore === scoresInfo.maxScore) {
@@ -151,7 +153,13 @@ export function objectiveColumn(scoresInfo: ScoresInfo): ColumnDef<Node> {
             </Popover>
           }
         >
-          <div style={{ padding: "7px 5px", height: "100%", backgroundColor: cellColor.toRgbaString() }}>
+          <div
+            style={{
+              padding: "7px 5px",
+              height: "100%",
+              backgroundColor: cellColor.toRgbaString(),
+            }}
+          >
             {row.original.score}
           </div>
         </OverlayTrigger>
@@ -163,21 +171,26 @@ export function objectiveColumn(scoresInfo: ScoresInfo): ColumnDef<Node> {
 export function showDecision(decision: DecisionView): ReactElement {
   if (decision.tag === "SingleBindView") return showBind(decision);
   else if (decision.tag === "GroupBindView") return showBinds(decision);
-  else if (decision.tag === "DataflowDecisionView") return showDataflow(decision);
+  else if (decision.tag === "DataflowDecisionView")
+    return showDataflow(decision);
   else if (decision.tag === "BreakLoopView") return showBreakLoop(decision);
-  else if (decision.tag === "ConstantFoldingView") return showConstantFolding(decision);
-  else if (decision.tag === "OptimizeAccumView") return showOptimizeAccum(decision);
-  else if (decision.tag === "OptimizeLogicalUnitView") return showOptimizeLogicalUnit(decision);
-  else if (decision.tag === "ResolveDeadlockView") return showResolveDeadlock(decision);
+  else if (decision.tag === "ConstantFoldingView")
+    return showConstantFolding(decision);
+  else if (decision.tag === "OptimizeAccumView")
+    return showOptimizeAccum(decision);
+  else if (decision.tag === "OptimizeLogicalUnitView")
+    return showOptimizeLogicalUnit(decision);
+  else if (decision.tag === "ResolveDeadlockView")
+    return showResolveDeadlock(decision);
   else if (decision.tag === "AllocationView") return showAllocation(decision);
   else throw new Error("Unkown decision type: " + decision.tag);
 }
 
 export function showBinds(decision: GroupBind): ReactElement {
   const binds = Object.keys(decision.bindGroup).map((uTag: string) => {
-    let fs = decision.bindGroup[uTag]!;
+    const fs = decision.bindGroup[uTag]!;
     return (
-      <div>
+      <div key={uTag}>
         <strong>{uTag}</strong> <Icon.ArrowLeft />
         <ul>
           {fs.map((e) => (
@@ -193,20 +206,22 @@ export function showBinds(decision: GroupBind): ReactElement {
 export function showBind(decision: SingleBind): ReactElement {
   return (
     <div>
-      <strong>{decision.pu}</strong> <Icon.ArrowLeft /> {decision.function.fvFun}
+      <strong>{decision.pu}</strong> <Icon.ArrowLeft />{" "}
+      {decision.function.fvFun}
     </div>
   );
 }
 
 export function showDataflow(decision: Dataflow): ReactElement {
-  let targets = decision.targets;
+  const targets = decision.targets;
   return (
     <div>
       from: <strong>{decision.source[0]}</strong> <br />
       {targets.map((target: [string, EndpointDecision], i: number) => (
         <div key={target[0]}>
-          {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong> <Icon.ArrowRight />{" "}
-          <strong>{target[0]}</strong> @ {target[1].epAt[0]} ... {target[1].epAt[1]}
+          {i + 1}) <strong>{(target[1].epRole as Target).contents}</strong>{" "}
+          <Icon.ArrowRight /> <strong>{target[0]}</strong> @ {target[1].epAt[0]}{" "}
+          ... {target[1].epAt[1]}
           <br />
         </div>
       ))}
@@ -215,7 +230,11 @@ export function showDataflow(decision: Dataflow): ReactElement {
 }
 
 export function showBreakLoop(decision: BreakLoop): ReactElement {
-  return <div>{"output: " + decision.outputs.join(", ") + " input: " + decision.input}</div>;
+  return (
+    <div>
+      {"output: " + decision.outputs.join(", ") + " input: " + decision.input}
+    </div>
+  );
 }
 
 export function showConstantFolding(d: ConstantFolding): ReactElement {
@@ -272,7 +291,8 @@ export function showResolveDeadlock(decision: ResolveDeadlock): ReactElement {
 export function showAllocation(decision: Allocation): ReactElement {
   return (
     <div>
-      <strong>{decision.networkTag}</strong> <Icon.ArrowLeft /> {decision.processUnitTag}
+      <strong>{decision.networkTag}</strong> <Icon.ArrowLeft />{" "}
+      {decision.processUnitTag}
     </div>
   );
 }

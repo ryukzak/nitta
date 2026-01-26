@@ -1,8 +1,14 @@
-import { AppContext, IAppContext } from "app/AppContext";
-import { AxiosError, AxiosResponse } from "axios";
-import React, { FC, useContext, useEffect, useState } from "react";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError, AxiosResponse } from "axios";
+import React, { type FC, useContext, useEffect, useState } from "react";
 import Tree from "react-d3-tree";
-import { Sid, SynthesisTree, api, reLastSid, sidSeparator } from "services/HaskellApiService";
+import {
+  api,
+  reLastSid,
+  type Sid,
+  type SynthesisTree,
+  sidSeparator,
+} from "services/HaskellApiService";
 
 type Node = {
   name: string;
@@ -13,8 +19,12 @@ type Node = {
   children: Node[];
 };
 
-function synthesisTree2D3Tree(node: SynthesisTree, knownSid: Set<Sid>, selectedSid: Sid | null): Node {
-  let label = node.rootLabel;
+function synthesisTree2D3Tree(
+  node: SynthesisTree,
+  knownSid: Set<Sid>,
+  selectedSid: Sid | null,
+): Node {
+  const label = node.rootLabel;
   knownSid.add(label.sid);
 
   var childrens: Node[] = [];
@@ -55,7 +65,7 @@ export const SynthesisGraphRender: FC = () => {
     api
       .getSynthesisTree()
       .then((response: AxiosResponse<SynthesisTree>) => {
-        let root = synthesisTree2D3Tree(response.data, knownSid, sid);
+        const root = synthesisTree2D3Tree(response.data, knownSid, sid);
         setSynthesisTree(root);
         knownSid.add(sidSeparator);
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
@@ -66,7 +76,9 @@ export const SynthesisGraphRender: FC = () => {
   useEffect(() => {
     const sid = appContext.selectedSid;
     if (synthesisTree && sid !== selectedSid && knownSid.has(sid)) {
-      console.log(`SynthesisGraphRender.setSelectedSid(${sid}) old: ${selectedSid}`);
+      console.log(
+        `SynthesisGraphRender.setSelectedSid(${sid}) old: ${selectedSid}`,
+      );
       setSelectedSid(sid);
       setDataGraph([synthesisTree]);
     }
@@ -87,7 +99,16 @@ export const SynthesisGraphRender: FC = () => {
 
     return (
       <g>
-        {datum.sid ? <circle r="10" fill={color} onClick={() => appContext.setSid(datum.sid)} /> : ""}
+        {datum.sid ? (
+          <circle
+            r="10"
+            fill={color}
+            onClick={() => appContext.setSid(datum.sid)}
+            role={"treeitem"}
+          />
+        ) : (
+          ""
+        )}
         <text fill="black" strokeWidth="1" x="20">
           {datum.name}
         </text>

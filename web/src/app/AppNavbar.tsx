@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { type FC } from "react";
 import { Nav, Navbar } from "react-bootstrap";
 import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
@@ -6,7 +6,7 @@ import "./AppNavbar.scss";
 
 import { AppNavbarButtons } from "./AppNavbarButtons";
 
-export interface IAppNavbarProps {}
+export type IAppNavbarProps = {};
 
 export const AppNavbar: FC<IAppNavbarProps> = (props) => {
   return (
