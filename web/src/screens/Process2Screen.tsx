@@ -1,7 +1,7 @@
-import React, { FC } from "react";
 import { ProcessTimelines2 } from "components/ProcessTimeline2";
+import React, { FC } from "react";
 
-export interface IProcess2ScreenProps {}
+export type IProcess2ScreenProps = {};
 
 export const Process2Screen: FC<IProcess2ScreenProps> = (props) => {
   return (
