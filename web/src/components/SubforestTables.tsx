@@ -9,7 +9,7 @@ import {
   sidColumn,
   textColumn,
 } from "components/SubforestTables/Columns";
-import React, { type FC, useContext, useMemo } from "react";
+import { type FC, useContext, useMemo } from "react";
 import type {
   AllocationMetrics,
   DataflowMetrics,

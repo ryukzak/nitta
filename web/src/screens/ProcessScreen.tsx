@@ -2,7 +2,7 @@ import { AppContext, type IAppContext } from "app/AppContext";
 import type { AxiosError } from "axios";
 import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
-import React, { type FC, useContext, useEffect, useState } from "react";
+import { type FC, useContext, useEffect, useState } from "react";
 import type {
   ProcessTimelines,
   TimelinePoint,

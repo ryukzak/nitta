@@ -4,7 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import React, { type FC } from "react";
+import type { FC } from "react";
 
 export interface ITestBenchSimulationLogProps {
   functional: { [k: string]: number }[];
