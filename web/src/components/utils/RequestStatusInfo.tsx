@@ -1,4 +1,4 @@
-import React, { type FC } from "react";
+import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { RefreshButton, type RefreshButtonProps } from "./RefreshButton";

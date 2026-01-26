@@ -1,5 +1,5 @@
 import { AppContext, type IAppContext } from "app/AppContext";
-import React, { type FC, useContext, useState } from "react";
+import { type FC, useContext, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 import {

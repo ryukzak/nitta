@@ -1,7 +1,7 @@
 import { AppContext, type IAppContext } from "app/AppContext";
 import type { AxiosError, AxiosResponse } from "axios";
 import { Graphviz } from "graphviz-react";
-import React, { type FC, useContext, useEffect, useState } from "react";
+import { type FC, useContext, useEffect, useState } from "react";
 import {
   api,
   type ProcessData,
@@ -16,7 +16,7 @@ import "components/Graphviz.scss";
 
 export type IProcessViewProps = {};
 
-export const ProcessView: FC<IProcessViewProps> = (props) => {
+export const ProcessView: FC<IProcessViewProps> = (_props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const [process, setProcess] = useState<ProcessData | null>(null);

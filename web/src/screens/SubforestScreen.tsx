@@ -4,7 +4,7 @@ import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { SubforestTables } from "components/SubforestTables";
 import { SynthesisHistory } from "components/SynthesisHistory";
-import React, { type FC, useContext, useEffect, useState } from "react";
+import { type FC, useContext, useEffect, useState } from "react";
 import { api, type Node } from "services/HaskellApiService";
 
 export const SubforestScreen: FC = () => {

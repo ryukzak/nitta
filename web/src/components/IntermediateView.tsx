@@ -1,6 +1,6 @@
 import { AppContext, type IAppContext } from "app/AppContext";
 import { Graphviz } from "graphviz-react";
-import React, { type FC, useCallback, useContext } from "react";
+import { type FC, useCallback, useContext } from "react";
 import type { GraphEdge, GraphNode } from "services/gen/types";
 import {
   api,
@@ -34,7 +34,7 @@ interface Endpoints {
   targets: string[];
 }
 
-export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
+export const IntermediateView: FC<IIntermediateViewProps> = (_props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const algorithmGraph = useAlgorithmGraph(selectedSid);

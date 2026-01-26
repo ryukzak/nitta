@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import React, { type ReactElement } from "react";
+import type { ReactElement } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import * as Icon from "react-bootstrap-icons";
 import type { DecisionView, FView, Interval } from "services/gen/types";

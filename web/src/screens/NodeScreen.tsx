@@ -2,7 +2,7 @@ import { AppContext, type IAppContext } from "app/AppContext";
 import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { TreeInfoView } from "components/TreeInfoView";
-import React, { type FC, useContext } from "react";
+import { type FC, useContext } from "react";
 
 export type INodeScreenProps = {};
 

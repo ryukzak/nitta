@@ -1,5 +1,5 @@
 import { SynthesisGraph } from "components/SynthesisGraph";
-import React, { Component } from "react";
+import { Component } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";

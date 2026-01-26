@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { Alert } from "react-bootstrap";
 
 interface ErrorDisplayProps extends React.HTMLAttributes<HTMLElement> {

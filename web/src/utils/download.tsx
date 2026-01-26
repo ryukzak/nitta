@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 
 export const DownloadTextFile = (props: { name: string; text: string }) => {
   const downloadTextFileCallback = useCallback(() => {

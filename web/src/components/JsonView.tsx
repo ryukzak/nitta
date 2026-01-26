@@ -1,6 +1,6 @@
 import JsonViewComponent, { type JsonViewProps } from "@uiw/react-json-view";
 import { TriangleSolidArrow } from "@uiw/react-json-view/triangle-solid-arrow";
-import React, { type FC } from "react";
+import type { FC } from "react";
 
 const DEFAULT_REACT_JSON_PROPS: Partial<JsonViewProps<object>> = {
   displayDataTypes: false,

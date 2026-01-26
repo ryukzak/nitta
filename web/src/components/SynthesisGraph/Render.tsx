@@ -1,6 +1,6 @@
 import { AppContext, type IAppContext } from "app/AppContext";
 import type { AxiosError, AxiosResponse } from "axios";
-import React, { type FC, useContext, useEffect, useState } from "react";
+import { type FC, useContext, useEffect, useState } from "react";
 import Tree from "react-d3-tree";
 import {
   api,

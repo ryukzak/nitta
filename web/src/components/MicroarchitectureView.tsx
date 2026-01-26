@@ -1,6 +1,6 @@
 import { AppContext, type IAppContext } from "app/AppContext";
 import { Graphviz } from "graphviz-react";
-import React, { type FC, useCallback, useContext, useMemo } from "react";
+import { type FC, useCallback, useContext, useMemo } from "react";
 import {
   api,
   type EndpointOptionData,
@@ -20,7 +20,7 @@ import { useApiRequest } from "hooks/useApiRequest";
 export type IMicroarchitectureViewProps = {};
 
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (
-  props,
+  _props,
 ) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 

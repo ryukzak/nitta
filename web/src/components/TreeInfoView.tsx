@@ -2,7 +2,7 @@ import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { RequestResult } from "components/utils/RequestResult";
 import { useApiRequest } from "hooks/useApiRequest";
-import React, { type FC, useCallback, useContext } from "react";
+import { type FC, useCallback } from "react";
 import { Col, Container, Row } from "react-bootstrap";
 import { api } from "services/HaskellApiService";
 import { CHART_COLOR_PALLETE } from "utils/color";
@@ -10,7 +10,7 @@ import "components/Graphviz.scss";
 
 export type ITreeInfoViewProps = {};
 
-export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
+export const TreeInfoView: FC<ITreeInfoViewProps> = (_props) => {
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
       return api.getTreeInfo();
