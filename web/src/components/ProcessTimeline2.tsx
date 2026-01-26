@@ -7,7 +7,7 @@ import { JsonView } from "./JsonView";
 import {
   ArrowPath,
   type ArrowProps,
-  ArrowWithLabel,
+  ArrowLabel,
 } from "./utils/ArrowWithLabel";
 
 enum OutputPosition {
@@ -701,14 +701,6 @@ export const ProcessTimelines2: FC = () => {
         mostLeftFreeSpaceInColumnsByRows.set(i, columnsMap);
       }
 
-      const columnsWidthPerRow = new Map<number, Map<number, number>>();
-      for (let i = minTime - 2; i <= maxTime; i++) {
-        const columnsMap = new Map<number, number>();
-        for (let i = 0; i < occupiedIntervalsPerColumn.size; i++)
-          columnsMap.set(i, 0);
-        columnsWidthPerRow.set(i, columnsMap);
-      }
-
       functionsArray.forEach((func) => {
         const estimatedHeaderHeight = estimateHeaderHeight(
           `${func.component} ${func.label}`,
@@ -778,40 +770,6 @@ export const ProcessTimelines2: FC = () => {
           mostLeftFreeSpaceInColumnsByRows
             .get(i)!
             .set(func.column, nextColumnRightBorder);
-        }
-
-        for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-          let funcWidthAtRow = 0;
-          if (i < func.startTime || !instructionPerRow.has(i))
-            funcWidthAtRow = func.width;
-          else {
-            const instr = instructionPerRow.get(i);
-            if (instr === undefined) continue;
-            if (instr.sendsOutputsToPIDs.size === 0)
-              funcWidthAtRow = func.width;
-            else {
-              const arrowTextWidth = estimateArrowTextWidth(
-                instr.sendsOutputsToPIDs.keys().toArray()[0],
-              );
-              if (
-                instr.outputPosition === OutputPosition.Right ||
-                instr.outputPosition === OutputPosition.Both
-              )
-                funcWidthAtRow += arrowTextWidth;
-              if (
-                instr.outputPosition === OutputPosition.Left ||
-                instr.outputPosition === OutputPosition.Both
-              ) {
-                const prevColumnWidth = columnsWidthPerRow
-                  .get(i)!
-                  .get(func.column - 1)!;
-                columnsWidthPerRow
-                  .get(i)!
-                  .set(func.column - 1, prevColumnWidth + arrowTextWidth);
-              }
-            }
-          }
-          columnsWidthPerRow.get(i)?.set(func.column, funcWidthAtRow);
         }
       });
 
@@ -918,10 +876,6 @@ export const ProcessTimelines2: FC = () => {
         <div className="vertical-time-axis">
           <div
             className="time-labels"
-            style={{
-              position: "relative",
-              height: `${topPadding + (Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 1) * ROW_HEIGHT}px`,
-            }}
           >
             {Array.from(
               {
@@ -938,9 +892,9 @@ export const ProcessTimelines2: FC = () => {
                   top:
                     topPadding +
                     (time - timelineConfig.minTime) * ROW_HEIGHT +
-                    13,
-                  height: ROW_HEIGHT - 26,
-                  width: ROW_HEIGHT - 26,
+                    ROW_HEIGHT * (1 - 0.6) / 2,
+                  height: ROW_HEIGHT * 0.6,
+                  width: ROW_HEIGHT * 0.6,
                 }}
               >
                 {time === timelineConfig.minTime - 1 ? `clk` : time}
@@ -960,17 +914,6 @@ export const ProcessTimelines2: FC = () => {
           {/* SVG overlay for data flow arrows and grid lines */}
           <svg
             className="data-flow-overlay"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: "100%",
-              height: "100%",
-              pointerEvents: "none",
-              overflow: "visible",
-            }}
             role={"presentation"}
           >
             <defs>
@@ -1061,7 +1004,7 @@ export const ProcessTimelines2: FC = () => {
               );
 
               return (
-                <ArrowWithLabel
+                <ArrowLabel
                   key={`arrow-label-${connection.sourceId}:${connection.targetId}`}
                   {...props}
                 />
@@ -1140,8 +1083,6 @@ export const ProcessTimelines2: FC = () => {
                             (instr.endTime - instr.startTime) * ROW_HEIGHT - 16,
                           ),
                           border: `2px solid ${bgColor}`,
-                          borderRadius: "6px",
-                          backgroundColor: "white",
                         }}
                         title={instr.info}
                       >

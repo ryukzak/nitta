@@ -78,7 +78,7 @@ export const ArrowPath: FC<ArrowProps> = (props) => {
   );
 };
 
-export const ArrowWithLabel: FC<ArrowProps> = (props) => {
+export const ArrowLabel: FC<ArrowProps> = (props) => {
   const {
     sourceX,
     sourceY,
@@ -107,17 +107,12 @@ export const ArrowWithLabel: FC<ArrowProps> = (props) => {
         y={rectY}
         width={rectWidth}
         height={rectHeight}
-        fill="white"
       />
       <text
         x={textX}
         y={textY}
         className="arrow-label"
         fill={color}
-        fontSize="11"
-        fontWeight="500"
-        textAnchor="start"
-        dominantBaseline="middle"
       >
         {label}
       </text>
