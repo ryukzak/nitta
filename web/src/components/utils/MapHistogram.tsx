@@ -7,7 +7,7 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import type React from "react";
+import React from "react";
 import { Chart } from "react-chartjs-2";
 import { CHART_COLOR_PALLETE, type Color } from "utils/color";
 

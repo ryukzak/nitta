@@ -1,5 +1,5 @@
 import { RequestStatusInfo } from "components/utils/RequestStatusInfo";
-import type React from "react";
+import React from "react";
 
 export interface NoResultRendererData {
   errorMessage: string | null;
