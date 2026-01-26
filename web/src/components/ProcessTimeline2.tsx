@@ -398,464 +398,464 @@ export const ProcessTimelines2: FC = () => {
     return IDs;
   };
 
-  const processVisualizationData = (
-    timelinesResponse: ProcessTimelines<number>,
-    processResponse: ProcessData,
-  ) => {
-    const functions: Map<string, Function> = new Map<string, Function>();
-
-    const getAllLowerPIDs = (pID: number) => {
-      const lowerIDs = new Set<number>();
-      for (const r of processResponse.relations) {
-        if (r.tag !== "Vertical") continue;
-        if (r.vUp === pID) {
-          lowerIDs.add(r.vDown);
-          const lowerLevelIDs = getAllLowerPIDs(r.vDown);
-          for (const lowerID of lowerLevelIDs) lowerIDs.add(lowerID);
-        }
-      }
-      return lowerIDs;
-    };
-
-    const getAllUpperPIDs = (pID: number) => {
-      const upperIDs = new Set<number>();
-      for (const r of processResponse.relations) {
-        if (r.tag !== "Vertical") continue;
-        if (r.vDown === pID) {
-          upperIDs.add(r.vUp);
-          const upperLevelIDs = getAllUpperPIDs(r.vUp);
-          for (const upperID of upperLevelIDs) upperIDs.add(upperID);
-        }
-      }
-      return upperIDs;
-    };
-
-    timelinesResponse.timelines.forEach((timeline) => {
-      const component = timeline.timelineViewpoint.component.join(".");
-      if (timeline.timelineViewpoint.level === "Fun") {
-        timeline.timelinePoints.forEach(
-          (pointGroup: TimelinePoint<number>[]) => {
-            pointGroup.forEach((point) => {
-              const functionId = `${component}[${point.pTime[0]};${point.pTime[1]}]`;
-
-              if (!functions.has(functionId)) {
-                const func: Function = {
-                  label: point.pInfo.split(/do \w+: /)[1],
-                  pID: point.pID,
-                  component: component,
-                  startTime: point.pTime[0],
-                  endTime: point.pTime[1],
-                  instructions: [],
-                  lowerPIDs: getAllLowerPIDs(point.pID),
-                  column: 0,
-                  width: MIN_COLUMN_WIDTH,
-                  isMemoryInit: false,
-                };
-                functions.set(functionId, func);
-              }
-            });
-          },
-        );
-      }
-    });
-
-    const inputsPerInstructionMap = new Map<string, number>();
-    const outputsPerInstructionMap = new Map<string, number>();
-
-    timelinesResponse.timelines.forEach((timeline) => {
-      const component = timeline.timelineViewpoint.component.join(".");
-      if (timeline.timelineViewpoint.level === "INST") {
-        timeline.timelinePoints.forEach(
-          (pointGroup: TimelinePoint<number>[]) => {
-            pointGroup.forEach((point) => {
-              let funcFound = 0;
-              for (const [, f] of functions) {
-                if (f.lowerPIDs.has(point.pID) && f.component === component) {
-                  const upperPIDs = getOneLevelUpperPIDs(
-                    point.pID,
-                    processResponse,
-                  );
-
-                  const inputs = new Set<string>();
-                  const outputs = new Set<string>();
-
-                  for (const upperPointID of upperPIDs) {
-                    for (const step of processResponse.steps) {
-                      if (step.pID !== upperPointID) continue;
-                      if (step.pDesc.includes(" Endpoint: ")) {
-                        let separator: string;
-                        if (step.pDesc.includes("Target")) {
-                          separator = " Endpoint: Target ";
-                          const args = step.pDesc
-                            .split(separator)[1]
-                            .split(",");
-                          for (const arg of args) {
-                            inputs.add(arg);
-                            inputsPerInstructionMap.set(arg, point.pID);
-                          }
-                        } else {
-                          separator = " Endpoint: Source ";
-                          const args = step.pDesc
-                            .split(separator)[1]
-                            .split(",");
-                          for (const arg of args) {
-                            outputs.add(arg);
-                            outputsPerInstructionMap.set(arg, point.pID);
-                          }
-                        }
-                      }
-                    }
-                  }
-                  const i: Instruction = {
-                    pID: point.pID,
-                    label: point.pInfo.split(": ")[1],
-                    startTime: point.pTime[0],
-                    endTime: point.pTime[1],
-                    info: point.pInfo,
-                    inputs: inputs,
-                    outputs: outputs,
-                    receiveInputsFromPIDs: new Map(),
-                    sendsOutputsToPIDs: new Map(),
-                    outputPosition: OutputPosition.None,
-                  };
-                  f.instructions.push(i);
-                  funcFound += 1;
-                }
-              }
-              if (funcFound > 1)
-                console.log("TO MANY MATCHES " + point.pID + " " + point.pInfo);
-              if (funcFound === 0)
-                console.log("NO MATCHES " + point.pID + " " + point.pInfo);
-            });
-          },
-        );
-      }
-    });
-
-    const estimateArrowTextWidth = (label: string): number => {
-      // approximately 7px per character at font size 11, plus 4px padding
-      return label.length * 7 + 4;
-    };
-
-    for (const f of functions.values()) {
-      if (f.instructions.length > 0) {
-        f.startTime = Math.min(...f.instructions.map((i) => i.startTime));
-        f.endTime = Math.max(...f.instructions.map((i) => i.endTime));
-      }
-      for (const i of f.instructions) {
-        for (const input of i.inputs) {
-          const inputPID = outputsPerInstructionMap.get(input);
-          if (inputPID) i.receiveInputsFromPIDs.set(input, inputPID);
-        }
-        for (const output of i.outputs) {
-          const outputPID = inputsPerInstructionMap.get(output);
-          if (outputPID) i.sendsOutputsToPIDs.set(output, outputPID);
-        }
-      }
-      let maxInstructionWidth =
-        f.instructions.length > 0
-          ? Math.max(
-              ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
-            )
-          : MIN_COLUMN_WIDTH;
-      maxInstructionWidth =
-        f.instructions.length > 0
-          ? Math.max(
-              ...f.instructions.map(
-                (i) =>
-                  `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
-                    .length *
-                    8 +
-                  TEXT_PADDING,
-              ),
-            )
-          : MIN_COLUMN_WIDTH;
-
-      let maxArrowTextWidth = 0;
-      f.instructions.forEach((instr) => {
-        instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
-          const arrowTextWidth = estimateArrowTextWidth(variableName);
-          maxArrowTextWidth = Math.max(maxArrowTextWidth, arrowTextWidth);
-        });
-      });
-
-      maxInstructionWidth = Math.max(
-        maxInstructionWidth,
-        maxArrowTextWidth + TEXT_PADDING,
-      );
-      f.width = Math.max(MIN_COLUMN_WIDTH, maxInstructionWidth);
-    }
-
-    const functionsArray: Function[] = functions.values().toArray();
-    functionsArray.sort((a, b) => a.startTime - b.startTime);
-
-    type Interval = [number, number];
-    const occupiedIntervalsPerColumn = new Map<number, Interval[]>();
-
-    // assign columns to functions to prevent overlapping
-    functionsArray.forEach((func) => {
-      let assignedColumn = 0;
-      const headerText = `${func.component} ${func.label}`;
-      const estimatedHeaderHeight = estimateHeaderHeight(
-        headerText,
-        func.width,
-      );
-      const headerRowHeight = estimatedHeaderHeight / ROW_HEIGHT;
-
-      while (true) {
-        if (!occupiedIntervalsPerColumn.has(assignedColumn)) {
-          const intervalArray: Interval[] = [];
-          intervalArray.push([
-            func.startTime - headerRowHeight,
-            func.endTime + MIN_FUNCTION_GAP,
-          ]);
-          occupiedIntervalsPerColumn.set(assignedColumn, intervalArray);
-          func.column = assignedColumn;
-          break;
-        }
-        let isOverlapping = false;
-        const intervals = occupiedIntervalsPerColumn.get(assignedColumn);
-        if (intervals) {
-          for (const interval of intervals) {
-            const newFuncStart = func.startTime - headerRowHeight;
-            const newFuncEnd = func.endTime + MIN_FUNCTION_GAP;
-            if (!(newFuncEnd < interval[0] || newFuncStart > interval[1])) {
-              isOverlapping = true;
-              break;
-            }
-          }
-        }
-        if (isOverlapping) {
-          assignedColumn += 1;
-        } else {
-          func.column = assignedColumn;
-          const newInterval: Interval = [
-            func.startTime - headerRowHeight,
-            func.endTime + MIN_FUNCTION_GAP,
-          ];
-          occupiedIntervalsPerColumn.get(assignedColumn)?.push(newInterval);
-          break;
-        }
-      }
-    });
-
-    functionsArray.sort(
-      (a, b) => a.column - b.column || a.startTime - b.startTime,
-    );
-
-    const getInstructionColumnByPID = (PID: number) => {
-      for (const f of functionsArray) {
-        for (const i of f.instructions) {
-          if (i.pID === PID) return f.column;
-        }
-      }
-      return null;
-    };
-
-    functionsArray.forEach((f) => {
-      f.instructions.forEach((i) => {
-        for (const [_, targetPID] of i.sendsOutputsToPIDs) {
-          const targetInstructionColumn = getInstructionColumnByPID(targetPID);
-          if (targetInstructionColumn === null) continue;
-          let nextOutputPosition: OutputPosition;
-          if (targetInstructionColumn >= f.column)
-            nextOutputPosition = OutputPosition.Right;
-          else nextOutputPosition = OutputPosition.Left;
-
-          if (i.outputPosition === OutputPosition.None) {
-            i.outputPosition = nextOutputPosition;
-          } else if (i.outputPosition !== nextOutputPosition) {
-            i.outputPosition = OutputPosition.Both;
-          }
-        }
-      });
-    });
-
-    let minTime = Math.min(...functionsArray.map((f) => f.startTime));
-    const maxTime = Math.max(...functionsArray.map((f) => f.endTime));
-
-    // сalculate max header height for functions starting at minTime to add to container height
-    const functionsAtMinTime = functionsArray.filter(
-      (f) => f.startTime === minTime,
-    );
-    const maxHeaderHeightAtMin = Math.max(
-      ...functionsAtMinTime.map((f) =>
-        estimateHeaderHeight(`${f.component} ${f.label}`, f.width),
-      ),
-      0,
-    );
-
-    // align function blocks to the most left position to minimize width
-    const mostLeftFreeSpaceInColumnsByRows = new Map<
-      number,
-      Map<number, number>
-    >();
-    for (let i = minTime - 2; i <= maxTime; i++) {
-      const columnsMap = new Map<number, number>();
-      for (let i = 0; i < occupiedIntervalsPerColumn.size; i++)
-        columnsMap.set(i, COLUMN_MARGIN);
-      mostLeftFreeSpaceInColumnsByRows.set(i, columnsMap);
-    }
-
-    const columnsWidthPerRow = new Map<number, Map<number, number>>();
-    for (let i = minTime - 2; i <= maxTime; i++) {
-      const columnsMap = new Map<number, number>();
-      for (let i = 0; i < occupiedIntervalsPerColumn.size; i++)
-        columnsMap.set(i, 0);
-      columnsWidthPerRow.set(i, columnsMap);
-    }
-
-    functionsArray.forEach((func) => {
-      const estimatedHeaderHeight = estimateHeaderHeight(
-        `${func.component} ${func.label}`,
-        func.width,
-      );
-      const headerRowHeight = Math.ceil(estimatedHeaderHeight / ROW_HEIGHT);
-      const firstAffectedRowIndex = Math.max(
-        func.startTime - headerRowHeight,
-        -1,
-      );
-      const lastAffectedRowIndex = func.endTime;
-
-      const instructionPerRow = new Map<number, Instruction>();
-      for (const instr of func.instructions) {
-        for (let i = instr.startTime; i <= instr.endTime; i++) {
-          instructionPerRow.set(i, instr);
-        }
-      }
-
-      let currentLeftPositionOfFunction = 0;
-      if (func.column !== 0) {
-        for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-          let leftArrowTextWidth = 0;
-          let arrowLabel = "";
-          if (instructionPerRow.has(i)) {
-            const instr = instructionPerRow.get(i)!;
-            arrowLabel = instr.sendsOutputsToPIDs.keys().toArray()[0];
-            if (
-              instr.outputPosition === OutputPosition.Left ||
-              instr.outputPosition === OutputPosition.Both
-            )
-              leftArrowTextWidth = estimateArrowTextWidth(arrowLabel);
-          }
-          currentLeftPositionOfFunction = Math.max(
-            currentLeftPositionOfFunction,
-            mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
-              leftArrowTextWidth,
-          );
-          const prevColumnWithLeftArrow =
-            mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
-            leftArrowTextWidth;
-          mostLeftFreeSpaceInColumnsByRows
-            .get(i)!
-            .set(func.column - 1, prevColumnWithLeftArrow);
-        }
-      }
-      for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-        let rightArrowTextWidth = 0;
-        if (instructionPerRow.has(i)) {
-          const instr = instructionPerRow.get(i)!;
-          if (
-            instr.outputPosition === OutputPosition.Right ||
-            instr.outputPosition === OutputPosition.Both
-          )
-            rightArrowTextWidth = estimateArrowTextWidth(
-              instr.sendsOutputsToPIDs.keys().toArray()[0],
-            );
-        }
-        const spaceBetweenColumns =
-          rightArrowTextWidth !== 0 ? rightArrowTextWidth : COLUMN_MARGIN;
-        const nextColumnRightBorder =
-          currentLeftPositionOfFunction + func.width + spaceBetweenColumns;
-        mostLeftFreeSpaceInColumnsByRows
-          .get(i)!
-          .set(func.column, nextColumnRightBorder);
-      }
-
-      for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-        let funcWidthAtRow = 0;
-        if (i < func.startTime || !instructionPerRow.has(i))
-          funcWidthAtRow = func.width;
-        else {
-          const instr = instructionPerRow.get(i);
-          if (instr === undefined) continue;
-          if (instr.sendsOutputsToPIDs.size === 0) funcWidthAtRow = func.width;
-          else {
-            const arrowTextWidth = estimateArrowTextWidth(
-              instr.sendsOutputsToPIDs.keys().toArray()[0],
-            );
-            if (
-              instr.outputPosition === OutputPosition.Right ||
-              instr.outputPosition === OutputPosition.Both
-            )
-              funcWidthAtRow += arrowTextWidth;
-            if (
-              instr.outputPosition === OutputPosition.Left ||
-              instr.outputPosition === OutputPosition.Both
-            ) {
-              const prevColumnWidth = columnsWidthPerRow
-                .get(i)!
-                .get(func.column - 1)!;
-              columnsWidthPerRow
-                .get(i)!
-                .set(func.column - 1, prevColumnWidth + arrowTextWidth);
-            }
-          }
-        }
-        columnsWidthPerRow.get(i)?.set(func.column, funcWidthAtRow);
-      }
-    });
-
-    const widthsMap = new Map<number, number>();
-    functionsArray.forEach((func) => {
-      const currentMaxWidth = widthsMap.get(func.column) || 0;
-      let maxArrowTextWidth = 0;
-      func.instructions.forEach((instr) => {
-        instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
-          const arrowTextWidth = estimateArrowTextWidth(variableName);
-          maxArrowTextWidth = Math.max(maxArrowTextWidth, arrowTextWidth);
-        });
-      });
-      widthsMap.set(
-        func.column,
-        Math.max(currentMaxWidth, func.width + maxArrowTextWidth),
-      );
-    });
-
-    if (!isFinite(minTime)) minTime = 0;
-
-    const connections: DataFlowConnection[] = [];
-
-    functionsArray.forEach((func) => {
-      func.instructions.forEach((instr) => {
-        instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
-          connections.push({
-            sourceId: instr.pID,
-            targetId,
-            variableName,
-          });
-        });
-      });
-    });
-
-    setFunctions(functionsArray);
-    setTimelineConfig({ minTime, maxTime });
-    setContainerHeight(
-      maxHeaderHeightAtMin + (maxTime - minTime + 1) * ROW_HEIGHT,
-    );
-    setColumnWidths(widthsMap);
-    setDataFlowConnections(connections);
-    setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
-  };
-
-  const processVisualizationDataCallback = useCallback(
+  const processVisualizationData = React.useCallback(
     (
       timelinesResponse: ProcessTimelines<number>,
       processResponse: ProcessData,
     ) => {
-      processVisualizationData(timelinesResponse, processResponse);
-    },
-    [processVisualizationData],
+      const functions: Map<string, Function> = new Map<string, Function>();
+
+      const getAllLowerPIDs = (pID: number) => {
+        const lowerIDs = new Set<number>();
+        for (const r of processResponse.relations) {
+          if (r.tag !== "Vertical") continue;
+          if (r.vUp === pID) {
+            lowerIDs.add(r.vDown);
+            const lowerLevelIDs = getAllLowerPIDs(r.vDown);
+            for (const lowerID of lowerLevelIDs) lowerIDs.add(lowerID);
+          }
+        }
+        return lowerIDs;
+      };
+
+      const getAllUpperPIDs = (pID: number) => {
+        const upperIDs = new Set<number>();
+        for (const r of processResponse.relations) {
+          if (r.tag !== "Vertical") continue;
+          if (r.vDown === pID) {
+            upperIDs.add(r.vUp);
+            const upperLevelIDs = getAllUpperPIDs(r.vUp);
+            for (const upperID of upperLevelIDs) upperIDs.add(upperID);
+          }
+        }
+        return upperIDs;
+      };
+
+      timelinesResponse.timelines.forEach((timeline) => {
+        const component = timeline.timelineViewpoint.component.join(".");
+        if (timeline.timelineViewpoint.level === "Fun") {
+          timeline.timelinePoints.forEach(
+            (pointGroup: TimelinePoint<number>[]) => {
+              pointGroup.forEach((point) => {
+                const functionId = `${component}[${point.pTime[0]};${point.pTime[1]}]`;
+
+                if (!functions.has(functionId)) {
+                  const func: Function = {
+                    label: point.pInfo.split(/do \w+: /)[1],
+                    pID: point.pID,
+                    component: component,
+                    startTime: point.pTime[0],
+                    endTime: point.pTime[1],
+                    instructions: [],
+                    lowerPIDs: getAllLowerPIDs(point.pID),
+                    column: 0,
+                    width: MIN_COLUMN_WIDTH,
+                    isMemoryInit: false,
+                  };
+                  functions.set(functionId, func);
+                }
+              });
+            },
+          );
+        }
+      });
+
+      const inputsPerInstructionMap = new Map<string, number>();
+      const outputsPerInstructionMap = new Map<string, number>();
+
+      timelinesResponse.timelines.forEach((timeline) => {
+        const component = timeline.timelineViewpoint.component.join(".");
+        if (timeline.timelineViewpoint.level === "INST") {
+          timeline.timelinePoints.forEach(
+            (pointGroup: TimelinePoint<number>[]) => {
+              pointGroup.forEach((point) => {
+                let funcFound = 0;
+                for (const [, f] of functions) {
+                  if (f.lowerPIDs.has(point.pID) && f.component === component) {
+                    const upperPIDs = getOneLevelUpperPIDs(
+                      point.pID,
+                      processResponse,
+                    );
+
+                    const inputs = new Set<string>();
+                    const outputs = new Set<string>();
+
+                    for (const upperPointID of upperPIDs) {
+                      for (const step of processResponse.steps) {
+                        if (step.pID !== upperPointID) continue;
+                        if (step.pDesc.includes(" Endpoint: ")) {
+                          let separator: string;
+                          if (step.pDesc.includes("Target")) {
+                            separator = " Endpoint: Target ";
+                            const args = step.pDesc
+                              .split(separator)[1]
+                              .split(",");
+                            for (const arg of args) {
+                              inputs.add(arg);
+                              inputsPerInstructionMap.set(arg, point.pID);
+                            }
+                          } else {
+                            separator = " Endpoint: Source ";
+                            const args = step.pDesc
+                              .split(separator)[1]
+                              .split(",");
+                            for (const arg of args) {
+                              outputs.add(arg);
+                              outputsPerInstructionMap.set(arg, point.pID);
+                            }
+                          }
+                        }
+                      }
+                    }
+                    const i: Instruction = {
+                      pID: point.pID,
+                      label: point.pInfo.split(": ")[1],
+                      startTime: point.pTime[0],
+                      endTime: point.pTime[1],
+                      info: point.pInfo,
+                      inputs: inputs,
+                      outputs: outputs,
+                      receiveInputsFromPIDs: new Map(),
+                      sendsOutputsToPIDs: new Map(),
+                      outputPosition: OutputPosition.None,
+                    };
+                    f.instructions.push(i);
+                    funcFound += 1;
+                  }
+                }
+                if (funcFound > 1)
+                  console.log(
+                    "TO MANY MATCHES " + point.pID + " " + point.pInfo,
+                  );
+                if (funcFound === 0)
+                  console.log("NO MATCHES " + point.pID + " " + point.pInfo);
+              });
+            },
+          );
+        }
+      });
+
+      const estimateArrowTextWidth = (label: string): number => {
+        // approximately 7px per character at font size 11, plus 4px padding
+        return label.length * 7 + 4;
+      };
+
+      for (const f of functions.values()) {
+        if (f.instructions.length > 0) {
+          f.startTime = Math.min(...f.instructions.map((i) => i.startTime));
+          f.endTime = Math.max(...f.instructions.map((i) => i.endTime));
+        }
+        for (const i of f.instructions) {
+          for (const input of i.inputs) {
+            const inputPID = outputsPerInstructionMap.get(input);
+            if (inputPID) i.receiveInputsFromPIDs.set(input, inputPID);
+          }
+          for (const output of i.outputs) {
+            const outputPID = inputsPerInstructionMap.get(output);
+            if (outputPID) i.sendsOutputsToPIDs.set(output, outputPID);
+          }
+        }
+        let maxInstructionWidth =
+          f.instructions.length > 0
+            ? Math.max(
+                ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
+              )
+            : MIN_COLUMN_WIDTH;
+        maxInstructionWidth =
+          f.instructions.length > 0
+            ? Math.max(
+                ...f.instructions.map(
+                  (i) =>
+                    `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
+                      .length *
+                      8 +
+                    TEXT_PADDING,
+                ),
+              )
+            : MIN_COLUMN_WIDTH;
+
+        let maxArrowTextWidth = 0;
+        f.instructions.forEach((instr) => {
+          instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
+            const arrowTextWidth = estimateArrowTextWidth(variableName);
+            maxArrowTextWidth = Math.max(maxArrowTextWidth, arrowTextWidth);
+          });
+        });
+
+        maxInstructionWidth = Math.max(
+          maxInstructionWidth,
+          maxArrowTextWidth + TEXT_PADDING,
+        );
+        f.width = Math.max(MIN_COLUMN_WIDTH, maxInstructionWidth);
+      }
+
+      const functionsArray: Function[] = functions.values().toArray();
+      functionsArray.sort((a, b) => a.startTime - b.startTime);
+
+      type Interval = [number, number];
+      const occupiedIntervalsPerColumn = new Map<number, Interval[]>();
+
+      // assign columns to functions to prevent overlapping
+      functionsArray.forEach((func) => {
+        let assignedColumn = 0;
+        const headerText = `${func.component} ${func.label}`;
+        const estimatedHeaderHeight = estimateHeaderHeight(
+          headerText,
+          func.width,
+        );
+        const headerRowHeight = estimatedHeaderHeight / ROW_HEIGHT;
+
+        while (true) {
+          if (!occupiedIntervalsPerColumn.has(assignedColumn)) {
+            const intervalArray: Interval[] = [];
+            intervalArray.push([
+              func.startTime - headerRowHeight,
+              func.endTime + MIN_FUNCTION_GAP,
+            ]);
+            occupiedIntervalsPerColumn.set(assignedColumn, intervalArray);
+            func.column = assignedColumn;
+            break;
+          }
+          let isOverlapping = false;
+          const intervals = occupiedIntervalsPerColumn.get(assignedColumn);
+          if (intervals) {
+            for (const interval of intervals) {
+              const newFuncStart = func.startTime - headerRowHeight;
+              const newFuncEnd = func.endTime + MIN_FUNCTION_GAP;
+              if (!(newFuncEnd < interval[0] || newFuncStart > interval[1])) {
+                isOverlapping = true;
+                break;
+              }
+            }
+          }
+          if (isOverlapping) {
+            assignedColumn += 1;
+          } else {
+            func.column = assignedColumn;
+            const newInterval: Interval = [
+              func.startTime - headerRowHeight,
+              func.endTime + MIN_FUNCTION_GAP,
+            ];
+            occupiedIntervalsPerColumn.get(assignedColumn)?.push(newInterval);
+            break;
+          }
+        }
+      });
+
+      functionsArray.sort(
+        (a, b) => a.column - b.column || a.startTime - b.startTime,
+      );
+
+      const getInstructionColumnByPID = (PID: number) => {
+        for (const f of functionsArray) {
+          for (const i of f.instructions) {
+            if (i.pID === PID) return f.column;
+          }
+        }
+        return null;
+      };
+
+      functionsArray.forEach((f) => {
+        f.instructions.forEach((i) => {
+          for (const [_, targetPID] of i.sendsOutputsToPIDs) {
+            const targetInstructionColumn =
+              getInstructionColumnByPID(targetPID);
+            if (targetInstructionColumn === null) continue;
+            let nextOutputPosition: OutputPosition;
+            if (targetInstructionColumn >= f.column)
+              nextOutputPosition = OutputPosition.Right;
+            else nextOutputPosition = OutputPosition.Left;
+
+            if (i.outputPosition === OutputPosition.None) {
+              i.outputPosition = nextOutputPosition;
+            } else if (i.outputPosition !== nextOutputPosition) {
+              i.outputPosition = OutputPosition.Both;
+            }
+          }
+        });
+      });
+
+      let minTime = Math.min(...functionsArray.map((f) => f.startTime));
+      const maxTime = Math.max(...functionsArray.map((f) => f.endTime));
+
+      // сalculate max header height for functions starting at minTime to add to container height
+      const functionsAtMinTime = functionsArray.filter(
+        (f) => f.startTime === minTime,
+      );
+      const maxHeaderHeightAtMin = Math.max(
+        ...functionsAtMinTime.map((f) =>
+          estimateHeaderHeight(`${f.component} ${f.label}`, f.width),
+        ),
+        0,
+      );
+
+      // align function blocks to the most left position to minimize width
+      const mostLeftFreeSpaceInColumnsByRows = new Map<
+        number,
+        Map<number, number>
+      >();
+      for (let i = minTime - 2; i <= maxTime; i++) {
+        const columnsMap = new Map<number, number>();
+        for (let i = 0; i < occupiedIntervalsPerColumn.size; i++)
+          columnsMap.set(i, COLUMN_MARGIN);
+        mostLeftFreeSpaceInColumnsByRows.set(i, columnsMap);
+      }
+
+      const columnsWidthPerRow = new Map<number, Map<number, number>>();
+      for (let i = minTime - 2; i <= maxTime; i++) {
+        const columnsMap = new Map<number, number>();
+        for (let i = 0; i < occupiedIntervalsPerColumn.size; i++)
+          columnsMap.set(i, 0);
+        columnsWidthPerRow.set(i, columnsMap);
+      }
+
+      functionsArray.forEach((func) => {
+        const estimatedHeaderHeight = estimateHeaderHeight(
+          `${func.component} ${func.label}`,
+          func.width,
+        );
+        const headerRowHeight = Math.ceil(estimatedHeaderHeight / ROW_HEIGHT);
+        const firstAffectedRowIndex = Math.max(
+          func.startTime - headerRowHeight,
+          -1,
+        );
+        const lastAffectedRowIndex = func.endTime;
+
+        const instructionPerRow = new Map<number, Instruction>();
+        for (const instr of func.instructions) {
+          for (let i = instr.startTime; i <= instr.endTime; i++) {
+            instructionPerRow.set(i, instr);
+          }
+        }
+
+        let currentLeftPositionOfFunction = 0;
+        if (func.column !== 0) {
+          for (
+            let i = firstAffectedRowIndex;
+            i < lastAffectedRowIndex + 1;
+            i++
+          ) {
+            let leftArrowTextWidth = 0;
+            let arrowLabel = "";
+            if (instructionPerRow.has(i)) {
+              const instr = instructionPerRow.get(i)!;
+              arrowLabel = instr.sendsOutputsToPIDs.keys().toArray()[0];
+              if (
+                instr.outputPosition === OutputPosition.Left ||
+                instr.outputPosition === OutputPosition.Both
+              )
+                leftArrowTextWidth = estimateArrowTextWidth(arrowLabel);
+            }
+            currentLeftPositionOfFunction = Math.max(
+              currentLeftPositionOfFunction,
+              mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
+                leftArrowTextWidth,
+            );
+            const prevColumnWithLeftArrow =
+              mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
+              leftArrowTextWidth;
+            mostLeftFreeSpaceInColumnsByRows
+              .get(i)!
+              .set(func.column - 1, prevColumnWithLeftArrow);
+          }
+        }
+        for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
+          let rightArrowTextWidth = 0;
+          if (instructionPerRow.has(i)) {
+            const instr = instructionPerRow.get(i)!;
+            if (
+              instr.outputPosition === OutputPosition.Right ||
+              instr.outputPosition === OutputPosition.Both
+            )
+              rightArrowTextWidth = estimateArrowTextWidth(
+                instr.sendsOutputsToPIDs.keys().toArray()[0],
+              );
+          }
+          const spaceBetweenColumns =
+            rightArrowTextWidth !== 0 ? rightArrowTextWidth : COLUMN_MARGIN;
+          const nextColumnRightBorder =
+            currentLeftPositionOfFunction + func.width + spaceBetweenColumns;
+          mostLeftFreeSpaceInColumnsByRows
+            .get(i)!
+            .set(func.column, nextColumnRightBorder);
+        }
+
+        for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
+          let funcWidthAtRow = 0;
+          if (i < func.startTime || !instructionPerRow.has(i))
+            funcWidthAtRow = func.width;
+          else {
+            const instr = instructionPerRow.get(i);
+            if (instr === undefined) continue;
+            if (instr.sendsOutputsToPIDs.size === 0)
+              funcWidthAtRow = func.width;
+            else {
+              const arrowTextWidth = estimateArrowTextWidth(
+                instr.sendsOutputsToPIDs.keys().toArray()[0],
+              );
+              if (
+                instr.outputPosition === OutputPosition.Right ||
+                instr.outputPosition === OutputPosition.Both
+              )
+                funcWidthAtRow += arrowTextWidth;
+              if (
+                instr.outputPosition === OutputPosition.Left ||
+                instr.outputPosition === OutputPosition.Both
+              ) {
+                const prevColumnWidth = columnsWidthPerRow
+                  .get(i)!
+                  .get(func.column - 1)!;
+                columnsWidthPerRow
+                  .get(i)!
+                  .set(func.column - 1, prevColumnWidth + arrowTextWidth);
+              }
+            }
+          }
+          columnsWidthPerRow.get(i)?.set(func.column, funcWidthAtRow);
+        }
+      });
+
+      const widthsMap = new Map<number, number>();
+      functionsArray.forEach((func) => {
+        const currentMaxWidth = widthsMap.get(func.column) || 0;
+        let maxArrowTextWidth = 0;
+        func.instructions.forEach((instr) => {
+          instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
+            const arrowTextWidth = estimateArrowTextWidth(variableName);
+            maxArrowTextWidth = Math.max(maxArrowTextWidth, arrowTextWidth);
+          });
+        });
+        widthsMap.set(
+          func.column,
+          Math.max(currentMaxWidth, func.width + maxArrowTextWidth),
+        );
+      });
+
+      if (!isFinite(minTime)) minTime = 0;
+
+      const connections: DataFlowConnection[] = [];
+
+      functionsArray.forEach((func) => {
+        func.instructions.forEach((instr) => {
+          instr.sendsOutputsToPIDs.forEach((targetId, variableName) => {
+            connections.push({
+              sourceId: instr.pID,
+              targetId,
+              variableName,
+            });
+          });
+        });
+      });
+
+      setFunctions(functionsArray);
+      setTimelineConfig({ minTime, maxTime });
+      setContainerHeight(
+        maxHeaderHeightAtMin + (maxTime - minTime + 1) * ROW_HEIGHT,
+      );
+      setColumnWidths(widthsMap);
+      setDataFlowConnections(connections);
+      setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
+    }, []
   );
 
   useEffect(() => {
@@ -870,7 +870,7 @@ export const ProcessTimelines2: FC = () => {
         }));
       })
       .then(({ timelines, process }) => {
-        processVisualizationDataCallback(timelines, process);
+        processVisualizationData(timelines, process);
         setLoading(false);
       })
       .catch((err: any) => {
@@ -882,7 +882,7 @@ export const ProcessTimelines2: FC = () => {
         setError(`Failed to load visualization data: ${errorMsg}`);
         setLoading(false);
       });
-  }, [selectedSid, processVisualizationDataCallback]);
+  }, [selectedSid, processVisualizationData]);
 
   if (loading) {
     return <div className="pt-4">Loading...</div>;
@@ -1041,7 +1041,7 @@ export const ProcessTimelines2: FC = () => {
 
               return (
                 <ArrowPath
-                  key={`arrow-path-${connection.sourceId}:${connection.tergetId}`}
+                  key={`arrow-path-${connection.sourceId}:${connection.targetId}`}
                   {...props}
                 />
               );
@@ -1062,7 +1062,7 @@ export const ProcessTimelines2: FC = () => {
 
               return (
                 <ArrowWithLabel
-                  key={`arrow-label-${connection.sourceId}:${connection.tergetId}`}
+                  key={`arrow-label-${connection.sourceId}:${connection.targetId}`}
                   {...props}
                 />
               );
