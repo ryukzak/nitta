@@ -13,7 +13,7 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineEnding": "crlf",
+    "lineEnding": "auto",
     "useEditorconfig": true
   },
   "linter": {

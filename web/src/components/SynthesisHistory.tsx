@@ -96,6 +96,7 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
           <button
             className="btn-link bg-transparent p-0 border-0"
             onClick={() => onUpdateNid(sid)}
+            type={"button"}
           >
             {stepNumber(row)}
           </button>

@@ -70,38 +70,45 @@ export const TimelineView: FC<TimelineProps> = ({
       const id = point[j].pID;
       if (highlight.up.indexOf(id) >= 0) {
         return (
-          <span
+          <button
             key={i}
             className="upRelation"
             onClick={() => selectPoint(point)}
+            type={"button"}
           >
             {s}
-          </span>
+          </button>
         );
       }
       if (highlight.current.indexOf(id) >= 0) {
         return (
-          <span key={i} className="current" onClick={() => selectPoint(point)}>
+          <button
+            key={i}
+            className="current"
+            onClick={() => selectPoint(point)}
+            type={"button"}
+          >
             {s}
-          </span>
+          </button>
         );
       }
       if (highlight.down.indexOf(id) >= 0) {
         return (
-          <span
+          <button
             key={i}
             className="downRelation"
             onClick={() => selectPoint(point)}
+            type={"button"}
           >
             {s}
-          </span>
+          </button>
         );
       }
     }
     return (
-      <span key={i} onClick={() => selectPoint(point)}>
+      <button key={i} onClick={() => selectPoint(point)} type={"button"}>
         {s}
-      </span>
+      </button>
     );
   }
 

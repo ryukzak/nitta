@@ -1,4 +1,3 @@
-import { AppContext, type IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { RequestResult } from "components/utils/RequestResult";
@@ -12,14 +11,12 @@ import "components/Graphviz.scss";
 export type ITreeInfoViewProps = {};
 
 export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
-  const { selectedSid } = useContext(AppContext) as IAppContext;
-
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
       return api.getTreeInfo();
       // getTreeInfo result depends on selectedSid on server side, thus need to re-request the result when it's changed
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSid]),
+    }, []),
   });
 
   return (

@@ -85,7 +85,7 @@ export const ProcessScreen: FC = () => {
           <div className="x-scrollable">
             {highlight.up.map((e, i) =>
               pIdIndex !== null && pIdIndex[e] !== undefined ? (
-                <div key={i} className="squeeze">
+                <div key={pIdIndex[e].pID} className="squeeze">
                   - {pIdIndex[e].pInfo}
                 </div>
               ) : (
@@ -97,7 +97,9 @@ export const ProcessScreen: FC = () => {
           <div className="squeeze current">current:</div>
           <div className="x-scrollable">
             {detail.map((e) => (
-              <div className="squeeze">- {e.pInfo}</div>
+              <div className="squeeze" key={e.pID}>
+                - {e.pInfo}
+              </div>
             ))}
           </div>
           <hr />
@@ -105,7 +107,9 @@ export const ProcessScreen: FC = () => {
           <div className="x-scrollable">
             {highlight.down.map((e) =>
               pIdIndex != null && pIdIndex[e] != null ? (
-                <div className="squeeze">-- {pIdIndex[e].pInfo}</div>
+                <div className="squeeze" key={pIdIndex[e].pID}>
+                  -- {pIdIndex[e].pInfo}
+                </div>
               ) : (
                 ""
               ),

@@ -104,6 +104,7 @@ export const SynthesisGraphRender: FC = () => {
             r="10"
             fill={color}
             onClick={() => appContext.setSid(datum.sid)}
+            role={"treeitem"}
           />
         ) : (
           ""

@@ -37,6 +37,7 @@ export function sidColumn(onUpdateNid: (sid: string) => void): ColumnDef<Node> {
         <button
           className="btn-link bg-transparent p-0 border-0"
           onClick={() => onUpdateNid(row.original.sid)}
+          type={"button"}
         >
           {sid[sid.length - 1]} {">"}
         </button>
@@ -189,7 +190,7 @@ export function showBinds(decision: GroupBind): ReactElement {
   const binds = Object.keys(decision.bindGroup).map((uTag: string) => {
     const fs = decision.bindGroup[uTag]!;
     return (
-      <div>
+      <div key={uTag}>
         <strong>{uTag}</strong> <Icon.ArrowLeft />
         <ul>
           {fs.map((e) => (

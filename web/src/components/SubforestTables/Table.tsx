@@ -51,8 +51,8 @@ export function Table(props: {
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
+                      key={header.id}
                       {...{
-                        key: header.id,
                         colSpan: header.colSpan,
                         style: {
                           width: header.getSize(),
@@ -96,8 +96,8 @@ export function Table(props: {
                 <tr key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <td
+                      key={cell.id}
                       {...{
-                        key: cell.id,
                         style: {
                           width: cell.column.getSize(),
                         },
