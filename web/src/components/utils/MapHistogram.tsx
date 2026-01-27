@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "chart.js";
 import type React from "react";
-import { Chart } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import { CHART_COLOR_PALLETE, type Color } from "utils/color";
 
 ChartJS.register(
@@ -44,5 +44,5 @@ export const MapHistogram: React.FC<MapHistogramProps> = (props) => {
     ],
   };
 
-  return <Chart type="bar" data={chartComponentData} />;
+  return <Bar data={chartComponentData} />;
 };
