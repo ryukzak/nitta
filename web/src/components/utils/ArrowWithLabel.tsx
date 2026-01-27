@@ -102,18 +102,8 @@ export const ArrowLabel: FC<ArrowProps> = (props) => {
 
   return (
     <g className="arrow-label-group">
-      <rect
-        x={rectX}
-        y={rectY}
-        width={rectWidth}
-        height={rectHeight}
-      />
-      <text
-        x={textX}
-        y={textY}
-        className="arrow-label"
-        fill={color}
-      >
+      <rect x={rectX} y={rectY} width={rectWidth} height={rectHeight} />
+      <text x={textX} y={textY} className="arrow-label" fill={color}>
         {label}
       </text>
     </g>

@@ -3,13 +3,9 @@ import React, { type FC, useContext, useEffect, useState } from "react";
 import type { ProcessTimelines, TimelinePoint } from "services/gen/types";
 import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
+import { COMPONENT_COLORS, Color, fadeColor } from "../utils/color";
 import { JsonView } from "./JsonView";
-import {
-  ArrowPath,
-  type ArrowProps,
-  ArrowLabel,
-} from "./utils/ArrowWithLabel";
-import {fadeColor, COMPONENT_COLORS, Color} from "../utils/color";
+import { ArrowLabel, ArrowPath, type ArrowProps } from "./utils/ArrowWithLabel";
 
 enum OutputPosition {
   Left,
@@ -43,7 +39,6 @@ interface Function {
   width: number;
   isMemoryInit: boolean;
 }
-
 
 const MIN_COLUMN_WIDTH = 50;
 const ROW_HEIGHT = 70;
@@ -334,47 +329,48 @@ export const ProcessTimelines2: FC = () => {
   }, [functions, loading, calculateInstructionPositions, headerHeights]);
 
   // estimate header height based on text wrapping within expected function width
-  const estimateHeaderHeight = (
-    headerText: string,
-    functionWidth: number,
-  ): number => {
-    // account for padding and margins in the header
-    const availableWidth = functionWidth - HEADER_PADDING * BASE_FONT_SIZE * 2; // left and right padding
+  const estimateHeaderHeight = React.useCallback(
+    (headerText: string, functionWidth: number): number => {
+      // account for padding and margins in the header
+      const availableWidth =
+        functionWidth - HEADER_PADDING * BASE_FONT_SIZE * 2; // left and right padding
 
-    // estimate characters per line based on monospace font
-    // average character width in monospace is approximately 0.6em = 9.6px at 16px base
-    const charWidth = 9.6;
-    const charsPerLine = Math.max(1, Math.floor(availableWidth / charWidth));
+      // estimate characters per line based on monospace font
+      // average character width in monospace is approximately 0.6em = 9.6px at 16px base
+      const charWidth = 9.6;
+      const charsPerLine = Math.max(1, Math.floor(availableWidth / charWidth));
 
-    // split header into lines and count how many lines needed
-    let totalLines = 1;
-    const lines = headerText.split("\n");
+      // split header into lines and count how many lines needed
+      let totalLines = 1;
+      const lines = headerText.split("\n");
 
-    for (const line of lines) {
-      const wrappedLines = Math.ceil(line.length / charsPerLine);
-      totalLines += wrappedLines - 1;
-    }
-
-    const lineHeight = 1.1 * BASE_FONT_SIZE;
-    const padding = HEADER_PADDING * BASE_FONT_SIZE * 2; // top and bottom
-    const estimatedHeight = totalLines * lineHeight + padding;
-
-    return Math.max(50, estimatedHeight); // Minimum 50px
-  };
-
-  const getOneLevelUpperPIDs = (
-    pID: number,
-    processResponse: ProcessData,
-  ): Set<number> => {
-    const IDs = new Set<number>();
-    for (const r of processResponse.relations) {
-      if (r.tag !== "Vertical") continue;
-      if (r.vDown === pID) {
-        IDs.add(r.vUp);
+      for (const line of lines) {
+        const wrappedLines = Math.ceil(line.length / charsPerLine);
+        totalLines += wrappedLines - 1;
       }
-    }
-    return IDs;
-  };
+
+      const lineHeight = 1.1 * BASE_FONT_SIZE;
+      const padding = HEADER_PADDING * BASE_FONT_SIZE * 2; // top and bottom
+      const estimatedHeight = totalLines * lineHeight + padding;
+
+      return Math.max(50, estimatedHeight); // Minimum 50px
+    },
+    [],
+  );
+
+  const getOneLevelUpperPIDs = React.useCallback(
+    (pID: number, processResponse: ProcessData): Set<number> => {
+      const IDs = new Set<number>();
+      for (const r of processResponse.relations) {
+        if (r.tag !== "Vertical") continue;
+        if (r.vDown === pID) {
+          IDs.add(r.vUp);
+        }
+      }
+      return IDs;
+    },
+    [],
+  );
 
   const processVisualizationData = React.useCallback(
     (
@@ -791,7 +787,8 @@ export const ProcessTimelines2: FC = () => {
       setColumnWidths(widthsMap);
       setDataFlowConnections(connections);
       setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
-    }, []
+    },
+    [estimateHeaderHeight, getOneLevelUpperPIDs],
   );
 
   useEffect(() => {
@@ -841,7 +838,9 @@ export const ProcessTimelines2: FC = () => {
               <div key={componentName} className="legend-item">
                 <div
                   className="legend-color-swatch"
-                  style={{ backgroundColor: COMPONENT_COLORS[colorKey].toHexString() }}
+                  style={{
+                    backgroundColor: COMPONENT_COLORS[colorKey].toHexString(),
+                  }}
                 />
                 <span className="legend-label">{componentName}</span>
               </div>
@@ -852,9 +851,7 @@ export const ProcessTimelines2: FC = () => {
 
       <div className="process-timelines-2-vertical">
         <div className="vertical-time-axis">
-          <div
-            className="time-labels"
-          >
+          <div className="time-labels">
             {Array.from(
               {
                 length:
@@ -870,7 +867,7 @@ export const ProcessTimelines2: FC = () => {
                   top:
                     topPadding +
                     (time - timelineConfig.minTime) * ROW_HEIGHT +
-                    ROW_HEIGHT * (1 - 0.6) / 2,
+                    (ROW_HEIGHT * (1 - 0.6)) / 2,
                   height: ROW_HEIGHT * 0.6,
                   width: ROW_HEIGHT * 0.6,
                 }}
@@ -890,10 +887,7 @@ export const ProcessTimelines2: FC = () => {
           }}
         >
           {/* SVG overlay for data flow arrows and grid lines */}
-          <svg
-            className="data-flow-overlay"
-            role={"presentation"}
-          >
+          <svg className="data-flow-overlay" role={"presentation"}>
             <defs>
               {Array.from(
                 new Set(
@@ -992,7 +986,11 @@ export const ProcessTimelines2: FC = () => {
 
           {functions.map((func, idx) => {
             const bgColor = getComponentColor(func.component);
-            const bgTransparentColor = new Color({r: bgColor.obj.r, g: bgColor.obj.g, b: bgColor.obj.b});
+            const bgTransparentColor = new Color({
+              r: bgColor.obj.r,
+              g: bgColor.obj.g,
+              b: bgColor.obj.b,
+            });
             bgTransparentColor.obj.a = 0x15 / 255;
             const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
             let leftPosition = 0;
@@ -1034,7 +1032,10 @@ export const ProcessTimelines2: FC = () => {
                   data-header-id={`func-header-${func.pID}`}
                   className="function-header"
                   style={{
-                    backgroundColor: fadeColor(bgColor, 0x15 / 255).toHexString(), // header function background is not transparent but faded
+                    backgroundColor: fadeColor(
+                      bgColor,
+                      0x15 / 255,
+                    ).toHexString(), // header function background is not transparent but faded
                     color: bgColor.toHexString(),
                     height: "auto",
                     minHeight: `${headerHeight}px`,

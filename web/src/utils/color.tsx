@@ -24,9 +24,7 @@ export class Color {
 
   public toHexString(): string {
     const toHex = (value: number): string =>
-      Math.max(0, Math.min(255, value))
-        .toString(16)
-        .padStart(2, "0");
+      Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0");
 
     const a = this.obj.a ? this.obj.a : 1;
     return `#${toHex(this.obj.r)}${toHex(this.obj.g)}${toHex(this.obj.b)}${toHex(a * 255)}`;
@@ -76,5 +74,10 @@ export function fadeColor(color: Color, opacity: number): Color {
    * @param opacity Number from 0 to 1 (divide by 255)
    */
   const faded = (i: number) => Math.round(i * opacity + 255 * (1 - opacity));
-  return new Color({r: faded(color.obj.r), g: faded(color.obj.g), b: faded(color.obj.b), a: 1});
+  return new Color({
+    r: faded(color.obj.r),
+    g: faded(color.obj.g),
+    b: faded(color.obj.b),
+    a: 1,
+  });
 }

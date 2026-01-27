@@ -1,5 +1,5 @@
 import { ProcessTimelines2 } from "components/ProcessTimeline2";
-import React, { FC } from "react";
+import React, { type FC } from "react";
 
 export type IProcess2ScreenProps = {};
 
