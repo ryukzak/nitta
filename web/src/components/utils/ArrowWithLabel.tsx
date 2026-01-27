@@ -35,7 +35,7 @@ const calculateArrowGeometry = (
   const textPaddingX = 2;
   const textPaddingY = 2;
   const textX = sourceX < targetX ? sourceX + 8 : sourceX - estimatedTextWidth;
-  const textY = sourceMidY;
+  const textY = sourceMidY + 3;
 
   const rectX = textX - textPaddingX;
   const rectY = textY - textPaddingY - 6;

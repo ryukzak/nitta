@@ -9,6 +9,7 @@ import {
   type ArrowProps,
   ArrowLabel,
 } from "./utils/ArrowWithLabel";
+import {fadeColor, COMPONENT_COLORS, Color} from "../utils/color";
 
 enum OutputPosition {
   Left,
@@ -43,17 +44,6 @@ interface Function {
   isMemoryInit: boolean;
 }
 
-const COMPONENT_COLORS: Record<string, string> = {
-  default: "#667eea",
-  red: "#f56565",
-  orange: "#F38A3F",
-  yellow: "#E3BC1E",
-  green: "#2ABB7F",
-  cyan: "#38b2ac",
-  blue: "#388BFF",
-  purple: "#8F7EE7",
-  pink: "#DA62AC",
-};
 
 const MIN_COLUMN_WIDTH = 50;
 const ROW_HEIGHT = 70;
@@ -76,18 +66,6 @@ interface DataFlowConnection {
   sourceId: number;
   targetId: number;
   variableName: string;
-}
-
-function fadeColor(hex: string): string {
-  const o = 0x15 / 255;
-  const c = hex.slice(1);
-
-  const b = (i: number) =>
-    Math.round(parseInt(c.slice(i, i + 2), 16) * o + 255 * (1 - o))
-      .toString(16)
-      .padStart(2, "0");
-
-  return `#${b(0)}${b(2)}${b(4)}`;
 }
 
 const getArrowProps = (
@@ -155,7 +133,7 @@ export const ProcessTimelines2: FC = () => {
   const [topPadding, setTopPadding] = useState(0);
   const measurementTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const getComponentColor = React.useCallback((component: string): string => {
+  const getComponentColor = React.useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
     if (preselectedColor) return COMPONENT_COLORS[preselectedColor];
 
@@ -277,7 +255,7 @@ export const ProcessTimelines2: FC = () => {
             y: relativeY,
             width: rect.width,
             height: rect.height,
-            color: getComponentColor(func.component),
+            color: getComponentColor(func.component).toHexString(),
           });
         }
       });
@@ -863,7 +841,7 @@ export const ProcessTimelines2: FC = () => {
               <div key={componentName} className="legend-item">
                 <div
                   className="legend-color-swatch"
-                  style={{ backgroundColor: COMPONENT_COLORS[colorKey] }}
+                  style={{ backgroundColor: COMPONENT_COLORS[colorKey].toHexString() }}
                 />
                 <span className="legend-label">{componentName}</span>
               </div>
@@ -1014,6 +992,8 @@ export const ProcessTimelines2: FC = () => {
 
           {functions.map((func, idx) => {
             const bgColor = getComponentColor(func.component);
+            const bgTransparentColor = new Color({r: bgColor.obj.r, g: bgColor.obj.g, b: bgColor.obj.b});
+            bgTransparentColor.obj.a = 0x15 / 255;
             const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
             let leftPosition = 0;
 
@@ -1046,16 +1026,16 @@ export const ProcessTimelines2: FC = () => {
                     headerHeight,
                   left: `${leftPosition}px`,
                   width: `${func.width}px`,
-                  borderColor: bgColor,
-                  backgroundColor: `${bgColor}15`, // function background is transparent
+                  borderColor: bgColor.toHexString(),
+                  backgroundColor: bgTransparentColor.toHexString(),
                 }}
               >
                 <div
                   data-header-id={`func-header-${func.pID}`}
                   className="function-header"
                   style={{
-                    backgroundColor: fadeColor(bgColor), // header function background is not transparent
-                    color: bgColor,
+                    backgroundColor: fadeColor(bgColor, 0x15 / 255).toHexString(), // header function background is not transparent but faded
+                    color: bgColor.toHexString(),
                     height: "auto",
                     minHeight: `${headerHeight}px`,
                   }}
@@ -1082,7 +1062,7 @@ export const ProcessTimelines2: FC = () => {
                             50,
                             (instr.endTime - instr.startTime) * ROW_HEIGHT - 16,
                           ),
-                          border: `2px solid ${bgColor}`,
+                          border: `2px solid ${bgColor.toHexString()}`,
                         }}
                         title={instr.info}
                       >
