@@ -46,65 +46,44 @@ const calculateArrowGeometry = (
 };
 
 export const ArrowPath: FC<ArrowProps> = (props) => {
-  const {
-    sourceX,
-    sourceY,
-    sourceHeight,
-    targetX,
-    targetY,
-    targetHeight,
-    label,
-    color,
-  } = props;
   const { pathData } = calculateArrowGeometry(
-    sourceX,
-    sourceY,
-    sourceHeight,
-    targetX,
-    targetY,
-    targetHeight,
-    label,
+    props.sourceX,
+    props.sourceY,
+    props.sourceHeight,
+    props.targetX,
+    props.targetY,
+    props.targetHeight,
+    props.label,
   );
 
   return (
     <path
       d={pathData}
-      stroke={color}
+      stroke={props.color}
       strokeWidth="2"
       fill="none"
-      markerEnd={`url(#arrowhead-${color.replace("#", "")})`}
+      markerEnd={`url(#arrowhead-${props.color.replace("#", "")})`}
       className="arrow-path"
     />
   );
 };
 
 export const ArrowLabel: FC<ArrowProps> = (props) => {
-  const {
-    sourceX,
-    sourceY,
-    sourceHeight,
-    targetX,
-    targetY,
-    targetHeight,
-    label,
-    color,
-  } = props;
   const { textX, textY, rectX, rectY, rectWidth, rectHeight } =
     calculateArrowGeometry(
-      sourceX,
-      sourceY,
-      sourceHeight,
-      targetX,
-      targetY,
-      targetHeight,
-      label,
+      props.sourceX,
+      props.sourceY,
+      props.sourceHeight,
+      props.targetX,
+      props.targetY,
+      props.targetHeight,
+      props.label,
     );
-
   return (
     <g className="arrow-label-group">
       <rect x={rectX} y={rectY} width={rectWidth} height={rectHeight} />
-      <text x={textX} y={textY} className="arrow-label" fill={color}>
-        {label}
+      <text x={textX} y={textY} className="arrow-label" fill={props.color}>
+        {props.label}
       </text>
     </g>
   );
