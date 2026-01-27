@@ -1,4 +1,5 @@
 import {
+  BarController,
   BarElement,
   CategoryScale,
   Chart as ChartJS,
@@ -6,7 +7,6 @@ import {
   LinearScale,
   Title,
   Tooltip,
-  BarController
 } from "chart.js";
 import type React from "react";
 import { Bar } from "react-chartjs-2";
@@ -19,7 +19,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  BarController
+  BarController,
 );
 
 interface MapHistogramProps {
