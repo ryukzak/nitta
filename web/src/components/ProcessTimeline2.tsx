@@ -392,19 +392,6 @@ export const ProcessTimelines2: FC = () => {
         return lowerIDs;
       };
 
-      const getAllUpperPIDs = (pID: number) => {
-        const upperIDs = new Set<number>();
-        for (const r of processResponse.relations) {
-          if (r.tag !== "Vertical") continue;
-          if (r.vDown === pID) {
-            upperIDs.add(r.vUp);
-            const upperLevelIDs = getAllUpperPIDs(r.vUp);
-            for (const upperID of upperLevelIDs) upperIDs.add(upperID);
-          }
-        }
-        return upperIDs;
-      };
-
       timelinesResponse.timelines.forEach((timeline) => {
         const component = timeline.timelineViewpoint.component.join(".");
         if (timeline.timelineViewpoint.level === "Fun") {
@@ -631,7 +618,7 @@ export const ProcessTimelines2: FC = () => {
 
       functionsArray.forEach((f) => {
         f.instructions.forEach((i) => {
-          for (const [_, targetPID] of i.sendsOutputsToPIDs) {
+          for (const [, targetPID] of i.sendsOutputsToPIDs) {
             const targetInstructionColumn =
               getInstructionColumnByPID(targetPID);
             if (targetInstructionColumn === null) continue;
