@@ -25,11 +25,6 @@
     "sass": "1.93.3",
     "typescript": "^5.9.3"
   },
-  "overrides": {
-    "@typescript-eslint/typescript-estree": "^5.57.1",
-    "fork-ts-checker-webpack-plugin": "^6.5.3",
-    "typescript": "^5.9.3"
-  },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
     "@types/react": "^19.0.0",
@@ -43,9 +38,6 @@
     "build": "react-scripts --max_old_space_size=4096 build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   },
   "browserslist": {
     "production": [
