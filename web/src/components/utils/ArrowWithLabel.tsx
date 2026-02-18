@@ -11,6 +11,47 @@ export interface ArrowProps {
   color: string;
 }
 
+export interface InstructionPosition {
+  instructionId: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
+export const getArrowProps = (
+  source: InstructionPosition,
+  target: InstructionPosition,
+  topPadding: number,
+  label: string,
+) => {
+  let arrowSourceX: number;
+  let arrowTargetX: number;
+
+  if (source.x > target.x) {
+    arrowSourceX = source.x;
+    arrowTargetX = target.x + target.width;
+  } else if (source.x === target.x) {
+    arrowSourceX = source.x + source.width;
+    arrowTargetX = target.x + target.width;
+  } else {
+    arrowSourceX = source.x + source.width;
+    arrowTargetX = target.x;
+  }
+  const result: ArrowProps = {
+    sourceX: arrowSourceX,
+    sourceY: topPadding + source.y,
+    sourceHeight: source.height,
+    targetX: arrowTargetX,
+    targetY: topPadding + target.y,
+    targetHeight: target.height,
+    label: label,
+    color: "#404040",
+  };
+  return result;
+};
+
 const calculateArrowGeometry = (
   sourceX: number,
   sourceY: number,

@@ -46,17 +46,17 @@
     height: 100%;
     overflow: visible;
 
-      .arrow-path {
-        opacity: 0.8;
-      }
+    .arrow-path {
+      opacity: 0.8;
+    }
 
-      text {
-        font-size: 0.7em;
-      }
+    text {
+      font-size: 0.7em;
+    }
 
-      rect {
-        fill: white;
-      }
+    rect {
+      fill: white;
+    }
   }
 
   .vertical-time-axis {
@@ -64,24 +64,19 @@
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 6px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
 
-    .time-labels {
-      position: relative;
-
-      .time-label-item {
-        position: absolute;
-        left: 0;
-        right: 0;
-        margin: 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 3px solid #F3F4F6;
-        border-radius: 14px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #495057;
-      }
+    .time-label-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #F3F4F6;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #495057;
     }
   }
 
