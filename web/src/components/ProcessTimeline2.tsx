@@ -29,7 +29,7 @@ import {
 
 const ROW_HEIGHT = 70;
 const COLUMN_MARGIN = 20;
-const MIN_FUNCTION_GAP = 0.5; // minimum time-unit gap between functions in same column
+const MIN_FUNCTION_GAP = 0.5;
 const CONTAINER_BUTTOM_PADDING = ROW_HEIGHT;
 
 export const ProcessTimelines2: FC = () => {
@@ -109,14 +109,12 @@ export const ProcessTimelines2: FC = () => {
 
       if (headerElement) {
         const measuredHeight = headerElement.offsetHeight;
-        heightsMap.set(func.pID, Math.max(measuredHeight, 50)); // Minimum height of 50px
+        heightsMap.set(func.pID, Math.max(measuredHeight, 50));
       } else {
-        // Fallback to default if element not found
         heightsMap.set(func.pID, ROW_HEIGHT);
       }
     });
 
-    // only update state if heights actually changed
     setHeaderHeights((prevHeights) => {
       if (mapsEqual(prevHeights, heightsMap)) {
         return prevHeights;
@@ -206,7 +204,6 @@ export const ProcessTimelines2: FC = () => {
       const maxTime = Math.max(...functionsArray.map((f) => f.endTime));
       if (!isFinite(minTime)) minTime = 0;
 
-      // Initialize mostLeftFreeSpaces with default values for column 0
       const initialMostLeftSpaces = new Map<number, Map<number, number>>();
       for (let i = minTime - 2; i <= maxTime; i++) {
         const columnsMap = new Map<number, number>();
