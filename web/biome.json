@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**/*.{ts,tsx}"],
+    "includes": ["src/**/*.{ts,tsx}", "biome.json"],
     "ignoreUnknown": false
   },
   "formatter": {
