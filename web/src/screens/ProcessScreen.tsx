@@ -1,12 +1,15 @@
-import { AxiosError } from "axios";
-import React, { FC, useContext, useEffect, useState } from "react";
-
-import { api } from "services/HaskellApiService";
-import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "services/gen/types";
-
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError } from "axios";
 import { TimelineView } from "components/ProcessTimeline";
 import { ProcessView } from "components/ProcessView";
+import { type FC, useContext, useEffect, useState } from "react";
+import type {
+  ProcessTimelines,
+  TimelinePoint,
+  TimelineWithViewPoint,
+  ViewPointID,
+} from "services/gen/types";
+import { api } from "services/HaskellApiService";
 import "screens/ProcessScreen.scss";
 
 export interface Highlight {
@@ -22,9 +25,18 @@ export interface Highlight {
 export const ProcessScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
-  const [pIdIndex, setPIdIndex] = useState<Record<number, TimelinePoint<number>> | null>(null);
-  const [highlight, setHighlight] = useState<Highlight>({ up: [], current: [], down: [] } as Highlight);
-  const [detail, setDetail] = useState<TimelinePoint<number>[]>([] as TimelinePoint<number>[]);
+  const [pIdIndex, setPIdIndex] = useState<Record<
+    number,
+    TimelinePoint<number>
+  > | null>(null);
+  const [highlight, setHighlight] = useState<Highlight>({
+    up: [],
+    current: [],
+    down: [],
+  } as Highlight);
+  const [detail, setDetail] = useState<TimelinePoint<number>[]>(
+    [] as TimelinePoint<number>[],
+  );
   const [data, setData] = useState<ProcessTimelines<number> | null>(null);
 
   useEffect(() => {
@@ -34,7 +46,7 @@ export const ProcessScreen: FC = () => {
       .getTimelines(appContext.selectedSid)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessScreen.requestTimelines - done");
-        let pIdIndex: Record<number, TimelinePoint<number>> = {};
+        const pIdIndex: Record<number, TimelinePoint<number>> = {};
         response.data.timelines.forEach((vt) => {
           vt.timelinePoints.forEach((point) => {
             point.forEach((e) => {
@@ -43,7 +55,7 @@ export const ProcessScreen: FC = () => {
             });
           });
         });
-        let resort = resortTimeline(response.data);
+        const resort = resortTimeline(response.data);
         setData(resort);
         setPIdIndex(pIdIndex);
       })
@@ -73,7 +85,7 @@ export const ProcessScreen: FC = () => {
           <div className="x-scrollable">
             {highlight.up.map((e, i) =>
               pIdIndex !== null && pIdIndex[e] !== undefined ? (
-                <div key={i} className="squeeze">
+                <div key={pIdIndex[e].pID} className="squeeze">
                   - {pIdIndex[e].pInfo}
                 </div>
               ) : (
@@ -85,14 +97,22 @@ export const ProcessScreen: FC = () => {
           <div className="squeeze current">current:</div>
           <div className="x-scrollable">
             {detail.map((e) => (
-              <div className="squeeze">- {e.pInfo}</div>
+              <div className="squeeze" key={e.pID}>
+                - {e.pInfo}
+              </div>
             ))}
           </div>
           <hr />
           <div className="squeeze downRelation">bottom related:</div>
           <div className="x-scrollable">
             {highlight.down.map((e) =>
-              pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : "",
+              pIdIndex != null && pIdIndex[e] != null ? (
+                <div className="squeeze" key={pIdIndex[e].pID}>
+                  -- {pIdIndex[e].pInfo}
+                </div>
+              ) : (
+                ""
+              ),
             )}
           </div>
         </div>
@@ -102,18 +122,22 @@ export const ProcessScreen: FC = () => {
 };
 
 function resortTimeline(data: ProcessTimelines<number>) {
-  let result: ProcessTimelines<number> = {
+  const result: ProcessTimelines<number> = {
     timelines: [],
     verticalRelations: data.verticalRelations,
   };
-  function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
-    if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
+  function cmp(
+    a: TimelineWithViewPoint<number>,
+    b: TimelineWithViewPoint<number>,
+  ) {
+    if (a.timelineViewpoint.component < b.timelineViewpoint.component)
+      return -1;
     if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
     return 0;
   }
   let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
   function extract(p: (id: ViewPointID) => boolean) {
-    let newTmp: TimelineWithViewPoint<number>[] = [];
+    const newTmp: TimelineWithViewPoint<number>[] = [];
     tmp.forEach((e) => {
       if (p(e.timelineViewpoint)) {
         result.timelines.push(e);

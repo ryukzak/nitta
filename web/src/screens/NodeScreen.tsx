@@ -1,12 +1,10 @@
-import React, { FC, useContext } from "react";
-import "react-table/react-table.css";
-
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
 import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { TreeInfoView } from "components/TreeInfoView";
+import { type FC, useContext } from "react";
 
-export interface INodeScreenProps {}
+export type INodeScreenProps = {};
 
 export const NodeScreen: FC<INodeScreenProps> = (props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;

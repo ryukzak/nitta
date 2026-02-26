@@ -1,28 +1,22 @@
-import React, { FC, useCallback, useContext } from "react";
-import { Col, Container, Row } from "react-bootstrap";
-
-import { AppContext, IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
 import { MapHistogram } from "components/utils/MapHistogram";
 import { RequestResult } from "components/utils/RequestResult";
 import { useApiRequest } from "hooks/useApiRequest";
+import { type FC, useCallback } from "react";
+import { Col, Container, Row } from "react-bootstrap";
 import { api } from "services/HaskellApiService";
 import { CHART_COLOR_PALLETE } from "utils/color";
-
 import "components/Graphviz.scss";
-import "react-table/react-table.css";
 
-export interface ITreeInfoViewProps {}
+export type ITreeInfoViewProps = {};
 
-export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
-  const { selectedSid } = useContext(AppContext) as IAppContext;
-
+export const TreeInfoView: FC<ITreeInfoViewProps> = (_props) => {
   const treeInfoRequest = useApiRequest({
     requester: useCallback(() => {
       return api.getTreeInfo();
       // getTreeInfo result depends on selectedSid on server side, thus need to re-request the result when it's changed
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSid]),
+    }, []),
   });
 
   return (
@@ -32,7 +26,7 @@ export const TreeInfoView: FC<ITreeInfoViewProps> = (props) => {
         <Container fluid>
           <Row>
             <Col sm={7} md={6} lg={5}>
-              <JsonView src={result.data} />
+              <JsonView value={result.data} />
             </Col>
             <Col sm={5} md={5} lg={4}>
               <Row>

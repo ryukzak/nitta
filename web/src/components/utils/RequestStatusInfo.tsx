@@ -1,7 +1,7 @@
-import React, { FC } from "react";
+import type { FC } from "react";
 import { Spinner } from "react-bootstrap";
 import { ErrorDisplay } from "./ErrorDisplay";
-import { RefreshButton, RefreshButtonProps } from "./RefreshButton";
+import { RefreshButton, type RefreshButtonProps } from "./RefreshButton";
 
 interface RequestStatusInfoProps {
   errorMessage: string | null;
@@ -20,8 +20,14 @@ export const RequestStatusInfo: FC<RequestStatusInfoProps> = (props) => {
           <RefreshButton {...refreshButtonProps} />
         </div>
       ) : (
-        <div className={`d-flex ${isSpinnerCentered ? "align-items-center" : ""} flex-column`}>
-          <Spinner animation="border" className="font-weight-light d-block mb-4" variant="primary" />
+        <div
+          className={`d-flex ${isSpinnerCentered ? "align-items-center" : ""} flex-column`}
+        >
+          <Spinner
+            animation="border"
+            className="font-weight-light d-block mb-4"
+            variant="primary"
+          />
         </div>
       )}
     </>

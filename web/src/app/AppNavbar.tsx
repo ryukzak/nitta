@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import type { FC } from "react";
 import { Nav, Navbar } from "react-bootstrap";
 import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
@@ -6,9 +6,9 @@ import "./AppNavbar.scss";
 
 import { AppNavbarButtons } from "./AppNavbarButtons";
 
-export interface IAppNavbarProps {}
+export type IAppNavbarProps = {};
 
-export const AppNavbar: FC<IAppNavbarProps> = (props) => {
+export const AppNavbar: FC<IAppNavbarProps> = (_props) => {
   return (
     <Navbar bg="dark" variant="dark" expand="md" className="appNavbar">
       <Navbar.Brand className="mr-md-5 " as={Link} to="/">
@@ -24,19 +24,19 @@ export const AppNavbar: FC<IAppNavbarProps> = (props) => {
       <Navbar.Collapse id="navbar-nav">
         <Nav className="mr-auto">
           {/* "as" property can help us to integrate React Router's NavLink */}
-          <Nav.Link as={RouterNavLink} exact to="/node">
+          <Nav.Link as={RouterNavLink} to="/node">
             Node
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/subforest">
+          <Nav.Link as={RouterNavLink} to="/subforest">
             Subforest
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/process">
+          <Nav.Link as={RouterNavLink} to="/process">
             Process
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/testbench">
+          <Nav.Link as={RouterNavLink} to="/testbench">
             Testbench
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/debug">
+          <Nav.Link as={RouterNavLink} to="/debug">
             Debug
           </Nav.Link>
         </Nav>

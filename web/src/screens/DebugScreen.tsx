@@ -1,11 +1,9 @@
-import React, { FC, useContext, useEffect, useState } from "react";
-import "react-table/react-table.css";
-
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
 import { JsonView } from "components/JsonView";
+import { type FC, useContext, useEffect, useState } from "react";
 import { api } from "services/HaskellApiService";
 
-export interface IDebugScreenProps {}
+export type IDebugScreenProps = {};
 
 export const DebugScreen: FC<IDebugScreenProps> = (props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
@@ -32,9 +30,9 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
         synthesisNodeData ? (
           <div className="d-flex flex-column">
             <h3>Current node</h3>
-            <JsonView src={synthesisNodeData} />
+            <JsonView value={synthesisNodeData} />
             <h3>Debug info</h3>
-            <JsonView src={debugInfo} />
+            <JsonView value={debugInfo} />
           </div>
         ) : (
           <pre> Updating... </pre>

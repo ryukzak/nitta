@@ -1,20 +1,22 @@
-import { AxiosError, AxiosResponse } from "axios";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError, AxiosResponse } from "axios";
 import { Graphviz } from "graphviz-react";
-import React, { FC, useContext, useEffect, useState } from "react";
-import "react-table/react-table.css";
-
-import { AppContext, IAppContext } from "app/AppContext";
-import { ProcessData, RelationData, StepData, api } from "services/HaskellApiService";
-
+import { type FC, useContext, useEffect, useState } from "react";
+import {
+  api,
+  type ProcessData,
+  type RelationData,
+  type StepData,
+} from "services/HaskellApiService";
 import "components/Graphviz.scss";
 
 /**
  * Component to display target process by GraphViz.
  */
 
-export interface IProcessViewProps {}
+export type IProcessViewProps = {};
 
-export const ProcessView: FC<IProcessViewProps> = (props) => {
+export const ProcessView: FC<IProcessViewProps> = (_props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const [process, setProcess] = useState<ProcessData | null>(null);
@@ -34,7 +36,12 @@ export const ProcessView: FC<IProcessViewProps> = (props) => {
   }
   return (
     <div className="bg-light border graphvizContainer">
-      {process && <Graphviz dot={renderProcessViewDot(process)} options={{ height: 399, width: "100%", zoom: true }} />}
+      {process && (
+        <Graphviz
+          dot={renderProcessViewDot(process)}
+          options={{ height: 399, width: "100%", zoom: true }}
+        />
+      )}
     </div>
   );
 };

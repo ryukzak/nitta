@@ -1,9 +1,19 @@
-import { AxiosError, AxiosResponse } from "axios";
-import React, { FC, ReactElement, useContext, useEffect, useState } from "react";
-import ReactTable, { Column } from "react-table";
-
-import { AppContext, IAppContext } from "app/AppContext";
-import { Node, Sid, api } from "services/HaskellApiService";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError, AxiosResponse } from "axios";
+import {
+  type FC,
+  type ReactElement,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { api, type Node, type Sid } from "services/HaskellApiService";
 import { showDecision } from "./SubforestTables/Columns";
 
 type Row = { original: Node; index: number };
@@ -33,7 +43,17 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedSid, props.reverse]);
 
-  function Table(props: { name: string; columns: Column[]; history: Node[] }) {
+  function Table(props: {
+    name: string;
+    columns: ColumnDef<Node>[];
+    history: Node[];
+  }) {
+    const table = useReactTable({
+      data: props.history,
+      columns: props.columns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
     if (props.history.length === 0)
       return (
         <small>
@@ -43,13 +63,19 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
     return (
       <small style={style}>
         <pre className="squeze h5">{props.name}</pre>
-        <ReactTable
-          defaultPageSize={props.history.length}
-          minRows={props.history.length}
-          showPagination={false}
-          columns={props.columns}
-          data={props.history}
-        />
+        <table>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
         <br />
       </small>
     );
@@ -59,15 +85,19 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
     return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
   }
 
-  function stepColumn(onUpdateNid: (sid: Sid) => void) {
+  function stepColumn(onUpdateNid: (sid: Sid) => void): ColumnDef<Node> {
     return {
-      Header: "step",
-      maxWidth: 40,
-      Cell: (row: Row) => {
-        let sid = row.original.sid;
+      header: "step",
+      size: 40,
+      cell: ({ row }) => {
+        const sid = row.original.sid;
         if (sid === appContext.selectedSid) return <>{stepNumber(row)}</>;
         return (
-          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(sid)}>
+          <button
+            className="btn-link bg-transparent p-0 border-0"
+            onClick={() => onUpdateNid(sid)}
+            type={"button"}
+          >
             {stepNumber(row)}
           </button>
         );
@@ -75,13 +105,17 @@ export const SynthesisHistory: FC<ISynthesisHistoryProps> = (props) => {
     };
   }
 
-  function textColumn(columnName: string, f: (n: Node) => string | ReactElement, maxWidth?: number, minWidth?: number) {
+  function textColumn(
+    columnName: string,
+    f: (n: Node) => string | ReactElement,
+    maxWidth?: number,
+    minWidth?: number,
+  ): ColumnDef<Node> {
     return {
-      Header: columnName,
-      style: style,
-      maxWidth: maxWidth,
-      minWidth: minWidth,
-      Cell: (row: { original: Node }) => f(row.original),
+      header: columnName,
+      size: maxWidth,
+      minSize: minWidth,
+      cell: ({ row }) => <span style={style}>{f(row.original)}</span>,
     };
   }
 

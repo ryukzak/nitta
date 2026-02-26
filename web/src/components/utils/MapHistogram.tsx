@@ -1,6 +1,26 @@
-import React from "react";
-import ChartComponent from "react-chartjs-2";
-import { CHART_COLOR_PALLETE, Color } from "utils/color";
+import {
+  BarController,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  Title,
+  Tooltip,
+} from "chart.js";
+import type React from "react";
+import { Bar } from "react-chartjs-2";
+import { CHART_COLOR_PALLETE, type Color } from "utils/color";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  BarController,
+);
 
 interface MapHistogramProps {
   data: { [k: string]: number };
@@ -9,7 +29,11 @@ interface MapHistogramProps {
 }
 
 export const MapHistogram: React.FC<MapHistogramProps> = (props) => {
-  const { data: rawData, name = "values", color = CHART_COLOR_PALLETE.blue } = props;
+  const {
+    data: rawData,
+    name = "values",
+    color = CHART_COLOR_PALLETE.blue,
+  } = props;
 
   const chartComponentData = {
     labels: Object.keys(rawData),
@@ -22,5 +46,5 @@ export const MapHistogram: React.FC<MapHistogramProps> = (props) => {
     ],
   };
 
-  return <ChartComponent type="bar" data={chartComponentData} />;
+  return <Bar data={chartComponentData} />;
 };

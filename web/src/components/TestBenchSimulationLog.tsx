@@ -1,38 +1,77 @@
-import React, { FC } from "react";
-import ReactTable from "react-table";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import type { FC } from "react";
 
 export interface ITestBenchSimulationLogProps {
   functional: { [k: string]: number }[];
   logical: { [k: string]: number }[];
 }
 
-export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({ functional, logical }) => {
-  let columns: { Header: string; accessor: string }[] = [{ Header: "Cycle", accessor: "i" }];
-  for (let key in logical[0]) {
-    columns.push({ Header: key, accessor: key });
-  }
-
-  let cntxs: Record<string, string>[] = [];
+export const TestBenchSimulationLog: FC<ITestBenchSimulationLogProps> = ({
+  functional,
+  logical,
+}) => {
+  const cntxs: Record<string, string>[] = [];
   for (let i = 0; i < functional.length; i++) {
     const funSim = functional[i];
     const logSim = logical[i];
-    let cntx: Record<string, string> = { i: i.toString() };
-    for (let key in logSim) {
+    const cntx: Record<string, string> = { i: i.toString() };
+    for (const key in logSim) {
       if (funSim[key] === logSim[key]) cntx[key] = logSim[key].toString();
       else cntx[key] = funSim[key] + " != " + logSim[key];
     }
     cntxs.push(cntx);
   }
 
+  const columns: ColumnDef<Record<string, string>>[] = [
+    {
+      header: "Cycle",
+      accessorKey: "i",
+    },
+    ...Object.keys(logical[0]).map((key) => ({
+      header: key,
+      accessorKey: key,
+    })),
+  ];
+
+  const table = useReactTable({
+    data: cntxs,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
     <>
-      <ReactTable
-        defaultPageSize={functional.length}
-        minRows={functional.length}
-        showPagination={false}
-        columns={columns}
-        data={cntxs}
-      />
+      <table>
+        <thead>
+          {table.getHeaderGroups().map((hg) => (
+            <tr key={hg.id}>
+              {hg.headers.map((h) => (
+                <th key={h.id}>
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
       <pre>function simulation [ != logical simulation ]</pre>
     </>
   );

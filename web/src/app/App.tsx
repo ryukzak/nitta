@@ -1,18 +1,16 @@
-import React, { Component } from "react";
-import { Redirect, Route, Switch } from "react-router-dom";
-
-import { Sid, sidSeparator } from "services/HaskellApiService";
-import { AppContextProvider, IAppContext } from "./AppContext";
-import { AppNavbar } from "./AppNavbar";
-
 import { SynthesisGraph } from "components/SynthesisGraph";
+import { Component } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";
 import { ProcessScreen } from "screens/ProcessScreen";
 import { SubforestScreen } from "screens/SubforestScreen";
 import { TestBenchScreen } from "screens/TestBenchScreen";
+import { type Sid, sidSeparator } from "services/HaskellApiService";
+import { AppContextProvider, type IAppContext } from "./AppContext";
+import { AppNavbar } from "./AppNavbar";
 
-export interface IAppProps {}
+export type IAppProps = {};
 
 // IMPORTANT: the value of AppContext.Provider MUST be {this.state} so React can handle re-rendering appropriately.
 // It's sad, but it's the best option we have.
@@ -43,28 +41,15 @@ export default class App extends Component<IAppProps, IAppState> {
 
         <div className="flex-grow-1">
           <SynthesisGraph />
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/node" />
-            </Route>
-            <Route exact path="/node">
-              <NodeScreen />
-            </Route>
-            <Route exact path="/subforest">
-              <SubforestScreen />
-            </Route>
-            <Route exact path="/process">
-              <ProcessScreen />
-            </Route>
-            <Route exact path="/testbench">
-              <TestBenchScreen />
-            </Route>
-            <Route exact path="/debug">
-              <DebugScreen />
-            </Route>
-
+          <Routes>
+            <Route path="/" element={<Navigate to="/node"></Navigate>}></Route>
+            <Route path="/node" element={<NodeScreen />}></Route>
+            <Route path="/subforest" element={<SubforestScreen />}></Route>
+            <Route path="/process" element={<ProcessScreen />}></Route>
+            <Route path="/testbench" element={<TestBenchScreen />}></Route>
+            <Route path="/debug" element={<DebugScreen />}></Route>
             <Route>404 NOT FOUND</Route>
-          </Switch>
+          </Routes>
         </div>
       </AppContextProvider>
     );

@@ -1,16 +1,15 @@
-import { AxiosError, AxiosResponse } from "axios";
-import React, { FC, useContext, useEffect, useState } from "react";
-
-import { api, TestBenchReportData } from "services/HaskellApiService";
-
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError, AxiosResponse } from "axios";
 import { TestBenchSimulationLog } from "components/TestBenchSimulationLog";
+import { type FC, useContext, useEffect, useState } from "react";
+import { api, type TestBenchReportData } from "services/HaskellApiService";
 
 export const TestBenchScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
-  const [testBenchDump, setTestBenchDump] = useState<TestBenchReportData | null>(null);
+  const [testBenchDump, setTestBenchDump] =
+    useState<TestBenchReportData | null>(null);
 
   useEffect(() => {
     api
@@ -19,7 +18,7 @@ export const TestBenchScreen: FC = () => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
       })
-      .catch((err: AxiosError) => {
+      .catch((_err: AxiosError) => {
         setRequestSuccess(false);
       });
   }, [appContext.selectedSid]);

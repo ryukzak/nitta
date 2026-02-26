@@ -27,7 +27,7 @@ It was bootstrapped with [Create React App](https://github.com/facebook/create-r
 
 ## Tooling
 
-Using [prettier.io](https://prettier.io) autoformatter with VS Code + extensions proved to be convenient to develop this project, although most editors should understand provided `.editorconfig` file and make no trouble.
+Using [biome](https://biomejs.dev/) autoformatter with VS Code + extensions proved to be convenient to develop this project, although most editors should understand provided `.editorconfig` file and make no trouble.
 
 ## Available Scripts
 

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Sid } from "services/HaskellApiService";
+import type { Sid } from "services/HaskellApiService";
 
 export interface IAppContext {
   selectedSid: Sid;

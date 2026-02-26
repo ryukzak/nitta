@@ -1,13 +1,11 @@
-import { AxiosResponse } from "axios";
-import React, { FC, useContext, useEffect, useState } from "react";
-
-import { api, Node } from "services/HaskellApiService";
-
-import { AppContext, IAppContext } from "app/AppContext";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosResponse } from "axios";
 import { IntermediateView } from "components/IntermediateView";
 import { MicroarchitectureView } from "components/MicroarchitectureView";
 import { SubforestTables } from "components/SubforestTables";
 import { SynthesisHistory } from "components/SynthesisHistory";
+import { type FC, useContext, useEffect, useState } from "react";
+import { api, type Node } from "services/HaskellApiService";
 
 export const SubforestScreen: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;

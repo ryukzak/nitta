@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 
 export const DownloadTextFile = (props: { name: string; text: string }) => {
   const downloadTextFileCallback = useCallback(() => {
@@ -10,7 +10,11 @@ export const DownloadTextFile = (props: { name: string; text: string }) => {
     element.click();
   }, [props.name, props.text]);
   return (
-    <button className="btn btn-link" onClick={downloadTextFileCallback}>
+    <button
+      className="btn btn-link"
+      onClick={downloadTextFileCallback}
+      type={"button"}
+    >
       <small>download</small>
     </button>
   );
