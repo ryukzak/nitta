@@ -10,6 +10,8 @@ import React, {
 import type { ProcessTimelines } from "services/gen/types";
 import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
+import { TimelinePerUnit } from "./TimelinePerUnit";
+import { SplitPane } from "./utils/SplitPane";
 import { COMPONENT_COLORS, Color, fadeColor } from "../utils/color";
 import { JsonView } from "./JsonView";
 import {
@@ -510,218 +512,231 @@ export const ProcessTimelines2: FC = () => {
           {/*</div>*/}
         </div>
 
-        <div
-          className="diagram-container"
-          ref={containerRef}
-          style={{
-            minHeight: `${containerHeight}px`,
-            paddingTop: `${topPadding}px`,
-          }}
-        >
-          {/* SVG overlay for data flow arrows and grid lines */}
-          <svg className="data-flow-overlay" role={"presentation"}>
-            <defs>
-              {Array.from(
-                new Set(
-                  dataFlowConnections.map((c) => (
-                    <marker
-                      key={`marker-404040`}
-                      id={`arrowhead-404040`}
-                      markerWidth="5"
-                      markerHeight="10"
-                      refX="5"
-                      refY="3"
-                      orient="auto"
-                    >
-                      <polygon points="0 0, 6 3, 0 6" fill="#404040" />
-                    </marker>
-                  )),
-                ),
-              )}
-            </defs>
-            {/* horizontal dotted grid lines */}
-            {(() => {
-              let totalWidth = 0;
-              mostLeftFreeSpacesInColumnsPerRows.forEach((rowMap) => {
-                rowMap.forEach((val) => {
-                  if (val > totalWidth) totalWidth = val;
+        <div className="diagram-split-view">
+          <SplitPane initialSplitPercentage={70} minWidthLeft={300} minWidthRight={200}>
+            <div
+              className="diagram-container"
+              ref={containerRef}
+              style={{
+                minHeight: `${containerHeight}px`,
+                paddingTop: `${topPadding}px`,
+              }}
+            >
+              {/* SVG overlay for data flow arrows and grid lines */}
+              <svg className="data-flow-overlay" role={"presentation"}>
+                <defs>
+                  {Array.from(
+                    new Set(
+                      dataFlowConnections.map((c) => (
+                        <marker
+                          key={`marker-404040`}
+                          id={`arrowhead-404040`}
+                          markerWidth="5"
+                          markerHeight="10"
+                          refX="5"
+                          refY="3"
+                          orient="auto"
+                        >
+                          <polygon points="0 0, 6 3, 0 6" fill="#404040" />
+                        </marker>
+                      )),
+                    ),
+                  )}
+                </defs>
+                {/* horizontal dotted grid lines */}
+                {(() => {
+                  let totalWidth = 0;
+                  mostLeftFreeSpacesInColumnsPerRows.forEach((rowMap) => {
+                    rowMap.forEach((val) => {
+                      if (val > totalWidth) totalWidth = val;
+                    });
+                  });
+
+                  return Array.from(
+                    {
+                      length:
+                        Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) +
+                        1,
+                    },
+                    (_, i) => timelineConfig.minTime + i,
+                  ).map((time) => (
+                    <line
+                      key={`grid-line-${time}`}
+                      x1="0"
+                      y1={topPadding + time * ROW_HEIGHT}
+                      x2={totalWidth}
+                      y2={topPadding + time * ROW_HEIGHT}
+                      stroke="#40404060"
+                      strokeDasharray="2,4"
+                      strokeWidth="1"
+                      pointerEvents="none"
+                    />
+                  ));
+                })()}
+                {/* render all arrow paths underneath */}
+                {dataFlowConnections.map((connection, idx) => {
+                  const source = instructionPositions.get(connection.sourceId);
+                  const target = instructionPositions.get(connection.targetId);
+
+                  if (!source || !target) return null;
+
+                  const props = getArrowProps(
+                    source!,
+                    target!,
+                    topPadding,
+                    connection.variableName,
+                  );
+
+                  return (
+                    <ArrowPath
+                      key={`arrow-path-${connection.sourceId}:${connection.targetId}`}
+                      {...props}
+                    />
+                  );
+                })}
+                {/* render all arrow labels on top */}
+                {dataFlowConnections.map((connection, idx) => {
+                  const source = instructionPositions.get(connection.sourceId);
+                  const target = instructionPositions.get(connection.targetId);
+
+                  if (!source || !target) return null;
+
+                  const props = getArrowProps(
+                    source!,
+                    target!,
+                    topPadding,
+                    connection.variableName,
+                  );
+
+                  return (
+                    <ArrowLabel
+                      key={`arrow-label-${connection.sourceId}:${connection.targetId}`}
+                      {...props}
+                    />
+                  );
+                })}
+              </svg>
+
+              {functions.map((func, idx) => {
+                const bgColor = getComponentColor(func.component);
+                const bgTransparentColor = new Color({
+                  r: bgColor.obj.r,
+                  g: bgColor.obj.g,
+                  b: bgColor.obj.b,
                 });
-              });
+                bgTransparentColor.obj.a = 0x15 / 255;
+                const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
+                let leftPosition = 0;
 
-              return Array.from(
-                {
-                  length:
-                    Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) +
-                    1,
-                },
-                (_, i) => timelineConfig.minTime + i,
-              ).map((time) => (
-                <line
-                  key={`grid-line-${time}`}
-                  x1="0"
-                  y1={topPadding + time * ROW_HEIGHT}
-                  x2={totalWidth}
-                  y2={topPadding + time * ROW_HEIGHT}
-                  stroke="#40404060"
-                  strokeDasharray="2,4"
-                  strokeWidth="1"
-                  pointerEvents="none"
-                />
-              ));
-            })()}
-            {/* render all arrow paths underneath */}
-            {dataFlowConnections.map((connection, idx) => {
-              const source = instructionPositions.get(connection.sourceId);
-              const target = instructionPositions.get(connection.targetId);
-
-              if (!source || !target) return null;
-
-              const props = getArrowProps(
-                source!,
-                target!,
-                topPadding,
-                connection.variableName,
-              );
-
-              return (
-                <ArrowPath
-                  key={`arrow-path-${connection.sourceId}:${connection.targetId}`}
-                  {...props}
-                />
-              );
-            })}
-            {/* render all arrow labels on top */}
-            {dataFlowConnections.map((connection, idx) => {
-              const source = instructionPositions.get(connection.sourceId);
-              const target = instructionPositions.get(connection.targetId);
-
-              if (!source || !target) return null;
-
-              const props = getArrowProps(
-                source!,
-                target!,
-                topPadding,
-                connection.variableName,
-              );
-
-              return (
-                <ArrowLabel
-                  key={`arrow-label-${connection.sourceId}:${connection.targetId}`}
-                  {...props}
-                />
-              );
-            })}
-          </svg>
-
-          {functions.map((func, idx) => {
-            const bgColor = getComponentColor(func.component);
-            const bgTransparentColor = new Color({
-              r: bgColor.obj.r,
-              g: bgColor.obj.g,
-              b: bgColor.obj.b,
-            });
-            bgTransparentColor.obj.a = 0x15 / 255;
-            const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
-            let leftPosition = 0;
-
-            for (
-              let i = Math.max(
-                func.startTime - Math.ceil(headerHeight / ROW_HEIGHT),
-                -1,
-              );
-              i <= func.endTime;
-              i++
-            ) {
-              const rowSpaces = mostLeftFreeSpacesInColumnsPerRows.get(i);
-              if (rowSpaces) {
-                const prevColSpace = rowSpaces.get(func.column - 1);
-                if (prevColSpace !== undefined) {
-                  leftPosition = Math.max(leftPosition, prevColSpace);
+                for (
+                  let i = Math.max(
+                    func.startTime - Math.ceil(headerHeight / ROW_HEIGHT),
+                    -1,
+                  );
+                  i <= func.endTime;
+                  i++
+                ) {
+                  const rowSpaces = mostLeftFreeSpacesInColumnsPerRows.get(i);
+                  if (rowSpaces) {
+                    const prevColSpace = rowSpaces.get(func.column - 1);
+                    if (prevColSpace !== undefined) {
+                      leftPosition = Math.max(leftPosition, prevColSpace);
+                    }
+                  }
                 }
-              }
-            }
 
-            return (
-              <div
-                key={func.pID}
-                className="function-rectangle"
-                style={{
-                  top:
-                    topPadding +
-                    (func.startTime - timelineConfig.minTime) * ROW_HEIGHT -
-                    headerHeight,
-                  height:
-                    (func.endTime - func.startTime + 1) * ROW_HEIGHT +
-                    headerHeight,
-                  left: `${leftPosition}px`,
-                  width: `${func.width}px`,
-                  borderColor: bgColor.toHexString(),
-                  backgroundColor: bgTransparentColor.toHexString(),
-                }}
-              >
-                <div
-                  data-header-id={`func-header-${func.pID}`}
-                  className="function-header"
-                  style={{
-                    backgroundColor: fadeColor(
-                      bgColor,
-                      0x15 / 255,
-                    ).toHexString(), // header function background is not transparent but faded
-                    color: bgColor.toHexString(),
-                    height: "auto",
-                    minHeight: `${headerHeight}px`,
-                  }}
-                >
-                  <div className="function-name">
-                    <div>
-                      {func.component} #{func.pID}
-                    </div>
-                    <div>{func.label}</div>
-                  </div>
-                  <div className="function-time">
-                    [{func.startTime};{func.endTime}]
-                  </div>
-                </div>
-
-                <div className="instructions-container">
-                  {func.instructions.map((instr) => {
-                    return (
-                      <div
-                        key={instr.pID}
-                        data-instruction-id={`instr-${instr.pID}`}
-                        className="instruction-rectangle"
-                        style={{
-                          top:
-                            (instr.startTime - func.startTime) * ROW_HEIGHT + 8,
-                          height: Math.max(
-                            50,
-                            (instr.endTime - instr.startTime) * ROW_HEIGHT - 16,
-                          ),
-                          border: `2px solid ${bgColor.toHexString()}`,
-                        }}
-                        title={instr.info}
-                      >
-                        <div className="instruction-content">
-                          <div className="instruction-label">
-                            <strong>
-                              {instr.label} #{instr.pID}
-                            </strong>
-                          </div>
-                          <div className="instruction-time">
-                            [{instr.startTime};{instr.endTime}]
-                          </div>
-                          <div className="instruction-io-info">
-                            ({Array.from(instr.inputs).join(",")}) -{">"} (
-                            {Array.from(instr.outputs).join(",")})
-                          </div>
+                return (
+                  <div
+                    key={func.pID}
+                    className="function-rectangle"
+                    style={{
+                      top:
+                        topPadding +
+                        (func.startTime - timelineConfig.minTime) * ROW_HEIGHT -
+                        headerHeight,
+                      height:
+                        (func.endTime - func.startTime + 1) * ROW_HEIGHT +
+                        headerHeight,
+                      left: `${leftPosition}px`,
+                      width: `${func.width}px`,
+                      borderColor: bgColor.toHexString(),
+                      backgroundColor: bgTransparentColor.toHexString(),
+                    }}
+                  >
+                    <div
+                      data-header-id={`func-header-${func.pID}`}
+                      className="function-header"
+                      style={{
+                        backgroundColor: fadeColor(
+                          bgColor,
+                          0x15 / 255,
+                        ).toHexString(), // header function background is not transparent but faded
+                        color: bgColor.toHexString(),
+                        height: "auto",
+                        minHeight: `${headerHeight}px`,
+                      }}
+                    >
+                      <div className="function-name">
+                        <div>
+                          {func.component} #{func.pID}
                         </div>
+                        <div>{func.label}</div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+                      <div className="function-time">
+                        [{func.startTime};{func.endTime}]
+                      </div>
+                    </div>
+
+                    <div className="instructions-container">
+                      {func.instructions.map((instr) => {
+                        return (
+                          <div
+                            key={instr.pID}
+                            data-instruction-id={`instr-${instr.pID}`}
+                            className="instruction-rectangle"
+                            style={{
+                              top:
+                                (instr.startTime - func.startTime) * ROW_HEIGHT + 8,
+                              height: Math.max(
+                                50,
+                                (instr.endTime - instr.startTime) * ROW_HEIGHT - 16,
+                              ),
+                              border: `2px solid ${bgColor.toHexString()}`,
+                            }}
+                            title={instr.info}
+                          >
+                            <div className="instruction-content">
+                              <div className="instruction-label">
+                                <strong>
+                                  {instr.label} #{instr.pID}
+                                </strong>
+                              </div>
+                              <div className="instruction-time">
+                                [{instr.startTime};{instr.endTime}]
+                              </div>
+                              <div className="instruction-io-info">
+                                ({Array.from(instr.inputs).join(",")}) -{">"} (
+                                {Array.from(instr.outputs).join(",")})
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <TimelinePerUnit
+              functions={functions}
+              timelineConfig={timelineConfig}
+              rowHeight={ROW_HEIGHT}
+              topPadding={topPadding}
+              containerHeight={containerHeight}
+              getComponentColor={getComponentColor}
+            />
+          </SplitPane>
         </div>
       </div>
       <JsonView
