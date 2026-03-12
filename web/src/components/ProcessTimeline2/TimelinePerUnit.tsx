@@ -21,6 +21,34 @@ interface TimelinePerUnitProps {
   // mostLeftFreeSpacesInColumnsPerRows?: Map<number, Map<number, number>>;
 }
 
+const calculateLeftPosition = (
+  func: ProcessFunction,
+  mostLeftFreeSpaces: Map<number, Map<number, number>>,
+  headerHeight: number = 0,
+  rowHeight: number = 70
+): number => {
+  let leftPosition = 0;
+
+  for (
+    let i = Math.max(
+      func.startTime - Math.ceil(headerHeight / rowHeight),
+      -1,
+    );
+    i <= func.endTime;
+    i++
+  ) {
+    const rowSpaces = mostLeftFreeSpaces.get(i);
+    if (rowSpaces) {
+      const prevColSpace = rowSpaces.get(func.column - 1);
+      if (prevColSpace !== undefined) {
+        leftPosition = Math.max(leftPosition, prevColSpace);
+      }
+    }
+  }
+
+  return leftPosition;
+};
+
 export const TimelinePerUnit: FC<TimelinePerUnitProps> = ({
   functions,
   timelineConfig,
@@ -70,24 +98,36 @@ export const TimelinePerUnit: FC<TimelinePerUnitProps> = ({
       <div className="units-container" style={{ minHeight: containerHeight }}>
         {units.map(([unitName, unitFunctions]) => {
           const unitColor = getComponentColor(unitName);
+
+          // Calculate the required width for the unit column to fit all function rectangles
+          let maxWidth = 0;
+          unitFunctions.forEach(f => {
+            const leftPos = calculateLeftPosition(f, mostLeftFreeSpaces, 0, rowHeight);
+            const rightEdge = leftPos + f.width;
+            maxWidth = Math.max(maxWidth, rightEdge);
+          });
+
           return (
             <div key={unitName} className="unit-row">
-              <div className="unit-timeline-track">
-                {/*{dataFlowConnections.length > 0 && instructionPositions.size > 0 && (*/}
+              <div className="unit-column">
+                <div className="unit-timeline-track" style={maxWidth > 0 ? { width: `${maxWidth}px` } : {}}>
+                  {/*{dataFlowConnections.length > 0 && instructionPositions.size > 0 && (*/}
 
-                {/*)}*/}
-                 {unitFunctions.map(f => (
-                   <FunctionRectangle
-                     key={f.pID}
-                     func={f}
-                     bgColor={unitColor}
-                     headerHeight={0}
-                     rowHeight={rowHeight}
-                     topPadding={topPadding}
-                     timelineConfig={timelineConfig}
-                     mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpaces}
-                   />
-                 ))}
+                  {/*)}*/}
+                   {unitFunctions.map(f => (
+                     <FunctionRectangle
+                       key={f.pID}
+                       func={f}
+                       bgColor={unitColor}
+                       headerHeight={0}
+                       rowHeight={rowHeight}
+                       topPadding={topPadding}
+                       timelineConfig={timelineConfig}
+                       mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpaces}
+                       headerMode="left"
+                     />
+                   ))}
+                </div>
               </div>
             </div>
           );

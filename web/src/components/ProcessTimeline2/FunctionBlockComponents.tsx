@@ -61,6 +61,7 @@ interface FunctionRectangleProps {
     maxTime: number;
   };
   mostLeftFreeSpacesInColumnsPerRows: Map<number, Map<number, number>>;
+  headerMode?: 'top' | 'left';
 }
 
 interface FunctionBlockContentProps {
@@ -70,6 +71,7 @@ interface FunctionBlockContentProps {
   rowHeight?: number;
   showHeader?: boolean;
   showInstructions?: boolean;
+  headerMode?: 'top' | 'left';
 }
 
 export const FunctionRectangle: FC<FunctionRectangleProps> = ({
@@ -80,6 +82,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   topPadding,
   timelineConfig,
   mostLeftFreeSpacesInColumnsPerRows,
+  headerMode = 'top',
 }) => {
   const bgTransparentColor = new Color({
     r: bgColor.obj.r,
@@ -130,6 +133,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
         bgColor={bgColor}
         headerHeight={headerHeight}
         rowHeight={rowHeight}
+        headerMode={headerMode}
       />
     </div>
   );
@@ -142,10 +146,33 @@ export const FunctionBlockContent: FC<FunctionBlockContentProps> = ({
   rowHeight = ROW_HEIGHT,
   showHeader = true,
   showInstructions = true,
+  headerMode = 'top',
 }) => {
   return (
     <>
-      {showHeader && (
+      {headerMode === 'left' && showHeader && (
+        <div
+          data-header-id={`func-header-${func.pID}`}
+          className="function-header function-header-left"
+          style={{
+            backgroundColor: fadeColor(bgColor, 0x15 / 255).toHexString(),
+            color: bgColor.toHexString(),
+            borderColor: bgColor.toHexString(),
+          }}
+        >
+          <div className="function-name">
+            <div>
+              {func.component} #{func.pID}
+            </div>
+            <div>{func.label}</div>
+          </div>
+          <div className="function-time">
+            [{func.startTime};{func.endTime}]
+          </div>
+        </div>
+      )}
+
+      {headerMode === 'top' && showHeader && (
         <div
           data-header-id={`func-header-${func.pID}`}
           className="function-header"

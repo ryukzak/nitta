@@ -33,8 +33,6 @@
   }
 
   .unit-row {
-    flex: 1;
-    min-width: 80px;
     display: flex;
     flex-direction: column;
     //border-right: 1px dashed #dee2e6;
@@ -53,10 +51,22 @@
       border-bottom: 1px solid #dee2e6;
     }
 
+    .unit-column {
+      position: relative;
+      display: inline-block;
+      height: 100%;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      background-color: rgba(255, 255, 255, 0.5);
+      padding: 0.25rem;
+    }
+
     .unit-timeline-track {
       position: relative;
-      flex: 1;
+      height: 100%;
       min-height: 1000px;
+      display: inline-block;
+
 
       .function-rectangle {
         position: absolute;
@@ -64,13 +74,63 @@
         border-radius: 6px;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         padding: 0;
+        display: flex;
 
         .function-header {
           display: none;
         }
 
+        .function-header-left {
+          display: flex !important;
+          position: relative;
+          width: fit-content;
+          min-width: max-content;
+          border-right: 2px solid;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #f8f9fa;
+          padding: 0.25rem 0.5rem;
+          height: auto;
+          min-height: auto;
+          white-space: nowrap;
+
+          .function-name {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            gap: 0.25rem;
+            width: auto;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-align: center;
+            word-break: break-word;
+            max-width: 150px;
+
+            div {
+              font-size: 0.7rem;
+              font-weight: bold;
+            }
+          }
+
+          .function-time {
+            font-size: 0.65rem;
+            text-align: center;
+            word-break: break-all;
+            color: #6c757d;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+          }
+        }
+
         .instructions-container {
           position: relative;
+          flex: 1;
 
           .instruction-rectangle {
             z-index: 3;
