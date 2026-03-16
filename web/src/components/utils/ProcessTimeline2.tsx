@@ -31,6 +31,7 @@ export interface ProcessFunction {
   lowerPIDs: Set<number>;
   column: number;
   width: number;
+  instructionMaxWidth: number;
   isMemoryInit: boolean;
 }
 
@@ -102,6 +103,7 @@ export function parseProcessData(
               lowerPIDs: getAllLowerPIDs(point.pID),
               column: 0,
               width: MIN_COLUMN_WIDTH,
+              instructionMaxWidth: -1,
               isMemoryInit: false,
             };
             functionsMap.set(functionId, func);
@@ -189,13 +191,14 @@ export function parseProcessData(
         if (outputPID) i.sendsOutputsToPIDs.set(output, outputPID);
       }
     }
-    let maxInstructionWidth =
+
+    let maxInstructionNameWidth =
       f.instructions.length > 0
         ? Math.max(
             ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
           )
         : MIN_COLUMN_WIDTH;
-    maxInstructionWidth =
+    let maxInstructionIOWidth =
       f.instructions.length > 0
         ? Math.max(
             ...f.instructions.map(
@@ -207,6 +210,8 @@ export function parseProcessData(
             ),
           )
         : MIN_COLUMN_WIDTH;
+
+    let maxInstructionWidth = Math.max(maxInstructionNameWidth, maxInstructionIOWidth);
 
     let maxArrowTextWidth = 0;
     f.instructions.forEach((instr) => {
@@ -221,6 +226,7 @@ export function parseProcessData(
       maxArrowTextWidth + TEXT_PADDING,
     );
     f.width = Math.max(MIN_COLUMN_WIDTH, maxInstructionWidth);
+    f.instructionMaxWidth = maxInstructionWidth - TEXT_PADDING;
   }
 
   const functionsArray: ProcessFunction[] = functionsMap.values().toArray();

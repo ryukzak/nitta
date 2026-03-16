@@ -1,10 +1,10 @@
 import React, { FC } from 'react';
 import { ProcessFunction, type DataFlowConnection } from '../utils/ProcessTimeline2';
 import { Color } from '../../utils/color';
-import { FunctionRectangle } from './FunctionBlockComponents';
-import { DataFlowOverlay } from './TimelineView';
+import { FunctionRectangle } from './FunctionRectangle';
+import { DataFlowOverlay } from './DataFlows';
 import { type InstructionPosition } from '../utils/ArrowWithLabel';
-import './TimelinePerUnit.scss';
+import './UnitTimeline.scss';
 
 interface TimelinePerUnitProps {
   functions: ProcessFunction[];
@@ -49,7 +49,7 @@ const calculateLeftPosition = (
   return leftPosition;
 };
 
-export const TimelinePerUnit: FC<TimelinePerUnitProps> = ({
+export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   functions,
   timelineConfig,
   rowHeight,
@@ -60,6 +60,7 @@ export const TimelinePerUnit: FC<TimelinePerUnitProps> = ({
   // instructionPositions = new Map(),
   // mostLeftFreeSpacesInColumnsPerRows,
 }) => {
+  console.log(functions);
   // Group functions by component (unit)
   const unitsMap = new Map<string, ProcessFunction[]>();
   functions.forEach((f) => {
@@ -124,7 +125,7 @@ export const TimelinePerUnit: FC<TimelinePerUnitProps> = ({
                        topPadding={topPadding}
                        timelineConfig={timelineConfig}
                        mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpaces}
-                       headerMode="left"
+                       headerMode="inside"
                      />
                    ))}
                 </div>

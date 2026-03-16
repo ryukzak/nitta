@@ -8,6 +8,7 @@ import {
   getArrowProps,
   type InstructionPosition,
 } from "../utils/ArrowWithLabel";
+import './DataFlows.scss';
 
 interface DataFlowOverlayProps {
   topPadding: number;

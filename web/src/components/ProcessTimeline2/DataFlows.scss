@@ -1,0 +1,18 @@
+.data-flow-overlay {
+    position: absolute;
+    bottom: 0;
+    height: 100%;
+    overflow: visible;
+
+    .arrow-path {
+      opacity: 0.8;
+    }
+
+    text {
+      font-size: 0.7em;
+    }
+
+    rect {
+      fill: white;
+    }
+  }
