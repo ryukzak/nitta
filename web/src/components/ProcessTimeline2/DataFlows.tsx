@@ -53,9 +53,9 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
       {Array.from(
         {
           length:
-            Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 1,
+            Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 2,
         },
-        (_, i) => timelineConfig.minTime + i,
+        (_, i) => i,
       ).map((time) => (
         <line
           key={`grid-line-${time}`}
@@ -79,7 +79,7 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
         const props = getArrowProps(
           source!,
           target!,
-          topPadding,
+          0,
           connection.variableName,
         );
 
@@ -100,7 +100,7 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
         const props = getArrowProps(
           source!,
           target!,
-          topPadding,
+          0,
           connection.variableName,
         );
 

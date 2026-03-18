@@ -1,5 +1,7 @@
-import type { ProcessTimelines, TimelinePoint } from "services/gen/types";
-import type { ProcessData } from "services/HaskellApiService";
+import type {ProcessTimelines, TimelinePoint} from "services/gen/types";
+import type {ProcessData} from "services/HaskellApiService";
+import {useCallback} from "react";
+import type {InstructionPosition} from "./ArrowWithLabel";
 
 export enum OutputPosition {
   Left,
@@ -195,20 +197,20 @@ export function parseProcessData(
     let maxInstructionNameWidth =
       f.instructions.length > 0
         ? Math.max(
-            ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
-          )
+          ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
+        )
         : MIN_COLUMN_WIDTH;
     let maxInstructionIOWidth =
       f.instructions.length > 0
         ? Math.max(
-            ...f.instructions.map(
-              (i) =>
-                `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
-                  .length *
-                  8 +
-                TEXT_PADDING,
-            ),
-          )
+          ...f.instructions.map(
+            (i) =>
+              `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
+                .length *
+              8 +
+              TEXT_PADDING,
+          ),
+        )
         : MIN_COLUMN_WIDTH;
 
     let maxInstructionWidth = Math.max(maxInstructionNameWidth, maxInstructionIOWidth);
@@ -244,5 +246,26 @@ export function parseProcessData(
     });
   });
 
-  return { functions: functionsArray, dataFlowConnections: connections };
+  return {functions: functionsArray, dataFlowConnections: connections};
+}
+
+export function instructionPositionsEqual(
+  map1: Map<number, InstructionPosition>,
+  map2: Map<number, InstructionPosition>,
+): boolean {
+  if (map1.size !== map2.size) return false;
+  for (const [key, pos1] of map1) {
+    const pos2 = map2.get(key);
+    if (
+      !pos2 ||
+      pos1.x !== pos2.x ||
+      pos1.y !== pos2.y ||
+      pos1.width !== pos2.width ||
+      pos1.height !== pos2.height ||
+      pos1.color !== pos2.color
+    ) {
+      return false;
+    }
+  }
+  return true;
 }

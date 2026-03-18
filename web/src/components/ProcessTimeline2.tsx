@@ -211,7 +211,7 @@ export const ProcessTimelines2: FC = () => {
         </div>
 
         <div className="diagram-split-view">
-          <SplitPane initialSplitPercentage={70} minWidthLeft={300} minWidthRight={200}>
+          <SplitPane initialSplitPercentage={70} minWidthLeft={15} minWidthRight={15}>
             <FunctionTimeline
               functions={functions}
               timelineConfig={timelineConfig}
@@ -227,7 +227,7 @@ export const ProcessTimelines2: FC = () => {
               topPadding={topPadding}
               containerHeight={containerHeight}
               getComponentColor={getComponentColor}
-              // dataFlowConnections={dataFlowConnections}
+              dataFlowConnections={dataFlowConnections}
               // instructionPositions={instructionPositions}
               // mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpacesInColumnsPerRows}
             />

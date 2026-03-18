@@ -83,10 +83,10 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
         top:
           topPadding +
           (func.startTime - timelineConfig.minTime) * rowHeight -
-          ((headerMode === "outside") ? headerHeight : 0),
+          ((headerMode === "outside" && showHeader) ? headerHeight : 0),
         height:
           (func.endTime - func.startTime + 1) * rowHeight +
-          ((headerMode === "outside") ? headerHeight : 0),
+          ((headerMode === "outside" && showHeader) ? headerHeight : 0),
         left: `${leftPosition}px`,
         // width: `${func.width}px`,
         borderColor: bgColor.toHexString(),
@@ -97,23 +97,23 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       {showHeader && (
         <div
           data-header-id={`func-header-${func.pID}`}
-          className="function-header"
+          className={`function-header ${(headerMode === 'inside' ? "inner" : "")}`}
           style={{
             backgroundColor: fadeColor(bgColor, 0x15 / 255).toHexString(),
             color: bgColor.toHexString(),
-            height: 'auto',
+            // height: 'auto',
             width: func.instructionMaxWidth + TEXT_PADDING,
-            minHeight: `${headerHeight}px`,
+            height: `${headerMode === 'inside' ? rowHeight / 5 + "px" : "auto"}`,
           }}
         >
           <div className="function-name">
-            <div>
-              {func.component} #{func.pID}
-            </div>
+            {/*<div>*/}
+            {/*  {func.component} #{func.pID}*/}
+            {/*</div>*/}
             <div>{func.label}</div>
           </div>
           <div className="function-time">
-            [{func.startTime};{func.endTime}]
+            {/*[{func.startTime};{func.endTime}]*/}
           </div>
         </div>
       )}
@@ -121,16 +121,16 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       {/* Instructions Container */}
       {showInstructions && (
         <div ref={instructionContainerRef} className="instructions-container" style={{width: func.instructionMaxWidth + TEXT_PADDING}}>
-          {func.instructions.map((instruction) => (
+          {func.instructions.map((instruction, index) => (
             <div
               key={instruction.pID}
               data-instruction-id={`instr-${instruction.pID}`}
               className="instruction-rectangle"
               style={{
-                top: (instruction.startTime - func.startTime) * rowHeight + 8,
+                top: (instruction.startTime - func.startTime) * rowHeight + 8 - ((headerMode === 'inside' && index !== 0) ? (rowHeight / 5) : 0),
                 height: Math.max(
-                  50,
-                  (instruction.endTime - instruction.startTime) * rowHeight - 16,
+                  1,
+                  (instruction.endTime - instruction.startTime + 1) * rowHeight - 20 - ((headerMode === 'inside' && index === 0) ? (rowHeight / 5) : 0),
                 ),
                 border: `2px solid ${bgColor.toHexString()}`,
               }}

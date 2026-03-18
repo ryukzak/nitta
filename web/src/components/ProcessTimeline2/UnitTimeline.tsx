@@ -1,5 +1,5 @@
-import React, { FC } from 'react';
-import { ProcessFunction, type DataFlowConnection } from '../utils/ProcessTimeline2';
+import React, {FC, useCallback, useLayoutEffect, useState} from 'react';
+import {ProcessFunction, instructionPositionsEqual, type DataFlowConnection} from '../utils/ProcessTimeline2';
 import { Color } from '../../utils/color';
 import { FunctionRectangle } from './FunctionRectangle';
 import { DataFlowOverlay } from './DataFlows';
@@ -16,7 +16,7 @@ interface TimelinePerUnitProps {
   topPadding: number;
   containerHeight: number;
   getComponentColor: (component: string) => Color;
-  // dataFlowConnections?: DataFlowConnection[];
+  dataFlowConnections: DataFlowConnection[];
   // instructionPositions?: Map<number, InstructionPosition>;
   // mostLeftFreeSpacesInColumnsPerRows?: Map<number, Map<number, number>>;
 }
@@ -56,10 +56,14 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   topPadding,
   containerHeight,
   getComponentColor,
-  // dataFlowConnections = [],
+  dataFlowConnections,
   // instructionPositions = new Map(),
   // mostLeftFreeSpacesInColumnsPerRows,
 }) => {
+  const [instructionPositions, setInstructionPositions] = useState<
+    Map<number, InstructionPosition>
+  >(new Map());
+  const containerRef = React.useRef<HTMLDivElement>(null);
   console.log(functions);
   // Group functions by component (unit)
   const unitsMap = new Map<string, ProcessFunction[]>();
@@ -71,6 +75,51 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   });
 
   const units = Array.from(unitsMap.entries());
+
+  const calculateInstructionPositions = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const positionsMap = new Map<number, InstructionPosition>();
+    const containerRect = container.getBoundingClientRect();
+    const paddingTop =
+      container.offsetHeight > 0
+        ? parseFloat(window.getComputedStyle(container).paddingTop)
+        : 0;
+
+    functions.forEach((func) => {
+      func.instructions.forEach((instr) => {
+        const elemId = `instr-${instr.pID}`;
+        const element = container.querySelector(
+          `[data-instruction-id="${elemId}"]`,
+        );
+
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const relativeX =
+            rect.left - containerRect.left + container.scrollLeft;
+          const relativeY =
+            rect.top - containerRect.top + container.scrollTop - paddingTop;
+
+          positionsMap.set(instr.pID, {
+            instructionId: instr.pID,
+            x: relativeX,
+            y: relativeY,
+            width: rect.width,
+            height: rect.height,
+            color: getComponentColor(func.component).toHexString(),
+          });
+        }
+      });
+    });
+
+    setInstructionPositions((prevPositions) => {
+      if (instructionPositionsEqual(prevPositions, positionsMap)) {
+        return prevPositions;
+      }
+      return positionsMap;
+    });
+  }, [functions, getComponentColor, instructionPositionsEqual]);
 
   // Create a default mostLeftFreeSpaces map with left margin for per-unit view
   const defaultMostLeftFreeSpaces = new Map<number, Map<number, number>>();
@@ -89,12 +138,18 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
     mostLeftFreeSpaces.set(i, columnsMap);
   }
 
+  useLayoutEffect(() => {
+    if (containerHeight > 0) calculateInstructionPositions();
+  }, [containerHeight, calculateInstructionPositions]);
+
   return (
-    <div className="timeline-per-unit">
+    <div ref={containerRef} className="timeline-per-unit">
       <DataFlowOverlay
                     topPadding={topPadding}
                     timelineConfig={timelineConfig}
                     rowHeight={rowHeight}
+                    dataFlowConnections={dataFlowConnections}
+                    instructionPositions={instructionPositions}
                   />
       <div className="units-container" style={{ minHeight: containerHeight }}>
         {units.map(([unitName, unitFunctions]) => {

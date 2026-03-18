@@ -10,7 +10,7 @@ import type {
   Instruction,
   ProcessFunction,
 } from "../utils/ProcessTimeline2";
-import { OutputPosition } from "../utils/ProcessTimeline2";
+import { OutputPosition, instructionPositionsEqual } from "../utils/ProcessTimeline2";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import type { Color } from "../../utils/color";
 import type { ProcessData } from "services/HaskellApiService";
@@ -86,7 +86,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
 
       if (headerElement) {
         const measuredHeight = headerElement.offsetHeight;
-        heightsMap.set(func.pID, Math.max(measuredHeight, 50));
+        heightsMap.set(func.pID, measuredHeight);
       } else {
         heightsMap.set(func.pID, ROW_HEIGHT);
       }
@@ -99,30 +99,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       return heightsMap;
     });
   }, [functions, mapsEqual]);
-
-  const instructionPositionsEqual = useCallback(
-    (
-      map1: Map<number, InstructionPosition>,
-      map2: Map<number, InstructionPosition>,
-    ): boolean => {
-      if (map1.size !== map2.size) return false;
-      for (const [key, pos1] of map1) {
-        const pos2 = map2.get(key);
-        if (
-          !pos2 ||
-          pos1.x !== pos2.x ||
-          pos1.y !== pos2.y ||
-          pos1.width !== pos2.width ||
-          pos1.height !== pos2.height ||
-          pos1.color !== pos2.color
-        ) {
-          return false;
-        }
-      }
-      return true;
-    },
-    [],
-  );
 
   const calculateInstructionPositions = useCallback(() => {
     const container = containerRef.current;
@@ -349,7 +325,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       maxHeaderHeightAtMin +
       (maxTime - minTime + 1) * ROW_HEIGHT +
       CONTAINER_BUTTOM_PADDING;
-    const newTopPadding = maxHeaderHeightAtMin;
+    const newTopPadding = Math.max(maxHeaderHeightAtMin, ROW_HEIGHT);
 
     setContainerHeight(newContainerHeight);
     setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
@@ -387,7 +363,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       ref={containerRef}
       style={{
         minHeight: `${containerHeight}px`,
-        paddingTop: `${topPadding}px`,
+        // paddingTop: `${topPadding}px`,
       }}
     >
       {/* SVG overlay for data flow arrows and grid lines */}
