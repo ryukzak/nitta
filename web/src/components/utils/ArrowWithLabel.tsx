@@ -9,6 +9,7 @@ export interface ArrowProps {
   targetHeight: number;
   label: string;
   color: string;
+  isNonNeighbor?: boolean;
 }
 
 export interface InstructionPosition {
@@ -18,6 +19,7 @@ export interface InstructionPosition {
   width: number;
   height: number;
   color: string;
+  column?: number;
 }
 
 export const getArrowProps = (
@@ -39,6 +41,13 @@ export const getArrowProps = (
     arrowSourceX = source.x + source.width;
     arrowTargetX = target.x;
   }
+
+  // Determine if source and target are in non-neighbor columns
+  // Non-neighbor means they are not in adjacent columns
+  const sourceColumn = source.column ?? 0;
+  const targetColumn = target.column ?? 0;
+  const isNonNeighbor = Math.abs(sourceColumn - targetColumn) > 1;
+
   const result: ArrowProps = {
     sourceX: arrowSourceX,
     sourceY: topPadding + source.y,
@@ -48,9 +57,24 @@ export const getArrowProps = (
     targetHeight: target.height,
     label: label,
     color: "#404040",
+    isNonNeighbor,
   };
   return result;
 };
+
+interface ArrowGeometry {
+  pathData: string;
+  textX: number;
+  textY: number;
+  rectX: number;
+  rectY: number;
+  rectWidth: number;
+  rectHeight: number;
+  targetTextX?: number;
+  targetTextY?: number;
+  targetRectX?: number;
+  targetRectY?: number;
+}
 
 const calculateArrowGeometry = (
   sourceX: number,
@@ -60,7 +84,8 @@ const calculateArrowGeometry = (
   targetY: number,
   targetHeight: number,
   label: string,
-) => {
+  isNonNeighbor: boolean = false,
+): ArrowGeometry => {
   const sourceMidY = sourceY + sourceHeight / 2;
   const targetMidY = targetY + targetHeight / 2;
   const horizontalDistance = targetX - sourceX;
@@ -75,15 +100,39 @@ const calculateArrowGeometry = (
 
   const textPaddingX = 2;
   const textPaddingY = 2;
-  const textX = sourceX < targetX ? sourceX + 8 : sourceX - estimatedTextWidth;
-  const textY = sourceMidY + 3;
+
+  // For neighbor columns, place label in the center of the connection
+  // For non-neighbor columns, place label at source side (target side will be added below)
+  const centerX = (sourceX + targetX) / 2;
+  const centerY = (sourceMidY + targetMidY) / 2;
+
+  // For neighbor columns, use center; for non-neighbor, use source side
+  const textX = isNonNeighbor
+    ? (sourceX < targetX ? sourceX + 8 : sourceX - estimatedTextWidth)
+    : centerX - estimatedTextWidth / 2;
+  const textY = isNonNeighbor ? sourceMidY + 3 : centerY + 3;
 
   const rectX = textX - textPaddingX;
   const rectY = textY - textPaddingY - 6;
   const rectWidth = estimatedTextWidth;
   const rectHeight = 14 + textPaddingY * 2;
 
-  return { pathData, textX, textY, rectX, rectY, rectWidth, rectHeight };
+  const geometry: ArrowGeometry = { pathData, textX, textY, rectX, rectY, rectWidth, rectHeight };
+
+  // For non-neighbor columns, also add label at target side
+  if (isNonNeighbor) {
+    const targetTextX = sourceX < targetX ? targetX - estimatedTextWidth - 8 : targetX + 8;
+    const targetTextY = targetMidY + 3;
+    const targetRectX = targetTextX - textPaddingX;
+    const targetRectY = targetTextY - textPaddingY - 6;
+
+    geometry.targetTextX = targetTextX;
+    geometry.targetTextY = targetTextY;
+    geometry.targetRectX = targetRectX;
+    geometry.targetRectY = targetRectY;
+  }
+
+  return geometry;
 };
 
 export const ArrowPath: FC<ArrowProps> = (props) => {
@@ -95,6 +144,7 @@ export const ArrowPath: FC<ArrowProps> = (props) => {
     props.targetY,
     props.targetHeight,
     props.label,
+    props.isNonNeighbor,
   );
 
   return (
@@ -110,7 +160,7 @@ export const ArrowPath: FC<ArrowProps> = (props) => {
 };
 
 export const ArrowLabel: FC<ArrowProps> = (props) => {
-  const { textX, textY, rectX, rectY, rectWidth, rectHeight } =
+  const { textX, textY, rectX, rectY, rectWidth, rectHeight, targetTextX, targetTextY, targetRectX, targetRectY } =
     calculateArrowGeometry(
       props.sourceX,
       props.sourceY,
@@ -119,7 +169,28 @@ export const ArrowLabel: FC<ArrowProps> = (props) => {
       props.targetY,
       props.targetHeight,
       props.label,
+      props.isNonNeighbor,
     );
+
+  if (props.isNonNeighbor && targetTextX !== undefined && targetTextY !== undefined && targetRectX !== undefined && targetRectY !== undefined) {
+    // Render labels on both sides for non-neighbor columns
+    return (
+      <g className="arrow-label-group">
+        {/* Source side label */}
+        <rect x={rectX} y={rectY} width={rectWidth} height={rectHeight} />
+        <text x={textX} y={textY} className="arrow-label" fill={props.color}>
+          {props.label}
+        </text>
+        {/* Target side label */}
+        <rect x={targetRectX} y={targetRectY} width={rectWidth} height={rectHeight} />
+        <text x={targetTextX} y={targetTextY} className="arrow-label" fill={props.color}>
+          {props.label}
+        </text>
+      </g>
+    );
+  }
+
+  // Single label in center for neighbor columns
   return (
     <g className="arrow-label-group">
       <rect x={rectX} y={rectY} width={rectWidth} height={rectHeight} />

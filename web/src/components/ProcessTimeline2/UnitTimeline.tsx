@@ -113,6 +113,7 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
             width: rect.width,
             height: rect.height,
             color: getComponentColor(func.component).toHexString(),
+            column: units.map(([key]) => key).indexOf(func.component)
           });
         }
       });
@@ -244,7 +245,7 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
           let maxWidth = 0;
           unitFunctions.forEach(f => {
             const leftPos = calculateLeftPosition(f, mostLeftFreeSpaces, 0, rowHeight);
-            const rightEdge = leftPos + f.width;
+            const rightEdge = f.width;
             maxWidth = Math.max(maxWidth, rightEdge);
           });
 

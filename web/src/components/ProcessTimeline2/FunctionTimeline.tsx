@@ -31,7 +31,6 @@ interface FunctionTimelineProps {
   dataFlowConnections: DataFlowConnection[];
   getComponentColor: (component: string) => Color;
   onLayoutComplete: (
-    functions: ProcessFunction[],
     containerHeight: number,
     topPadding: number,
     mostLeftFreeSpaces: Map<number, Map<number, number>>,
@@ -59,6 +58,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     setMostLeftFreeSpacesInColumnsPerRows,
   ] = useState<Map<number, Map<number, number>>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
+  const [functionColumns, setFunctionColumns] = useState<Map<number, number>>(new Map());
   const processingRef = React.useRef(false);
 
   const mapsEqual = useCallback(
@@ -112,6 +112,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
         : 0;
 
     functions.forEach((func) => {
+      const funcColumn = functionColumns.get(func.pID) ?? 0;
       func.instructions.forEach((instr) => {
         const elemId = `instr-${instr.pID}`;
         const element = container.querySelector(
@@ -132,6 +133,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
             width: rect.width,
             height: rect.height,
             color: getComponentColor(func.component).toHexString(),
+            column: funcColumn,
           });
         }
       });
@@ -143,7 +145,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       }
       return positionsMap;
     });
-  }, [functions, getComponentColor, instructionPositionsEqual]);
+  }, [functions, functionColumns, getComponentColor, instructionPositionsEqual]);
 
   const performLayout = useCallback(() => {
     if (functions.length === 0 || headerHeights.size < functions.length) return;
@@ -331,9 +333,15 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
     setTopPadding(newTopPadding);
 
+    // Store column assignments
+    const columnsMap = new Map<number, number>();
+    functionsArray.forEach((func) => {
+      columnsMap.set(func.pID, func.column);
+    });
+    setFunctionColumns(columnsMap);
+
     // Notify parent component of layout changes
     onLayoutComplete(
-      functionsArray,
       newContainerHeight,
       newTopPadding,
       mostLeftFreeSpaceInColumnsByRows,
@@ -341,7 +349,12 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     );
 
     processingRef.current = false;
-  }, [headerHeights, timelineConfig, onLayoutComplete]);
+
+    // Recalculate instruction positions after layout changes
+    setTimeout(() => {
+      calculateInstructionPositions();
+    }, 0);
+  }, [headerHeights, timelineConfig, functions]);
 
   useLayoutEffect(() => {
     if (functions.length > 0) {
@@ -355,7 +368,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
 
   useLayoutEffect(() => {
     if (containerHeight > 0) calculateInstructionPositions();
-  }, [containerHeight, calculateInstructionPositions]);
+  }, [containerHeight, calculateInstructionPositions, functions]);
 
   return (
     <div
@@ -378,11 +391,13 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       {functions.map((func) => {
         const bgColor = getComponentColor(func.component);
         const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
+        const column = functionColumns.get(func.pID) ?? 0;
+        const funcWithColumn = { ...func, column };
 
         return (
           <FunctionRectangle
             key={func.pID}
-            func={func}
+            func={funcWithColumn}
             bgColor={bgColor}
             headerHeight={headerHeight}
             rowHeight={ROW_HEIGHT}

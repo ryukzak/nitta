@@ -51,6 +51,7 @@ export const ProcessTimelines2: FC = () => {
   const selectedColorsRef = React.useRef<Map<string, string>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
+  const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -87,18 +88,19 @@ export const ProcessTimelines2: FC = () => {
     });
   }, []);
 
-  // Filter functions based on enabled units
-  const filteredFunctions = functions.filter(f => enabledUnits.has(f.component));
+  // Update filteredFunctions when functions or enabledUnits change
+  useEffect(() => {
+    const filtered = functions.filter(f => enabledUnits.has(f.component));
+    setFilteredFunctions(filtered);
+  }, [functions, enabledUnits]);
 
   const handleLayoutComplete = useCallback(
     (
-      layoutFunctions: ProcessFunction[],
       newContainerHeight: number,
       newTopPadding: number,
       newMostLeftFreeSpaces: Map<number, Map<number, number>>,
       newInstructionPositions: Map<number, InstructionPosition>,
     ) => {
-      setFunctions(layoutFunctions);
       setContainerHeight(newContainerHeight);
       setTopPadding(newTopPadding);
       setMostLeftFreeSpacesInColumnsPerRows(newMostLeftFreeSpaces);
