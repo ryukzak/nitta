@@ -1,8 +1,9 @@
-import React, {FC, useCallback, useLayoutEffect, useState} from 'react';
+import React, {FC, useCallback, useEffect, useLayoutEffect, useState} from 'react';
 import {ProcessFunction, instructionPositionsEqual, type DataFlowConnection} from '../utils/ProcessTimeline2';
 import { Color } from '../../utils/color';
 import { FunctionRectangle } from './FunctionRectangle';
 import { DataFlowOverlay } from './DataFlows';
+import { LegendItem } from './LegendItem';
 import { type InstructionPosition } from '../utils/ArrowWithLabel';
 import './UnitTimeline.scss';
 
@@ -17,6 +18,8 @@ interface TimelinePerUnitProps {
   containerHeight: number;
   getComponentColor: (component: string) => Color;
   dataFlowConnections: DataFlowConnection[];
+  onUnitToggle?: (unitName: string) => void;
+  enabledUnits?: Set<string>;
   // instructionPositions?: Map<number, InstructionPosition>;
   // mostLeftFreeSpacesInColumnsPerRows?: Map<number, Map<number, number>>;
 }
@@ -57,6 +60,8 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   containerHeight,
   getComponentColor,
   dataFlowConnections,
+  onUnitToggle,
+  enabledUnits = new Set(),
   // instructionPositions = new Map(),
   // mostLeftFreeSpacesInColumnsPerRows,
 }) => {
@@ -142,6 +147,86 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
     if (containerHeight > 0) calculateInstructionPositions();
   }, [containerHeight, calculateInstructionPositions]);
 
+  useEffect(() => {
+    // Measure the widest function rectangle per unit and apply that width to all rectangles in that unit
+    const unitRows = containerRef.current?.querySelectorAll('.unit-row');
+    if (!unitRows || unitRows.length === 0) return;
+
+    unitRows.forEach((unitRow) => {
+      const functionRectangles = unitRow.querySelectorAll('.function-rectangle');
+      if (functionRectangles.length === 0) return;
+
+      let maxWidth = 0;
+      functionRectangles.forEach((rect) => {
+        const width = rect.getBoundingClientRect().width;
+        maxWidth = Math.max(maxWidth, width);
+      });
+
+      // Apply the max width to all function rectangles, headers, and instructions containers in this unit
+      if (maxWidth > 0) {
+        functionRectangles.forEach((rect) => {
+          (rect as HTMLElement).style.width = `${maxWidth}px`;
+
+          const header = rect.querySelector('.function-header') as HTMLElement;
+          if (header) {
+            header.style.width = `${maxWidth}px`;
+          }
+
+          const instructionsContainer = rect.querySelector('.instructions-container') as HTMLElement;
+          if (instructionsContainer) {
+            instructionsContainer.style.width = `${maxWidth}px`;
+          }
+        });
+      }
+    });
+  }, [functions]);
+
+  useEffect(() => {
+    // Adjust spacing between unit columns based on arrow label widths
+    const unitRows = containerRef.current?.querySelectorAll('.unit-row');
+    if (!unitRows || unitRows.length === 0) return;
+
+    // Get all arrow label groups from the SVG overlay
+    const arrowLabels = containerRef.current?.querySelectorAll('.arrow-label-group');
+    if (!arrowLabels || arrowLabels.length === 0) return;
+
+    // Map to store max label width per row
+    const labelWidthsByRow = new Map<number, number>();
+
+    arrowLabels.forEach((labelGroup) => {
+      const rect = labelGroup.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const relativeY = rect.top - containerRect.top + containerRef.current!.scrollTop;
+
+      // Round to nearest row to group labels in same row
+      const rowKey = Math.round(relativeY / rowHeight) * rowHeight;
+      const labelWidth = rect.width;
+
+      const currentMax = labelWidthsByRow.get(rowKey) || 0;
+      labelWidthsByRow.set(rowKey, Math.max(currentMax, labelWidth));
+    });
+
+    // Apply spacing between unit columns based on the maximum label widths
+    if (labelWidthsByRow.size > 0) {
+      const maxLabelWidth = Math.max(...Array.from(labelWidthsByRow.values()));
+      const requiredGap = maxLabelWidth + 20; // Add padding
+
+      const unitsContainer = containerRef.current?.querySelector('.units-container') as HTMLElement;
+      if (unitsContainer) {
+        unitsContainer.style.columnGap = `${requiredGap}px`;
+      }
+
+      // Also set gap on unit-columns
+      const unitColumns = containerRef.current?.querySelectorAll('.unit-column');
+      unitColumns?.forEach((col) => {
+        (col as HTMLElement).style.marginRight = `${requiredGap}px`;
+      });
+
+      // Update instruction positions after spacing adjustment
+      calculateInstructionPositions();
+    }
+  }, [functions, rowHeight, calculateInstructionPositions]);
+
   return (
     <div ref={containerRef} className="timeline-per-unit">
       <DataFlowOverlay
@@ -166,6 +251,12 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
           return (
             <div key={unitName} className="unit-row">
               <div className="unit-column">
+                <LegendItem
+                  componentName={unitName}
+                  color={unitColor}
+                  enabled={enabledUnits.has(unitName)}
+                  onToggle={onUnitToggle}
+                />
                 <div className="unit-timeline-track" style={maxWidth > 0 ? { width: `${maxWidth}px` } : {}}>
                   {/*{dataFlowConnections.length > 0 && instructionPositions.size > 0 && (*/}
 

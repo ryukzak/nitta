@@ -11,6 +11,7 @@ import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
 import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
+import { LegendItem } from "./ProcessTimeline2/LegendItem";
 import { SplitPane } from "./utils/SplitPane";
 import { COMPONENT_COLORS, Color, fadeColor } from "../utils/color";
 import { JsonView } from "./JsonView";
@@ -49,6 +50,7 @@ export const ProcessTimelines2: FC = () => {
   ] = useState<Map<number, Map<number, number>>>(new Map());
   const selectedColorsRef = React.useRef<Map<string, string>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
+  const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -72,6 +74,21 @@ export const ProcessTimelines2: FC = () => {
     selectedColorsRef.current.set(component, selectedColor);
     return COMPONENT_COLORS[selectedColor];
   }, []);
+
+  const handleUnitToggle = useCallback((unitName: string) => {
+    setEnabledUnits((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(unitName)) {
+        newSet.delete(unitName);
+      } else {
+        newSet.add(unitName);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Filter functions based on enabled units
+  const filteredFunctions = functions.filter(f => enabledUnits.has(f.component));
 
   const handleLayoutComplete = useCallback(
     (
@@ -115,6 +132,10 @@ export const ProcessTimelines2: FC = () => {
       setContainerHeight((maxTime - minTime + 1) * ROW_HEIGHT + 100);
       setDataFlowConnections(connections);
       setMostLeftFreeSpacesInColumnsPerRows(initialMostLeftSpaces);
+
+      // Initialize all units as enabled
+      const allUnits = new Set(functionsArray.map(f => f.component));
+      setEnabledUnits(allUnits);
     },
     [],
   );
@@ -167,15 +188,13 @@ export const ProcessTimelines2: FC = () => {
         <div className="legend-container">
           {Array.from(selectedColorsRef.current.entries()).map(
             ([componentName, colorKey]) => (
-              <div key={componentName} className="legend-item">
-                <div
-                  className="legend-color-swatch"
-                  style={{
-                    backgroundColor: COMPONENT_COLORS[colorKey].toHexString(),
-                  }}
-                />
-                <span className="legend-label">{componentName}</span>
-              </div>
+              <LegendItem
+                key={componentName}
+                componentName={componentName}
+                color={COMPONENT_COLORS[colorKey]}
+                enabled={enabledUnits.has(componentName)}
+                onToggle={handleUnitToggle}
+              />
             ),
           )}
         </div>
@@ -213,7 +232,7 @@ export const ProcessTimelines2: FC = () => {
         <div className="diagram-split-view">
           <SplitPane initialSplitPercentage={70} minWidthLeft={15} minWidthRight={15}>
             <FunctionTimeline
-              functions={functions}
+              functions={filteredFunctions}
               timelineConfig={timelineConfig}
               dataFlowConnections={dataFlowConnections}
               getComponentColor={getComponentColor}
@@ -221,13 +240,15 @@ export const ProcessTimelines2: FC = () => {
             />
 
             <UnitTimeline
-              functions={functions}
+              functions={filteredFunctions}
               timelineConfig={timelineConfig}
               rowHeight={ROW_HEIGHT}
               topPadding={topPadding}
               containerHeight={containerHeight}
               getComponentColor={getComponentColor}
               dataFlowConnections={dataFlowConnections}
+              onUnitToggle={handleUnitToggle}
+              enabledUnits={enabledUnits}
               // instructionPositions={instructionPositions}
               // mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpacesInColumnsPerRows}
             />
@@ -236,7 +257,7 @@ export const ProcessTimelines2: FC = () => {
       </div>
       <JsonView
         style={{ gap: "2rem", padding: "3rem 3rem 3rem 4rem" }}
-        value={functions}
+        value={filteredFunctions}
         collapsed={1}
         shortenTextAfterLength={120}
       />

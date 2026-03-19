@@ -1,0 +1,30 @@
+.legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f0f0f0;
+      }
+
+      &.disabled {
+        opacity: 0.5;
+      }
+
+      .legend-color-swatch {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 16px;
+      }
+
+      .legend-label {
+        font-weight: 500;
+        word-break: break-word;
+      }
+    }

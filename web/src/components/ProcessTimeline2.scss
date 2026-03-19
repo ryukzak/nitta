@@ -10,25 +10,6 @@
     border-radius: 6px;
     display: flex;
     gap: 1.5rem;
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.9rem;
-
-      .legend-color-swatch {
-        flex-shrink: 0;
-        width: 16px;
-        height: 16px;
-        border-radius: 16px;
-      }
-
-      .legend-label {
-        font-weight: 500;
-        word-break: break-word;
-      }
-    }
   }
 }
 
