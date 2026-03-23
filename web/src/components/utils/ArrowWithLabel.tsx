@@ -22,6 +22,12 @@ export interface InstructionPosition {
   column?: number;
 }
 
+const TEXT_PADDING = 2;
+const TEXT_HEIGHT = 14;
+
+const SPACE_BETWEEN_INSTRUCTION_AND_SOURCE_TEXT = 6;
+const SPACE_BETWEEN_INSTRUCTION_AND_TARGET_TEXT = 16;
+
 export const getArrowProps = (
   source: InstructionPosition,
   target: InstructionPosition,
@@ -30,6 +36,31 @@ export const getArrowProps = (
 ) => {
   let arrowSourceX: number;
   let arrowTargetX: number;
+
+  const estimatedTextWidth = label.length * 7;
+  const extra_spacing = SPACE_BETWEEN_INSTRUCTION_AND_TARGET_TEXT + SPACE_BETWEEN_INSTRUCTION_AND_SOURCE_TEXT;
+
+  if (source === undefined) {
+    source = {
+      instructionId: -1,
+      x: target.x - estimatedTextWidth - extra_spacing,
+      y: target.y,
+      width: 0,
+      height: target.height,
+      color: 'null'
+    }
+  }
+
+  if (target === undefined) {
+    target = {
+      instructionId: -1,
+      x: source.x + source.width + estimatedTextWidth + extra_spacing,
+      y: source.y,
+      width: 0,
+      height: source.height,
+      color: 'null'
+    }
+  }
 
   if (source.x > target.x) {
     arrowSourceX = source.x;
@@ -89,17 +120,19 @@ const calculateArrowGeometry = (
   const sourceMidY = sourceY + sourceHeight / 2;
   const targetMidY = targetY + targetHeight / 2;
   const horizontalDistance = targetX - sourceX;
-  const estimatedTextWidth = label.length * 7;
-  const curveOffset = Math.max(30, Math.abs(horizontalDistance) * 0.25);
+  const estimatedTextWidth = label.length * 6.5;
+  let curveOffset = Math.max(30, Math.abs(horizontalDistance) * 0.25);
 
   let pathData: string;
-  if (sourceX < targetX)
-    pathData = `M ${sourceX} ${sourceMidY} C ${sourceX + estimatedTextWidth * 1.75 + curveOffset} ${sourceMidY}, ${targetX - 45 - curveOffset} ${targetMidY}, ${targetX} ${targetMidY}`;
-  else
-    pathData = `M ${sourceX} ${sourceMidY} C ${sourceX - estimatedTextWidth * 1.75 - curveOffset} ${sourceMidY}, ${targetX + 45 + curveOffset} ${targetMidY}, ${targetX} ${targetMidY}`;
 
-  const textPaddingX = 2;
-  const textPaddingY = 2;
+  curveOffset += isNonNeighbor ? estimatedTextWidth * 1.75 : 45;
+
+  if (sourceX < targetX)
+    pathData = `M ${sourceX} ${sourceMidY} C ${sourceX + curveOffset} ${sourceMidY}, ${targetX - curveOffset} ${targetMidY}, ${targetX} ${targetMidY}`;
+  else
+    pathData = `M ${sourceX} ${sourceMidY} C ${sourceX - curveOffset} ${sourceMidY}, ${targetX + curveOffset} ${targetMidY}, ${targetX} ${targetMidY}`;
+
+
 
   // For neighbor columns, place label in the center of the connection
   // For non-neighbor columns, place label at source side (target side will be added below)
@@ -108,23 +141,23 @@ const calculateArrowGeometry = (
 
   // For neighbor columns, use center; for non-neighbor, use source side
   const textX = isNonNeighbor
-    ? (sourceX < targetX ? sourceX + 8 : sourceX - estimatedTextWidth)
+    ? (sourceX < targetX ? sourceX + SPACE_BETWEEN_INSTRUCTION_AND_SOURCE_TEXT : sourceX - estimatedTextWidth - SPACE_BETWEEN_INSTRUCTION_AND_SOURCE_TEXT)
     : centerX - estimatedTextWidth / 2;
   const textY = isNonNeighbor ? sourceMidY + 3 : centerY + 3;
 
-  const rectX = textX - textPaddingX;
-  const rectY = textY - textPaddingY - 6;
+  const rectX = textX - TEXT_PADDING;
+  const rectY = textY - TEXT_PADDING - TEXT_HEIGHT * 0.75;
   const rectWidth = estimatedTextWidth;
-  const rectHeight = 14 + textPaddingY * 2;
+  const rectHeight = TEXT_HEIGHT + TEXT_PADDING * 2;
 
   const geometry: ArrowGeometry = { pathData, textX, textY, rectX, rectY, rectWidth, rectHeight };
 
   // For non-neighbor columns, also add label at target side
   if (isNonNeighbor) {
-    const targetTextX = sourceX < targetX ? targetX - estimatedTextWidth - 8 : targetX + 8;
+    const targetTextX = sourceX < targetX ? targetX - estimatedTextWidth - SPACE_BETWEEN_INSTRUCTION_AND_TARGET_TEXT : targetX + SPACE_BETWEEN_INSTRUCTION_AND_TARGET_TEXT;
     const targetTextY = targetMidY + 3;
-    const targetRectX = targetTextX - textPaddingX;
-    const targetRectY = targetTextY - textPaddingY - 6;
+    const targetRectX = targetTextX - TEXT_PADDING;
+    const targetRectY = targetTextY - TEXT_PADDING - TEXT_HEIGHT * 0.75;
 
     geometry.targetTextX = targetTextX;
     geometry.targetTextY = targetTextY;

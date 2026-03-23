@@ -1,29 +1,23 @@
 import React, {
   type FC,
   useCallback,
-  useEffect,
   useLayoutEffect,
   useState,
 } from "react";
-import type {
-  DataFlowConnection,
-  Instruction,
-  ProcessFunction,
+import {
+  COLUMN_MARGIN, CONTAINER_BUTTOM_PADDING,
+  DataFlowConnection, MIN_FUNCTION_GAP,
+  ProcessFunction, ROW_HEIGHT,
 } from "../utils/ProcessTimeline2";
-import { OutputPosition, instructionPositionsEqual } from "../utils/ProcessTimeline2";
+import { LabelPosition, instructionPositionsEqual } from "../utils/ProcessTimeline2";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import type { Color } from "../../utils/color";
-import type { ProcessData } from "services/HaskellApiService";
-import type { ProcessTimelines } from "services/gen/types";
 import { FunctionRectangle } from "./FunctionRectangle";
 import { DataFlowOverlay } from "./DataFlows";
 import { estimateArrowTextWidth } from "../utils/ProcessTimeline2";
-import "components/ProcessTimeline2/FunctionTimeline.scss";
+import "components/ProcessTimeline2/TimelineContainer.scss";
 
-const ROW_HEIGHT = 70;
-const COLUMN_MARGIN = 20;
-const MIN_FUNCTION_GAP = 0.5;
-const CONTAINER_BUTTOM_PADDING = ROW_HEIGHT;
+
 
 interface FunctionTimelineProps {
   functions: ProcessFunction[];
@@ -32,9 +26,7 @@ interface FunctionTimelineProps {
   getComponentColor: (component: string) => Color;
   onLayoutComplete: (
     containerHeight: number,
-    topPadding: number,
-    mostLeftFreeSpaces: Map<number, Map<number, number>>,
-    instructionPositions: Map<number, InstructionPosition>,
+    topPadding: number
   ) => void;
 }
 
@@ -45,6 +37,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   getComponentColor,
   onLayoutComplete,
 }) => {
+  const [layoutFunctions, setLayoutFunctions] = useState<ProcessFunction[]>([]);
   const [containerHeight, setContainerHeight] = useState(1000);
   const [instructionPositions, setInstructionPositions] = useState<
     Map<number, InstructionPosition>
@@ -53,10 +46,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     new Map(),
   );
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [
-    mostLeftFreeSpacesInColumnsPerRows,
-    setMostLeftFreeSpacesInColumnsPerRows,
-  ] = useState<Map<number, Map<number, number>>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
   const [functionColumns, setFunctionColumns] = useState<Map<number, number>>(new Map());
   const processingRef = React.useRef(false);
@@ -147,12 +136,25 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     });
   }, [functions, functionColumns, getComponentColor, instructionPositionsEqual]);
 
+  const getFunctionAffectedRows = (func: ProcessFunction) => {
+    const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
+    const headerRowHeight = Math.ceil(headerHeight / ROW_HEIGHT);
+
+    const firstAffectedRowIndex = Math.max(
+      func.startTime - headerRowHeight,
+      -1,
+    );
+    const lastAffectedRowIndex = func.endTime;
+    return { firstAffectedRowIndex: firstAffectedRowIndex, lastAffectedRowIndex: lastAffectedRowIndex }
+  }
+
+  const functionsArray = functions.map((f) => ({ ...f }));
+
   const performLayout = useCallback(() => {
     if (functions.length === 0 || headerHeights.size < functions.length) return;
     if (processingRef.current) return;
     processingRef.current = true;
 
-    const functionsArray = functions.map((f) => ({ ...f }));
     functionsArray.sort((a, b) => a.startTime - b.startTime);
 
     type Interval = [number, number];
@@ -214,105 +216,87 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       return null;
     };
 
+    const getArrowLabelPosition = (fromColumn: number, toColumn: number) => {
+      return toColumn >= fromColumn ? LabelPosition.Right : LabelPosition.Left;
+    }
+
+    // assign input/output positions
     functionsArray.forEach((f) => {
       f.instructions.forEach((i) => {
-        for (const [, targetPID] of i.sendsOutputsToPIDs) {
-          const targetInstructionColumn = getInstructionColumnByPID(targetPID);
-          if (targetInstructionColumn === null) continue;
-          let nextOutputPosition: OutputPosition;
-          if (targetInstructionColumn >= f.column)
-            nextOutputPosition = OutputPosition.Right;
-          else nextOutputPosition = OutputPosition.Left;
-
-          if (i.outputPosition === OutputPosition.None) {
-            i.outputPosition = nextOutputPosition;
-          } else if (i.outputPosition !== nextOutputPosition) {
-            i.outputPosition = OutputPosition.Both;
-          }
-        }
+        i.inputs.forEach((inp) => {
+          const targetInstrucionPID = i.receiveInputsFromPIDs.get(inp);
+          let inputPosition;
+          if (targetInstrucionPID === undefined || getInstructionColumnByPID(targetInstrucionPID) === null) inputPosition = LabelPosition.Left;
+          else inputPosition = getArrowLabelPosition(f.column, getInstructionColumnByPID(targetInstrucionPID)!);
+          i.inputPositions.set(inp, inputPosition)
+        })
+        i.outputs.forEach((outp) => {
+          const targetInstrucionPID = i.sendsOutputsToPIDs.get(outp);
+          let outputPosition;
+          if (targetInstrucionPID === undefined || getInstructionColumnByPID(targetInstrucionPID) === null) outputPosition = LabelPosition.Right;
+          else outputPosition = getArrowLabelPosition(f.column, getInstructionColumnByPID(targetInstrucionPID)!);
+          i.outputPositions.set(outp, outputPosition)
+        })
       });
     });
 
     const { minTime, maxTime } = timelineConfig;
 
     // align function blocks to the most left position to minimize width
-    const mostLeftFreeSpaceInColumnsByRows = new Map<
-      number,
-      Map<number, number>
-    >();
-    const maxCol = Math.max(...functionsArray.map((f) => f.column), 0);
-
-    for (let i = minTime - 2; i <= maxTime; i++) {
-      const columnsMap = new Map<number, number>();
-      columnsMap.set(-1, 0);
-      for (let j = 0; j <= maxCol; j++) columnsMap.set(j, COLUMN_MARGIN);
-      mostLeftFreeSpaceInColumnsByRows.set(i, columnsMap);
-    }
+    const funcLeftPositions = new Map<number, number>();
 
     functionsArray.forEach((func) => {
-      const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
-      const headerRowHeight = Math.ceil(headerHeight / ROW_HEIGHT);
+      const {firstAffectedRowIndex, lastAffectedRowIndex} = getFunctionAffectedRows(func);
 
-      const firstAffectedRowIndex = Math.max(
-        func.startTime - headerRowHeight,
-        -1,
-      );
-      const lastAffectedRowIndex = func.endTime;
+      let leftOccupiedPositionsPerRow = new Map<number, number>();
+      for (let i: number = func.startTime; i <= func.endTime; i++)
+        leftOccupiedPositionsPerRow.set(i, 0)
 
-      const instructionPerRow = new Map<number, Instruction>();
-      for (const instr of func.instructions) {
-        for (let i = instr.startTime; i <= instr.endTime; i++) {
-          instructionPerRow.set(i, instr);
-        }
-      }
+      functionsArray.forEach((f) => {
+        if (f.column === func.column - 1) {
+          const {firstAffectedRowIndex: a, lastAffectedRowIndex: b} = getFunctionAffectedRows(f);
 
-      let currentLeftPositionOfFunction = 0;
-      if (func.column !== 0) {
-        for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-          let leftArrowTextWidth = 0;
-          let arrowLabel = "";
-          if (instructionPerRow.has(i)) {
-            const instr = instructionPerRow.get(i)!;
-            arrowLabel = instr.sendsOutputsToPIDs.keys().toArray()[0];
-            if (
-              instr.outputPosition === OutputPosition.Left ||
-              instr.outputPosition === OutputPosition.Both
-            )
-              leftArrowTextWidth = estimateArrowTextWidth(arrowLabel);
+          if (Math.max(firstAffectedRowIndex, a) <= Math.min(lastAffectedRowIndex, b)) {
+
+            let neighbourRightBorderPosition = funcLeftPositions.get(f.pID)! + f.width;
+            for (let i: number = f.startTime; i <= f.endTime; i++)
+              leftOccupiedPositionsPerRow.set(i, neighbourRightBorderPosition + COLUMN_MARGIN)
+
+            f.instructions.forEach((i) => {
+              i.outputs.forEach((l) => {
+                if (i.outputPositions.get(l) === LabelPosition.Right) {
+                  const labelRightBorder = neighbourRightBorderPosition + estimateArrowTextWidth(l);
+                  leftOccupiedPositionsPerRow.set(i.startTime, labelRightBorder)
+                }
+              })
+              i.inputs.forEach((l) => {
+                if (i.inputPositions.get(l) === LabelPosition.Right) {
+                  const labelRightBorder = neighbourRightBorderPosition + estimateArrowTextWidth(l);
+                  leftOccupiedPositionsPerRow.set(i.startTime, labelRightBorder)
+                }
+              })
+            })
           }
-          currentLeftPositionOfFunction = Math.max(
-            currentLeftPositionOfFunction,
-            mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
-              leftArrowTextWidth,
-          );
-          const prevColumnWithLeftArrow =
-            mostLeftFreeSpaceInColumnsByRows.get(i)!.get(func.column - 1)! +
-            leftArrowTextWidth;
-          mostLeftFreeSpaceInColumnsByRows
-            .get(i)!
-            .set(func.column - 1, prevColumnWithLeftArrow);
         }
-      }
-      for (let i = firstAffectedRowIndex; i < lastAffectedRowIndex + 1; i++) {
-        let rightArrowTextWidth = 0;
-        if (instructionPerRow.has(i)) {
-          const instr = instructionPerRow.get(i)!;
-          if (
-            instr.outputPosition === OutputPosition.Right ||
-            instr.outputPosition === OutputPosition.Both
-          )
-            rightArrowTextWidth = estimateArrowTextWidth(
-              instr.sendsOutputsToPIDs.keys().toArray()[0],
-            );
-        }
-        const spaceBetweenColumns =
-          rightArrowTextWidth !== 0 ? rightArrowTextWidth : COLUMN_MARGIN;
-        const nextColumnRightBorder =
-          currentLeftPositionOfFunction + func.width + spaceBetweenColumns;
-        mostLeftFreeSpaceInColumnsByRows
-          .get(i)!
-          .set(func.column, nextColumnRightBorder);
-      }
+      })
+      func.instructions.forEach((i) => {
+        i.inputs.forEach((l) => {
+          if (i.inputPositions.get(l) === LabelPosition.Left) {
+            const lastPos = leftOccupiedPositionsPerRow.get(i.startTime);
+            const nextPos = lastPos! + estimateArrowTextWidth(l);
+            leftOccupiedPositionsPerRow.set(i.startTime, nextPos);
+          }
+        })
+        i.outputs.forEach((l) => {
+          if (i.outputPositions.get(l) === LabelPosition.Left) {
+            const lastPos = leftOccupiedPositionsPerRow.get(i.startTime);
+            const nextPos = lastPos! + estimateArrowTextWidth(l);
+            leftOccupiedPositionsPerRow.set(i.startTime, nextPos);
+          }
+        })
+      })
+      func.leftPosition = Math.max(...leftOccupiedPositionsPerRow.values());
+      funcLeftPositions.set(func.pID, func.leftPosition);
     });
 
     const functionsAtMinTime = functionsArray.filter(
@@ -330,7 +314,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     const newTopPadding = Math.max(maxHeaderHeightAtMin, ROW_HEIGHT);
 
     setContainerHeight(newContainerHeight);
-    setMostLeftFreeSpacesInColumnsPerRows(mostLeftFreeSpaceInColumnsByRows);
     setTopPadding(newTopPadding);
 
     // Store column assignments
@@ -343,36 +326,26 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     // Notify parent component of layout changes
     onLayoutComplete(
       newContainerHeight,
-      newTopPadding,
-      mostLeftFreeSpaceInColumnsByRows,
-      instructionPositions,
+      newTopPadding
     );
 
     processingRef.current = false;
 
-    // Recalculate instruction positions after layout changes
-    setTimeout(() => {
-      calculateInstructionPositions();
-    }, 0);
-  }, [headerHeights, timelineConfig, functions]);
-
-  useLayoutEffect(() => {
-    if (functions.length > 0) {
-      calculateHeaderHeights();
-    }
-  }, [functions, calculateHeaderHeights]);
+    setLayoutFunctions(functionsArray);
+  }, [headerHeights, timelineConfig]);
 
   useLayoutEffect(() => {
     performLayout();
   }, [performLayout]);
 
   useLayoutEffect(() => {
-    if (containerHeight > 0) calculateInstructionPositions();
-  }, [containerHeight, calculateInstructionPositions, functions]);
+    calculateHeaderHeights();
+    calculateInstructionPositions();
+  }, [calculateHeaderHeights, calculateInstructionPositions]);
 
   return (
     <div
-      className="diagram-container"
+      className="timeline-container function-timeline"
       ref={containerRef}
       style={{
         minHeight: `${containerHeight}px`,
@@ -388,22 +361,16 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
         rowHeight={ROW_HEIGHT}
       />
 
-      {functions.map((func) => {
+      {layoutFunctions.map((func) => {
         const bgColor = getComponentColor(func.component);
-        const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
-        const column = functionColumns.get(func.pID) ?? 0;
-        const funcWithColumn = { ...func, column };
-
         return (
           <FunctionRectangle
             key={func.pID}
-            func={funcWithColumn}
+            func={func}
             bgColor={bgColor}
-            headerHeight={headerHeight}
             rowHeight={ROW_HEIGHT}
             topPadding={topPadding}
             timelineConfig={timelineConfig}
-            mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpacesInColumnsPerRows}
           />
         );
       })}

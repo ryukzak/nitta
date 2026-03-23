@@ -13,19 +13,16 @@ import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
 import { LegendItem } from "./ProcessTimeline2/LegendItem";
 import { SplitPane } from "./utils/SplitPane";
-import { COMPONENT_COLORS, Color, fadeColor } from "../utils/color";
+import { COMPONENT_COLORS, Color } from "../utils/color";
 import { JsonView } from "./JsonView";
-import {
-  type InstructionPosition,
-} from "./utils/ArrowWithLabel";
 import {
   type DataFlowConnection,
   type ProcessFunction,
-  parseProcessData,
+  parseProcessData, COLUMN_MARGIN,
+  ROW_HEIGHT,
 } from "./utils/ProcessTimeline2";
 
-const ROW_HEIGHT = 70;
-const COLUMN_MARGIN = 20;
+
 
 export const ProcessTimelines2: FC = () => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
@@ -41,13 +38,6 @@ export const ProcessTimelines2: FC = () => {
   const [dataFlowConnections, setDataFlowConnections] = useState<
     DataFlowConnection[]
   >([]);
-  const [instructionPositions, setInstructionPositions] = useState<
-    Map<number, InstructionPosition>
-  >(new Map());
-  const [
-    mostLeftFreeSpacesInColumnsPerRows,
-    setMostLeftFreeSpacesInColumnsPerRows,
-  ] = useState<Map<number, Map<number, number>>>(new Map());
   const selectedColorsRef = React.useRef<Map<string, string>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
@@ -98,13 +88,9 @@ export const ProcessTimelines2: FC = () => {
     (
       newContainerHeight: number,
       newTopPadding: number,
-      newMostLeftFreeSpaces: Map<number, Map<number, number>>,
-      newInstructionPositions: Map<number, InstructionPosition>,
     ) => {
       setContainerHeight(newContainerHeight);
       setTopPadding(newTopPadding);
-      setMostLeftFreeSpacesInColumnsPerRows(newMostLeftFreeSpaces);
-      setInstructionPositions(newInstructionPositions);
     },
     [],
   );
@@ -131,9 +117,8 @@ export const ProcessTimelines2: FC = () => {
 
       setFunctions(functionsArray);
       setTimelineConfig({ minTime, maxTime });
-      setContainerHeight((maxTime - minTime + 1) * ROW_HEIGHT + 100);
+      // setContainerHeight((maxTime - minTime + 1) * ROW_HEIGHT + 100);
       setDataFlowConnections(connections);
-      setMostLeftFreeSpacesInColumnsPerRows(initialMostLeftSpaces);
 
       // Initialize all units as enabled
       const allUnits = new Set(functionsArray.map(f => f.component));
@@ -141,7 +126,6 @@ export const ProcessTimelines2: FC = () => {
     },
     [],
   );
-
 
   useEffect(() => {
     if (selectedSid) {
@@ -257,9 +241,17 @@ export const ProcessTimelines2: FC = () => {
           </SplitPane>
         </div>
       </div>
+      <div>Filtered Functions</div>
       <JsonView
         style={{ gap: "2rem", padding: "3rem 3rem 3rem 4rem" }}
         value={filteredFunctions}
+        collapsed={1}
+        shortenTextAfterLength={120}
+      />
+      <div>Data Flow Connections</div>
+      <JsonView
+        style={{ gap: "2rem", padding: "3rem 3rem 3rem 4rem" }}
+        value={dataFlowConnections}
         collapsed={1}
         shortenTextAfterLength={120}
       />

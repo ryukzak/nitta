@@ -1,21 +1,17 @@
 import React, { FC } from 'react';
-import {Instruction, ProcessFunction, TEXT_PADDING} from '../utils/ProcessTimeline2';
+import { ProcessFunction, TEXT_PADDING} from '../utils/ProcessTimeline2';
 import { Color, fadeColor } from '../../utils/color';
 import './FunctionRectangle.scss';
-
-const ROW_HEIGHT = 70;
 
 interface FunctionRectangleProps {
   func: ProcessFunction;
   bgColor: Color;
-  headerHeight: number;
   rowHeight: number;
   topPadding: number;
   timelineConfig: {
     minTime: number;
     maxTime: number;
   };
-  mostLeftFreeSpacesInColumnsPerRows: Map<number, Map<number, number>>;
   headerMode?: 'inside' | 'outside';
   showHeader?: boolean;
   showInstructions?: boolean;
@@ -24,18 +20,16 @@ interface FunctionRectangleProps {
 export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   func,
   bgColor,
-  headerHeight,
   rowHeight,
   topPadding,
   timelineConfig,
-  mostLeftFreeSpacesInColumnsPerRows,
   headerMode = 'outside',
   showHeader = true,
   showInstructions = true,
 }) => {
 
-  const instructionContainerRef = React.useRef<HTMLDivElement>(null)
-  const [instructionContainerHeight, setInstructionContainerHeight] = React.useState<number | null>(null)
+  const headerRef = React.useRef<HTMLDivElement | null>(null);
+  const [headerHeight, setHeaderHeight] = React.useState<number>(0);
 
   const bgTransparentColor = new Color({
     r: bgColor.obj.r,
@@ -44,36 +38,12 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   });
   bgTransparentColor.obj.a = 0x15 / 255;
 
-  let leftPosition = 0;
-
-  for (
-    let i = Math.max(
-      func.startTime - Math.ceil(headerHeight / rowHeight),
-      -1,
-    );
-    i <= func.endTime;
-    i++
-  ) {
-    const rowSpaces = mostLeftFreeSpacesInColumnsPerRows.get(i);
-    if (rowSpaces) {
-      const prevColSpace = rowSpaces.get(func.column - 1);
-      if (prevColSpace !== undefined) {
-        leftPosition = Math.max(leftPosition, prevColSpace);
-      }
+  React.useLayoutEffect(() => {
+    if (headerRef.current) {
+      const rect = headerRef.current.getBoundingClientRect();
+      setHeaderHeight(rect.height);
     }
-  }
-
-  React.useEffect(() => {
-    if (instructionContainerRef.current) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          setInstructionContainerHeight(entry.contentRect.height)
-        }
-      })
-      resizeObserver.observe(instructionContainerRef.current)
-      return () => resizeObserver.disconnect()
-    }
-  }, [])
+  }, []); // run after first render
 
   return (
     <div
@@ -87,7 +57,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
         height:
           (func.endTime - func.startTime + 1) * rowHeight +
           ((headerMode === "outside" && showHeader) ? headerHeight : 0),
-        left: `${leftPosition}px`,
+        left: `${func.leftPosition}px`, //`${leftPosition}px`,
         // width: `${func.width}px`,
         borderColor: bgColor.toHexString(),
         backgroundColor: bgTransparentColor.toHexString(),
@@ -96,6 +66,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       {/* Top Header - shown when headerMode is 'top' */}
       {showHeader && (
         <div
+          ref={headerRef}
           data-header-id={`func-header-${func.pID}`}
           className={`function-header ${(headerMode === 'inside' ? "inner" : "")}`}
           style={{
@@ -120,7 +91,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
 
       {/* Instructions Container */}
       {showInstructions && (
-        <div ref={instructionContainerRef} className="instructions-container" style={{width: func.instructionMaxWidth + TEXT_PADDING}}>
+        <div className="instructions-container" style={{width: func.instructionMaxWidth + TEXT_PADDING}}>
           {func.instructions.map((instruction, index) => (
             <div
               key={instruction.pID}

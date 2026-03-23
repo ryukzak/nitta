@@ -74,11 +74,11 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
         const source = instructionPositions.get(connection.sourceId);
         const target = instructionPositions.get(connection.targetId);
 
-        if (!source || !target) return null;
+        if (!source && !target) return null;
 
         const props = getArrowProps(
-          source!,
-          target!,
+          source,
+          target,
           0,
           connection.variableName,
         );
@@ -95,7 +95,7 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
         const source = instructionPositions.get(connection.sourceId);
         const target = instructionPositions.get(connection.targetId);
 
-        if (!source || !target) return null;
+        if (!source && !target) return null;
 
         const props = getArrowProps(
           source!,

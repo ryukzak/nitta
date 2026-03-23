@@ -3,11 +3,12 @@ import type {ProcessData} from "services/HaskellApiService";
 import {useCallback} from "react";
 import type {InstructionPosition} from "./ArrowWithLabel";
 
-export enum OutputPosition {
+export enum LabelPosition {
   Left,
   Right,
   Both,
   None,
+  Center
 }
 
 export interface Instruction {
@@ -18,9 +19,11 @@ export interface Instruction {
   info: string;
   inputs: Set<string>;
   outputs: Set<string>;
-  receiveInputsFromPIDs: Map<string, number>;
+  outputPositions: Map<string, number>;
+  inputPositions: Map<string, LabelPosition>;
+  receiveInputsFromPIDs: Map<string, LabelPosition>;
   sendsOutputsToPIDs: Map<string, number>;
-  outputPosition: OutputPosition;
+  outputPosition: LabelPosition;
 }
 
 export interface ProcessFunction {
@@ -33,18 +36,26 @@ export interface ProcessFunction {
   lowerPIDs: Set<number>;
   column: number;
   width: number;
+  leftPosition: number;
   instructionMaxWidth: number;
   isMemoryInit: boolean;
 }
 
 export interface DataFlowConnection {
-  sourceId: number;
-  targetId: number;
+  sourceId: number | null;
+  targetId: number | null;
   variableName: string;
+  isSourcePlanned: boolean;
+  isTargetPlanned: boolean;
 }
 
 export const MIN_COLUMN_WIDTH = 50;
 export const TEXT_PADDING = 40;
+export const ROW_HEIGHT = 70;
+export const COLUMN_MARGIN = 20;
+export const MIN_FUNCTION_GAP = 0.5;
+export const SCROLLBARHEIGHT = 25;
+export const CONTAINER_BUTTOM_PADDING = 35 + SCROLLBARHEIGHT;
 
 export const estimateArrowTextWidth = (label: string): number => {
   // approximately 7px per character at font size 11, plus 4px padding
@@ -107,6 +118,7 @@ export function parseProcessData(
               width: MIN_COLUMN_WIDTH,
               instructionMaxWidth: -1,
               isMemoryInit: false,
+              leftPosition: -1
             };
             functionsMap.set(functionId, func);
           }
@@ -165,9 +177,11 @@ export function parseProcessData(
                 info: point.pInfo,
                 inputs: inputs,
                 outputs: outputs,
+                inputPositions: new Map(),
+                outputPositions: new Map(),
                 receiveInputsFromPIDs: new Map(),
                 sendsOutputsToPIDs: new Map(),
-                outputPosition: OutputPosition.None,
+                outputPosition: LabelPosition.None,
               };
               f.instructions.push(i);
               funcFound += 1;
@@ -241,9 +255,40 @@ export function parseProcessData(
           sourceId: instr.pID,
           targetId,
           variableName,
+          isSourcePlanned: true,
+          isTargetPlanned: true
         });
       });
     });
+  });
+
+  functionsArray.forEach((func) => {
+    func.instructions.forEach((instr) => {
+      instr.inputs.forEach((inputVarName) => {
+          if (!instr.receiveInputsFromPIDs.has(inputVarName)) {
+            connections.push({
+              sourceId: null,
+              targetId: instr.pID,
+              variableName: inputVarName,
+              isSourcePlanned: false,
+              isTargetPlanned: true
+            })
+          }
+        }
+      )
+
+      instr.outputs.forEach((outputVarName) => {
+        if (!instr.sendsOutputsToPIDs.has(outputVarName)) {
+          connections.push({
+              sourceId: instr.pID,
+              targetId: null,
+              variableName: outputVarName,
+              isSourcePlanned: true,
+              isTargetPlanned: false
+            })
+        }
+      })
+    })
   });
 
   return {functions: functionsArray, dataFlowConnections: connections};
