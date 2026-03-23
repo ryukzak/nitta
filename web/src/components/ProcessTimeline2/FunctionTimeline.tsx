@@ -8,13 +8,18 @@ import {
   COLUMN_MARGIN, CONTAINER_BUTTOM_PADDING,
   DataFlowConnection, MIN_FUNCTION_GAP,
   ProcessFunction, ROW_HEIGHT,
+  LabelPosition, instructionPositionsEqual,
+  estimateArrowTextWidth,
+  mapsEqual,
+  getInstructionColumnByPID,
+  getArrowLabelPosition,
+  assignInputOutputPositions,
+  calculateInstructionPositionsFromDOM,
 } from "../utils/ProcessTimeline2";
-import { LabelPosition, instructionPositionsEqual } from "../utils/ProcessTimeline2";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import type { Color } from "../../utils/color";
 import { FunctionRectangle } from "./FunctionRectangle";
 import { DataFlowOverlay } from "./DataFlows";
-import { estimateArrowTextWidth } from "../utils/ProcessTimeline2";
 import "components/ProcessTimeline2/TimelineContainer.scss";
 
 
@@ -50,17 +55,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   const [functionColumns, setFunctionColumns] = useState<Map<number, number>>(new Map());
   const processingRef = React.useRef(false);
 
-  const mapsEqual = useCallback(
-    (map1: Map<number, number>, map2: Map<number, number>): boolean => {
-      if (map1.size !== map2.size) return false;
-      for (const [key, value] of map1) {
-        if (map2.get(key) !== value) return false;
-      }
-      return true;
-    },
-    [],
-  );
-
   const calculateHeaderHeights = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -91,42 +85,12 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
 
   const calculateInstructionPositions = useCallback(() => {
     const container = containerRef.current;
-    if (!container) return;
-
-    const positionsMap = new Map<number, InstructionPosition>();
-    const containerRect = container.getBoundingClientRect();
-    const paddingTop =
-      container.offsetHeight > 0
-        ? parseFloat(window.getComputedStyle(container).paddingTop)
-        : 0;
-
-    functions.forEach((func) => {
-      const funcColumn = functionColumns.get(func.pID) ?? 0;
-      func.instructions.forEach((instr) => {
-        const elemId = `instr-${instr.pID}`;
-        const element = container.querySelector(
-          `[data-instruction-id="${elemId}"]`,
-        );
-
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          const relativeX =
-            rect.left - containerRect.left + container.scrollLeft;
-          const relativeY =
-            rect.top - containerRect.top + container.scrollTop - paddingTop;
-
-          positionsMap.set(instr.pID, {
-            instructionId: instr.pID,
-            x: relativeX,
-            y: relativeY,
-            width: rect.width,
-            height: rect.height,
-            color: getComponentColor(func.component).toHexString(),
-            column: funcColumn,
-          });
-        }
-      });
-    });
+    const positionsMap = calculateInstructionPositionsFromDOM(
+      container,
+      functions,
+      getComponentColor,
+      (func) => functionColumns.get(func.pID) ?? 0,
+    );
 
     setInstructionPositions((prevPositions) => {
       if (instructionPositionsEqual(prevPositions, positionsMap)) {
@@ -134,7 +98,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       }
       return positionsMap;
     });
-  }, [functions, functionColumns, getComponentColor, instructionPositionsEqual]);
+  }, [functions, functionColumns, getComponentColor]);
 
   const getFunctionAffectedRows = (func: ProcessFunction) => {
     const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
@@ -207,38 +171,8 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       (a, b) => a.column - b.column || a.startTime - b.startTime,
     );
 
-    const getInstructionColumnByPID = (PID: number) => {
-      for (const f of functionsArray) {
-        for (const i of f.instructions) {
-          if (i.pID === PID) return f.column;
-        }
-      }
-      return null;
-    };
-
-    const getArrowLabelPosition = (fromColumn: number, toColumn: number) => {
-      return toColumn >= fromColumn ? LabelPosition.Right : LabelPosition.Left;
-    }
-
     // assign input/output positions
-    functionsArray.forEach((f) => {
-      f.instructions.forEach((i) => {
-        i.inputs.forEach((inp) => {
-          const targetInstrucionPID = i.receiveInputsFromPIDs.get(inp);
-          let inputPosition;
-          if (targetInstrucionPID === undefined || getInstructionColumnByPID(targetInstrucionPID) === null) inputPosition = LabelPosition.Left;
-          else inputPosition = getArrowLabelPosition(f.column, getInstructionColumnByPID(targetInstrucionPID)!);
-          i.inputPositions.set(inp, inputPosition)
-        })
-        i.outputs.forEach((outp) => {
-          const targetInstrucionPID = i.sendsOutputsToPIDs.get(outp);
-          let outputPosition;
-          if (targetInstrucionPID === undefined || getInstructionColumnByPID(targetInstrucionPID) === null) outputPosition = LabelPosition.Right;
-          else outputPosition = getArrowLabelPosition(f.column, getInstructionColumnByPID(targetInstrucionPID)!);
-          i.outputPositions.set(outp, outputPosition)
-        })
-      });
-    });
+    assignInputOutputPositions(functionsArray);
 
     const { minTime, maxTime } = timelineConfig;
 

@@ -314,3 +314,137 @@ export function instructionPositionsEqual(
   }
   return true;
 }
+
+/**
+ * Compare two maps with numeric keys and values for equality
+ */
+export const mapsEqual = (map1: Map<number, number>, map2: Map<number, number>): boolean => {
+  if (map1.size !== map2.size) return false;
+  for (const [key, value] of map1) {
+    if (map2.get(key) !== value) return false;
+  }
+  return true;
+};
+
+/**
+ * Get the instruction's column by searching through functions
+ */
+export const getInstructionColumnByPID = (
+  pID: number,
+  functions: ProcessFunction[],
+): number | null => {
+  for (const f of functions) {
+    for (const i of f.instructions) {
+      if (i.pID === pID) return f.column;
+    }
+  }
+  return null;
+};
+
+/**
+ * Determine arrow label position based on source and target columns
+ */
+export const getArrowLabelPosition = (fromColumn: number, toColumn: number): LabelPosition => {
+  return toColumn >= fromColumn ? LabelPosition.Right : LabelPosition.Left;
+};
+
+/**
+ * Assign input/output label positions to instructions based on column relationships
+ */
+export const assignInputOutputPositions = (
+  functions: ProcessFunction[],
+): void => {
+  functions.forEach((f) => {
+    f.instructions.forEach((i) => {
+      i.inputs.forEach((inp) => {
+        const targetInstructionPID = i.receiveInputsFromPIDs.get(inp);
+        let inputPosition;
+        if (
+          targetInstructionPID === undefined ||
+          getInstructionColumnByPID(targetInstructionPID, functions) === null
+        ) {
+          inputPosition = LabelPosition.Left;
+        } else {
+          inputPosition = getArrowLabelPosition(
+            f.column,
+            getInstructionColumnByPID(targetInstructionPID, functions)!,
+          );
+        }
+        i.inputPositions.set(inp, inputPosition);
+      });
+      i.outputs.forEach((outp) => {
+        const targetInstructionPID = i.sendsOutputsToPIDs.get(outp);
+        let outputPosition;
+        if (
+          targetInstructionPID === undefined ||
+          getInstructionColumnByPID(targetInstructionPID, functions) === null
+        ) {
+          outputPosition = LabelPosition.Right;
+        } else {
+          outputPosition = getArrowLabelPosition(
+            f.column,
+            getInstructionColumnByPID(targetInstructionPID, functions)!,
+          );
+        }
+        i.outputPositions.set(outp, outputPosition);
+      });
+    });
+  });
+};
+
+/**
+ * Calculate instruction positions from DOM elements
+ */
+export const calculateInstructionPositionsFromDOM = (
+  container: HTMLElement | null,
+  functions: ProcessFunction[],
+  getComponentColor: (component: string) => any,
+  getColumn: (func: ProcessFunction) => number,
+): Map<number, InstructionPosition> => {
+  const positionsMap = new Map<number, InstructionPosition>();
+  if (!container) return positionsMap;
+
+  const containerRect = container.getBoundingClientRect();
+  const paddingTop =
+    container.offsetHeight > 0
+      ? parseFloat(window.getComputedStyle(container).paddingTop)
+      : 0;
+
+  functions.forEach((func) => {
+    func.instructions.forEach((instr) => {
+      const elemId = `instr-${instr.pID}`;
+      const element = container.querySelector(`[data-instruction-id="${elemId}"]`);
+
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const relativeX = rect.left - containerRect.left + container.scrollLeft;
+        const relativeY =
+          rect.top - containerRect.top + container.scrollTop - paddingTop;
+
+        positionsMap.set(instr.pID, {
+          instructionId: instr.pID,
+          x: relativeX,
+          y: relativeY,
+          width: rect.width,
+          height: rect.height,
+          color: getComponentColor(func.component).toHexString(),
+          column: getColumn(func),
+        });
+      }
+    });
+  });
+
+  return positionsMap;
+};
+
+/**
+ * Create a zero-initialized map for a time range
+ */
+export const createZeroMap = (
+  minTime: number,
+  maxTime: number,
+): Map<number, number> => {
+  return new Map<number, number>(
+    Array.from({ length: maxTime - minTime + 1 }, (_, i) => [minTime + i, 0]),
+  );
+};
