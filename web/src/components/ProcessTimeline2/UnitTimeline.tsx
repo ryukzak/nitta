@@ -11,7 +11,7 @@ import {
 import { Color } from '../../utils/color';
 import { FunctionRectangle } from './FunctionRectangle';
 import { DataFlowOverlay } from './DataFlows';
-import { LegendItem } from './LegendItem';
+import { UnitLabel } from './UnitLabel';
 import { type InstructionPosition } from '../utils/ArrowWithLabel';
 import './UnitTimeline.scss';
 import "components/ProcessTimeline2/TimelineContainer.scss";
@@ -22,31 +22,25 @@ interface TimelinePerUnitProps {
     minTime: number;
     maxTime: number;
   };
-  rowHeight: number;
   topPadding: number;
   containerHeight: number;
   getComponentColor: (component: string) => Color;
   dataFlowConnections: DataFlowConnection[];
-  onUnitToggle?: (unitName: string) => void;
-  enabledUnits?: Set<string>;
 }
 
 export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   functions,
   timelineConfig,
-  rowHeight,
   topPadding,
   containerHeight,
   getComponentColor,
-  dataFlowConnections,
-  onUnitToggle,
-  enabledUnits = new Set()
+  dataFlowConnections
 }) => {
   const [instructionPositions, setInstructionPositions] = useState<
     Map<number, InstructionPosition>
   >(new Map());
   const containerRef = React.useRef<HTMLDivElement>(null);
-  console.log(functions);
+
   // Group functions by component (unit)
   const unitsMap = new Map<string, ProcessFunction[]>();
   functions.forEach((f) => {
@@ -152,10 +146,6 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
 
       let unitLeftPosition = -1;
 
-      console.log(prevColumnRigthBordersPerRows)
-      console.log(leftArrowLabelWidthsPerRows)
-      console.log(rightArrowLabelWidthPerRows)
-
       for (let i: number = timelineConfig.minTime; i <= timelineConfig.maxTime; i++) {
         const l = prevColumnRigthBordersPerRows.get(i)! + leftArrowLabelWidthsPerRows.get(i)!;
         if (l > unitLeftPosition) {
@@ -171,89 +161,16 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
       for (let i: number = timelineConfig.minTime; i < timelineConfig.maxTime; i++) {
         prevColumnRigthBordersPerRows.set(i, unitLeftPosition + unitWidth + rightArrowLabelWidthPerRows.get(i)!);
       }
-
-      console.log(`GOT NEXT LEFT POS FOR ${ufs[0]}: ${unitLeftPosition}`)
-      console.log("UPDATED PREV COLUMN RIGHT BORDERS");
-      console.log(prevColumnRigthBordersPerRows);
     })
-
-    // // Adjust spacing between columns based on arrow label widths between neighboring columns in each row
-    // const containerElem = containerRef.current;
-    // if (!containerElem) return;
-    //
-    // // Get all arrow label groups from the DOM
-    // const arrowLabels = containerElem.querySelectorAll('.arrow-label-group');
-    // if (arrowLabels.length === 0) return;
-    //
-    // const spacingByRow = new Map<number, number>();
-    // const containerRect = containerElem.getBoundingClientRect();
-    //
-    // // Measure arrow labels and group by row
-    // arrowLabels.forEach((labelGroup) => {
-    //   const labelRect = labelGroup.getBoundingClientRect();
-    //   const labelWidth = labelRect.width;
-    //
-    //   // Calculate which row this label is in (based on Y position)
-    //   const relativeY = labelRect.top - containerRect.top + containerElem.scrollTop;
-    //   const rowIndex = Math.floor(relativeY / rowHeight);
-    //
-    //   // Get the text content to determine which connection this is
-    //   const textElem = labelGroup.querySelector('text');
-    //   if (!textElem) return;
-    //
-    //   const labelText = textElem.textContent || '';
-    //
-    //   // Find the corresponding data flow connection to check if it's between neighbors
-    //   const connection = dataFlowConnections.find(c => c.variableName === labelText);
-    //   if (!connection) return;
-    //
-    //   // Get source and target functions
-    //   const sourceFunc = functions.find(f =>
-    //     f.instructions.some(i => i.pID === connection.sourceId)
-    //   );
-    //   const targetFunc = functions.find(f =>
-    //     f.instructions.some(i => i.pID === connection.targetId)
-    //   );
-    //
-    //   if (!sourceFunc || !targetFunc) return;
-    //
-    //   // Check if they are in neighboring columns
-    //   const sourceCol = sourceFunc.column ?? 0;
-    //   const targetCol = targetFunc.column ?? 0;
-    //
-    //   if (Math.abs(sourceCol - targetCol) === 1) {
-    //     // This is a neighbor connection, store its label width for this row
-    //     const currentMax = spacingByRow.get(rowIndex) || 0;
-    //     spacingByRow.set(rowIndex, Math.max(currentMax, labelWidth));
-    //   }
-    // });
-    //
-    // // Apply the maximum spacing found across all rows
-    // if (spacingByRow.size > 0) {
-    //   const maxSpacing = Math.max(...Array.from(spacingByRow.values()));
-    //   const requiredGap = maxSpacing + 20; // Add padding
-    //
-    //   const unitsContainer = containerElem.querySelector('.units-container') as HTMLElement;
-    //   if (unitsContainer) {
-    //     unitsContainer.style.columnGap = `${requiredGap}px`;
-    //   }
-    //
-    //   // Also set gap on unit-columns
-    //   const unitColumns = containerElem.querySelectorAll('.unit-column');
-    //   unitColumns?.forEach((col) => {
-    //     (col as HTMLElement).style.marginRight = `${requiredGap}px`;
-    //   });
-
       // Update instruction positions after spacing adjustment
       calculateInstructionPositions();
-  }, [functions, dataFlowConnections, rowHeight, calculateInstructionPositions]);
+  }, [functions, dataFlowConnections, ROW_HEIGHT, calculateInstructionPositions]);
 
   return (
     <div ref={containerRef} className="timeline-container unit-timeline">
       <DataFlowOverlay
                     topPadding={topPadding}
                     timelineConfig={timelineConfig}
-                    rowHeight={rowHeight}
                     dataFlowConnections={dataFlowConnections}
                     instructionPositions={instructionPositions}
                   />
@@ -269,14 +186,12 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
           });
 
           return (
-            // <div key={unitName} className="unit-row">
               <div key={unitName} className="unit-column" data-unit={unitName}>
                 <div className="unit-header">
-                  <LegendItem
+                  <UnitLabel
                     componentName={unitName}
                     color={unitColor}
-                    enabled={enabledUnits.has(unitName)}
-                    onToggle={onUnitToggle}
+                    enabled={true}
                   />
                 </div>
                 <div className="unit-timeline-track" style={maxWidth > 0 ? { width: `${maxWidth}px` } : {}}>
@@ -285,14 +200,12 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
                        key={f.pID}
                        func={f}
                        bgColor={unitColor}
-                       rowHeight={rowHeight}
                        topPadding={topPadding}
                        timelineConfig={timelineConfig}
                        headerMode="inside"
                      />
                    ))}
                 </div>
-              {/*</div>*/}
             </div>
           );
         })}

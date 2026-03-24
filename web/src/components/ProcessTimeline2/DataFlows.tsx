@@ -1,6 +1,6 @@
 import React, { type FC } from "react";
-import type {
-  DataFlowConnection,
+import {
+  DataFlowConnection, ROW_HEIGHT,
 } from "../utils/ProcessTimeline2";
 import {
   ArrowLabel,
@@ -16,7 +16,6 @@ interface DataFlowOverlayProps {
     minTime: number;
     maxTime: number;
   };
-  rowHeight: number;
   dataFlowConnections?: DataFlowConnection[];
   instructionPositions?: Map<number, InstructionPosition>;
 }
@@ -24,7 +23,6 @@ interface DataFlowOverlayProps {
 export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
   topPadding,
   timelineConfig,
-  rowHeight,
   dataFlowConnections = [],
   instructionPositions = new Map(),
 }) => {
@@ -60,9 +58,9 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
         <line
           key={`grid-line-${time}`}
           x1="0"
-          y1={topPadding + time * rowHeight}
+          y1={topPadding + time * ROW_HEIGHT}
           x2="100%"
-          y2={topPadding + time * rowHeight}
+          y2={topPadding + time * ROW_HEIGHT}
           stroke="#40404060"
           strokeDasharray="2,4"
           strokeWidth="1"

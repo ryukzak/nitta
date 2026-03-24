@@ -1,12 +1,11 @@
 import React, { FC } from 'react';
-import { ProcessFunction, TEXT_PADDING} from '../utils/ProcessTimeline2';
+import {ProcessFunction, ROW_HEIGHT, TEXT_PADDING} from '../utils/ProcessTimeline2';
 import { Color, fadeColor } from '../../utils/color';
 import './FunctionRectangle.scss';
 
 interface FunctionRectangleProps {
   func: ProcessFunction;
   bgColor: Color;
-  rowHeight: number;
   topPadding: number;
   timelineConfig: {
     minTime: number;
@@ -20,7 +19,6 @@ interface FunctionRectangleProps {
 export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   func,
   bgColor,
-  rowHeight,
   topPadding,
   timelineConfig,
   headerMode = 'outside',
@@ -52,10 +50,10 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       style={{
         top:
           topPadding +
-          (func.startTime - timelineConfig.minTime) * rowHeight -
+          (func.startTime - timelineConfig.minTime) * ROW_HEIGHT -
           ((headerMode === "outside" && showHeader) ? headerHeight : 0),
         height:
-          (func.endTime - func.startTime + 1) * rowHeight +
+          (func.endTime - func.startTime + 1) * ROW_HEIGHT +
           ((headerMode === "outside" && showHeader) ? headerHeight : 0),
         left: `${func.leftPosition}px`, //`${leftPosition}px`,
         // width: `${func.width}px`,
@@ -74,7 +72,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
             color: bgColor.toHexString(),
             // height: 'auto',
             width: func.instructionMaxWidth + TEXT_PADDING,
-            height: `${headerMode === 'inside' ? rowHeight / 5 + "px" : "auto"}`,
+            height: `${headerMode === 'inside' ? ROW_HEIGHT / 5 + "px" : "auto"}`,
           }}
         >
           <div className="function-name">
@@ -98,10 +96,10 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
               data-instruction-id={`instr-${instruction.pID}`}
               className="instruction-rectangle"
               style={{
-                top: (instruction.startTime - func.startTime) * rowHeight + 8 - ((headerMode === 'inside' && index !== 0) ? (rowHeight / 5) : 0),
+                top: (instruction.startTime - func.startTime) * ROW_HEIGHT + 8 - ((headerMode === 'inside' && index !== 0) ? (ROW_HEIGHT / 5) : 0),
                 height: Math.max(
                   1,
-                  (instruction.endTime - instruction.startTime + 1) * rowHeight - 20 - ((headerMode === 'inside' && index === 0) ? (rowHeight / 5) : 0),
+                  (instruction.endTime - instruction.startTime + 1) * ROW_HEIGHT - 20 - ((headerMode === 'inside' && index === 0) ? (ROW_HEIGHT / 5) : 0),
                 ),
                 border: `2px solid ${bgColor.toHexString()}`,
               }}

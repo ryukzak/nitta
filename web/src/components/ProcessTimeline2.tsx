@@ -11,10 +11,11 @@ import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
 import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
-import { LegendItem } from "./ProcessTimeline2/LegendItem";
+import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
 import { SplitPane } from "./utils/SplitPane";
 import { COMPONENT_COLORS, Color } from "../utils/color";
 import { JsonView } from "./JsonView";
+import { IntermediateView } from "./IntermediateView";
 import {
   type DataFlowConnection,
   type ProcessFunction,
@@ -42,6 +43,7 @@ export const ProcessTimelines2: FC = () => {
   const [topPadding, setTopPadding] = useState(0);
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
   const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
+  const [showIntermediateView, setShowIntermediateView] = useState(false);
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -170,25 +172,44 @@ export const ProcessTimelines2: FC = () => {
 
   return (
     <div>
-      <div className="legend-section">
-        <div className="legend-container">
-          {Array.from(selectedColorsRef.current.entries()).map(
-            ([componentName, colorKey]) => (
-              <LegendItem
-                key={componentName}
-                componentName={componentName}
-                color={COMPONENT_COLORS[colorKey]}
-                enabled={enabledUnits.has(componentName)}
-                onToggle={handleUnitToggle}
-              />
-            ),
+      <div className="filter-section">
+        <div className="filter-container">
+          <div className="buttons">
+            <div className="unit-buttons">
+              {
+                Array.from(
+                  new Set(functions.map(f => f.component))
+                ).map(
+                  (component) => {
+                    if (!selectedColorsRef.current.get(component)) return;
+                    return <UnitLabel
+                      key={component}
+                      componentName={component}
+                      color={COMPONENT_COLORS[selectedColorsRef.current.get(component)!]}
+                      enabled={enabledUnits.has(component)}
+                      onToggle={handleUnitToggle}
+                    />
+                  })
+              }
+            </div>
+            <button
+              className="filter-toggle-button"
+              onClick={() => setShowIntermediateView(!showIntermediateView)}
+            >
+              {showIntermediateView ? "Hide" : "Show"} Functions Filter
+            </button>
+          </div>
+          {showIntermediateView && (
+            <IntermediateView
+              functionToUnitMapping={new Map(functions.map(f => [f.label, f.component]))}
+              unitColors={selectedColorsRef.current}/>
           )}
         </div>
       </div>
 
+
       <div className="process-timelines-2-vertical">
         <div className="vertical-time-axis">
-          {/*<div className="time-labels">*/}
           {Array.from(
             {
               length:
@@ -212,7 +233,6 @@ export const ProcessTimelines2: FC = () => {
               {time === timelineConfig.minTime - 1 ? `clk` : time}
             </div>
           ))}
-          {/*</div>*/}
         </div>
 
         <div className="diagram-split-view">
@@ -224,19 +244,13 @@ export const ProcessTimelines2: FC = () => {
               getComponentColor={getComponentColor}
               onLayoutComplete={handleLayoutComplete}
             />
-
             <UnitTimeline
               functions={filteredFunctions}
               timelineConfig={timelineConfig}
-              rowHeight={ROW_HEIGHT}
               topPadding={topPadding}
               containerHeight={containerHeight}
               getComponentColor={getComponentColor}
               dataFlowConnections={dataFlowConnections}
-              onUnitToggle={handleUnitToggle}
-              enabledUnits={enabledUnits}
-              // instructionPositions={instructionPositions}
-              // mostLeftFreeSpacesInColumnsPerRows={mostLeftFreeSpacesInColumnsPerRows}
             />
           </SplitPane>
         </div>

@@ -292,7 +292,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
         instructionPositions={instructionPositions}
         topPadding={topPadding}
         timelineConfig={timelineConfig}
-        rowHeight={ROW_HEIGHT}
       />
 
       {layoutFunctions.map((func) => {
@@ -302,7 +301,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
             key={func.pID}
             func={func}
             bgColor={bgColor}
-            rowHeight={ROW_HEIGHT}
             topPadding={topPadding}
             timelineConfig={timelineConfig}
           />

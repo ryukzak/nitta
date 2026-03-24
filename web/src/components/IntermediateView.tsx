@@ -17,12 +17,16 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 import { useApiResponse } from "hooks/useApiResponse";
+import { COMPONENT_COLORS, fadeColor } from "utils/color";
 
 /**
  * Component to display algorithm graph.
  */
 
-export type IIntermediateViewProps = {};
+export type IIntermediateViewProps = {
+  functionToUnitMapping?: Map<string, string>,
+  unitColors?: Map<string, string>;
+};
 
 interface ProcessState {
   bindeFuns: string[];
@@ -34,7 +38,7 @@ interface Endpoints {
   targets: string[];
 }
 
-export const IntermediateView: FC<IIntermediateViewProps> = (_props) => {
+export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const algorithmGraph = useAlgorithmGraph(selectedSid);
@@ -44,7 +48,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (_props) => {
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
   const dot = algorithmGraph
-    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints)
+    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors)
     : undefined;
   return (
     <div className="bg-light border graphvizContainer">
@@ -95,19 +99,42 @@ function renderGraphJsonToDot(
   json: IntermediateGraph,
   state: ProcessState,
   endpoints: Endpoints,
+  functionToUnitMapping?: Map<string, string>,
+  unitColors?: Map<string, string>,
 ): string {
   const lines = [
     // "rankdir=LR"
   ];
-
+  if (functionToUnitMapping) console.log([...functionToUnitMapping.keys()]);
+  console.log(json.nodes.map((node) => {return node.function}))
   const nodes: string[] = json.nodes.map((node) => {
+    const dotOptions: any = {
+      label: node.label,
+      style: isFunctionBound(state.bindeFuns, node) ? "line" : "dashed",
+    };
+    if (functionToUnitMapping) {
+      let matchedUnitFunctionName;
+      functionToUnitMapping.keys().forEach((functionName) => {
+        if (functionName.replaceAll(" ", "").includes(node.function.replaceAll(" ", ""))) matchedUnitFunctionName = functionName;
+      });
+
+      if (unitColors && matchedUnitFunctionName) {
+        const colorKey = unitColors.get(functionToUnitMapping.get(matchedUnitFunctionName)!)!;
+        const color = COMPONENT_COLORS[colorKey as keyof typeof COMPONENT_COLORS];
+        if (color) {
+          // const rgbString = `rgb(${color.obj.r},${color.obj.g},${color.obj.b})`;
+          dotOptions.style = 'filled';
+          dotOptions.fillcolor = fadeColor(color, 0x15 / 255).toHexString();
+          dotOptions.color = color.toHexString();
+          dotOptions.fontcolor = color.toHexString();
+        }
+      }
+    }
+
     return (
       node.id +
       " " +
-      renderDotOptions({
-        label: node.label,
-        style: isFunctionBound(state.bindeFuns, node) ? "line" : "dashed",
-      })
+      renderDotOptions(dotOptions)
     );
   });
   function isTransfered(v: string): boolean {

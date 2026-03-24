@@ -1,15 +1,54 @@
-.legend-section {
+.filter-section {
   padding: 1rem 2rem 0 2rem;
   background-color: #f8f9fa;
 
-  .legend-container {
-
+  .filter-container {
     background: white;
     padding: 1rem;
     border: 1px solid #dee2e6;
     border-radius: 6px;
+    gap: 1rem;
     display: flex;
-    gap: 1.5rem;
+    flex-direction: column;
+
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      .unit-buttons {
+        display: flex;
+        gap: 1.5rem;
+      }
+    }
+
+    .graphvizContainer {
+      background-color: white !important;
+    }
+  }
+
+  .filter-toggle-button {
+    //margin-top: 0.75rem;
+    //margin-bottom: 1rem;
+    //padding: 0.5rem 1rem;
+
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f8f9fa;
+      border-color: #adb5bd;
+      color: #212529;
+    }
+
+    &:active {
+      background-color: #e9ecef;
+    }
   }
 }
 

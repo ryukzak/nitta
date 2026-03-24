@@ -2,14 +2,14 @@ import React, { type FC } from 'react';
 import { Color } from '../../utils/color';
 import "components/ProcessTimeline2/LegendItem.scss";
 
-interface LegendItemProps {
+interface UnitLabelProps {
   componentName: string;
   color: Color;
   enabled?: boolean;
   onToggle?: (componentName: string) => void;
 }
 
-export const LegendItem: FC<LegendItemProps> = ({ componentName, color, enabled = true, onToggle }) => {
+export const UnitLabel: FC<UnitLabelProps> = ({ componentName, color, enabled = true, onToggle }) => {
   return (
     <div
       className={`legend-item ${!enabled ? 'disabled' : ''}`}
