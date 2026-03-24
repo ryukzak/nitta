@@ -17,7 +17,7 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 import { useApiResponse } from "hooks/useApiResponse";
-import { COMPONENT_COLORS, fadeColor } from "utils/color";
+import { COMPONENT_COLORS, fadeColor, Color } from "utils/color";
 
 /**
  * Component to display algorithm graph.
@@ -26,6 +26,7 @@ import { COMPONENT_COLORS, fadeColor } from "utils/color";
 export type IIntermediateViewProps = {
   functionToUnitMapping?: Map<string, string>,
   unitColors?: Map<string, string>;
+  enabledFunctions?: Set<string>;
 };
 
 interface ProcessState {
@@ -48,7 +49,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
   const dot = algorithmGraph
-    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors)
+    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors, props.enabledFunctions)
     : undefined;
   return (
     <div className="bg-light border graphvizContainer">
@@ -101,12 +102,11 @@ function renderGraphJsonToDot(
   endpoints: Endpoints,
   functionToUnitMapping?: Map<string, string>,
   unitColors?: Map<string, string>,
+  enabledFunctions?: Set<string>
 ): string {
   const lines = [
     // "rankdir=LR"
   ];
-  if (functionToUnitMapping) console.log([...functionToUnitMapping.keys()]);
-  console.log(json.nodes.map((node) => {return node.function}))
   const nodes: string[] = json.nodes.map((node) => {
     const dotOptions: any = {
       label: node.label,
@@ -120,13 +120,21 @@ function renderGraphJsonToDot(
 
       if (unitColors && matchedUnitFunctionName) {
         const colorKey = unitColors.get(functionToUnitMapping.get(matchedUnitFunctionName)!)!;
-        const color = COMPONENT_COLORS[colorKey as keyof typeof COMPONENT_COLORS];
+        let color = COMPONENT_COLORS[colorKey as keyof typeof COMPONENT_COLORS];
+        let fontColor = color;
+        let fadedColor = fadeColor(color, 0x15 / 255);
         if (color) {
+          if (!enabledFunctions?.has(matchedUnitFunctionName)) {
+            color = new Color({r: color.obj.r, g: color.obj.g, b: color.obj.b, a: 0.4})
+            fadedColor = new Color({r: fadedColor.obj.r, g: fadedColor.obj.g, b: fadedColor.obj.b, a: 0.4});
+            fontColor = fadeColor(color, 0.4);
+          }
           // const rgbString = `rgb(${color.obj.r},${color.obj.g},${color.obj.b})`;
           dotOptions.style = 'filled';
-          dotOptions.fillcolor = fadeColor(color, 0x15 / 255).toHexString();
+          dotOptions.fillcolor = fadedColor.toHexString();
           dotOptions.color = color.toHexString();
-          dotOptions.fontcolor = color.toHexString();
+          dotOptions.fontcolor = fontColor.toHexString();
+          dotOptions.tooltip = matchedUnitFunctionName;
         }
       }
     }

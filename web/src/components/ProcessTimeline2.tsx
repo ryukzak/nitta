@@ -15,13 +15,13 @@ import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
 import { SplitPane } from "./utils/SplitPane";
 import { COMPONENT_COLORS, Color } from "../utils/color";
 import { JsonView } from "./JsonView";
-import { IntermediateView } from "./IntermediateView";
 import {
   type DataFlowConnection,
   type ProcessFunction,
   parseProcessData, COLUMN_MARGIN,
   ROW_HEIGHT,
 } from "./utils/ProcessTimeline2";
+import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 
 
 
@@ -42,6 +42,7 @@ export const ProcessTimelines2: FC = () => {
   const selectedColorsRef = React.useRef<Map<string, string>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
+  const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(new Set());
   const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
   const [showIntermediateView, setShowIntermediateView] = useState(false);
 
@@ -80,11 +81,25 @@ export const ProcessTimelines2: FC = () => {
     });
   }, []);
 
+  const handleFunctionToggle = useCallback((label: string) => {
+    console.log(label);
+    setEnabledFunctions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(label)) {
+        newSet.delete(label);
+      } else {
+        newSet.add(label);
+      }
+      return newSet;
+    });
+  }, []);
+
   // Update filteredFunctions when functions or enabledUnits change
   useEffect(() => {
-    const filtered = functions.filter(f => enabledUnits.has(f.component));
+    const filtered = functions.filter(
+      f => enabledUnits.has(f.component) && enabledFunctions.has(f.label));
     setFilteredFunctions(filtered);
-  }, [functions, enabledUnits]);
+  }, [functions, enabledUnits, enabledFunctions]);
 
   const handleLayoutComplete = useCallback(
     (
@@ -125,6 +140,10 @@ export const ProcessTimelines2: FC = () => {
       // Initialize all units as enabled
       const allUnits = new Set(functionsArray.map(f => f.component));
       setEnabledUnits(allUnits);
+
+      // Initialize all functions as enabled
+      const allFunctions = new Set(functionsArray.map(f => f.label));
+      setEnabledFunctions(allFunctions);
     },
     [],
   );
@@ -200,9 +219,12 @@ export const ProcessTimelines2: FC = () => {
             </button>
           </div>
           {showIntermediateView && (
-            <IntermediateView
+            <ClickableIntermediateView
               functionToUnitMapping={new Map(functions.map(f => [f.label, f.component]))}
-              unitColors={selectedColorsRef.current}/>
+              unitColors={selectedColorsRef.current}
+              enabledFunctions={enabledFunctions}
+              onToggle={handleFunctionToggle}
+            />
           )}
         </div>
       </div>

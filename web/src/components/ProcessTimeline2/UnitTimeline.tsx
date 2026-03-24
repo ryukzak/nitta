@@ -124,6 +124,8 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
       let unitMaxTime = -1;
 
       ufs[1].forEach((f) => {
+        console.log("PROCESSING " + f.label)
+        console.log("[" + f.startTime + "; " + f.endTime + "]")
         f.instructions.forEach((i) => {
           i.inputPositions.forEach((pos, label) => {
             if (pos === LabelPosition.Left) {
@@ -153,12 +155,15 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
         }
       }
 
+      console.log(prevColumnRigthBordersPerRows);
+      console.log(leftArrowLabelWidthsPerRows);
+
       const unitColumnElem = containerElem.querySelector(`[data-unit=${ufs[0]}]`) as HTMLElement;
       const unitWidth = unitColumnElem.getBoundingClientRect().width;
       unitColumnElem.style.left = `${unitLeftPosition}px`;
       unitColumnElem.style.height = `${(unitMaxTime - timelineConfig.minTime + 2) * ROW_HEIGHT}px`;
 
-      for (let i: number = timelineConfig.minTime; i < timelineConfig.maxTime; i++) {
+      for (let i: number = timelineConfig.minTime; i <= timelineConfig.maxTime; i++) {
         prevColumnRigthBordersPerRows.set(i, unitLeftPosition + unitWidth + rightArrowLabelWidthPerRows.get(i)!);
       }
     })
