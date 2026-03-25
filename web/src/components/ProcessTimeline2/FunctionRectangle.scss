@@ -62,6 +62,13 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
       }
 
+      &.instruction-selected,
+      &.instruction-related {
+        border-width: 3px !important;
+        border-radius: 7px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.45);
+      }
+
       .instruction-content {
         width: 100%;
         display: flex;

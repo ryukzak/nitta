@@ -18,6 +18,10 @@ interface DataFlowOverlayProps {
   };
   dataFlowConnections?: DataFlowConnection[];
   instructionPositions?: Map<number, InstructionPosition>;
+  selectedInstructionId?: number | null;
+  selectedDataFlowId?: string | null;
+  onDataFlowSelect?: (dataFlowId: string) => void;
+  getRelatedInstructions?: (dataFlowId: string) => number[];
 }
 
 export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
@@ -25,7 +29,30 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
   timelineConfig,
   dataFlowConnections = [],
   instructionPositions = new Map(),
+  selectedInstructionId,
+  selectedDataFlowId,
+  onDataFlowSelect,
+  getRelatedInstructions,
 }) => {
+  const getDataFlowHighlightClass = (sourceId: number | null, targetId: number | null): string => {
+    const dataFlowId = `${sourceId}:${targetId}`;
+
+    if (selectedInstructionId !== null && selectedInstructionId !== undefined &&
+      (sourceId === selectedInstructionId || targetId === selectedInstructionId)) {
+        return 'dataflow-related';
+    }
+
+    if (selectedDataFlowId !== null && selectedDataFlowId !== undefined && dataFlowId === selectedDataFlowId) {
+        return 'dataflow-selected';
+    }
+    return '';
+  };
+
+  const getFillColor = (c: DataFlowConnection): string => {
+    const highlightClass = getDataFlowHighlightClass(c.sourceId, c.targetId);
+    return (highlightClass === 'dataflow-selected' || highlightClass === 'dataflow-related') ? "#000000" : "#404040";
+  }
+
   return (
     <svg className="data-flow-overlay" role={"presentation"} style={{ width: '100%', height: '100%' }}>
       <defs>
@@ -33,15 +60,15 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
           new Set(
             dataFlowConnections.map((c) => (
               <marker
-                key={`marker-404040`}
-                id={`arrowhead-404040`}
+                key={`arrowhead-${c.sourceId}-${c.targetId}`}
+                id={`arrowhead-${c.variableName}`}
                 markerWidth="5"
                 markerHeight="10"
                 refX="5"
                 refY="3"
                 orient="auto"
               >
-                <polygon points="0 0, 6 3, 0 6" fill="#404040" />
+                <polygon points="0 0, 6 3, 0 6" fill={getFillColor(c)} />
               </marker>
             )),
           ),
@@ -81,11 +108,18 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
           connection.variableName,
         );
 
+        const highlightClass = getDataFlowHighlightClass(connection.sourceId, connection.targetId);
+        const dataFlowId = `${connection.sourceId}:${connection.targetId}`;
+
         return (
-          <ArrowPath
-            key={`arrow-path-${connection.sourceId}:${connection.targetId}`}
-            {...props}
-          />
+          <g
+            key={`arrow-path-${dataFlowId}`}
+            className={`dataflow-group ${highlightClass}`}
+            onClick={() => onDataFlowSelect?.(dataFlowId)}
+            style={{ cursor: 'pointer' }}
+          >
+            <ArrowPath {...props} />
+          </g>
         );
       })}
       {/* render all arrow labels on top */}
@@ -102,11 +136,18 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
           connection.variableName,
         );
 
+        const highlightClass = getDataFlowHighlightClass(connection.sourceId, connection.targetId);
+        const dataFlowId = `${connection.sourceId}:${connection.targetId}`;
+
         return (
-          <ArrowLabel
-            key={`arrow-label-${connection.sourceId}:${connection.targetId}`}
-            {...props}
-          />
+          <g
+            key={`arrow-label-${dataFlowId}`}
+            className={`dataflow-group ${highlightClass}`}
+            onClick={() => onDataFlowSelect?.(dataFlowId)}
+            style={{ cursor: 'pointer' }}
+          >
+            <ArrowLabel {...props} />
+          </g>
         );
       })}
     </svg>

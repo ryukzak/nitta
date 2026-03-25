@@ -186,7 +186,8 @@ export const ArrowPath: FC<ArrowProps> = (props) => {
       stroke={props.color}
       strokeWidth="2"
       fill="none"
-      markerEnd={`url(#arrowhead-${props.color.replace("#", "")})`}
+      // markerEnd={`url(#arrowhead-${props.color.replace("#", "")})`}
+      markerEnd={`url(#arrowhead-${props.label})`}
       className="arrow-path"
     />
   );

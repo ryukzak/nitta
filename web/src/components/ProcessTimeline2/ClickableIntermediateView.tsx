@@ -2,7 +2,12 @@ import {type FC, useEffect, useRef} from "react";
 import {IIntermediateViewProps, IntermediateView} from "../IntermediateView";
 
 export type IClickableIntermediateViewProps = IIntermediateViewProps & {
-  onToggle: (label: string) => void
+  onToggle: (label: string) => void;
+  highlightedFunctions?: Set<string>;
+  highlightedDataFlows?: Set<string>;
+  selectedInstructionId?: number | null;
+  selectedDataFlowId?: string | null;
+  onClearSelection?: () => void;
 };
 
 
@@ -39,14 +44,40 @@ export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (p
     observer.observe(container, {childList: true, subtree: true});
 
     return () => observer.disconnect();
-  }, []);
+  }, [props.onToggle]);
 
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+
+    // Check if we clicked on a node or its children
+    let isOnNode = false;
+    let currentElement: Element | null = target;
+
+    while (currentElement && currentElement !== containerRef.current) {
+      if (currentElement.classList.contains('node') ||
+          currentElement.classList.contains('edge') ||
+          currentElement.tagName === 'A') {
+        isOnNode = true;
+        break;
+      }
+      currentElement = currentElement.parentElement;
+    }
+
+    // If not on a node, clear selection
+    if (!isOnNode) {
+      props.onClearSelection?.();
+    }
+  };
 
   return (
-    <div ref={containerRef}>
-      <IntermediateView {...props}/>
+    <div ref={containerRef} onClick={handleContainerClick}>
+      <IntermediateView
+        functionToUnitMapping={props.functionToUnitMapping}
+        unitColors={props.unitColors}
+        enabledFunctions={props.enabledFunctions}
+        highlightedFunctions={props.highlightedFunctions}
+        highlightedDataFlows={props.highlightedDataFlows}
+      />
     </div>
   );
 }
-
-

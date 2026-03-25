@@ -26,6 +26,13 @@ interface TimelinePerUnitProps {
   containerHeight: number;
   getComponentColor: (component: string) => Color;
   dataFlowConnections: DataFlowConnection[];
+  selectedInstructionId: number | null;
+  selectedDataFlowId: string | null;
+  onInstructionSelect: (instructionId: number) => void;
+  onDataFlowSelect: (dataFlowId: string) => void;
+  getRelatedDataFlows: (instructionId: number) => string[];
+  getRelatedInstructions: (dataFlowId: string) => number[];
+  onClearSelection?: () => void;
 }
 
 export const UnitTimeline: FC<TimelinePerUnitProps> = ({
@@ -34,7 +41,14 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
   topPadding,
   containerHeight,
   getComponentColor,
-  dataFlowConnections
+  dataFlowConnections,
+  selectedInstructionId,
+  selectedDataFlowId,
+  onInstructionSelect,
+  onDataFlowSelect,
+  getRelatedDataFlows,
+  getRelatedInstructions,
+  onClearSelection,
 }) => {
   const [instructionPositions, setInstructionPositions] = useState<
     Map<number, InstructionPosition>
@@ -171,14 +185,43 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
       calculateInstructionPositions();
   }, [functions, dataFlowConnections, ROW_HEIGHT, calculateInstructionPositions]);
 
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+
+    // Check if we clicked on an interactive element (instruction, data flow arrow, etc)
+    let isOnInteractive = false;
+    let currentElement: Element | null = target;
+
+    while (currentElement && currentElement !== containerRef.current) {
+      if (currentElement.classList.contains('instruction-rectangle') ||
+          currentElement.classList.contains('function-rectangle') ||
+          currentElement.classList.contains('dataflow-group') ||
+          currentElement.tagName === 'polyline' ||
+          currentElement.tagName === 'path') {
+        isOnInteractive = true;
+        break;
+      }
+      currentElement = currentElement.parentElement;
+    }
+
+    // If not on an interactive element, clear selection
+    if (!isOnInteractive) {
+      onClearSelection?.();
+    }
+  };
+
   return (
-    <div ref={containerRef} className="timeline-container unit-timeline">
+    <div ref={containerRef} className="timeline-container unit-timeline" onClick={handleContainerClick}>
       <DataFlowOverlay
-                    topPadding={topPadding}
-                    timelineConfig={timelineConfig}
-                    dataFlowConnections={dataFlowConnections}
-                    instructionPositions={instructionPositions}
-                  />
+        topPadding={topPadding}
+        timelineConfig={timelineConfig}
+        dataFlowConnections={dataFlowConnections}
+        instructionPositions={instructionPositions}
+        selectedInstructionId={selectedInstructionId}
+        selectedDataFlowId={selectedDataFlowId}
+        onDataFlowSelect={onDataFlowSelect}
+        getRelatedInstructions={getRelatedInstructions}
+      />
       <div className="units-container" style={{ minHeight: containerHeight }}>
         {units.map(([unitName, unitFunctions]) => {
           const unitColor = getComponentColor(unitName);
@@ -208,6 +251,11 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
                        topPadding={topPadding}
                        timelineConfig={timelineConfig}
                        headerMode="inside"
+                       selectedInstructionId={selectedInstructionId}
+                       selectedDataFlowId={selectedDataFlowId}
+                       onInstructionSelect={onInstructionSelect}
+                       getRelatedDataFlows={getRelatedDataFlows}
+                       getRelatedInstructions={getRelatedInstructions}
                      />
                    ))}
                 </div>

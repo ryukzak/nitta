@@ -14,6 +14,11 @@ interface FunctionRectangleProps {
   headerMode?: 'inside' | 'outside';
   showHeader?: boolean;
   showInstructions?: boolean;
+  selectedInstructionId?: number | null;
+  selectedDataFlowId?: string | null;
+  onInstructionSelect?: (instructionId: number) => void;
+  getRelatedDataFlows?: (instructionId: number) => string[];
+  getRelatedInstructions?: (dataFlowId: string) => number[];
 }
 
 export const FunctionRectangle: FC<FunctionRectangleProps> = ({
@@ -24,10 +29,45 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   headerMode = 'outside',
   showHeader = true,
   showInstructions = true,
+  selectedInstructionId,
+  selectedDataFlowId,
+  onInstructionSelect,
+  getRelatedDataFlows,
+  getRelatedInstructions,
 }) => {
 
   const headerRef = React.useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = React.useState<number>(0);
+
+  const isInstructionSelected = selectedInstructionId !== null && selectedInstructionId !== undefined;
+  const isDataFlowSelected = selectedDataFlowId !== null && selectedDataFlowId !== undefined;
+
+  const getInstructionHighlightClass = (instructionId: number): string => {
+    if (!isInstructionSelected && !isDataFlowSelected) return '';
+
+    if (isInstructionSelected) {
+      if (instructionId === selectedInstructionId) return 'instruction-selected';
+      if (getRelatedDataFlows && getRelatedDataFlows(selectedInstructionId!).length > 0) {
+        const relatedFlows = getRelatedDataFlows(selectedInstructionId!);
+        if (relatedFlows.some(flow => {
+          const [sourceId, targetId] = flow.split(':').map(id => id === 'null' ? null : parseInt(id));
+          return sourceId === instructionId || targetId === instructionId;
+        })) {
+          return 'instruction-related';
+        }
+      }
+      return '';
+    }
+
+    if (isDataFlowSelected && getRelatedInstructions) {
+      const relatedInstructions = getRelatedInstructions(selectedDataFlowId!);
+      if (relatedInstructions.includes(instructionId)) {
+        return 'instruction-related';
+      }
+    }
+
+    return '';
+  };
 
   const bgTransparentColor = new Color({
     r: bgColor.obj.r,
@@ -90,37 +130,42 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       {/* Instructions Container */}
       {showInstructions && (
         <div className="instructions-container" style={{width: func.instructionMaxWidth + TEXT_PADDING}}>
-          {func.instructions.map((instruction, index) => (
-            <div
-              key={instruction.pID}
-              data-instruction-id={`instr-${instruction.pID}`}
-              className="instruction-rectangle"
-              style={{
-                top: (instruction.startTime - func.startTime) * ROW_HEIGHT + 8 - ((headerMode === 'inside' && index !== 0) ? (ROW_HEIGHT / 5) : 0),
-                height: Math.max(
-                  1,
-                  (instruction.endTime - instruction.startTime + 1) * ROW_HEIGHT - 20 - ((headerMode === 'inside' && index === 0) ? (ROW_HEIGHT / 5) : 0),
-                ),
-                border: `2px solid ${bgColor.toHexString()}`,
-              }}
-              title={instruction.info}
-            >
-              <div className="instruction-content">
-                <div className="instruction-label">
-                  <strong>
-                    {instruction.label}{/* #{instruction.pID}*/}
-                  </strong>
-                </div>
-                {/*<div className="instruction-time">*/}
-                {/*  [{instruction.startTime};{instruction.endTime}]*/}
-                {/*</div>*/}
-                <div className="instruction-io-info">
-                  ({Array.from(instruction.inputs).join(',')}) -&gt; (
-                  {Array.from(instruction.outputs).join(',')})
+          {func.instructions.map((instruction, index) => {
+            const highlightClass = getInstructionHighlightClass(instruction.pID);
+            return (
+              <div
+                key={instruction.pID}
+                data-instruction-id={`instr-${instruction.pID}`}
+                className={`instruction-rectangle ${highlightClass}`}
+                onClick={() => onInstructionSelect?.(instruction.pID)}
+                style={{
+                  top: (instruction.startTime - func.startTime) * ROW_HEIGHT + 8 - ((headerMode === 'inside' && index !== 0) ? (ROW_HEIGHT / 5) : 0),
+                  height: Math.max(
+                    1,
+                    (instruction.endTime - instruction.startTime + 1) * ROW_HEIGHT - 20 - ((headerMode === 'inside' && index === 0) ? (ROW_HEIGHT / 5) : 0),
+                  ),
+                  border: `2px solid ${bgColor.toHexString()}`,
+                  cursor: 'pointer',
+                }}
+                title={instruction.info}
+              >
+                <div className="instruction-content">
+                  <div className="instruction-label">
+                    <strong>
+                      {instruction.label}{/* #{instruction.pID}*/}
+                    </strong>
+                  </div>
+                  {/*<div className="instruction-time">*/}
+                  {/*  [{instruction.startTime};{instruction.endTime}]*/}
+                  {/*</div>*/}
+                  <div className="instruction-io-info">
+                    ({Array.from(instruction.inputs).join(',')}) -&gt; (
+                    {Array.from(instruction.outputs).join(',')})
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

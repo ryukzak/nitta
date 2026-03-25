@@ -45,6 +45,8 @@ export const ProcessTimelines2: FC = () => {
   const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(new Set());
   const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
   const [showIntermediateView, setShowIntermediateView] = useState(false);
+  const [selectedInstructionId, setSelectedInstructionId] = useState<number | null>(null);
+  const [selectedDataFlowId, setSelectedDataFlowId] = useState<string | null>(null);
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -93,6 +95,121 @@ export const ProcessTimelines2: FC = () => {
       return newSet;
     });
   }, []);
+
+  const handleInstructionSelect = useCallback((instructionId: number) => {
+    setSelectedInstructionId(instructionId);
+    setSelectedDataFlowId(null);
+  }, []);
+
+  const handleDataFlowSelect = useCallback((dataFlowId: string) => {
+    setSelectedDataFlowId(dataFlowId);
+    setSelectedInstructionId(null);
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedInstructionId(null);
+    setSelectedDataFlowId(null);
+  }, []);
+
+  const getRelatedDataFlows = useCallback((instructionId: number): string[] => {
+    return dataFlowConnections
+      .map((conn, idx) => {
+        if (conn.sourceId === instructionId || conn.targetId === instructionId) {
+          return `${conn.sourceId}:${conn.targetId}`;
+        }
+        return null;
+      })
+      .filter((id): id is string => id !== null);
+  }, [dataFlowConnections]);
+
+  const getRelatedInstructions = useCallback((dataFlowId: string): number[] => {
+    const [sourceId, targetId] = dataFlowId.split(':').map(id => id === 'null' ? null : parseInt(id));
+    const instructions = [];
+    if (sourceId !== null) instructions.push(sourceId);
+    if (targetId !== null) instructions.push(targetId);
+    return instructions;
+  }, []);
+
+  const getRelatedFunctionLabels = useCallback((instructionId: number | null, dataFlowId: string | null): Set<string> => {
+    const relatedLabels = new Set<string>();
+
+    if (instructionId !== null) {
+      // Find the function containing this instruction
+      for (const func of functions) {
+        for (const instr of func.instructions) {
+          if (instr.pID === instructionId) {
+            relatedLabels.add(func.label);
+            // Also add functions that have data flows connected to this instruction
+            instr.sendsOutputsToPIDs.forEach((targetPID) => {
+              for (const f of functions) {
+                for (const i of f.instructions) {
+                  if (i.pID === targetPID) {
+                    relatedLabels.add(f.label);
+                  }
+                }
+              }
+            });
+            instr.receiveInputsFromPIDs.forEach((sourcePID) => {
+              for (const f of functions) {
+                for (const i of f.instructions) {
+                  if (i.pID === sourcePID) {
+                    relatedLabels.add(f.label);
+                  }
+                }
+              }
+            });
+            break;
+          }
+        }
+      }
+    } else if (dataFlowId !== null) {
+      // Find functions containing the source and target instructions
+      const relatedInstructions = getRelatedInstructions(dataFlowId);
+      for (const instrId of relatedInstructions) {
+        for (const func of functions) {
+          for (const instr of func.instructions) {
+            if (instr.pID === instrId) {
+              relatedLabels.add(func.label);
+            }
+          }
+        }
+      }
+    }
+
+    return relatedLabels;
+  }, [functions, getRelatedInstructions]);
+
+  const getRelatedDataFlowVariables = useCallback((instructionId: number | null, dataFlowId: string | null): Set<string> => {
+    const relatedVariables = new Set<string>();
+
+    if (instructionId !== null) {
+      // Find the instruction and get its input/output variables
+      for (const func of functions) {
+        for (const instr of func.instructions) {
+          if (instr.pID === instructionId) {
+            // Add all output variables (data flows sent from this instruction)
+            instr.outputs.forEach(output => {
+              relatedVariables.add(output);
+            });
+            // Add all input variables (data flows received by this instruction)
+            instr.inputs.forEach(input => {
+              relatedVariables.add(input);
+            });
+            break;
+          }
+        }
+      }
+    } else if (dataFlowId !== null) {
+      // Extract the variable name from data flow connections
+      for (const conn of dataFlowConnections) {
+        if (`${conn.sourceId}:${conn.targetId}` === dataFlowId) {
+          relatedVariables.add(conn.variableName);
+        }
+      }
+    }
+
+    return relatedVariables;
+  }, [functions, dataFlowConnections]);
 
   // Update filteredFunctions when functions or enabledUnits change
   useEffect(() => {
@@ -224,6 +341,11 @@ export const ProcessTimelines2: FC = () => {
               unitColors={selectedColorsRef.current}
               enabledFunctions={enabledFunctions}
               onToggle={handleFunctionToggle}
+              highlightedFunctions={getRelatedFunctionLabels(selectedInstructionId, selectedDataFlowId)}
+              highlightedDataFlows={getRelatedDataFlowVariables(selectedInstructionId, selectedDataFlowId)}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onClearSelection={handleClearSelection}
             />
           )}
         </div>
@@ -265,6 +387,13 @@ export const ProcessTimelines2: FC = () => {
               dataFlowConnections={dataFlowConnections}
               getComponentColor={getComponentColor}
               onLayoutComplete={handleLayoutComplete}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onInstructionSelect={handleInstructionSelect}
+              onDataFlowSelect={handleDataFlowSelect}
+              getRelatedDataFlows={getRelatedDataFlows}
+              getRelatedInstructions={getRelatedInstructions}
+              onClearSelection={handleClearSelection}
             />
             <UnitTimeline
               functions={filteredFunctions}
@@ -273,6 +402,13 @@ export const ProcessTimelines2: FC = () => {
               containerHeight={containerHeight}
               getComponentColor={getComponentColor}
               dataFlowConnections={dataFlowConnections}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onInstructionSelect={handleInstructionSelect}
+              onDataFlowSelect={handleDataFlowSelect}
+              getRelatedDataFlows={getRelatedDataFlows}
+              getRelatedInstructions={getRelatedInstructions}
+              onClearSelection={handleClearSelection}
             />
           </SplitPane>
         </div>

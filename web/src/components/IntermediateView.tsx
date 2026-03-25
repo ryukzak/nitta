@@ -27,6 +27,8 @@ export type IIntermediateViewProps = {
   functionToUnitMapping?: Map<string, string>,
   unitColors?: Map<string, string>;
   enabledFunctions?: Set<string>;
+  highlightedFunctions?: Set<string>;
+  highlightedDataFlows?: Set<string>;
 };
 
 interface ProcessState {
@@ -49,7 +51,7 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
   const dot = algorithmGraph
-    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors, props.enabledFunctions)
+    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors, props.enabledFunctions, props.highlightedFunctions, props.highlightedDataFlows)
     : undefined;
   return (
     <div className="bg-light border graphvizContainer">
@@ -102,7 +104,9 @@ function renderGraphJsonToDot(
   endpoints: Endpoints,
   functionToUnitMapping?: Map<string, string>,
   unitColors?: Map<string, string>,
-  enabledFunctions?: Set<string>
+  enabledFunctions?: Set<string>,
+  highlightedFunctions?: Set<string>,
+  highlightedDataFlows?: Set<string>
 ): string {
   const lines = [
     // "rankdir=LR"
@@ -129,12 +133,17 @@ function renderGraphJsonToDot(
             fadedColor = new Color({r: fadedColor.obj.r, g: fadedColor.obj.g, b: fadedColor.obj.b, a: 0.4});
             fontColor = fadeColor(color, 0.4);
           }
-          // const rgbString = `rgb(${color.obj.r},${color.obj.g},${color.obj.b})`;
           dotOptions.style = 'filled';
           dotOptions.fillcolor = fadedColor.toHexString();
           dotOptions.color = color.toHexString();
           dotOptions.fontcolor = fontColor.toHexString();
           dotOptions.tooltip = matchedUnitFunctionName;
+
+          // Add highlighting for selected instructions/dataflows
+          if (highlightedFunctions && highlightedFunctions.has(matchedUnitFunctionName)) {
+            // dotOptions.color = "#0066cc";
+            dotOptions.penwidth = 3;
+          }
         }
       }
     }
@@ -148,22 +157,47 @@ function renderGraphJsonToDot(
   function isTransfered(v: string): boolean {
     return state.transferedVars.indexOf(v) >= 0;
   }
+
+  // Create a mapping from node ID to function name for edge highlighting
+  const nodeIdToFunctionName = new Map<number, string>();
+  json.nodes.forEach((node, idx) => {
+    if (functionToUnitMapping) {
+      let matchedUnitFunctionName;
+      functionToUnitMapping.keys().forEach((functionName) => {
+        if (functionName.replaceAll(" ", "").includes(node.function.replaceAll(" ", ""))) {
+          matchedUnitFunctionName = functionName;
+        }
+      });
+      if (matchedUnitFunctionName) {
+        nodeIdToFunctionName.set(idx + 1, matchedUnitFunctionName);
+      }
+    }
+  });
+
   const edges = json.edges.map((edge) => {
+    const edgeOptions: any = {
+      label: edge.label,
+      style: isTransfered(edge.label) ? "line" : "dashed",
+      dir: "both",
+      arrowhead:
+        endpoints.targets.indexOf(edge.label) >= 0 || isTransfered(edge.label)
+          ? ""
+          : "o",
+      arrowtail:
+        endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label)
+          ? "dot"
+          : "odot",
+    };
+
+    // Add highlighting only for specific data flows (variables) related to the selected instruction
+    if (highlightedDataFlows && highlightedDataFlows.has(edge.label)) {
+      // edgeOptions.color = "#0066cc";
+      edgeOptions.penwidth = 3;
+    }
+
     return (
       `${edge.from} -> ${edge.to} ` +
-      renderDotOptions({
-        label: edge.label,
-        style: isTransfered(edge.label) ? "line" : "dashed",
-        dir: "both",
-        arrowhead:
-          endpoints.targets.indexOf(edge.label) >= 0 || isTransfered(edge.label)
-            ? ""
-            : "o",
-        arrowtail:
-          endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label)
-            ? "dot"
-            : "odot",
-      })
+      renderDotOptions(edgeOptions)
     );
   });
 

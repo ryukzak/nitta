@@ -15,4 +15,19 @@
     rect {
       fill: white;
     }
+
+    .dataflow-group {
+      &.dataflow-selected,
+      &.dataflow-related {
+        .arrow-path {
+          stroke: #000000 !important;
+          opacity: 1;
+        }
+
+        text {
+          fill: #000000;
+          font-weight: bold;
+        }
+      }
+    }
   }
