@@ -11,10 +11,8 @@ import {
   LabelPosition, instructionPositionsEqual,
   estimateArrowTextWidth,
   mapsEqual,
-  getInstructionColumnByPID,
-  getArrowLabelPosition,
   assignInputOutputPositions,
-  calculateInstructionPositionsFromDOM,
+  calculateInstructionPositionsFromDOM, createContainerClickHandler,
 } from "../utils/ProcessTimeline2";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import type { Color } from "../../utils/color";
@@ -39,7 +37,7 @@ interface FunctionTimelineProps {
   onDataFlowSelect: (dataFlowId: string) => void;
   getRelatedDataFlows: (instructionId: number) => string[];
   getRelatedInstructions: (dataFlowId: string) => number[];
-  onClearSelection?: () => void;
+  onClearSelection: () => void;
 }
 
 export const FunctionTimeline: FC<FunctionTimelineProps> = ({
@@ -126,30 +124,30 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     return { firstAffectedRowIndex: firstAffectedRowIndex, lastAffectedRowIndex: lastAffectedRowIndex }
   }
 
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-
-    // Check if we clicked on an interactive element (instruction, data flow arrow, etc)
-    let isOnInteractive = false;
-    let currentElement: Element | null = target;
-
-    while (currentElement && currentElement !== containerRef.current) {
-      if (currentElement.classList.contains('instruction-rectangle') ||
-          currentElement.classList.contains('function-rectangle') ||
-          currentElement.classList.contains('dataflow-group') ||
-          currentElement.tagName === 'polyline' ||
-          currentElement.tagName === 'path') {
-        isOnInteractive = true;
-        break;
-      }
-      currentElement = currentElement.parentElement;
-    }
-
-    // If not on an interactive element, clear selection
-    if (!isOnInteractive) {
-      onClearSelection?.();
-    }
-  };
+  // const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  //   const target = e.target as HTMLElement;
+  //
+  //   // Check if we clicked on an interactive element (instruction, data flow arrow, etc)
+  //   let isOnInteractive = false;
+  //   let currentElement: Element | null = target;
+  //
+  //   while (currentElement && currentElement !== containerRef.current) {
+  //     if (currentElement.classList.contains('instruction-rectangle') ||
+  //         currentElement.classList.contains('function-rectangle') ||
+  //         currentElement.classList.contains('dataflow-group') ||
+  //         currentElement.tagName === 'polyline' ||
+  //         currentElement.tagName === 'path') {
+  //       isOnInteractive = true;
+  //       break;
+  //     }
+  //     currentElement = currentElement.parentElement;
+  //   }
+  //
+  //   // If not on an interactive element, clear selection
+  //   if (!isOnInteractive) {
+  //     onClearSelection?.();
+  //   }
+  // };
 
   const functionsArray = functions.map((f) => ({ ...f }));
 
@@ -320,13 +318,8 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     <div
       className="timeline-container function-timeline"
       ref={containerRef}
-      onClick={handleContainerClick}
-      style={{
-        minHeight: `${containerHeight}px`,
-        // paddingTop: `${topPadding}px`,
-      }}
+      onClick={createContainerClickHandler(containerRef, onClearSelection)}
     >
-      {/* SVG overlay for data flow arrows and grid lines */}
       <DataFlowOverlay
         dataFlowConnections={dataFlowConnections}
         instructionPositions={instructionPositions}

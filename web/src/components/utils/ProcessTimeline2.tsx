@@ -1,6 +1,6 @@
 import type {ProcessTimelines, TimelinePoint} from "services/gen/types";
 import type {ProcessData} from "services/HaskellApiService";
-import {useCallback} from "react";
+import React, {useCallback} from "react";
 import type {InstructionPosition} from "./ArrowWithLabel";
 
 export enum LabelPosition {
@@ -49,6 +49,12 @@ export interface DataFlowConnection {
   isTargetPlanned: boolean;
 }
 
+export interface Unit {
+  name: string;
+  subunits: Unit[] | null;
+  functions: ProcessFunction[] | null;
+}
+
 export const MIN_COLUMN_WIDTH = 50;
 export const TEXT_PADDING = 40;
 export const ROW_HEIGHT = 70;
@@ -79,7 +85,7 @@ export const getOneLevelUpperPIDs = (
 export function parseProcessData(
   timelinesResponse: ProcessTimelines<number>,
   processResponse: ProcessData,
-): { functions: ProcessFunction[]; dataFlowConnections: DataFlowConnection[] } {
+): { functions: ProcessFunction[]; dataFlowConnections: DataFlowConnection[], units: Unit[] } {
   const functionsMap: Map<string, ProcessFunction> = new Map<
     string,
     ProcessFunction
@@ -118,7 +124,7 @@ export function parseProcessData(
               width: MIN_COLUMN_WIDTH,
               instructionMaxWidth: -1,
               isMemoryInit: false,
-              leftPosition: -1
+              leftPosition: 0
             };
             functionsMap.set(functionId, func);
           }
@@ -291,7 +297,42 @@ export function parseProcessData(
     })
   });
 
-  return {functions: functionsArray, dataFlowConnections: connections};
+  const unitsMap = new Map<string, Unit>();
+  functionsArray.forEach((f) => {
+    if (!unitsMap.has(f.component)) {
+      const u: Unit = {name: f.component, functions: [f], subunits: null};
+      unitsMap.set(f.component, u);
+    }
+    else {
+      unitsMap.get(f.component)!.functions!.push(f);
+    }
+  });
+
+  unitsMap.forEach((u) => {
+    if (u.name.includes('fram')) {
+      const subunitsMap = new Map<string, Unit>();
+      u.functions!.forEach((f) => {
+        let subunitName = undefined;
+        f.instructions.forEach((i) => {
+          subunitName = "#" + i.label.charAt(i.label.length - 1);
+        })
+        if (subunitName === undefined) return;
+        if (!subunitsMap.has(subunitName)) {
+          const subunit: Unit = {name: subunitName, subunits: null, functions: [f]}
+          subunitsMap.set(subunitName, subunit);
+        } else {
+          subunitsMap.get(subunitName)!.functions!.push(f);
+        }
+      })
+      u.functions = null;
+      u.subunits = [...subunitsMap.values()];
+      u.subunits.sort((a, b) => a.name.localeCompare(b.name))
+    }
+  })
+
+  const units = Array.from(unitsMap.values());
+
+  return {functions: functionsArray, dataFlowConnections: connections, units: units};
 }
 
 export function instructionPositionsEqual(
@@ -436,6 +477,33 @@ export const calculateInstructionPositionsFromDOM = (
 
   return positionsMap;
 };
+
+export function createContainerClickHandler(
+  containerRef: React.RefObject<HTMLElement | null>,
+  onClearSelection: () => void
+) {
+  return (e: React.MouseEvent<HTMLElement>) => {
+    if (!containerRef) return
+    const target = e.target as HTMLElement;
+
+    let isOnInteractive = false;
+    let currentElement: Element | null = target;
+    while (currentElement && currentElement !== containerRef.current) {
+      if (currentElement.classList.contains('instruction-rectangle') ||
+        currentElement.classList.contains('function-rectangle') ||
+        currentElement.classList.contains('dataflow-group') ||
+        currentElement.tagName === 'polyline' ||
+        currentElement.tagName === 'path') {
+        isOnInteractive = true;
+        break;
+      }
+      currentElement = currentElement.parentElement;
+    }
+    if (!isOnInteractive) {
+      onClearSelection();
+    }
+  };
+}
 
 /**
  * Create a zero-initialized map for a time range

@@ -1,217 +1,285 @@
-import React, {FC, useCallback, useEffect, useLayoutEffect, useState} from 'react';
+import React, {FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,} from "react";
+
 import {
-  ProcessFunction,
-  instructionPositionsEqual,
-  type DataFlowConnection,
-  LabelPosition, estimateArrowTextWidth, ROW_HEIGHT,
   assignInputOutputPositions,
   calculateInstructionPositionsFromDOM,
+  createContainerClickHandler,
   createZeroMap,
-} from '../utils/ProcessTimeline2';
-import { Color } from '../../utils/color';
-import { FunctionRectangle } from './FunctionRectangle';
-import { DataFlowOverlay } from './DataFlows';
-import { UnitLabel } from './UnitLabel';
-import { type InstructionPosition } from '../utils/ArrowWithLabel';
-import './UnitTimeline.scss';
+  DataFlowConnection,
+  estimateArrowTextWidth,
+  instructionPositionsEqual,
+  LabelPosition,
+  ProcessFunction,
+  ROW_HEIGHT,
+  Unit,
+} from "../utils/ProcessTimeline2";
+
+import {Color} from "../../utils/color";
+import {FunctionRectangle} from "./FunctionRectangle";
+import {DataFlowOverlay} from "./DataFlows";
+import {UnitLabel} from "./UnitLabel";
+import {InstructionPosition} from "../utils/ArrowWithLabel";
+
+import "./UnitTimeline.scss";
 import "components/ProcessTimeline2/TimelineContainer.scss";
 
-interface TimelinePerUnitProps {
+interface Props {
   functions: ProcessFunction[];
-  timelineConfig: {
-    minTime: number;
-    maxTime: number;
-  };
+  units: Unit[];
+  timelineConfig: { minTime: number; maxTime: number };
   topPadding: number;
   containerHeight: number;
   getComponentColor: (component: string) => Color;
   dataFlowConnections: DataFlowConnection[];
+
   selectedInstructionId: number | null;
   selectedDataFlowId: string | null;
-  onInstructionSelect: (instructionId: number) => void;
-  onDataFlowSelect: (dataFlowId: string) => void;
-  getRelatedDataFlows: (instructionId: number) => string[];
-  getRelatedInstructions: (dataFlowId: string) => number[];
-  onClearSelection?: () => void;
+
+  onInstructionSelect: (id: number) => void;
+  onDataFlowSelect: (id: string) => void;
+
+  getRelatedDataFlows: (id: number) => string[];
+  getRelatedInstructions: (id: string) => number[];
+
+  onClearSelection: () => void;
 }
 
-export const UnitTimeline: FC<TimelinePerUnitProps> = ({
-  functions,
-  timelineConfig,
-  topPadding,
-  containerHeight,
-  getComponentColor,
-  dataFlowConnections,
-  selectedInstructionId,
-  selectedDataFlowId,
-  onInstructionSelect,
-  onDataFlowSelect,
-  getRelatedDataFlows,
-  getRelatedInstructions,
-  onClearSelection,
-}) => {
-  const [instructionPositions, setInstructionPositions] = useState<
-    Map<number, InstructionPosition>
-  >(new Map());
-  const containerRef = React.useRef<HTMLDivElement>(null);
+export const UnitTimeline: FC<Props> = ({
+                                          functions,
+                                          units,
+                                          timelineConfig,
+                                          topPadding,
+                                          containerHeight,
+                                          getComponentColor,
+                                          dataFlowConnections,
+                                          selectedInstructionId,
+                                          selectedDataFlowId,
+                                          onInstructionSelect,
+                                          onDataFlowSelect,
+                                          getRelatedDataFlows,
+                                          getRelatedInstructions,
+                                          onClearSelection,
+                                        }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Group functions by component (unit)
-  const unitsMap = new Map<string, ProcessFunction[]>();
-  functions.forEach((f) => {
-    if (!unitsMap.has(f.component)) {
-      unitsMap.set(f.component, []);
-    }
-    unitsMap.get(f.component)?.push(f);
+  const [instructionPositions, setInstructionPositions] =
+    useState<Map<number, InstructionPosition>>(new Map());
+
+  const renderUnits = units
+    .filter((u) => {
+      if (!u.subunits && (!u.functions || u.functions.length === 0)) return false;
+
+      if (u.subunits) {
+        let allSubUnitsAreEmpty = true;
+        u.subunits.forEach((su) => {if (su.functions && su.functions.length !== 0) allSubUnitsAreEmpty = false});
+        return !allSubUnitsAreEmpty;
+      }
+      return true;
+    })
+    .map((u) => ({
+      unit: u,
+      subunits: u.subunits ?? undefined,
+    }));
+
+  const flatUnits: { unit: Unit; parent?: Unit }[] = [];
+
+  renderUnits.forEach(({unit, subunits}) => {
+    if (unit.functions) flatUnits.push({unit});
+
+    subunits?.forEach((su) =>
+      flatUnits.push({unit: su, parent: unit})
+    );
   });
-
-  const units = Array.from(unitsMap.entries());
 
   const calculateInstructionPositions = useCallback(() => {
     const container = containerRef.current;
-    const positionsMap = calculateInstructionPositionsFromDOM(
+    if (!container) return;
+
+    const map = calculateInstructionPositionsFromDOM(
       container,
       functions,
       getComponentColor,
-      (func) => units.map(([key]) => key).indexOf(func.component),
+      (func) => {
+        const idx = flatUnits.findIndex((u) =>
+          u.unit.functions?.some(
+            (f) => f.label === func.label
+          )
+        );
+        return idx < 0 ? 0 : idx;
+      }
     );
 
-    setInstructionPositions((prevPositions) => {
-      if (instructionPositionsEqual(prevPositions, positionsMap)) {
-        return prevPositions;
-      }
-      return positionsMap;
-    });
-  }, [functions, getComponentColor, units]);
+    setInstructionPositions((prev) =>
+      instructionPositionsEqual(prev, map) ? prev : map
+    );
+  }, [units, functions, flatUnits, getComponentColor]);
 
   useLayoutEffect(() => {
     if (containerHeight > 0) calculateInstructionPositions();
   }, [containerHeight, calculateInstructionPositions]);
 
   useEffect(() => {
-    // Measure the widest function rectangle per unit and apply that width to all rectangles in that unit
-    const unitRows = containerRef.current?.querySelectorAll('.unit-column');
-    if (!unitRows || unitRows.length === 0) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    unitRows.forEach((unitRow) => {
-      const functionRectangles = unitRow.querySelectorAll('.function-rectangle');
-      if (functionRectangles.length === 0) return;
+    assignInputOutputPositions(functions);
+
+    const prevBorders = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
+
+    const parentLeftMap = new Map<string, number>();
+    const parentMaxTimeMap = new Map<string, number>();
+
+    flatUnits.forEach(({unit, parent}) => {
+      const funcs = unit.functions ?? [];
+
+      const leftWidths = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
+      const rightWidths = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
+
+      let maxTime = -1;
+
+      for (const f of funcs) {
+        for (const i of f.instructions) {
+          i.inputPositions.forEach((pos, label) => {
+            const w = estimateArrowTextWidth(label);
+            if (pos === LabelPosition.Left)
+              leftWidths.set(i.startTime, w);
+            else rightWidths.set(i.startTime, w);
+          });
+
+          i.outputPositions.forEach((pos, label) => {
+            const w = estimateArrowTextWidth(label);
+            if (pos === LabelPosition.Left)
+              leftWidths.set(i.startTime, w);
+            else rightWidths.set(i.startTime, w);
+          });
+        }
+
+        maxTime = Math.max(maxTime, f.endTime);
+      }
+
+      let globalLeft = 0;
+
+      for (let t = timelineConfig.minTime; t <= timelineConfig.maxTime; t++) {
+        globalLeft = Math.max(globalLeft, prevBorders.get(t)! + leftWidths.get(t)!);
+      }
+
+      const selector = parent
+        ? `[data-subunit="${parent.name + unit.name}"]`
+        : `[data-unit="${unit.name}"]`;
+
+      const elem = container.querySelector(selector) as HTMLElement;
+      if (!elem) return;
+
+      if (!parent) {
+        // unit
+        elem.style.left = `${globalLeft}px`;
+        parentLeftMap.set(unit.name, globalLeft);
+        elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT}px`;
+      } else {
+        // subunit
+        const parentColumn = container.querySelector(`[data-unit=${parent.name}]`) as HTMLElement;
+        if (!parentLeftMap.has(parent.name)) {
+          parentLeftMap.set(parent.name, globalLeft);
+          parentMaxTimeMap.set(parent.name, -1);
+          parentColumn.style.left = `${globalLeft}px`;
+        }
+        if (parentMaxTimeMap.get(parent.name)! < maxTime) {
+          parentColumn.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT}px`;
+          parentMaxTimeMap.set(parent.name, maxTime);
+        }
+
+        const parentLeft = parentLeftMap.get(parent.name) ?? 0;
+
+        elem.style.left = `${globalLeft - parentLeft}px`;
+        parentColumn.style.width = `${globalLeft - parentLeft + elem.getBoundingClientRect().width}px`
+
+        const header = elem.querySelector(`.subunit-header`) as HTMLElement;
+        elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT - header.getBoundingClientRect().height}px`;
+      }
+
+      const width = elem.getBoundingClientRect().width;
+
+      for (let t = timelineConfig.minTime; t <= timelineConfig.maxTime; t++) {
+        prevBorders.set(t, globalLeft + width + rightWidths.get(t)!);
+      }
+    });
+
+    calculateInstructionPositions();
+  }, [units, flatUnits, functions, dataFlowConnections]);
+
+  const renderFunctions = (funcs: ProcessFunction[], color: Color) =>
+    funcs.map((f) => (
+      <FunctionRectangle
+        key={f.pID}
+        func={f}
+        bgColor={color}
+        topPadding={topPadding}
+        timelineConfig={timelineConfig}
+        headerMode="inside"
+        selectedInstructionId={selectedInstructionId}
+        selectedDataFlowId={selectedDataFlowId}
+        onInstructionSelect={onInstructionSelect}
+        getRelatedDataFlows={getRelatedDataFlows}
+        getRelatedInstructions={getRelatedInstructions}
+      />
+    ));
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const tracks = container.querySelectorAll(".unit-timeline-track");
+
+    tracks.forEach(track => {
+      const rects = track.querySelectorAll(".function-rectangle");
 
       let maxWidth = 0;
-      functionRectangles.forEach((rect) => {
-        const width = rect.getBoundingClientRect().width;
-        maxWidth = Math.max(maxWidth, width);
+
+      rects.forEach(r => {
+        maxWidth = Math.max(maxWidth, (r as HTMLElement).getBoundingClientRect().width);
       });
 
-      // Apply the max width to all function rectangles, headers, and instructions containers in this unit
-      if (maxWidth > 0) {
-        functionRectangles.forEach((rect) => {
-          (rect as HTMLElement).style.width = `${maxWidth}px`;
+      if (!maxWidth) return;
 
-          const header = rect.querySelector('.function-header') as HTMLElement;
-          if (header) {
-            header.style.width = `${maxWidth}px`;
-          }
+      (track as HTMLElement).style.width = `${maxWidth}px`;
 
-          const instructionsContainer = rect.querySelector('.instructions-container') as HTMLElement;
-          if (instructionsContainer) {
-            instructionsContainer.style.width = `${maxWidth}px`;
-          }
-        });
-      }
+      const column =
+        track.closest(".unit-column, .subunit-column") as HTMLElement;
+
+      if (column)
+        column.style.width = `${maxWidth}px`;
+
+      let header: HTMLElement;
+      if (column.classList.contains('subunit-column'))
+        header = column.querySelector(`.subunit-header`) as HTMLElement;
+
+      rects.forEach(r => {
+        (r as HTMLElement).style.width = `${maxWidth}px`
+
+        if (header) {
+          const prev = parseFloat((r as HTMLElement).style.top);
+          const adjust = header.getBoundingClientRect().height;
+          (r as HTMLElement).style.top = `${prev - adjust}px`
+        }
+
+        const functionHeader = r.querySelector('.function-header') as HTMLElement;
+        if (functionHeader) {
+          functionHeader.style.width = `${maxWidth}px`;
+        }
+
+        const instructionsContainer = r.querySelector('.instructions-container') as HTMLElement;
+        if (instructionsContainer) {
+          instructionsContainer.style.width = `${maxWidth}px`;
+        }
+      });
     });
   }, [functions]);
 
-  useEffect(() => {
-
-    const containerElem = containerRef.current;
-    if (!containerElem) return;
-
-    // assign input/output positions
-    assignInputOutputPositions(functions);
-
-    let prevColumnRigthBordersPerRows = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
-
-    units.forEach((ufs, index) => {
-
-      let leftArrowLabelWidthsPerRows = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
-      let rightArrowLabelWidthPerRows = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
-      let unitMaxTime = -1;
-
-      ufs[1].forEach((f) => {
-        console.log("PROCESSING " + f.label)
-        console.log("[" + f.startTime + "; " + f.endTime + "]")
-        f.instructions.forEach((i) => {
-          i.inputPositions.forEach((pos, label) => {
-            if (pos === LabelPosition.Left) {
-              leftArrowLabelWidthsPerRows.set(i.startTime, estimateArrowTextWidth(label));
-            } else if (pos === LabelPosition.Right) {
-              rightArrowLabelWidthPerRows.set(i.startTime, estimateArrowTextWidth(label));
-            }
-          })
-          i.outputPositions.forEach((pos, label) => {
-            if (pos === LabelPosition.Left) {
-              leftArrowLabelWidthsPerRows.set(i.startTime, estimateArrowTextWidth(label));
-            } else if (pos === LabelPosition.Right) {
-              rightArrowLabelWidthPerRows.set(i.startTime, estimateArrowTextWidth(label));
-            }
-          })
-          if (f.endTime > unitMaxTime)
-            unitMaxTime = f.endTime;
-        })
-      })
-
-      let unitLeftPosition = -1;
-
-      for (let i: number = timelineConfig.minTime; i <= timelineConfig.maxTime; i++) {
-        const l = prevColumnRigthBordersPerRows.get(i)! + leftArrowLabelWidthsPerRows.get(i)!;
-        if (l > unitLeftPosition) {
-          unitLeftPosition = l;
-        }
-      }
-
-      console.log(prevColumnRigthBordersPerRows);
-      console.log(leftArrowLabelWidthsPerRows);
-
-      const unitColumnElem = containerElem.querySelector(`[data-unit=${ufs[0]}]`) as HTMLElement;
-      const unitWidth = unitColumnElem.getBoundingClientRect().width;
-      unitColumnElem.style.left = `${unitLeftPosition}px`;
-      unitColumnElem.style.height = `${(unitMaxTime - timelineConfig.minTime + 2) * ROW_HEIGHT}px`;
-
-      for (let i: number = timelineConfig.minTime; i <= timelineConfig.maxTime; i++) {
-        prevColumnRigthBordersPerRows.set(i, unitLeftPosition + unitWidth + rightArrowLabelWidthPerRows.get(i)!);
-      }
-    })
-      // Update instruction positions after spacing adjustment
-      calculateInstructionPositions();
-  }, [functions, dataFlowConnections, ROW_HEIGHT, calculateInstructionPositions]);
-
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-
-    // Check if we clicked on an interactive element (instruction, data flow arrow, etc)
-    let isOnInteractive = false;
-    let currentElement: Element | null = target;
-
-    while (currentElement && currentElement !== containerRef.current) {
-      if (currentElement.classList.contains('instruction-rectangle') ||
-          currentElement.classList.contains('function-rectangle') ||
-          currentElement.classList.contains('dataflow-group') ||
-          currentElement.tagName === 'polyline' ||
-          currentElement.tagName === 'path') {
-        isOnInteractive = true;
-        break;
-      }
-      currentElement = currentElement.parentElement;
-    }
-
-    // If not on an interactive element, clear selection
-    if (!isOnInteractive) {
-      onClearSelection?.();
-    }
-  };
-
   return (
-    <div ref={containerRef} className="timeline-container unit-timeline" onClick={handleContainerClick}>
+    <div ref={containerRef}
+         className="timeline-container unit-timeline"
+         onClick={createContainerClickHandler(containerRef, onClearSelection)}
+    >
       <DataFlowOverlay
         topPadding={topPadding}
         timelineConfig={timelineConfig}
@@ -222,43 +290,36 @@ export const UnitTimeline: FC<TimelinePerUnitProps> = ({
         onDataFlowSelect={onDataFlowSelect}
         getRelatedInstructions={getRelatedInstructions}
       />
-      <div className="units-container" style={{ minHeight: containerHeight }}>
-        {units.map(([unitName, unitFunctions]) => {
-          const unitColor = getComponentColor(unitName);
 
-          // Calculate the required width for the unit column to fit all function rectangles
-          let maxWidth = 0;
-          unitFunctions.forEach(f => {
-            const rightEdge = f.width;
-            maxWidth = Math.max(maxWidth, rightEdge);
-          });
+      <div className="units-container" style={{minHeight: containerHeight}}>
+        {renderUnits.map(({unit, subunits}) => {
+          const color = getComponentColor(unit.name);
 
           return (
-              <div key={unitName} className="unit-column" data-unit={unitName}>
-                <div className="unit-header">
-                  <UnitLabel
-                    componentName={unitName}
-                    color={unitColor}
-                    enabled={true}
-                  />
+            <div key={unit.name} className="unit-column" data-unit={unit.name}>
+              <div className="unit-header">
+                <UnitLabel componentName={unit.name} color={color} enabled/>
+              </div>
+
+              {/* units */}
+              {unit.functions && (
+                <div className="unit-timeline-track">
+                  {renderFunctions(unit.functions, color)}
                 </div>
-                <div className="unit-timeline-track" style={maxWidth > 0 ? { width: `${maxWidth}px` } : {}}>
-                   {unitFunctions.map(f => (
-                     <FunctionRectangle
-                       key={f.pID}
-                       func={f}
-                       bgColor={unitColor}
-                       topPadding={topPadding}
-                       timelineConfig={timelineConfig}
-                       headerMode="inside"
-                       selectedInstructionId={selectedInstructionId}
-                       selectedDataFlowId={selectedDataFlowId}
-                       onInstructionSelect={onInstructionSelect}
-                       getRelatedDataFlows={getRelatedDataFlows}
-                       getRelatedInstructions={getRelatedInstructions}
-                     />
-                   ))}
+              )}
+
+              {/* subunits */}
+              {subunits?.map((su) => (
+                <div key={su.name} className="subunit-column" data-subunit={unit.name + su.name}>
+                  <div className="subunit-header">
+                    <UnitLabel componentName={su.name} color={color} enabled/>
+                  </div>
+
+                  <div className="unit-timeline-track" data-subunit={unit.name + su.name}>
+                    {renderFunctions(su.functions ?? [], color)}
+                  </div>
                 </div>
+              ))}
             </div>
           );
         })}

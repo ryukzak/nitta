@@ -19,7 +19,7 @@ import {
   type DataFlowConnection,
   type ProcessFunction,
   parseProcessData, COLUMN_MARGIN,
-  ROW_HEIGHT,
+  ROW_HEIGHT, Unit,
 } from "./utils/ProcessTimeline2";
 import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 
@@ -29,6 +29,7 @@ export const ProcessTimelines2: FC = () => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
 
   const [functions, setFunctions] = useState<ProcessFunction[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [timelineConfig, setTimelineConfig] = useState({
     minTime: 0,
     maxTime: 10,
@@ -44,6 +45,7 @@ export const ProcessTimelines2: FC = () => {
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
   const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(new Set());
   const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   const [showIntermediateView, setShowIntermediateView] = useState(false);
   const [selectedInstructionId, setSelectedInstructionId] = useState<number | null>(null);
   const [selectedDataFlowId, setSelectedDataFlowId] = useState<string | null>(null);
@@ -213,10 +215,21 @@ export const ProcessTimelines2: FC = () => {
 
   // Update filteredFunctions when functions or enabledUnits change
   useEffect(() => {
-    const filtered = functions.filter(
+    const filteredFunctions = functions.filter(
       f => enabledUnits.has(f.component) && enabledFunctions.has(f.label));
-    setFilteredFunctions(filtered);
-  }, [functions, enabledUnits, enabledFunctions]);
+    setFilteredFunctions(filteredFunctions);
+
+    const filterUnitFunctions = (u: Unit) => {
+      if (u.functions) u.functions = u.functions.filter(f => enabledFunctions.has(f.label))
+      if (u.subunits) u.subunits.forEach((subu) => {filterUnitFunctions(subu)})
+    }
+
+    const filteredUnits = units.filter(u => enabledUnits.has(u.name))
+    filteredUnits.forEach((u) => {
+      filterUnitFunctions(u);
+    })
+    setFilteredUnits(filteredUnits);
+  }, [functions, units, enabledUnits, enabledFunctions]);
 
   const handleLayoutComplete = useCallback(
     (
@@ -234,7 +247,7 @@ export const ProcessTimelines2: FC = () => {
       timelinesResponse: ProcessTimelines<number>,
       processResponse: ProcessData,
     ) => {
-      const { functions: functionsArray, dataFlowConnections: connections } =
+      const { functions: functionsArray, dataFlowConnections: connections, units: units } =
         parseProcessData(timelinesResponse, processResponse);
 
       let minTime = Math.min(...functionsArray.map((f) => f.startTime));
@@ -250,6 +263,7 @@ export const ProcessTimelines2: FC = () => {
       }
 
       setFunctions(functionsArray);
+      setUnits(units);
       setTimelineConfig({ minTime, maxTime });
       // setContainerHeight((maxTime - minTime + 1) * ROW_HEIGHT + 100);
       setDataFlowConnections(connections);
@@ -397,6 +411,7 @@ export const ProcessTimelines2: FC = () => {
             />
             <UnitTimeline
               functions={filteredFunctions}
+              units={filteredUnits}
               timelineConfig={timelineConfig}
               topPadding={topPadding}
               containerHeight={containerHeight}
