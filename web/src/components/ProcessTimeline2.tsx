@@ -219,12 +219,19 @@ export const ProcessTimelines2: FC = () => {
       f => enabledUnits.has(f.component) && enabledFunctions.has(f.label));
     setFilteredFunctions(filteredFunctions);
 
+    // Deep copy units to avoid mutating the original state
+    const deepCopyUnit = (u: Unit): Unit => ({
+      ...u,
+      functions: u.functions ? [...u.functions] : null,
+      subunits: u.subunits ? u.subunits.map(su => deepCopyUnit(su)) : null,
+    });
+
     const filterUnitFunctions = (u: Unit) => {
       if (u.functions) u.functions = u.functions.filter(f => enabledFunctions.has(f.label))
       if (u.subunits) u.subunits.forEach((subu) => {filterUnitFunctions(subu)})
     }
 
-    const filteredUnits = units.filter(u => enabledUnits.has(u.name))
+    const filteredUnits = units.filter(u => enabledUnits.has(u.name)).map(u => deepCopyUnit(u))
     filteredUnits.forEach((u) => {
       filterUnitFunctions(u);
     })

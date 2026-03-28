@@ -224,6 +224,7 @@ export const UnitTimeline: FC<Props> = ({
       />
     ));
 
+  // Update widths and apply transforms for subunit rectangles
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -243,31 +244,38 @@ export const UnitTimeline: FC<Props> = ({
 
       (track as HTMLElement).style.width = `${maxWidth}px`;
 
-      const column =
-        track.closest(".unit-column, .subunit-column") as HTMLElement;
+      const column = track.closest(".unit-column, .subunit-column") as HTMLElement;
 
-      if (column)
+      if (column) {
         column.style.width = `${maxWidth}px`;
+      }
 
-      let header: HTMLElement;
-      if (column.classList.contains('subunit-column'))
-        header = column.querySelector(`.subunit-header`) as HTMLElement;
+      // Measure header height if this is a subunit column
+      let headerOffset = 0;
+      if (column?.classList.contains('subunit-column')) {
+        const header = column.querySelector('.subunit-header') as HTMLElement;
+        if (header) {
+          headerOffset = header.getBoundingClientRect().height;
+        }
+      }
 
       rects.forEach(r => {
-        (r as HTMLElement).style.width = `${maxWidth}px`
+        const elem = r as HTMLElement;
+        elem.style.width = `${maxWidth}px`;
 
-        if (header) {
-          const prev = parseFloat((r as HTMLElement).style.top);
-          const adjust = header.getBoundingClientRect().height;
-          (r as HTMLElement).style.top = `${prev - adjust}px`
+        // Apply transform to offset rectangles in subunit columns
+        if (headerOffset > 0) {
+          elem.style.transform = `translateY(-${headerOffset}px)`;
+        } else {
+          elem.style.transform = '';
         }
 
-        const functionHeader = r.querySelector('.function-header') as HTMLElement;
+        const functionHeader = elem.querySelector('.function-header') as HTMLElement;
         if (functionHeader) {
           functionHeader.style.width = `${maxWidth}px`;
         }
 
-        const instructionsContainer = r.querySelector('.instructions-container') as HTMLElement;
+        const instructionsContainer = elem.querySelector('.instructions-container') as HTMLElement;
         if (instructionsContainer) {
           instructionsContainer.style.width = `${maxWidth}px`;
         }
