@@ -1,14 +1,12 @@
 import React, { type FC } from "react";
 import {
-  DataFlowConnection, ROW_HEIGHT,
-} from "../utils/ProcessTimeline2";
-import {
   ArrowLabel,
   ArrowPath,
   getArrowProps,
   type InstructionPosition,
 } from "../utils/ArrowWithLabel";
-import './DataFlows.scss';
+import { type DataFlowConnection, ROW_HEIGHT } from "../utils/ProcessTimeline2";
+import "./DataFlows.scss";
 
 interface DataFlowOverlayProps {
   topPadding: number;
@@ -35,7 +33,7 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
   getRelatedInstructions,
 }) => {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
-  const [svgWidth, setSvgWidth] = React.useState<string>('100%');
+  const [svgWidth, setSvgWidth] = React.useState<string>("100%");
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -51,44 +49,55 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
     const parent = svgRef.current?.parentElement;
     if (parent) {
       handleScroll();
-      parent.addEventListener('scroll', handleScroll);
-      window.addEventListener('resize', handleScroll);
+      parent.addEventListener("scroll", handleScroll);
+      window.addEventListener("resize", handleScroll);
       return () => {
-        parent.removeEventListener('scroll', handleScroll);
-        window.removeEventListener('resize', handleScroll);
+        parent.removeEventListener("scroll", handleScroll);
+        window.removeEventListener("resize", handleScroll);
       };
     }
   }, []);
 
-  const getDataFlowHighlightClass = (sourceId: number | null, targetId: number | null): string => {
+  const getDataFlowHighlightClass = (
+    sourceId: number | null,
+    targetId: number | null,
+  ): string => {
     const dataFlowId = `${sourceId}:${targetId}`;
 
-    if (selectedInstructionId !== null && selectedInstructionId !== undefined &&
-      (sourceId === selectedInstructionId || targetId === selectedInstructionId)) {
-        return 'dataflow-related';
+    if (
+      selectedInstructionId !== null &&
+      selectedInstructionId !== undefined &&
+      (sourceId === selectedInstructionId || targetId === selectedInstructionId)
+    ) {
+      return "dataflow-related";
     }
 
-    if (selectedDataFlowId !== null && selectedDataFlowId !== undefined && dataFlowId === selectedDataFlowId) {
-        return 'dataflow-selected';
+    if (
+      selectedDataFlowId !== null &&
+      selectedDataFlowId !== undefined &&
+      dataFlowId === selectedDataFlowId
+    ) {
+      return "dataflow-selected";
     }
-    return '';
+    return "";
   };
 
   const getFillColor = (c: DataFlowConnection): string => {
     const highlightClass = getDataFlowHighlightClass(c.sourceId, c.targetId);
-    return (highlightClass === 'dataflow-selected' || highlightClass === 'dataflow-related') ? "#000000" : "#404040";
-  }
+    return highlightClass === "dataflow-selected" ||
+      highlightClass === "dataflow-related"
+      ? "#000000"
+      : "#404040";
+  };
 
-  const lineWidth = typeof svgWidth === 'string' && svgWidth.includes('px')
-    ? parseInt(svgWidth)
-    : 1000;
+  const lineWidth = svgWidth.includes("px") ? parseInt(svgWidth) : 1000;
 
   return (
     <svg
       ref={svgRef}
       className="data-flow-overlay"
       role={"presentation"}
-      style={{ width: svgWidth, height: '100%' }}
+      style={{ width: svgWidth, height: "100%" }}
     >
       <defs>
         {Array.from(
@@ -136,22 +145,30 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
 
         if (!source && !target) return null;
 
-        const props = getArrowProps(
-          source,
-          target,
-          0,
-          connection.variableName,
-        );
+        const props = getArrowProps(source, target, 0, connection.variableName);
 
-        const highlightClass = getDataFlowHighlightClass(connection.sourceId, connection.targetId);
+        const highlightClass = getDataFlowHighlightClass(
+          connection.sourceId,
+          connection.targetId,
+        );
         const dataFlowId = `${connection.sourceId}:${connection.targetId}`;
+
+        const handleKeyDown = (e: React.KeyboardEvent<SVGGElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onDataFlowSelect?.(dataFlowId);
+          }
+        };
 
         return (
           <g
             key={`arrow-path-${dataFlowId}`}
+            role="treeitem"
             className={`dataflow-group ${highlightClass}`}
             onClick={() => onDataFlowSelect?.(dataFlowId)}
-            style={{ cursor: 'pointer' }}
+            onKeyDown={handleKeyDown}
+            style={{ cursor: "pointer" }}
+            aria-label={`Data flow from ${connection.sourceId} to ${connection.targetId}`}
           >
             <ArrowPath {...props} />
           </g>
@@ -171,15 +188,28 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
           connection.variableName,
         );
 
-        const highlightClass = getDataFlowHighlightClass(connection.sourceId, connection.targetId);
+        const highlightClass = getDataFlowHighlightClass(
+          connection.sourceId,
+          connection.targetId,
+        );
         const dataFlowId = `${connection.sourceId}:${connection.targetId}`;
+
+        const handleKeyDown = (e: React.KeyboardEvent<SVGGElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onDataFlowSelect?.(dataFlowId);
+          }
+        };
 
         return (
           <g
             key={`arrow-label-${dataFlowId}`}
+            role="treeitem"
             className={`dataflow-group ${highlightClass}`}
             onClick={() => onDataFlowSelect?.(dataFlowId)}
-            style={{ cursor: 'pointer' }}
+            onKeyDown={handleKeyDown}
+            style={{ cursor: "pointer" }}
+            aria-label={`Data flow label from ${connection.sourceId} to ${connection.targetId}`}
           >
             <ArrowLabel {...props} />
           </g>

@@ -1,5 +1,8 @@
-import {type FC, useEffect, useRef} from "react";
-import {IIntermediateViewProps, IntermediateView} from "../IntermediateView";
+import { type FC, useEffect, useRef } from "react";
+import {
+  type IIntermediateViewProps,
+  IntermediateView,
+} from "../IntermediateView";
 
 export type IClickableIntermediateViewProps = IIntermediateViewProps & {
   onToggle: (label: string) => void;
@@ -10,8 +13,9 @@ export type IClickableIntermediateViewProps = IIntermediateViewProps & {
   onClearSelection?: () => void;
 };
 
-
-export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (props) => {
+export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (
+  props,
+) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,28 +24,28 @@ export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (p
     if (!container) return;
 
     const observer = new MutationObserver(() => {
-      const svg = container.querySelector('svg');
+      const svg = container.querySelector("svg");
       if (!svg) return;
 
-      const nodes = svg.querySelectorAll('.node');
+      const nodes = svg.querySelectorAll(".node");
 
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         if ((node as any).__clickBound) return;
         (node as any).__clickBound = true;
 
-        const link = node.querySelector('a');
-        const tooltip = link?.getAttribute('title');
-        if (!tooltip) return
+        const link = node.querySelector("a");
+        const tooltip = link?.getAttribute("title");
+        if (!tooltip) return;
 
-        (node as HTMLElement).style.cursor = 'pointer';
+        (node as HTMLElement).style.cursor = "pointer";
 
-        node.addEventListener('click', () => {
-          props.onToggle(tooltip)
+        node.addEventListener("click", () => {
+          props.onToggle(tooltip);
         });
       });
     });
 
-    observer.observe(container, {childList: true, subtree: true});
+    observer.observe(container, { childList: true, subtree: true });
 
     return () => observer.disconnect();
   }, [props.onToggle]);
@@ -49,28 +53,40 @@ export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (p
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
 
-    // Check if we clicked on a node or its children
     let isOnNode = false;
     let currentElement: Element | null = target;
 
     while (currentElement && currentElement !== containerRef.current) {
-      if (currentElement.classList.contains('node') ||
-          currentElement.classList.contains('edge') ||
-          currentElement.tagName === 'A') {
+      if (
+        currentElement.classList.contains("node") ||
+        currentElement.classList.contains("edge") ||
+        currentElement.tagName === "A"
+      ) {
         isOnNode = true;
         break;
       }
       currentElement = currentElement.parentElement;
     }
 
-    // If not on a node, clear selection
     if (!isOnNode) {
       props.onClearSelection?.();
     }
   };
 
+  const handleContainerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      props.onClearSelection?.();
+    }
+  };
+
   return (
-    <div ref={containerRef} onClick={handleContainerClick}>
+    <section
+      ref={containerRef}
+      onClick={handleContainerClick}
+      onKeyDown={handleContainerKeyDown}
+      tabIndex={-1}
+      aria-label="Intermediate view"
+    >
       <IntermediateView
         functionToUnitMapping={props.functionToUnitMapping}
         unitColors={props.unitColors}
@@ -78,6 +94,6 @@ export const ClickableIntermediateView: FC<IClickableIntermediateViewProps> = (p
         highlightedFunctions={props.highlightedFunctions}
         highlightedDataFlows={props.highlightedDataFlows}
       />
-    </div>
+    </section>
   );
-}
+};

@@ -9,21 +9,21 @@ import React, {
 import type { ProcessTimelines } from "services/gen/types";
 import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
-import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
+import { COMPONENT_COLORS, type Color } from "../utils/color";
+import { JsonView } from "./JsonView";
+import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
 import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
-import { SplitPane } from "./utils/SplitPane";
-import { COMPONENT_COLORS, Color } from "../utils/color";
-import { JsonView } from "./JsonView";
+import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
 import {
+  COLUMN_MARGIN,
   type DataFlowConnection,
   type ProcessFunction,
-  parseProcessData, COLUMN_MARGIN,
-  ROW_HEIGHT, Unit,
+  parseProcessData,
+  ROW_HEIGHT,
+  type Unit,
 } from "./utils/ProcessTimeline2";
-import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
-
-
+import { SplitPane } from "./utils/SplitPane";
 
 export const ProcessTimelines2: FC = () => {
   const { selectedSid } = useContext(AppContext) as IAppContext;
@@ -43,12 +43,20 @@ export const ProcessTimelines2: FC = () => {
   const selectedColorsRef = React.useRef<Map<string, string>>(new Map());
   const [topPadding, setTopPadding] = useState(0);
   const [enabledUnits, setEnabledUnits] = useState<Set<string>>(new Set());
-  const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(new Set());
-  const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>([]);
+  const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(
+    new Set(),
+  );
+  const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>(
+    [],
+  );
   const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   const [showIntermediateView, setShowIntermediateView] = useState(false);
-  const [selectedInstructionId, setSelectedInstructionId] = useState<number | null>(null);
-  const [selectedDataFlowId, setSelectedDataFlowId] = useState<string | null>(null);
+  const [selectedInstructionId, setSelectedInstructionId] = useState<
+    number | null
+  >(null);
+  const [selectedDataFlowId, setSelectedDataFlowId] = useState<string | null>(
+    null,
+  );
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -113,136 +121,145 @@ export const ProcessTimelines2: FC = () => {
     setSelectedDataFlowId(null);
   }, []);
 
-  const getRelatedDataFlows = useCallback((instructionId: number): string[] => {
-    return dataFlowConnections
-      .map((conn, idx) => {
-        if (conn.sourceId === instructionId || conn.targetId === instructionId) {
-          return `${conn.sourceId}:${conn.targetId}`;
-        }
-        return null;
-      })
-      .filter((id): id is string => id !== null);
-  }, [dataFlowConnections]);
+  const getRelatedDataFlows = useCallback(
+    (instructionId: number): string[] => {
+      return dataFlowConnections
+        .map((conn, idx) => {
+          if (
+            conn.sourceId === instructionId ||
+            conn.targetId === instructionId
+          ) {
+            return `${conn.sourceId}:${conn.targetId}`;
+          }
+          return null;
+        })
+        .filter((id): id is string => id !== null);
+    },
+    [dataFlowConnections],
+  );
 
   const getRelatedInstructions = useCallback((dataFlowId: string): number[] => {
-    const [sourceId, targetId] = dataFlowId.split(':').map(id => id === 'null' ? null : parseInt(id));
+    const [sourceId, targetId] = dataFlowId
+      .split(":")
+      .map((id) => (id === "null" ? null : parseInt(id)));
     const instructions = [];
     if (sourceId !== null) instructions.push(sourceId);
     if (targetId !== null) instructions.push(targetId);
     return instructions;
   }, []);
 
-  const getRelatedFunctionLabels = useCallback((instructionId: number | null, dataFlowId: string | null): Set<string> => {
-    const relatedLabels = new Set<string>();
+  const getRelatedFunctionLabels = useCallback(
+    (instructionId: number | null, dataFlowId: string | null): Set<string> => {
+      const relatedLabels = new Set<string>();
 
-    if (instructionId !== null) {
-      // Find the function containing this instruction
-      for (const func of functions) {
-        for (const instr of func.instructions) {
-          if (instr.pID === instructionId) {
-            relatedLabels.add(func.label);
-            // Also add functions that have data flows connected to this instruction
-            instr.sendsOutputsToPIDs.forEach((targetPID) => {
-              for (const f of functions) {
-                for (const i of f.instructions) {
-                  if (i.pID === targetPID) {
-                    relatedLabels.add(f.label);
-                  }
-                }
-              }
-            });
-            instr.receiveInputsFromPIDs.forEach((sourcePID) => {
-              for (const f of functions) {
-                for (const i of f.instructions) {
-                  if (i.pID === sourcePID) {
-                    relatedLabels.add(f.label);
-                  }
-                }
-              }
-            });
-            break;
-          }
-        }
-      }
-    } else if (dataFlowId !== null) {
-      // Find functions containing the source and target instructions
-      const relatedInstructions = getRelatedInstructions(dataFlowId);
-      for (const instrId of relatedInstructions) {
+      if (instructionId !== null) {
         for (const func of functions) {
           for (const instr of func.instructions) {
-            if (instr.pID === instrId) {
+            if (instr.pID === instructionId) {
               relatedLabels.add(func.label);
+              instr.sendsOutputsToPIDs.forEach((targetPID) => {
+                for (const f of functions) {
+                  for (const i of f.instructions) {
+                    if (i.pID === targetPID) {
+                      relatedLabels.add(f.label);
+                    }
+                  }
+                }
+              });
+              instr.receiveInputsFromPIDs.forEach((sourcePID) => {
+                for (const f of functions) {
+                  for (const i of f.instructions) {
+                    if (i.pID === sourcePID) {
+                      relatedLabels.add(f.label);
+                    }
+                  }
+                }
+              });
+              break;
+            }
+          }
+        }
+      } else if (dataFlowId !== null) {
+        const relatedInstructions = getRelatedInstructions(dataFlowId);
+        for (const instrId of relatedInstructions) {
+          for (const func of functions) {
+            for (const instr of func.instructions) {
+              if (instr.pID === instrId) {
+                relatedLabels.add(func.label);
+              }
             }
           }
         }
       }
-    }
 
-    return relatedLabels;
-  }, [functions, getRelatedInstructions]);
+      return relatedLabels;
+    },
+    [functions, getRelatedInstructions],
+  );
 
-  const getRelatedDataFlowVariables = useCallback((instructionId: number | null, dataFlowId: string | null): Set<string> => {
-    const relatedVariables = new Set<string>();
+  const getRelatedDataFlowVariables = useCallback(
+    (instructionId: number | null, dataFlowId: string | null): Set<string> => {
+      const relatedVariables = new Set<string>();
 
-    if (instructionId !== null) {
-      // Find the instruction and get its input/output variables
-      for (const func of functions) {
-        for (const instr of func.instructions) {
-          if (instr.pID === instructionId) {
-            // Add all output variables (data flows sent from this instruction)
-            instr.outputs.forEach(output => {
-              relatedVariables.add(output);
-            });
-            // Add all input variables (data flows received by this instruction)
-            instr.inputs.forEach(input => {
-              relatedVariables.add(input);
-            });
-            break;
+      if (instructionId !== null) {
+        for (const func of functions) {
+          for (const instr of func.instructions) {
+            if (instr.pID === instructionId) {
+              instr.outputs.forEach((output) => {
+                relatedVariables.add(output);
+              });
+              instr.inputs.forEach((input) => {
+                relatedVariables.add(input);
+              });
+              break;
+            }
+          }
+        }
+      } else if (dataFlowId !== null) {
+        for (const conn of dataFlowConnections) {
+          if (`${conn.sourceId}:${conn.targetId}` === dataFlowId) {
+            relatedVariables.add(conn.variableName);
           }
         }
       }
-    } else if (dataFlowId !== null) {
-      // Extract the variable name from data flow connections
-      for (const conn of dataFlowConnections) {
-        if (`${conn.sourceId}:${conn.targetId}` === dataFlowId) {
-          relatedVariables.add(conn.variableName);
-        }
-      }
-    }
 
-    return relatedVariables;
-  }, [functions, dataFlowConnections]);
+      return relatedVariables;
+    },
+    [functions, dataFlowConnections],
+  );
 
-  // Update filteredFunctions when functions or enabledUnits change
   useEffect(() => {
     const filteredFunctions = functions.filter(
-      f => enabledUnits.has(f.component) && enabledFunctions.has(f.label));
+      (f) => enabledUnits.has(f.component) && enabledFunctions.has(f.label),
+    );
     setFilteredFunctions(filteredFunctions);
 
-    // Deep copy units to avoid mutating the original state
     const deepCopyUnit = (u: Unit): Unit => ({
       ...u,
       functions: u.functions ? [...u.functions] : null,
-      subunits: u.subunits ? u.subunits.map(su => deepCopyUnit(su)) : null,
+      subunits: u.subunits ? u.subunits.map((su) => deepCopyUnit(su)) : null,
     });
 
     const filterUnitFunctions = (u: Unit) => {
-      if (u.functions) u.functions = u.functions.filter(f => enabledFunctions.has(f.label))
-      if (u.subunits) u.subunits.forEach((subu) => {filterUnitFunctions(subu)})
-    }
+      if (u.functions)
+        u.functions = u.functions.filter((f) => enabledFunctions.has(f.label));
+      if (u.subunits)
+        u.subunits.forEach((subu) => {
+          filterUnitFunctions(subu);
+        });
+    };
 
-    const filteredUnits = units.filter(u => enabledUnits.has(u.name)).map(u => deepCopyUnit(u))
+    const filteredUnits = units
+      .filter((u) => enabledUnits.has(u.name))
+      .map((u) => deepCopyUnit(u));
     filteredUnits.forEach((u) => {
       filterUnitFunctions(u);
-    })
+    });
     setFilteredUnits(filteredUnits);
   }, [functions, units, enabledUnits, enabledFunctions]);
 
   const handleLayoutComplete = useCallback(
-    (
-      newContainerHeight: number,
-      newTopPadding: number,
-    ) => {
+    (newContainerHeight: number, newTopPadding: number) => {
       setContainerHeight(newContainerHeight);
       setTopPadding(newTopPadding);
     },
@@ -254,8 +271,11 @@ export const ProcessTimelines2: FC = () => {
       timelinesResponse: ProcessTimelines<number>,
       processResponse: ProcessData,
     ) => {
-      const { functions: functionsArray, dataFlowConnections: connections, units: units } =
-        parseProcessData(timelinesResponse, processResponse);
+      const {
+        functions: functionsArray,
+        dataFlowConnections: connections,
+        units,
+      } = parseProcessData(timelinesResponse, processResponse);
 
       let minTime = Math.min(...functionsArray.map((f) => f.startTime));
       const maxTime = Math.max(...functionsArray.map((f) => f.endTime));
@@ -272,15 +292,12 @@ export const ProcessTimelines2: FC = () => {
       setFunctions(functionsArray);
       setUnits(units);
       setTimelineConfig({ minTime, maxTime });
-      // setContainerHeight((maxTime - minTime + 1) * ROW_HEIGHT + 100);
       setDataFlowConnections(connections);
 
-      // Initialize all units as enabled
-      const allUnits = new Set(functionsArray.map(f => f.component));
+      const allUnits = new Set(functionsArray.map((f) => f.component));
       setEnabledUnits(allUnits);
 
-      // Initialize all functions as enabled
-      const allFunctions = new Set(functionsArray.map(f => f.label));
+      const allFunctions = new Set(functionsArray.map((f) => f.label));
       setEnabledFunctions(allFunctions);
     },
     [],
@@ -314,7 +331,6 @@ export const ProcessTimelines2: FC = () => {
     }
   }, [selectedSid, parseProcessDataLocal]);
 
-
   if (loading) {
     return <div className="pt-4">Loading...</div>;
   }
@@ -333,23 +349,27 @@ export const ProcessTimelines2: FC = () => {
         <div className="filter-container">
           <div className="buttons">
             <div className="unit-buttons">
-              {
-                Array.from(
-                  new Set(functions.map(f => f.component))
-                ).map(
-                  (component) => {
-                    if (!selectedColorsRef.current.get(component)) return;
-                    return <UnitLabel
+              {Array.from(new Set(functions.map((f) => f.component))).map(
+                (component) => {
+                  if (!selectedColorsRef.current.get(component)) return null;
+                  return (
+                    <UnitLabel
                       key={component}
                       componentName={component}
-                      color={COMPONENT_COLORS[selectedColorsRef.current.get(component)!]}
+                      color={
+                        COMPONENT_COLORS[
+                          selectedColorsRef.current.get(component)!
+                        ]
+                      }
                       enabled={enabledUnits.has(component)}
                       onToggle={handleUnitToggle}
                     />
-                  })
-              }
+                  );
+                },
+              )}
             </div>
             <button
+              type="button"
               className="filter-toggle-button"
               onClick={() => setShowIntermediateView(!showIntermediateView)}
             >
@@ -358,12 +378,20 @@ export const ProcessTimelines2: FC = () => {
           </div>
           {showIntermediateView && (
             <ClickableIntermediateView
-              functionToUnitMapping={new Map(functions.map(f => [f.label, f.component]))}
+              functionToUnitMapping={
+                new Map(functions.map((f) => [f.label, f.component]))
+              }
               unitColors={selectedColorsRef.current}
               enabledFunctions={enabledFunctions}
               onToggle={handleFunctionToggle}
-              highlightedFunctions={getRelatedFunctionLabels(selectedInstructionId, selectedDataFlowId)}
-              highlightedDataFlows={getRelatedDataFlowVariables(selectedInstructionId, selectedDataFlowId)}
+              highlightedFunctions={getRelatedFunctionLabels(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
+              highlightedDataFlows={getRelatedDataFlowVariables(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
               selectedInstructionId={selectedInstructionId}
               selectedDataFlowId={selectedDataFlowId}
               onClearSelection={handleClearSelection}
@@ -371,7 +399,6 @@ export const ProcessTimelines2: FC = () => {
           )}
         </div>
       </div>
-
 
       <div className="process-timelines-2-vertical">
         <div className="vertical-time-axis">
@@ -401,7 +428,11 @@ export const ProcessTimelines2: FC = () => {
         </div>
 
         <div className="diagram-split-view">
-          <SplitPane initialSplitPercentage={70} minWidthLeft={15} minWidthRight={15}>
+          <SplitPane
+            initialSplitPercentage={70}
+            minWidthLeft={15}
+            minWidthRight={15}
+          >
             <FunctionTimeline
               functions={filteredFunctions}
               timelineConfig={timelineConfig}

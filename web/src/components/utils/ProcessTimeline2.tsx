@@ -1,14 +1,15 @@
-import type {ProcessTimelines, TimelinePoint} from "services/gen/types";
-import type {ProcessData} from "services/HaskellApiService";
-import React, {useCallback} from "react";
-import type {InstructionPosition} from "./ArrowWithLabel";
+import type React from "react";
+import { useCallback } from "react";
+import type { ProcessTimelines, TimelinePoint } from "services/gen/types";
+import type { ProcessData } from "services/HaskellApiService";
+import type { InstructionPosition } from "./ArrowWithLabel";
 
 export enum LabelPosition {
   Left,
   Right,
   Both,
   None,
-  Center
+  Center,
 }
 
 export interface Instruction {
@@ -85,7 +86,11 @@ export const getOneLevelUpperPIDs = (
 export function parseProcessData(
   timelinesResponse: ProcessTimelines<number>,
   processResponse: ProcessData,
-): { functions: ProcessFunction[]; dataFlowConnections: DataFlowConnection[], units: Unit[] } {
+): {
+  functions: ProcessFunction[];
+  dataFlowConnections: DataFlowConnection[];
+  units: Unit[];
+} {
   const functionsMap: Map<string, ProcessFunction> = new Map<
     string,
     ProcessFunction
@@ -124,7 +129,7 @@ export function parseProcessData(
               width: MIN_COLUMN_WIDTH,
               instructionMaxWidth: -1,
               isMemoryInit: false,
-              leftPosition: 0
+              leftPosition: 0,
             };
             functionsMap.set(functionId, func);
           }
@@ -214,26 +219,29 @@ export function parseProcessData(
       }
     }
 
-    let maxInstructionNameWidth =
+    const maxInstructionNameWidth =
       f.instructions.length > 0
         ? Math.max(
-          ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
-        )
+            ...f.instructions.map((i) => i.label.length * 8 + TEXT_PADDING),
+          )
         : MIN_COLUMN_WIDTH;
-    let maxInstructionIOWidth =
+    const maxInstructionIOWidth =
       f.instructions.length > 0
         ? Math.max(
-          ...f.instructions.map(
-            (i) =>
-              `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
-                .length *
-              8 +
-              TEXT_PADDING,
-          ),
-        )
+            ...f.instructions.map(
+              (i) =>
+                `(${Array.from(i.inputs).join(",")}) -> (${Array.from(i.outputs).join(",")})`
+                  .length *
+                  8 +
+                TEXT_PADDING,
+            ),
+          )
         : MIN_COLUMN_WIDTH;
 
-    let maxInstructionWidth = Math.max(maxInstructionNameWidth, maxInstructionIOWidth);
+    let maxInstructionWidth = Math.max(
+      maxInstructionNameWidth,
+      maxInstructionIOWidth,
+    );
 
     let maxArrowTextWidth = 0;
     f.instructions.forEach((instr) => {
@@ -262,7 +270,7 @@ export function parseProcessData(
           targetId,
           variableName,
           isSourcePlanned: true,
-          isTargetPlanned: true
+          isTargetPlanned: true,
         });
       });
     });
@@ -271,68 +279,74 @@ export function parseProcessData(
   functionsArray.forEach((func) => {
     func.instructions.forEach((instr) => {
       instr.inputs.forEach((inputVarName) => {
-          if (!instr.receiveInputsFromPIDs.has(inputVarName)) {
-            connections.push({
-              sourceId: null,
-              targetId: instr.pID,
-              variableName: inputVarName,
-              isSourcePlanned: false,
-              isTargetPlanned: true
-            })
-          }
+        if (!instr.receiveInputsFromPIDs.has(inputVarName)) {
+          connections.push({
+            sourceId: null,
+            targetId: instr.pID,
+            variableName: inputVarName,
+            isSourcePlanned: false,
+            isTargetPlanned: true,
+          });
         }
-      )
+      });
 
       instr.outputs.forEach((outputVarName) => {
         if (!instr.sendsOutputsToPIDs.has(outputVarName)) {
           connections.push({
-              sourceId: instr.pID,
-              targetId: null,
-              variableName: outputVarName,
-              isSourcePlanned: true,
-              isTargetPlanned: false
-            })
+            sourceId: instr.pID,
+            targetId: null,
+            variableName: outputVarName,
+            isSourcePlanned: true,
+            isTargetPlanned: false,
+          });
         }
-      })
-    })
+      });
+    });
   });
 
   const unitsMap = new Map<string, Unit>();
   functionsArray.forEach((f) => {
     if (!unitsMap.has(f.component)) {
-      const u: Unit = {name: f.component, functions: [f], subunits: null};
+      const u: Unit = { name: f.component, functions: [f], subunits: null };
       unitsMap.set(f.component, u);
-    }
-    else {
+    } else {
       unitsMap.get(f.component)!.functions!.push(f);
     }
   });
 
   unitsMap.forEach((u) => {
-    if (u.name.includes('fram')) {
+    if (u.name.includes("fram")) {
       const subunitsMap = new Map<string, Unit>();
       u.functions!.forEach((f) => {
-        let subunitName = undefined;
+        let subunitName: string | undefined;
         f.instructions.forEach((i) => {
           subunitName = "#" + i.label.charAt(i.label.length - 1);
-        })
+        });
         if (subunitName === undefined) return;
         if (!subunitsMap.has(subunitName)) {
-          const subunit: Unit = {name: subunitName, subunits: null, functions: [f]}
+          const subunit: Unit = {
+            name: subunitName,
+            subunits: null,
+            functions: [f],
+          };
           subunitsMap.set(subunitName, subunit);
         } else {
           subunitsMap.get(subunitName)!.functions!.push(f);
         }
-      })
+      });
       u.functions = null;
       u.subunits = [...subunitsMap.values()];
-      u.subunits.sort((a, b) => a.name.localeCompare(b.name))
+      u.subunits.sort((a, b) => a.name.localeCompare(b.name));
     }
-  })
+  });
 
   const units = Array.from(unitsMap.values());
 
-  return {functions: functionsArray, dataFlowConnections: connections, units: units};
+  return {
+    functions: functionsArray,
+    dataFlowConnections: connections,
+    units: units,
+  };
 }
 
 export function instructionPositionsEqual(
@@ -359,7 +373,10 @@ export function instructionPositionsEqual(
 /**
  * Compare two maps with numeric keys and values for equality
  */
-export const mapsEqual = (map1: Map<number, number>, map2: Map<number, number>): boolean => {
+export const mapsEqual = (
+  map1: Map<number, number>,
+  map2: Map<number, number>,
+): boolean => {
   if (map1.size !== map2.size) return false;
   for (const [key, value] of map1) {
     if (map2.get(key) !== value) return false;
@@ -385,7 +402,10 @@ export const getInstructionColumnByPID = (
 /**
  * Determine arrow label position based on source and target columns
  */
-export const getArrowLabelPosition = (fromColumn: number, toColumn: number): LabelPosition => {
+export const getArrowLabelPosition = (
+  fromColumn: number,
+  toColumn: number,
+): LabelPosition => {
   return toColumn >= fromColumn ? LabelPosition.Right : LabelPosition.Left;
 };
 
@@ -399,7 +419,7 @@ export const assignInputOutputPositions = (
     f.instructions.forEach((i) => {
       i.inputs.forEach((inp) => {
         const targetInstructionPID = i.receiveInputsFromPIDs.get(inp);
-        let inputPosition;
+        let inputPosition: LabelPosition;
         if (
           targetInstructionPID === undefined ||
           getInstructionColumnByPID(targetInstructionPID, functions) === null
@@ -415,7 +435,7 @@ export const assignInputOutputPositions = (
       });
       i.outputs.forEach((outp) => {
         const targetInstructionPID = i.sendsOutputsToPIDs.get(outp);
-        let outputPosition;
+        let outputPosition: LabelPosition;
         if (
           targetInstructionPID === undefined ||
           getInstructionColumnByPID(targetInstructionPID, functions) === null
@@ -454,7 +474,9 @@ export const calculateInstructionPositionsFromDOM = (
   functions.forEach((func) => {
     func.instructions.forEach((instr) => {
       const elemId = `instr-${instr.pID}`;
-      const element = container.querySelector(`[data-instruction-id="${elemId}"]`);
+      const element = container.querySelector(
+        `[data-instruction-id="${elemId}"]`,
+      );
 
       if (element) {
         const rect = element.getBoundingClientRect();
@@ -480,20 +502,22 @@ export const calculateInstructionPositionsFromDOM = (
 
 export function createContainerClickHandler(
   containerRef: React.RefObject<HTMLElement | null>,
-  onClearSelection: () => void
+  onClearSelection: () => void,
 ) {
   return (e: React.MouseEvent<HTMLElement>) => {
-    if (!containerRef) return
+    if (!containerRef) return;
     const target = e.target as HTMLElement;
 
     let isOnInteractive = false;
     let currentElement: Element | null = target;
     while (currentElement && currentElement !== containerRef.current) {
-      if (currentElement.classList.contains('instruction-rectangle') ||
-        currentElement.classList.contains('function-rectangle') ||
-        currentElement.classList.contains('dataflow-group') ||
-        currentElement.tagName === 'polyline' ||
-        currentElement.tagName === 'path') {
+      if (
+        currentElement.classList.contains("instruction-rectangle") ||
+        currentElement.classList.contains("function-rectangle") ||
+        currentElement.classList.contains("dataflow-group") ||
+        currentElement.tagName === "polyline" ||
+        currentElement.tagName === "path"
+      ) {
         isOnInteractive = true;
         break;
       }

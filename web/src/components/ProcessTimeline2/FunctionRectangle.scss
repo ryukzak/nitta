@@ -60,7 +60,6 @@
       position: absolute;
       left: 0.5rem;
       right: 0.5rem;
-      //min-height: 50px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       cursor: pointer;
       display: flex;
@@ -92,11 +91,6 @@
           font-family: Calibri;
         }
 
-        //.instruction-time {
-        //  font-size: 0.7rem;
-        //  color: #6c757d;
-        //}
-
         .instruction-io-info {
           font-size: 0.65rem;
           color: #6c757d;
@@ -105,7 +99,6 @@
     }
   }
 
-  // Variant for left header mode in TimelinePerUnit
   &.with-left-header {
     display: flex;
     padding: 0;

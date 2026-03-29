@@ -1,24 +1,30 @@
-import React, {FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,} from "react";
-
+import React, {
+  type FC,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { Color } from "../../utils/color";
+import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
   calculateInstructionPositionsFromDOM,
   createContainerClickHandler,
   createZeroMap,
-  DataFlowConnection,
+  type DataFlowConnection,
   estimateArrowTextWidth,
   instructionPositionsEqual,
   LabelPosition,
-  ProcessFunction,
+  type ProcessFunction,
   ROW_HEIGHT,
-  Unit,
+  type Unit,
 } from "../utils/ProcessTimeline2";
-
-import {Color} from "../../utils/color";
-import {FunctionRectangle} from "./FunctionRectangle";
-import {DataFlowOverlay} from "./DataFlows";
-import {UnitLabel} from "./UnitLabel";
-import {InstructionPosition} from "../utils/ArrowWithLabel";
+import { DataFlowOverlay } from "./DataFlows";
+import { FunctionRectangle } from "./FunctionRectangle";
+import { UnitLabel } from "./UnitLabel";
 
 import "./UnitTimeline.scss";
 import "components/ProcessTimeline2/TimelineContainer.scss";
@@ -45,33 +51,38 @@ interface Props {
 }
 
 export const UnitTimeline: FC<Props> = ({
-                                          functions,
-                                          units,
-                                          timelineConfig,
-                                          topPadding,
-                                          containerHeight,
-                                          getComponentColor,
-                                          dataFlowConnections,
-                                          selectedInstructionId,
-                                          selectedDataFlowId,
-                                          onInstructionSelect,
-                                          onDataFlowSelect,
-                                          getRelatedDataFlows,
-                                          getRelatedInstructions,
-                                          onClearSelection,
-                                        }) => {
+  functions,
+  units,
+  timelineConfig,
+  topPadding,
+  containerHeight,
+  getComponentColor,
+  dataFlowConnections,
+  selectedInstructionId,
+  selectedDataFlowId,
+  onInstructionSelect,
+  onDataFlowSelect,
+  getRelatedDataFlows,
+  getRelatedInstructions,
+  onClearSelection,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [instructionPositions, setInstructionPositions] =
-    useState<Map<number, InstructionPosition>>(new Map());
+  const [instructionPositions, setInstructionPositions] = useState<
+    Map<number, InstructionPosition>
+  >(new Map());
 
   const renderUnits = units
     .filter((u) => {
-      if (!u.subunits && (!u.functions || u.functions.length === 0)) return false;
+      if (!u.subunits && (!u.functions || u.functions.length === 0))
+        return false;
 
       if (u.subunits) {
         let allSubUnitsAreEmpty = true;
-        u.subunits.forEach((su) => {if (su.functions && su.functions.length !== 0) allSubUnitsAreEmpty = false});
+        u.subunits.forEach((su) => {
+          if (su.functions && su.functions.length !== 0)
+            allSubUnitsAreEmpty = false;
+        });
         return !allSubUnitsAreEmpty;
       }
       return true;
@@ -83,12 +94,12 @@ export const UnitTimeline: FC<Props> = ({
 
   const flatUnits: { unit: Unit; parent?: Unit }[] = [];
 
-  renderUnits.forEach(({unit, subunits}) => {
-    if (unit.functions) flatUnits.push({unit});
+  renderUnits.forEach(({ unit, subunits }) => {
+    if (unit.functions) flatUnits.push({ unit });
 
-    subunits?.forEach((su) =>
-      flatUnits.push({unit: su, parent: unit})
-    );
+    subunits?.forEach((su) => {
+      flatUnits.push({ unit: su, parent: unit });
+    });
   });
 
   const calculateInstructionPositions = useCallback(() => {
@@ -101,18 +112,16 @@ export const UnitTimeline: FC<Props> = ({
       getComponentColor,
       (func) => {
         const idx = flatUnits.findIndex((u) =>
-          u.unit.functions?.some(
-            (f) => f.label === func.label
-          )
+          u.unit.functions?.some((f) => f.label === func.label),
         );
         return idx < 0 ? 0 : idx;
-      }
+      },
     );
 
     setInstructionPositions((prev) =>
-      instructionPositionsEqual(prev, map) ? prev : map
+      instructionPositionsEqual(prev, map) ? prev : map,
     );
-  }, [units, functions, flatUnits, getComponentColor]);
+  }, [functions, getComponentColor]);
 
   useLayoutEffect(() => {
     if (containerHeight > 0) calculateInstructionPositions();
@@ -124,16 +133,25 @@ export const UnitTimeline: FC<Props> = ({
 
     assignInputOutputPositions(functions);
 
-    const prevBorders = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
+    const prevBorders = createZeroMap(
+      timelineConfig.minTime,
+      timelineConfig.maxTime,
+    );
 
     const parentLeftMap = new Map<string, number>();
     const parentMaxTimeMap = new Map<string, number>();
 
-    flatUnits.forEach(({unit, parent}) => {
+    flatUnits.forEach(({ unit, parent }) => {
       const funcs = unit.functions ?? [];
 
-      const leftWidths = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
-      const rightWidths = createZeroMap(timelineConfig.minTime, timelineConfig.maxTime);
+      const leftWidths = createZeroMap(
+        timelineConfig.minTime,
+        timelineConfig.maxTime,
+      );
+      const rightWidths = createZeroMap(
+        timelineConfig.minTime,
+        timelineConfig.maxTime,
+      );
 
       let maxTime = -1;
 
@@ -141,15 +159,13 @@ export const UnitTimeline: FC<Props> = ({
         for (const i of f.instructions) {
           i.inputPositions.forEach((pos, label) => {
             const w = estimateArrowTextWidth(label);
-            if (pos === LabelPosition.Left)
-              leftWidths.set(i.startTime, w);
+            if (pos === LabelPosition.Left) leftWidths.set(i.startTime, w);
             else rightWidths.set(i.startTime, w);
           });
 
           i.outputPositions.forEach((pos, label) => {
             const w = estimateArrowTextWidth(label);
-            if (pos === LabelPosition.Left)
-              leftWidths.set(i.startTime, w);
+            if (pos === LabelPosition.Left) leftWidths.set(i.startTime, w);
             else rightWidths.set(i.startTime, w);
           });
         }
@@ -160,7 +176,10 @@ export const UnitTimeline: FC<Props> = ({
       let globalLeft = 0;
 
       for (let t = timelineConfig.minTime; t <= timelineConfig.maxTime; t++) {
-        globalLeft = Math.max(globalLeft, prevBorders.get(t)! + leftWidths.get(t)!);
+        globalLeft = Math.max(
+          globalLeft,
+          prevBorders.get(t)! + leftWidths.get(t)!,
+        );
       }
 
       const selector = parent
@@ -177,7 +196,9 @@ export const UnitTimeline: FC<Props> = ({
         elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT}px`;
       } else {
         // subunit
-        const parentColumn = container.querySelector(`[data-unit=${parent.name}]`) as HTMLElement;
+        const parentColumn = container.querySelector(
+          `[data-unit=${parent.name}]`,
+        ) as HTMLElement;
         if (!parentLeftMap.has(parent.name)) {
           parentLeftMap.set(parent.name, globalLeft);
           parentMaxTimeMap.set(parent.name, -1);
@@ -191,7 +212,7 @@ export const UnitTimeline: FC<Props> = ({
         const parentLeft = parentLeftMap.get(parent.name) ?? 0;
 
         elem.style.left = `${globalLeft - parentLeft}px`;
-        parentColumn.style.width = `${globalLeft - parentLeft + elem.getBoundingClientRect().width}px`
+        parentColumn.style.width = `${globalLeft - parentLeft + elem.getBoundingClientRect().width}px`;
 
         const header = elem.querySelector(`.subunit-header`) as HTMLElement;
         elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT - header.getBoundingClientRect().height}px`;
@@ -205,7 +226,12 @@ export const UnitTimeline: FC<Props> = ({
     });
 
     calculateInstructionPositions();
-  }, [units, flatUnits, functions, dataFlowConnections]);
+  }, [
+    functions,
+    calculateInstructionPositions,
+    timelineConfig.minTime,
+    timelineConfig.maxTime,
+  ]);
 
   const renderFunctions = (funcs: ProcessFunction[], color: Color) =>
     funcs.map((f) => (
@@ -224,69 +250,85 @@ export const UnitTimeline: FC<Props> = ({
       />
     ));
 
-  // Update widths and apply transforms for subunit rectangles
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const tracks = container.querySelectorAll(".unit-timeline-track");
 
-    tracks.forEach(track => {
+    tracks.forEach((track) => {
       const rects = track.querySelectorAll(".function-rectangle");
 
       let maxWidth = 0;
 
-      rects.forEach(r => {
-        maxWidth = Math.max(maxWidth, (r as HTMLElement).getBoundingClientRect().width);
+      rects.forEach((r) => {
+        maxWidth = Math.max(
+          maxWidth,
+          (r as HTMLElement).getBoundingClientRect().width,
+        );
       });
 
       if (!maxWidth) return;
 
       (track as HTMLElement).style.width = `${maxWidth}px`;
 
-      const column = track.closest(".unit-column, .subunit-column") as HTMLElement;
+      const column = track.closest(
+        ".unit-column, .subunit-column",
+      ) as HTMLElement;
 
       if (column) {
         column.style.width = `${maxWidth}px`;
       }
 
-      // Measure header height if this is a subunit column
       let headerOffset = 0;
-      if (column?.classList.contains('subunit-column')) {
-        const header = column.querySelector('.subunit-header') as HTMLElement;
+      if (column?.classList.contains("subunit-column")) {
+        const header = column.querySelector(".subunit-header") as HTMLElement;
         if (header) {
           headerOffset = header.getBoundingClientRect().height;
         }
       }
 
-      rects.forEach(r => {
+      rects.forEach((r) => {
         const elem = r as HTMLElement;
         elem.style.width = `${maxWidth}px`;
 
-        // Apply transform to offset rectangles in subunit columns
         if (headerOffset > 0) {
           elem.style.transform = `translateY(-${headerOffset}px)`;
         } else {
-          elem.style.transform = '';
+          elem.style.transform = "";
         }
 
-        const functionHeader = elem.querySelector('.function-header') as HTMLElement;
+        const functionHeader = elem.querySelector(
+          ".function-header",
+        ) as HTMLElement;
         if (functionHeader) {
           functionHeader.style.width = `${maxWidth}px`;
         }
 
-        const instructionsContainer = elem.querySelector('.instructions-container') as HTMLElement;
+        const instructionsContainer = elem.querySelector(
+          ".instructions-container",
+        ) as HTMLElement;
         if (instructionsContainer) {
           instructionsContainer.style.width = `${maxWidth}px`;
         }
       });
     });
-  }, [functions]);
+  });
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClearSelection();
+    }
+  };
 
   return (
-    <div ref={containerRef}
-         className="timeline-container unit-timeline"
-         onClick={createContainerClickHandler(containerRef, onClearSelection)}
+    <section
+      ref={containerRef}
+      className="timeline-container unit-timeline"
+      onClick={createContainerClickHandler(containerRef, onClearSelection)}
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
+      aria-label="Unit timeline"
     >
       <DataFlowOverlay
         topPadding={topPadding}
@@ -299,14 +341,14 @@ export const UnitTimeline: FC<Props> = ({
         getRelatedInstructions={getRelatedInstructions}
       />
 
-      <div className="units-container" style={{minHeight: containerHeight}}>
-        {renderUnits.map(({unit, subunits}) => {
+      <div className="units-container" style={{ minHeight: containerHeight }}>
+        {renderUnits.map(({ unit, subunits }) => {
           const color = getComponentColor(unit.name);
 
           return (
             <div key={unit.name} className="unit-column" data-unit={unit.name}>
               <div className="unit-header">
-                <UnitLabel componentName={unit.name} color={color} enabled/>
+                <UnitLabel componentName={unit.name} color={color} enabled />
               </div>
 
               {/* units */}
@@ -318,12 +360,19 @@ export const UnitTimeline: FC<Props> = ({
 
               {/* subunits */}
               {subunits?.map((su) => (
-                <div key={su.name} className="subunit-column" data-subunit={unit.name + su.name}>
+                <div
+                  key={su.name}
+                  className="subunit-column"
+                  data-subunit={unit.name + su.name}
+                >
                   <div className="subunit-header">
-                    <UnitLabel componentName={su.name} color={color} enabled/>
+                    <UnitLabel componentName={su.name} color={color} enabled />
                   </div>
 
-                  <div className="unit-timeline-track" data-subunit={unit.name + su.name}>
+                  <div
+                    className="unit-timeline-track"
+                    data-subunit={unit.name + su.name}
+                  >
                     {renderFunctions(su.functions ?? [], color)}
                   </div>
                 </div>
@@ -332,6 +381,6 @@ export const UnitTimeline: FC<Props> = ({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };

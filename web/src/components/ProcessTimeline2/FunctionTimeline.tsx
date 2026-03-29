@@ -1,36 +1,31 @@
-import React, {
-  type FC,
-  useCallback,
-  useLayoutEffect,
-  useState,
-} from "react";
-import {
-  COLUMN_MARGIN, CONTAINER_BUTTOM_PADDING,
-  DataFlowConnection, MIN_FUNCTION_GAP,
-  ProcessFunction, ROW_HEIGHT,
-  LabelPosition, instructionPositionsEqual,
-  estimateArrowTextWidth,
-  mapsEqual,
-  assignInputOutputPositions,
-  calculateInstructionPositionsFromDOM, createContainerClickHandler,
-} from "../utils/ProcessTimeline2";
-import type { InstructionPosition } from "../utils/ArrowWithLabel";
+import React, { type FC, useCallback, useLayoutEffect, useState } from "react";
 import type { Color } from "../../utils/color";
-import { FunctionRectangle } from "./FunctionRectangle";
+import type { InstructionPosition } from "../utils/ArrowWithLabel";
+import {
+  assignInputOutputPositions,
+  COLUMN_MARGIN,
+  CONTAINER_BUTTOM_PADDING,
+  calculateInstructionPositionsFromDOM,
+  createContainerClickHandler,
+  type DataFlowConnection,
+  estimateArrowTextWidth,
+  instructionPositionsEqual,
+  LabelPosition,
+  MIN_FUNCTION_GAP,
+  mapsEqual,
+  type ProcessFunction,
+  ROW_HEIGHT,
+} from "../utils/ProcessTimeline2";
 import { DataFlowOverlay } from "./DataFlows";
+import { FunctionRectangle } from "./FunctionRectangle";
 import "components/ProcessTimeline2/TimelineContainer.scss";
-
-
 
 interface FunctionTimelineProps {
   functions: ProcessFunction[];
   timelineConfig: { minTime: number; maxTime: number };
   dataFlowConnections: DataFlowConnection[];
   getComponentColor: (component: string) => Color;
-  onLayoutComplete: (
-    containerHeight: number,
-    topPadding: number
-  ) => void;
+  onLayoutComplete: (containerHeight: number, topPadding: number) => void;
   selectedInstructionId: number | null;
   selectedDataFlowId: string | null;
   onInstructionSelect: (instructionId: number) => void;
@@ -64,7 +59,9 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   );
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [topPadding, setTopPadding] = useState(0);
-  const [functionColumns, setFunctionColumns] = useState<Map<number, number>>(new Map());
+  const [functionColumns, setFunctionColumns] = useState<Map<number, number>>(
+    new Map(),
+  );
   const processingRef = React.useRef(false);
 
   const calculateHeaderHeights = useCallback(() => {
@@ -93,7 +90,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       }
       return heightsMap;
     });
-  }, [functions, mapsEqual]);
+  }, [functions]);
 
   const calculateInstructionPositions = useCallback(() => {
     const container = containerRef.current;
@@ -112,49 +109,26 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     });
   }, [functions, functionColumns, getComponentColor]);
 
-  const getFunctionAffectedRows = (func: ProcessFunction) => {
-    const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
-    const headerRowHeight = Math.ceil(headerHeight / ROW_HEIGHT);
-
-    const firstAffectedRowIndex = Math.max(
-      func.startTime - headerRowHeight,
-      -1,
-    );
-    const lastAffectedRowIndex = func.endTime;
-    return { firstAffectedRowIndex: firstAffectedRowIndex, lastAffectedRowIndex: lastAffectedRowIndex }
-  }
-
-  // const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-  //   const target = e.target as HTMLElement;
-  //
-  //   // Check if we clicked on an interactive element (instruction, data flow arrow, etc)
-  //   let isOnInteractive = false;
-  //   let currentElement: Element | null = target;
-  //
-  //   while (currentElement && currentElement !== containerRef.current) {
-  //     if (currentElement.classList.contains('instruction-rectangle') ||
-  //         currentElement.classList.contains('function-rectangle') ||
-  //         currentElement.classList.contains('dataflow-group') ||
-  //         currentElement.tagName === 'polyline' ||
-  //         currentElement.tagName === 'path') {
-  //       isOnInteractive = true;
-  //       break;
-  //     }
-  //     currentElement = currentElement.parentElement;
-  //   }
-  //
-  //   // If not on an interactive element, clear selection
-  //   if (!isOnInteractive) {
-  //     onClearSelection?.();
-  //   }
-  // };
-
-  const functionsArray = functions.map((f) => ({ ...f }));
-
   const performLayout = useCallback(() => {
+    const functionsArray = functions.map((f) => ({ ...f }));
     if (functions.length === 0 || headerHeights.size < functions.length) return;
     if (processingRef.current) return;
     processingRef.current = true;
+
+    const getFunctionAffectedRows = (func: ProcessFunction) => {
+      const headerHeight = headerHeights.get(func.pID) || ROW_HEIGHT;
+      const headerRowHeight = Math.ceil(headerHeight / ROW_HEIGHT);
+
+      const firstAffectedRowIndex = Math.max(
+        func.startTime - headerRowHeight,
+        -1,
+      );
+      const lastAffectedRowIndex = func.endTime;
+      return {
+        firstAffectedRowIndex: firstAffectedRowIndex,
+        lastAffectedRowIndex: lastAffectedRowIndex,
+      };
+    };
 
     functionsArray.sort((a, b) => a.startTime - b.startTime);
 
@@ -208,7 +182,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       (a, b) => a.column - b.column || a.startTime - b.startTime,
     );
 
-    // assign input/output positions
     assignInputOutputPositions(functionsArray);
 
     const { minTime, maxTime } = timelineConfig;
@@ -217,39 +190,55 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     const funcLeftPositions = new Map<number, number>();
 
     functionsArray.forEach((func) => {
-      const {firstAffectedRowIndex, lastAffectedRowIndex} = getFunctionAffectedRows(func);
+      const { firstAffectedRowIndex, lastAffectedRowIndex } =
+        getFunctionAffectedRows(func);
 
-      let leftOccupiedPositionsPerRow = new Map<number, number>();
+      const leftOccupiedPositionsPerRow = new Map<number, number>();
       for (let i: number = func.startTime; i <= func.endTime; i++)
-        leftOccupiedPositionsPerRow.set(i, 0)
+        leftOccupiedPositionsPerRow.set(i, 0);
 
       functionsArray.forEach((f) => {
         if (f.column === func.column - 1) {
-          const {firstAffectedRowIndex: a, lastAffectedRowIndex: b} = getFunctionAffectedRows(f);
+          const { firstAffectedRowIndex: a, lastAffectedRowIndex: b } =
+            getFunctionAffectedRows(f);
 
-          if (Math.max(firstAffectedRowIndex, a) <= Math.min(lastAffectedRowIndex, b)) {
-
-            let neighbourRightBorderPosition = funcLeftPositions.get(f.pID)! + f.width;
+          if (
+            Math.max(firstAffectedRowIndex, a) <=
+            Math.min(lastAffectedRowIndex, b)
+          ) {
+            const neighbourRightBorderPosition =
+              funcLeftPositions.get(f.pID)! + f.width;
             for (let i: number = f.startTime; i <= f.endTime; i++)
-              leftOccupiedPositionsPerRow.set(i, neighbourRightBorderPosition + COLUMN_MARGIN)
+              leftOccupiedPositionsPerRow.set(
+                i,
+                neighbourRightBorderPosition + COLUMN_MARGIN,
+              );
 
             f.instructions.forEach((i) => {
               i.outputs.forEach((l) => {
                 if (i.outputPositions.get(l) === LabelPosition.Right) {
-                  const labelRightBorder = neighbourRightBorderPosition + estimateArrowTextWidth(l);
-                  leftOccupiedPositionsPerRow.set(i.startTime, labelRightBorder)
+                  const labelRightBorder =
+                    neighbourRightBorderPosition + estimateArrowTextWidth(l);
+                  leftOccupiedPositionsPerRow.set(
+                    i.startTime,
+                    labelRightBorder,
+                  );
                 }
-              })
+              });
               i.inputs.forEach((l) => {
                 if (i.inputPositions.get(l) === LabelPosition.Right) {
-                  const labelRightBorder = neighbourRightBorderPosition + estimateArrowTextWidth(l);
-                  leftOccupiedPositionsPerRow.set(i.startTime, labelRightBorder)
+                  const labelRightBorder =
+                    neighbourRightBorderPosition + estimateArrowTextWidth(l);
+                  leftOccupiedPositionsPerRow.set(
+                    i.startTime,
+                    labelRightBorder,
+                  );
                 }
-              })
-            })
+              });
+            });
           }
         }
-      })
+      });
       func.instructions.forEach((i) => {
         i.inputs.forEach((l) => {
           if (i.inputPositions.get(l) === LabelPosition.Left) {
@@ -257,15 +246,15 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
             const nextPos = lastPos! + estimateArrowTextWidth(l);
             leftOccupiedPositionsPerRow.set(i.startTime, nextPos);
           }
-        })
+        });
         i.outputs.forEach((l) => {
           if (i.outputPositions.get(l) === LabelPosition.Left) {
             const lastPos = leftOccupiedPositionsPerRow.get(i.startTime);
             const nextPos = lastPos! + estimateArrowTextWidth(l);
             leftOccupiedPositionsPerRow.set(i.startTime, nextPos);
           }
-        })
-      })
+        });
+      });
       func.leftPosition = Math.max(...leftOccupiedPositionsPerRow.values());
       funcLeftPositions.set(func.pID, func.leftPosition);
     });
@@ -287,23 +276,18 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     setContainerHeight(newContainerHeight);
     setTopPadding(newTopPadding);
 
-    // Store column assignments
     const columnsMap = new Map<number, number>();
     functionsArray.forEach((func) => {
       columnsMap.set(func.pID, func.column);
     });
     setFunctionColumns(columnsMap);
 
-    // Notify parent component of layout changes
-    onLayoutComplete(
-      newContainerHeight,
-      newTopPadding
-    );
+    onLayoutComplete(newContainerHeight, newTopPadding);
 
     processingRef.current = false;
 
     setLayoutFunctions(functionsArray);
-  }, [headerHeights, timelineConfig]);
+  }, [functions, headerHeights, timelineConfig, onLayoutComplete]);
 
   useLayoutEffect(() => {
     performLayout();
@@ -314,11 +298,20 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     calculateInstructionPositions();
   }, [calculateHeaderHeights, calculateInstructionPositions]);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClearSelection();
+    }
+  };
+
   return (
-    <div
+    <section
       className="timeline-container function-timeline"
       ref={containerRef}
       onClick={createContainerClickHandler(containerRef, onClearSelection)}
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
+      aria-label="Function timeline"
     >
       <DataFlowOverlay
         dataFlowConnections={dataFlowConnections}
@@ -348,6 +341,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
           />
         );
       })}
-    </div>
+    </section>
   );
 };

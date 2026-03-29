@@ -17,14 +17,14 @@ import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
 import { useApiResponse } from "hooks/useApiResponse";
-import { COMPONENT_COLORS, fadeColor, Color } from "utils/color";
+import { COMPONENT_COLORS, Color, fadeColor } from "utils/color";
 
 /**
  * Component to display algorithm graph.
  */
 
 export type IIntermediateViewProps = {
-  functionToUnitMapping?: Map<string, string>,
+  functionToUnitMapping?: Map<string, string>;
   unitColors?: Map<string, string>;
   enabledFunctions?: Set<string>;
   highlightedFunctions?: Set<string>;
@@ -51,7 +51,16 @@ export const IntermediateView: FC<IIntermediateViewProps> = (props) => {
   // TODO: is renderGraphJsonToDot expensive? may be a good idea to wrap expression in useMemo, otherwise it's called on
   // each rerender
   const dot = algorithmGraph
-    ? renderGraphJsonToDot(algorithmGraph, procState, endpoints, props.functionToUnitMapping, props.unitColors, props.enabledFunctions, props.highlightedFunctions, props.highlightedDataFlows)
+    ? renderGraphJsonToDot(
+        algorithmGraph,
+        procState,
+        endpoints,
+        props.functionToUnitMapping,
+        props.unitColors,
+        props.enabledFunctions,
+        props.highlightedFunctions,
+        props.highlightedDataFlows,
+      )
     : undefined;
   return (
     <div className="bg-light border graphvizContainer">
@@ -106,7 +115,7 @@ function renderGraphJsonToDot(
   unitColors?: Map<string, string>,
   enabledFunctions?: Set<string>,
   highlightedFunctions?: Set<string>,
-  highlightedDataFlows?: Set<string>
+  highlightedDataFlows?: Set<string>,
 ): string {
   const lines = [
     // "rankdir=LR"
@@ -117,30 +126,50 @@ function renderGraphJsonToDot(
       style: isFunctionBound(state.bindeFuns, node) ? "line" : "dashed",
     };
     if (functionToUnitMapping) {
-      let matchedUnitFunctionName;
+      let matchedUnitFunctionName: string | null = null;
       functionToUnitMapping.keys().forEach((functionName) => {
-        if (functionName.replaceAll(" ", "").includes(node.function.replaceAll(" ", ""))) matchedUnitFunctionName = functionName;
+        if (
+          functionName
+            .replaceAll(" ", "")
+            .includes(node.function.replaceAll(" ", ""))
+        )
+          matchedUnitFunctionName = functionName;
       });
 
       if (unitColors && matchedUnitFunctionName) {
-        const colorKey = unitColors.get(functionToUnitMapping.get(matchedUnitFunctionName)!)!;
+        const colorKey = unitColors.get(
+          functionToUnitMapping.get(matchedUnitFunctionName)!,
+        )!;
         let color = COMPONENT_COLORS[colorKey as keyof typeof COMPONENT_COLORS];
         let fontColor = color;
         let fadedColor = fadeColor(color, 0x15 / 255);
         if (color) {
           if (!enabledFunctions?.has(matchedUnitFunctionName)) {
-            color = new Color({r: color.obj.r, g: color.obj.g, b: color.obj.b, a: 0.4})
-            fadedColor = new Color({r: fadedColor.obj.r, g: fadedColor.obj.g, b: fadedColor.obj.b, a: 0.4});
+            color = new Color({
+              r: color.obj.r,
+              g: color.obj.g,
+              b: color.obj.b,
+              a: 0.4,
+            });
+            fadedColor = new Color({
+              r: fadedColor.obj.r,
+              g: fadedColor.obj.g,
+              b: fadedColor.obj.b,
+              a: 0.4,
+            });
             fontColor = fadeColor(color, 0.4);
           }
-          dotOptions.style = 'filled';
+          dotOptions.style = "filled";
           dotOptions.fillcolor = fadedColor.toHexString();
           dotOptions.color = color.toHexString();
           dotOptions.fontcolor = fontColor.toHexString();
           dotOptions.tooltip = matchedUnitFunctionName;
 
           // Add highlighting for selected instructions/dataflows
-          if (highlightedFunctions && highlightedFunctions.has(matchedUnitFunctionName)) {
+          if (
+            highlightedFunctions &&
+            highlightedFunctions.has(matchedUnitFunctionName)
+          ) {
             // dotOptions.color = "#0066cc";
             dotOptions.penwidth = 3;
           }
@@ -148,11 +177,7 @@ function renderGraphJsonToDot(
       }
     }
 
-    return (
-      node.id +
-      " " +
-      renderDotOptions(dotOptions)
-    );
+    return node.id + " " + renderDotOptions(dotOptions);
   });
   function isTransfered(v: string): boolean {
     return state.transferedVars.indexOf(v) >= 0;
@@ -162,9 +187,13 @@ function renderGraphJsonToDot(
   const nodeIdToFunctionName = new Map<number, string>();
   json.nodes.forEach((node, idx) => {
     if (functionToUnitMapping) {
-      let matchedUnitFunctionName;
+      let matchedUnitFunctionName: string | null = null;
       functionToUnitMapping.keys().forEach((functionName) => {
-        if (functionName.replaceAll(" ", "").includes(node.function.replaceAll(" ", ""))) {
+        if (
+          functionName
+            .replaceAll(" ", "")
+            .includes(node.function.replaceAll(" ", ""))
+        ) {
           matchedUnitFunctionName = functionName;
         }
       });
@@ -195,10 +224,7 @@ function renderGraphJsonToDot(
       edgeOptions.penwidth = 3;
     }
 
-    return (
-      `${edge.from} -> ${edge.to} ` +
-      renderDotOptions(edgeOptions)
-    );
+    return `${edge.from} -> ${edge.to} ` + renderDotOptions(edgeOptions);
   });
 
   lines.push(...nodes);
