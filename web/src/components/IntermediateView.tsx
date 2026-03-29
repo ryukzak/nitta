@@ -165,12 +165,10 @@ function renderGraphJsonToDot(
           dotOptions.fontcolor = fontColor.toHexString();
           dotOptions.tooltip = matchedUnitFunctionName;
 
-          // Add highlighting for selected instructions/dataflows
           if (
             highlightedFunctions &&
             highlightedFunctions.has(matchedUnitFunctionName)
           ) {
-            // dotOptions.color = "#0066cc";
             dotOptions.penwidth = 3;
           }
         }
@@ -183,7 +181,6 @@ function renderGraphJsonToDot(
     return state.transferedVars.indexOf(v) >= 0;
   }
 
-  // Create a mapping from node ID to function name for edge highlighting
   const nodeIdToFunctionName = new Map<number, string>();
   json.nodes.forEach((node, idx) => {
     if (functionToUnitMapping) {
@@ -218,9 +215,7 @@ function renderGraphJsonToDot(
           : "odot",
     };
 
-    // Add highlighting only for specific data flows (variables) related to the selected instruction
     if (highlightedDataFlows && highlightedDataFlows.has(edge.label)) {
-      // edgeOptions.color = "#0066cc";
       edgeOptions.penwidth = 3;
     }
 

@@ -96,7 +96,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
       const rect = headerRef.current.getBoundingClientRect();
       setHeaderHeight(rect.height);
     }
-  }, []); // run after first render
+  }, []);
 
   return (
     <div
