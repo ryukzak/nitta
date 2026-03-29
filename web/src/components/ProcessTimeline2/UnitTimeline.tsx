@@ -226,8 +226,13 @@ export const UnitTimeline: FC<Props> = ({
     });
 
     calculateInstructionPositions();
-  }, [functions, calculateInstructionPositions,
-    timelineConfig.minTime, timelineConfig.maxTime, flatUnits.forEach]);
+  }, [
+    functions,
+    calculateInstructionPositions,
+    timelineConfig.minTime,
+    timelineConfig.maxTime,
+    flatUnits.forEach,
+  ]);
 
   const renderFunctions = (funcs: ProcessFunction[], color: Color) =>
     funcs.map((f) => (
