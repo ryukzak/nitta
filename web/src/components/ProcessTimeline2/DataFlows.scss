@@ -1,8 +1,10 @@
 .data-flow-overlay {
     position: absolute;
-    bottom: 0;
+    top: 0;
+    left: 0;
     height: 100%;
     overflow: visible;
+    z-index: 0;
 
     .arrow-path {
       opacity: 0.8;

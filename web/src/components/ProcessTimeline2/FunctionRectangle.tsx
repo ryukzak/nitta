@@ -76,6 +76,8 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
   });
   bgTransparentColor.obj.a = 0x15 / 255;
 
+  const tooltipText = `${func.component} #${func.pID} \n${func.label} \n[${func.startTime};${func.endTime}]`;
+
   React.useLayoutEffect(() => {
     if (headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
@@ -87,6 +89,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
     <div
       key={func.pID}
       className={`function-rectangle`}
+      title={tooltipText}
       style={{
         top:
           topPadding +
@@ -147,7 +150,7 @@ export const FunctionRectangle: FC<FunctionRectangleProps> = ({
                   border: `2px solid ${bgColor.toHexString()}`,
                   cursor: 'pointer',
                 }}
-                title={instruction.info}
+                title={`${func.component} #${instruction.pID}\n${instruction.label}\n[${instruction.startTime};${instruction.endTime}]`}
               >
                 <div className="instruction-content">
                   <div className="instruction-label">

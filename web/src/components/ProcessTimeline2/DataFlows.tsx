@@ -34,6 +34,32 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
   onDataFlowSelect,
   getRelatedInstructions,
 }) => {
+  const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const [svgWidth, setSvgWidth] = React.useState<string>('100%');
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (svgRef.current?.parentElement) {
+        const parent = svgRef.current.parentElement;
+        const scrollWidth = parent.scrollWidth;
+        const clientWidth = parent.clientWidth;
+        const width = Math.max(scrollWidth, clientWidth);
+        setSvgWidth(`${width}px`);
+      }
+    };
+
+    const parent = svgRef.current?.parentElement;
+    if (parent) {
+      handleScroll();
+      parent.addEventListener('scroll', handleScroll);
+      window.addEventListener('resize', handleScroll);
+      return () => {
+        parent.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleScroll);
+      };
+    }
+  }, []);
+
   const getDataFlowHighlightClass = (sourceId: number | null, targetId: number | null): string => {
     const dataFlowId = `${sourceId}:${targetId}`;
 
@@ -53,8 +79,17 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
     return (highlightClass === 'dataflow-selected' || highlightClass === 'dataflow-related') ? "#000000" : "#404040";
   }
 
+  const lineWidth = typeof svgWidth === 'string' && svgWidth.includes('px')
+    ? parseInt(svgWidth)
+    : 1000;
+
   return (
-    <svg className="data-flow-overlay" role={"presentation"} style={{ width: '100%', height: '100%' }}>
+    <svg
+      ref={svgRef}
+      className="data-flow-overlay"
+      role={"presentation"}
+      style={{ width: svgWidth, height: '100%' }}
+    >
       <defs>
         {Array.from(
           new Set(
@@ -86,7 +121,7 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
           key={`grid-line-${time}`}
           x1="0"
           y1={topPadding + time * ROW_HEIGHT}
-          x2="100%"
+          x2={lineWidth}
           y2={topPadding + time * ROW_HEIGHT}
           stroke="#40404060"
           strokeDasharray="2,4"
