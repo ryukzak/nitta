@@ -1,14 +1,8 @@
-import { AppContext, type IAppContext } from "app/AppContext";
-import type { AxiosError, AxiosResponse } from "axios";
-import { type FC, useContext, useEffect, useState } from "react";
+import {AppContext, type IAppContext} from "app/AppContext";
+import type {AxiosError, AxiosResponse} from "axios";
+import {type FC, useContext, useEffect, useMemo, useState} from "react";
 import Tree from "react-d3-tree";
-import {
-  api,
-  reLastSid,
-  type Sid,
-  type SynthesisTree,
-  sidSeparator,
-} from "services/HaskellApiService";
+import {api, reLastSid, type Sid, sidSeparator, type SynthesisTree,} from "services/HaskellApiService";
 
 type Node = {
   name: string;
@@ -17,46 +11,55 @@ type Node = {
   isProcessed: boolean;
   decsionType: string;
   children: Node[];
+  isHidden?: boolean;
+  allChildrenCount?: number;
+  hiddenChildrenCount?: number;
 };
-
-function synthesisTree2D3Tree(
-  node: SynthesisTree,
-  knownSid: Set<Sid>,
-  selectedSid: Sid | null,
-): Node {
-  const label = node.rootLabel;
-  knownSid.add(label.sid);
-
-  var childrens: Node[] = [];
-  var skipped: number = 0;
-  node.subForest.forEach((e: SynthesisTree) => {
-    if (e.rootLabel.isProcessed || e.rootLabel.sid === selectedSid) {
-      childrens.push(synthesisTree2D3Tree(e, knownSid, selectedSid));
-    } else {
-      skipped++;
-    }
-  });
-  if (skipped > 0) {
-    childrens.push({ name: `...and ${skipped} more` } as Node);
-  }
-
-  return {
-    sid: label.sid,
-    name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
-    isProcessed: label.isProcessed,
-    isTerminal: label.isTerminal,
-    decsionType: label.decsionType,
-    children: childrens,
-  };
-}
 
 export const SynthesisGraphRender: FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
-
   const [synthesisTree, setSynthesisTree] = useState<Node | null>(null);
   const [knownSid] = useState<Set<Sid>>(new Set());
   const [selectedSid, setSelectedSid] = useState<Sid | null>(null);
   const [dataGraph, setDataGraph] = useState<Node[]>([] as Node[]);
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<Sid>>(new Set());
+  const [hiddenNodes, setHiddenNodes] = useState<Set<Sid>>(new Set());
+
+  function synthesisTree2D3Tree(
+    node: SynthesisTree,
+    knownSid: Set<Sid>,
+    selectedSid: Sid | null,
+  ): Node {
+    const label = node.rootLabel;
+    knownSid.add(label.sid);
+
+    const children: Node[] = [];
+    let hiddenChildrenCount: number = 0;
+    node.subForest.forEach((e: SynthesisTree) => {
+
+      children.push(synthesisTree2D3Tree(e, knownSid, selectedSid));
+      if (!(e.rootLabel.isProcessed || e.rootLabel.sid === selectedSid)) {
+        hiddenChildrenCount++;
+        setHiddenNodes((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(e.rootLabel.sid);
+          return newSet;
+        });
+      }
+    });
+
+    return {
+      sid: label.sid,
+      name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
+      isProcessed: label.isProcessed,
+      isTerminal: label.isTerminal,
+      decsionType: label.decsionType,
+      children: children,
+      isHidden: hiddenNodes.has(label.sid),
+      allChildrenCount: children.length,
+      hiddenChildrenCount: hiddenChildrenCount
+    };
+  }
 
   useEffect(() => {
     const sid = appContext.selectedSid;
@@ -84,9 +87,94 @@ export const SynthesisGraphRender: FC = () => {
     }
   }, [appContext.selectedSid, selectedSid, knownSid, synthesisTree]);
 
+  const findNode = (nodes: Node[], id: Sid): Node | null => {
+    for (const node of nodes) {
+      if (node.sid === id) return node;
+      if (node.children) {
+        const found = findNode(node.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const handleNodeButtonClick = (node: Node, event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const originalNode = findNode(dataGraph, node.sid);
+    if (originalNode === null) return;
+
+    if (node.allChildrenCount === node.hiddenChildrenCount) {
+      setHiddenNodes((prev) => {
+        const newSet = new Set(prev);
+        originalNode.children.forEach((child) => {
+          newSet.delete(child.sid);
+        });
+        return newSet;
+      });
+    } else {
+      setHiddenNodes((prev) => {
+        const newSet = new Set(prev);
+        originalNode.children.forEach((child) => newSet.add(child.sid));
+        return newSet;
+      });
+    }
+  };
+
+  const handleNodeTitleClick = (nodeId: Sid, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setHiddenNodes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+
+  const processHiddenChildren = (node: Node, hidden: Set<Sid>): Node => {
+    const visibleChildren: Node[] = []
+    let hiddenChildrenCount = 0;
+    node.children.forEach(c => {
+      if (hidden.has(c.sid)) {
+        hiddenChildrenCount++;
+      }
+      else visibleChildren.push(processHiddenChildren(c, hidden));
+    })
+
+    if (hiddenChildrenCount > 0 && hiddenChildrenCount < node.children.length) {
+      const moreNode: Node = {
+        name: `...and ${hiddenChildrenCount} more`,
+        sid: null as any,
+        isTerminal: false,
+        isProcessed: false,
+        decsionType: "",
+        children: [],
+        isHidden: false
+      };
+      visibleChildren.push(moreNode);
+    }
+    return {
+      ...node,
+      isHidden: hidden.has(node.sid),
+      children: visibleChildren,
+      allChildrenCount: node.children.length,
+      hiddenChildrenCount: hiddenChildrenCount
+    };
+  };
+
+  const displayGraph = useMemo(() => {
+    if (dataGraph.length === 0) return dataGraph;
+    const mapped = dataGraph.map((node) => processHiddenChildren(node, hiddenNodes));
+    return mapped.filter(n => !n.isHidden);
+  }, [dataGraph, collapsedNodes, hiddenNodes]);
+
   const renderNode = (props: any) => {
-    var datum = props.nodeDatum as Node;
-    var color = "white";
+    let datum = props.nodeDatum as Node;
+    if (datum.isHidden) return;
+    let color = "white";
     if (datum.isProcessed) {
       color = "black";
     }
@@ -100,16 +188,44 @@ export const SynthesisGraphRender: FC = () => {
     return (
       <g>
         {datum.sid ? (
-          <circle
-            r="10"
-            fill={color}
-            onClick={() => appContext.setSid(datum.sid)}
-            role={"treeitem"}
-          />
+          <>
+            {datum.allChildrenCount && datum.allChildrenCount > 0 && (
+              <>
+                <text
+                  x="-25"
+                  y="0"
+                  fill="black"
+                  fontSize="16"
+                  fontWeight="bold"
+                  strokeWidth="0"
+                  cursor="pointer"
+                  onClick={(e) => handleNodeButtonClick(datum, e as any)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {datum.hiddenChildrenCount === datum.allChildrenCount ? "+" : "-"}
+                </text>
+              </>
+            )}
+            <circle
+              r="10"
+              fill={color}
+              onClick={() => appContext.setSid(datum.sid)}
+              role={"treeitem"}
+            />
+          </>
         ) : (
           ""
         )}
-        <text fill="black" strokeWidth="1" x="20">
+        <text
+          fill="black"
+          strokeWidth="1"
+          x="20"
+          cursor="pointer"
+          onClick={(e) => handleNodeTitleClick(datum.sid, e as any)}
+          role="button"
+          tabIndex={0}
+        >
           {datum.name}
         </text>
       </g>
@@ -126,7 +242,7 @@ export const SynthesisGraphRender: FC = () => {
   return (
     <div className="h-100">
       <Tree
-        data={dataGraph}
+        data={displayGraph}
         nodeSize={{ x: 160, y: 60 }}
         separation={{ siblings: 1, nonSiblings: 1 }}
         pathFunc="diagonal"
