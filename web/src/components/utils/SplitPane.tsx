@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import "components/utils/SplitPane.scss"
 
 interface SplitPaneProps {
   children: ReactNode;
@@ -68,7 +69,6 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
         return;
       }
 
-      // Check constraints
       if (!containerRef.current) return;
       const containerRect = containerRef.current.getBoundingClientRect();
       const leftWidth = (newPercentage / 100) * containerRect.width;
