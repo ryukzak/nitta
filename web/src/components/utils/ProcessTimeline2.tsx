@@ -22,7 +22,7 @@ export interface Instruction {
   outputs: Set<string>;
   outputPositions: Map<string, number>;
   inputPositions: Map<string, LabelPosition>;
-  receiveInputsFromPIDs: Map<string, LabelPosition>;
+  receiveInputsFromPIDs: Map<string, number>;
   sendsOutputsToPIDs: Map<string, number>;
   outputPosition: LabelPosition;
 }

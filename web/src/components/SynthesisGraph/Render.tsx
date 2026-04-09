@@ -1,8 +1,21 @@
-import {AppContext, type IAppContext} from "app/AppContext";
-import type {AxiosError, AxiosResponse} from "axios";
-import {type FC, useContext, useEffect, useMemo, useState} from "react";
+import { AppContext, type IAppContext } from "app/AppContext";
+import type { AxiosError, AxiosResponse } from "axios";
+import {
+  type FC,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Tree from "react-d3-tree";
-import {api, reLastSid, type Sid, sidSeparator, type SynthesisTree,} from "services/HaskellApiService";
+import {
+  api,
+  reLastSid,
+  type Sid,
+  type SynthesisTree,
+  sidSeparator,
+} from "services/HaskellApiService";
 
 type Node = {
   name: string;
@@ -22,44 +35,41 @@ export const SynthesisGraphRender: FC = () => {
   const [knownSid] = useState<Set<Sid>>(new Set());
   const [selectedSid, setSelectedSid] = useState<Sid | null>(null);
   const [dataGraph, setDataGraph] = useState<Node[]>([] as Node[]);
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<Sid>>(new Set());
   const [hiddenNodes, setHiddenNodes] = useState<Set<Sid>>(new Set());
 
-  function synthesisTree2D3Tree(
-    node: SynthesisTree,
-    knownSid: Set<Sid>,
-    selectedSid: Sid | null,
-  ): Node {
-    const label = node.rootLabel;
-    knownSid.add(label.sid);
+  const synthesisTree2D3Tree = useCallback(
+    (node: SynthesisTree, knownSid: Set<Sid>, selectedSid: Sid | null) => {
+      const label = node.rootLabel;
+      knownSid.add(label.sid);
 
-    const children: Node[] = [];
-    let hiddenChildrenCount: number = 0;
-    node.subForest.forEach((e: SynthesisTree) => {
+      const children: Node[] = [];
+      let hiddenChildrenCount: number = 0;
+      node.subForest.forEach((e: SynthesisTree) => {
+        children.push(synthesisTree2D3Tree(e, knownSid, selectedSid));
+        if (!(e.rootLabel.isProcessed || e.rootLabel.sid === selectedSid)) {
+          hiddenChildrenCount++;
+          setHiddenNodes((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(e.rootLabel.sid);
+            return newSet;
+          });
+        }
+      });
 
-      children.push(synthesisTree2D3Tree(e, knownSid, selectedSid));
-      if (!(e.rootLabel.isProcessed || e.rootLabel.sid === selectedSid)) {
-        hiddenChildrenCount++;
-        setHiddenNodes((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(e.rootLabel.sid);
-          return newSet;
-        });
-      }
-    });
-
-    return {
-      sid: label.sid,
-      name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
-      isProcessed: label.isProcessed,
-      isTerminal: label.isTerminal,
-      decsionType: label.decsionType,
-      children: children,
-      isHidden: hiddenNodes.has(label.sid),
-      allChildrenCount: children.length,
-      hiddenChildrenCount: hiddenChildrenCount
-    };
-  }
+      return {
+        sid: label.sid,
+        name: reLastSid.exec(label.sid)![0] + " " + label.decsionType,
+        isProcessed: label.isProcessed,
+        isTerminal: label.isTerminal,
+        decsionType: label.decsionType,
+        children: children,
+        isHidden: hiddenNodes.has(label.sid),
+        allChildrenCount: children.length,
+        hiddenChildrenCount: hiddenChildrenCount,
+      };
+    },
+    [hiddenNodes.has],
+  );
 
   useEffect(() => {
     const sid = appContext.selectedSid;
@@ -74,7 +84,7 @@ export const SynthesisGraphRender: FC = () => {
         console.log(`SynthesisGraphRender.reloadSynthesisGraph(${sid}):done`);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedSid, knownSid]);
+  }, [appContext.selectedSid, knownSid, synthesisTree2D3Tree]);
 
   useEffect(() => {
     const sid = appContext.selectedSid;
@@ -115,7 +125,9 @@ export const SynthesisGraphRender: FC = () => {
     } else {
       setHiddenNodes((prev) => {
         const newSet = new Set(prev);
-        originalNode.children.forEach((child) => newSet.add(child.sid));
+        originalNode.children.forEach((child) => {
+          newSet.add(child.sid);
+        });
         return newSet;
       });
     }
@@ -123,6 +135,7 @@ export const SynthesisGraphRender: FC = () => {
 
   const handleNodeTitleClick = (nodeId: Sid, event: React.MouseEvent) => {
     event.stopPropagation();
+    if (nodeId === "-") return;
     setHiddenNodes((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
@@ -134,45 +147,52 @@ export const SynthesisGraphRender: FC = () => {
     });
   };
 
-  const processHiddenChildren = (node: Node, hidden: Set<Sid>): Node => {
-    const visibleChildren: Node[] = []
-    let hiddenChildrenCount = 0;
-    node.children.forEach(c => {
-      if (hidden.has(c.sid)) {
-        hiddenChildrenCount++;
-      }
-      else visibleChildren.push(processHiddenChildren(c, hidden));
-    })
+  const processHiddenChildren = useCallback(
+    (node: Node, hidden: Set<Sid>): Node => {
+      const visibleChildren: Node[] = [];
+      let hiddenChildrenCount = 0;
+      node.children.forEach((c) => {
+        if (hidden.has(c.sid)) {
+          hiddenChildrenCount++;
+        } else visibleChildren.push(processHiddenChildren(c, hidden));
+      });
 
-    if (hiddenChildrenCount > 0 && hiddenChildrenCount < node.children.length) {
-      const moreNode: Node = {
-        name: `...and ${hiddenChildrenCount} more`,
-        sid: null as any,
-        isTerminal: false,
-        isProcessed: false,
-        decsionType: "",
-        children: [],
-        isHidden: false
+      if (
+        hiddenChildrenCount > 0 &&
+        hiddenChildrenCount < node.children.length
+      ) {
+        const moreNode: Node = {
+          name: `...and ${hiddenChildrenCount} more`,
+          sid: null as any,
+          isTerminal: false,
+          isProcessed: false,
+          decsionType: "",
+          children: [],
+          isHidden: false,
+        };
+        visibleChildren.push(moreNode);
+      }
+      return {
+        ...node,
+        isHidden: hidden.has(node.sid),
+        children: visibleChildren,
+        allChildrenCount: node.children.length,
+        hiddenChildrenCount: hiddenChildrenCount,
       };
-      visibleChildren.push(moreNode);
-    }
-    return {
-      ...node,
-      isHidden: hidden.has(node.sid),
-      children: visibleChildren,
-      allChildrenCount: node.children.length,
-      hiddenChildrenCount: hiddenChildrenCount
-    };
-  };
+    },
+    [],
+  );
 
   const displayGraph = useMemo(() => {
     if (dataGraph.length === 0) return dataGraph;
-    const mapped = dataGraph.map((node) => processHiddenChildren(node, hiddenNodes));
-    return mapped.filter(n => !n.isHidden);
-  }, [dataGraph, collapsedNodes, hiddenNodes]);
+    const mapped = dataGraph.map((node) =>
+      processHiddenChildren(node, hiddenNodes),
+    );
+    return mapped.filter((n) => !n.isHidden);
+  }, [dataGraph, hiddenNodes, processHiddenChildren]);
 
   const renderNode = (props: any) => {
-    let datum = props.nodeDatum as Node;
+    const datum = props.nodeDatum as Node;
     if (datum.isHidden) return;
     let color = "white";
     if (datum.isProcessed) {
@@ -203,7 +223,9 @@ export const SynthesisGraphRender: FC = () => {
                   role="button"
                   tabIndex={0}
                 >
-                  {datum.hiddenChildrenCount === datum.allChildrenCount ? "+" : "-"}
+                  {datum.hiddenChildrenCount === datum.allChildrenCount
+                    ? "+"
+                    : "-"}
                 </text>
               </>
             )}

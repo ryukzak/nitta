@@ -11,6 +11,7 @@ import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
 import { COMPONENT_COLORS, type Color } from "../utils/color";
 import { JsonView } from "./JsonView";
+import { type DataFlow, MicroarchitectureView } from "./MicroarchitectureView";
 import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
 import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
@@ -228,6 +229,132 @@ export const ProcessTimelines2: FC = () => {
     [functions, dataFlowConnections],
   );
 
+  const getRelatedDataFlowVariablesForMicroarchitectureView = useCallback(
+    (
+      instructionId: number | null,
+      dataFlowId: string | null,
+    ): Set<DataFlow> => {
+      const dataFlows = new Set<DataFlow>();
+
+      const sourceInstructionIds = new Set<number>();
+      const targetInstructionIds = new Set<number>();
+
+      const getUnitNameByInstructionId = (instrId: number) => {
+        for (const func of functions) {
+          for (const instr of func.instructions) {
+            if (instr.pID === instrId) {
+              return func.component;
+            }
+          }
+        }
+        return null;
+      };
+
+      if (instructionId !== null) {
+        for (const func of functions) {
+          for (const instr of func.instructions) {
+            if (instr.pID === instructionId) {
+              const outputMap = new Map<string, string>();
+              instr.sendsOutputsToPIDs.forEach((targetInstrId, varName) => {
+                const componentName = getUnitNameByInstructionId(targetInstrId);
+                outputMap.set(componentName!, varName);
+              });
+              if (outputMap.size > 0) {
+                dataFlows.add({
+                  source: func.component,
+                  targetsWithVars: outputMap,
+                  net: "net1",
+                });
+              }
+              let inputId = -1;
+              let inputVarName = "";
+              instr.receiveInputsFromPIDs.forEach((sourceInstrId, varName) => {
+                inputId = sourceInstrId;
+                inputVarName = varName;
+              });
+              console.log(inputId);
+              if (inputId !== -1) {
+                const m = new Map<string, string>();
+                m.set(func.component, inputVarName);
+                dataFlows.add({
+                  source: getUnitNameByInstructionId(inputId)!,
+                  targetsWithVars: m,
+                  net: "net1",
+                });
+              }
+              break;
+            }
+          }
+        }
+      } else if (dataFlowId !== null) {
+        for (const conn of dataFlowConnections) {
+          if (`${conn.sourceId}:${conn.targetId}` === dataFlowId) {
+            const targetUnitName = getUnitNameByInstructionId(conn.targetId!)!;
+            const m = new Map<string, string>();
+            m.set(targetUnitName, conn.variableName);
+            dataFlows.add({
+              source: getUnitNameByInstructionId(conn.sourceId!)!,
+              targetsWithVars: m,
+              net: "net1",
+            });
+          }
+        }
+      }
+      console.log(dataFlows);
+      return dataFlows;
+    },
+    [functions, dataFlowConnections],
+  );
+
+  const getRelatedUnitLabels = useCallback(
+    (instructionId: number | null, dataFlowId: string | null): Set<string> => {
+      const relatedLabels = new Set<string>();
+
+      if (instructionId !== null) {
+        for (const func of functions) {
+          for (const instr of func.instructions) {
+            if (instr.pID === instructionId) {
+              relatedLabels.add(func.component);
+              instr.sendsOutputsToPIDs.forEach((targetPID) => {
+                for (const f of functions) {
+                  for (const i of f.instructions) {
+                    if (i.pID === targetPID) {
+                      relatedLabels.add(f.component);
+                    }
+                  }
+                }
+              });
+              instr.receiveInputsFromPIDs.forEach((sourcePID) => {
+                for (const f of functions) {
+                  for (const i of f.instructions) {
+                    if (i.pID === sourcePID) {
+                      relatedLabels.add(f.component);
+                    }
+                  }
+                }
+              });
+              break;
+            }
+          }
+        }
+      } else if (dataFlowId !== null) {
+        const relatedInstructions = getRelatedInstructions(dataFlowId);
+        for (const instrId of relatedInstructions) {
+          for (const func of functions) {
+            for (const instr of func.instructions) {
+              if (instr.pID === instrId) {
+                relatedLabels.add(func.component);
+              }
+            }
+          }
+        }
+      }
+
+      return relatedLabels;
+    },
+    [functions, getRelatedInstructions],
+  );
+
   useEffect(() => {
     const filteredFunctions = functions.filter(
       (f) => enabledUnits.has(f.component) && enabledFunctions.has(f.label),
@@ -377,25 +504,39 @@ export const ProcessTimelines2: FC = () => {
             </button>
           </div>
           {showIntermediateView && (
-            <ClickableIntermediateView
-              functionToUnitMapping={
-                new Map(functions.map((f) => [f.label, f.component]))
-              }
-              unitColors={selectedColorsRef.current}
-              enabledFunctions={enabledFunctions}
-              onToggle={handleFunctionToggle}
-              highlightedFunctions={getRelatedFunctionLabels(
-                selectedInstructionId,
-                selectedDataFlowId,
-              )}
-              highlightedDataFlows={getRelatedDataFlowVariables(
-                selectedInstructionId,
-                selectedDataFlowId,
-              )}
-              selectedInstructionId={selectedInstructionId}
-              selectedDataFlowId={selectedDataFlowId}
-              onClearSelection={handleClearSelection}
-            />
+            <SplitPane orientation="vertical" initialSplitPercentage={50}>
+              <ClickableIntermediateView
+                functionToUnitMapping={
+                  new Map(functions.map((f) => [f.label, f.component]))
+                }
+                unitColors={selectedColorsRef.current}
+                enabledFunctions={enabledFunctions}
+                onToggle={handleFunctionToggle}
+                highlightedFunctions={getRelatedFunctionLabels(
+                  selectedInstructionId,
+                  selectedDataFlowId,
+                )}
+                highlightedDataFlows={getRelatedDataFlowVariables(
+                  selectedInstructionId,
+                  selectedDataFlowId,
+                )}
+                selectedInstructionId={selectedInstructionId}
+                selectedDataFlowId={selectedDataFlowId}
+                onClearSelection={handleClearSelection}
+              />
+              <MicroarchitectureView
+                unitColors={selectedColorsRef.current}
+                enabledUnits={enabledUnits}
+                highligthedUnits={getRelatedUnitLabels(
+                  selectedInstructionId,
+                  selectedDataFlowId,
+                )}
+                highlightedDataFlows={getRelatedDataFlowVariablesForMicroarchitectureView(
+                  selectedInstructionId,
+                  selectedDataFlowId,
+                )}
+              ></MicroarchitectureView>
+            </SplitPane>
           )}
         </div>
       </div>
@@ -428,11 +569,7 @@ export const ProcessTimelines2: FC = () => {
         </div>
 
         <div className="diagram-split-view">
-          <SplitPane
-            initialSplitPercentage={70}
-            minWidthLeft={15}
-            minWidthRight={15}
-          >
+          <SplitPane minWidthLeft={15} minWidthRight={15}>
             <FunctionTimeline
               functions={filteredFunctions}
               timelineConfig={timelineConfig}
@@ -466,16 +603,16 @@ export const ProcessTimelines2: FC = () => {
           </SplitPane>
         </div>
       </div>
-      <div>Filtered Functions</div>
+      <div className={"p-3"}>Filtered Functions</div>
       <JsonView
-        style={{ gap: "2rem", padding: "3rem 3rem 3rem 4rem" }}
+        style={{ gap: "1rem", padding: "1rem 1rem 1rem 3rem" }}
         value={filteredFunctions}
         collapsed={1}
         shortenTextAfterLength={120}
       />
-      <div>Data Flow Connections</div>
+      <div className={"p-3"}>Data Flow Connections</div>
       <JsonView
-        style={{ gap: "2rem", padding: "3rem 3rem 3rem 4rem" }}
+        style={{ gap: "1rem", padding: "1rem 1rem 1rem 3rem" }}
         value={dataFlowConnections}
         collapsed={1}
         shortenTextAfterLength={120}

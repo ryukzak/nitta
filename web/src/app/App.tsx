@@ -1,4 +1,5 @@
 import { SynthesisGraph } from "components/SynthesisGraph";
+import { SplitPane } from "components/utils/SplitPane";
 import { Component } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { DebugScreen } from "screens/DebugScreen";
@@ -41,17 +42,22 @@ export default class App extends Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <SynthesisGraph />
-          <Routes>
-            <Route path="/" element={<Navigate to="/node"></Navigate>}></Route>
-            <Route path="/node" element={<NodeScreen />}></Route>
-            <Route path="/subforest" element={<SubforestScreen />}></Route>
-            <Route path="/process" element={<ProcessScreen />}></Route>
-            <Route path="/process2" element={<Process2Screen />}></Route>
-            <Route path="/testbench" element={<TestBenchScreen />}></Route>
-            <Route path="/debug" element={<DebugScreen />}></Route>
-            <Route>404 NOT FOUND</Route>
-          </Routes>
+          <SplitPane orientation="horizontal" initialSplitPercentage={35}>
+            <SynthesisGraph />
+            <Routes>
+              <Route
+                path="/"
+                element={<Navigate to="/node"></Navigate>}
+              ></Route>
+              <Route path="/node" element={<NodeScreen />}></Route>
+              <Route path="/subforest" element={<SubforestScreen />}></Route>
+              <Route path="/process" element={<ProcessScreen />}></Route>
+              <Route path="/process2" element={<Process2Screen />}></Route>
+              <Route path="/testbench" element={<TestBenchScreen />}></Route>
+              <Route path="/debug" element={<DebugScreen />}></Route>
+              <Route>404 NOT FOUND</Route>
+            </Routes>
+          </SplitPane>
         </div>
       </AppContextProvider>
     );

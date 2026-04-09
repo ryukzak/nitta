@@ -6,13 +6,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import "components/utils/SplitPane.scss"
+import "components/utils/SplitPane.scss";
 
 interface SplitPaneProps {
   children: ReactNode;
   initialSplitPercentage?: number;
   minWidthLeft?: number;
   minWidthRight?: number;
+  orientation?: "vertical" | "horizontal";
 }
 
 interface SplitPaneInnerProps {
@@ -20,6 +21,7 @@ interface SplitPaneInnerProps {
   initialSplitPercentage: number;
   minWidthLeft: number;
   minWidthRight: number;
+  orientation: "vertical" | "horizontal";
 }
 
 const SplitPaneInner: FC<SplitPaneInnerProps> = ({
@@ -27,6 +29,7 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
   initialSplitPercentage,
   minWidthLeft,
   minWidthRight,
+  orientation,
 }) => {
   const childrenArray = React.Children.toArray(children);
   const [splitPercentage, setSplitPercentage] = useState(
@@ -39,12 +42,16 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, []);
+  const startResizing = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isResizing.current = true;
+      document.body.style.cursor =
+        orientation === "horizontal" ? "row-resize" : "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [orientation],
+  );
 
   const stopResizing = useCallback(() => {
     isResizing.current = false;
@@ -71,16 +78,20 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
 
       if (!containerRef.current) return;
       const containerRect = containerRef.current.getBoundingClientRect();
-      const leftWidth = (newPercentage / 100) * containerRect.width;
-      const rightWidth = containerRect.width - leftWidth;
+      const isHorizontal = orientation === "horizontal";
+      const containerSize = isHorizontal
+        ? containerRect.height
+        : containerRect.width;
+      const firstPaneSize = (newPercentage / 100) * containerSize;
+      const secondPaneSize = containerSize - firstPaneSize;
 
-      if (leftWidth >= minWidthLeft && rightWidth >= minWidthRight) {
+      if (firstPaneSize >= minWidthLeft && secondPaneSize >= minWidthRight) {
         setSplitPercentage(newPercentage);
         setIsLeftHidden(false);
         setIsRightHidden(false);
       }
     },
-    [minWidthLeft, minWidthRight],
+    [minWidthLeft, minWidthRight, orientation],
   );
 
   const onMouseMove = useCallback(
@@ -88,23 +99,29 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
       if (!isResizing.current || !containerRef.current) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
-      const newPercentage =
-        ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      const isHorizontal = orientation === "horizontal";
+      const newPercentage = isHorizontal
+        ? ((e.clientY - containerRect.top) / containerRect.height) * 100
+        : ((e.clientX - containerRect.left) / containerRect.width) * 100;
 
       updateSplitPercentage(newPercentage);
     },
-    [updateSplitPercentage],
+    [updateSplitPercentage, orientation],
   );
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const step = 5; // move by 5% with arrow keys
       let newPercentage = splitPercentage;
+      const isHorizontal = orientation === "horizontal";
 
-      if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+      const increaseKey = isHorizontal ? "ArrowDown" : "ArrowRight";
+      const decreaseKey = isHorizontal ? "ArrowUp" : "ArrowLeft";
+
+      if (e.key === increaseKey) {
         e.preventDefault();
         newPercentage = Math.min(splitPercentage + step, 100);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+      } else if (e.key === decreaseKey) {
         e.preventDefault();
         newPercentage = Math.max(splitPercentage - step, 0);
       }
@@ -113,7 +130,7 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
         updateSplitPercentage(newPercentage);
       }
     },
-    [splitPercentage, updateSplitPercentage],
+    [splitPercentage, updateSplitPercentage, orientation],
   );
 
   useEffect(() => {
@@ -125,21 +142,32 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
     };
   }, [onMouseMove, stopResizing]);
 
+  const isHorizontal = orientation === "horizontal";
+
   return (
     <div
       ref={containerRef}
-      className={`split-pane-container ${isLeftHidden ? "left-hidden" : ""} ${isRightHidden ? "right-hidden" : ""}`}
+      className={`split-pane-container split-pane-${orientation} ${isLeftHidden ? "left-hidden" : ""} ${isRightHidden ? "right-hidden" : ""}`}
     >
       <div
         className="split-pane-left"
-        style={{
-          width: isRightHidden
-            ? "100%"
-            : isLeftHidden
-              ? "0"
-              : `${splitPercentage}%`,
-          display: isLeftHidden ? "none" : "flex",
-        }}
+        style={
+          isHorizontal
+            ? {
+                height: isRightHidden
+                  ? "100%"
+                  : isLeftHidden
+                    ? "0"
+                    : `${splitPercentage}%`,
+              }
+            : {
+                width: isRightHidden
+                  ? "100%"
+                  : isLeftHidden
+                    ? "0"
+                    : `${splitPercentage}%`,
+              }
+        }
       >
         {childrenArray[0]}
       </div>
@@ -160,14 +188,23 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
       </div>
       <div
         className="split-pane-right"
-        style={{
-          width: isLeftHidden
-            ? "100%"
-            : isRightHidden
-              ? "0"
-              : `${100 - splitPercentage}%`,
-          display: isRightHidden ? "none" : "flex",
-        }}
+        style={
+          isHorizontal
+            ? {
+                height: isLeftHidden
+                  ? "100%"
+                  : isRightHidden
+                    ? "0"
+                    : `${100 - splitPercentage}%`,
+              }
+            : {
+                width: isLeftHidden
+                  ? "100%"
+                  : isRightHidden
+                    ? "0"
+                    : `${100 - splitPercentage}%`,
+              }
+        }
       >
         {childrenArray[1]}
       </div>
@@ -177,9 +214,10 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
 
 export const SplitPane: FC<SplitPaneProps> = ({
   children,
-  initialSplitPercentage = 70,
+  initialSplitPercentage = 50,
   minWidthLeft = 200,
   minWidthRight = 200,
+  orientation = "vertical",
 }) => {
   const childrenArray = React.Children.toArray(children);
   if (childrenArray.length < 2) {
@@ -191,6 +229,7 @@ export const SplitPane: FC<SplitPaneProps> = ({
       initialSplitPercentage={initialSplitPercentage}
       minWidthLeft={minWidthLeft}
       minWidthRight={minWidthRight}
+      orientation={orientation}
     >
       {childrenArray}
     </SplitPaneInner>

@@ -90,14 +90,14 @@ export const DataFlowOverlay: FC<DataFlowOverlayProps> = ({
       : "#404040";
   };
 
-  const lineWidth = svgWidth.includes("px") ? parseInt(svgWidth) : 1000;
+  const lineWidth = 10000;
 
   return (
     <svg
       ref={svgRef}
       className="data-flow-overlay"
       role={"presentation"}
-      style={{ width: svgWidth, height: "100%" }}
+      style={{ width: "100%", height: "100%" }}
     >
       <defs>
         {Array.from(
