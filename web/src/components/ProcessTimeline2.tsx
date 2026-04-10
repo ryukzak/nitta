@@ -361,6 +361,34 @@ export const ProcessTimelines2: FC = () => {
     );
     setFilteredFunctions(filteredFunctions);
 
+    // Clear selectedInstructionId if the function it belongs to is filtered out
+    if (selectedInstructionId !== null) {
+      const isInstructionInFilteredFunctions = filteredFunctions.some((func) =>
+        func.instructions.some((instr) => instr.pID === selectedInstructionId),
+      );
+      if (!isInstructionInFilteredFunctions) {
+        setSelectedInstructionId(null);
+      }
+    }
+
+    // Clear selectedDataFlowId only if both source and target instructions are filtered out
+    if (selectedDataFlowId !== null) {
+      const [sourceId, targetId] = selectedDataFlowId
+        .split(":")
+        .map((id) => (id === "null" ? null : parseInt(id)));
+
+      const isSourceInFilteredFunctions = sourceId === null || filteredFunctions.some((func) =>
+        func.instructions.some((instr) => instr.pID === sourceId),
+      );
+      const isTargetInFilteredFunctions = targetId === null || filteredFunctions.some((func) =>
+        func.instructions.some((instr) => instr.pID === targetId),
+      );
+
+      if (!isSourceInFilteredFunctions && !isTargetInFilteredFunctions) {
+        setSelectedDataFlowId(null);
+      }
+    }
+
     const deepCopyUnit = (u: Unit): Unit => ({
       ...u,
       functions: u.functions ? [...u.functions] : null,
@@ -383,7 +411,7 @@ export const ProcessTimelines2: FC = () => {
       filterUnitFunctions(u);
     });
     setFilteredUnits(filteredUnits);
-  }, [functions, units, enabledUnits, enabledFunctions]);
+  }, [functions, units, enabledUnits, enabledFunctions, selectedInstructionId, selectedDataFlowId]);
 
   const handleLayoutComplete = useCallback(
     (newContainerHeight: number, newTopPadding: number) => {
@@ -541,68 +569,76 @@ export const ProcessTimelines2: FC = () => {
         </div>
       </div>
 
-      <div className="process-timelines-2-vertical">
-        <div className="vertical-time-axis">
-          {Array.from(
-            {
-              length:
-                Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 2,
-            },
-            (_, i) => timelineConfig.minTime + i - 1,
-          ).map((time) => (
-            <div
-              key={time}
-              className="time-label-item"
-              style={{
-                marginTop:
-                  time === timelineConfig.minTime - 1
-                    ? topPadding - ROW_HEIGHT + ROW_HEIGHT * 0.2
-                    : ROW_HEIGHT * 0.2,
-                marginBottom: ROW_HEIGHT * 0.2,
-                height: ROW_HEIGHT * 0.6,
-                width: ROW_HEIGHT * 0.6,
-              }}
-            >
-              {time === timelineConfig.minTime - 1 ? `clk` : time}
-            </div>
-          ))}
+      {filteredFunctions.length === 0 ? (
+        <div className="empty-state-container" style={{"padding": "1rem 2rem 1rem 2rem"}}>
+          <div className="alert alert-info">
+            No functions to display. Adjust filters to see the timeline.
+          </div>
         </div>
+      ) : (
+        <div className="process-timelines-2-vertical">
+          <div className="vertical-time-axis">
+            {Array.from(
+              {
+                length:
+                  Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 2,
+              },
+              (_, i) => timelineConfig.minTime + i - 1,
+            ).map((time) => (
+              <div
+                key={time}
+                className="time-label-item"
+                style={{
+                  marginTop:
+                    time === timelineConfig.minTime - 1
+                      ? topPadding - ROW_HEIGHT + ROW_HEIGHT * 0.2
+                      : ROW_HEIGHT * 0.2,
+                  marginBottom: ROW_HEIGHT * 0.2,
+                  height: ROW_HEIGHT * 0.6,
+                  width: ROW_HEIGHT * 0.6,
+                }}
+              >
+                {time === timelineConfig.minTime - 1 ? `clk` : time}
+              </div>
+            ))}
+          </div>
 
-        <div className="diagram-split-view">
-          <SplitPane minWidthLeft={15} minWidthRight={15}>
-            <FunctionTimeline
-              functions={filteredFunctions}
-              timelineConfig={timelineConfig}
-              dataFlowConnections={dataFlowConnections}
-              getComponentColor={getComponentColor}
-              onLayoutComplete={handleLayoutComplete}
-              selectedInstructionId={selectedInstructionId}
-              selectedDataFlowId={selectedDataFlowId}
-              onInstructionSelect={handleInstructionSelect}
-              onDataFlowSelect={handleDataFlowSelect}
-              getRelatedDataFlows={getRelatedDataFlows}
-              getRelatedInstructions={getRelatedInstructions}
-              onClearSelection={handleClearSelection}
-            />
-            <UnitTimeline
-              functions={filteredFunctions}
-              units={filteredUnits}
-              timelineConfig={timelineConfig}
-              topPadding={topPadding}
-              containerHeight={containerHeight}
-              getComponentColor={getComponentColor}
-              dataFlowConnections={dataFlowConnections}
-              selectedInstructionId={selectedInstructionId}
-              selectedDataFlowId={selectedDataFlowId}
-              onInstructionSelect={handleInstructionSelect}
-              onDataFlowSelect={handleDataFlowSelect}
-              getRelatedDataFlows={getRelatedDataFlows}
-              getRelatedInstructions={getRelatedInstructions}
-              onClearSelection={handleClearSelection}
-            />
-          </SplitPane>
+          <div className="diagram-split-view">
+            <SplitPane minWidthLeft={15} minWidthRight={15}>
+              <FunctionTimeline
+                functions={filteredFunctions}
+                timelineConfig={timelineConfig}
+                dataFlowConnections={dataFlowConnections}
+                getComponentColor={getComponentColor}
+                onLayoutComplete={handleLayoutComplete}
+                selectedInstructionId={selectedInstructionId}
+                selectedDataFlowId={selectedDataFlowId}
+                onInstructionSelect={handleInstructionSelect}
+                onDataFlowSelect={handleDataFlowSelect}
+                getRelatedDataFlows={getRelatedDataFlows}
+                getRelatedInstructions={getRelatedInstructions}
+                onClearSelection={handleClearSelection}
+              />
+              <UnitTimeline
+                functions={filteredFunctions}
+                units={filteredUnits}
+                timelineConfig={timelineConfig}
+                topPadding={topPadding}
+                containerHeight={containerHeight}
+                getComponentColor={getComponentColor}
+                dataFlowConnections={dataFlowConnections}
+                selectedInstructionId={selectedInstructionId}
+                selectedDataFlowId={selectedDataFlowId}
+                onInstructionSelect={handleInstructionSelect}
+                onDataFlowSelect={handleDataFlowSelect}
+                getRelatedDataFlows={getRelatedDataFlows}
+                getRelatedInstructions={getRelatedInstructions}
+                onClearSelection={handleClearSelection}
+              />
+            </SplitPane>
+          </div>
         </div>
-      </div>
+      )}
       <div className={"p-3"}>Filtered Functions</div>
       <JsonView
         style={{ gap: "1rem", padding: "1rem 1rem 1rem 3rem" }}

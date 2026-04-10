@@ -111,7 +111,16 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
 
   const performLayout = useCallback(() => {
     const functionsArray = functions.map((f) => ({ ...f }));
-    if (functions.length === 0 || headerHeights.size < functions.length) return;
+    if (functions.length === 0) {
+      setLayoutFunctions([]);
+      setInstructionPositions(new Map());
+      setContainerHeight(1000);
+      setTopPadding(0);
+      setFunctionColumns(new Map());
+      onLayoutComplete(1000, 0);
+      return;
+    }
+    if (headerHeights.size < functions.length) return;
     if (processingRef.current) return;
     processingRef.current = true;
 
