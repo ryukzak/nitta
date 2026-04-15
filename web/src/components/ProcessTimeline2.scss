@@ -15,9 +15,30 @@
     .buttons {
       display: flex;
       justify-content: space-between;
-      .unit-buttons {
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      .units-section {
         display: flex;
-        gap: 1.5rem;
+        align-items: center;
+        gap: 0.75rem;
+
+        .unit-controls {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .unit-buttons {
+          display: flex;
+          gap: 1.5rem;
+        }
+      }
+
+      .filter-buttons {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
       }
     }
 
@@ -26,10 +47,7 @@
     }
   }
 
-  .filter-toggle-button {
-    //margin-top: 0.75rem;
-    //margin-bottom: 1rem;
-    //padding: 0.5rem 1rem;
+  .filter-button {
 
     background-color: white;
     border: 1px solid #dee2e6;
@@ -39,6 +57,7 @@
     color: #495057;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
 
     &:hover {
       background-color: #f8f9fa;
@@ -58,7 +77,6 @@
   padding: 1rem 2rem 1rem 2rem;
   background-color: #f8f9fa;
   font-family: monospace;
-
 
   .vertical-time-axis {
     width: 70px;
@@ -85,7 +103,5 @@
     flex: 1;
     overflow: hidden;
     min-width: 0;
-
   }
-
 }

@@ -47,6 +47,7 @@ export const ProcessTimelines2: FC = () => {
   const [enabledFunctions, setEnabledFunctions] = useState<Set<string>>(
     new Set(),
   );
+  const [filterOperator, setFilterOperator] = useState<"AND" | "OR">("AND");
   const [filteredFunctions, setFilteredFunctions] = useState<ProcessFunction[]>(
     [],
   );
@@ -106,6 +107,18 @@ export const ProcessTimelines2: FC = () => {
       return newSet;
     });
   }, []);
+
+  const handleToggleAllUnits = useCallback(() => {
+    const allUnits = new Set(functions.map((f) => f.component));
+    const allSelected = allUnits.size > 0 && allUnits.size === enabledUnits.size;
+    setEnabledUnits(allSelected ? new Set() : allUnits);
+  }, [functions, enabledUnits]);
+
+  const handleToggleAllFunctions = useCallback(() => {
+    const allFunctions = new Set(functions.map((f) => f.label));
+    const allSelected = allFunctions.size > 0 && allFunctions.size === enabledFunctions.size;
+    setEnabledFunctions(allSelected ? new Set() : allFunctions);
+  }, [functions, enabledFunctions]);
 
   const handleInstructionSelect = useCallback((instructionId: number) => {
     setSelectedInstructionId(instructionId);
@@ -356,9 +369,13 @@ export const ProcessTimelines2: FC = () => {
   );
 
   useEffect(() => {
-    const filteredFunctions = functions.filter(
-      (f) => enabledUnits.has(f.component) && enabledFunctions.has(f.label),
-    );
+    const filteredFunctions = functions.filter((f) => {
+      const hasUnit = enabledUnits.has(f.component);
+      const hasFunction = enabledFunctions.has(f.label);
+      return filterOperator === "AND"
+        ? hasUnit && hasFunction
+        : hasUnit || hasFunction;
+    });
     setFilteredFunctions(filteredFunctions);
 
     // Clear selectedInstructionId if the function it belongs to is filtered out
@@ -396,22 +413,30 @@ export const ProcessTimelines2: FC = () => {
     });
 
     const filterUnitFunctions = (u: Unit) => {
-      if (u.functions)
-        u.functions = u.functions.filter((f) => enabledFunctions.has(f.label));
+      if (u.functions) {
+        u.functions = u.functions.filter((f) => {
+          const hasUnit = enabledUnits.has(f.component);
+          const hasFunction = enabledFunctions.has(f.label);
+          return filterOperator === "AND"
+            ? hasUnit && hasFunction
+            : hasUnit || hasFunction;
+        });
+      }
       if (u.subunits)
         u.subunits.forEach((subu) => {
           filterUnitFunctions(subu);
         });
     };
 
-    const filteredUnits = units
-      .filter((u) => enabledUnits.has(u.name))
+    let filteredUnits = units;
+
+    filteredUnits = filteredUnits
       .map((u) => deepCopyUnit(u));
     filteredUnits.forEach((u) => {
       filterUnitFunctions(u);
     });
     setFilteredUnits(filteredUnits);
-  }, [functions, units, enabledUnits, enabledFunctions, selectedInstructionId, selectedDataFlowId]);
+  }, [functions, units, enabledUnits, enabledFunctions, filterOperator, selectedInstructionId, selectedDataFlowId]);
 
   const handleLayoutComplete = useCallback(
     (newContainerHeight: number, newTopPadding: number) => {
@@ -503,33 +528,66 @@ export const ProcessTimelines2: FC = () => {
       <div className="filter-section">
         <div className="filter-container">
           <div className="buttons">
-            <div className="unit-buttons">
-              {Array.from(new Set(functions.map((f) => f.component))).map(
-                (component) => {
-                  if (!selectedColorsRef.current.get(component)) return null;
-                  return (
-                    <UnitLabel
-                      key={component}
-                      componentName={component}
-                      color={
-                        COMPONENT_COLORS[
-                          selectedColorsRef.current.get(component)!
-                        ]
-                      }
-                      enabled={enabledUnits.has(component)}
-                      onToggle={handleUnitToggle}
-                    />
-                  );
-                },
-              )}
+            <div className="units-section">
+              <div className="unit-buttons">
+                {Array.from(new Set(functions.map((f) => f.component))).map(
+                  (component) => {
+                    if (!selectedColorsRef.current.get(component)) return null;
+                    return (
+                      <UnitLabel
+                        key={component}
+                        componentName={component}
+                        color={
+                          COMPONENT_COLORS[
+                            selectedColorsRef.current.get(component)!
+                          ]
+                        }
+                        enabled={enabledUnits.has(component)}
+                        onToggle={handleUnitToggle}
+                      />
+                    );
+                  },
+                )}
+              </div>
             </div>
-            <button
-              type="button"
-              className="filter-toggle-button"
-              onClick={() => setShowIntermediateView(!showIntermediateView)}
-            >
-              {showIntermediateView ? "Hide" : "Show"} Functions Filter
-            </button>
+            <div className="filter-buttons">
+              <button
+                type="button"
+                className={"filter-button functions-toggle-button"}
+                onClick={handleToggleAllFunctions}
+              >
+                {enabledFunctions.size === new Set(functions.map((f) => f.label)).size &&
+                enabledFunctions.size > 0
+                  ? "Deselect all functions"
+                  : "Select all functions"}
+              </button>
+              <button
+                type="button"
+                className={"filter-button units-toggle-button"}
+                onClick={handleToggleAllUnits}
+              >
+                {enabledUnits.size === new Set(functions.map((f) => f.component)).size &&
+                enabledUnits.size > 0
+                  ? "Deselect all units"
+                  : "Select all units"}
+              </button>
+              <button
+                type="button"
+                className="filter-button operator-toggle-button"
+                onClick={() =>
+                  setFilterOperator(filterOperator === "AND" ? "OR" : "AND")
+                }
+              >
+                Filter Operator: {filterOperator}
+              </button>
+              <button
+                type="button"
+                className="filter-button filter-toggle-button"
+                onClick={() => setShowIntermediateView(!showIntermediateView)}
+              >
+                {showIntermediateView ? "Hide" : "Show"} Functions Filter
+              </button>
+            </div>
           </div>
           {showIntermediateView && (
             <SplitPane orientation="vertical" initialSplitPercentage={50}>
