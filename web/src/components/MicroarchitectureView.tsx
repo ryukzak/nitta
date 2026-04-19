@@ -155,7 +155,7 @@ function renderMicroarchitectureDot(
           fontColor = fadeColor(color, 0.4);
         }
 
-        let colorProperties = `color="${color.toHexString()}"; style="filled"; fillcolor="${fadedColor.toHexString()}"; fontcolor="${fontColor.toHexString()}"`;
+        let colorProperties = `color="${color.toHexString()}"; style="filled"; fillcolor="${fadedColor.toHexString()}"; fontcolor="${fontColor.toHexString()}"; tooltip="${name}"`;
         if (highligthedUnits && highligthedUnits.has(unit.unitTag)) {
           colorProperties = `${colorProperties}; penwidth=3;`;
         }

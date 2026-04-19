@@ -13,6 +13,7 @@ import { COMPONENT_COLORS, type Color } from "../utils/color";
 import { JsonView } from "./JsonView";
 import { type DataFlow, MicroarchitectureView } from "./MicroarchitectureView";
 import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
+import { ClickableMicroarchitectureView } from "./ProcessTimeline2/ClickableMicroarchitectureView";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
 import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
 import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
@@ -96,7 +97,6 @@ export const ProcessTimelines2: FC = () => {
   }, []);
 
   const handleFunctionToggle = useCallback((label: string) => {
-    console.log(label);
     setEnabledFunctions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(label)) {
@@ -110,13 +110,15 @@ export const ProcessTimelines2: FC = () => {
 
   const handleToggleAllUnits = useCallback(() => {
     const allUnits = new Set(functions.map((f) => f.component));
-    const allSelected = allUnits.size > 0 && allUnits.size === enabledUnits.size;
+    const allSelected =
+      allUnits.size > 0 && allUnits.size === enabledUnits.size;
     setEnabledUnits(allSelected ? new Set() : allUnits);
   }, [functions, enabledUnits]);
 
   const handleToggleAllFunctions = useCallback(() => {
     const allFunctions = new Set(functions.map((f) => f.label));
-    const allSelected = allFunctions.size > 0 && allFunctions.size === enabledFunctions.size;
+    const allSelected =
+      allFunctions.size > 0 && allFunctions.size === enabledFunctions.size;
     setEnabledFunctions(allSelected ? new Set() : allFunctions);
   }, [functions, enabledFunctions]);
 
@@ -285,7 +287,6 @@ export const ProcessTimelines2: FC = () => {
                 inputId = sourceInstrId;
                 inputVarName = varName;
               });
-              console.log(inputId);
               if (inputId !== -1) {
                 const m = new Map<string, string>();
                 m.set(func.component, inputVarName);
@@ -313,7 +314,6 @@ export const ProcessTimelines2: FC = () => {
           }
         }
       }
-      console.log(dataFlows);
       return dataFlows;
     },
     [functions, dataFlowConnections],
@@ -378,7 +378,6 @@ export const ProcessTimelines2: FC = () => {
     });
     setFilteredFunctions(filteredFunctions);
 
-    // Clear selectedInstructionId if the function it belongs to is filtered out
     if (selectedInstructionId !== null) {
       const isInstructionInFilteredFunctions = filteredFunctions.some((func) =>
         func.instructions.some((instr) => instr.pID === selectedInstructionId),
@@ -388,18 +387,21 @@ export const ProcessTimelines2: FC = () => {
       }
     }
 
-    // Clear selectedDataFlowId only if both source and target instructions are filtered out
     if (selectedDataFlowId !== null) {
       const [sourceId, targetId] = selectedDataFlowId
         .split(":")
         .map((id) => (id === "null" ? null : parseInt(id)));
 
-      const isSourceInFilteredFunctions = sourceId === null || filteredFunctions.some((func) =>
-        func.instructions.some((instr) => instr.pID === sourceId),
-      );
-      const isTargetInFilteredFunctions = targetId === null || filteredFunctions.some((func) =>
-        func.instructions.some((instr) => instr.pID === targetId),
-      );
+      const isSourceInFilteredFunctions =
+        sourceId === null ||
+        filteredFunctions.some((func) =>
+          func.instructions.some((instr) => instr.pID === sourceId),
+        );
+      const isTargetInFilteredFunctions =
+        targetId === null ||
+        filteredFunctions.some((func) =>
+          func.instructions.some((instr) => instr.pID === targetId),
+        );
 
       if (!isSourceInFilteredFunctions && !isTargetInFilteredFunctions) {
         setSelectedDataFlowId(null);
@@ -430,13 +432,20 @@ export const ProcessTimelines2: FC = () => {
 
     let filteredUnits = units;
 
-    filteredUnits = filteredUnits
-      .map((u) => deepCopyUnit(u));
+    filteredUnits = filteredUnits.map((u) => deepCopyUnit(u));
     filteredUnits.forEach((u) => {
       filterUnitFunctions(u);
     });
     setFilteredUnits(filteredUnits);
-  }, [functions, units, enabledUnits, enabledFunctions, filterOperator, selectedInstructionId, selectedDataFlowId]);
+  }, [
+    functions,
+    units,
+    enabledUnits,
+    enabledFunctions,
+    filterOperator,
+    selectedInstructionId,
+    selectedDataFlowId,
+  ]);
 
   const handleLayoutComplete = useCallback(
     (newContainerHeight: number, newTopPadding: number) => {
@@ -556,7 +565,8 @@ export const ProcessTimelines2: FC = () => {
                 className={"filter-button functions-toggle-button"}
                 onClick={handleToggleAllFunctions}
               >
-                {enabledFunctions.size === new Set(functions.map((f) => f.label)).size &&
+                {enabledFunctions.size ===
+                  new Set(functions.map((f) => f.label)).size &&
                 enabledFunctions.size > 0
                   ? "Deselect all functions"
                   : "Select all functions"}
@@ -566,7 +576,8 @@ export const ProcessTimelines2: FC = () => {
                 className={"filter-button units-toggle-button"}
                 onClick={handleToggleAllUnits}
               >
-                {enabledUnits.size === new Set(functions.map((f) => f.component)).size &&
+                {enabledUnits.size ===
+                  new Set(functions.map((f) => f.component)).size &&
                 enabledUnits.size > 0
                   ? "Deselect all units"
                   : "Select all units"}
@@ -578,14 +589,14 @@ export const ProcessTimelines2: FC = () => {
                   setFilterOperator(filterOperator === "AND" ? "OR" : "AND")
                 }
               >
-                Filter Operator: {filterOperator}
+                Filter operator: {filterOperator}
               </button>
               <button
                 type="button"
                 className="filter-button filter-toggle-button"
                 onClick={() => setShowIntermediateView(!showIntermediateView)}
               >
-                {showIntermediateView ? "Hide" : "Show"} Functions Filter
+                {showIntermediateView ? "Hide" : "Show"} graph filters
               </button>
             </div>
           </div>
@@ -610,7 +621,7 @@ export const ProcessTimelines2: FC = () => {
                 selectedDataFlowId={selectedDataFlowId}
                 onClearSelection={handleClearSelection}
               />
-              <MicroarchitectureView
+              <ClickableMicroarchitectureView
                 unitColors={selectedColorsRef.current}
                 enabledUnits={enabledUnits}
                 highligthedUnits={getRelatedUnitLabels(
@@ -621,14 +632,21 @@ export const ProcessTimelines2: FC = () => {
                   selectedInstructionId,
                   selectedDataFlowId,
                 )}
-              ></MicroarchitectureView>
+                onToggle={handleUnitToggle}
+                selectedInstructionId={selectedInstructionId}
+                selectedDataFlowId={selectedDataFlowId}
+                onClearSelection={handleClearSelection}
+              />
             </SplitPane>
           )}
         </div>
       </div>
 
       {filteredFunctions.length === 0 ? (
-        <div className="empty-state-container" style={{"padding": "1rem 2rem 1rem 2rem"}}>
+        <div
+          className="empty-state-container"
+          style={{ padding: "1rem 2rem 1rem 2rem" }}
+        >
           <div className="alert alert-info">
             No functions to display. Adjust filters to see the timeline.
           </div>
@@ -639,7 +657,8 @@ export const ProcessTimelines2: FC = () => {
             {Array.from(
               {
                 length:
-                  Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) + 2,
+                  Math.ceil(timelineConfig.maxTime - timelineConfig.minTime) +
+                  2,
               },
               (_, i) => timelineConfig.minTime + i - 1,
             ).map((time) => (
