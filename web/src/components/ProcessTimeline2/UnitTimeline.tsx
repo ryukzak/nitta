@@ -121,7 +121,7 @@ export const UnitTimeline: FC<Props> = ({
     setInstructionPositions((prev) =>
       instructionPositionsEqual(prev, map) ? prev : map,
     );
-  }, [functions, getComponentColor]);
+  }, [functions, getComponentColor, flatUnits.findIndex]);
 
   useLayoutEffect(() => {
     if (containerHeight > 0) calculateInstructionPositions();
@@ -231,6 +231,7 @@ export const UnitTimeline: FC<Props> = ({
     calculateInstructionPositions,
     timelineConfig.minTime,
     timelineConfig.maxTime,
+    flatUnits.forEach,
   ]);
 
   const renderFunctions = (funcs: ProcessFunction[], color: Color) =>
