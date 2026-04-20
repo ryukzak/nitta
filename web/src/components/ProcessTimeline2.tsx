@@ -11,7 +11,7 @@ import { api, type ProcessData } from "services/HaskellApiService";
 import "components/ProcessTimeline2.scss";
 import { COMPONENT_COLORS, type Color } from "../utils/color";
 import { JsonView } from "./JsonView";
-import { type DataFlow, MicroarchitectureView } from "./MicroarchitectureView";
+import type { DataFlow } from "./MicroarchitectureView";
 import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 import { ClickableMicroarchitectureView } from "./ProcessTimeline2/ClickableMicroarchitectureView";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";

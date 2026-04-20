@@ -61,7 +61,7 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
 
   const updateSplitPercentage = useCallback(
     (newPercentage: number) => {
-      const snapThreshold = 5; // snap to hide if within 5% of edge
+      const snapThreshold = 5;
 
       if (newPercentage <= snapThreshold) {
         setSplitPercentage(0);
@@ -111,7 +111,7 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const step = 5; // move by 5% with arrow keys
+      const step = 5;
       let newPercentage = splitPercentage;
       const isHorizontal = orientation === "horizontal";
 

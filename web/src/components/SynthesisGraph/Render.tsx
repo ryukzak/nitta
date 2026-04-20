@@ -220,7 +220,7 @@ export const SynthesisGraphRender: FC = () => {
                   strokeWidth="0"
                   cursor="pointer"
                   onClick={(e) => handleNodeButtonClick(datum, e as any)}
-                  role="button"
+                  role="treeitem"
                   tabIndex={0}
                 >
                   {datum.hiddenChildrenCount === datum.allChildrenCount
@@ -245,7 +245,7 @@ export const SynthesisGraphRender: FC = () => {
           x="20"
           cursor="pointer"
           onClick={(e) => handleNodeTitleClick(datum.sid, e as any)}
-          role="button"
+          role="treeitem"
           tabIndex={0}
         >
           {datum.name}
