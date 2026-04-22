@@ -29,7 +29,7 @@ export const SubforestScreen: FC = () => {
   }
 
   return (
-    <div className="p-3" style={{ backgroundColor: "white" }}>
+    <div className="m-3">
       <div className="row">
         <div className="col-4">
           <IntermediateView />

@@ -25,7 +25,7 @@ export const DebugScreen: FC<IDebugScreenProps> = (props) => {
   }, [selectedSid]);
 
   return (
-    <div className="p-3" style={{ backgroundColor: "white" }}>
+    <div className="m-3">
       {selectedSid ? (
         synthesisNodeData ? (
           <div className="d-flex flex-column">

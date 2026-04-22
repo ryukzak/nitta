@@ -5,13 +5,7 @@ export type IProcess2ScreenProps = {};
 
 export const Process2Screen: FC<IProcess2ScreenProps> = (props) => {
   return (
-    <div
-      style={{
-        backgroundColor: "white",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div>
       <h3 className="p-3">Process Timeline Visualization</h3>
       <ProcessTimelines2 />
     </div>

@@ -601,7 +601,7 @@ export const ProcessTimelines2: FC = () => {
             </div>
           </div>
           {showIntermediateView && (
-            <SplitPane orientation="vertical" initialSplitPercentage={50}>
+            <SplitPane orientation="vertical" initialSplitPercentage={65}>
               <ClickableIntermediateView
                 functionToUnitMapping={
                   new Map(functions.map((f) => [f.label, f.component]))
@@ -681,7 +681,7 @@ export const ProcessTimelines2: FC = () => {
           </div>
 
           <div className="diagram-split-view">
-            <SplitPane minWidthLeft={15} minWidthRight={15}>
+            <SplitPane>
               <FunctionTimeline
                 functions={filteredFunctions}
                 timelineConfig={timelineConfig}

@@ -67,7 +67,7 @@ export const ProcessScreen: FC = () => {
   if (data.timelines.length === 0) return <pre>EMPTY PROCESS TIMELINE</pre>;
 
   return (
-    <div className="row p-3" style={{ backgroundColor: "white" }}>
+    <div className="row m-3">
       <h3>Process Graph</h3>
       <ProcessView />
       <h3>Process Timeline (deprecated)</h3>

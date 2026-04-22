@@ -215,8 +215,8 @@ const SplitPaneInner: FC<SplitPaneInnerProps> = ({
 export const SplitPane: FC<SplitPaneProps> = ({
   children,
   initialSplitPercentage = 50,
-  minWidthLeft = 200,
-  minWidthRight = 200,
+  minWidthLeft = 0,
+  minWidthRight = 0,
   orientation = "vertical",
 }) => {
   const childrenArray = React.Children.toArray(children);

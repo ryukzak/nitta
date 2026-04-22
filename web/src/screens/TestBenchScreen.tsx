@@ -40,7 +40,7 @@ export const TestBenchScreen: FC = () => {
   }
 
   return (
-    <div className="p-3" style={{ backgroundColor: "white" }}>
+    <div className="m-3">
       <h3>Status:</h3>
       <pre> {JSON.stringify(testBenchDump!.tbStatus)} </pre>
       <hr />

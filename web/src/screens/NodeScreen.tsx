@@ -12,7 +12,7 @@ export const NodeScreen: FC<INodeScreenProps> = (props) => {
   if (!selectedSid) return <pre> synthesis is not selected </pre>;
 
   return (
-    <div className="p-3" style={{ backgroundColor: "white" }}>
+    <div className="m-3">
       <pre>{selectedSid}</pre>
 
       <h3>Tree info:</h3>
