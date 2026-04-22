@@ -21,6 +21,14 @@ export class Color {
   public toRgbaString(): string {
     return `rgba(${this.obj.r}, ${this.obj.g}, ${this.obj.b}, ${this.obj.a})`;
   }
+
+  public toHexString(): string {
+    const toHex = (value: number): string =>
+      Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0");
+
+    const a = this.obj.a ? this.obj.a : 1;
+    return `#${toHex(this.obj.r)}${toHex(this.obj.g)}${toHex(this.obj.b)}${toHex(a * 255)}`;
+  }
 }
 
 export interface ColorObject {
@@ -45,4 +53,31 @@ export const CHART_COLOR_PALLETE = {
   lightblue: Color.fromHex("#82C6E2"),
 };
 
+export const COMPONENT_COLORS: Record<string, Color> = {
+  default: Color.fromHex("#667eea"),
+  red: Color.fromHex("#f56565"),
+  orange: Color.fromHex("#F38A3F"),
+  yellow: Color.fromHex("#E3BC1E"),
+  green: Color.fromHex("#2ABB7F"),
+  cyan: Color.fromHex("#38b2ac"),
+  blue: Color.fromHex("#388BFF"),
+  purple: Color.fromHex("#8F7EE7"),
+  pink: Color.fromHex("#DA62AC"),
+};
+
 export const CHART_COLORS = Object.values(CHART_COLOR_PALLETE);
+
+export function fadeColor(color: Color, opacity: number): Color {
+  /**
+   * Applies fade to hex color but with alpha = 1
+   * @param color Color obhj
+   * @param opacity Number from 0 to 1 (divide by 255)
+   */
+  const faded = (i: number) => Math.round(i * opacity + 255 * (1 - opacity));
+  return new Color({
+    r: faded(color.obj.r),
+    g: faded(color.obj.g),
+    b: faded(color.obj.b),
+    a: 1,
+  });
+}

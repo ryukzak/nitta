@@ -34,15 +34,9 @@ export const SynthesisGraph: FC = () => {
   };
 
   return (
-    <div className="flex-grow-1">
+    <div className="flex-grow-1" style={{ height: "100%" }}>
       <div className="d-flex justify-content-between m-2">
         <div>
-          <Button {...buttonAttrs} onClick={() => expandSynthesisGraphView()}>
-            Expand
-          </Button>
-          <Button {...buttonAttrs} onClick={() => reduceSynthesisGraphView()}>
-            Reduce
-          </Button>
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
@@ -81,7 +75,7 @@ export const SynthesisGraph: FC = () => {
       </div>
       <div
         className="justify-content-center bg-light border"
-        style={{ height: height }}
+        style={{ height: "100%" }}
       >
         <SynthesisGraphRender />
       </div>

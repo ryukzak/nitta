@@ -12,12 +12,24 @@ import {
 import { DownloadTextFile } from "utils/download";
 import "components/Graphviz.scss";
 import { useApiRequest } from "hooks/useApiRequest";
+import { COMPONENT_COLORS, Color, fadeColor } from "../utils/color";
 
 /**
  * Component to display a microarchitecture with available endpoints.
  */
 
-export type IMicroarchitectureViewProps = {};
+export type DataFlow = {
+  source: string;
+  targetsWithVars: Map<string, string>;
+  net: string;
+};
+
+export type IMicroarchitectureViewProps = {
+  unitColors?: Map<string, string>;
+  enabledUnits?: Set<string>;
+  highligthedUnits?: Set<string>;
+  highlightedDataFlows?: Set<DataFlow>;
+};
 
 export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (
   _props,
@@ -40,9 +52,20 @@ export const MicroarchitectureView: FC<IMicroarchitectureViewProps> = (
       return renderMicroarchitectureDot(
         maRequest.response.data,
         collectEndpoints(endpointsRequest.response.data),
+        _props.unitColors,
+        _props.enabledUnits,
+        _props.highligthedUnits,
+        _props.highlightedDataFlows,
       );
     }
-  }, [maRequest.response, endpointsRequest.response]);
+  }, [
+    maRequest.response,
+    endpointsRequest.response,
+    _props.unitColors,
+    _props.enabledUnits,
+    _props.highligthedUnits,
+    _props.highlightedDataFlows,
+  ]);
 
   return (
     <div className="bg-light border graphvizContainer">
@@ -87,22 +110,78 @@ function collectEndpoints(data: UnitEndpointsData[]): Endpoints {
 function renderMicroarchitectureDot(
   ma: MicroarchitectureData,
   endpoints: Endpoints,
+  unitColors?: Map<string, string>,
+  enabledUnits?: Set<string>,
+  highligthedUnits?: Set<string>,
+  highlightedDataFlows?: Set<DataFlow>,
 ): string {
-  var lines: string[] = [];
-  var units: string[] = [];
-  var vars: string[] = [];
+  const lines: string[] = [];
+  const units: string[] = [];
+  const vars: string[] = [];
 
   lines.push("digraph {");
   lines.push("  rankdir=LR;");
   ma.networks.forEach((net: NetworkData) => {
-    lines.push(
-      `  ${net.networkTag}[label="${net.networkTag} :: ${net.valueType}"];`,
-    );
+    let networkProperties = `[label="${net.networkTag} :: ${net.valueType}"]`;
+    if (
+      highlightedDataFlows &&
+      Array.from(highlightedDataFlows).some((df) => df.net === net.networkTag)
+    ) {
+      networkProperties = `[label="${net.networkTag} :: ${net.valueType}";penwidth=3]`;
+    }
+    lines.push(`  ${net.networkTag}${networkProperties};`);
     net.units.forEach((unit: UnitData) => {
       const name = `${net.networkTag}_${unit.unitTag}`;
       units.push(name);
-      lines.push(`  ${name}[label="${unit.unitTag} :: ${unit.unitType}"];`);
-      lines.push(`  ${net.networkTag} -> ${name}[dir="both"];`);
+      if (unitColors && unitColors.has(unit.unitTag)) {
+        const colorKey = unitColors.get(unit.unitTag)!;
+        let color = COMPONENT_COLORS[colorKey as keyof typeof COMPONENT_COLORS];
+        let fontColor = color;
+        let fadedColor = fadeColor(color, 0x15 / 255);
+
+        if (!enabledUnits?.has(unit.unitTag)) {
+          color = new Color({
+            r: color.obj.r,
+            g: color.obj.g,
+            b: color.obj.b,
+            a: 0.4,
+          });
+          fadedColor = new Color({
+            r: fadedColor.obj.r,
+            g: fadedColor.obj.g,
+            b: fadedColor.obj.b,
+            a: 0.4,
+          });
+          fontColor = fadeColor(color, 0.4);
+        }
+
+        let colorProperties = `color="${color.toHexString()}"; style="filled"; fillcolor="${fadedColor.toHexString()}"; fontcolor="${fontColor.toHexString()}"; tooltip="${name}"`;
+        if (highligthedUnits && highligthedUnits.has(unit.unitTag)) {
+          colorProperties = `${colorProperties}; penwidth=3;`;
+        }
+
+        lines.push(
+          `  ${name}[label="${unit.unitTag} :: ${unit.unitType}"; ${colorProperties}];`,
+        );
+      } else {
+        lines.push(`  ${name}[label="${unit.unitTag} :: ${unit.unitType}"];`);
+      }
+
+      let connectionProperties = `[arrowhead="none"; arrowtail="none"]`;
+
+      if (highlightedDataFlows) {
+        highlightedDataFlows.forEach((df) => {
+          if (df.source === unit.unitTag) {
+            const vars = Array.from(df.targetsWithVars.values()).join(", ");
+            connectionProperties = `[label="${vars}";arrowhead="none";dir="both";arrowtail="";penwidth=3]`;
+          }
+          if (df.targetsWithVars.has(unit.unitTag)) {
+            connectionProperties = `[label="${df.targetsWithVars.get(unit.unitTag)}";arrowhead="";arrowtail="none";penwidth=3]`;
+          }
+        });
+      }
+
+      lines.push(`  ${net.networkTag} -> ${name}${connectionProperties};`);
 
       endpoints[unit.unitTag].sources.forEach((e) => {
         lines.push(`  ${name} -> "${e}";`);
