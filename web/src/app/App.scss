@@ -1,0 +1,15 @@
+
+.app-content {
+
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+
+  > .split-pane-container {
+    > .split-pane-right {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+  }
+}

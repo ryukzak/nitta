@@ -11,6 +11,7 @@ import { TestBenchScreen } from "screens/TestBenchScreen";
 import { type Sid, sidSeparator } from "services/HaskellApiService";
 import { AppContextProvider, type IAppContext } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
+import "app/App.scss";
 
 export type IAppProps = {};
 
@@ -40,23 +41,7 @@ export default class App extends Component<IAppProps, IAppState> {
     return (
       <AppContextProvider value={this.state}>
         <AppNavbar />
-        <div
-          className="app-content"
-          style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}
-        >
-          {/* style to apply certain overflow behaviour only to this certain child */}
-          <style>
-            {`
-              .app-content {
-                > .split-pane-container {
-                  > .split-pane-right {
-                    overflow-y: auto;
-                    overflow-x: hidden;
-                  }
-                }
-              }
-            `}
-          </style>
+        <div className="app-content">
           <SplitPane orientation="horizontal" initialSplitPercentage={35}>
             <SynthesisGraph />
             <div
