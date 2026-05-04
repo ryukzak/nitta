@@ -33,6 +33,9 @@ export const AppNavbar: FC<IAppNavbarProps> = (_props) => {
           <Nav.Link as={RouterNavLink} to="/process">
             Process
           </Nav.Link>
+          <Nav.Link as={RouterNavLink} to="/process2">
+            Process#2
+          </Nav.Link>
           <Nav.Link as={RouterNavLink} to="/testbench">
             Testbench
           </Nav.Link>

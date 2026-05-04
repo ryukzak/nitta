@@ -1,0 +1,35 @@
+.data-flow-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    overflow: visible;
+    z-index: 0;
+
+    .arrow-path {
+      opacity: 0.8;
+    }
+
+    text {
+      font-size: 0.7em;
+    }
+
+    rect {
+      fill: white;
+    }
+
+    .dataflow-group {
+      &.dataflow-selected,
+      &.dataflow-related {
+        .arrow-path {
+          stroke: #000000 !important;
+          opacity: 1;
+        }
+
+        text {
+          fill: #000000;
+          font-weight: bold;
+        }
+      }
+    }
+  }

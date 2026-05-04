@@ -1,0 +1,13 @@
+
+.timeline-container {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  font-family: monospace;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

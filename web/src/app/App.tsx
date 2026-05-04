@@ -1,14 +1,17 @@
 import { SynthesisGraph } from "components/SynthesisGraph";
+import { SplitPane } from "components/utils/SplitPane";
 import { Component } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { DebugScreen } from "screens/DebugScreen";
 import { NodeScreen } from "screens/NodeScreen";
+import { Process2Screen } from "screens/Process2Screen";
 import { ProcessScreen } from "screens/ProcessScreen";
 import { SubforestScreen } from "screens/SubforestScreen";
 import { TestBenchScreen } from "screens/TestBenchScreen";
 import { type Sid, sidSeparator } from "services/HaskellApiService";
 import { AppContextProvider, type IAppContext } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
+import "app/App.scss";
 
 export type IAppProps = {};
 
@@ -38,18 +41,28 @@ export default class App extends Component<IAppProps, IAppState> {
     return (
       <AppContextProvider value={this.state}>
         <AppNavbar />
-
-        <div className="flex-grow-1">
-          <SynthesisGraph />
-          <Routes>
-            <Route path="/" element={<Navigate to="/node"></Navigate>}></Route>
-            <Route path="/node" element={<NodeScreen />}></Route>
-            <Route path="/subforest" element={<SubforestScreen />}></Route>
-            <Route path="/process" element={<ProcessScreen />}></Route>
-            <Route path="/testbench" element={<TestBenchScreen />}></Route>
-            <Route path="/debug" element={<DebugScreen />}></Route>
-            <Route>404 NOT FOUND</Route>
-          </Routes>
+        <div className="app-content">
+          <SplitPane orientation="horizontal" initialSplitPercentage={35}>
+            <SynthesisGraph />
+            <div
+              className="h-full overflow-auto"
+              style={{ backgroundColor: "white" }}
+            >
+              <Routes>
+                <Route
+                  path="/"
+                  element={<Navigate to="/node"></Navigate>}
+                ></Route>
+                <Route path="/node" element={<NodeScreen />}></Route>
+                <Route path="/subforest" element={<SubforestScreen />}></Route>
+                <Route path="/process" element={<ProcessScreen />}></Route>
+                <Route path="/process2" element={<Process2Screen />}></Route>
+                <Route path="/testbench" element={<TestBenchScreen />}></Route>
+                <Route path="/debug" element={<DebugScreen />}></Route>
+                <Route>404 NOT FOUND</Route>
+              </Routes>
+            </div>
+          </SplitPane>
         </div>
       </AppContextProvider>
     );
