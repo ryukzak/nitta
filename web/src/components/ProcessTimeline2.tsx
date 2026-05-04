@@ -60,6 +60,7 @@ export const ProcessTimelines2: FC = () => {
   const [selectedDataFlowId, setSelectedDataFlowId] = useState<string | null>(
     null,
   );
+  const [scale, setScale] = useState(1);
 
   const getComponentColor = useCallback((component: string): Color => {
     const preselectedColor = selectedColorsRef.current.get(component);
@@ -135,6 +136,16 @@ export const ProcessTimelines2: FC = () => {
   const handleClearSelection = useCallback(() => {
     setSelectedInstructionId(null);
     setSelectedDataFlowId(null);
+  }, []);
+
+  const handleTimelineWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setScale((prevScale) => {
+      const newScale = prevScale * delta;
+      return Math.max(0.3, Math.min(3, newScale));
+    });
   }, []);
 
   const getRelatedDataFlows = useCallback(
@@ -695,6 +706,8 @@ export const ProcessTimelines2: FC = () => {
                 getRelatedDataFlows={getRelatedDataFlows}
                 getRelatedInstructions={getRelatedInstructions}
                 onClearSelection={handleClearSelection}
+                scale={scale}
+                onWheel={handleTimelineWheel}
               />
               <UnitTimeline
                 functions={filteredFunctions}
@@ -711,6 +724,8 @@ export const ProcessTimelines2: FC = () => {
                 getRelatedDataFlows={getRelatedDataFlows}
                 getRelatedInstructions={getRelatedInstructions}
                 onClearSelection={handleClearSelection}
+                scale={scale}
+                onWheel={handleTimelineWheel}
               />
             </SplitPane>
           </div>

@@ -33,6 +33,8 @@ interface FunctionTimelineProps {
   getRelatedDataFlows: (instructionId: number) => string[];
   getRelatedInstructions: (dataFlowId: string) => number[];
   onClearSelection: () => void;
+  scale: number;
+  onWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
 }
 
 export const FunctionTimeline: FC<FunctionTimelineProps> = ({
@@ -48,6 +50,8 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   getRelatedDataFlows,
   getRelatedInstructions,
   onClearSelection,
+  scale,
+  onWheel,
 }) => {
   const [layoutFunctions, setLayoutFunctions] = useState<ProcessFunction[]>([]);
   const [containerHeight, setContainerHeight] = useState(1000);
@@ -321,35 +325,40 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       onKeyDown={handleKeyDown}
       tabIndex={-1}
       aria-label="Function timeline"
+      onWheel={onWheel}
     >
-      <DataFlowOverlay
-        dataFlowConnections={dataFlowConnections}
-        instructionPositions={instructionPositions}
-        topPadding={topPadding}
-        timelineConfig={timelineConfig}
-        selectedInstructionId={selectedInstructionId}
-        selectedDataFlowId={selectedDataFlowId}
-        onDataFlowSelect={onDataFlowSelect}
-        getRelatedInstructions={getRelatedInstructions}
-      />
+      <div style={{transform: `scale(${scale})`, transformOrigin: "0px 0px"}}>
+        <DataFlowOverlay
+          dataFlowConnections={dataFlowConnections}
+          instructionPositions={instructionPositions}
+          topPadding={topPadding}
+          timelineConfig={timelineConfig}
+          selectedInstructionId={selectedInstructionId}
+          selectedDataFlowId={selectedDataFlowId}
+          onDataFlowSelect={onDataFlowSelect}
+          getRelatedInstructions={getRelatedInstructions}
+        />
 
-      {layoutFunctions.map((func) => {
-        const bgColor = getComponentColor(func.component);
-        return (
-          <FunctionRectangle
-            key={func.pID}
-            func={func}
-            bgColor={bgColor}
-            topPadding={topPadding}
-            timelineConfig={timelineConfig}
-            selectedInstructionId={selectedInstructionId}
-            selectedDataFlowId={selectedDataFlowId}
-            onInstructionSelect={onInstructionSelect}
-            getRelatedDataFlows={getRelatedDataFlows}
-            getRelatedInstructions={getRelatedInstructions}
-          />
-        );
-      })}
+        {layoutFunctions.map((func) => {
+          const bgColor = getComponentColor(func.component);
+          return (
+            <FunctionRectangle
+              key={func.pID}
+              func={func}
+              bgColor={bgColor}
+              topPadding={topPadding}
+              timelineConfig={timelineConfig}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onInstructionSelect={onInstructionSelect}
+              getRelatedDataFlows={getRelatedDataFlows}
+              getRelatedInstructions={getRelatedInstructions}
+            />
+          );
+        })}
+        </div>
     </section>
-  );
+
+)
+  ;
 };
