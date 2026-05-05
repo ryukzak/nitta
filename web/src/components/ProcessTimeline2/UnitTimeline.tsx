@@ -8,7 +8,6 @@ import React, {
   useState,
 } from "react";
 import type { Color } from "../../utils/color";
-import { useWheelScale } from "./hooks/useWheelScale";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
@@ -23,9 +22,10 @@ import {
   ROW_HEIGHT,
   type Unit,
 } from "../utils/ProcessTimeline2";
+import { ColorLabelButton } from "./ColorLabelButton";
 import { DataFlowOverlay } from "./DataFlows";
 import { FunctionRectangle } from "./FunctionRectangle";
-import { UnitLabel } from "./UnitLabel";
+import { useWheelScale } from "./hooks/useWheelScale";
 
 import "./UnitTimeline.scss";
 import "components/ProcessTimeline2/TimelineContainer.scss";
@@ -368,7 +368,7 @@ export const UnitTimeline: FC<Props> = ({
                   data-unit={unit.name}
                 >
                   <div className="unit-header">
-                    <UnitLabel
+                    <ColorLabelButton
                       componentName={unit.name}
                       color={color}
                       enabled
@@ -390,7 +390,7 @@ export const UnitTimeline: FC<Props> = ({
                       data-subunit={unit.name + su.name}
                     >
                       <div className="subunit-header">
-                        <UnitLabel
+                        <ColorLabelButton
                           componentName={su.name}
                           color={color}
                           enabled

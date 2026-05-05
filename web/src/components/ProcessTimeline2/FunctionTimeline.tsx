@@ -1,6 +1,5 @@
 import React, { type FC, useCallback, useLayoutEffect, useState } from "react";
 import type { Color } from "../../utils/color";
-import { useWheelScale } from "./hooks/useWheelScale";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
@@ -19,6 +18,7 @@ import {
 } from "../utils/ProcessTimeline2";
 import { DataFlowOverlay } from "./DataFlows";
 import { FunctionRectangle } from "./FunctionRectangle";
+import { useWheelScale } from "./hooks/useWheelScale";
 import "components/ProcessTimeline2/TimelineContainer.scss";
 
 interface FunctionTimelineProps {

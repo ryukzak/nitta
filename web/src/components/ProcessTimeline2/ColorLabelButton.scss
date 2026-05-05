@@ -9,6 +9,8 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   transition: background-color 0.2s;
+  width: fit-content;
+  min-width: 0;
 
   &:hover {
     background-color: #f0f0f0;
@@ -27,6 +29,6 @@
 
   .legend-label {
     font-weight: 500;
-    word-break: break-word;
+    white-space: nowrap;
   }
 }

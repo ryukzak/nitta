@@ -2,7 +2,7 @@
   padding: 1rem 2rem 0 2rem;
   background-color: #f8f9fa;
 
-  .filter-container {
+  .filter-controls-container {
     background: white;
     padding: 1rem;
     border: 1px solid #dee2e6;
@@ -12,61 +12,49 @@
     flex-direction: column;
 
 
-    .buttons {
+    .buttons-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
       gap: 1rem;
 
-      .units-section {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-
-        .unit-controls {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .unit-buttons {
-          display: flex;
-          gap: 1.5rem;
-        }
+      .label-buttons {
+        gap: 1.5rem;
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, max-content);
       }
 
       .filter-buttons {
         display: flex;
-        gap: 0.75rem;
-        align-items: center;
+        gap: 8px;
+
+        .filter-button {
+
+          background-color: white;
+          border: 1px solid #dee2e6;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #495057;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+
+          &:hover {
+            background-color: #f8f9fa;
+            border-color: #adb5bd;
+            color: #212529;
+          }
+
+          &:active {
+            background-color: #e9ecef;
+          }
+        }
       }
     }
 
     .graphvizContainer {
       background-color: white !important;
-    }
-  }
-
-  .filter-button {
-
-    background-color: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #495057;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-
-    &:hover {
-      background-color: #f8f9fa;
-      border-color: #adb5bd;
-      color: #212529;
-    }
-
-    &:active {
-      background-color: #e9ecef;
     }
   }
 }

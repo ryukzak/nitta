@@ -14,8 +14,8 @@ import { JsonView } from "./JsonView";
 import type { DataFlow } from "./MicroarchitectureView";
 import { ClickableIntermediateView } from "./ProcessTimeline2/ClickableIntermediateView";
 import { ClickableMicroarchitectureView } from "./ProcessTimeline2/ClickableMicroarchitectureView";
+import { ColorLabelButton } from "./ProcessTimeline2/ColorLabelButton";
 import { FunctionTimeline } from "./ProcessTimeline2/FunctionTimeline";
-import { UnitLabel } from "./ProcessTimeline2/UnitLabel";
 import { UnitTimeline } from "./ProcessTimeline2/UnitTimeline";
 import {
   COLUMN_MARGIN,
@@ -53,7 +53,8 @@ export const ProcessTimelines2: FC = () => {
     [],
   );
   const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
-  const [showIntermediateView, setShowIntermediateView] = useState(false);
+  const [showUnitGraph, setShowUnitGraph] = useState(false);
+  const [showFunctionGraph, setShowFunctionGraph] = useState(false);
   const [selectedInstructionId, setSelectedInstructionId] = useState<
     number | null
   >(null);
@@ -143,9 +144,11 @@ export const ProcessTimelines2: FC = () => {
     e.stopPropagation();
 
     if (e.shiftKey) {
+      // Shift + wheel scroll for horizontal scrolling
       const target = e.currentTarget as HTMLElement;
       target.scrollLeft += e.deltaY;
     } else {
+      // Regular wheel scroll for scaling
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       setScale((prevScale) => {
         const newScale = prevScale * delta;
@@ -559,42 +562,29 @@ export const ProcessTimelines2: FC = () => {
   return (
     <div>
       <div className="filter-section">
-        <div className="filter-container">
-          <div className="buttons">
-            <div className="units-section">
-              <div className="unit-buttons">
-                {Array.from(new Set(functions.map((f) => f.component))).map(
-                  (component) => {
-                    if (!selectedColorsRef.current.get(component)) return null;
-                    return (
-                      <UnitLabel
-                        key={component}
-                        componentName={component}
-                        color={
-                          COMPONENT_COLORS[
-                            selectedColorsRef.current.get(component)!
-                          ]
-                        }
-                        enabled={enabledUnits.has(component)}
-                        onToggle={handleUnitToggle}
-                      />
-                    );
-                  },
-                )}
-              </div>
+        <div className="filter-controls-container">
+          <div className="buttons-row">
+            <div className="label-buttons">
+              {Array.from(new Set(functions.map((f) => f.component))).map(
+                (component) => {
+                  if (!selectedColorsRef.current.get(component)) return null;
+                  return (
+                    <ColorLabelButton
+                      key={component}
+                      componentName={component}
+                      color={
+                        COMPONENT_COLORS[
+                          selectedColorsRef.current.get(component)!
+                        ]
+                      }
+                      enabled={enabledUnits.has(component)}
+                      onToggle={handleUnitToggle}
+                    />
+                  );
+                },
+              )}
             </div>
             <div className="filter-buttons">
-              <button
-                type="button"
-                className={"filter-button functions-toggle-button"}
-                onClick={handleToggleAllFunctions}
-              >
-                {enabledFunctions.size ===
-                  new Set(functions.map((f) => f.label)).size &&
-                enabledFunctions.size > 0
-                  ? "Deselect all functions"
-                  : "Select all functions"}
-              </button>
               <button
                 type="button"
                 className={"filter-button units-toggle-button"}
@@ -618,50 +608,93 @@ export const ProcessTimelines2: FC = () => {
               <button
                 type="button"
                 className="filter-button filter-toggle-button"
-                onClick={() => setShowIntermediateView(!showIntermediateView)}
+                onClick={() => setShowUnitGraph(!showUnitGraph)}
               >
-                {showIntermediateView ? "Hide" : "Show"} graph filters
+                {showUnitGraph ? "Hide" : "Show"} unit graph
               </button>
             </div>
           </div>
-          {showIntermediateView && (
-            <SplitPane orientation="vertical" initialSplitPercentage={65}>
-              <ClickableIntermediateView
-                functionToUnitMapping={
-                  new Map(functions.map((f) => [f.label, f.component]))
-                }
-                unitColors={selectedColorsRef.current}
-                enabledFunctions={enabledFunctions}
-                onToggle={handleFunctionToggle}
-                highlightedFunctions={getRelatedFunctionLabels(
-                  selectedInstructionId,
-                  selectedDataFlowId,
-                )}
-                highlightedDataFlows={getRelatedDataFlowVariables(
-                  selectedInstructionId,
-                  selectedDataFlowId,
-                )}
-                selectedInstructionId={selectedInstructionId}
-                selectedDataFlowId={selectedDataFlowId}
-                onClearSelection={handleClearSelection}
-              />
-              <ClickableMicroarchitectureView
-                unitColors={selectedColorsRef.current}
-                enabledUnits={enabledUnits}
-                highligthedUnits={getRelatedUnitLabels(
-                  selectedInstructionId,
-                  selectedDataFlowId,
-                )}
-                highlightedDataFlows={getRelatedDataFlowVariablesForMicroarchitectureView(
-                  selectedInstructionId,
-                  selectedDataFlowId,
-                )}
-                onToggle={handleUnitToggle}
-                selectedInstructionId={selectedInstructionId}
-                selectedDataFlowId={selectedDataFlowId}
-                onClearSelection={handleClearSelection}
-              />
-            </SplitPane>
+          {showUnitGraph && (
+            <ClickableMicroarchitectureView
+              unitColors={selectedColorsRef.current}
+              enabledUnits={enabledUnits}
+              highligthedUnits={getRelatedUnitLabels(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
+              highlightedDataFlows={getRelatedDataFlowVariablesForMicroarchitectureView(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
+              onToggle={handleUnitToggle}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onClearSelection={handleClearSelection}
+            />
+          )}
+          <div className="buttons-row">
+            <div className="label-buttons">
+              {Array.from(
+                functions.map((fun) => {
+                  if (!selectedColorsRef.current.get(fun.component))
+                    return null;
+                  return (
+                    <ColorLabelButton
+                      key={fun.label}
+                      componentName={fun.label}
+                      color={
+                        COMPONENT_COLORS[
+                          selectedColorsRef.current.get(fun.component)!
+                        ]
+                      }
+                      enabled={enabledFunctions.has(fun.label)}
+                      onToggle={handleFunctionToggle}
+                    />
+                  );
+                }),
+              )}
+            </div>
+            <div className="filter-buttons">
+              <button
+                type="button"
+                className={"filter-button functions-toggle-button"}
+                onClick={handleToggleAllFunctions}
+              >
+                {enabledFunctions.size ===
+                  new Set(functions.map((f) => f.label)).size &&
+                enabledFunctions.size > 0
+                  ? "Deselect all functions"
+                  : "Select all functions"}
+              </button>
+              <button
+                type="button"
+                className="filter-button filter-toggle-button"
+                onClick={() => setShowFunctionGraph(!showFunctionGraph)}
+              >
+                {showUnitGraph ? "Hide" : "Show"} function graph
+              </button>
+            </div>
+          </div>
+          {showFunctionGraph && (
+            <ClickableIntermediateView
+              functionToUnitMapping={
+                new Map(functions.map((f) => [f.label, f.component]))
+              }
+              unitColors={selectedColorsRef.current}
+              enabledFunctions={enabledFunctions}
+              onToggle={handleFunctionToggle}
+              highlightedFunctions={getRelatedFunctionLabels(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
+              highlightedDataFlows={getRelatedDataFlowVariables(
+                selectedInstructionId,
+                selectedDataFlowId,
+              )}
+              selectedInstructionId={selectedInstructionId}
+              selectedDataFlowId={selectedDataFlowId}
+              onClearSelection={handleClearSelection}
+            />
           )}
         </div>
       </div>
@@ -691,6 +724,7 @@ export const ProcessTimelines2: FC = () => {
             ).map((time) => (
               <div
                 className="time-label-container"
+                key={time}
                 style={{
                   marginTop:
                     time === timelineConfig.minTime - 1
