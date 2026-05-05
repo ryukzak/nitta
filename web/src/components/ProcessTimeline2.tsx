@@ -587,6 +587,15 @@ export const ProcessTimelines2: FC = () => {
             <div className="filter-buttons">
               <button
                 type="button"
+                className="filter-button operator-toggle-button"
+                onClick={() =>
+                  setFilterOperator(filterOperator === "AND" ? "OR" : "AND")
+                }
+              >
+                Filter operator: {filterOperator}
+              </button>
+              <button
+                type="button"
                 className={"filter-button units-toggle-button"}
                 onClick={handleToggleAllUnits}
               >
@@ -595,15 +604,6 @@ export const ProcessTimelines2: FC = () => {
                 enabledUnits.size > 0
                   ? "Deselect all units"
                   : "Select all units"}
-              </button>
-              <button
-                type="button"
-                className="filter-button operator-toggle-button"
-                onClick={() =>
-                  setFilterOperator(filterOperator === "AND" ? "OR" : "AND")
-                }
-              >
-                Filter operator: {filterOperator}
               </button>
               <button
                 type="button"
@@ -633,26 +633,44 @@ export const ProcessTimelines2: FC = () => {
             />
           )}
           <div className="buttons-row">
-            <div className="label-buttons">
+            <div className="unit-buttons-rows">
               {Array.from(
-                functions.map((fun) => {
-                  if (!selectedColorsRef.current.get(fun.component))
-                    return null;
-                  return (
-                    <ColorLabelButton
-                      key={fun.label}
-                      componentName={fun.label}
-                      color={
-                        COMPONENT_COLORS[
-                          selectedColorsRef.current.get(fun.component)!
-                        ]
-                      }
-                      enabled={enabledFunctions.has(fun.label)}
-                      onToggle={handleFunctionToggle}
-                    />
-                  );
-                }),
-              )}
+                new Set(
+                  functions
+                    .filter(
+                      (f) =>
+                        filterOperator === "OR" ||
+                        enabledUnits.has(f.component),
+                    )
+                    .map((f) => f.component),
+                ),
+              ).map((component) => {
+                return (
+                  <div className="label-buttons" key={component}>
+                    {Array.from(
+                      functions
+                        .filter((f) => f.component === component)
+                        .map((fun) => {
+                          if (!selectedColorsRef.current.get(fun.component))
+                            return null;
+                          return (
+                            <ColorLabelButton
+                              key={fun.label}
+                              componentName={fun.label}
+                              color={
+                                COMPONENT_COLORS[
+                                  selectedColorsRef.current.get(fun.component)!
+                                ]
+                              }
+                              enabled={enabledFunctions.has(fun.label)}
+                              onToggle={handleFunctionToggle}
+                            />
+                          );
+                        }),
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="filter-buttons">
               <button

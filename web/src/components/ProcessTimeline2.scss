@@ -18,10 +18,11 @@
       gap: 1rem;
 
       .label-buttons {
-        gap: 1.5rem;
+        gap: 0.25rem 0.75rem;
         flex: 1 1 auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, max-content);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
       }
 
       .filter-buttons {
@@ -29,7 +30,6 @@
         gap: 8px;
 
         .filter-button {
-
           background-color: white;
           border: 1px solid #dee2e6;
           border-radius: 6px;
