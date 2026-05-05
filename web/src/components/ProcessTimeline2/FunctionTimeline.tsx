@@ -282,8 +282,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     );
 
     const newContainerHeight =
-      maxHeaderHeightAtMin +
-      (maxTime - minTime + 1) * ROW_HEIGHT;
+      maxHeaderHeightAtMin + (maxTime - minTime + 1) * ROW_HEIGHT;
     const newTopPadding = Math.max(maxHeaderHeightAtMin, ROW_HEIGHT);
 
     setContainerHeight(newContainerHeight);
