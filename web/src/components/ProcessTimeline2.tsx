@@ -139,24 +139,6 @@ export const ProcessTimelines2: FC = () => {
     setSelectedDataFlowId(null);
   }, []);
 
-  const handleTimelineWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.shiftKey) {
-      // Shift + wheel scroll for horizontal scrolling
-      const target = e.currentTarget as HTMLElement;
-      target.scrollLeft += e.deltaY;
-    } else {
-      // Regular wheel scroll for scaling
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      setScale((prevScale) => {
-        const newScale = prevScale * delta;
-        return Math.max(0.3, Math.min(3, newScale));
-      });
-    }
-  }, []);
-
   const handleScaleChange = useCallback((delta: number) => {
     setScale((prevScale) => {
       const newScale = prevScale * delta;
@@ -784,7 +766,6 @@ export const ProcessTimelines2: FC = () => {
                 getRelatedInstructions={getRelatedInstructions}
                 onClearSelection={handleClearSelection}
                 scale={scale}
-                onWheel={handleTimelineWheel}
                 onScaleChange={handleScaleChange}
               />
               <UnitTimeline
@@ -803,7 +784,6 @@ export const ProcessTimelines2: FC = () => {
                 getRelatedInstructions={getRelatedInstructions}
                 onClearSelection={handleClearSelection}
                 scale={scale}
-                onWheel={handleTimelineWheel}
                 onScaleChange={handleScaleChange}
               />
             </SplitPane>

@@ -50,7 +50,6 @@ interface Props {
 
   onClearSelection: () => void;
   scale: number;
-  onWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
   onScaleChange: (delta: number) => void;
 }
 
@@ -70,7 +69,6 @@ export const UnitTimeline: FC<Props> = ({
   getRelatedInstructions,
   onClearSelection,
   scale,
-  onWheel,
   onScaleChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -339,7 +337,6 @@ export const UnitTimeline: FC<Props> = ({
       className="timeline-container unit-timeline"
       onClick={createContainerClickHandler(containerRef, onClearSelection)}
       onKeyDown={handleKeyDown}
-      onWheel={onWheel}
       tabIndex={-1}
       aria-label="Unit timeline"
     >

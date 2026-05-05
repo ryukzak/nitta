@@ -4,7 +4,6 @@ import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
   COLUMN_MARGIN,
-  CONTAINER_BUTTOM_PADDING,
   calculateInstructionPositionsFromDOM,
   createContainerClickHandler,
   type DataFlowConnection,
@@ -35,7 +34,6 @@ interface FunctionTimelineProps {
   getRelatedInstructions: (dataFlowId: string) => number[];
   onClearSelection: () => void;
   scale: number;
-  onWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
   onScaleChange: (delta: number) => void;
 }
 
@@ -53,7 +51,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   getRelatedInstructions,
   onClearSelection,
   scale,
-  onWheel,
   onScaleChange,
 }) => {
   const [layoutFunctions, setLayoutFunctions] = useState<ProcessFunction[]>([]);
@@ -286,8 +283,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
 
     const newContainerHeight =
       maxHeaderHeightAtMin +
-      (maxTime - minTime + 1) * ROW_HEIGHT +
-      CONTAINER_BUTTOM_PADDING;
+      (maxTime - minTime + 1) * ROW_HEIGHT;
     const newTopPadding = Math.max(maxHeaderHeightAtMin, ROW_HEIGHT);
 
     setContainerHeight(newContainerHeight);
@@ -331,7 +327,6 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       onKeyDown={handleKeyDown}
       tabIndex={-1}
       aria-label="Function timeline"
-      onWheel={onWheel}
     >
       <div style={{ minHeight: containerHeight * scale }}>
         <div
