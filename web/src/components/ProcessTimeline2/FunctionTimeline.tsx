@@ -103,6 +103,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       functions,
       getComponentColor,
       (func) => functionColumns.get(func.pID) ?? 0,
+      scale,
     );
 
     setInstructionPositions((prevPositions) => {
@@ -111,7 +112,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       }
       return positionsMap;
     });
-  }, [functions, functionColumns, getComponentColor]);
+  }, [functions, functionColumns, getComponentColor, scale]);
 
   const performLayout = useCallback(() => {
     const functionsArray = functions.map((f) => ({ ...f }));
@@ -318,6 +319,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   };
 
   return (
+
     <section
       className="timeline-container function-timeline"
       ref={containerRef}

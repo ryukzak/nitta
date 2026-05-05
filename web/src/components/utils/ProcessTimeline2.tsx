@@ -461,6 +461,7 @@ export const calculateInstructionPositionsFromDOM = (
   functions: ProcessFunction[],
   getComponentColor: (component: string) => any,
   getColumn: (func: ProcessFunction) => number,
+  scale: number = 1,
 ): Map<number, InstructionPosition> => {
   const positionsMap = new Map<number, InstructionPosition>();
   if (!container) return positionsMap;
@@ -486,10 +487,10 @@ export const calculateInstructionPositionsFromDOM = (
 
         positionsMap.set(instr.pID, {
           instructionId: instr.pID,
-          x: relativeX,
-          y: relativeY,
-          width: rect.width,
-          height: rect.height,
+          x: relativeX / scale,
+          y: relativeY / scale,
+          width: rect.width / scale,
+          height: rect.height / scale,
           color: getComponentColor(func.component).toHexString(),
           column: getColumn(func),
         });

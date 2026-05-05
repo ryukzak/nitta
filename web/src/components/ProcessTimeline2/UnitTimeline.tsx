@@ -120,12 +120,13 @@ export const UnitTimeline: FC<Props> = ({
         );
         return idx < 0 ? 0 : idx;
       },
+      scale,
     );
 
     setInstructionPositions((prev) =>
       instructionPositionsEqual(prev, map) ? prev : map,
     );
-  }, [functions, getComponentColor, flatUnits.findIndex]);
+  }, [functions, getComponentColor, flatUnits.findIndex, scale]);
 
   useLayoutEffect(() => {
     if (containerHeight > 0) calculateInstructionPositions();
@@ -216,13 +217,13 @@ export const UnitTimeline: FC<Props> = ({
         const parentLeft = parentLeftMap.get(parent.name) ?? 0;
 
         elem.style.left = `${globalLeft - parentLeft}px`;
-        parentColumn.style.width = `${globalLeft - parentLeft + elem.getBoundingClientRect().width}px`;
+        parentColumn.style.width = `${globalLeft - parentLeft + elem.getBoundingClientRect().width / scale}px`;
 
         const header = elem.querySelector(`.subunit-header`) as HTMLElement;
-        elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT - header.getBoundingClientRect().height}px`;
+        elem.style.height = `${(maxTime - timelineConfig.minTime + 2) * ROW_HEIGHT - header.getBoundingClientRect().height / scale}px`;
       }
 
-      const width = elem.getBoundingClientRect().width;
+      const width = elem.getBoundingClientRect().width / scale;
 
       for (let t = timelineConfig.minTime; t <= timelineConfig.maxTime; t++) {
         prevBorders.set(t, globalLeft + width + rightWidths.get(t)!);
@@ -236,6 +237,7 @@ export const UnitTimeline: FC<Props> = ({
     timelineConfig.minTime,
     timelineConfig.maxTime,
     flatUnits.forEach,
+    scale,
   ]);
 
   const renderFunctions = (funcs: ProcessFunction[], color: Color) =>
@@ -269,7 +271,7 @@ export const UnitTimeline: FC<Props> = ({
       rects.forEach((r) => {
         maxWidth = Math.max(
           maxWidth,
-          (r as HTMLElement).getBoundingClientRect().width,
+          (r as HTMLElement).getBoundingClientRect().width / scale,
         );
       });
 
@@ -289,7 +291,7 @@ export const UnitTimeline: FC<Props> = ({
       if (column?.classList.contains("subunit-column")) {
         const header = column.querySelector(".subunit-header") as HTMLElement;
         if (header) {
-          headerOffset = header.getBoundingClientRect().height;
+          headerOffset = header.getBoundingClientRect().height / scale;
         }
       }
 
@@ -318,7 +320,7 @@ export const UnitTimeline: FC<Props> = ({
         }
       });
     });
-  });
+  }, [scale]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -332,9 +334,9 @@ export const UnitTimeline: FC<Props> = ({
       className="timeline-container unit-timeline"
       onClick={createContainerClickHandler(containerRef, onClearSelection)}
       onKeyDown={handleKeyDown}
+      onWheel={onWheel}
       tabIndex={-1}
       aria-label="Unit timeline"
-      onWheel={onWheel}
     >
       <div style={{transform: `scale(${scale})`, transformOrigin: "0px 0px"}}>
         <DataFlowOverlay
