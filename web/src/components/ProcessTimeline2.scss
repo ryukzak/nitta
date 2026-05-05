@@ -73,13 +73,12 @@
 
 .process-timelines-2-vertical {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   padding: 1rem 2rem 1rem 2rem;
   background-color: #f8f9fa;
   font-family: monospace;
 
   .vertical-time-axis {
-    width: 70px;
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 6px;
@@ -87,15 +86,20 @@
     flex-flow: column;
     align-items: center;
 
-    .time-label-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid #F3F4F6;
-      border-radius: 14px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #495057;
+    .time-label-container {
+      .time-label-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border: 3px solid #F3F4F6;
+        border-radius: 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #495057;
+        transform-origin: top left;
+      }
     }
   }
 

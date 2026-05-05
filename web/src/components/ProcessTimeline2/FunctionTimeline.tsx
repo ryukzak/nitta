@@ -1,5 +1,6 @@
 import React, { type FC, useCallback, useLayoutEffect, useState } from "react";
 import type { Color } from "../../utils/color";
+import { useWheelScale } from "./hooks/useWheelScale";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
@@ -35,6 +36,7 @@ interface FunctionTimelineProps {
   onClearSelection: () => void;
   scale: number;
   onWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
+  onScaleChange: (delta: number) => void;
 }
 
 export const FunctionTimeline: FC<FunctionTimelineProps> = ({
@@ -52,6 +54,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   onClearSelection,
   scale,
   onWheel,
+  onScaleChange,
 }) => {
   const [layoutFunctions, setLayoutFunctions] = useState<ProcessFunction[]>([]);
   const [containerHeight, setContainerHeight] = useState(1000);
@@ -318,8 +321,9 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     }
   };
 
-  return (
+  useWheelScale(containerRef, onScaleChange);
 
+  return (
     <section
       className="timeline-container function-timeline"
       ref={containerRef}
@@ -329,38 +333,41 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       aria-label="Function timeline"
       onWheel={onWheel}
     >
-      <div style={{transform: `scale(${scale})`, transformOrigin: "0px 0px"}}>
-        <DataFlowOverlay
-          dataFlowConnections={dataFlowConnections}
-          instructionPositions={instructionPositions}
-          topPadding={topPadding}
-          timelineConfig={timelineConfig}
-          selectedInstructionId={selectedInstructionId}
-          selectedDataFlowId={selectedDataFlowId}
-          onDataFlowSelect={onDataFlowSelect}
-          getRelatedInstructions={getRelatedInstructions}
-        />
-
-        {layoutFunctions.map((func) => {
-          const bgColor = getComponentColor(func.component);
-          return (
-            <FunctionRectangle
-              key={func.pID}
-              func={func}
-              bgColor={bgColor}
-              topPadding={topPadding}
-              timelineConfig={timelineConfig}
-              selectedInstructionId={selectedInstructionId}
-              selectedDataFlowId={selectedDataFlowId}
-              onInstructionSelect={onInstructionSelect}
-              getRelatedDataFlows={getRelatedDataFlows}
-              getRelatedInstructions={getRelatedInstructions}
-            />
-          );
-        })}
+      <div style={{ minHeight: containerHeight * scale }}>
+        <div
+          style={{ transform: `scale(${scale})`, transformOrigin: "0px 0px" }}
+        >
+          <DataFlowOverlay
+            dataFlowConnections={dataFlowConnections}
+            instructionPositions={instructionPositions}
+            topPadding={topPadding}
+            timelineConfig={timelineConfig}
+            selectedInstructionId={selectedInstructionId}
+            selectedDataFlowId={selectedDataFlowId}
+            onDataFlowSelect={onDataFlowSelect}
+            getRelatedInstructions={getRelatedInstructions}
+          />
+          <div className="functions-container">
+            {layoutFunctions.map((func) => {
+              const bgColor = getComponentColor(func.component);
+              return (
+                <FunctionRectangle
+                  key={func.pID}
+                  func={func}
+                  bgColor={bgColor}
+                  topPadding={topPadding}
+                  timelineConfig={timelineConfig}
+                  selectedInstructionId={selectedInstructionId}
+                  selectedDataFlowId={selectedDataFlowId}
+                  onInstructionSelect={onInstructionSelect}
+                  getRelatedDataFlows={getRelatedDataFlows}
+                  getRelatedInstructions={getRelatedInstructions}
+                />
+              );
+            })}
+          </div>
         </div>
+      </div>
     </section>
-
-)
-  ;
+  );
 };

@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import type { Color } from "../../utils/color";
+import { useWheelScale } from "./hooks/useWheelScale";
 import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
@@ -50,6 +51,7 @@ interface Props {
   onClearSelection: () => void;
   scale: number;
   onWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
+  onScaleChange: (delta: number) => void;
 }
 
 export const UnitTimeline: FC<Props> = ({
@@ -69,6 +71,7 @@ export const UnitTimeline: FC<Props> = ({
   onClearSelection,
   scale,
   onWheel,
+  onScaleChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -328,6 +331,8 @@ export const UnitTimeline: FC<Props> = ({
     }
   };
 
+  useWheelScale(containerRef, onScaleChange);
+
   return (
     <section
       ref={containerRef}
@@ -338,59 +343,74 @@ export const UnitTimeline: FC<Props> = ({
       tabIndex={-1}
       aria-label="Unit timeline"
     >
-      <div style={{transform: `scale(${scale})`, transformOrigin: "0px 0px"}}>
-        <DataFlowOverlay
-          topPadding={topPadding}
-          timelineConfig={timelineConfig}
-          dataFlowConnections={dataFlowConnections}
-          instructionPositions={instructionPositions}
-          selectedInstructionId={selectedInstructionId}
-          selectedDataFlowId={selectedDataFlowId}
-          onDataFlowSelect={onDataFlowSelect}
-          getRelatedInstructions={getRelatedInstructions}
-        />
+      <div style={{ minHeight: containerHeight * scale }}>
+        <div
+          style={{ transform: `scale(${scale})`, transformOrigin: "0px 0px" }}
+        >
+          <DataFlowOverlay
+            topPadding={topPadding}
+            timelineConfig={timelineConfig}
+            dataFlowConnections={dataFlowConnections}
+            instructionPositions={instructionPositions}
+            selectedInstructionId={selectedInstructionId}
+            selectedDataFlowId={selectedDataFlowId}
+            onDataFlowSelect={onDataFlowSelect}
+            getRelatedInstructions={getRelatedInstructions}
+          />
+          <div className="units-container">
+            {renderUnits.map(({ unit, subunits }) => {
+              const color = getComponentColor(unit.name);
 
-        <div className="units-container" style={{minHeight: containerHeight}}>
-          {renderUnits.map(({unit, subunits}) => {
-            const color = getComponentColor(unit.name);
-
-            return (
-              <div key={unit.name} className="unit-column" data-unit={unit.name}>
-                <div className="unit-header">
-                  <UnitLabel componentName={unit.name} color={color} enabled/>
-                </div>
-
-                {/* units */}
-                {unit.functions && (
-                  <div className="unit-timeline-track">
-                    {renderFunctions(unit.functions, color)}
+              return (
+                <div
+                  key={unit.name}
+                  className="unit-column"
+                  data-unit={unit.name}
+                >
+                  <div className="unit-header">
+                    <UnitLabel
+                      componentName={unit.name}
+                      color={color}
+                      enabled
+                    />
                   </div>
-                )}
 
-                {/* subunits */}
-                {subunits?.map((su) => (
-                  <div
-                    key={su.name}
-                    className="subunit-column"
-                    data-subunit={unit.name + su.name}
-                  >
-                    <div className="subunit-header">
-                      <UnitLabel componentName={su.name} color={color} enabled/>
+                  {/* units */}
+                  {unit.functions && (
+                    <div className="unit-timeline-track">
+                      {renderFunctions(unit.functions, color)}
                     </div>
+                  )}
 
+                  {/* subunits */}
+                  {subunits?.map((su) => (
                     <div
-                      className="unit-timeline-track"
+                      key={su.name}
+                      className="subunit-column"
                       data-subunit={unit.name + su.name}
                     >
-                      {renderFunctions(su.functions ?? [], color)}
+                      <div className="subunit-header">
+                        <UnitLabel
+                          componentName={su.name}
+                          color={color}
+                          enabled
+                        />
+                      </div>
+
+                      <div
+                        className="unit-timeline-track"
+                        data-subunit={unit.name + su.name}
+                      >
+                        {renderFunctions(su.functions ?? [], color)}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
-);
+  );
 };

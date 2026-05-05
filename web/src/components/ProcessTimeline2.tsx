@@ -140,8 +140,21 @@ export const ProcessTimelines2: FC = () => {
 
   const handleTimelineWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    if (e.shiftKey) {
+      const target = e.currentTarget as HTMLElement;
+      target.scrollLeft += e.deltaY;
+    } else {
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setScale((prevScale) => {
+        const newScale = prevScale * delta;
+        return Math.max(0.3, Math.min(3, newScale));
+      });
+    }
+  }, []);
+
+  const handleScaleChange = useCallback((delta: number) => {
     setScale((prevScale) => {
       const newScale = prevScale * delta;
       return Math.max(0.3, Math.min(3, newScale));
@@ -664,7 +677,10 @@ export const ProcessTimelines2: FC = () => {
         </div>
       ) : (
         <div className="process-timelines-2-vertical">
-          <div className="vertical-time-axis">
+          <div
+            className="vertical-time-axis"
+            style={{ width: ROW_HEIGHT * 0.8 * scale }}
+          >
             {Array.from(
               {
                 length:
@@ -674,19 +690,28 @@ export const ProcessTimelines2: FC = () => {
               (_, i) => timelineConfig.minTime + i - 1,
             ).map((time) => (
               <div
-                key={time}
-                className="time-label-item"
+                className="time-label-container"
                 style={{
                   marginTop:
                     time === timelineConfig.minTime - 1
-                      ? topPadding - ROW_HEIGHT + ROW_HEIGHT * 0.2
-                      : ROW_HEIGHT * 0.2,
-                  marginBottom: ROW_HEIGHT * 0.2,
-                  height: ROW_HEIGHT * 0.6,
-                  width: ROW_HEIGHT * 0.6,
+                      ? (topPadding - ROW_HEIGHT + ROW_HEIGHT * 0.2) * scale
+                      : ROW_HEIGHT * 0.2 * scale,
+                  marginBottom: ROW_HEIGHT * 0.2 * scale,
+                  height: ROW_HEIGHT * 0.6 * scale,
+                  width: ROW_HEIGHT * 0.6 * scale,
                 }}
               >
-                {time === timelineConfig.minTime - 1 ? `clk` : time}
+                <div
+                  key={time}
+                  className="time-label-item"
+                  style={{
+                    transform: `scale(${scale})`,
+                    width: `${100 / scale}%`,
+                    height: `${100 / scale}%`,
+                  }}
+                >
+                  {time === timelineConfig.minTime - 1 ? `clk` : time}
+                </div>
               </div>
             ))}
           </div>
@@ -708,6 +733,7 @@ export const ProcessTimelines2: FC = () => {
                 onClearSelection={handleClearSelection}
                 scale={scale}
                 onWheel={handleTimelineWheel}
+                onScaleChange={handleScaleChange}
               />
               <UnitTimeline
                 functions={filteredFunctions}
@@ -726,6 +752,7 @@ export const ProcessTimelines2: FC = () => {
                 onClearSelection={handleClearSelection}
                 scale={scale}
                 onWheel={handleTimelineWheel}
+                onScaleChange={handleScaleChange}
               />
             </SplitPane>
           </div>

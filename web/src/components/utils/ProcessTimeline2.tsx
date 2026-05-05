@@ -62,7 +62,7 @@ export const ROW_HEIGHT = 70;
 export const COLUMN_MARGIN = 20;
 export const MIN_FUNCTION_GAP = 0.5;
 export const SCROLLBARHEIGHT = 25;
-export const CONTAINER_BUTTOM_PADDING = 35 + SCROLLBARHEIGHT;
+export const CONTAINER_BUTTOM_PADDING = 0; // 35 + SCROLLBARHEIGHT;
 
 export const estimateArrowTextWidth = (label: string): number => {
   // approximately 7px per character at font size 11, plus 4px padding
