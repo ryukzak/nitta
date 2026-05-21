@@ -1,16 +1,16 @@
 import type React from "react";
 import type { FC } from "react";
 import type { Color } from "../../utils/color";
-import "components/ProcessTimeline2/LegendItem.scss";
+import "components/ProcessTimeline2/ColorLabelButton.scss";
 
-interface UnitLabelProps {
+interface ColorLabelButtonProps {
   componentName: string;
   color: Color;
   enabled?: boolean;
   onToggle?: (componentName: string) => void;
 }
 
-export const UnitLabel: FC<UnitLabelProps> = ({
+export const ColorLabelButton: FC<ColorLabelButtonProps> = ({
   componentName,
   color,
   enabled = true,

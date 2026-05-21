@@ -4,7 +4,6 @@ import type { InstructionPosition } from "../utils/ArrowWithLabel";
 import {
   assignInputOutputPositions,
   COLUMN_MARGIN,
-  CONTAINER_BUTTOM_PADDING,
   calculateInstructionPositionsFromDOM,
   createContainerClickHandler,
   type DataFlowConnection,
@@ -18,6 +17,7 @@ import {
 } from "../utils/ProcessTimeline2";
 import { DataFlowOverlay } from "./DataFlows";
 import { FunctionRectangle } from "./FunctionRectangle";
+import { useWheelScale } from "./hooks/useWheelScale";
 import "components/ProcessTimeline2/TimelineContainer.scss";
 
 interface FunctionTimelineProps {
@@ -33,6 +33,8 @@ interface FunctionTimelineProps {
   getRelatedDataFlows: (instructionId: number) => string[];
   getRelatedInstructions: (dataFlowId: string) => number[];
   onClearSelection: () => void;
+  scale: number;
+  onScaleChange: (delta: number) => void;
 }
 
 export const FunctionTimeline: FC<FunctionTimelineProps> = ({
@@ -48,6 +50,8 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
   getRelatedDataFlows,
   getRelatedInstructions,
   onClearSelection,
+  scale,
+  onScaleChange,
 }) => {
   const [layoutFunctions, setLayoutFunctions] = useState<ProcessFunction[]>([]);
   const [containerHeight, setContainerHeight] = useState(1000);
@@ -99,6 +103,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       functions,
       getComponentColor,
       (func) => functionColumns.get(func.pID) ?? 0,
+      scale,
     );
 
     setInstructionPositions((prevPositions) => {
@@ -107,7 +112,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       }
       return positionsMap;
     });
-  }, [functions, functionColumns, getComponentColor]);
+  }, [functions, functionColumns, getComponentColor, scale]);
 
   const performLayout = useCallback(() => {
     const functionsArray = functions.map((f) => ({ ...f }));
@@ -277,9 +282,7 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     );
 
     const newContainerHeight =
-      maxHeaderHeightAtMin +
-      (maxTime - minTime + 1) * ROW_HEIGHT +
-      CONTAINER_BUTTOM_PADDING;
+      maxHeaderHeightAtMin + (maxTime - minTime + 1) * ROW_HEIGHT;
     const newTopPadding = Math.max(maxHeaderHeightAtMin, ROW_HEIGHT);
 
     setContainerHeight(newContainerHeight);
@@ -313,6 +316,8 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
     }
   };
 
+  useWheelScale(containerRef, onScaleChange);
+
   return (
     <section
       className="timeline-container function-timeline"
@@ -322,34 +327,41 @@ export const FunctionTimeline: FC<FunctionTimelineProps> = ({
       tabIndex={-1}
       aria-label="Function timeline"
     >
-      <DataFlowOverlay
-        dataFlowConnections={dataFlowConnections}
-        instructionPositions={instructionPositions}
-        topPadding={topPadding}
-        timelineConfig={timelineConfig}
-        selectedInstructionId={selectedInstructionId}
-        selectedDataFlowId={selectedDataFlowId}
-        onDataFlowSelect={onDataFlowSelect}
-        getRelatedInstructions={getRelatedInstructions}
-      />
-
-      {layoutFunctions.map((func) => {
-        const bgColor = getComponentColor(func.component);
-        return (
-          <FunctionRectangle
-            key={func.pID}
-            func={func}
-            bgColor={bgColor}
+      <div style={{ minHeight: containerHeight * scale }}>
+        <div
+          style={{ transform: `scale(${scale})`, transformOrigin: "0px 0px" }}
+        >
+          <DataFlowOverlay
+            dataFlowConnections={dataFlowConnections}
+            instructionPositions={instructionPositions}
             topPadding={topPadding}
             timelineConfig={timelineConfig}
             selectedInstructionId={selectedInstructionId}
             selectedDataFlowId={selectedDataFlowId}
-            onInstructionSelect={onInstructionSelect}
-            getRelatedDataFlows={getRelatedDataFlows}
+            onDataFlowSelect={onDataFlowSelect}
             getRelatedInstructions={getRelatedInstructions}
           />
-        );
-      })}
+          <div className="functions-container">
+            {layoutFunctions.map((func) => {
+              const bgColor = getComponentColor(func.component);
+              return (
+                <FunctionRectangle
+                  key={func.pID}
+                  func={func}
+                  bgColor={bgColor}
+                  topPadding={topPadding}
+                  timelineConfig={timelineConfig}
+                  selectedInstructionId={selectedInstructionId}
+                  selectedDataFlowId={selectedDataFlowId}
+                  onInstructionSelect={onInstructionSelect}
+                  getRelatedDataFlows={getRelatedDataFlows}
+                  getRelatedInstructions={getRelatedInstructions}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
