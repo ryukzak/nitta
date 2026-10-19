@@ -22,6 +22,7 @@ import Control.Monad (when)
 import Data.ByteString.Lazy.Char8 qualified as BS
 import Data.Default (def)
 import Data.Maybe
+import Data.Foldable (forM_)
 import Data.Proxy
 import Data.String.Utils qualified as S
 import Data.Text qualified as T
@@ -32,7 +33,7 @@ import NITTA.Frontends
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Microarchitecture.Config
-import NITTA.Model.Networks.Bus
+import NITTA.Model.Networks.Bus hiding (ioSync)
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project (TestbenchReport (..), defProjectTemplates, runTestbench)
@@ -40,7 +41,6 @@ import NITTA.Synthesis (TargetSynthesis (..), mlScoreKeyPrefix, noSynthesis, sta
 import NITTA.Synthesis.MlBackend.ServerInstance
 import NITTA.UIBackend
 import NITTA.UIBackend.Types (BackendCtx, mlBackendGetter, nodeScores, outputPath, receivedValues, root)
-import NITTA.Utils
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
@@ -199,8 +199,6 @@ nittaArgs =
 getNittaArgs :: IO Nitta
 getNittaArgs = cmdArgs nittaArgs
 
-fromConf toml s = getFromTomlSection s =<< toml
-
 main = do
     ( Nitta
             filename
@@ -230,9 +228,10 @@ main = do
     -- it's critical for successful parsing of NITTA's stdout in python scripts
     hSetBuffering stdout LineBuffering
 
-    toml <- case uarch of
+    conf <- case uarch of
         Nothing -> return Nothing
-        Just path -> Just . getToml <$> T.readFile path
+        Just path -> Just <$> parseConfig path
+    forM_ conf $ saveConfig output_path
 
     let exactFrontendType = identifyFrontendType filename frontend_language
 
@@ -242,17 +241,17 @@ main = do
             let frontendResult@FrontendResult{frDataFlow, frTrace, frPrettyLog} =
                     translate exactFrontendType src
                 received = [("u^0#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ioSync = fromJust $ io_sync <|> fromConf toml "ioSync" <|> Just Sync
-                confMa = toml >>= Just . mkMicroarchitecture ioSync
+                ioSync_ = fromJust $ io_sync <|> ioSync <$> conf <|> Just Sync
+                confMa = mkMicroarchitecture <$> conf
                 ma :: BusNetwork T.Text T.Text (Attr (FX m b)) Int
                 ma
                     | auto_uarch && isJust confMa =
                         error $
                             "auto_uarch flag means that an empty uarch with default prototypes will be used. "
                                 <> "Remove uarch flag or specify prototypes list in config file and remove auto_uarch."
-                    | auto_uarch = microarchWithProtos ioSync
+                    | auto_uarch = microarchWithProtos ioSync_
                     | isJust confMa = fromJust confMa
-                    | otherwise = defMicroarch ioSync
+                    | otherwise = defMicroarch ioSync_
 
             infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
@@ -303,7 +302,7 @@ main = do
                     exitSuccess
         )
         $ parseFX . fromJust
-        $ type_ <|> fromConf toml "type" <|> Just "fx32.32"
+        $ type_ <|> T.unpack . valueType <$> conf <|> Just "fx32.32"
 
 parseFX input =
     let typePattern = mkRegex "fx([0-9]+).([0-9]+)"
