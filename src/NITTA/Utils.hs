@@ -33,10 +33,6 @@ module NITTA.Utils (
     getIntermediates,
     isInstruction,
     module NITTA.Utils.Base,
-
-    -- * Yaml
-    -- getYaml,
-
 ) where
 
 import Data.Bits (setBit, testBit)
