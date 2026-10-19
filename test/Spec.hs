@@ -20,6 +20,7 @@ import NITTA.Frontends.XMILE.MathParserTests qualified
 import NITTA.Intermediate.Functions.Accum.Tests qualified
 import NITTA.Intermediate.Simulation.Tests qualified
 import NITTA.Intermediate.Value.Tests qualified
+import NITTA.Model.Config.Tests qualified
 import NITTA.Model.Problems.Refactor.Accum.Tests qualified
 import NITTA.Model.Problems.Refactor.ConstantFolding.Tests qualified
 import NITTA.Model.Problems.Refactor.Tests qualified
@@ -53,6 +54,7 @@ main = do
           , NITTA.Frontends.Lua.Tests.tests
           , NITTA.Frontends.XMILE.MathParserTests.tests
           , NITTA.Frontends.XMILE.DocumentParserTests.tests
+          , NITTA.Model.Config.Tests.tests
           , NITTA.Model.Problems.Refactor.Tests.tests
           , NITTA.Model.Problems.Refactor.Accum.Tests.tests
           , NITTA.Model.Problems.Refactor.ConstantFolding.Tests.tests
