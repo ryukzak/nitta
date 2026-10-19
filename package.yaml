@@ -63,7 +63,6 @@ dependencies:
   - data-default
   - filepath
   - ginger
-  - htoml
   - intervals
   - mtl
   - prettyprinter
@@ -73,6 +72,7 @@ dependencies:
   - text
   - unordered-containers
   - tostring
+  - yaml
   - wai-app-static
 
 library:
