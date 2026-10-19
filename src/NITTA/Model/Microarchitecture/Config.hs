@@ -3,21 +3,28 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module NITTA.Model.Microarchitecture.Config (
+    MicroarchitectureConf (..),
+    NetworkConf (..),
+    PUConf (..),
+    parseConfig,
+    saveConfig,
     mkMicroarchitecture,
 ) where
 
 import Data.Aeson (
-    FromJSON (parseJSON),
     Options (sumEncoding),
     SumEncoding (TaggedObject, contentsFieldName, tagFieldName),
-    ToJSON (toJSON),
     defaultOptions,
     genericParseJSON,
     genericToJSON,
  )
 import Data.Default (Default (def))
-import Data.HashMap.Internal.Strict (HashMap)
 import Data.Text qualified as T
+import Data.Map as M (
+    Map,
+    toList,
+ )
+import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import NITTA.Intermediate.Value (Val)
 import NITTA.Intermediate.Variable (Var)
@@ -30,28 +37,18 @@ import NITTA.Model.Networks.Bus (
  )
 import NITTA.Model.Networks.Types (IOSynchronization)
 import NITTA.Model.ProcessorUnits qualified as PU
-import NITTA.Utils (getFromToml)
+import Data.Yaml
+import System.Directory (createDirectoryIfMissing)
 
 data PUConf
     = Accum
-        { name :: T.Text
-        }
     | Divider
-        { name :: T.Text
-        , pipeline :: Int
-        , mock :: Bool
-        }
+        { pipeline :: Int }
     | Multiplier
-        { name :: T.Text
-        , mock :: Bool
-        }
     | Fram
-        { name :: T.Text
-        , size :: Int
-        }
+        { size :: Int }
     | SPI
-        { name :: T.Text
-        , mosi :: T.Text
+        { mosi :: T.Text
         , miso :: T.Text
         , sclk :: T.Text
         , cs :: T.Text
@@ -60,18 +57,10 @@ data PUConf
         , bounceFilter :: Int
         }
     | Shift
-        { name :: T.Text
-        , sRight :: Maybe Bool
-        }
+        { sRight :: Maybe Bool }
     | Comparator
-        { name :: T.Text
-        }
     | LogicalUnit
-        { name :: T.Text
-        }
     | Multiplexer
-        { name :: T.Text
-        }
     deriving (Generic, Show)
 
 puConfJsonOptions =
@@ -86,41 +75,55 @@ instance FromJSON PUConf where
     parseJSON = genericParseJSON puConfJsonOptions
 
 data NetworkConf = NetworkConf
-    { name :: T.Text
-    , pus :: [PUConf]
-    , protos :: [PUConf]
+    { pus :: Maybe (Map T.Text PUConf)
     }
     deriving (Generic, Show)
 
 instance FromJSON NetworkConf
 instance ToJSON NetworkConf
 
-newtype MicroarchitectureConf = MicroarchitectureConf
-    { networks :: [NetworkConf]
+data MicroarchitectureConf = MicroarchitectureConf
+    { mock :: Bool
+    , ioSync :: IOSynchronization
+    , valueType :: T.Text
+    , library :: Maybe (Map T.Text PUConf)
+    , networks :: Map T.Text NetworkConf
+    , puLibrary :: Maybe (Map T.Text PUConf) 
     }
     deriving (Generic, Show)
 
 instance FromJSON MicroarchitectureConf
 instance ToJSON MicroarchitectureConf
 
-mkMicroarchitecture :: (Val v, Var x, ToJSON a, ToJSON x) => IOSynchronization -> HashMap T.Text a -> BusNetwork T.Text x v Int
-mkMicroarchitecture ioSync toml =
+parseConfig :: FilePath -> IO MicroarchitectureConf
+parseConfig path = do
+    decodeFileThrow path :: IO MicroarchitectureConf
+
+saveConfig :: FilePath -> MicroarchitectureConf -> IO ()
+saveConfig path conf = do
+    createDirectoryIfMissing True path
+    encodeFile (path <> "/microarch.yml") conf
+
+mkMicroarchitecture :: (Val v, Var x, ToJSON x) => MicroarchitectureConf -> BusNetwork T.Text x v Int
+mkMicroarchitecture MicroarchitectureConf{mock, ioSync, library, networks, puLibrary} =
     let addPU proto
             | proto = addCustomPrototype
             | otherwise = addCustom
-        build NetworkConf{pus, protos} = do
-            mapM_ (configure False) pus
-            mapM_ (configure True) protos
+        build NetworkConf{pus} = do
+            mapM_ (configure_ False) $ M.toList $ fromMaybe def pus
+            mapM_ (configure_ True) $ M.toList $ fromMaybe def puLibrary
+            mapM_ (configure_ True) $ M.toList $ fromMaybe def library
             where
-                configure proto Accum{name} = addPU proto name def PU.AccumIO
-                configure proto Divider{name, pipeline, mock} = addPU proto name (PU.divider pipeline mock) PU.DividerIO
-                configure proto Multiplier{name, mock} = addPU proto name (PU.multiplier mock) PU.MultiplierIO
-                configure proto Fram{name, size} = addPU proto name (PU.framWithSize size) PU.FramIO
-                configure proto Shift{name, sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
-                configure proto Comparator{name} = addPU proto name def PU.CompareIO
-                configure proto LogicalUnit{name} = addPU proto name def PU.LogicalUnitIO
-                configure proto Multiplexer{name} = addPU proto name def PU.MultiplexerIO
-                configure proto SPI{name, mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
+                configure_ proto (name, pu) = configure proto name pu
+                configure proto name Accum = addPU proto name def PU.AccumIO
+                configure proto name Divider{pipeline} = addPU proto name (PU.divider pipeline mock) PU.DividerIO
+                configure proto name Multiplier = addPU proto name (PU.multiplier mock) PU.MultiplierIO
+                configure proto name Fram{size} = addPU proto name (PU.framWithSize size) PU.FramIO
+                configure proto name Shift{sRight} = addPU proto name (PU.shift $ Just False /= sRight) PU.ShiftIO
+                configure proto name Comparator = addPU proto name def PU.CompareIO
+                configure proto name LogicalUnit = addPU proto name def PU.LogicalUnitIO
+                configure proto name Multiplexer = addPU proto name def PU.MultiplexerIO
+                configure proto name SPI{mosi, miso, sclk, cs, isSlave, bounceFilter, bufferSize} =
                     addPU proto name (PU.anySPI bounceFilter bufferSize) $
                         if isSlave
                             then
@@ -137,8 +140,8 @@ mkMicroarchitecture ioSync toml =
                                     , master_sclk = PU.OutputPortTag sclk
                                     , master_cs = PU.OutputPortTag cs
                                     }
-        nets = networks (getFromToml toml :: MicroarchitectureConf)
-        mkNetwork net@NetworkConf{name} = modifyNetwork (busNetwork name ioSync) (build net)
-     in case nets of
-            [n] -> mkNetwork n
+        mkNetwork name net = modifyNetwork (busNetwork name ioSync) (build net)
+     in case M.toList networks of
+            [(name, net)] -> mkNetwork name net
+            [] -> error "any network undefined"
             _ -> error "multi-networks are not currently supported"
